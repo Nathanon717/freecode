@@ -1,0 +1,13 @@
+{
+  "name": "slash-clear",
+  "description": "/clear resets history, clears the screen, and redraws the banner",
+  "requiresLlm": false,
+  "turns": [
+    { "input": "/clear" }
+  ],
+  "expect": {
+    "stdoutContains": ["Chat history cleared", ".d888", "Goodbye"],
+    "stdoutAbsent": ["Error:"],
+    "exitCode": 0
+  }
+}

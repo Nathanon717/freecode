@@ -1,0 +1,23 @@
+node_modules/
+dist/
+coverage/
+
+# secrets
+*.txt
+.env
+.env.*
+!.env.example
+
+# planning / private notes
+dont look/
+
+# local playground output
+playground/*
+!playground/challenges/
+!playground/challenges/**
+__pycache__/
+*.pyc
+
+# generated
+*.js.map
+*.d.ts.map

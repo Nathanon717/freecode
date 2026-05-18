@@ -1,0 +1,13 @@
+{
+  "name": "slash-eval-menu",
+  "description": "/eval lists LLM eval scenarios with available checks in script mode",
+  "requiresLlm": false,
+  "turns": [
+    { "input": "/eval" }
+  ],
+  "expect": {
+    "stdoutContains": ["LLM eval scenarios", "01-eval-basic-read-search", "02-eval-medium-create-files", "03-eval-hard-edit-and-summarize", "checks:", "Goodbye"],
+    "stdoutAbsent": ["Error:", "slash-test-menu", "write-hello-world-file"],
+    "exitCode": 0
+  }
+}

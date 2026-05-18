@@ -1,0 +1,13 @@
+{
+  "name": "slash-model-list",
+  "description": "/model with no arg prints current model without crashing",
+  "requiresLlm": false,
+  "turns": [
+    { "input": "/model" }
+  ],
+  "expect": {
+    "stdoutContains": ["Current model:"],
+    "stdoutAbsent": ["Error:"],
+    "exitCode": 0
+  }
+}

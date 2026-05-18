@@ -1,0 +1,13 @@
+{
+  "name": "slash-test-menu",
+  "description": "/test lists scenario tests without running one in script mode",
+  "requiresLlm": false,
+  "turns": [
+    { "input": "/test" }
+  ],
+  "expect": {
+    "stdoutContains": ["Verification scenarios", "slash-test-menu", "Goodbye"],
+    "stdoutAbsent": ["Error:", "write-hello-world-file"],
+    "exitCode": 0
+  }
+}

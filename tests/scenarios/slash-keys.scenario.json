@@ -1,0 +1,13 @@
+{
+  "name": "slash-keys",
+  "description": "/keys command lists providers without crashing",
+  "requiresLlm": false,
+  "turns": [
+    { "input": "/keys" }
+  ],
+  "expect": {
+    "stdoutContains": ["API Keys Status"],
+    "stdoutAbsent": ["Error:"],
+    "exitCode": 0
+  }
+}

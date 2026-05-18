@@ -1,0 +1,39 @@
+# src/cli/command-dispatcher.ts - Command Dispatcher
+
+**Role:** Handles slash commands and sends normal user input to the agent loop.
+
+## Exports
+
+| Symbol | Description |
+|--------|-------------|
+| `CommandDispatchResult` | `'continue' \| 'exit'`. |
+| `ModelListMode` | `'current-only' \| 'full'`. |
+| `CommandRuntime` | Dependency bundle passed by `runCliSession()`. |
+| `formatQuotaReset` | Formats raw or millisecond quota reset values. |
+| `dispatchCommand` | Main command/user-input dispatcher. |
+
+## Slash Commands
+
+| Command | Behavior |
+|---------|----------|
+| `/model [id]` | Without an arg, shows current model and provider status. With an arg, sets selected model. |
+| `/config` | Runs config editor if the current mode supplies `runConfig`; otherwise prints unavailable. |
+| `/help` | Prints slash command help plus CLI flags. |
+| `/test` | Opens/renders non-LLM scenario menu. |
+| `/eval` | Opens/renders LLM eval scenario menu. |
+| `/keys` | Prints API key status from env/config. |
+| `/resume` | Loads the most recent persisted session for the current project root. |
+| `/clear` | Clears in-memory history, redraws banner, and restores screen hooks. |
+
+## Agent Turns
+
+Non-command input is handled by `sendToAgent()`:
+
+1. Append user input to `SessionController.messages`.
+2. Run `beforeAgentCall`.
+3. Call `agentLoop(messages, projectRoot, selectedModel, { confirmToolCall })`.
+4. Run `onAgentResult`.
+5. Append assistant message and persist the exchange.
+6. Run `afterAgentCall`.
+
+Errors are logged and printed, not thrown through the session loop.
