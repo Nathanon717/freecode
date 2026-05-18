@@ -59,8 +59,10 @@ export async function agentLoop(
     supportsTools = routed.supportsTools;
   } catch (error) {
     logError('stream', 'Route failed', error);
+    const errMsg = error instanceof Error ? error.message : 'Failed to route to provider';
+    process.stdout.write(`Error: ${errMsg}\n`);
     return {
-      text: `Error: ${error instanceof Error ? error.message : 'Failed to route to provider'}`,
+      text: `Error: ${errMsg}`,
       usage: { totalTokens: 0 },
       providerId: 'none',
       modelId: 'none',
@@ -114,8 +116,11 @@ export async function agentLoop(
   } catch (error) {
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);
     log('stream', 'streamText error details', serializeError(error));
+    const errMsg = error instanceof Error ? error.message : (typeof error === 'object' && error !== null ? JSON.stringify(error) : String(error));
+    if (fullText && !fullText.endsWith('\n')) process.stdout.write('\n');
+    process.stdout.write(`Error: ${errMsg}\n`);
     return {
-      text: fullText + `\n\nError: ${error instanceof Error ? error.message : (typeof error === 'object' && error !== null ? JSON.stringify(error) : String(error))}`,
+      text: fullText + `\n\nError: ${errMsg}`,
       usage: { totalTokens },
       providerId,
       modelId,
