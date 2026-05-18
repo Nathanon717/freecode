@@ -28,53 +28,7 @@ Inside the CLI, use `/test` to open the non-LLM verification menu. Use `/eval` t
 2. If the change introduces user-visible behavior (new flag, new slash command, new tool, changed output format), check whether an existing scenario covers it. If not, add a scenario in `tests/scenarios/` as part of the same change.
 3. LLM-dependent scenarios (`"requiresLlm": true`) run under `/eval` or `npm run eval`. They are intentionally excluded from `npm run verify` and `npm run verify:fast` because they call real providers.
 
-### Scenario format (`tests/scenarios/*.scenario.json`)
-
 For the full scenario authoring reference, see `docs/testing-scenarios.md`.
-
-```json
-{
-  "name": "slash-help-and-exit",
-  "description": "...",
-  "requiresLlm": false,
-  "workspace": "repo",
-  "flags": [],
-  "turns": [
-    { "input": "/help" },
-    { "input": "/exit" }
-  ],
-  "expect": {
-    "stdoutContains": ["Available commands", "Goodbye"],
-    "stdoutAbsent": ["Error:"],
-    "exitCode": 0
-  }
-}
-```
-
-- `requiresLlm: false` scenarios run unconditionally (slash commands, help, flags, structural checks).
-- `requiresLlm: true` scenarios need Ollama running or a provider key and are run explicitly with `/eval` or `npm run eval`.
-- `workspace: "temp"` runs the CLI from a disposable temp directory for file-writing scenarios; omit it or use `"repo"` for repo-root scenarios.
-- `flags` injects CLI flags (e.g., `["-log"]`) for scenarios that assert on log output.
-- `y`/`yes` and `n`/`no` turns are consumed as scripted tool confirmations.
-- Assertions check `stdout + stderr` combined. Use `stdoutContains` for structural markers; avoid exact LLM output.
-- `expect.files` can assert created files and exact content. On mismatch, the harness prints the actual content.
-- `expect.toolTrace` can assert tool call sequence, required tools, forbidden tools, and max call count.
-
-### LLM scenario gotchas
-
-- LLM scenarios make real provider network calls. In sandboxed Codex runs, rerun them with escalated network permissions if they fail with `EACCES` / `Cannot connect to API`.
-- Groq tool-call failures can surface as `code: "tool_use_failed"` and may be followed by Windows exit code `3221226505` (`0xC0000409`) if the child process aborts during shutdown. Treat the provider error as the root cause; the exit code is a secondary crash symptom.
-- For tool scenarios, write prompts that name the expected tool sequence and exact tool arguments. This reduces malformed provider tool calls and keeps trace assertions meaningful.
-
-### How it works
-
-The harness writes the scenario's `turns[].input` lines to a temp file and runs:
-
-```
-node dist/index.js [flags] --script <temp-file>
-```
-
-`--script` feeds input lines through the same `interactiveLoop` code path the user gets, then exits at EOF. `FREECODE_HOME` is set to a temp directory so verify runs never pollute `~/.config/freecode/sessions.json`.
 
 ## Session Logs
 
@@ -190,6 +144,10 @@ The router:
 ## Providers
 
 For the full provider list, how to test providers, how to add a new provider, and API key setup, see `docs/providers.md`.
+
+## Simplification log
+
+For a running log of efforts to make the codebase easier to understand and change, see `docs/easy_to_think_about.md`.
 
 ## Future (Phase 2+)
 
