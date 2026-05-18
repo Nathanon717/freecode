@@ -145,6 +145,10 @@ The router:
 
 For the full provider list, how to test providers, how to add a new provider, and API key setup, see `docs/providers.md`.
 
+## Simplification log
+
+For a running log of efforts to make the codebase easier to understand and change, see `docs/easy_to_think_about.md`.
+
 ## Future (Phase 2+)
 
 - More sophisticated routing
