@@ -127,7 +127,8 @@ function scenarioReference(): string {
 
 function updateFile(path: string, update: (content: string) => string): boolean {
   const current = existsSync(join(ROOT, path)) ? readProjectFile(path) : '';
-  const next = `${update(current).trimEnd()}\n`;
+  const normalized = current.replace(/\r\n/g, '\n');
+  const next = `${update(normalized).trimEnd()}\n`;
   if (current === next) return false;
 
   if (!CHECK) {
