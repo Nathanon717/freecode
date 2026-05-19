@@ -16,7 +16,6 @@
 ```typescript
 {
   providers: {},
-  preferLocal: true,
   useOllama: true,
   toolRationale: true,
 }

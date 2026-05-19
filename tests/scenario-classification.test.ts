@@ -5,6 +5,7 @@ describe('scenario LLM classification', () => {
   it('treats scripted slash commands and approvals as non-LLM input', () => {
     expect(isNonLlmScriptInput('/help')).toBe(true);
     expect(isNonLlmScriptInput('/model groq:test-model')).toBe(true);
+    expect(isNonLlmScriptInput('/models')).toBe(true);
     expect(isNonLlmScriptInput('yes')).toBe(true);
     expect(isNonLlmScriptInput('Say PONG')).toBe(false);
   });

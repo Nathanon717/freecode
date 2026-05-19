@@ -6,6 +6,7 @@ import {
   saveMessage,
 } from '../db/client.js';
 import { estimateContextTokens } from '../agent/token-count.js';
+import { resetAnthropicSessionCost } from '../providers/anthropic-cost.js';
 
 export class SessionController {
   readonly projectRoot: string;
@@ -18,6 +19,7 @@ export class SessionController {
 
   createSession(): void {
     this.currentSessionId = createSession(this.projectRoot).id;
+    resetAnthropicSessionCost();
   }
 
   resumeLast(): { id: string; messageCount: number } | null {

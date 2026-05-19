@@ -5,7 +5,7 @@ import type { Config } from '../providers/types.js';
 
 // ── Setting definitions ───────────────────────────────────────────────────────
 
-type BoolKey = 'useOllama' | 'preferLocal' | 'toolRationale';
+type BoolKey = 'useOllama' | 'toolRationale';
 
 interface BoolSetting {
   type: 'boolean';
@@ -20,7 +20,6 @@ type Setting = BoolSetting;
 
 const SETTINGS: Setting[] = [
   { type: 'boolean', key: 'useOllama',     label: 'Use Ollama',         description: 'Enable Ollama local model auto-detection' },
-  { type: 'boolean', key: 'preferLocal',  label: 'Prefer local first', description: 'Try Ollama before cloud providers', disabledWhen: (v) => !v['useOllama'] },
   { type: 'boolean', key: 'toolRationale', label: 'Tool rationale',    description: 'Ask model to explain each tool call before executing' },
 ];
 
@@ -76,6 +75,7 @@ function buildScreen(values: Record<string, unknown>, sel: number, globalPath: s
 
 function saveSetting(globalPath: string, key: string, value: unknown): void {
   const existing = (readRawConfig(globalPath) as Record<string, unknown>) ?? {};
+  delete existing['preferLocal'];
   existing[key] = value;
   writeConfigFile(globalPath, existing as Partial<Config>);
 }
@@ -153,11 +153,6 @@ export async function runConfigCommand(rl: Interface): Promise<void> {
           if (!disabled) {
             values[setting.key] = !(values[setting.key] as boolean);
             saveSetting(paths.globalPath, setting.key, values[setting.key]);
-            // Force preferLocal off when useOllama is turned off.
-            if (setting.key === 'useOllama' && !values['useOllama']) {
-              values['preferLocal'] = false;
-              saveSetting(paths.globalPath, 'preferLocal', false);
-            }
             redraw();
           }
         }

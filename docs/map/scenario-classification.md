@@ -7,7 +7,7 @@
 | Symbol | Signature | Description |
 |--------|-----------|-------------|
 | `isScriptedConfirmation` | `(input: string) => boolean` | True for `y`, `yes`, `n`, or `no`. |
-| `isNonLlmScriptInput` | `(input: string) => boolean` | True for blank input, confirmations, `/model...`, and known structural slash commands. |
+| `isNonLlmScriptInput` | `(input: string) => boolean` | True for blank input, confirmations, `/model`, `/model ...`, `/models`, `/models ...`, and known structural slash commands. |
 | `classifyScenario` | `(scenario) => ScenarioClassification` | Computes declared/inferred LLM requirement and validation errors. |
 
 ## Non-LLM Commands
@@ -21,7 +21,10 @@ The classifier treats these as structural and safe for non-LLM verification:
 /keys
 /resume
 /clear
-/model...
+/model
+/model ...
+/models
+/models ...
 ```
 
 Any non-empty turn input outside that set is considered an agent prompt, so `inferredRequiresLlm` becomes true.

@@ -1,6 +1,26 @@
 # Codebase Map
 
-Hierarchical documentation of the `freecode` source tree. This map is focused on `src/` and mirrors the current module layout.
+This is the agent navigation layer for the `freecode` source tree. Use it before broad source reads to decide which files matter for a task.
+
+The map is maintained incrementally:
+
+1. Start from this file and the relevant area page.
+2. Read source only when the map points you to files involved in the change.
+3. After edits, inspect `git diff --name-only`.
+4. Update only map pages for changed files whose purpose, ownership, exports, dependencies, or read/use guidance changed.
+5. Update this file when source files are added, removed, renamed, or moved.
+
+`npm run docs:check` runs `scripts/check-map.ts`, which checks that every `src/**/*.ts` file has a matching map page and that map pages still point to existing source files. It intentionally does not regenerate semantic summaries; agents keep those current from the focused diff.
+
+Map pages should be short and operational. Prefer:
+
+- purpose;
+- read when;
+- exports or entry points;
+- key neighbors;
+- update triggers.
+
+Do not duplicate reference facts that belong in generated docs.
 
 ## Structure
 
@@ -33,7 +53,8 @@ src/
 |   |-- slash-commands.ts         -> [Slash command list/completion](cli/slash-commands.md)
 |   `-- terminal-ui.ts            -> [Bottom-pinned terminal UI](cli/terminal-ui.md)
 |-- commands/
-|   `-- config.ts                 -> [Interactive /config editor](commands/config.md)
+|   |-- config.ts                 -> [Interactive /config editor](commands/config.md)
+|   `-- model.ts                  -> [Interactive /model picker](commands/model.md)
 |-- config/
 |   `-- index.ts                  -> [Config loader](config/index.md)
 |-- db/
@@ -44,39 +65,16 @@ src/
     |-- registry.ts               -> [Provider registry](providers/registry.md)
     |-- router.ts                 -> [Routing logic](providers/router.md)
     |-- ollama.ts                 -> [Ollama detection](providers/ollama.md)
+    |-- anthropic-cost.ts         -> [Anthropic cost estimates](providers/anthropic-cost.md)
     |-- adapters/
-    |   `-- openai-compat.ts      -> [OpenAI-compatible adapter](providers/adapters/openai-compat.md)
+    |   |-- openai-compat.ts      -> [OpenAI-compatible adapter](providers/adapters/openai-compat.md)
+    |   `-- anthropic.ts          -> [Anthropic adapter](providers/adapters/anthropic.md)
     `-- quota/
-        `-- headers.ts            -> [Groq rate-limit parsing](providers/quota/headers.md)
+        `-- headers.ts            -> [Provider rate-limit parsing](providers/quota/headers.md)
 ```
 
-## Main Runtime Flow
+## Main Flow
 
-```text
-index.ts
-  -> loadConfig()
-  -> optionally getOllamaModels()
-  -> handle --test / --test-all / --script or start interactive mode
-  -> SessionController.createSession()
-  -> runCliSession()
-       -> mode.readInput(context token count)
-       -> dispatchCommand()
-            -> slash command handler, or
-            -> agentLoop()
-                 -> setProjectRoot()
-                 -> route()
-                 -> buildSystemPrompt()
-                 -> streamText(... createTools(confirmToolCall) ...)
-                 -> capture streamed text, token usage, optional quota headers
-            -> SessionController.saveExchange()
-```
+Runtime starts in [index.md](index.md), enters [cli/session-runner.md](cli/session-runner.md), dispatches slash commands through [cli/command-dispatcher.md](cli/command-dispatcher.md), and sends normal turns to [agent/loop.md](agent/loop.md).
 
-## Key Concepts
-
-- **CLI mode**: `input-modes.ts` supplies either raw TTY interaction or deterministic `--script` input.
-- **Session**: `SessionController` keeps in-memory `CoreMessage[]`; `db/client.ts` persists sessions/messages to JSON.
-- **Router**: `providers/router.ts` resolves a model preference or auto-selects a configured provider.
-- **Provider adapter**: `providers/adapters/openai-compat.ts` wraps OpenAI-compatible APIs for the AI SDK.
-- **Agent loop**: `agent/loop.ts` streams model output, enables tools only when the provider supports them, and returns metadata.
-- **Tool**: Zod-validated AI SDK tool wrapped with confirmation, logging, optional rationale, tracing, and serialized execution.
-- **Scenario**: JSON test script under `tests/scenarios/`; classification decides whether it belongs in `/test` or `/eval`.
+Provider selection lives in [providers/router.md](providers/router.md). Tool wrappers live under [agent/tools/](agent/tools/index.md). Scenario discovery and classification live in [cli/scenario-catalog.md](cli/scenario-catalog.md) and [scenario-classification.md](scenario-classification.md).

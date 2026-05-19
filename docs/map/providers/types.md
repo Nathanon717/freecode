@@ -22,16 +22,17 @@ interface ModelConfig {
 interface ProviderConfig {
   id: string;
   name: string;
-  type: 'openai-compat';
-  baseUrl: string;
+  type: 'openai-compat' | 'anthropic';
+  baseUrl?: string;
   apiKeyEnvVar: string;
   models: ModelConfig[];
   supportsTools?: boolean;
+  paid?: boolean;
 }
 
 interface Config {
-  providers: Partial<Record<string, { apiKey?: string; preferredModel?: string }>>;
-  preferLocal: boolean;
+  providers: Partial<Record<string, { apiKey?: string }>>;
+  preferredModel?: string;
   useOllama: boolean;
   toolRationale: boolean;
 }
@@ -40,13 +41,15 @@ interface Config {
 ## Notes
 
 - `supportsTools` defaults effectively to true; router checks `provider.supportsTools !== false`.
-- `preferLocal` is part of config and editable through `/config`, but current router logic does not use it.
-- `preferredModel` is accepted in config shape but current routing is driven by explicit model preference or registry defaults.
+- `baseUrl` is optional because native Anthropic providers use the Anthropic SDK default endpoint.
+- `paid` marks providers that should be treated as paid even if other providers are free-tier oriented.
+- `preferredModel` is the startup/default `provider:model` selection used by the CLI and MCP server.
 
 ## Used By
 
 - `providers/registry.ts`: `ProviderConfig`, `ModelConfig`, `RateLimits`
 - `providers/ollama.ts`: `ModelConfig`
 - `providers/adapters/openai-compat.ts`: `ProviderConfig`
+- `providers/adapters/anthropic.ts`: `ProviderConfig`
 - `config/index.ts`: `Config`
 - `commands/config.ts`: `Config`

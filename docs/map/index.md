@@ -6,29 +6,18 @@
 
 None. This is the `#!/usr/bin/env node` executable entry point.
 
-## Imports
+## Read When
 
-| Symbol | Source |
-|--------|--------|
-| `agentLoop` | `./agent/loop` |
-| `showBanner` | `./cli/banner` |
-| `createInteractiveMode`, `createScriptedMode`, `denyToolCallWithPreview` | `./cli/input-modes` |
-| `SessionController` | `./cli/session-controller` |
-| `runCliSession` | `./cli/session-runner` |
-| `setupBottomUI` | `./cli/terminal-ui` |
-| `loadConfig` | `./config/index` |
-| `enableLog`, `log` | `./logger` |
-| `getOllamaModels` | `./providers/ollama` |
-| `route`, `testAllProviders` | `./providers/router` |
-| `chalk` | npm |
-| `createInterface` | Node `readline` |
+- Changing CLI startup flags or mode selection.
+- Debugging startup provider probes, readline lifecycle, or default model selection.
+- Tracing how the executable enters the shared session runner.
 
 ## Startup
 
 1. Creates a process-wide readline interface.
 2. Sets `projectRoot` to `process.cwd()`.
 3. Enables diagnostic logging when `-log` is present.
-4. Loads config and probes Ollama when `config.useOllama` is true.
+4. Loads config, seeds the selected model from `config.preferredModel`, and probes Ollama when `config.useOllama` is true.
 5. Routes to a flag mode, script mode, or interactive mode.
 
 ## Modes
@@ -43,20 +32,18 @@ None. This is the `#!/usr/bin/env node` executable entry point.
 
 ## State Ownership
 
-- Owns the selected model string, currently defaulting to `groq:llama-3.3-70b-versatile`.
+- Owns the selected model string, defaulting to `config.preferredModel` when configured.
 - Owns process-level readline creation/closure.
 - Does not implement slash commands directly; command handling lives in [cli/command-dispatcher.md](cli/command-dispatcher.md).
+- Prints Anthropic cost estimates in `--test` mode when the selected provider is Anthropic.
 
-## Flow
+## Key Neighbors
 
-```text
-startup
-  -> loadConfig()
-  -> getOllamaModels() if enabled
-  -> handle special flag, or:
-  -> showBanner()
-  -> route() startup probe
-  -> SessionController.createSession()
-  -> setupBottomUI() for interactive TTY
-  -> runCliSession(...)
-```
+- [cli/session-runner.md](cli/session-runner.md): owns the shared REPL/script loop.
+- [cli/input-modes.md](cli/input-modes.md): creates interactive and scripted input modes.
+- [cli/command-dispatcher.md](cli/command-dispatcher.md): handles slash commands.
+- [providers/router.md](providers/router.md): used for startup probe and provider tests.
+
+## Update Triggers
+
+Update this page when startup flags, mode ownership, or top-level runtime flow changes.

@@ -6,7 +6,6 @@ import { log, logError } from '../logger.js';
 
 const DEFAULT_CONFIG: Config = {
   providers: {},
-  preferLocal: true,
   useOllama: true,
   toolRationale: true,
 };
@@ -66,6 +65,7 @@ export function loadConfig(): Config {
   if (localConfig) {
     config = { ...config, ...localConfig };
   }
+  delete (config as Record<string, unknown>)['preferLocal'];
   
   const configuredProviders: Config['providers'] = {};
   const providerIds = ['groq', 'openrouter', 'siliconflow', 'nvidia', 'llm7', 'github', 'cohere', 'cerebras', 'mistral', 'anthropic'];
@@ -102,6 +102,7 @@ export function readRawConfig(path: string): Partial<Config> | null {
 }
 
 export function writeConfigFile(path: string, data: Partial<Config>): void {
+  delete (data as Record<string, unknown>)['preferLocal'];
   const dir = dirname(path);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });

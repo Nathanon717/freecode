@@ -1,0 +1,185 @@
+#!/usr/bin/env tsx
+import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from 'fs';
+import { dirname, join, relative } from 'path';
+import { fileURLToPath } from 'url';
+import { PROVIDER_REGISTRY } from '../src/providers/registry.js';
+import { SLASH_COMMANDS } from '../src/cli/slash-commands.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(__dirname, '..');
+const CHECK = process.argv.includes('--check');
+
+interface ScenarioDoc {
+  file: string;
+  name: string;
+  description: string;
+  requiresLlm: boolean;
+  workspace?: string;
+}
+
+function readProjectFile(path: string): string {
+  return readFileSync(join(ROOT, path), 'utf-8');
+}
+
+function writeProjectFile(path: string, content: string): void {
+  const fullPath = join(ROOT, path);
+  mkdirSync(dirname(fullPath), { recursive: true });
+  writeFileSync(fullPath, content, 'utf-8');
+}
+
+function replaceGeneratedSection(content: string, name: string, generated: string): string {
+  const start = `<!-- BEGIN GENERATED ${name} -->`;
+  const end = `<!-- END GENERATED ${name} -->`;
+  const pattern = new RegExp(`${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}`);
+  const replacement = `${start}\n${generated.trimEnd()}\n${end}`;
+
+  if (!pattern.test(content)) {
+    const separator = content.endsWith('\n') ? '\n' : '\n\n';
+    return `${content}${separator}${replacement}\n`;
+  }
+
+  return content.replace(pattern, replacement);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function markdownTable(headers: string[], rows: string[][]): string {
+  return [
+    `| ${headers.join(' | ')} |`,
+    `| ${headers.map(() => '---').join(' | ')} |`,
+    ...rows.map(row => `| ${row.map(escapeMarkdownCell).join(' | ')} |`),
+  ].join('\n');
+}
+
+function escapeMarkdownCell(value: string): string {
+  return value.replace(/\|/g, '\\|').replace(/\n/g, '<br>');
+}
+
+function formatModels(models: typeof PROVIDER_REGISTRY[number]['models']): string {
+  return models.map(model => `\`${model.id}\``).join('<br>');
+}
+
+function providerReference(): string {
+  const rows = PROVIDER_REGISTRY.map((provider, index) => [
+    String(index + 1),
+    provider.name,
+    `\`${provider.id}\``,
+    provider.type,
+    `\`${provider.apiKeyEnvVar}\``,
+    provider.supportsTools === false ? 'No' : 'Yes',
+    provider.paid ? 'Yes' : 'No',
+    formatModels(provider.models),
+  ]);
+
+  return markdownTable(
+    ['Order', 'Provider', 'ID', 'Type', 'API key env var', 'Tools', 'Paid', 'Models'],
+    rows,
+  );
+}
+
+function packageScriptReference(): string {
+  const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts?: Record<string, string> };
+  const scripts = Object.entries(packageJson.scripts ?? {}).sort(([a], [b]) => a.localeCompare(b));
+
+  return markdownTable(
+    ['Script', 'Command'],
+    scripts.map(([name, command]) => [`\`npm run ${name}\``, `\`${command}\``]),
+  );
+}
+
+function slashCommandReference(): string {
+  return markdownTable(
+    ['Command', 'Description'],
+    SLASH_COMMANDS.map(({ command, description }) => [`\`${command}\``, description]),
+  );
+}
+
+function readScenarios(): ScenarioDoc[] {
+  const scenariosDir = join(ROOT, 'tests', 'scenarios');
+  return readdirSync(scenariosDir)
+    .filter(file => file.endsWith('.scenario.json'))
+    .sort()
+    .map(file => {
+      const scenario = JSON.parse(readFileSync(join(scenariosDir, file), 'utf-8')) as ScenarioDoc;
+      return {
+        file,
+        name: scenario.name,
+        description: scenario.description,
+        requiresLlm: Boolean(scenario.requiresLlm),
+        workspace: scenario.workspace ?? 'repo',
+      };
+    });
+}
+
+function scenarioReference(): string {
+  const rows = readScenarios().map(scenario => [
+    `\`${scenario.file}\``,
+    `\`${scenario.name}\``,
+    scenario.requiresLlm ? 'LLM eval' : 'Non-LLM verification',
+    scenario.workspace ?? 'repo',
+    scenario.description,
+  ]);
+
+  return markdownTable(['File', 'Name', 'Type', 'Workspace', 'Description'], rows);
+}
+
+function updateFile(path: string, update: (content: string) => string): boolean {
+  const current = existsSync(join(ROOT, path)) ? readProjectFile(path) : '';
+  const next = `${update(current).trimEnd()}\n`;
+  if (current === next) return false;
+
+  if (!CHECK) {
+    writeProjectFile(path, next);
+  }
+
+  return true;
+}
+
+const updates: Array<[string, (content: string) => string]> = [
+  ['docs/providers.md', content => replaceGeneratedSection(content, 'PROVIDERS', providerReference())],
+  ['docs/commands.md', content => {
+    const base = content || '# Commands\n\nReference docs for npm scripts and slash commands.\n';
+    return replaceGeneratedSection(
+      replaceGeneratedSection(base, 'NPM SCRIPTS', packageScriptReference()),
+      'SLASH COMMANDS',
+      slashCommandReference(),
+    );
+  }],
+  ['docs/scenarios.md', content => {
+    const base = content || [
+      '# Scenarios',
+      '',
+      'Reference docs for verification and eval scenarios.',
+      '',
+      'This table is generated from `tests/scenarios/*.scenario.json`.',
+      '',
+    ].join('\n');
+    return replaceGeneratedSection(base, 'SCENARIOS', scenarioReference());
+  }],
+];
+
+const changed = updates
+  .map(([path, update]) => ({ path, changed: updateFile(path, update) }))
+  .filter(result => result.changed);
+
+if (CHECK && changed.length > 0) {
+  console.error('Generated docs are stale:');
+  for (const { path } of changed) {
+    console.error(`  - ${relative(ROOT, join(ROOT, path))}`);
+  }
+  console.error('Run npm run docs:generate and commit the result.');
+  process.exit(1);
+}
+
+if (!CHECK) {
+  if (changed.length === 0) {
+    console.log('Generated docs are already current.');
+  } else {
+    console.log('Updated generated docs:');
+    for (const { path } of changed) {
+      console.log(`  - ${relative(ROOT, join(ROOT, path))}`);
+    }
+  }
+}

@@ -23,7 +23,6 @@ function logSelection(provider: ProviderConfig, modelId: string): void {
 }
 
 export async function route(
-  excludeProviders: string[] = [],
   modelPreference?: string
 ): Promise<{ model: LanguageModel; providerId: string; modelId: string; supportsTools: boolean }> {
   const config = loadConfig();
@@ -89,11 +88,6 @@ export async function route(
 
   log('router', 'Auto-selecting provider (scanning registry)');
   for (const provider of getAllProviders()) {
-    if (excludeProviders.includes(provider.id)) {
-      log('router', `Skipping ${provider.id} (excluded)`);
-      continue;
-    }
-
     const apiKey = process.env[provider.apiKeyEnvVar] || config.providers[provider.id]?.apiKey;
     if (!apiKey) {
       log('router', `Skipping ${provider.id} — no API key`);

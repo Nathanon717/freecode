@@ -6,6 +6,13 @@ import { log } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/registry.js';
 import { testAllProviders } from '../providers/router.js';
 import { detectOllama } from '../providers/ollama.js';
+import {
+  addAnthropicSessionCost,
+  describeCostEstimate,
+  describeCostEstimateBreakdown,
+  formatUsdCeil,
+  resetAnthropicSessionCost,
+} from '../providers/anthropic-cost.js';
 import { showBanner } from './banner.js';
 import { showHelp } from './slash-commands.js';
 import type { SessionController } from './session-controller.js';
@@ -27,12 +34,22 @@ export interface CommandRuntime {
   beforeScreenClear?(): void | Promise<void>;
   afterScreenClear?(): void | Promise<void>;
   runConfig?(): Promise<void>;
+  runModelMenu?(): Promise<void>;
   runTestMenu(): Promise<void>;
   runEvalMenu(): Promise<void>;
 }
 
 function isScriptedConfirmation(input: string): boolean {
   return input === 'y' || input === 'yes' || input === 'n' || input === 'no';
+}
+
+function getModelCommandArg(input: string): string | null {
+  const normalized = input.toLowerCase();
+  if (normalized === '/model') return '';
+  if (normalized.startsWith('/model ')) return input.slice(6).trim();
+  if (normalized === '/models') return '';
+  if (normalized.startsWith('/models ')) return input.slice(7).trim();
+  return null;
 }
 
 function showFlagsHelp(): void {
@@ -128,6 +145,15 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
     runtime.session.addAssistantMessage(result.text);
     runtime.session.saveExchange(input, result.text, result.usage.totalTokens);
 
+    if (result.providerId === 'anthropic') {
+      const sessionTotal = addAnthropicSessionCost(result.costEstimate);
+      console.log(chalk.gray(
+        `Estimated API cost: ${describeCostEstimate(result.costEstimate)} this turn | ${formatUsdCeil(sessionTotal)} session`
+      ));
+      const breakdown = describeCostEstimateBreakdown(result.costEstimate);
+      if (breakdown) console.log(chalk.gray(breakdown));
+    }
+
     console.log();
   } catch (error) {
     log('error', 'agentLoop threw', { error: error instanceof Error ? error.message : String(error) });
@@ -148,11 +174,13 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
     return 'continue';
   }
 
-  if (trimmed.startsWith('/model')) {
-    const modelArg = trimmed.slice(6).trim();
+  const modelArg = getModelCommandArg(trimmed);
+  if (modelArg !== null) {
     if (modelArg) {
       runtime.setSelectedModel(modelArg);
       console.log(chalk.blue(`Model set to: ${runtime.getSelectedModel()}`));
+    } else if (runtime.runModelMenu) {
+      await runtime.runModelMenu();
     } else {
       await showModelStatus(runtime);
     }
@@ -202,6 +230,7 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
 
   if (normalized === '/clear') {
     runtime.session.clearMessages();
+    resetAnthropicSessionCost();
     await runtime.beforeScreenClear?.();
     showBanner();
     await runtime.afterScreenClear?.();

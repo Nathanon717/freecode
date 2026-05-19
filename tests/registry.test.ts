@@ -15,10 +15,11 @@ describe('Provider Registry', () => {
       expect(providerIds).toContain('cohere');
       expect(providerIds).toContain('cerebras');
       expect(providerIds).toContain('mistral');
+      expect(providerIds).toContain('anthropic');
     });
 
-    it('should have 9 providers total', () => {
-      expect(PROVIDER_REGISTRY).toHaveLength(9);
+    it('should have 10 providers total', () => {
+      expect(PROVIDER_REGISTRY).toHaveLength(10);
     });
 
     it('each provider should have required fields', () => {
@@ -26,8 +27,10 @@ describe('Provider Registry', () => {
         expect(provider.id).toBeDefined();
         expect(provider.name).toBeDefined();
         expect(provider.type).toBeDefined();
-        expect(['openai-compat']).toContain(provider.type);
-        expect(provider.baseUrl).toBeDefined();
+        expect(['openai-compat', 'anthropic']).toContain(provider.type);
+        if (provider.type === 'openai-compat') {
+          expect(provider.baseUrl).toBeDefined();
+        }
         expect(provider.apiKeyEnvVar).toBeDefined();
         expect(provider.models).toBeDefined();
         expect(Array.isArray(provider.models)).toBe(true);
@@ -84,7 +87,7 @@ describe('Provider Registry', () => {
       const providers = getAllProviders();
       
       expect(Array.isArray(providers)).toBe(true);
-      expect(providers.length).toBe(9);
+      expect(providers.length).toBe(10);
     });
 
     it('should return copy of registry', () => {
@@ -101,6 +104,7 @@ describe('Provider Registry', () => {
       const types = providers.map(p => p.type);
       
       expect(types.filter(t => t === 'openai-compat')).toHaveLength(9);
+      expect(types.filter(t => t === 'anthropic')).toHaveLength(1);
     });
   });
 

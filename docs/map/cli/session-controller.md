@@ -12,7 +12,7 @@
 
 | Method | Description |
 |--------|-------------|
-| `createSession()` | Creates a new DB session for `projectRoot`. |
+| `createSession()` | Creates a new DB session for `projectRoot` and resets Anthropic session cost tracking. |
 | `resumeLast()` | Loads the most recent DB session for `projectRoot` into `messages`. |
 | `clearMessages()` | Clears in-memory history only. |
 | `getContextTokenCount()` | Returns `estimateContextTokens(messages)`. |
@@ -23,3 +23,5 @@
 ## Persistence Model
 
 The agent loop receives in-memory `messages`. Persistence is explicit through `saveExchange()` after the turn completes.
+
+Anthropic session cost totals are process-local metadata, not persisted with session messages.

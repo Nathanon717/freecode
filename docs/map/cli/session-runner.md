@@ -16,7 +16,7 @@ Modes provide:
 - `readInput(tokenCount)`: returns the next input or `null` when exhausted.
 - `confirmToolCall`: approval callback passed to tools.
 - `modelListMode`: `full` or `current-only`.
-- Hooks for agent calls, screen clearing, scenario menus, config, exit, and input exhaustion.
+- Hooks for agent calls, screen clearing, scenario menus, config, model picker, exit, and input exhaustion.
 
 ## Flow
 

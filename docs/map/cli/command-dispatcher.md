@@ -16,14 +16,15 @@
 
 | Command | Behavior |
 |---------|----------|
-| `/model [id]` | Without an arg, shows current model and provider status. With an arg, sets selected model. |
+| `/model [id]` | Without an arg, opens the interactive picker when available or shows status. With an arg, sets selected model. |
+| `/models [id]` | Alias for `/model [id]`. |
 | `/config` | Runs config editor if the current mode supplies `runConfig`; otherwise prints unavailable. |
 | `/help` | Prints slash command help plus CLI flags. |
 | `/test` | Opens/renders non-LLM scenario menu. |
 | `/eval` | Opens/renders LLM eval scenario menu. |
 | `/keys` | Prints API key status from env/config. |
 | `/resume` | Loads the most recent persisted session for the current project root. |
-| `/clear` | Clears in-memory history, redraws banner, and restores screen hooks. |
+| `/clear` | Clears in-memory history and Anthropic session cost, redraws banner, and restores screen hooks. |
 
 ## Agent Turns
 
@@ -34,6 +35,7 @@ Non-command input is handled by `sendToAgent()`:
 3. Call `agentLoop(messages, projectRoot, selectedModel, { confirmToolCall })`.
 4. Run `onAgentResult`.
 5. Append assistant message and persist the exchange.
-6. Run `afterAgentCall`.
+6. When using Anthropic, print estimated turn cost, session total, and a token/rate breakdown when available.
+7. Run `afterAgentCall`.
 
 Errors are logged and printed, not thrown through the session loop.

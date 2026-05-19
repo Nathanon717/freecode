@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import type { Interface } from 'readline';
 import chalk from 'chalk';
 import { runConfigCommand } from '../commands/config.js';
+import { runModelCommand } from '../commands/model.js';
 import type { ToolCallConfirmation, ToolCallPreview } from '../agent/tools/index.js';
 import { getCommandCompletion, getFilteredCommands } from './slash-commands.js';
 import { printScriptedScenarioList, runEvalMenu, runTestMenu } from './scenario-menu.js';
@@ -262,7 +263,13 @@ async function readLineWithAutocomplete(rl: Interface, tokenCount: number): Prom
   });
 }
 
-export function createInteractiveMode(rl: Interface, projectRoot: string, session: SessionController): CliSessionMode {
+export function createInteractiveMode(
+  rl: Interface,
+  projectRoot: string,
+  session: SessionController,
+  getSelectedModel: () => string,
+  setSelectedModel: (model: string) => void,
+): CliSessionMode {
   return {
     readInput: (tokenCount) => readLineWithAutocomplete(rl, tokenCount),
     confirmToolCall: (preview) => confirmToolCallInteractive(rl, preview),
@@ -300,6 +307,19 @@ export function createInteractiveMode(rl: Interface, projectRoot: string, sessio
       await runConfigCommand(rl);
       rl.pause();
       if (process.stdin.isTTY) setupBottomUI();
+    },
+    runModelMenu: async () => {
+      teardownBottomUI();
+      rl.resume();
+      await runModelCommand(rl, getSelectedModel(), setSelectedModel);
+      rl.pause();
+      if (process.stdin.isTTY) {
+        setupBottomUI();
+        setInputBuffer('');
+        setInlineCompletion(null);
+        setSuggestions(getFilteredCommands(''));
+        drawBottomUI();
+      }
     },
     runTestMenu: () => runTestMenu(rl, projectRoot),
     runEvalMenu: () => runEvalMenu(rl, projectRoot),

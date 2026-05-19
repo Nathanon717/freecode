@@ -12,8 +12,7 @@
 
 | Key | Label | Behavior |
 |-----|-------|----------|
-| `useOllama` | Use Ollama | Enables/disables local Ollama auto-detection. Turning it off also forces `preferLocal` false. |
-| `preferLocal` | Prefer local first | Disabled in the UI while `useOllama` is false. |
+| `useOllama` | Use Ollama | Enables/disables local Ollama auto-detection. |
 | `toolRationale` | Tool rationale | Controls whether tool schemas require a `rationale` field. |
 
 ## Persistence

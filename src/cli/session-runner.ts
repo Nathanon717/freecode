@@ -14,6 +14,7 @@ export interface CliSessionMode {
   beforeScreenClear?(): void | Promise<void>;
   afterScreenClear?(): void | Promise<void>;
   runConfig?(): Promise<void>;
+  runModelMenu?(): Promise<void>;
   runTestMenu(): Promise<void>;
   runEvalMenu(): Promise<void>;
   onExit?(): void | Promise<void>;
@@ -52,6 +53,7 @@ export async function runCliSession(options: CliSessionRunnerOptions): Promise<v
       beforeScreenClear: mode.beforeScreenClear,
       afterScreenClear: mode.afterScreenClear,
       runConfig: mode.runConfig,
+      runModelMenu: mode.runModelMenu,
       runTestMenu: mode.runTestMenu,
       runEvalMenu: mode.runEvalMenu,
     });

@@ -4,7 +4,16 @@ import { route } from '../providers/router.js';
 import { buildSystemPrompt } from './system-prompt.js';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
 import { getLastCapturedHeaders } from '../providers/adapters/openai-compat.js';
-import { getLastCapturedAnthropicHeaders } from '../providers/adapters/anthropic.js';
+import {
+  beginAnthropicUsageCapture,
+  endAnthropicUsageCapture,
+  getLastCapturedAnthropicHeaders,
+} from '../providers/adapters/anthropic.js';
+import {
+  estimateAnthropicCost,
+  getAnthropicPricing,
+  type CostEstimate,
+} from '../providers/anthropic-cost.js';
 import type { GroqRateLimitHeaders } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
@@ -17,10 +26,11 @@ interface AgentLoopOptions {
 
 export interface AgentLoopResult {
   text: string;
-  usage: { totalTokens: number };
+  usage: { totalTokens: number; promptTokens?: number; outputTokens?: number };
   providerId: string;
   modelId: string;
   quota: GroqRateLimitHeaders | null;
+  costEstimate?: CostEstimate;
 }
 
 function serializeError(error: unknown): unknown {
@@ -53,7 +63,7 @@ export async function agentLoop(
   setProjectRoot(projectRoot);
   log('stream', `agentLoop called`, { modelPreference: modelPreference ?? '(auto)', historyLength: messages.length, projectRoot });
   try {
-    const routed = await route([], modelPreference);
+    const routed = await route(modelPreference);
     languageModel = routed.model;
     providerId = routed.providerId;
     modelId = routed.modelId;
@@ -73,7 +83,10 @@ export async function agentLoop(
 
   let fullText = '';
   let totalTokens = 0;
+  let promptTokens: number | undefined;
+  let outputTokens: number | undefined;
   let quota: GroqRateLimitHeaders | null = null;
+  let costEstimate: CostEstimate | undefined;
 
   const systemPrompt = buildSystemPrompt();
   if (!systemPromptLogged) {
@@ -83,6 +96,7 @@ export async function agentLoop(
 
   log('stream', `Calling streamText`, { supportsTools, maxSteps: supportsTools ? 10 : undefined });
   try {
+    if (providerId === 'anthropic') beginAnthropicUsageCapture(providerId);
     const result: unknown = await streamText({
       model: languageModel,
       system: systemPrompt,
@@ -90,7 +104,10 @@ export async function agentLoop(
       ...(supportsTools ? { tools: createTools(options.confirmToolCall), maxSteps: 10 } : {}),
     });
 
-    const typedResult = result as { textStream: AsyncIterable<string>; usage: Promise<{ totalTokens: number }> };
+    const typedResult = result as {
+      textStream: AsyncIterable<string>;
+      usage: Promise<{ totalTokens: number; promptTokens?: number; completionTokens?: number; outputTokens?: number }>;
+    };
 
     let chunkCount = 0;
     for await (const chunk of typedResult.textStream) {
@@ -103,7 +120,20 @@ export async function agentLoop(
     }
     const usage = await typedResult.usage;
     totalTokens = usage?.totalTokens ?? 0;
-    log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens });
+    promptTokens = usage?.promptTokens;
+    outputTokens = usage?.completionTokens ?? usage?.outputTokens;
+    log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
+
+    if (providerId === 'anthropic') {
+      const [anthropicUsage, pricing] = await Promise.all([
+        endAnthropicUsageCapture(providerId),
+        getAnthropicPricing(),
+      ]);
+      costEstimate = estimateAnthropicCost(modelId, anthropicUsage, pricing);
+      promptTokens = anthropicUsage?.inputTokens ?? promptTokens;
+      outputTokens = anthropicUsage?.outputTokens ?? outputTokens;
+      log('stream', 'Anthropic cost estimate', costEstimate);
+    }
 
     if (process.env['DEBUG_QUOTA'] !== '0') {
       const headers = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
@@ -115,6 +145,13 @@ export async function agentLoop(
       }
     }
   } catch (error) {
+    if (providerId === 'anthropic') {
+      const anthropicUsage = await endAnthropicUsageCapture(providerId);
+      if (anthropicUsage) {
+        const pricing = await getAnthropicPricing();
+        costEstimate = estimateAnthropicCost(modelId, anthropicUsage, pricing);
+      }
+    }
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);
     log('stream', 'streamText error details', serializeError(error));
     const errMsg = error instanceof Error ? error.message : (typeof error === 'object' && error !== null ? JSON.stringify(error) : String(error));
@@ -122,18 +159,20 @@ export async function agentLoop(
     process.stdout.write(`Error: ${errMsg}\n`);
     return {
       text: fullText + `\n\nError: ${errMsg}`,
-      usage: { totalTokens },
+      usage: { totalTokens, promptTokens, outputTokens },
       providerId,
       modelId,
       quota,
+      costEstimate,
     };
   }
 
   return {
     text: fullText,
-    usage: { totalTokens },
+    usage: { totalTokens, promptTokens, outputTokens },
     providerId,
     modelId,
     quota,
+    costEstimate,
   };
 }

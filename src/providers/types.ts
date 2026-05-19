@@ -24,8 +24,8 @@ export interface ProviderConfig {
 }
 
 export interface Config {
-  providers: Partial<Record<string, { apiKey?: string; preferredModel?: string }>>;
-  preferLocal: boolean;
+  providers: Partial<Record<string, { apiKey?: string }>>;
+  preferredModel?: string;
   useOllama: boolean;
   toolRationale: boolean;
 }

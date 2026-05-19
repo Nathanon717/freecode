@@ -15,7 +15,7 @@ describe('Config Module', () => {
   const apiKeysToClear = [
     'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'SILICONFLOW_API_KEY',
     'NVIDIA_API_KEY', 'LLM7_API_KEY', 'GITHUB_TOKEN', 'COHERE_API_KEY',
-    'CEREBRAS_API_KEY', 'MISTRAL_API_KEY', 'OLLAMA_API_KEY'
+    'CEREBRAS_API_KEY', 'MISTRAL_API_KEY', 'ANTHROPIC_API_KEY', 'OLLAMA_API_KEY'
   ];
 
   beforeEach(() => {
@@ -34,8 +34,8 @@ describe('Config Module', () => {
       const { loadConfig } = await import('../src/config/index.js');
       const config = loadConfig();
 
-      expect(config.preferLocal).toBe(true);
       expect(config.toolRationale).toBe(true);
+      expect(config.useOllama).toBe(true);
       expect(config.providers).toEqual({});
     });
 
@@ -43,7 +43,7 @@ describe('Config Module', () => {
       const { existsSync, readFileSync } = await import('fs');
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
-        preferLocal: false,
+        preferredModel: 'groq:test-model',
         toolRationale: false,
         providers: {
           groq: { apiKey: 'test-key' }
@@ -53,7 +53,7 @@ describe('Config Module', () => {
       const { loadConfig } = await import('../src/config/index.js');
       const config = loadConfig();
 
-      expect(config.preferLocal).toBe(false);
+      expect(config.preferredModel).toBe('groq:test-model');
       expect(config.toolRationale).toBe(false);
       expect(config.providers.groq?.apiKey).toBe('test-key');
     });
@@ -74,14 +74,14 @@ describe('Config Module', () => {
       const { existsSync, readFileSync } = await import('fs');
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
-        preferLocal: false,
+        useOllama: false,
         toolRationale: true
       }));
 
       const { loadConfig } = await import('../src/config/index.js');
       const config = loadConfig();
 
-      expect(config.preferLocal).toBe(false);
+      expect(config.useOllama).toBe(false);
       expect(config.toolRationale).toBe(true);
     });
 
@@ -93,8 +93,8 @@ describe('Config Module', () => {
       const { loadConfig } = await import('../src/config/index.js');
       const config = loadConfig();
 
-      expect(config.preferLocal).toBe(true);
       expect(config.toolRationale).toBe(true);
+      expect(config.useOllama).toBe(true);
     });
   });
 });

@@ -29,7 +29,12 @@ export function isNonLlmScriptInput(input: string): boolean {
   const normalized = input.trim().toLowerCase();
   if (!normalized) return true;
   if (isScriptedConfirmation(normalized)) return true;
-  if (normalized.startsWith('/model')) return true;
+  if (
+    normalized === '/model' ||
+    normalized.startsWith('/model ') ||
+    normalized === '/models' ||
+    normalized.startsWith('/models ')
+  ) return true;
   return NON_LLM_SCRIPT_COMMANDS.has(normalized);
 }
 

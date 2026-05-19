@@ -10,6 +10,12 @@ import { runCliSession } from './cli/session-runner.js';
 import { setupBottomUI } from './cli/terminal-ui.js';
 import { loadConfig } from './config/index.js';
 import { enableLog, log } from './logger.js';
+import {
+  addAnthropicSessionCost,
+  describeCostEstimate,
+  describeCostEstimateBreakdown,
+  formatUsdCeil,
+} from './providers/anthropic-cost.js';
 import { getOllamaModels } from './providers/ollama.js';
 import { route, testAllProviders } from './providers/router.js';
 
@@ -27,6 +33,7 @@ async function main() {
   }
 
   const config = loadConfig();
+  selectedModel = config.preferredModel ?? '';
   if (config.useOllama) {
     log('ollama', 'Probing Ollama');
     await getOllamaModels();
@@ -78,7 +85,7 @@ async function main() {
   showBanner();
 
   try {
-    const probe = await route([], selectedModel ?? undefined);
+    const probe = await route(selectedModel || undefined);
     log('router', `Startup probe OK -> ${probe.providerId}:${probe.modelId}`);
   } catch (err) {
     log('router', 'Startup probe failed - no providers available', { error: err instanceof Error ? err.message : String(err) });
@@ -93,7 +100,13 @@ async function main() {
     session,
     getSelectedModel: () => selectedModel,
     setSelectedModel: (model) => { selectedModel = model; },
-    mode: createInteractiveMode(rl, projectRoot, session),
+    mode: createInteractiveMode(
+      rl,
+      projectRoot,
+      session,
+      () => selectedModel,
+      (model) => { selectedModel = model; },
+    ),
   });
   rl.close();
 }
@@ -116,6 +129,12 @@ async function testSingle() {
     console.log(result.text);
     console.log();
     console.log(chalk.gray(`Tokens used: ${result.usage.totalTokens} | using ${result.providerId}:${result.modelId}`));
+    if (result.providerId === 'anthropic') {
+      const sessionTotal = addAnthropicSessionCost(result.costEstimate);
+      console.log(chalk.gray(`Estimated API cost: ${describeCostEstimate(result.costEstimate)} this turn | ${formatUsdCeil(sessionTotal)} session`));
+      const breakdown = describeCostEstimateBreakdown(result.costEstimate);
+      if (breakdown) console.log(chalk.gray(breakdown));
+    }
   } catch (error) {
     if (error instanceof Error) {
       console.log(chalk.red(`Error: ${error.message}`));

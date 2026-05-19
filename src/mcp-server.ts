@@ -5,13 +5,21 @@ import type { CoreMessage } from 'ai';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { agentLoop } from './agent/loop.js';
+import { loadConfig } from './config/index.js';
 import { createSession, saveMessage } from './db/client.js';
+import {
+  addAnthropicSessionCost,
+  describeCostEstimate,
+  describeCostEstimateBreakdown,
+  formatUsdCeil,
+  resetAnthropicSessionCost,
+} from './providers/anthropic-cost.js';
 
 const PLAYGROUND_BASE = join(import.meta.dirname, '..', 'playground');
 
 let currentProjectRoot = process.cwd();
 let messages: CoreMessage[] = [];
-let selectedModel = '';
+let selectedModel = loadConfig().preferredModel ?? '';
 let sessionId = createSession(currentProjectRoot).id;
 
 const server = new Server(
@@ -93,6 +101,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     currentProjectRoot = newPath;
     messages = [];
     sessionId = createSession(currentProjectRoot).id;
+    resetAnthropicSessionCost();
     return {
       content: [{ type: 'text', text: `Created and switched to: ${newPath}\nSession cleared.` }],
     };
@@ -102,6 +111,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     currentProjectRoot = (args as { path: string }).path;
     messages = [];
     sessionId = createSession(currentProjectRoot).id;
+    resetAnthropicSessionCost();
     return {
       content: [{ type: 'text', text: `Working directory set to: ${currentProjectRoot}\nSession cleared.` }],
     };
@@ -110,6 +120,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name === 'freecode_clear') {
     messages = [];
     sessionId = createSession(currentProjectRoot).id;
+    resetAnthropicSessionCost();
     return { content: [{ type: 'text', text: `Session cleared. New session: ${sessionId.slice(0, 8)}` }] };
   }
 
@@ -137,7 +148,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     let result: Awaited<ReturnType<typeof agentLoop>>;
     try {
-      result = await agentLoop(messages, currentProjectRoot, selectedModel);
+      result = await agentLoop(messages, currentProjectRoot, selectedModel || undefined);
     } finally {
       process.stdout.write = originalWrite;
     }
@@ -146,7 +157,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     saveMessage(sessionId, 'user', message, null);
     saveMessage(sessionId, 'assistant', result.text, result.usage.totalTokens);
 
-    const footer = `\n\n---\n*[${result.providerId}:${result.modelId} | ${result.usage.totalTokens} tokens | ${messages.length} msgs in context]*`;
+    let costText = '';
+    if (result.providerId === 'anthropic') {
+      const sessionTotal = addAnthropicSessionCost(result.costEstimate);
+      const breakdown = describeCostEstimateBreakdown(result.costEstimate);
+      costText = `\n*Estimated API cost: ${describeCostEstimate(result.costEstimate)} this turn | ${formatUsdCeil(sessionTotal)} session*`;
+      if (breakdown) costText += `\n*${breakdown}*`;
+    }
+    const footer = `\n\n---\n*[${result.providerId}:${result.modelId} | ${result.usage.totalTokens} tokens | ${messages.length} msgs in context]*${costText}`;
     return { content: [{ type: 'text', text: result.text + footer }] };
   }
 

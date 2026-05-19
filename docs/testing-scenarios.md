@@ -1,4 +1,4 @@
-# Scenario Tests
+# Scenario Authoring
 
 Scenario tests live in `tests/scenarios/*.scenario.json` and run through `tests/harness/run-scenarios.ts`. They execute the built CLI with `node dist/index.js --script <temp-file>`, so they cover the real scripted interactive path.
 
@@ -13,6 +13,8 @@ npm run eval          # build + LLM eval scenarios with detailed breakdown
 `npm run verify` is the normal post-change safety check and never calls an LLM. Use evals only when you explicitly want provider-backed tests. LLM scenarios cost tokens/time and can vary by provider.
 
 Inside the CLI, run `/test` to open the non-LLM verification menu. Run `/eval` to list provider-backed evals, see the checks each one performs, and select one or many evals to run sequentially. `/eval` accepts numbers, names, comma/space-separated selections, and numeric ranges such as `1-3`.
+
+For the generated scenario inventory, see [scenarios.md](scenarios.md).
 
 ## Basic Shape
 

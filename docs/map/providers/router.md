@@ -6,7 +6,6 @@
 
 ```typescript
 route(
-  excludeProviders?: string[],
   modelPreference?: string
 ): Promise<{
   model: LanguageModel;
@@ -25,49 +24,19 @@ testAllProviders(): Promise<Array<{
 }>>
 ```
 
-## Routing Algorithm
+## Read When
 
-```text
-loadConfig()
-getOllamaModels() when config.useOllama is true
+- Changing provider/model preference parsing.
+- Debugging auto-selection order or Ollama fallback.
+- Updating provider availability checks used by `/keys`, `--test`, or `--test-all`.
 
-if modelPreference starts with "ollama":
-  require config.useOllama
-  require cached Ollama availability
-  use model after "ollama:" or first detected model
-  return supportsTools false
+## Key Neighbors
 
-if modelPreference is set:
-  parse providerId and optional modelId from providerId:modelId
-  require provider exists in registry
-  require API key from env or config
-  use exact model match, partial model-id match, or first model if no modelId
-  return supportsTools based on provider.supportsTools !== false
+- [registry.md](registry.md): provider order, metadata, tool support, and model IDs.
+- [ollama.md](ollama.md): local model detection and cache.
+- [adapters/openai-compat.md](adapters/openai-compat.md) and [adapters/anthropic.md](adapters/anthropic.md): provider construction.
+- [config/index.md](../config/index.md): API key and router-related config.
 
-auto-select:
-  iterate registry order
-  skip excluded providers
-  skip providers without API keys
-  return first provider's first model
+## Update Triggers
 
-fallback:
-  if Ollama is available, return first Ollama model with supportsTools false
-
-otherwise throw "No providers available"
-```
-
-## Tool Support
-
-- Registry providers support tools unless `supportsTools: false`.
-- LLM7 is currently marked `supportsTools: false`.
-- Ollama always returns `supportsTools: false`.
-
-## Provider Tests
-
-`testProvider()` checks registry presence and API key availability, then creates the OpenAI-compatible provider object. It does not make a provider network call.
-
-`testAllProviders()` checks every registry provider and appends Ollama if `config.useOllama` is true and detected models exist.
-
-## Note
-
-`config.preferLocal` exists in config and the `/config` UI, but the current router does not use it to prefer Ollama before cloud providers.
+Update this page when routing inputs/outputs, selection order, or provider-test ownership changes.

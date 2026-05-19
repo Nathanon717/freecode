@@ -1,21 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { RouteOptions } from '../src/providers/types.js';
 
 describe('Router Logic', () => {
-  describe('route options', () => {
-    it('should have sensible defaults', () => {
-      const options: RouteOptions = {};
-      expect(options.preferLocal).toBeUndefined();
-    });
-
-    it('should allow custom options', () => {
-      const options: RouteOptions = {
-        preferLocal: false,
-      };
-      expect(options.preferLocal).toBe(false);
-    });
-  });
-
   describe('provider API format detection', () => {
     function getApiFormat(providerId: string): 'openai' | 'cohere' {
       if (providerId === 'cohere') return 'cohere';

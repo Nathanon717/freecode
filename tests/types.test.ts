@@ -8,23 +8,11 @@ describe('Provider Types', () => {
         id: 'test-model',
         displayName: 'Test Model',
         contextWindow: 128000,
-        isLocal: true,
       };
 
       expect(model.id).toBe('test-model');
       expect(model.displayName).toBe('Test Model');
       expect(model.contextWindow).toBe(128000);
-      expect(model.isLocal).toBe(true);
-    });
-
-    it('should allow optional isLocal field', () => {
-      const model: types.ModelConfig = {
-        id: 'test-model',
-        displayName: 'Test Model',
-        contextWindow: 32000,
-      };
-
-      expect(model.isLocal).toBeUndefined();
     });
   });
 
@@ -44,42 +32,26 @@ describe('Provider Types', () => {
     });
   });
 
-  describe('RouteOptions', () => {
-    it('should have optional fields', () => {
-      const options: types.RouteOptions = {};
-
-      expect(options.preferLocal).toBeUndefined();
-    });
-
-    it('should accept all options', () => {
-      const options: types.RouteOptions = {
-        preferLocal: true,
-      };
-
-      expect(options.preferLocal).toBe(true);
-    });
-  });
-
   describe('Config', () => {
     it('should have correct structure', () => {
       const config: types.Config = {
         providers: {
           groq: { apiKey: 'test-key' },
         },
-        preferLocal: true,
-        preferSpeed: true,
+        preferredModel: 'groq:llama-3.1-8b-instant',
+        useOllama: true,
+        toolRationale: true,
       };
 
       expect(config.providers.groq?.apiKey).toBe('test-key');
-      expect(config.preferLocal).toBe(true);
-      expect(config.preferSpeed).toBe(true);
+      expect(config.preferredModel).toBe('groq:llama-3.1-8b-instant');
     });
 
     it('should allow empty providers', () => {
       const config: types.Config = {
         providers: {},
-        preferLocal: false,
-        preferSpeed: false,
+        useOllama: false,
+        toolRationale: false,
       };
 
       expect(Object.keys(config.providers).length).toBe(0);

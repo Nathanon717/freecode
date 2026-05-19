@@ -1,0 +1,35 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  verify:
+    name: Build, docs, and scenarios
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm.cmd ci
+
+      - name: Build
+        run: npm.cmd run build
+
+      - name: Check generated docs
+        run: npm.cmd run docs:check
+
+      - name: Run non-LLM scenarios
+        run: npm.cmd run verify:fast

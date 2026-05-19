@@ -1,6 +1,22 @@
 import chalk from 'chalk';
 
-const SLASH_COMMANDS = ['/clear', '/config', '/eval', '/help', '/keys', '/model', '/resume', '/test'];
+export interface SlashCommandInfo {
+  command: string;
+  description: string;
+}
+
+export const SLASH_COMMANDS: SlashCommandInfo[] = [
+  { command: '/clear', description: 'Clear screen and chat history' },
+  { command: '/config', description: 'Open interactive config' },
+  { command: '/eval', description: 'Show and run LLM eval scenarios' },
+  { command: '/help', description: 'Show this help' },
+  { command: '/keys', description: 'Show API key status' },
+  { command: '/model', description: 'Show or set model' },
+  { command: '/resume', description: 'Resume last session' },
+  { command: '/test', description: 'Show and run non-LLM verification scenarios' },
+];
+
+const SLASH_COMMAND_NAMES = SLASH_COMMANDS.map(({ command }) => command);
 
 function fuzzyMatch(target: string, query: string): boolean {
   if (!query) return true;
@@ -14,7 +30,7 @@ function fuzzyMatch(target: string, query: string): boolean {
 function getRawFilteredCommands(input: string): string[] {
   if (!input.startsWith('/')) return [];
   const query = input.slice(1).toLowerCase();
-  return SLASH_COMMANDS.filter(cmd => fuzzyMatch(cmd.slice(1), query));
+  return SLASH_COMMAND_NAMES.filter(cmd => fuzzyMatch(cmd.slice(1), query));
 }
 
 export function getCommandCompletion(input: string): string | null {
@@ -22,10 +38,10 @@ export function getCommandCompletion(input: string): string | null {
   const normalized = input.toLowerCase();
   if (normalized === '/') return null;
 
-  const exact = SLASH_COMMANDS.find(cmd => cmd === normalized);
+  const exact = SLASH_COMMAND_NAMES.find(cmd => cmd === normalized);
   if (exact) return null;
 
-  const prefixMatch = SLASH_COMMANDS.find(cmd => cmd.startsWith(normalized));
+  const prefixMatch = SLASH_COMMAND_NAMES.find(cmd => cmd.startsWith(normalized));
   if (prefixMatch) return prefixMatch;
 
   return getRawFilteredCommands(input)[0] ?? null;
@@ -41,12 +57,8 @@ export function getFilteredCommands(input: string): string[] {
 
 export function showHelp() {
   console.log(chalk.bold('Available commands'));
-  console.log(chalk.gray('  /clear   Clear screen and chat history'));
-  console.log(chalk.gray('  /config  Open interactive config'));
-  console.log(chalk.gray('  /help    Show this help'));
-  console.log(chalk.gray('  /keys    Show API key status'));
-  console.log(chalk.gray('  /model   Show or set model'));
-  console.log(chalk.gray('  /resume  Resume last session'));
-  console.log(chalk.gray('  /test    Show and run non-LLM verification scenarios'));
-  console.log(chalk.gray('  /eval    Show and run LLM eval scenarios'));
+  const commandWidth = Math.max(...SLASH_COMMANDS.map(({ command }) => command.length));
+  for (const { command, description } of SLASH_COMMANDS) {
+    console.log(chalk.gray(`  ${command.padEnd(commandWidth)}  ${description}`));
+  }
 }

@@ -1,58 +1,30 @@
-# src/providers/quota/headers.ts - Groq Rate-Limit Header Parsing
+# src/providers/quota/headers.ts - Provider Rate-Limit Header Parsing
 
-**Role:** Pure parser for Groq `x-ratelimit-*` response headers plus helper to attach static model limit metadata.
+**Role:** Pure parser for Groq and Anthropic rate-limit response headers plus helper to attach static model limit metadata.
 
 ## Exports
 
 ```typescript
-interface GroqRateLimitHeaders {
-  limitRequests: number | null;
-  limitTokens: number | null;
-  remainingRequests: number | null;
-  remainingTokens: number | null;
-  resetRequestsMs: number | null;
-  resetTokensMs: number | null;
-  resetRequestsRaw: string | null;
-  resetTokensRaw: string | null;
-}
-
-interface GroqRateLimitInfo extends GroqRateLimitHeaders {
-  modelRpm: number | null;
-  modelRpd: number | null;
-  modelTpm: number | null;
-  modelTpd: number | null;
-}
-
 parseGroqDuration(s: string): number | null
 parseGroqRateLimitHeaders(headers: Headers | Record<string, string>): GroqRateLimitHeaders
+parseAnthropicRateLimitHeaders(headers: Headers | Record<string, string>): GroqRateLimitHeaders
+parseAnthropicExtendedHeaders(headers: Headers | Record<string, string>): AnthropicExtendedHeaders
 supplementWithModelLimits(headers, modelLimits?): GroqRateLimitInfo
 ```
 
-## Duration Parsing
+## Read When
 
-`parseGroqDuration()` parses Go `time.Duration`-style strings and returns milliseconds.
+- Debugging quota display or provider response headers.
+- Adding provider-specific rate-limit parsing.
+- Changing how static registry limits supplement live quota headers.
 
-| Input | Output |
-|-------|--------|
-| `2s` | `2000` |
-| `13.5s` | `13500` |
-| `300ms` | `300` |
-| `1m30s` | `90000` |
-| `1h30m` | `5400000` |
+## Key Neighbors
 
-The whole input must be consumed. Empty or invalid input returns `null`.
+- [providers/registry.md](../registry.md): static model limits.
+- [providers/adapters/openai-compat.md](../adapters/openai-compat.md): captured OpenAI-compatible headers.
+- [providers/adapters/anthropic.md](../adapters/anthropic.md): captured Anthropic headers.
+- [agent/loop.md](../../agent/loop.md): attaches quota metadata to turn results.
 
-## Header Mapping
+## Update Triggers
 
-| Header | Parsed field |
-|--------|--------------|
-| `x-ratelimit-limit-requests` | `limitRequests` |
-| `x-ratelimit-limit-tokens` | `limitTokens` |
-| `x-ratelimit-remaining-requests` | `remainingRequests` |
-| `x-ratelimit-remaining-tokens` | `remainingTokens` |
-| `x-ratelimit-reset-requests` | `resetRequestsRaw`, `resetRequestsMs` |
-| `x-ratelimit-reset-tokens` | `resetTokensRaw`, `resetTokensMs` |
-
-## Model Limits
-
-`supplementWithModelLimits()` copies parsed header fields and adds static registry limits as `modelRpm`, `modelRpd`, `modelTpm`, and `modelTpd`, defaulting missing values to `null`.
+Update this page when exported parser names, quota ownership, or key consumers change. Keep detailed header mappings in source tests or generated references, not in this map page.
