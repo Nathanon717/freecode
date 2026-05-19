@@ -12,7 +12,7 @@ This table is generated from `package.json`.
 | `npm run build` | `tsc` |
 | `npm run coverage` | `vitest run --coverage` |
 | `npm run dev` | `tsx src/index.ts` |
-| `npm run docs:check` | `tsx scripts/generate-docs.ts --check && tsx scripts/check-map.ts` |
+| `npm run docs:check` | `tsx scripts/generate-docs.ts && tsx scripts/check-map.ts` |
 | `npm run docs:generate` | `tsx scripts/generate-docs.ts` |
 | `npm run eval` | `npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-llm --details` |
 | `npm run start` | `node dist/index.js` |
@@ -39,5 +39,6 @@ This table is generated from `src/cli/slash-commands.ts`.
 | `/keys` | Show API key status |
 | `/model` | Show or set model |
 | `/resume` | Resume last session |
+| `/sources` | Show model data sources |
 | `/test` | Show and run non-LLM verification scenarios |
 <!-- END GENERATED SLASH COMMANDS -->

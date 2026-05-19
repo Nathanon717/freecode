@@ -13,6 +13,7 @@ export const SLASH_COMMANDS: SlashCommandInfo[] = [
   { command: '/keys', description: 'Show API key status' },
   { command: '/model', description: 'Show or set model' },
   { command: '/resume', description: 'Resume last session' },
+  { command: '/sources', description: 'Show model data sources' },
   { command: '/test', description: 'Show and run non-LLM verification scenarios' },
 ];
 

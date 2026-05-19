@@ -4,6 +4,7 @@ import type { ConfirmToolCall } from '../agent/tools/index.js';
 import { loadConfig } from '../config/index.js';
 import { log } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/registry.js';
+import { getAllModelDataSources, type ModelDataSourceKind } from '../providers/model-sources.js';
 import { testAllProviders } from '../providers/router.js';
 import { detectOllama } from '../providers/ollama.js';
 import {
@@ -74,6 +75,41 @@ function showKeyStatus(): void {
   }
 }
 
+function formatSourceKind(kind: ModelDataSourceKind): string {
+  switch (kind) {
+    case 'official': return 'Official provider sources';
+    case 'gateway': return 'Gateway sources';
+    case 'aggregator': return 'Aggregator registries';
+    case 'observability': return 'Observability references';
+    case 'reference': return 'Comparison references';
+  }
+}
+
+function showModelDataSources(): void {
+  const sources = getAllModelDataSources();
+  const order: ModelDataSourceKind[] = ['official', 'gateway', 'aggregator', 'observability', 'reference'];
+
+  console.log(chalk.bold('Model Data Sources'));
+  console.log(chalk.dim('Static source catalog for display and future gatherers. No token-cost estimates are made here.\n'));
+
+  for (const kind of order) {
+    const group = sources.filter(source => source.kind === kind);
+    if (group.length === 0) continue;
+
+    console.log(chalk.bold(formatSourceKind(kind)));
+    for (const source of group) {
+      const machine = source.machineReadable === 'yes' ? 'machine-readable' : `${source.machineReadable} machine-readable`;
+      console.log(chalk.cyan(`  ${source.name}`) + chalk.gray(` [${source.trust}, ${machine}]`));
+      console.log(chalk.gray(`    ${source.url}`));
+      console.log(chalk.gray(`    Provides: ${source.provides.join(', ')}`));
+      if (source.caveats.length > 0) {
+        console.log(chalk.gray(`    Caveat: ${source.caveats[0]}`));
+      }
+    }
+    console.log('');
+  }
+}
+
 export function formatQuotaReset(ms: number | null, raw: string | null): string {
   if (raw?.trim()) return raw;
   if (ms === null) return '?';
@@ -109,7 +145,7 @@ async function showModelStatus(runtime: CommandRuntime): Promise<void> {
     if (status.ok) {
       any = true;
       for (const model of provider.models) {
-        console.log(chalk.cyan(`  ${provider.id}:${model.id}`) + chalk.gray(` (${model.displayName})`));
+        console.log(chalk.cyan(`  ${model.displayName}`) + chalk.gray(` [${provider.id}:${model.id}]`));
       }
     }
   }
@@ -214,6 +250,11 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
 
   if (normalized === '/keys') {
     showKeyStatus();
+    return 'continue';
+  }
+
+  if (normalized === '/sources' || normalized === '/model-sources') {
+    showModelDataSources();
     return 'continue';
   }
 

@@ -71,14 +71,10 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
   return items;
 }
 
-function buildScreen(items: ModelMenuItem[], selected: number, currentModel: string): string[] {
-  const lines: string[] = [];
+function buildAllItemLines(items: ModelMenuItem[], selected: number, currentModel: string): { itemLines: string[]; selectedLineIdx: number } {
+  const itemLines: string[] = [];
   let lastProvider = '';
-
-  lines.push('');
-  lines.push(`  ${chalk.bold.cyan('Select model')}`);
-  lines.push(`  ${chalk.dim('Up/Down navigate, Enter select, Space select + default, Esc close')}`);
-  lines.push('');
+  let selectedLineIdx = 0;
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
@@ -87,20 +83,61 @@ function buildScreen(items: ModelMenuItem[], selected: number, currentModel: str
     const current = preference === currentModel;
 
     if (item.providerId !== lastProvider) {
-      if (lastProvider) lines.push('');
-      lines.push(`  ${chalk.bold(item.providerName)}`);
+      if (lastProvider) itemLines.push('');
+      itemLines.push(`  ${chalk.bold(item.providerName)}`);
       lastProvider = item.providerId;
     }
 
+    if (i === selected) selectedLineIdx = itemLines.length;
+
     const cursor = active ? chalk.cyan('>') : ' ';
-    const label = `${item.providerId}:${item.modelId}`;
-    const renderedLabel = active ? chalk.inverse(label) : chalk.cyan(label);
+    const id = `${item.providerId}:${item.modelId}`;
+    const renderedName = active ? chalk.inverse(item.displayName) : chalk.cyan(item.displayName);
     const marker = current ? chalk.green(' current') : '';
-    lines.push(`  ${cursor} ${renderedLabel} ${chalk.gray(`(${item.displayName})`)}${marker}`);
+    itemLines.push(`  ${cursor} ${renderedName} ${chalk.dim(id)}${marker}`);
   }
 
+  return { itemLines, selectedLineIdx };
+}
+
+// Returns rendered lines and updated viewStart.
+// Total line count is always fixed so cursor-up redraws stay stable.
+function buildScreen(
+  items: ModelMenuItem[],
+  selected: number,
+  currentModel: string,
+  viewStart: number,
+): { lines: string[]; newViewStart: number } {
+  const HEADER = 4;   // blank + title + hint + blank
+  const CHROME = 3;   // top indicator + bottom indicator + trailing blank
+  const termHeight = process.stdout.rows ?? 24;
+  const maxItemLines = Math.max(4, termHeight - HEADER - CHROME);
+
+  const { itemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel);
+
+  // Scroll viewStart to keep selectedLineIdx visible
+  let newViewStart = viewStart;
+  if (selectedLineIdx < newViewStart) newViewStart = Math.max(0, selectedLineIdx - 2);
+  if (selectedLineIdx >= newViewStart + maxItemLines) newViewStart = selectedLineIdx - maxItemLines + 1;
+  newViewStart = Math.max(0, Math.min(newViewStart, Math.max(0, itemLines.length - maxItemLines)));
+
+  const viewEnd = Math.min(newViewStart + maxItemLines, itemLines.length);
+  const visibleLines = itemLines.slice(newViewStart, viewEnd);
+  // Pad to maxItemLines so total output height is constant
+  while (visibleLines.length < maxItemLines) visibleLines.push('');
+
+  const lines: string[] = [];
   lines.push('');
-  return lines;
+  lines.push(`  ${chalk.bold.cyan('Select model')}`);
+  lines.push(`  ${chalk.dim('Up/Down navigate, Enter select, Space select + default, Esc close')}`);
+  lines.push('');
+
+  lines.push(newViewStart > 0 ? chalk.dim('  · · ·') : '');
+  for (const line of visibleLines) lines.push(line);
+  lines.push(viewEnd < itemLines.length ? chalk.dim('  · · ·') : '');
+
+  lines.push('');
+  return { lines, newViewStart };
 }
 
 export async function runModelCommand(
@@ -123,10 +160,12 @@ export async function runModelCommand(
 
   const currentIndex = items.findIndex(item => modelPreference(item) === currentModel);
   let selected = currentIndex >= 0 ? currentIndex : 0;
+  let viewStart = 0;
   let lineCount = 1;
 
   function redraw(): void {
-    const lines = buildScreen(items, selected, currentModel);
+    const { lines, newViewStart } = buildScreen(items, selected, currentModel, viewStart);
+    viewStart = newViewStart;
     if (lineCount > 0) {
       process.stdout.write(`\x1b[${lineCount}A\r\x1b[J`);
     }
@@ -190,6 +229,9 @@ export async function runModelCommand(
       process.stdin.removeListener('data', onData);
       process.stdin.setRawMode(false);
       process.stdin.pause();
+      if (lineCount > 0) {
+        process.stdout.write(`\x1b[${lineCount}A\r\x1b[J`);
+      }
       process.stdout.write('\x1b[?25h');
       rl.resume();
     }

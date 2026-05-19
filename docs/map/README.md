@@ -62,10 +62,12 @@ src/
 `-- providers/
     |-- index.ts                  -> [Provider re-exports](providers/index.md)
     |-- types.ts                  -> [Provider/config types](providers/types.md)
+    |-- model-sources.ts          -> [Model data sources](providers/model-sources.md)
     |-- registry.ts               -> [Provider registry](providers/registry.md)
     |-- router.ts                 -> [Routing logic](providers/router.md)
     |-- ollama.ts                 -> [Ollama detection](providers/ollama.md)
     |-- anthropic-cost.ts         -> [Anthropic cost estimates](providers/anthropic-cost.md)
+    |-- openai-cost.ts            -> [OpenAI cost estimates](providers/openai-cost.md)
     |-- adapters/
     |   |-- openai-compat.ts      -> [OpenAI-compatible adapter](providers/adapters/openai-compat.md)
     |   `-- anthropic.ts          -> [Anthropic adapter](providers/adapters/anthropic.md)

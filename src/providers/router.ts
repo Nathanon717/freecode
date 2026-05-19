@@ -19,7 +19,6 @@ function logSelection(provider: ProviderConfig, modelId: string): void {
   if (provider.paid) {
     console.log(chalk.yellow.bold(`\n⚠  PAID PROVIDER — charges apply to your ${provider.name} account`));
   }
-  console.log(chalk.dim(`[using ${provider.id}:${modelId}]\n`));
 }
 
 export async function route(
@@ -117,7 +116,6 @@ export async function route(
     const modelId = ollamaModels[0]?.id;
     if (modelId) {
       const ollama = getOllamaProvider();
-      console.log(chalk.dim(`[using ollama:${modelId}]\n`));
       log('router', `Falling back to ollama:${modelId}`);
       return {
         model: ollama(modelId),

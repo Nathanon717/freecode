@@ -23,6 +23,8 @@
 | `/test` | Opens/renders non-LLM scenario menu. |
 | `/eval` | Opens/renders LLM eval scenario menu. |
 | `/keys` | Prints API key status from env/config. |
+| `/sources` | Prints the static model data source catalog used for future gatherers. |
+| `/model-sources` | Alias for `/sources`. |
 | `/resume` | Loads the most recent persisted session for the current project root. |
 | `/clear` | Clears in-memory history and Anthropic session cost, redraws banner, and restores screen hooks. |
 

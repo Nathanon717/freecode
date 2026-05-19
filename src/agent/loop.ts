@@ -14,6 +14,7 @@ import {
   getAnthropicPricing,
   type CostEstimate,
 } from '../providers/anthropic-cost.js';
+import { estimateOpenAICost, getOpenAIPricing } from '../providers/openai-cost.js';
 import type { GroqRateLimitHeaders } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
@@ -133,6 +134,10 @@ export async function agentLoop(
       promptTokens = anthropicUsage?.inputTokens ?? promptTokens;
       outputTokens = anthropicUsage?.outputTokens ?? outputTokens;
       log('stream', 'Anthropic cost estimate', costEstimate);
+    } else if (providerId === 'openai') {
+      const openaiPricing = await getOpenAIPricing();
+      costEstimate = estimateOpenAICost(modelId, promptTokens, outputTokens, openaiPricing);
+      log('stream', 'OpenAI cost estimate', costEstimate);
     }
 
     if (process.env['DEBUG_QUOTA'] !== '0') {
@@ -151,6 +156,9 @@ export async function agentLoop(
         const pricing = await getAnthropicPricing();
         costEstimate = estimateAnthropicCost(modelId, anthropicUsage, pricing);
       }
+    } else if (providerId === 'openai' && (promptTokens !== undefined || outputTokens !== undefined)) {
+      const openaiPricing = await getOpenAIPricing();
+      costEstimate = estimateOpenAICost(modelId, promptTokens, outputTokens, openaiPricing);
     }
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);
     log('stream', 'streamText error details', serializeError(error));

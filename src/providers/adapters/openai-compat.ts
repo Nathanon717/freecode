@@ -27,20 +27,37 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
   const debugQuota = process.env['DEBUG_QUOTA'] !== '0';
   const shouldCapture = debugQuota && providerConfig.id === 'groq';
 
-  const customFetch: typeof globalThis.fetch | undefined = shouldCapture
+  // o1/o3 reasoning models reject the temperature parameter entirely.
+  const isReasoningModel = (modelId: string) => /^(o1|o3)(-|$)/i.test(modelId);
+  const shouldStripTemperature = providerConfig.id === 'openai';
+
+  const customFetch: typeof globalThis.fetch | undefined = (shouldCapture || shouldStripTemperature)
     ? async (input, init) => {
-        if (process.env['DEBUG_TOOLS'] === '1' && init?.body) {
+        if (shouldCapture && process.env['DEBUG_TOOLS'] === '1' && init?.body) {
           try {
             const body = JSON.parse(init.body as string);
             process.stderr.write(`[groq-req] tools: ${JSON.stringify(body.tools?.map((t: { function?: { name: string; parameters: unknown } }) => ({ name: t.function?.name, schema: t.function?.parameters })), null, 2)}\n`);
           } catch { /* ignore */ }
         }
-        const response = await globalThis.fetch(input, init);
-        // Read headers without touching the body — the stream remains intact.
-        lastCapturedHeaders.set(
-          providerConfig.id,
-          parseGroqRateLimitHeaders(response.headers)
-        );
+
+        let patchedInit = init;
+        if (shouldStripTemperature && init?.body) {
+          try {
+            const body = JSON.parse(init.body as string);
+            if (isReasoningModel(body.model ?? '') && 'temperature' in body) {
+              const { temperature: _t, ...rest } = body;
+              patchedInit = { ...init, body: JSON.stringify(rest) };
+            }
+          } catch { /* ignore — leave body untouched */ }
+        }
+
+        const response = await globalThis.fetch(input, patchedInit);
+        if (shouldCapture) {
+          lastCapturedHeaders.set(
+            providerConfig.id,
+            parseGroqRateLimitHeaders(response.headers)
+          );
+        }
         return response;
       }
     : undefined;

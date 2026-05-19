@@ -15,6 +15,7 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `slash-eval-menu.scenario.json` | `slash-eval-menu` | Non-LLM verification | repo | /eval lists LLM eval scenarios with available checks in script mode |
 | `slash-keys.scenario.json` | `slash-keys` | Non-LLM verification | repo | /keys command lists providers without crashing |
 | `slash-model-list.scenario.json` | `slash-model-list` | Non-LLM verification | repo | /models aliases /model with no arg and prints current model without crashing |
+| `slash-sources.scenario.json` | `slash-sources` | Non-LLM verification | repo | /sources command lists model data sources without crashing |
 | `slash-test-menu.scenario.json` | `slash-test-menu` | Non-LLM verification | repo | /test lists scenario tests without running one in script mode |
 | `startup-help-exit.scenario.json` | `startup-help-exit` | Non-LLM verification | repo | Boot the CLI, print help, exit cleanly |
 <!-- END GENERATED SCENARIOS -->

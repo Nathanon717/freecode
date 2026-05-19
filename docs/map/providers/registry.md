@@ -21,6 +21,7 @@ For the generated provider table, see [providers.md](../../providers.md).
 ## Special Cases
 
 - LLM7 has `supportsTools: false`, so `agentLoop()` does not pass tools to that model.
+- OpenAI has `type: "openai-compat"` and `paid: true`; uses the standard OpenAI-compatible adapter against `api.openai.com/v1`.
 - Anthropic has `type: "anthropic"` and `paid: true`; routing uses the native Anthropic adapter instead of the OpenAI-compatible adapter.
 - Ollama is not in `PROVIDER_REGISTRY`; it is detected dynamically in [ollama.md](ollama.md).
 

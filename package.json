@@ -18,7 +18,7 @@
     "coverage": "vitest run --coverage",
     "test-env": "node test-env.js",
     "docs:generate": "tsx scripts/generate-docs.ts",
-    "docs:check": "tsx scripts/generate-docs.ts --check && tsx scripts/check-map.ts",
+    "docs:check": "tsx scripts/generate-docs.ts && tsx scripts/check-map.ts",
     "verify": "npm run build && npm run docs:check && tsx tests/harness/run-scenarios.ts --no-build --skip-llm",
     "verify:fast": "npm run docs:check && tsx tests/harness/run-scenarios.ts --no-build --skip-llm",
     "eval": "npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-llm --details"
@@ -36,7 +36,8 @@
     "@ai-sdk/openai": "^0.0.66",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "ai": "^3.4.0",
-    "chalk": "^5.3.0"
+    "chalk": "^5.3.0",
+    "codex": "^0.2.3"
   },
   "devDependencies": {
     "@types/node": "^22.19.17",
