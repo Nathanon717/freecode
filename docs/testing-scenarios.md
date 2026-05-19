@@ -1,6 +1,9 @@
 # Scenario Authoring
 
-Scenario tests live in `tests/scenarios/*.scenario.json` and run through `tests/harness/run-scenarios.ts`. They execute the built CLI with `node dist/index.js --script <temp-file>`, so they cover the real scripted interactive path.
+Scenario tests live in `tests/scenarios/*.scenario.json` and run through `tests/harness/run-scenarios.ts`. There are two execution modes:
+
+- **Script mode** (default): the harness runs `node dist/index.js --script <temp-file>`, covering the real scripted interactive path. stdin is a pipe, so the bottom-pinned terminal UI does not activate.
+- **TTY screen mode** (`tty` block present): the harness spawns the built CLI through a pseudo-terminal, renders its output with a headless VT emulator, and asserts against the rendered screen. This exercises the full interactive TUI — raw-mode input, autocomplete, scroll regions, the pinned status line — which script mode cannot reach. See [TTY screen scenarios](#tty-screen-scenarios).
 
 ## Commands
 
@@ -83,6 +86,51 @@ For the generated scenario inventory, see [scenarios.md](scenarios.md).
 - `toolTrace.sequence`: Exact tool call sequence.
 - `toolTrace.present`: Tool names that must appear at least once.
 - `toolTrace.absent`: Tool names that must not appear.
+
+## TTY screen scenarios
+
+A scenario with a top-level `tty` block is driven through a real pseudo-terminal instead of script mode, and its assertions run against the *rendered screen* (what a human would see), not raw stdout. Use this for interactive UI behavior: autocomplete, suggestion lists, the pinned input/status line, menus, and screen redraws. Nothing is reconstructed — the escape sequences the CLI emits are applied by a VT emulator (`@xterm/headless`) over a PTY (`node-pty`).
+
+Set `requiresLlm: false` and omit `turns`/`expect`; the `tty` block fully describes the run.
+
+```json
+{
+  "name": "tty-autocomplete",
+  "description": "Interactive TUI: slash command suggestions and tab completion",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      { "name": "idle prompt", "screenContains": [".d888", "> / for commands"] },
+      { "name": "type /", "send": "/", "screenContains": ["/clear", "/config", "> /"] },
+      { "name": "filter", "send": "cle", "screenContains": ["> /cle"], "screenAbsent": ["/config"] },
+      { "name": "tab", "send": "\t", "screenContains": ["> /clear"] }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}
+```
+
+### `tty` fields
+
+- `cols` / `rows`: Terminal size. Default `80` x `24`. Keep fixed for determinism.
+- `readyText`: Substring awaited in the raw stream before the first step, signaling the prompt is live. Default `"for commands"`.
+- `steps[]`: Ordered interactions, each evaluated after the screen settles.
+  - `name`: Label used in failure messages.
+  - `send`: Keystrokes to send. Control chars use JSON escapes: `"\t"` (Tab), `"\r"` (Enter), `"\u0003"` (Ctrl-C). The interactive input handler only treats Tab as completion when the chunk is exactly `"\t"`, so send typed text and a Tab as separate steps.
+  - `waitFor`: Optional substring to await in the raw stream before asserting.
+  - `screenContains` / `screenAbsent`: Substrings that must / must not appear on the rendered viewport.
+  - `quietMs`: Override the per-step settle window (default `350`).
+- `exit`: Keystrokes sent after the last step to end the process. Default `"\u0003"` (Ctrl-C); the CLI has no `/exit` command.
+- `expectExit`: Require the process to exit after `exit`.
+- `exitCode`: Expected exit code when it exits.
+- `mask`: Optional regex strings stripped from the screen before substring checks, for volatile content (e.g. token counts).
+
+Run `npx tsx tests/harness/pty/demo.ts` to drive the live CLI and print the rendered screen after each keystroke — handy for designing `screenContains` assertions. The harness driver lives in `tests/harness/pty/driver.ts` and the scenario runner in `tests/harness/pty/run-tty-scenario.ts`.
 
 ## Guidelines
 

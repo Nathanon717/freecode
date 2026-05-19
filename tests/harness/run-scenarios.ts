@@ -8,6 +8,7 @@ import chalk from 'chalk';
 import { classifyScenario } from '../../src/scenario-classification.js';
 import { assertScenarioExpectations } from './assertions/index.js';
 import type { ScenarioExpectations, ToolTraceEvent } from './assertions/index.js';
+import type { TtyScenario } from './pty/run-tty-scenario.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
@@ -23,8 +24,9 @@ interface Scenario {
   filesBefore?: Array<{ path: string; content: string }>;
   flags?: string[];
   model?: string;
-  turns: Array<{ input: string }>;
-  expect: ScenarioExpectations;
+  turns?: Array<{ input: string }>;
+  expect?: ScenarioExpectations;
+  tty?: TtyScenario;
 }
 
 function printCapturedOutput(stdout: string, stderr: string): void {
@@ -84,6 +86,56 @@ const runnableScenarios = scenarios.filter(({ scenario }) => {
 
 for (const { file, scenario } of runnableScenarios) {
   if (onlyScenario && scenario.name !== onlyScenario && file !== onlyScenario && file !== `${onlyScenario}.scenario.json`) {
+    continue;
+  }
+
+  if (scenario.tty) {
+    if (showDetails) {
+      console.log(`\n  ${chalk.cyan('RUN')}   ${chalk.cyan(scenario.name)}`);
+      console.log(`        ${chalk.dim(scenario.description || '(no description)')}`);
+      console.log(`        type: ${chalk.yellow('TTY screen verification')} | steps: ${chalk.magenta(String(scenario.tty.steps.length))}`);
+    }
+
+    const tmpHome = join(tmpdir(), `freecode-tty-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    mkdirSync(tmpHome, { recursive: true });
+
+    let ttyFailures: string[] = [];
+    let ttyScreen = '';
+    try {
+      const { runTtyScenario } = await import('./pty/run-tty-scenario.js');
+      const result = await runTtyScenario({
+        scenarioName: scenario.name,
+        tty: scenario.tty,
+        entry: DIST_ENTRY,
+        cwd: ROOT,
+        env: {
+          ...process.env,
+          FREECODE_HOME: tmpHome,
+          DEBUG_QUOTA: '0',
+          FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
+        },
+      });
+      ttyFailures = result.failures;
+      ttyScreen = result.transcript;
+    } catch (err) {
+      ttyFailures = [`tty harness error: ${err instanceof Error ? err.message : String(err)}`];
+    }
+
+    if (ttyFailures.length === 0) {
+      console.log(`  ${chalk.green('PASS')}  ${chalk.cyan(scenario.name)}`);
+      passed++;
+    } else {
+      console.log(`  ${chalk.red('FAIL')}  ${chalk.cyan(scenario.name)}`);
+      for (const f of ttyFailures) console.log(`          ${chalk.red(f)}`);
+      failed++;
+    }
+    if (showDetails || process.env.VERBOSE) {
+      console.log(chalk.dim('--- rendered screen ---'));
+      console.log(ttyScreen.trimEnd() || chalk.dim('(empty)'));
+      console.log(chalk.dim('--- end screen ---'));
+    }
+
+    try { rmSync(tmpHome, { recursive: true, force: true }); } catch {}
     continue;
   }
 

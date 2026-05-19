@@ -18,4 +18,5 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `slash-sources.scenario.json` | `slash-sources` | Non-LLM verification | repo | /sources command lists model data sources without crashing |
 | `slash-test-menu.scenario.json` | `slash-test-menu` | Non-LLM verification | repo | /test lists scenario tests without running one in script mode |
 | `startup-help-exit.scenario.json` | `startup-help-exit` | Non-LLM verification | repo | Boot the CLI, print help, exit cleanly |
+| `tty-autocomplete.scenario.json` | `tty-autocomplete` | Non-LLM verification | repo | Interactive TUI: slash command suggestions, prefix filtering, tab completion, and submit reset, verified against the rendered screen |
 <!-- END GENERATED SCENARIOS -->
