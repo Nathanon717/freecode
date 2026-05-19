@@ -122,6 +122,113 @@ export function parseGroqRateLimitHeaders(
   };
 }
 
+/**
+ * Anthropic returns ISO-8601 timestamps for reset times, not durations.
+ * Convert to "ms until reset" at parse time so the terminal UI (which expects
+ * a duration) works without changes.
+ */
+function parseIsoToMsUntilReset(iso: string | null): number | null {
+  if (!iso) return null;
+  const resetAt = Date.parse(iso);
+  if (isNaN(resetAt)) return null;
+  return Math.max(0, resetAt - Date.now());
+}
+
+/**
+ * Anthropic-specific headers beyond the base requests/tokens buckets:
+ * separate input-token and output-token limits, plus the request ID.
+ *
+ * Headers captured:
+ *   anthropic-ratelimit-input-tokens-limit
+ *   anthropic-ratelimit-input-tokens-remaining
+ *   anthropic-ratelimit-input-tokens-reset     (ISO-8601)
+ *   anthropic-ratelimit-output-tokens-limit
+ *   anthropic-ratelimit-output-tokens-remaining
+ *   anthropic-ratelimit-output-tokens-reset    (ISO-8601)
+ *   request-id
+ */
+export interface AnthropicExtendedHeaders {
+  inputTokensLimit: number | null;
+  inputTokensRemaining: number | null;
+  inputTokensResetMs: number | null;
+  inputTokensResetRaw: string | null;
+  outputTokensLimit: number | null;
+  outputTokensRemaining: number | null;
+  outputTokensResetMs: number | null;
+  outputTokensResetRaw: string | null;
+  requestId: string | null;
+}
+
+/**
+ * Parse Anthropic rate-limit headers into the same shape as GroqRateLimitHeaders
+ * so the terminal quota display works without changes.
+ *
+ * Anthropic headers:
+ *   anthropic-ratelimit-requests-limit / -remaining / -reset (ISO-8601)
+ *   anthropic-ratelimit-tokens-limit   / -remaining / -reset (ISO-8601)
+ */
+export function parseAnthropicRateLimitHeaders(
+  headers: Headers | Record<string, string>
+): GroqRateLimitHeaders {
+  const get = (key: string): string | null =>
+    headers instanceof Headers
+      ? headers.get(key)
+      : ((headers as Record<string, string>)[key] ?? null);
+
+  const num = (key: string): number | null => {
+    const v = get(key);
+    if (v === null) return null;
+    const n = parseInt(v, 10);
+    return isNaN(n) ? null : n;
+  };
+
+  const resetRequestsRaw = get('anthropic-ratelimit-requests-reset');
+  const resetTokensRaw = get('anthropic-ratelimit-tokens-reset');
+
+  return {
+    limitRequests: num('anthropic-ratelimit-requests-limit'),
+    limitTokens: num('anthropic-ratelimit-tokens-limit'),
+    remainingRequests: num('anthropic-ratelimit-requests-remaining'),
+    remainingTokens: num('anthropic-ratelimit-tokens-remaining'),
+    resetRequestsMs: parseIsoToMsUntilReset(resetRequestsRaw),
+    resetTokensMs: parseIsoToMsUntilReset(resetTokensRaw),
+    resetRequestsRaw,
+    resetTokensRaw,
+  };
+}
+
+/** Parse the Anthropic-specific extended headers (input/output token buckets + request ID). */
+export function parseAnthropicExtendedHeaders(
+  headers: Headers | Record<string, string>
+): AnthropicExtendedHeaders {
+  const get = (key: string): string | null =>
+    headers instanceof Headers
+      ? headers.get(key)
+      : ((headers as Record<string, string>)[key] ?? null);
+
+  const num = (key: string): number | null => {
+    const v = get(key);
+    if (v === null) return null;
+    const n = parseInt(v, 10);
+    return isNaN(n) ? null : n;
+  };
+
+  const inputResetRaw = get('anthropic-ratelimit-input-tokens-reset');
+  const outputResetRaw = get('anthropic-ratelimit-output-tokens-reset');
+
+  return {
+    inputTokensLimit: num('anthropic-ratelimit-input-tokens-limit'),
+    inputTokensRemaining: num('anthropic-ratelimit-input-tokens-remaining'),
+    inputTokensResetMs: parseIsoToMsUntilReset(inputResetRaw),
+    inputTokensResetRaw: inputResetRaw,
+    outputTokensLimit: num('anthropic-ratelimit-output-tokens-limit'),
+    outputTokensRemaining: num('anthropic-ratelimit-output-tokens-remaining'),
+    outputTokensResetMs: parseIsoToMsUntilReset(outputResetRaw),
+    outputTokensResetRaw: outputResetRaw,
+    requestId: get('request-id') ?? get('x-request-id'),
+  };
+}
+
 export function supplementWithModelLimits(
   headers: GroqRateLimitHeaders,
   modelLimits?: { rpm: number; rpd: number; tpm: number; tpd: number | null }

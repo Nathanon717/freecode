@@ -38,6 +38,7 @@ function getApiKeyFromEnv(providerId: string): string | undefined {
     ollama: 'OLLAMA_API_KEY',
     cerebras: 'CEREBRAS_API_KEY',
     mistral: 'MISTRAL_API_KEY',
+    anthropic: 'ANTHROPIC_API_KEY',
   };
   
   const envVar = envVars[providerId];
@@ -67,7 +68,7 @@ export function loadConfig(): Config {
   }
   
   const configuredProviders: Config['providers'] = {};
-  const providerIds = ['groq', 'openrouter', 'siliconflow', 'nvidia', 'llm7', 'github', 'cohere', 'cerebras', 'mistral'];
+  const providerIds = ['groq', 'openrouter', 'siliconflow', 'nvidia', 'llm7', 'github', 'cohere', 'cerebras', 'mistral', 'anthropic'];
   
   for (const providerId of providerIds) {
     const apiKey = getApiKeyFromEnv(providerId);

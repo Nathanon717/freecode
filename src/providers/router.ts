@@ -3,8 +3,24 @@ import { getAllProviders, getProvider } from './registry.js';
 import chalk from 'chalk';
 import { getOllamaModels, getOllamaProvider, isOllamaAvailable } from './ollama.js';
 import { createOpenAICompatProvider } from './adapters/openai-compat.js';
+import { createAnthropicProvider } from './adapters/anthropic.js';
+import type { ProviderConfig } from './types.js';
 import { loadConfig } from '../config/index.js';
 import { log } from '../logger.js';
+
+function buildModel(provider: ProviderConfig, modelId: string): LanguageModel {
+  if (provider.type === 'anthropic') {
+    return createAnthropicProvider(provider)(modelId) as LanguageModel;
+  }
+  return createOpenAICompatProvider(provider)(modelId) as LanguageModel;
+}
+
+function logSelection(provider: ProviderConfig, modelId: string): void {
+  if (provider.paid) {
+    console.log(chalk.yellow.bold(`\n⚠  PAID PROVIDER — charges apply to your ${provider.name} account`));
+  }
+  console.log(chalk.dim(`[using ${provider.id}:${modelId}]\n`));
+}
 
 export async function route(
   excludeProviders: string[] = [],
@@ -57,10 +73,10 @@ export async function route(
         if (!targetModel) {
           log('router', `Model not found in ${providerId}`, { wanted: modelId, available: provider.models.map(m => m.id) });
         } else {
-          const openai = createOpenAICompatProvider(provider);
+          logSelection(provider, targetModel.id);
           log('router', `Routed to ${provider.id}:${targetModel.id} (supportsTools=${provider.supportsTools !== false})`);
           return {
-            model: openai(targetModel.id),
+            model: buildModel(provider, targetModel.id),
             providerId: provider.id,
             modelId: targetModel.id,
             supportsTools: provider.supportsTools !== false,
@@ -88,13 +104,11 @@ export async function route(
     log('router', `Trying ${provider.id}:${targetModel.id}`);
 
     try {
-      const openai = createOpenAICompatProvider(provider);
-      const testModel = openai(targetModel.id);
-
-      console.log(chalk.dim(`[using ${provider.id}:${targetModel.id}]\n`));
+      const model = buildModel(provider, targetModel.id);
+      logSelection(provider, targetModel.id);
       log('router', `Routed to ${provider.id}:${targetModel.id}`);
       return {
-        model: testModel,
+        model,
         providerId: provider.id,
         modelId: targetModel.id,
         supportsTools: provider.supportsTools !== false,
@@ -141,7 +155,11 @@ export async function testProvider(providerId: string): Promise<{ ok: boolean; e
   }
 
   try {
-    createOpenAICompatProvider(provider);
+    if (provider.type === 'anthropic') {
+      createAnthropicProvider(provider);
+    } else {
+      createOpenAICompatProvider(provider);
+    }
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Unknown error' };

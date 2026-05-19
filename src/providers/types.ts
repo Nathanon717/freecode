@@ -15,11 +15,12 @@ export interface ModelConfig {
 export interface ProviderConfig {
   id: string;
   name: string;
-  type: 'openai-compat';
-  baseUrl: string;
+  type: 'openai-compat' | 'anthropic';
+  baseUrl?: string;
   apiKeyEnvVar: string;
   models: ModelConfig[];
   supportsTools?: boolean;
+  paid?: boolean;
 }
 
 export interface Config {

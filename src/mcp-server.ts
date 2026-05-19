@@ -11,7 +11,7 @@ const PLAYGROUND_BASE = join(import.meta.dirname, '..', 'playground');
 
 let currentProjectRoot = process.cwd();
 let messages: CoreMessage[] = [];
-let selectedModel = 'groq:llama-3.3-70b-versatile';
+let selectedModel = '';
 let sessionId = createSession(currentProjectRoot).id;
 
 const server = new Server(
