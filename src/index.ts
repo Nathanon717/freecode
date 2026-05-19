@@ -17,7 +17,7 @@ const rl = createInterface({ input: process.stdin, output: process.stdout });
 const projectRoot = process.cwd();
 
 const session = new SessionController(projectRoot);
-let selectedModel = 'groq:llama-3.3-70b-versatile';
+let selectedModel = '';
 
 async function main() {
   const args = process.argv.slice(2);

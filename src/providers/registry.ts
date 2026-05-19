@@ -118,6 +118,17 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
       { id: 'mistral-nemo-latest', displayName: 'Mistral Nemo', contextWindow: 128000 },
     ],
   },
+  {
+    id: 'anthropic',
+    name: 'Anthropic',
+    type: 'anthropic',
+    apiKeyEnvVar: 'ANTHROPIC_API_KEY',
+    paid: true,
+    models: [
+      { id: 'claude-haiku-4-5-20251001', displayName: 'Claude Haiku 4.5', contextWindow: 200000 },
+      { id: 'claude-sonnet-4-6', displayName: 'Claude Sonnet 4.6', contextWindow: 200000 },
+    ],
+  },
 ];
 
 export function getProvider(id: string): ProviderConfig | undefined {

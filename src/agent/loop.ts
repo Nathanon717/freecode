@@ -4,6 +4,7 @@ import { route } from '../providers/router.js';
 import { buildSystemPrompt } from './system-prompt.js';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
 import { getLastCapturedHeaders } from '../providers/adapters/openai-compat.js';
+import { getLastCapturedAnthropicHeaders } from '../providers/adapters/anthropic.js';
 import type { GroqRateLimitHeaders } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
@@ -105,7 +106,7 @@ export async function agentLoop(
     log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens });
 
     if (process.env['DEBUG_QUOTA'] !== '0') {
-      const headers = getLastCapturedHeaders(providerId);
+      const headers = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
       if (headers) {
         quota = headers;
         log('quota', `Rate limit headers captured`, headers);
