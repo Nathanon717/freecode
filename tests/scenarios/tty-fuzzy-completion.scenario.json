@@ -1,0 +1,47 @@
+{
+  "name": "tty-fuzzy-completion",
+  "description": "Fuzzy query /ks matches /keys; Tab expands the buffer to /keys, Enter submits and shows the key status",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /ks — fuzzy matches /keys but no inline suffix (completion is not a prefix)",
+        "send": "/ks",
+        "screenContains": [
+          "> /ks"
+        ],
+        "screenAbsent": [
+          "/clear",
+          "/config",
+          "/eval",
+          "/help",
+          "/resume",
+          "/sources",
+          "/test"
+        ]
+      },
+      {
+        "name": "tab expands buffer to /keys",
+        "send": "\t",
+        "screenContains": [
+          "> /keys"
+        ]
+      },
+      {
+        "name": "enter submits /keys — API key status appears in scroll region",
+        "send": "\r",
+        "waitFor": "API Keys Status",
+        "screenContains": [
+          "API Keys Status",
+          "> / for commands"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "tty-clear-redraws",
+  "description": "Submitting /clear clears the whole terminal, redraws the banner, and the cleared message appears in the raw stream",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /clear",
+        "send": "/clear",
+        "screenContains": [
+          "> /clear"
+        ]
+      },
+      {
+        "name": "submit — terminal clears, banner redraws, prompt returns",
+        "send": "\r",
+        "screenContains": [
+          ".d888",
+          "> / for commands"
+        ],
+        "quietMs": 800
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

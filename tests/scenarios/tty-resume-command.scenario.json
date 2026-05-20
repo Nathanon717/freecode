@@ -1,0 +1,31 @@
+{
+  "name": "tty-resume-command",
+  "description": "/resume finds the session created at startup and reports messages loaded, then restores the prompt",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /resume",
+        "send": "/resume",
+        "screenContains": [
+          "> /resume"
+        ]
+      },
+      {
+        "name": "submit — session info appears in scroll region, prompt returns",
+        "send": "\r",
+        "waitFor": "messages loaded",
+        "screenContains": [
+          "messages loaded",
+          "> / for commands"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

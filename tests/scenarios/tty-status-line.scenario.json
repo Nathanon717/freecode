@@ -1,0 +1,21 @@
+{
+  "name": "tty-status-line",
+  "description": "Status line shows context token count at the bottom of the terminal at idle",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "status line shows ctx tokens at idle",
+        "screenContains": [
+          "ctx tokens"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

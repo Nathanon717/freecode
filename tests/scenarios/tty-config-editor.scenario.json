@@ -1,0 +1,39 @@
+{
+  "name": "tty-config-editor",
+  "description": "Submitting /config opens the interactive settings editor showing all settings; pressing q closes it and restores the input prompt",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /config",
+        "send": "/config",
+        "screenContains": [
+          "> /config"
+        ]
+      },
+      {
+        "name": "submit — config editor opens with both settings visible",
+        "send": "\r",
+        "waitFor": "freecode config",
+        "screenContains": [
+          "freecode config",
+          "Use Ollama",
+          "Tool rationale"
+        ]
+      },
+      {
+        "name": "press q — editor closes, prompt returns",
+        "send": "q",
+        "screenContains": [
+          "> / for commands"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}
