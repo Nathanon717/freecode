@@ -1,0 +1,41 @@
+{
+  "name": "tty-autocomplete",
+  "description": "Interactive TUI: slash command suggestions, prefix filtering, tab completion, and submit reset, verified against the rendered screen",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "startup banner + idle prompt",
+        "screenContains": [".d888", "> / for commands"]
+      },
+      {
+        "name": "type / shows full command list",
+        "send": "/",
+        "screenContains": ["/clear", "/config", "/help", "/model", "/sources", "> /"]
+      },
+      {
+        "name": "prefix filters suggestions",
+        "send": "cle",
+        "screenContains": ["> /cle", "/clear"],
+        "screenAbsent": ["/config", "/help"]
+      },
+      {
+        "name": "tab completes to /clear",
+        "send": "\t",
+        "screenContains": ["> /clear"]
+      },
+      {
+        "name": "enter submits and resets the prompt",
+        "send": "\r",
+        "screenContains": ["> / for commands"],
+        "screenAbsent": ["> /clear"]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}
