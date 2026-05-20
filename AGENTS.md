@@ -16,6 +16,7 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 - For any change touching `src/`, run `npm.cmd run verify:fast` before reporting completion. Build, docs, and scenario failures are blockers.
 - `verify:fast` skips TTY screen scenarios (they are slow and require a PTY). Run `npm.cmd run verify:e2e` to run TTY scenarios only.
+- For quick visual checks of the interactive TUI (e.g. after adding a provider, open the model picker to confirm it appears), use `npm.cmd run inspect:tty -- '<json>'`. Pass a JSON object with a `steps` array — each step has `send` (keystrokes) and optionally `screenContains`/`screenAbsent`. Always send typed text and control keys (Enter `\r`, Tab `\t`) as **separate steps**. See `docs/testing-scenarios.md` for full shape and examples.
 - If a user-visible behavior changes, ensure it has scenario coverage in `tests/scenarios/` or docs coverage, as appropriate.
 - If generated reference sources change, update the source of truth first, then run `npm.cmd run docs:generate`. Do not hand-edit generated sections.
 - Run `npm.cmd run docs:check` before reporting docs-related or user-visible changes complete.
