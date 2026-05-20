@@ -34,10 +34,6 @@ async function main() {
 
   const config = loadConfig();
   selectedModel = config.preferredModel ?? '';
-  if (config.useOllama) {
-    log('ollama', 'Probing Ollama');
-    await getOllamaModels();
-  }
 
   if (args.includes('--test-all')) {
     await testAll();

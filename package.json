@@ -19,8 +19,9 @@
     "test-env": "node test-env.js",
     "docs:generate": "tsx scripts/generate-docs.ts",
     "docs:check": "tsx scripts/generate-docs.ts && tsx scripts/check-map.ts",
-    "verify": "npm run build && npm run docs:check && tsx tests/harness/run-scenarios.ts --no-build --skip-llm",
-    "verify:fast": "npm run docs:check && tsx tests/harness/run-scenarios.ts --no-build --skip-llm",
+    "verify:scenarios": "tsx tests/harness/run-scenarios.ts --no-build --skip-llm",
+    "verify": "npm run build && npm run docs:check && npm run verify:scenarios",
+    "verify:fast": "npm run docs:check && npm run verify:scenarios",
     "eval": "npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-llm --details"
   },
   "keywords": [
