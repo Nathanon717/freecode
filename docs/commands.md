@@ -15,6 +15,7 @@ This table is generated from `package.json`.
 | `npm run docs:check` | `tsx scripts/generate-docs.ts && tsx scripts/check-map.ts` |
 | `npm run docs:generate` | `tsx scripts/generate-docs.ts` |
 | `npm run eval` | `npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-llm --details` |
+| `npm run inspect:tty` | `tsx tests/harness/pty/inspect.ts` |
 | `npm run start` | `node dist/index.js` |
 | `npm run test` | `tsx src/index.ts --test` |
 | `npm run test-all` | `tsx src/index.ts --test-all` |
