@@ -3,9 +3,56 @@ import type { ProviderConfig } from '../types.js';
 import { loadConfig } from '../../config/index.js';
 import { parseGroqRateLimitHeaders, type GroqRateLimitHeaders } from '../quota/headers.js';
 
+export interface CapturedProviderUsage {
+  providerId: string;
+  responseId?: string;
+  model?: string;
+  usage: unknown;
+  source: 'json' | 'sse';
+  capturedAt: number;
+}
+
 // Module-level store: most-recently captured rate-limit headers per provider ID.
 // Written by the custom fetch wrapper; read by the agent loop for logging.
 const lastCapturedHeaders = new Map<string, GroqRateLimitHeaders>();
+const usageCapturePromises = new Map<string, Promise<CapturedProviderUsage | null>[]>();
+
+export async function formatOpenAICompatHttpError(providerName: string, response: Response): Promise<string | null> {
+  if (response.ok) return null;
+
+  const body = await response.clone().text().catch(() => '');
+  let providerMessage: string | undefined;
+  let providerCode: string | number | undefined;
+
+  if (body) {
+    try {
+      const parsed = JSON.parse(body) as unknown;
+      if (isRecord(parsed) && isRecord(parsed.error)) {
+        providerMessage = typeof parsed.error.message === 'string' ? parsed.error.message : undefined;
+        providerCode = typeof parsed.error.code === 'string' || typeof parsed.error.code === 'number'
+          ? parsed.error.code
+          : undefined;
+      }
+    } catch {
+      providerMessage = body.slice(0, 500);
+    }
+  }
+
+  const status = `${response.status} ${response.statusText}`.trim();
+  const retryAfter = formatRetryAfter(response.headers.get('retry-after'));
+  const retryHint = response.status === 429 && retryAfter
+    ? ` Retry after ${retryAfter}.`
+    : '';
+  const providerHint = response.status === 429 && providerName === 'OpenRouter'
+    ? ' OpenRouter rate limits can come from OpenRouter or the upstream model provider; try again later or switch models/providers.'
+    : '';
+  const details = providerMessage
+    ? `${providerMessage}${providerCode !== undefined ? ` (code: ${providerCode})` : ''}`
+    : body.slice(0, 500);
+  return details
+    ? `${providerName} HTTP ${status}: ${details}${retryHint}${providerHint}`
+    : `${providerName} HTTP ${status}${retryHint}${providerHint}`;
+}
 
 /**
  * Return the headers captured from the most recent HTTP response for the given
@@ -13,6 +60,123 @@ const lastCapturedHeaders = new Map<string, GroqRateLimitHeaders>();
  */
 export function getLastCapturedHeaders(providerId: string): GroqRateLimitHeaders | null {
   return lastCapturedHeaders.get(providerId) ?? null;
+}
+
+export function beginProviderUsageCapture(providerId: string): void {
+  usageCapturePromises.set(providerId, []);
+}
+
+export async function endProviderUsageCapture(providerId: string): Promise<CapturedProviderUsage[]> {
+  const promises = usageCapturePromises.get(providerId) ?? [];
+  usageCapturePromises.delete(providerId);
+  const results = await Promise.all(promises);
+  return results.filter((usage): usage is CapturedProviderUsage => usage !== null);
+}
+
+export function formatCapturedProviderUsages(usages: CapturedProviderUsage[] | null | undefined): string | null {
+  if (!usages || usages.length === 0) return null;
+  const payload = usages.map(({ providerId, responseId, model, source, usage }) => ({
+    providerId,
+    ...(model ? { model } : {}),
+    ...(responseId ? { responseId } : {}),
+    source,
+    usage,
+  }));
+  return JSON.stringify(usages.length === 1 ? payload[0] : payload, null, 2);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function formatRetryAfter(value: string | null): string | null {
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    if (seconds === 1) return '1 second';
+    return `${Math.ceil(seconds)} seconds`;
+  }
+
+  const date = Date.parse(value);
+  if (!Number.isNaN(date)) {
+    const secondsUntil = Math.max(0, Math.ceil((date - Date.now()) / 1000));
+    if (secondsUntil === 1) return '1 second';
+    return `${secondsUntil} seconds`;
+  }
+
+  return value;
+}
+
+function usageFromPayload(providerId: string, payload: unknown, source: 'json' | 'sse'): CapturedProviderUsage | null {
+  if (!isRecord(payload)) return null;
+  const usage = isRecord(payload.usage) ? payload.usage : null;
+  const response = isRecord(payload.response) ? payload.response : null;
+  const responseUsage = isRecord(response?.usage) ? response.usage : null;
+  const capturedUsage = usage ?? responseUsage;
+  if (!capturedUsage) return null;
+
+  const responseId = typeof payload.id === 'string'
+    ? payload.id
+    : typeof response?.id === 'string'
+      ? response.id
+      : undefined;
+  const model = typeof payload.model === 'string'
+    ? payload.model
+    : typeof response?.model === 'string'
+      ? response.model
+      : undefined;
+
+  return {
+    providerId,
+    responseId,
+    model,
+    usage: capturedUsage,
+    source,
+    capturedAt: Date.now(),
+  };
+}
+
+function parseProviderUsageFromSse(providerId: string, body: string): CapturedProviderUsage | null {
+  let lastUsage: CapturedProviderUsage | null = null;
+  for (const line of body.split(/\r?\n/)) {
+    if (!line.startsWith('data:')) continue;
+    const data = line.slice('data:'.length).trim();
+    if (!data || data === '[DONE]') continue;
+    try {
+      lastUsage = usageFromPayload(providerId, JSON.parse(data), 'sse') ?? lastUsage;
+    } catch {
+      // Ignore non-JSON SSE comments or malformed provider chunks.
+    }
+  }
+  return lastUsage;
+}
+
+async function parseProviderUsage(providerId: string, response: Response): Promise<CapturedProviderUsage | null> {
+  const body = await response.clone().text();
+  const contentType = response.headers.get('content-type') ?? '';
+  if (contentType.includes('text/event-stream')) {
+    return parseProviderUsageFromSse(providerId, body);
+  }
+
+  try {
+    return usageFromPayload(providerId, JSON.parse(body), 'json');
+  } catch {
+    return null;
+  }
+}
+
+function captureProviderUsage(providerId: string, response: Response): void {
+  const captures = usageCapturePromises.get(providerId);
+  if (!captures) return;
+  captures.push(parseProviderUsage(providerId, response).catch(() => null));
+}
+
+export function getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined {
+  if (providerId !== 'openrouter') return undefined;
+  return {
+    'HTTP-Referer': 'https://freecode.local',
+    'X-Title': 'freecode',
+  };
 }
 
 export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
@@ -26,12 +190,13 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
   // Defaults to ON so Phase-1 observation works out of the box.
   const debugQuota = process.env['DEBUG_QUOTA'] !== '0';
   const shouldCapture = debugQuota && providerConfig.id === 'groq';
+  const shouldCaptureUsage = true;
 
   // o1/o3 reasoning models reject the temperature parameter entirely.
   const isReasoningModel = (modelId: string) => /^(o1|o3)(-|$)/i.test(modelId);
   const shouldStripTemperature = providerConfig.id === 'openai';
 
-  const customFetch: typeof globalThis.fetch | undefined = (shouldCapture || shouldStripTemperature)
+  const customFetch: typeof globalThis.fetch | undefined = (shouldCapture || shouldStripTemperature || shouldCaptureUsage)
     ? async (input, init) => {
         if (shouldCapture && process.env['DEBUG_TOOLS'] === '1' && init?.body) {
           try {
@@ -52,6 +217,13 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         }
 
         const response = await globalThis.fetch(input, patchedInit);
+        const httpError = await formatOpenAICompatHttpError(providerConfig.name, response);
+        if (httpError) {
+          throw new Error(httpError);
+        }
+        if (shouldCaptureUsage) {
+          captureProviderUsage(providerConfig.id, response);
+        }
         if (shouldCapture) {
           lastCapturedHeaders.set(
             providerConfig.id,
@@ -65,6 +237,7 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
   return createOpenAI({
     baseURL: providerConfig.baseUrl,
     apiKey,
+    headers: getOpenAICompatProviderHeaders(providerConfig.id),
     ...(customFetch ? { fetch: customFetch } : {}),
   });
 }

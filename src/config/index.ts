@@ -39,6 +39,8 @@ function getApiKeyFromEnv(providerId: string): string | undefined {
     mistral: 'MISTRAL_API_KEY',
     anthropic: 'ANTHROPIC_API_KEY',
     openai: 'OPENAI_API_KEY',
+    cloudflare: 'CLOUDFLARE_API_KEY',
+    zai: 'ZAI_API_KEY',
   };
   
   const envVar = envVars[providerId];
@@ -69,7 +71,7 @@ export function loadConfig(): Config {
   delete (config as Record<string, unknown>)['preferLocal'];
   
   const configuredProviders: Config['providers'] = {};
-  const providerIds = ['groq', 'openrouter', 'siliconflow', 'nvidia', 'llm7', 'github', 'cohere', 'cerebras', 'mistral', 'openai', 'anthropic'];
+  const providerIds = ['groq', 'openrouter', 'siliconflow', 'nvidia', 'llm7', 'github', 'cohere', 'cerebras', 'mistral', 'openai', 'anthropic', 'cloudflare', 'zai'];
   
   for (const providerId of providerIds) {
     const apiKey = getApiKeyFromEnv(providerId);

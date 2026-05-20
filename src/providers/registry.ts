@@ -1,4 +1,40 @@
-import type { ProviderConfig } from './types.js';
+import type { ModelConfig, ProviderConfig } from './types.js';
+
+const OPENROUTER_FREE_FALLBACK: ModelConfig[] = [
+  { id: 'meta-llama/llama-3.3-70b-instruct:free', displayName: 'Llama 3.3 70B', contextWindow: 131072 },
+  { id: 'deepseek/deepseek-v4-flash:free', displayName: 'DeepSeek V4 Flash' },
+  { id: 'google/gemma-3-27b-it:free', displayName: 'Gemma 3 27B' },
+];
+
+let openRouterInitDone = false;
+
+export async function initOpenRouterModels(): Promise<void> {
+  if (openRouterInitDone) return;
+  openRouterInitDone = true;
+
+  const entry = PROVIDER_REGISTRY.find(p => p.id === 'openrouter');
+  if (!entry) return;
+
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/models');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = (await res.json()) as { data: Record<string, unknown>[] };
+    const free = json.data.filter(
+      m => typeof m.id === 'string' && m.id.endsWith(':free')
+    );
+    if (free.length > 0) {
+      entry.models = free.map(m => ({
+        id: m.id as string,
+        displayName: typeof m.name === 'string' ? m.name : m.id as string,
+        ...(typeof m.context_length === 'number' ? { contextWindow: m.context_length } : {}),
+      }));
+    } else {
+      entry.models = [...OPENROUTER_FREE_FALLBACK];
+    }
+  } catch {
+    entry.models = [...OPENROUTER_FREE_FALLBACK];
+  }
+}
 
 export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
@@ -25,15 +61,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     type: 'openai-compat',
     baseUrl: 'https://openrouter.ai/api/v1',
     apiKeyEnvVar: 'OPENROUTER_API_KEY',
-    models: [
-      { id: 'meta-llama/llama-3.3-70b-instruct:free', displayName: 'Llama 3.3 70B', contextWindow: 128000 },
-      { id: 'deepseek/deepseek-v4-flash:free', displayName: 'DeepSeek V4 Flash' },
-      { id: 'openai/gpt-oss-120b:free', displayName: 'GPT-OSS 120B' },
-      { id: 'nousresearch/hermes-3-llama-3.1-405b:free', displayName: 'Hermes 3 405B' },
-      { id: 'google/gemma-4-31b-it:free', displayName: 'Gemma 4 31B' },
-      { id: 'qwen/qwen3-coder:free', displayName: 'Qwen3 Coder' },
-      { id: 'nvidia/nemotron-3-super-120b-a12b:free', displayName: 'Nemotron Super 120B' },
-    ],
+    models: [],
   },
   {
     id: 'siliconflow',
@@ -124,6 +152,37 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
       { id: 'open-mistral-nemo', displayName: 'Mistral Nemo', contextWindow: 128000 },
       { id: 'ministral-3b-latest', displayName: 'Ministral 3B', contextWindow: 128000 },
       { id: 'ministral-8b-latest', displayName: 'Ministral 8B', contextWindow: 128000 },
+    ],
+  },
+  {
+    id: 'cloudflare',
+    name: 'Cloudflare Workers AI',
+    type: 'openai-compat',
+    baseUrl: `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID ?? ''}/ai/v1`,
+    apiKeyEnvVar: 'CLOUDFLARE_API_KEY',
+    models: [
+      { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', displayName: 'Llama 3.3 70B Fast', contextWindow: 128000 },
+      { id: '@cf/meta/llama-3.1-8b-instruct', displayName: 'Llama 3.1 8B', contextWindow: 128000 },
+      { id: '@cf/qwen/qwen2.5-coder-32b-instruct', displayName: 'Qwen2.5 Coder 32B', contextWindow: 32768 },
+      { id: '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b', displayName: 'DeepSeek R1 Distill 32B', contextWindow: 32768 },
+    ],
+  },
+  {
+    id: 'zai',
+    name: 'Z.ai (ZhipuAI)',
+    type: 'openai-compat',
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    apiKeyEnvVar: 'ZAI_API_KEY',
+    models: [
+      { id: 'glm-4.7-flash', displayName: 'GLM-4.7 Flash (free)', contextWindow: 128000 },
+      { id: 'glm-4.5-flash', displayName: 'GLM-4.5 Flash (free)', contextWindow: 128000 },
+      { id: 'glm-5.1', displayName: 'GLM-5.1', contextWindow: 128000 },
+      { id: 'glm-5-turbo', displayName: 'GLM-5 Turbo', contextWindow: 128000 },
+      { id: 'glm-5', displayName: 'GLM-5', contextWindow: 128000 },
+      { id: 'glm-4.7', displayName: 'GLM-4.7', contextWindow: 128000 },
+      { id: 'glm-4.6', displayName: 'GLM-4.6', contextWindow: 128000 },
+      { id: 'glm-4.5', displayName: 'GLM-4.5', contextWindow: 128000 },
+      { id: 'glm-4.5-air', displayName: 'GLM-4.5 Air', contextWindow: 128000 },
     ],
   },
   {

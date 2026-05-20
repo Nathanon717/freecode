@@ -16,6 +16,7 @@ import {
   describeCostEstimateBreakdown,
   formatUsdCeil,
 } from './providers/anthropic-cost.js';
+import { formatCapturedProviderUsages } from './providers/adapters/openai-compat.js';
 import { getOllamaModels } from './providers/ollama.js';
 import { route, testAllProviders } from './providers/router.js';
 
@@ -130,6 +131,11 @@ async function testSingle() {
       console.log(chalk.gray(`Estimated API cost: ${describeCostEstimate(result.costEstimate)} this turn | ${formatUsdCeil(sessionTotal)} session`));
       const breakdown = describeCostEstimateBreakdown(result.costEstimate);
       if (breakdown) console.log(chalk.gray(breakdown));
+    }
+    const providerUsage = formatCapturedProviderUsages(result.providerUsage);
+    if (providerUsage) {
+      console.log(chalk.gray('Provider usage:'));
+      console.log(chalk.gray(providerUsage));
     }
   } catch (error) {
     if (error instanceof Error) {

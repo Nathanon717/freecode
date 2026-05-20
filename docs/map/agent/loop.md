@@ -11,6 +11,7 @@ interface AgentLoopResult {
   providerId: string;
   modelId: string;
   quota: GroqRateLimitHeaders | null;
+  providerUsage?: CapturedProviderUsage[];
   costEstimate?: CostEstimate;
 }
 
@@ -51,6 +52,8 @@ if provider is Anthropic:
   end usage capture
   fetch live/fallback pricing
   estimate turn cost
+else if provider is OpenAI-compatible:
+  end raw provider usage capture
 if DEBUG_QUOTA !== "0":
   read most recent captured OpenAI-compatible or Anthropic headers for providerId
 return AgentLoopResult
@@ -68,7 +71,7 @@ return AgentLoopResult
 - [providers/router.md](../providers/router.md): resolves provider/model.
 - [system-prompt.md](system-prompt.md): builds the prompt.
 - [tools/index.md](tools/index.md): creates tool wrappers.
-- [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md) and [providers/adapters/anthropic.md](../providers/adapters/anthropic.md): capture provider metadata.
+- [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md) and [providers/adapters/anthropic.md](../providers/adapters/anthropic.md): capture provider metadata and usage details.
 
 ## Error Handling
 

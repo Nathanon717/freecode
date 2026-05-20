@@ -38,6 +38,7 @@ Non-command input is handled by `sendToAgent()`:
 4. Run `onAgentResult`.
 5. Append assistant message and persist the exchange.
 6. When using Anthropic, print estimated turn cost, session total, and a token/rate breakdown when available.
-7. Run `afterAgentCall`.
+7. When non-OpenAI-compatible provider usage was captured, print the raw provider usage JSON.
+8. Run `afterAgentCall`.
 
 Errors are logged and printed, not thrown through the session loop.

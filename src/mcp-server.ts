@@ -14,6 +14,7 @@ import {
   formatUsdCeil,
   resetAnthropicSessionCost,
 } from './providers/anthropic-cost.js';
+import { formatCapturedProviderUsages } from './providers/adapters/openai-compat.js';
 
 const PLAYGROUND_BASE = join(import.meta.dirname, '..', 'playground');
 
@@ -164,7 +165,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       costText = `\n*Estimated API cost: ${describeCostEstimate(result.costEstimate)} this turn | ${formatUsdCeil(sessionTotal)} session*`;
       if (breakdown) costText += `\n*${breakdown}*`;
     }
-    const footer = `\n\n---\n*[${result.providerId}:${result.modelId} | ${result.usage.totalTokens} tokens | ${messages.length} msgs in context]*${costText}`;
+    const providerUsage = formatCapturedProviderUsages(result.providerUsage);
+    const usageText = providerUsage ? `\nProvider usage:\n\`\`\`json\n${providerUsage}\n\`\`\`` : '';
+    const footer = `\n\n---\n*[${result.providerId}:${result.modelId} | ${result.usage.totalTokens} tokens | ${messages.length} msgs in context]*${costText}${usageText}`;
     return { content: [{ type: 'text', text: result.text + footer }] };
   }
 

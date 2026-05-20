@@ -14,6 +14,7 @@ import {
   formatUsdCeil,
   resetAnthropicSessionCost,
 } from '../providers/anthropic-cost.js';
+import { formatCapturedProviderUsages } from '../providers/adapters/openai-compat.js';
 import { showBanner } from './banner.js';
 import { showHelp } from './slash-commands.js';
 import type { SessionController } from './session-controller.js';
@@ -188,6 +189,11 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
       ));
       const breakdown = describeCostEstimateBreakdown(result.costEstimate);
       if (breakdown) console.log(chalk.gray(breakdown));
+    }
+    const providerUsage = formatCapturedProviderUsages(result.providerUsage);
+    if (providerUsage) {
+      console.log(chalk.gray('Provider usage:'));
+      console.log(chalk.gray(providerUsage));
     }
 
     console.log();

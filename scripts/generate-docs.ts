@@ -2,7 +2,7 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, join, relative } from 'path';
 import { fileURLToPath } from 'url';
-import { PROVIDER_REGISTRY } from '../src/providers/registry.js';
+import { PROVIDER_REGISTRY, initOpenRouterModels } from '../src/providers/registry.js';
 import { SLASH_COMMANDS } from '../src/cli/slash-commands.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -160,6 +160,8 @@ const updates: Array<[string, (content: string) => string]> = [
     return replaceGeneratedSection(base, 'SCENARIOS', scenarioReference());
   }],
 ];
+
+await initOpenRouterModels();
 
 const changed = updates
   .map(([path, update]) => ({ path, changed: updateFile(path, update) }))

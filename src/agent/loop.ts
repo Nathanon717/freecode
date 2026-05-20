@@ -3,7 +3,12 @@ import { streamText } from 'ai';
 import { route } from '../providers/router.js';
 import { buildSystemPrompt } from './system-prompt.js';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
-import { getLastCapturedHeaders } from '../providers/adapters/openai-compat.js';
+import {
+  beginProviderUsageCapture,
+  endProviderUsageCapture,
+  getLastCapturedHeaders,
+  type CapturedProviderUsage,
+} from '../providers/adapters/openai-compat.js';
 import {
   beginAnthropicUsageCapture,
   endAnthropicUsageCapture,
@@ -31,6 +36,7 @@ export interface AgentLoopResult {
   providerId: string;
   modelId: string;
   quota: GroqRateLimitHeaders | null;
+  providerUsage?: CapturedProviderUsage[];
   costEstimate?: CostEstimate;
 }
 
@@ -87,6 +93,7 @@ export async function agentLoop(
   let promptTokens: number | undefined;
   let outputTokens: number | undefined;
   let quota: GroqRateLimitHeaders | null = null;
+  let providerUsage: CapturedProviderUsage[] | undefined;
   let costEstimate: CostEstimate | undefined;
 
   const systemPrompt = buildSystemPrompt();
@@ -97,7 +104,11 @@ export async function agentLoop(
 
   log('stream', `Calling streamText`, { supportsTools, maxSteps: supportsTools ? 10 : undefined });
   try {
-    if (providerId === 'anthropic') beginAnthropicUsageCapture(providerId);
+    if (providerId === 'anthropic') {
+      beginAnthropicUsageCapture(providerId);
+    } else {
+      beginProviderUsageCapture(providerId);
+    }
     const result: unknown = await streamText({
       model: languageModel,
       system: systemPrompt,
@@ -133,11 +144,29 @@ export async function agentLoop(
       costEstimate = estimateAnthropicCost(modelId, anthropicUsage, pricing);
       promptTokens = anthropicUsage?.inputTokens ?? promptTokens;
       outputTokens = anthropicUsage?.outputTokens ?? outputTokens;
+      if (anthropicUsage) {
+        providerUsage = [{
+          providerId,
+          model: modelId,
+          source: 'sse',
+          usage: anthropicUsage,
+          capturedAt: Date.now(),
+        }];
+      }
       log('stream', 'Anthropic cost estimate', costEstimate);
     } else if (providerId === 'openai') {
+      providerUsage = await endProviderUsageCapture(providerId);
+      if (providerUsage.length > 0) {
+        log('stream', 'Provider usage captured', providerUsage);
+      }
       const openaiPricing = await getOpenAIPricing();
       costEstimate = estimateOpenAICost(modelId, promptTokens, outputTokens, openaiPricing);
       log('stream', 'OpenAI cost estimate', costEstimate);
+    } else {
+      providerUsage = await endProviderUsageCapture(providerId);
+      if (providerUsage.length > 0) {
+        log('stream', 'Provider usage captured', providerUsage);
+      }
     }
 
     if (process.env['DEBUG_QUOTA'] !== '0') {
@@ -153,12 +182,24 @@ export async function agentLoop(
     if (providerId === 'anthropic') {
       const anthropicUsage = await endAnthropicUsageCapture(providerId);
       if (anthropicUsage) {
+        providerUsage = [{
+          providerId,
+          model: modelId,
+          source: 'sse',
+          usage: anthropicUsage,
+          capturedAt: Date.now(),
+        }];
         const pricing = await getAnthropicPricing();
         costEstimate = estimateAnthropicCost(modelId, anthropicUsage, pricing);
       }
-    } else if (providerId === 'openai' && (promptTokens !== undefined || outputTokens !== undefined)) {
-      const openaiPricing = await getOpenAIPricing();
-      costEstimate = estimateOpenAICost(modelId, promptTokens, outputTokens, openaiPricing);
+    } else if (providerId === 'openai') {
+      providerUsage = await endProviderUsageCapture(providerId);
+      if (promptTokens !== undefined || outputTokens !== undefined) {
+        const openaiPricing = await getOpenAIPricing();
+        costEstimate = estimateOpenAICost(modelId, promptTokens, outputTokens, openaiPricing);
+      }
+    } else {
+      providerUsage = await endProviderUsageCapture(providerId);
     }
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);
     log('stream', 'streamText error details', serializeError(error));
@@ -171,6 +212,7 @@ export async function agentLoop(
       providerId,
       modelId,
       quota,
+      providerUsage,
       costEstimate,
     };
   }
@@ -181,6 +223,7 @@ export async function agentLoop(
     providerId,
     modelId,
     quota,
+    providerUsage,
     costEstimate,
   };
 }

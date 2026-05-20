@@ -8,7 +8,7 @@ This table is generated from `src/providers/registry.ts`. Run `npm run docs:gene
 | Order | Provider | ID | Type | API key env var | Tools | Paid | Models |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Groq | `groq` | openai-compat | `GROQ_API_KEY` | Yes | No | `allam-2-7b`<br>`groq/compound`<br>`groq/compound-mini`<br>`llama-3.1-8b-instant`<br>`llama-3.3-70b-versatile`<br>`meta-llama/llama-4-scout-17b-16e-instruct`<br>`openai/gpt-oss-120b`<br>`openai/gpt-oss-20b`<br>`qwen/qwen3-32b` |
-| 2 | OpenRouter | `openrouter` | openai-compat | `OPENROUTER_API_KEY` | Yes | No | `meta-llama/llama-3.3-70b-instruct:free`<br>`deepseek/deepseek-v4-flash:free`<br>`openai/gpt-oss-120b:free`<br>`nousresearch/hermes-3-llama-3.1-405b:free`<br>`google/gemma-4-31b-it:free`<br>`qwen/qwen3-coder:free`<br>`nvidia/nemotron-3-super-120b-a12b:free` |
+| 2 | OpenRouter | `openrouter` | openai-compat | `OPENROUTER_API_KEY` | Yes | No | `baidu/cobuddy:free`<br>`nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`<br>`poolside/laguna-xs.2:free`<br>`poolside/laguna-m.1:free`<br>`deepseek/deepseek-v4-flash:free`<br>`google/gemma-4-26b-a4b-it:free`<br>`google/gemma-4-31b-it:free`<br>`arcee-ai/trinity-large-thinking:free`<br>`nvidia/nemotron-3-super-120b-a12b:free`<br>`minimax/minimax-m2.5:free`<br>`liquid/lfm-2.5-1.2b-thinking:free`<br>`liquid/lfm-2.5-1.2b-instruct:free`<br>`nvidia/nemotron-3-nano-30b-a3b:free`<br>`nvidia/nemotron-nano-12b-v2-vl:free`<br>`qwen/qwen3-next-80b-a3b-instruct:free`<br>`nvidia/nemotron-nano-9b-v2:free`<br>`openai/gpt-oss-120b:free`<br>`openai/gpt-oss-20b:free`<br>`z-ai/glm-4.5-air:free`<br>`qwen/qwen3-coder:free`<br>`cognitivecomputations/dolphin-mistral-24b-venice-edition:free`<br>`meta-llama/llama-3.3-70b-instruct:free`<br>`meta-llama/llama-3.2-3b-instruct:free`<br>`nousresearch/hermes-3-llama-3.1-405b:free` |
 | 3 | SiliconFlow | `siliconflow` | openai-compat | `SILICONFLOW_API_KEY` | Yes | No | `Qwen/Qwen3-8B`<br>`deepseek-ai/DeepSeek-R1-Distill-Qwen-7B` |
 | 4 | NVIDIA NIM | `nvidia` | openai-compat | `NVIDIA_API_KEY` | Yes | No | `meta/llama-3.3-70b-instruct`<br>`meta/llama-4-maverick-17b-128e-instruct`<br>`mistralai/mistral-large`<br>`deepseek-ai/deepseek-v4-flash`<br>`nvidia/llama-3.1-nemotron-ultra-253b-v1`<br>`qwen/qwen3-next-80b-a3b-instruct` |
 | 5 | LLM7 | `llm7` | openai-compat | `LLM7_API_KEY` | Yes | No | `gpt-oss-20b`<br>`codestral-latest`<br>`GLM-4.6V-Flash` |
@@ -16,8 +16,10 @@ This table is generated from `src/providers/registry.ts`. Run `npm run docs:gene
 | 7 | Cohere | `cohere` | openai-compat | `COHERE_API_KEY` | Yes | No | `command-a-03-2025`<br>`command-r-plus-08-2024`<br>`command-r-08-2024`<br>`command-r7b-12-2024` |
 | 8 | Cerebras | `cerebras` | openai-compat | `CEREBRAS_API_KEY` | Yes | No | `llama3.1-8b`<br>`qwen-3-235b-a22b-instruct-2507`<br>`zai-glm-4.7`<br>`gpt-oss-120b` |
 | 9 | Mistral | `mistral` | openai-compat | `MISTRAL_API_KEY` | Yes | No | `mistral-large-latest`<br>`mistral-small-latest`<br>`open-mistral-nemo`<br>`ministral-3b-latest`<br>`ministral-8b-latest` |
-| 10 | OpenAI | `openai` | openai-compat | `OPENAI_API_KEY` | Yes | Yes | `gpt-4.1`<br>`gpt-4.1-mini`<br>`gpt-4.1-nano`<br>`gpt-4o`<br>`gpt-4o-mini`<br>`o3`<br>`o4-mini` |
-| 11 | Anthropic | `anthropic` | anthropic | `ANTHROPIC_API_KEY` | Yes | Yes | `claude-haiku-4-5-20251001`<br>`claude-sonnet-4-6`<br>`claude-opus-4-7` |
+| 10 | Cloudflare Workers AI | `cloudflare` | openai-compat | `CLOUDFLARE_API_KEY` | Yes | No | `@cf/meta/llama-3.3-70b-instruct-fp8-fast`<br>`@cf/meta/llama-3.1-8b-instruct`<br>`@cf/qwen/qwen2.5-coder-32b-instruct`<br>`@cf/deepseek-ai/deepseek-r1-distill-qwen-32b` |
+| 11 | Z.ai (ZhipuAI) | `zai` | openai-compat | `ZAI_API_KEY` | Yes | No | `glm-4.7-flash`<br>`glm-4.5-flash`<br>`glm-5.1`<br>`glm-5-turbo`<br>`glm-5`<br>`glm-4.7`<br>`glm-4.6`<br>`glm-4.5`<br>`glm-4.5-air` |
+| 12 | OpenAI | `openai` | openai-compat | `OPENAI_API_KEY` | Yes | Yes | `gpt-4.1`<br>`gpt-4.1-mini`<br>`gpt-4.1-nano`<br>`gpt-4o`<br>`gpt-4o-mini`<br>`o3`<br>`o4-mini` |
+| 13 | Anthropic | `anthropic` | anthropic | `ANTHROPIC_API_KEY` | Yes | Yes | `claude-haiku-4-5-20251001`<br>`claude-sonnet-4-6`<br>`claude-opus-4-7` |
 <!-- END GENERATED PROVIDERS -->
 
 ## Testing Providers

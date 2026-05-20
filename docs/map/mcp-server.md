@@ -12,6 +12,8 @@
 
 During `freecode_chat`, stdout is temporarily suppressed because MCP uses stdout for JSON-RPC. The agent response is still captured from the returned `AgentLoopResult`.
 
+The response footer includes raw provider usage JSON when usage metadata is captured.
+
 The MCP server seeds its selected model from `config.preferredModel`; `freecode_set_model` changes only the current MCP server process selection.
 
 `freecode_new_project`, `freecode_set_cwd`, and `freecode_clear` reset Anthropic session cost totals along with message history.

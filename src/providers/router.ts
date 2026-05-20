@@ -1,5 +1,5 @@
 import type { LanguageModel } from 'ai';
-import { getAllProviders, getProvider } from './registry.js';
+import { getAllProviders, getProvider, initOpenRouterModels } from './registry.js';
 import chalk from 'chalk';
 import { getOllamaModels, getOllamaProvider, isOllamaAvailable } from './ollama.js';
 import { createOpenAICompatProvider } from './adapters/openai-compat.js';
@@ -24,6 +24,7 @@ function logSelection(provider: ProviderConfig, modelId: string): void {
 export async function route(
   modelPreference?: string
 ): Promise<{ model: LanguageModel; providerId: string; modelId: string; supportsTools: boolean }> {
+  await initOpenRouterModels();
   const config = loadConfig();
   const ollamaModels = config.useOllama ? await getOllamaModels() : [];
   const ollamaAvailable = config.useOllama && isOllamaAvailable();

@@ -1,11 +1,16 @@
 # src/providers/adapters/openai-compat.ts - OpenAI-Compatible Adapter
 
-**Role:** Creates `@ai-sdk/openai` provider factories for registry providers and Ollama, and captures Groq rate-limit headers.
+**Role:** Creates `@ai-sdk/openai` provider factories for registry providers and Ollama, captures Groq rate-limit headers, and captures raw usage metadata from OpenAI-compatible responses.
 
 ## Exports
 
 ```typescript
 getLastCapturedHeaders(providerId: string): GroqRateLimitHeaders | null
+beginProviderUsageCapture(providerId: string): void
+endProviderUsageCapture(providerId: string): Promise<CapturedProviderUsage[]>
+formatCapturedProviderUsages(usages): string | null
+formatOpenAICompatHttpError(providerName, response): Promise<string | null>
+getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined
 createOpenAICompatProvider(providerConfig: ProviderConfig)
 createOllamaProvider()
 ```
@@ -16,7 +21,10 @@ Calls `createOpenAI()` with:
 
 - `baseURL` from `providerConfig.baseUrl`
 - `apiKey` from `process.env[providerConfig.apiKeyEnvVar]`, then `loadConfig().providers[providerConfig.id]?.apiKey`, then `placeholder`
-- optional custom `fetch` for Groq quota capture
+- `headers` from `getOpenAICompatProviderHeaders()`, currently OpenRouter `HTTP-Referer` and `X-Title`
+- optional custom `fetch` for Groq quota capture, OpenAI temperature stripping, raw usage capture, or provider HTTP error formatting
+
+Non-OK HTTP responses are parsed for OpenAI-compatible `{ error: { message, code } }` bodies before throwing so callers see provider-specific API key, credit, model, or rate-limit details instead of a generic SDK error.
 
 ## Groq Header Capture
 
@@ -28,6 +36,18 @@ When `DEBUG_QUOTA !== "0"` and `providerConfig.id === "groq"`, a wrapped fetch:
 4. Stores the parsed headers in a module-level `Map` keyed by provider ID.
 
 `agent/loop.ts` reads that map after a streamed turn.
+
+## Usage Capture
+
+For OpenAI-compatible providers, the wrapped fetch clones responses while an agent turn is inside `beginProviderUsageCapture()` / `endProviderUsageCapture()`.
+
+The parser reads:
+
+- top-level JSON `usage`
+- Responses-style JSON `response.usage`
+- SSE `data:` chunks with either shape, keeping the last usage-bearing chunk
+
+Captured usage is intentionally not interpreted for billing; CLI and MCP callers print the raw JSON returned by the provider.
 
 ## `createOllamaProvider`
 
