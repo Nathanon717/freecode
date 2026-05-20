@@ -1,0 +1,39 @@
+{
+  "name": "tty-inline-completion",
+  "description": "A partial prefix renders the full command inline before Tab is pressed; inline completion updates as the buffer changes",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /cl — inline shows /clear without Tab",
+        "send": "/cl",
+        "screenContains": [
+          "> /clear"
+        ]
+      },
+      {
+        "name": "backspace to /c — inline still shows /clear",
+        "send": "",
+        "screenContains": [
+          "> /clear"
+        ]
+      },
+      {
+        "name": "type on to make /con — inline shifts to /config",
+        "send": "on",
+        "screenContains": [
+          "> /config"
+        ],
+        "screenAbsent": [
+          "> /clear"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

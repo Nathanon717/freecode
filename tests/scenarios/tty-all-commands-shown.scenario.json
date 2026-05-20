@@ -1,0 +1,30 @@
+{
+  "name": "tty-all-commands-shown",
+  "description": "Typing / shows all nine slash commands in the suggestion list",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type / — all nine commands appear as suggestions",
+        "send": "/",
+        "screenContains": [
+          "/clear",
+          "/config",
+          "/eval",
+          "/help",
+          "/keys",
+          "/model",
+          "/resume",
+          "/sources",
+          "/test"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "tty-help-output",
+  "description": "Submitting /help renders the command list in the scroll region while the input prompt remains pinned at the bottom",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /help",
+        "send": "/help",
+        "screenContains": [
+          "> /help"
+        ]
+      },
+      {
+        "name": "submit — help text scrolls in, prompt stays at bottom",
+        "send": "\r",
+        "waitFor": "Available commands",
+        "screenContains": [
+          "Available commands",
+          "/clear",
+          "/keys",
+          "/model",
+          "/test",
+          "> / for commands"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

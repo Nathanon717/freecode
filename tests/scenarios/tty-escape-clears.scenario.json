@@ -1,0 +1,33 @@
+{
+  "name": "tty-escape-clears",
+  "description": "Escape key clears the input buffer and hides the suggestion list, restoring the empty-prompt hint",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /he — suggestion list appears",
+        "send": "/he",
+        "screenContains": [
+          "> /he",
+          "/help"
+        ]
+      },
+      {
+        "name": "escape clears input and hides suggestions",
+        "send": "\u001b",
+        "screenContains": [
+          "> / for commands"
+        ],
+        "screenAbsent": [
+          "/help"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

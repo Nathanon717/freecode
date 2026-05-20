@@ -1,0 +1,31 @@
+{
+  "name": "tty-model-inline",
+  "description": "/model <arg> sets the model inline without opening the picker and prints the confirmation in the scroll region",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /model testmodel",
+        "send": "/model testmodel",
+        "screenContains": [
+          "> /model testmodel"
+        ]
+      },
+      {
+        "name": "submit — model-set confirmation in scroll region, prompt returns",
+        "send": "\r",
+        "waitFor": "Model set to",
+        "screenContains": [
+          "Model set to: testmodel",
+          "> / for commands"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

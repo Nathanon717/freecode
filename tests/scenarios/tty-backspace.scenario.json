@@ -1,0 +1,39 @@
+{
+  "name": "tty-backspace",
+  "description": "Backspace key removes the last character from the input buffer; repeated backspaces restore the empty-prompt hint",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type two chars",
+        "send": "ab",
+        "screenContains": [
+          "> ab"
+        ]
+      },
+      {
+        "name": "backspace removes last char",
+        "send": "",
+        "screenContains": [
+          "> a"
+        ],
+        "screenAbsent": [
+          "> ab"
+        ]
+      },
+      {
+        "name": "backspace to empty restores hint",
+        "send": "",
+        "screenContains": [
+          "> / for commands"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}
