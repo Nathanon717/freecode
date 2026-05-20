@@ -17,8 +17,8 @@ None. This is the `#!/usr/bin/env node` executable entry point.
 1. Creates a process-wide readline interface.
 2. Sets `projectRoot` to `process.cwd()`.
 3. Enables diagnostic logging when `-log` is present.
-4. Loads config, seeds the selected model from `config.preferredModel`, and probes Ollama when `config.useOllama` is true.
-5. Routes to a flag mode, script mode, or interactive mode.
+4. Loads config and seeds the selected model from `config.preferredModel`.
+5. Routes to a flag mode, script mode, or interactive mode. Ollama is probed lazily within each path (via `route()` / `testAllProviders()`) rather than unconditionally on startup — this avoids a network round-trip in scripted/scenario mode.
 
 ## Modes
 

@@ -21,8 +21,9 @@ This table is generated from `package.json`.
 | `npm run test-env` | `node test-env.js` |
 | `npm run unit` | `vitest run` |
 | `npm run unit:watch` | `vitest` |
-| `npm run verify` | `npm run build && npm run docs:check && tsx tests/harness/run-scenarios.ts --no-build --skip-llm` |
-| `npm run verify:fast` | `npm run docs:check && tsx tests/harness/run-scenarios.ts --no-build --skip-llm` |
+| `npm run verify` | `npm run build && npm run docs:check && npm run verify:scenarios` |
+| `npm run verify:fast` | `npm run docs:check && npm run verify:scenarios` |
+| `npm run verify:scenarios` | `tsx tests/harness/run-scenarios.ts --no-build --skip-llm` |
 <!-- END GENERATED NPM SCRIPTS -->
 
 ## Slash Commands
