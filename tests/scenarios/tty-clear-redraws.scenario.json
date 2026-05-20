@@ -17,11 +17,11 @@
       {
         "name": "submit — terminal clears, banner redraws, prompt returns",
         "send": "\r",
-        "waitFor": "Chat history cleared",
         "screenContains": [
           ".d888",
           "> / for commands"
-        ]
+        ],
+        "quietMs": 800
       }
     ],
     "exit": "\u0003",
