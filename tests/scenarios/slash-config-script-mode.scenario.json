@@ -1,0 +1,13 @@
+{
+  "name": "slash-config-script-mode",
+  "description": "/config in script mode (no TTY) prints a message that the editor is only available in interactive mode",
+  "requiresLlm": false,
+  "turns": [
+    { "input": "/config" }
+  ],
+  "expect": {
+    "stdoutContains": ["only available in interactive mode", "Goodbye"],
+    "stdoutAbsent": ["Error:", "freecode config", "Use Ollama"],
+    "exitCode": 0
+  }
+}

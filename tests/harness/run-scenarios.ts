@@ -102,6 +102,9 @@ for (const { file, scenario } of runnableScenarios) {
 
     const tmpHome = join(tmpdir(), `freecode-tty-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(tmpHome, { recursive: true });
+    if (scenario.config) {
+      writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(scenario.config, null, 2), 'utf-8');
+    }
 
     let ttyFailures: string[] = [];
     let ttyScreen = '';

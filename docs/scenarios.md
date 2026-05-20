@@ -11,11 +11,15 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `02-eval-medium-create-files.scenario.json` | `02-eval-medium-create-files` | LLM eval | temp | Medium: create a small nested project with exact code and JSON files |
 | `03-eval-hard-edit-and-summarize.scenario.json` | `03-eval-hard-edit-and-summarize` | LLM eval | temp | Hard: inspect seeded files, update code, create a derived summary, and preserve unrelated files |
 | `04-eval-shell-exec-write.scenario.json` | `04-eval-shell-exec-write` | LLM eval | temp | Easy: run a shell command, write its output to a file |
+| `05-eval-shell-destructive-guard.scenario.json` | `05-eval-shell-destructive-guard` | LLM eval | temp | Easy: shell_exec with a destructive command returns a blocking message instead of executing; agent reports BLOCKED=true |
+| `06-eval-read-file-truncation.scenario.json` | `06-eval-read-file-truncation` | LLM eval | temp | Easy: read_file on a file larger than 30 KB returns a truncated result with a [TRUNCATED] marker; agent reports TRUNCATED=true |
 | `slash-clear.scenario.json` | `slash-clear` | Non-LLM verification | repo | /clear resets history, clears the screen, and redraws the banner |
+| `slash-config-script-mode.scenario.json` | `slash-config-script-mode` | Non-LLM verification | repo | /config in script mode (no TTY) prints a message that the editor is only available in interactive mode |
 | `slash-eval-menu.scenario.json` | `slash-eval-menu` | Non-LLM verification | repo | /eval lists LLM eval scenarios with available checks in script mode |
 | `slash-keys.scenario.json` | `slash-keys` | Non-LLM verification | repo | /keys command lists providers without crashing |
 | `slash-model-list.scenario.json` | `slash-model-list` | Non-LLM verification | repo | /models aliases /model with no arg and prints current model without crashing |
 | `slash-sources.scenario.json` | `slash-sources` | Non-LLM verification | repo | /sources command lists model data sources without crashing |
+| `slash-stray-confirmation.scenario.json` | `slash-stray-confirmation` | Non-LLM verification | repo | Sending 'y' with no pending tool call is silently skipped rather than forwarded to the agent |
 | `slash-test-menu.scenario.json` | `slash-test-menu` | Non-LLM verification | repo | /test lists scenario tests without running one in script mode |
 | `startup-help-exit.scenario.json` | `startup-help-exit` | Non-LLM verification | repo | Boot the CLI, print help, exit cleanly |
 | `tty-all-commands-shown.scenario.json` | `tty-all-commands-shown` | Non-LLM verification | repo | Typing / shows all nine slash commands in the suggestion list |
@@ -23,11 +27,13 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-backspace.scenario.json` | `tty-backspace` | Non-LLM verification | repo | Backspace key removes the last character from the input buffer; repeated backspaces restore the empty-prompt hint |
 | `tty-clear-redraws.scenario.json` | `tty-clear-redraws` | Non-LLM verification | repo | Submitting /clear clears the whole terminal, redraws the banner, and the cleared message appears in the raw stream |
 | `tty-config-editor.scenario.json` | `tty-config-editor` | Non-LLM verification | repo | Submitting /config opens the interactive settings editor showing all settings; pressing q closes it and restores the input prompt |
+| `tty-config-toggle.scenario.json` | `tty-config-toggle` | Non-LLM verification | repo | Space key toggles a boolean setting in the config editor; the changed value appears in the deselected row and survives reopening the editor |
 | `tty-escape-clears.scenario.json` | `tty-escape-clears` | Non-LLM verification | repo | Escape key clears the input buffer and hides the suggestion list, restoring the empty-prompt hint |
 | `tty-fuzzy-completion.scenario.json` | `tty-fuzzy-completion` | Non-LLM verification | repo | Fuzzy query /ks matches /keys; Tab expands the buffer to /keys, Enter submits and shows the key status |
 | `tty-help-output.scenario.json` | `tty-help-output` | Non-LLM verification | repo | Submitting /help renders the command list in the scroll region while the input prompt remains pinned at the bottom |
 | `tty-inline-completion.scenario.json` | `tty-inline-completion` | Non-LLM verification | repo | A partial prefix renders the full command inline before Tab is pressed; inline completion updates as the buffer changes |
 | `tty-model-inline.scenario.json` | `tty-model-inline` | Non-LLM verification | repo | /model <arg> sets the model inline without opening the picker and prints the confirmation in the scroll region |
+| `tty-model-picker-no-arg.scenario.json` | `tty-model-picker-no-arg` | Non-LLM verification | repo | /model with no argument invokes the interactive picker flow; loading message appears and ESC or the no-providers fallback returns the prompt |
 | `tty-prefix-multi-match.scenario.json` | `tty-prefix-multi-match` | Non-LLM verification | repo | Typing /c shows /clear as the inline completion and /config + /sources as suggestions (sources contains letter c); unrelated commands are absent |
 | `tty-resume-command.scenario.json` | `tty-resume-command` | Non-LLM verification | repo | /resume finds the session created at startup and reports messages loaded, then restores the prompt |
 | `tty-status-line.scenario.json` | `tty-status-line` | Non-LLM verification | repo | Status line shows context token count at the bottom of the terminal at idle |
