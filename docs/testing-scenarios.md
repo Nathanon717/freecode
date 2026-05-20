@@ -122,7 +122,7 @@ Set `requiresLlm: false` and omit `turns`/`expect`; the `tty` block fully descri
 - `readyText`: Substring awaited in the raw stream before the first step, signaling the prompt is live. Default `"for commands"`.
 - `steps[]`: Ordered interactions, each evaluated after the screen settles.
   - `name`: Label used in failure messages.
-  - `send`: Keystrokes to send. Control chars use JSON escapes: `"\t"` (Tab), `"\r"` (Enter), `"\u0003"` (Ctrl-C). The interactive input handler only treats Tab as completion when the chunk is exactly `"\t"`, so send typed text and a Tab as separate steps.
+  - `send`: Keystrokes to send. Control chars use JSON escapes: `"\t"` (Tab), `"\r"` (Enter), `"\u0003"` (Ctrl-C). The interactive input handler only acts on control keys when they arrive as a standalone chunk — always send typed text and a control key as **separate steps** (e.g. `{"send": "/model"}` then `{"send": "\r"}`). Bundling them (e.g. `"/model\r"`) silently drops the control character.
   - `waitFor`: Optional substring to await in the raw stream before asserting.
   - `screenContains` / `screenAbsent`: Substrings that must / must not appear on the rendered viewport.
   - `quietMs`: Override the per-step settle window (default `350`).
@@ -131,7 +131,15 @@ Set `requiresLlm: false` and omit `turns`/`expect`; the `tty` block fully descri
 - `exitCode`: Expected exit code when it exits.
 - `mask`: Optional regex strings stripped from the screen before substring checks, for volatile content (e.g. token counts).
 
-Run `npx tsx tests/harness/pty/demo.ts` to drive the live CLI and print the rendered screen after each keystroke — handy for designing `screenContains` assertions. The harness driver lives in `tests/harness/pty/driver.ts` and the scenario runner in `tests/harness/pty/run-tty-scenario.ts`.
+Run `npm run inspect:tty -- '<json>'` to drive the live CLI with a one-off interaction sequence and print the rendered screen after each step — the fastest way to visually verify a UI change without writing a full scenario file. Pass inline JSON matching the `tty` block shape, or a path to a JSON file:
+
+```bash
+npm run inspect:tty -- '{"steps":[{"name":"open model picker","send":"/model"},{"name":"press enter","send":"\r","quietMs":1000}]}'
+```
+
+`screenContains` and `screenAbsent` in each step are optional: if present, the tool prints `✓`/`✗` inline alongside the screen snapshot so the same invocation doubles as a quick assertion check.
+
+Run `npx tsx tests/harness/pty/demo.ts` for a fixed startup-through-`/clear` walkthrough. The harness driver lives in `tests/harness/pty/driver.ts` and the scenario runner in `tests/harness/pty/run-tty-scenario.ts`.
 
 ## Guidelines
 
