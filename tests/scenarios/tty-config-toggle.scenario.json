@@ -1,0 +1,87 @@
+{
+  "name": "tty-config-toggle",
+  "description": "Space key toggles a boolean setting in the config editor; the changed value appears in the deselected row and survives reopening the editor",
+  "requiresLlm": false,
+  "config": {
+    "useOllama": false
+  },
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /config",
+        "send": "/config",
+        "screenContains": [
+          "> /config"
+        ]
+      },
+      {
+        "name": "submit — editor opens with Use Ollama selected",
+        "send": "\r",
+        "waitFor": "freecode config",
+        "screenContains": [
+          "freecode config",
+          "Use Ollama",
+          "Tool rationale"
+        ]
+      },
+      {
+        "name": "space — toggles Use Ollama from false to true",
+        "send": " ",
+        "screenContains": [
+          "Use Ollama",
+          "Tool rationale"
+        ]
+      },
+      {
+        "name": "down arrow — deselects Use Ollama; plain value now visible in its row",
+        "send": "\u001b[B",
+        "screenContains": [
+          "Use Ollama            true"
+        ]
+      },
+      {
+        "name": "q — close editor, prompt returns",
+        "send": "q",
+        "screenContains": [
+          "> / for commands"
+        ]
+      },
+      {
+        "name": "reopen /config to verify persistence",
+        "send": "/config",
+        "screenContains": [
+          "> /config"
+        ]
+      },
+      {
+        "name": "submit — editor reopens",
+        "send": "\r",
+        "waitFor": "freecode config",
+        "screenContains": [
+          "freecode config",
+          "Use Ollama"
+        ]
+      },
+      {
+        "name": "down arrow — Use Ollama shows persisted true value",
+        "send": "\u001b[B",
+        "screenContains": [
+          "Use Ollama            true"
+        ]
+      },
+      {
+        "name": "q — close editor",
+        "send": "q",
+        "screenContains": [
+          "> / for commands"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

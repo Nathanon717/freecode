@@ -1,0 +1,38 @@
+{
+  "name": "tty-model-picker-no-arg",
+  "description": "/model with no argument invokes the interactive picker flow; loading message appears and ESC or the no-providers fallback returns the prompt",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /model",
+        "send": "/model",
+        "screenContains": [
+          "> /model"
+        ]
+      },
+      {
+        "name": "submit — picker loading starts",
+        "send": "\r",
+        "waitFor": "Loading available models",
+        "screenContains": [
+          "Loading available models"
+        ]
+      },
+      {
+        "name": "ESC closes picker (or no-op if already returned); prompt comes back",
+        "send": "\u001b",
+        "waitFor": "for commands",
+        "screenContains": [
+          "> / for commands"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

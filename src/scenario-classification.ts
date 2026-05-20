@@ -18,6 +18,7 @@ const NON_LLM_SCRIPT_COMMANDS = new Set([
   '/keys',
   '/resume',
   '/clear',
+  '/config',
   '/sources',
   '/model-sources',
 ]);

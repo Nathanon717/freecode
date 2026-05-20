@@ -21,6 +21,7 @@ The classifier treats these as structural and safe for non-LLM verification:
 /keys
 /resume
 /clear
+/config
 /sources
 /model-sources
 /model
