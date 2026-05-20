@@ -22,8 +22,9 @@ This table is generated from `package.json`.
 | `npm run unit` | `vitest run` |
 | `npm run unit:watch` | `vitest` |
 | `npm run verify` | `npm run build && npm run docs:check && npm run verify:scenarios` |
+| `npm run verify:e2e` | `npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-tty` |
 | `npm run verify:fast` | `npm run docs:check && npm run verify:scenarios` |
-| `npm run verify:scenarios` | `tsx tests/harness/run-scenarios.ts --no-build --skip-llm` |
+| `npm run verify:scenarios` | `tsx tests/harness/run-scenarios.ts --no-build --skip-llm --skip-tty` |
 <!-- END GENERATED NPM SCRIPTS -->
 
 ## Slash Commands

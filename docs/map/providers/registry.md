@@ -1,6 +1,6 @@
 # src/providers/registry.ts - Provider Registry
 
-**Role:** Hardcoded catalog of known cloud providers and their models. It is the source of provider IDs, display names, base URLs, API key env vars, tool support flags, model IDs, and static model limits.
+**Role:** Catalog of known cloud providers and their models. Source of provider IDs, display names, base URLs, API key env vars, tool support flags, model IDs, static model limits, and live-fetch init logic.
 
 ## Exports
 
@@ -8,6 +8,7 @@
 PROVIDER_REGISTRY: ProviderConfig[]
 getProvider(id: string): ProviderConfig | undefined
 getAllProviders(): ProviderConfig[]
+initDynamicProviders(): Promise<void>   // fetches live model lists for all live-source providers
 ```
 
 ## Read When
@@ -25,6 +26,7 @@ For the generated provider table, see [providers.md](../../providers.md).
 - Anthropic has `type: "anthropic"` and `paid: true`; routing uses the native Anthropic adapter instead of the OpenAI-compatible adapter.
 - Cloudflare Workers AI uses a `baseUrl` templated from `process.env.CLOUDFLARE_ACCOUNT_ID` at module load time; requires both `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_KEY` env vars.
 - Ollama is not in `PROVIDER_REGISTRY`; it is detected dynamically in [ollama.md](ollama.md).
+- Providers with `modelsSource: 'live'` (openrouter, groq, siliconflow, cerebras, mistral) have their model list fetched from the provider's `/v1/models` API at runtime via `initDynamicProviders()`. Static entries serve as fallback when a key is absent or the request fails. OpenRouter uses a public endpoint; the others require their respective API keys.
 
 ## Key Neighbors
 

@@ -39,6 +39,8 @@ function printCapturedOutput(stdout: string, stderr: string): void {
 const args = process.argv.slice(2);
 const skipLlm = args.includes('--skip-llm');
 const onlyLlm = args.includes('--only-llm');
+const skipTty = args.includes('--skip-tty');
+const onlyTty = args.includes('--only-tty');
 const noBuild = args.includes('--no-build');
 const showDetails = args.includes('--details');
 const onlyArg = args.find(arg => arg.startsWith('--only='));
@@ -79,8 +81,10 @@ let passed = 0;
 let failed = 0;
 
 const runnableScenarios = scenarios.filter(({ scenario }) => {
-  if (skipLlm) return !scenario.requiresLlm;
-  if (onlyLlm) return scenario.requiresLlm;
+  if (skipLlm && scenario.requiresLlm) return false;
+  if (onlyLlm && !scenario.requiresLlm) return false;
+  if (skipTty && scenario.tty) return false;
+  if (onlyTty && !scenario.tty) return false;
   return true;
 });
 

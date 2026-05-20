@@ -19,9 +19,10 @@
     "test-env": "node test-env.js",
     "docs:generate": "tsx scripts/generate-docs.ts",
     "docs:check": "tsx scripts/generate-docs.ts && tsx scripts/check-map.ts",
-    "verify:scenarios": "tsx tests/harness/run-scenarios.ts --no-build --skip-llm",
+    "verify:scenarios": "tsx tests/harness/run-scenarios.ts --no-build --skip-llm --skip-tty",
     "verify": "npm run build && npm run docs:check && npm run verify:scenarios",
     "verify:fast": "npm run docs:check && npm run verify:scenarios",
+    "verify:e2e": "npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-tty",
     "eval": "npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-llm --details"
   },
   "keywords": [

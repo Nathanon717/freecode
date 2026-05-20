@@ -15,6 +15,7 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 ## Verification
 
 - For any change touching `src/`, run `npm.cmd run verify:fast` before reporting completion. Build, docs, and scenario failures are blockers.
+- `verify:fast` skips TTY screen scenarios (they are slow and require a PTY). Run `npm.cmd run verify:e2e` to run TTY scenarios only.
 - If a user-visible behavior changes, ensure it has scenario coverage in `tests/scenarios/` or docs coverage, as appropriate.
 - If generated reference sources change, update the source of truth first, then run `npm.cmd run docs:generate`. Do not hand-edit generated sections.
 - Run `npm.cmd run docs:check` before reporting docs-related or user-visible changes complete.

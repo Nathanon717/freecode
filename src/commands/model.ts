@@ -18,6 +18,7 @@ export interface ModelMenuItem {
   providerName: string;
   modelId: string;
   displayName: string;
+  modelsSource?: 'static' | 'live';
 }
 
 function modelPreference(item: ModelMenuItem): string {
@@ -41,6 +42,7 @@ function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, mod
       providerName: provider.name,
       modelId: model.id,
       displayName: model.displayName,
+      modelsSource: provider.modelsSource,
     });
   }
 }
@@ -84,7 +86,8 @@ function buildAllItemLines(items: ModelMenuItem[], selected: number, currentMode
 
     if (item.providerId !== lastProvider) {
       if (lastProvider) itemLines.push('');
-      itemLines.push(`  ${chalk.bold(item.providerName)}`);
+      const liveBadge = item.modelsSource === 'live' ? chalk.dim('  · live') : '';
+      itemLines.push(`  ${chalk.bold(item.providerName)}${liveBadge}`);
       lastProvider = item.providerId;
     }
 

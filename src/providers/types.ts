@@ -21,6 +21,7 @@ export interface ProviderConfig {
   models: ModelConfig[];
   supportsTools?: boolean;
   paid?: boolean;
+  modelsSource?: 'static' | 'live';
 }
 
 export interface Config {

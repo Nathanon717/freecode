@@ -6,11 +6,11 @@ const OPENROUTER_FREE_FALLBACK: ModelConfig[] = [
   { id: 'google/gemma-3-27b-it:free', displayName: 'Gemma 3 27B' },
 ];
 
-let openRouterInitDone = false;
+const initializedProviders = new Set<string>();
 
-export async function initOpenRouterModels(): Promise<void> {
-  if (openRouterInitDone) return;
-  openRouterInitDone = true;
+async function initOpenRouterModels(): Promise<void> {
+  if (initializedProviders.has('openrouter')) return;
+  initializedProviders.add('openrouter');
 
   const entry = PROVIDER_REGISTRY.find(p => p.id === 'openrouter');
   if (!entry) return;
@@ -36,6 +36,47 @@ export async function initOpenRouterModels(): Promise<void> {
   }
 }
 
+async function initProviderModels(providerId: string, apiKey: string | undefined): Promise<void> {
+  if (initializedProviders.has(providerId)) return;
+  initializedProviders.add(providerId);
+
+  const entry = PROVIDER_REGISTRY.find(p => p.id === providerId);
+  if (!entry?.baseUrl || !apiKey) return;
+
+  try {
+    const res = await fetch(`${entry.baseUrl}/models`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = (await res.json()) as { data?: Record<string, unknown>[] };
+    const all = json.data ?? [];
+    const chatModels = all.filter(
+      m => typeof m.id === 'string' && !String(m.id).includes('embed')
+    );
+    if (chatModels.length > 0) {
+      entry.models = chatModels.map(m => ({
+        id: m.id as string,
+        displayName: typeof m.name === 'string' ? m.name : m.id as string,
+        ...(typeof m.context_window === 'number' ? { contextWindow: m.context_window } : {}),
+      }));
+    }
+  } catch {
+    // keep static fallback
+  }
+}
+
+const LIVE_PROVIDER_IDS = ['groq', 'siliconflow', 'cerebras', 'mistral'] as const;
+
+export async function initDynamicProviders(): Promise<void> {
+  await Promise.all([
+    initOpenRouterModels(),
+    ...LIVE_PROVIDER_IDS.map(id => {
+      const entry = PROVIDER_REGISTRY.find(p => p.id === id);
+      return initProviderModels(id, entry ? process.env[entry.apiKeyEnvVar] : undefined);
+    }),
+  ]);
+}
+
 export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: 'groq',
@@ -43,6 +84,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     type: 'openai-compat',
     baseUrl: 'https://api.groq.com/openai/v1',
     apiKeyEnvVar: 'GROQ_API_KEY',
+    modelsSource: 'live',
     models: [
       { id: 'allam-2-7b', displayName: 'Allam 2 7B', limits: { rpm: 30, rpd: 7000, tpm: 6000, tpd: 500000 } },
       { id: 'groq/compound', displayName: 'Groq Compound', limits: { rpm: 30, rpd: 250, tpm: 70000, tpd: null } },
@@ -61,6 +103,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     type: 'openai-compat',
     baseUrl: 'https://openrouter.ai/api/v1',
     apiKeyEnvVar: 'OPENROUTER_API_KEY',
+    modelsSource: 'live',
     models: [],
   },
   {
@@ -69,6 +112,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     type: 'openai-compat',
     baseUrl: 'https://api.siliconflow.cn/v1',
     apiKeyEnvVar: 'SILICONFLOW_API_KEY',
+    modelsSource: 'live',
     models: [
       { id: 'Qwen/Qwen3-8B', displayName: 'Qwen3 8B' },
       { id: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B', displayName: 'DeepSeek R1 Distill 7B' },
@@ -133,6 +177,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     type: 'openai-compat',
     baseUrl: 'https://api.cerebras.ai/v1',
     apiKeyEnvVar: 'CEREBRAS_API_KEY',
+    modelsSource: 'live',
     models: [
       { id: 'llama3.1-8b', displayName: 'Llama 3.1 8B', contextWindow: 128000 },
       { id: 'qwen-3-235b-a22b-instruct-2507', displayName: 'Qwen3 235B', contextWindow: 32000 },
@@ -146,6 +191,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     type: 'openai-compat',
     baseUrl: 'https://api.mistral.ai/v1',
     apiKeyEnvVar: 'MISTRAL_API_KEY',
+    modelsSource: 'live',
     models: [
       { id: 'mistral-large-latest', displayName: 'Mistral Large', contextWindow: 128000 },
       { id: 'mistral-small-latest', displayName: 'Mistral Small', contextWindow: 128000 },

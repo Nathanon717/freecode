@@ -8,12 +8,13 @@ Scenario tests live in `tests/scenarios/*.scenario.json` and run through `tests/
 ## Commands
 
 ```powershell
-npm run verify        # build + non-LLM scenarios only
-npm run verify:fast   # non-LLM scenarios only, no rebuild
+npm run verify        # build + non-LLM, non-TTY scenarios only
+npm run verify:fast   # non-LLM, non-TTY scenarios only, no rebuild
+npm run verify:e2e    # build + TTY screen scenarios only (slow, require a PTY)
 npm run eval          # build + LLM eval scenarios with detailed breakdown
 ```
 
-`npm run verify` is the normal post-change safety check and never calls an LLM. Use evals only when you explicitly want provider-backed tests. LLM scenarios cost tokens/time and can vary by provider.
+`npm run verify` is the normal post-change safety check and never calls an LLM or spawns a PTY. `verify:e2e` runs the interactive TTY screen tests — keep them separate because they require `node-pty` and are significantly slower than script-mode scenarios. Use evals only when you explicitly want provider-backed tests.
 
 Inside the CLI, run `/test` to open the non-LLM verification menu. Run `/eval` to list provider-backed evals, see the checks each one performs, and select one or many evals to run sequentially. `/eval` accepts numbers, names, comma/space-separated selections, and numeric ranges such as `1-3`.
 
