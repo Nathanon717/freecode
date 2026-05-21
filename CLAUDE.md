@@ -6,7 +6,7 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 ## Required Rules
 
-- Windows only. Run commands in PowerShell or cmd, not WSL.
+- Windows only. Run commands in PowerShell or cmd, not WSL. **Exception:** when running in a Claude Code web container (Linux), use `npm run ...` instead of `npm.cmd run ...`. See `docs/claude_code_web.md`.
 - Run npm scripts as `npm.cmd run ...` or `cmd /c npm.cmd run ...`; do not rely on the PowerShell `npm` shim.
 - Run `npm.cmd run build` after every code change.
 - Before broad source reads, start with `docs/map/README.md` and the relevant map page.
