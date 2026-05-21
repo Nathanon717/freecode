@@ -24,7 +24,8 @@
     "verify:fast": "npm run docs:check && npm run verify:scenarios",
     "verify:e2e": "npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-tty",
     "eval": "npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-llm --details",
-    "inspect:tty": "tsx tests/harness/pty/inspect.ts"
+    "inspect:tty": "tsx tests/harness/pty/inspect.ts",
+    "pty:session": "tsx tests/harness/pty/session.ts"
   },
   "keywords": [
     "cli",
