@@ -28,7 +28,6 @@ Do not duplicate reference facts that belong in generated docs.
 src/
 |-- index.ts                      -> [CLI entry point](index.md)
 |-- logger.ts                     -> [Diagnostic logging](logger.md)
-|-- mcp-server.ts                 -> [Claude Code MCP bridge](mcp-server.md)
 |-- scenario-classification.ts    -> [Scenario LLM/non-LLM classifier](scenario-classification.md)
 |-- agent/
 |   |-- context.ts                -> [Mutable project root](agent/context.md)

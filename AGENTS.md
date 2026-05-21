@@ -68,9 +68,8 @@ Only create a log if the user confirms. Session log instructions and examples li
 
 ## Project Notes
 
-Freecode is a TypeScript CLI coding agent with provider routing, an interactive REPL, scenario verification, session persistence, and a Claude Code MCP bridge.
+Freecode is a TypeScript CLI coding agent with provider routing, an interactive REPL, scenario verification, and session persistence.
 
 - CLI and slash command behavior: `docs/commands.md`
 - Source layout and ownership: `docs/map/README.md`
-- MCP bridge entry point: `docs/map/mcp-server.md`
 - Provider routing: `docs/map/providers/router.md`
