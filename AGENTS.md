@@ -23,6 +23,31 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 Command details live in `docs/commands.md`. Scenario details live in `docs/scenarios.md` and `docs/testing-scenarios.md`.
 
+## Interactive Freecode Sessions
+
+To drive the live freecode TUI as an agent (open menus, send keystrokes, read the rendered screen), use `npm run pty:session`. A persistent PTY daemon holds a real terminal session open; you interact with it step by step.
+
+```bash
+# Start a session — prints SESSION_ID and the initial screen
+npm run pty:session -- start
+
+# Send keystrokes, get the resulting screen
+npm run pty:session -- send <SESSION_ID> <keys>
+
+# Wait for agent output to finish before snapshotting
+npm run pty:session -- send <SESSION_ID> $'some prompt\r' --wait-for "for commands"
+
+# Read the screen without sending input
+npm run pty:session -- screen <SESSION_ID>
+
+# Kill the session when done
+npm run pty:session -- stop <SESSION_ID>
+```
+
+Control chars: Enter `$'\r'`, Tab `$'\t'`, Escape `$'\x1b'`, Ctrl-C `$'\x03'`, arrows `$'\x1b[A'`/`$'\x1b[B'`. Multiple key args are concatenated.
+
+Full reference — patterns, flags, lifecycle: `docs/pty-session.md`
+
 ## Documentation
 
 - Use `docs/README.md` as the documentation index.
