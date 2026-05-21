@@ -10,6 +10,7 @@ export interface ModelConfig {
   displayName: string;
   contextWindow?: number;
   limits?: RateLimits;
+  isNew?: boolean;
 }
 
 export interface ProviderConfig {
@@ -22,6 +23,7 @@ export interface ProviderConfig {
   supportsTools?: boolean;
   paid?: boolean;
   modelsSource?: 'static' | 'live';
+  modelIdBlocklist?: string[];
 }
 
 export interface Config {

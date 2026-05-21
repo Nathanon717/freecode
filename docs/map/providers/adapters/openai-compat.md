@@ -11,6 +11,7 @@ endProviderUsageCapture(providerId: string): Promise<CapturedProviderUsage[]>
 formatCapturedProviderUsages(usages): string | null
 formatOpenAICompatHttpError(providerName, response): Promise<string | null>
 getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined
+openAIModelDisallowsTemperature(modelId: string): boolean
 createOpenAICompatProvider(providerConfig: ProviderConfig)
 createOllamaProvider()
 ```
@@ -23,6 +24,8 @@ Calls `createOpenAI()` with:
 - `apiKey` from `process.env[providerConfig.apiKeyEnvVar]`, then `loadConfig().providers[providerConfig.id]?.apiKey`, then `placeholder`
 - `headers` from `getOpenAICompatProviderHeaders()`, currently OpenRouter `HTTP-Referer` and `X-Title`
 - optional custom `fetch` for Groq quota capture, OpenAI temperature stripping, raw usage capture, or provider HTTP error formatting
+
+For direct OpenAI requests, the custom fetch removes `temperature` from models matched by `openAIModelDisallowsTemperature()` because those models only accept OpenAI's default temperature.
 
 Non-OK HTTP responses are parsed for OpenAI-compatible `{ error: { message, code } }` bodies before throwing so callers see provider-specific API key, credit, model, or rate-limit details instead of a generic SDK error.
 

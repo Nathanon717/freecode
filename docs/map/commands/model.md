@@ -10,6 +10,9 @@ interface ModelMenuItem {
   providerName: string;
   modelId: string;
   displayName: string;
+  modelsSource?: 'static' | 'live';
+  isNew?: boolean;
+  pricing?: { input: number; output: number; confidence: PricingConfidence };  // input/output per million tokens
 }
 
 getSelectableModels(): Promise<ModelMenuItem[]>
@@ -25,9 +28,10 @@ runModelCommand(
 
 `getSelectableModels()`:
 
-1. Calls `testAllProviders()` to filter providers to those with available keys/config.
+1. Calls `testAllProviders()` and `getOpenAIPricing()` in parallel.
 2. Adds every model from each healthy registry provider.
 3. Adds detected Ollama models when the Ollama status is healthy.
+4. Attaches `pricing` to Anthropic and OpenAI models via `getAnthropicVerifiedRates` / `getOpenAIVerifiedRates` (both fetched in parallel). Pricing is omitted when confidence is `'disagree'`.
 
 The selected model string is always `providerId:modelId`.
 

@@ -1,3 +1,6 @@
+import chalk from 'chalk';
+import type { PricingConfidence, VerifiedRates } from './pricing-verifier.js';
+
 export const ANTHROPIC_PRICING_URL = 'https://platform.claude.com/docs/en/about-claude/pricing';
 export const ANTHROPIC_USAGE_COST_URL = 'https://docs.anthropic.com/en/api/data-usage-cost-api';
 
@@ -60,6 +63,7 @@ export interface CostEstimate {
   updatedAt?: string;
   breakdown?: CostEstimateBreakdown;
   warnings: string[];
+  confidence?: PricingConfidence;
 }
 
 const FALLBACK_PRICING_FETCHED_AT = '2026-05-19T00:00:00.000Z';
@@ -114,8 +118,26 @@ export function formatUsdCeil(usd: number | null | undefined): string {
   return `$${(Math.ceil(usd * factor) / factor).toFixed(precision)} USD`;
 }
 
-export function describeCostEstimate(estimate: CostEstimate | null | undefined): string {
-  if (!estimate || estimate.usd === null) return 'cost unavailable';
+export function describeCostEstimate(estimate: CostEstimate | null | undefined, opts?: { colored?: boolean }): string {
+  const colored = opts?.colored ?? false;
+  if (!estimate) return 'cost unavailable';
+
+  if (estimate.confidence === 'disagree') {
+    return colored ? chalk.red('sources disagree') : 'sources disagree';
+  }
+  if (estimate.confidence === 'agreed') {
+    return colored ? chalk.green(estimate.formattedUsd) : estimate.formattedUsd;
+  }
+  if (estimate.confidence === 'litellm-only') {
+    const text = `${estimate.formattedUsd} (only LiteLLM)`;
+    return colored ? chalk.yellow(text) : text;
+  }
+  if (estimate.confidence === 'openrouter-only') {
+    const text = `${estimate.formattedUsd} (only OpenRouter)`;
+    return colored ? chalk.yellow(text) : text;
+  }
+
+  if (estimate.usd === null) return 'cost unavailable';
   const source = estimate.source === 'fallback' ? ' (fallback pricing)' : '';
   const warnings = estimate.warnings.length > 0 ? ` (${estimate.warnings.join('; ')})` : '';
   return `${estimate.formattedUsd}${source}${warnings}`;
@@ -138,10 +160,10 @@ export function describeCostEstimateBreakdown(estimate: CostEstimate | null | un
     costPart('cache read', breakdown.cacheReadTokens, breakdown.cacheReadPerMillion, breakdown.cacheReadUsd),
   ].filter((part): part is string => part !== null);
 
-  const source = estimate.source === 'fallback' ? 'fallback pricing' : 'live pricing';
+  const sourceLabel = pricingSourceLabel(estimate);
   const multiplier = breakdown.multiplier !== 1 ? `, ${breakdown.multiplier.toFixed(1)}x US inference multiplier` : '';
   const warnings = estimate.warnings.length > 0 ? `; ${estimate.warnings.join('; ')}` : '';
-  return `Cost breakdown: ${parts.join(' + ')} (${source}${multiplier}${warnings})`;
+  return `Cost breakdown: ${parts.join(' + ')} (${sourceLabel}${multiplier}${warnings})`;
 }
 
 function costPart(label: string, tokens: number, ratePerMillion: number, usd: number): string | null {
@@ -232,6 +254,51 @@ export async function getAnthropicPricing(): Promise<AnthropicPricingTable> {
     }
   })();
   return pricingPromise;
+}
+
+function pricingSourceLabel(estimate: CostEstimate): string {
+  if (estimate.confidence === 'agreed') return 'LiteLLM + OpenRouter';
+  if (estimate.confidence === 'litellm-only') return 'LiteLLM only';
+  if (estimate.confidence === 'openrouter-only') return 'OpenRouter only';
+  return estimate.source === 'fallback' ? 'fallback pricing' : 'live pricing';
+}
+
+export function estimateAnthropicCostVerified(
+  modelId: string,
+  usage: AnthropicTokenUsage | null | undefined,
+  rates: VerifiedRates
+): CostEstimate {
+  if (rates.confidence === 'disagree' || rates.inputPerMillion === null || rates.outputPerMillion === null) {
+    return {
+      usd: null,
+      formattedUsd: 'cost unavailable',
+      source: 'live',
+      sourceUrl: '',
+      fetchedAt: new Date().toISOString(),
+      confidence: 'disagree',
+      warnings: [],
+    };
+  }
+
+  const key = modelPricingKey(modelId);
+  const table: AnthropicPricingTable = {
+    source: 'live',
+    sourceUrl: '',
+    fetchedAt: new Date().toISOString(),
+    models: {
+      [key]: {
+        modelName: modelId,
+        inputPerMillion: rates.inputPerMillion,
+        outputPerMillion: rates.outputPerMillion,
+        cacheWrite5mPerMillion: rates.inputPerMillion * 1.25,
+        cacheWrite1hPerMillion: rates.inputPerMillion * 2,
+        cacheReadPerMillion: rates.inputPerMillion * 0.1,
+      },
+    },
+  };
+
+  const estimate = estimateAnthropicCost(modelId, usage, table);
+  return { ...estimate, confidence: rates.confidence };
 }
 
 export function estimateAnthropicCost(

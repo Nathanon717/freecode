@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatOpenAICompatHttpError,
   getOpenAICompatProviderHeaders,
+  openAIModelDisallowsTemperature,
 } from '../src/providers/adapters/openai-compat.js';
 
 describe('Router Logic', () => {
@@ -59,6 +60,21 @@ describe('Router Logic', () => {
         .resolves.toBe(
           'OpenRouter HTTP 429 Too Many Requests: Provider returned error (code: 429) Retry after 12 seconds. OpenRouter rate limits can come from OpenRouter or the upstream model provider; try again later or switch models/providers.',
         );
+    });
+  });
+
+  describe('OpenAI temperature handling', () => {
+    it('detects OpenAI models that only accept default temperature', () => {
+      expect(openAIModelDisallowsTemperature('gpt-5.5')).toBe(true);
+      expect(openAIModelDisallowsTemperature('gpt-5.5-2026-05-01')).toBe(true);
+      expect(openAIModelDisallowsTemperature('gpt-5')).toBe(true);
+      expect(openAIModelDisallowsTemperature('o3-mini')).toBe(true);
+    });
+
+    it('does not match unrelated OpenAI-compatible model IDs', () => {
+      expect(openAIModelDisallowsTemperature('gpt-4o')).toBe(false);
+      expect(openAIModelDisallowsTemperature('openai/gpt-5.5')).toBe(false);
+      expect(openAIModelDisallowsTemperature('llama-3.3-70b')).toBe(false);
     });
   });
 });

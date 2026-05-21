@@ -1,7 +1,13 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import type { ProviderConfig } from '../types.js';
 import { loadConfig } from '../../config/index.js';
-import { parseGroqRateLimitHeaders, type GroqRateLimitHeaders } from '../quota/headers.js';
+import {
+  parseGroqRateLimitHeaders,
+  groqHeadersToSnapshot,
+  parseMistralRateLimitSnapshot,
+  parseCerebrasRateLimitSnapshot,
+  type RateLimitSnapshot,
+} from '../quota/headers.js';
 
 export interface CapturedProviderUsage {
   providerId: string;
@@ -14,7 +20,7 @@ export interface CapturedProviderUsage {
 
 // Module-level store: most-recently captured rate-limit headers per provider ID.
 // Written by the custom fetch wrapper; read by the agent loop for logging.
-const lastCapturedHeaders = new Map<string, GroqRateLimitHeaders>();
+const lastCapturedHeaders = new Map<string, RateLimitSnapshot>();
 const usageCapturePromises = new Map<string, Promise<CapturedProviderUsage | null>[]>();
 
 export async function formatOpenAICompatHttpError(providerName: string, response: Response): Promise<string | null> {
@@ -58,7 +64,7 @@ export async function formatOpenAICompatHttpError(providerName: string, response
  * Return the headers captured from the most recent HTTP response for the given
  * provider, or null if none have been captured yet.
  */
-export function getLastCapturedHeaders(providerId: string): GroqRateLimitHeaders | null {
+export function getLastCapturedHeaders(providerId: string): RateLimitSnapshot | null {
   return lastCapturedHeaders.get(providerId) ?? null;
 }
 
@@ -179,6 +185,10 @@ export function getOpenAICompatProviderHeaders(providerId: string): Record<strin
   };
 }
 
+export function openAIModelDisallowsTemperature(modelId: string): boolean {
+  return /^(o1|o3|gpt-5)([-.]|$)/i.test(modelId);
+}
+
 export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
   const config = loadConfig();
   const apiKey =
@@ -189,11 +199,11 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
   // Capture Groq rate-limit headers unless explicitly disabled (DEBUG_QUOTA=0).
   // Defaults to ON so Phase-1 observation works out of the box.
   const debugQuota = process.env['DEBUG_QUOTA'] !== '0';
-  const shouldCapture = debugQuota && providerConfig.id === 'groq';
+  const shouldCapture = debugQuota && ['groq', 'mistral', 'cerebras'].includes(providerConfig.id);
   const shouldCaptureUsage = true;
 
-  // o1/o3 reasoning models reject the temperature parameter entirely.
-  const isReasoningModel = (modelId: string) => /^(o1|o3)(-|$)/i.test(modelId);
+  // Some OpenAI reasoning models only accept the default temperature. The AI SDK
+  // may send temperature: 0, so remove it and let OpenAI apply the default.
   const shouldStripTemperature = providerConfig.id === 'openai';
 
   const customFetch: typeof globalThis.fetch | undefined = (shouldCapture || shouldStripTemperature || shouldCaptureUsage)
@@ -209,7 +219,7 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         if (shouldStripTemperature && init?.body) {
           try {
             const body = JSON.parse(init.body as string);
-            if (isReasoningModel(body.model ?? '') && 'temperature' in body) {
+            if (openAIModelDisallowsTemperature(body.model ?? '') && 'temperature' in body) {
               const { temperature: _t, ...rest } = body;
               patchedInit = { ...init, body: JSON.stringify(rest) };
             }
@@ -225,10 +235,15 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
           captureProviderUsage(providerConfig.id, response);
         }
         if (shouldCapture) {
-          lastCapturedHeaders.set(
-            providerConfig.id,
-            parseGroqRateLimitHeaders(response.headers)
-          );
+          let snapshot: RateLimitSnapshot;
+          if (providerConfig.id === 'mistral') {
+            snapshot = parseMistralRateLimitSnapshot(response.headers);
+          } else if (providerConfig.id === 'cerebras') {
+            snapshot = parseCerebrasRateLimitSnapshot(response.headers);
+          } else {
+            snapshot = groqHeadersToSnapshot(parseGroqRateLimitHeaders(response.headers));
+          }
+          if (snapshot.length > 0) lastCapturedHeaders.set(providerConfig.id, snapshot);
         }
         return response;
       }

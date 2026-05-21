@@ -241,3 +241,71 @@ export function supplementWithModelLimits(
     modelTpd: modelLimits?.tpd ?? null,
   };
 }
+
+/**
+ * A single rate-limit bucket: remaining and limit counts, with an optional
+ * reset duration (ms) for time-based estimation.
+ */
+export interface RateLimitBucket {
+  label: string;
+  remaining: number | null;
+  limit: number | null;
+  /** ms until bucket refills — present when the provider returns a reset header. */
+  resetMs?: number | null;
+}
+
+/** Normalised rate-limit state for any provider, as an ordered list of buckets. */
+export type RateLimitSnapshot = RateLimitBucket[];
+
+/** Convert the Groq-specific header struct into the generic snapshot format. */
+export function groqHeadersToSnapshot(h: GroqRateLimitHeaders): RateLimitSnapshot {
+  return [
+    { label: 'R', remaining: h.remainingRequests, limit: h.limitRequests, resetMs: h.resetRequestsMs },
+    { label: 'T', remaining: h.remainingTokens, limit: h.limitTokens, resetMs: h.resetTokensMs },
+  ];
+}
+
+function headerNum(headers: Headers | Record<string, string>, key: string): number | null {
+  const v = headers instanceof Headers ? headers.get(key) : (headers[key] ?? null);
+  if (v === null) return null;
+  const n = parseInt(v, 10);
+  return isNaN(n) ? null : n;
+}
+
+/**
+ * Parse Mistral minute-level rate-limit headers into a snapshot.
+ * Headers: x-ratelimit-{limit,remaining}-{req,tokens}-minute
+ */
+export function parseMistralRateLimitSnapshot(
+  headers: Headers | Record<string, string>
+): RateLimitSnapshot {
+  const rr = headerNum(headers, 'x-ratelimit-remaining-req-minute');
+  const lr = headerNum(headers, 'x-ratelimit-limit-req-minute');
+  const rt = headerNum(headers, 'x-ratelimit-remaining-tokens-minute');
+  const lt = headerNum(headers, 'x-ratelimit-limit-tokens-minute');
+  const buckets: RateLimitSnapshot = [];
+  if (rr !== null || lr !== null) buckets.push({ label: 'R', remaining: rr, limit: lr });
+  if (rt !== null || lt !== null) buckets.push({ label: 'T', remaining: rt, limit: lt });
+  return buckets;
+}
+
+/**
+ * Parse Cerebras per-minute/hour/day rate-limit headers into a snapshot.
+ * Headers: x-ratelimit-{limit,remaining}-{requests,tokens}-{minute,hour,day}
+ */
+export function parseCerebrasRateLimitSnapshot(
+  headers: Headers | Record<string, string>
+): RateLimitSnapshot {
+  const granularities = ['minute', 'hour', 'day'] as const;
+  const suffix = { minute: 'm', hour: 'h', day: 'd' } as const;
+  const buckets: RateLimitSnapshot = [];
+  for (const gran of granularities) {
+    const rr = headerNum(headers, `x-ratelimit-remaining-requests-${gran}`);
+    const lr = headerNum(headers, `x-ratelimit-limit-requests-${gran}`);
+    const rt = headerNum(headers, `x-ratelimit-remaining-tokens-${gran}`);
+    const lt = headerNum(headers, `x-ratelimit-limit-tokens-${gran}`);
+    if (rr !== null || lr !== null) buckets.push({ label: `R${suffix[gran]}`, remaining: rr, limit: lr });
+    if (rt !== null || lt !== null) buckets.push({ label: `T${suffix[gran]}`, remaining: rt, limit: lt });
+  }
+  return buckets;
+}

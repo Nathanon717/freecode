@@ -1,12 +1,12 @@
 import type { ModelConfig, ProviderConfig } from './types.js';
-
-const OPENROUTER_FREE_FALLBACK: ModelConfig[] = [
-  { id: 'meta-llama/llama-3.3-70b-instruct:free', displayName: 'Llama 3.3 70B', contextWindow: 131072 },
-  { id: 'deepseek/deepseek-v4-flash:free', displayName: 'DeepSeek V4 Flash' },
-  { id: 'google/gemma-3-27b-it:free', displayName: 'Gemma 3 27B' },
-];
+import { getProviderCache, updateProviderCache } from './model-cache.js';
 
 const initializedProviders = new Set<string>();
+
+function applyBlocklist(models: ModelConfig[], blocklist: string[]): ModelConfig[] {
+  if (blocklist.length === 0) return models;
+  return models.filter(m => !blocklist.some(b => m.id.includes(b)));
+}
 
 async function initOpenRouterModels(): Promise<void> {
   if (initializedProviders.has('openrouter')) return;
@@ -19,21 +19,46 @@ async function initOpenRouterModels(): Promise<void> {
     const res = await fetch('https://openrouter.ai/api/v1/models');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = (await res.json()) as { data: Record<string, unknown>[] };
-    const free = json.data.filter(
-      m => typeof m.id === 'string' && m.id.endsWith(':free')
-    );
-    if (free.length > 0) {
-      entry.models = free.map(m => ({
+    const normalized = json.data
+      .filter(m => typeof m.id === 'string')
+      .map(m => ({
         id: m.id as string,
         displayName: typeof m.name === 'string' ? m.name : m.id as string,
         ...(typeof m.context_length === 'number' ? { contextWindow: m.context_length } : {}),
       }));
-    } else {
-      entry.models = [...OPENROUTER_FREE_FALLBACK];
-    }
+    const { newIds } = updateProviderCache('openrouter', normalized);
+    const newIdSet = new Set(newIds);
+    const free = normalized
+      .filter(m => m.id.endsWith(':free'))
+      .map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
+    entry.models = free;
   } catch {
-    entry.models = [...OPENROUTER_FREE_FALLBACK];
+    const cached = getProviderCache('openrouter');
+    if (cached) {
+      entry.models = cached.models.filter(m => m.id.endsWith(':free'));
+    }
   }
+}
+
+// Score an id for "versioned-ness": higher = more preferable as canonical.
+// Versioned IDs (date stamp, semver) beat aliases (latest, fast, turbo, etc.).
+function versionScore(id: string): number {
+  if (/\d{4}/.test(id)) return 2;   // date stamp like -2603 or -2025
+  if (/[-_]v?\d+\.\d/.test(id)) return 1; // semver-like
+  return 0;
+}
+
+function deduplicateByDisplayName(models: ModelConfig[]): ModelConfig[] {
+  const groups = new Map<string, ModelConfig[]>();
+  for (const m of models) {
+    const key = m.displayName;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(m);
+  }
+  return [...groups.values()].map(group => {
+    if (group.length === 1) return group[0];
+    return group.reduce((best, m) => versionScore(m.id) >= versionScore(best.id) ? m : best);
+  });
 }
 
 async function initProviderModels(providerId: string, apiKey: string | undefined): Promise<void> {
@@ -43,33 +68,75 @@ async function initProviderModels(providerId: string, apiKey: string | undefined
   const entry = PROVIDER_REGISTRY.find(p => p.id === providerId);
   if (!entry?.baseUrl || !apiKey) return;
 
+  const blocklist = entry.modelIdBlocklist ?? [];
+
   try {
     const res = await fetch(`${entry.baseUrl}/models`, {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = (await res.json()) as { data?: Record<string, unknown>[] };
-    const all = json.data ?? [];
-    const chatModels = all.filter(
-      m => typeof m.id === 'string' && !String(m.id).includes('embed')
-    );
-    if (chatModels.length > 0) {
-      entry.models = chatModels.map(m => ({
+    const normalized = (json.data ?? [])
+      .filter(m => typeof m.id === 'string')
+      .map(m => ({
         id: m.id as string,
         displayName: typeof m.name === 'string' ? m.name : m.id as string,
         ...(typeof m.context_window === 'number' ? { contextWindow: m.context_window } : {}),
       }));
-    }
+    const { newIds } = updateProviderCache(providerId, normalized);
+    const newIdSet = new Set(newIds);
+    const filtered = deduplicateByDisplayName(applyBlocklist(normalized, blocklist));
+    entry.models = filtered.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
   } catch {
-    // keep static fallback
+    const cached = getProviderCache(providerId);
+    if (cached) {
+      entry.models = deduplicateByDisplayName(applyBlocklist(cached.models, blocklist));
+      const newIdSet = new Set(cached.newIds);
+      entry.models = entry.models.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
+    }
   }
 }
 
-const LIVE_PROVIDER_IDS = ['groq', 'siliconflow', 'cerebras', 'mistral'] as const;
+const LIVE_PROVIDER_IDS = ['groq', 'siliconflow', 'cerebras', 'mistral', 'openai'] as const;
+
+async function initAnthropicModels(): Promise<void> {
+  if (initializedProviders.has('anthropic')) return;
+  initializedProviders.add('anthropic');
+
+  const entry = PROVIDER_REGISTRY.find(p => p.id === 'anthropic');
+  if (!entry) return;
+
+  const apiKey = process.env[entry.apiKeyEnvVar];
+  if (!apiKey) return;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/models', {
+      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = (await res.json()) as { data: Record<string, unknown>[] };
+    const normalized = json.data
+      .filter(m => typeof m.id === 'string')
+      .map(m => ({
+        id: m.id as string,
+        displayName: typeof m.display_name === 'string' ? m.display_name : m.id as string,
+      }));
+    const { newIds } = updateProviderCache('anthropic', normalized);
+    const newIdSet = new Set(newIds);
+    entry.models = normalized.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
+  } catch {
+    const cached = getProviderCache('anthropic');
+    if (cached) {
+      const newIdSet = new Set(cached.newIds);
+      entry.models = cached.models.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
+    }
+  }
+}
 
 export async function initDynamicProviders(): Promise<void> {
   await Promise.all([
     initOpenRouterModels(),
+    initAnthropicModels(),
     ...LIVE_PROVIDER_IDS.map(id => {
       const entry = PROVIDER_REGISTRY.find(p => p.id === id);
       return initProviderModels(id, entry ? process.env[entry.apiKeyEnvVar] : undefined);
@@ -85,17 +152,8 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     baseUrl: 'https://api.groq.com/openai/v1',
     apiKeyEnvVar: 'GROQ_API_KEY',
     modelsSource: 'live',
-    models: [
-      { id: 'allam-2-7b', displayName: 'Allam 2 7B', limits: { rpm: 30, rpd: 7000, tpm: 6000, tpd: 500000 } },
-      { id: 'groq/compound', displayName: 'Groq Compound', limits: { rpm: 30, rpd: 250, tpm: 70000, tpd: null } },
-      { id: 'groq/compound-mini', displayName: 'Groq Compound Mini', limits: { rpm: 30, rpd: 250, tpm: 70000, tpd: null } },
-      { id: 'llama-3.1-8b-instant', displayName: 'Llama 3.1 8B Instant', limits: { rpm: 30, rpd: 14400, tpm: 6000, tpd: 500000 } },
-      { id: 'llama-3.3-70b-versatile', displayName: 'Llama 3.3 70B', limits: { rpm: 30, rpd: 1000, tpm: 12000, tpd: 100000 } },
-      { id: 'meta-llama/llama-4-scout-17b-16e-instruct', displayName: 'Llama 4 Scout', limits: { rpm: 30, rpd: 1000, tpm: 30000, tpd: 500000 } },
-      { id: 'openai/gpt-oss-120b', displayName: 'GPT-OSS 120B', limits: { rpm: 30, rpd: 1000, tpm: 8000, tpd: 200000 } },
-      { id: 'openai/gpt-oss-20b', displayName: 'GPT-OSS 20B', limits: { rpm: 30, rpd: 1000, tpm: 8000, tpd: 200000 } },
-      { id: 'qwen/qwen3-32b', displayName: 'Qwen3 32B', limits: { rpm: 60, rpd: 1000, tpm: 6000, tpd: 500000 } },
-    ],
+    modelIdBlocklist: [],
+    models: [],
   },
   {
     id: 'openrouter',
@@ -104,6 +162,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     baseUrl: 'https://openrouter.ai/api/v1',
     apiKeyEnvVar: 'OPENROUTER_API_KEY',
     modelsSource: 'live',
+    modelIdBlocklist: [],
     models: [],
   },
   {
@@ -113,10 +172,8 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     baseUrl: 'https://api.siliconflow.cn/v1',
     apiKeyEnvVar: 'SILICONFLOW_API_KEY',
     modelsSource: 'live',
-    models: [
-      { id: 'Qwen/Qwen3-8B', displayName: 'Qwen3 8B' },
-      { id: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B', displayName: 'DeepSeek R1 Distill 7B' },
-    ],
+    modelIdBlocklist: [],
+    models: [],
   },
   {
     id: 'nvidia',
@@ -178,12 +235,8 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     baseUrl: 'https://api.cerebras.ai/v1',
     apiKeyEnvVar: 'CEREBRAS_API_KEY',
     modelsSource: 'live',
-    models: [
-      { id: 'llama3.1-8b', displayName: 'Llama 3.1 8B', contextWindow: 128000 },
-      { id: 'qwen-3-235b-a22b-instruct-2507', displayName: 'Qwen3 235B', contextWindow: 32000 },
-      { id: 'zai-glm-4.7', displayName: 'Z.ai GLM 4.7', contextWindow: 128000 },
-      { id: 'gpt-oss-120b', displayName: 'GPT OSS 120B', contextWindow: 128000 },
-    ],
+    modelIdBlocklist: [],
+    models: [],
   },
   {
     id: 'mistral',
@@ -192,13 +245,8 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     baseUrl: 'https://api.mistral.ai/v1',
     apiKeyEnvVar: 'MISTRAL_API_KEY',
     modelsSource: 'live',
-    models: [
-      { id: 'mistral-large-latest', displayName: 'Mistral Large', contextWindow: 128000 },
-      { id: 'mistral-small-latest', displayName: 'Mistral Small', contextWindow: 128000 },
-      { id: 'open-mistral-nemo', displayName: 'Mistral Nemo', contextWindow: 128000 },
-      { id: 'ministral-3b-latest', displayName: 'Ministral 3B', contextWindow: 128000 },
-      { id: 'ministral-8b-latest', displayName: 'Ministral 8B', contextWindow: 128000 },
-    ],
+    modelIdBlocklist: ['voxtral', 'embed', 'ocr', 'moderation', 'pixtral', 'labs'],
+    models: [],
   },
   {
     id: 'cloudflare',
@@ -238,15 +286,9 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     baseUrl: 'https://api.openai.com/v1',
     apiKeyEnvVar: 'OPENAI_API_KEY',
     paid: true,
-    models: [
-      { id: 'gpt-4.1', displayName: 'GPT-4.1', contextWindow: 1047576 },
-      { id: 'gpt-4.1-mini', displayName: 'GPT-4.1 Mini', contextWindow: 1047576 },
-      { id: 'gpt-4.1-nano', displayName: 'GPT-4.1 Nano', contextWindow: 1047576 },
-      { id: 'gpt-4o', displayName: 'GPT-4o', contextWindow: 128000 },
-      { id: 'gpt-4o-mini', displayName: 'GPT-4o Mini', contextWindow: 128000 },
-      { id: 'o3', displayName: 'o3', contextWindow: 200000 },
-      { id: 'o4-mini', displayName: 'o4-mini', contextWindow: 200000 },
-    ],
+    modelsSource: 'live',
+    modelIdBlocklist: ['embed', 'tts', 'audio', 'realtime', 'image', 'sora', 'whisper', 'gpt-3', 'moderation', 'transcribe', 'search', 'davinci', 'babbage', 'computer-use'],
+    models: [],
   },
   {
     id: 'anthropic',
@@ -254,11 +296,8 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     type: 'anthropic',
     apiKeyEnvVar: 'ANTHROPIC_API_KEY',
     paid: true,
-    models: [
-      { id: 'claude-haiku-4-5-20251001', displayName: 'Claude Haiku 4.5', contextWindow: 200000 },
-      { id: 'claude-sonnet-4-6', displayName: 'Claude Sonnet 4.6', contextWindow: 200000 },
-      { id: 'claude-opus-4-7', displayName: 'Claude Opus 4.7', contextWindow: 200000 },
-    ],
+    modelsSource: 'live',
+    models: [],
   },
 ];
 

@@ -5,6 +5,9 @@ import { PROVIDER_REGISTRY } from '../providers/registry.js';
 import { getOllamaModels } from '../providers/ollama.js';
 import { testAllProviders } from '../providers/router.js';
 import type { Config, ModelConfig, ProviderConfig } from '../providers/types.js';
+import { getProviderCache, markModelSelected } from '../providers/model-cache.js';
+import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
+import type { PricingConfidence } from '../providers/pricing-verifier.js';
 
 interface ProviderStatus {
   providerId: string;
@@ -19,10 +22,17 @@ export interface ModelMenuItem {
   modelId: string;
   displayName: string;
   modelsSource?: 'static' | 'live';
+  isNew?: boolean;
+  pricing?: { input: number; output: number; confidence: PricingConfidence };
 }
 
 function modelPreference(item: ModelMenuItem): string {
   return `${item.providerId}:${item.modelId}`;
+}
+
+function formatPricingLabel(input: number, output: number): string {
+  const fmt = (n: number): string => `$${parseFloat(n.toFixed(2))}`;
+  return `${fmt(input)}/${fmt(output)}/MTok`;
 }
 
 function savePreferredModel(model: string): void {
@@ -43,6 +53,7 @@ function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, mod
       modelId: model.id,
       displayName: model.displayName,
       modelsSource: provider.modelsSource,
+      isNew: model.isNew,
     });
   }
 }
@@ -70,10 +81,29 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
     }
   }
 
+  const pricedItems = items.filter(i => i.providerId === 'anthropic' || i.providerId === 'openai');
+  const pricingResults = await Promise.all(pricedItems.map(item =>
+    item.providerId === 'anthropic'
+      ? getAnthropicVerifiedRates(item.modelId)
+      : getOpenAIVerifiedRates(item.modelId)
+  ));
+
+  for (let i = 0; i < pricedItems.length; i++) {
+    const rates = pricingResults[i];
+    if (rates.inputPerMillion !== null && rates.outputPerMillion !== null && rates.confidence !== 'disagree') {
+      pricedItems[i].pricing = { input: rates.inputPerMillion, output: rates.outputPerMillion, confidence: rates.confidence };
+    }
+  }
+
   return items;
 }
 
-function buildAllItemLines(items: ModelMenuItem[], selected: number, currentModel: string): { itemLines: string[]; selectedLineIdx: number } {
+function buildAllItemLines(
+  items: ModelMenuItem[],
+  selected: number,
+  currentModel: string,
+  removedByProvider: Map<string, string[]>,
+): { itemLines: string[]; selectedLineIdx: number } {
   const itemLines: string[] = [];
   let lastProvider = '';
   let selectedLineIdx = 0;
@@ -85,7 +115,13 @@ function buildAllItemLines(items: ModelMenuItem[], selected: number, currentMode
     const current = preference === currentModel;
 
     if (item.providerId !== lastProvider) {
-      if (lastProvider) itemLines.push('');
+      if (lastProvider) {
+        const removed = removedByProvider.get(lastProvider) ?? [];
+        for (const id of removed) {
+          itemLines.push(`    ${chalk.dim.strikethrough(id)} ${chalk.dim('(removed)')}`);
+        }
+        itemLines.push('');
+      }
       const liveBadge = item.modelsSource === 'live' ? chalk.dim('  · live') : '';
       itemLines.push(`  ${chalk.bold(item.providerName)}${liveBadge}`);
       lastProvider = item.providerId;
@@ -97,7 +133,21 @@ function buildAllItemLines(items: ModelMenuItem[], selected: number, currentMode
     const id = `${item.providerId}:${item.modelId}`;
     const renderedName = active ? chalk.inverse(item.displayName) : chalk.cyan(item.displayName);
     const marker = current ? chalk.green(' current') : '';
-    itemLines.push(`  ${cursor} ${renderedName} ${chalk.dim(id)}${marker}`);
+    const newBadge = item.isNew ? chalk.yellow(' new') : '';
+    const pricingBadge = item.pricing
+      ? (item.pricing.confidence === 'agreed'
+          ? chalk.green(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`)
+          : chalk.yellow(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`))
+      : '';
+    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${pricingBadge} ${chalk.dim(id)}${marker}`);
+  }
+
+  // trailing removed models for the last provider group
+  if (lastProvider) {
+    const removed = removedByProvider.get(lastProvider) ?? [];
+    for (const id of removed) {
+      itemLines.push(`    ${chalk.dim.strikethrough(id)} ${chalk.dim('(removed)')}`);
+    }
   }
 
   return { itemLines, selectedLineIdx };
@@ -110,13 +160,14 @@ function buildScreen(
   selected: number,
   currentModel: string,
   viewStart: number,
+  removedByProvider: Map<string, string[]>,
 ): { lines: string[]; newViewStart: number } {
   const HEADER = 4;   // blank + title + hint + blank
   const CHROME = 3;   // top indicator + bottom indicator + trailing blank
   const termHeight = process.stdout.rows ?? 24;
   const maxItemLines = Math.max(4, termHeight - HEADER - CHROME);
 
-  const { itemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel);
+  const { itemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, removedByProvider);
 
   // Scroll viewStart to keep selectedLineIdx visible
   let newViewStart = viewStart;
@@ -161,13 +212,21 @@ export async function runModelCommand(
     return;
   }
 
+  const removedByProvider = new Map<string, string[]>();
+  for (const provider of PROVIDER_REGISTRY) {
+    if (provider.modelsSource === 'live') {
+      const cached = getProviderCache(provider.id);
+      if (cached?.removedIds.length) removedByProvider.set(provider.id, cached.removedIds);
+    }
+  }
+
   const currentIndex = items.findIndex(item => modelPreference(item) === currentModel);
   let selected = currentIndex >= 0 ? currentIndex : 0;
   let viewStart = 0;
   let lineCount = 1;
 
   function redraw(): void {
-    const { lines, newViewStart } = buildScreen(items, selected, currentModel, viewStart);
+    const { lines, newViewStart } = buildScreen(items, selected, currentModel, viewStart, removedByProvider);
     viewStart = newViewStart;
     if (lineCount > 0) {
       process.stdout.write(`\x1b[${lineCount}A\r\x1b[J`);
@@ -210,17 +269,21 @@ export async function runModelCommand(
       }
 
       if (data === '\r' || data === '\n') {
-        const choice = modelPreference(items[selected]);
+        const item = items[selected];
+        const choice = modelPreference(item);
         setSelectedModel(choice);
+        markModelSelected(item.providerId, item.modelId);
         cleanup();
         console.log(chalk.blue(`Model set to: ${choice}`));
         resolve();
       }
 
       if (data === ' ') {
-        const choice = modelPreference(items[selected]);
+        const item = items[selected];
+        const choice = modelPreference(item);
         setSelectedModel(choice);
         savePreferredModel(choice);
+        markModelSelected(item.providerId, item.modelId);
         cleanup();
         console.log(chalk.blue(`Model set to: ${choice}`));
         console.log(chalk.green(`Default model set to: ${choice}`));

@@ -15,12 +15,12 @@ import {
   getLastCapturedAnthropicHeaders,
 } from '../providers/adapters/anthropic.js';
 import {
-  estimateAnthropicCost,
-  getAnthropicPricing,
+  estimateAnthropicCostVerified,
   type CostEstimate,
 } from '../providers/anthropic-cost.js';
-import { estimateOpenAICost, getOpenAIPricing } from '../providers/openai-cost.js';
-import type { GroqRateLimitHeaders } from '../providers/quota/headers.js';
+import { estimateOpenAICostVerified } from '../providers/openai-cost.js';
+import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
+import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
 
@@ -35,7 +35,7 @@ export interface AgentLoopResult {
   usage: { totalTokens: number; promptTokens?: number; outputTokens?: number };
   providerId: string;
   modelId: string;
-  quota: GroqRateLimitHeaders | null;
+  quota: RateLimitSnapshot | null;
   providerUsage?: CapturedProviderUsage[];
   costEstimate?: CostEstimate;
 }
@@ -92,7 +92,7 @@ export async function agentLoop(
   let totalTokens = 0;
   let promptTokens: number | undefined;
   let outputTokens: number | undefined;
-  let quota: GroqRateLimitHeaders | null = null;
+  let quota: RateLimitSnapshot | null = null;
   let providerUsage: CapturedProviderUsage[] | undefined;
   let costEstimate: CostEstimate | undefined;
 
@@ -137,11 +137,11 @@ export async function agentLoop(
     log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
 
     if (providerId === 'anthropic') {
-      const [anthropicUsage, pricing] = await Promise.all([
+      const [anthropicUsage, rates] = await Promise.all([
         endAnthropicUsageCapture(providerId),
-        getAnthropicPricing(),
+        getAnthropicVerifiedRates(modelId),
       ]);
-      costEstimate = estimateAnthropicCost(modelId, anthropicUsage, pricing);
+      costEstimate = estimateAnthropicCostVerified(modelId, anthropicUsage, rates);
       promptTokens = anthropicUsage?.inputTokens ?? promptTokens;
       outputTokens = anthropicUsage?.outputTokens ?? outputTokens;
       if (anthropicUsage) {
@@ -159,8 +159,8 @@ export async function agentLoop(
       if (providerUsage.length > 0) {
         log('stream', 'Provider usage captured', providerUsage);
       }
-      const openaiPricing = await getOpenAIPricing();
-      costEstimate = estimateOpenAICost(modelId, promptTokens, outputTokens, openaiPricing);
+      const rates = await getOpenAIVerifiedRates(modelId);
+      costEstimate = estimateOpenAICostVerified(modelId, promptTokens, outputTokens, rates);
       log('stream', 'OpenAI cost estimate', costEstimate);
     } else {
       providerUsage = await endProviderUsageCapture(providerId);
@@ -189,14 +189,14 @@ export async function agentLoop(
           usage: anthropicUsage,
           capturedAt: Date.now(),
         }];
-        const pricing = await getAnthropicPricing();
-        costEstimate = estimateAnthropicCost(modelId, anthropicUsage, pricing);
+        const rates = await getAnthropicVerifiedRates(modelId);
+        costEstimate = estimateAnthropicCostVerified(modelId, anthropicUsage, rates);
       }
     } else if (providerId === 'openai') {
       providerUsage = await endProviderUsageCapture(providerId);
       if (promptTokens !== undefined || outputTokens !== undefined) {
-        const openaiPricing = await getOpenAIPricing();
-        costEstimate = estimateOpenAICost(modelId, promptTokens, outputTokens, openaiPricing);
+        const rates = await getOpenAIVerifiedRates(modelId);
+        costEstimate = estimateOpenAICostVerified(modelId, promptTokens, outputTokens, rates);
       }
     } else {
       providerUsage = await endProviderUsageCapture(providerId);

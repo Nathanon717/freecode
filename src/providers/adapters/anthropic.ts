@@ -4,15 +4,16 @@ import { loadConfig } from '../../config/index.js';
 import {
   parseAnthropicRateLimitHeaders,
   parseAnthropicExtendedHeaders,
-  type GroqRateLimitHeaders,
+  groqHeadersToSnapshot,
+  type RateLimitSnapshot,
 } from '../quota/headers.js';
 import { log } from '../../logger.js';
 import type { AnthropicTokenUsage } from '../anthropic-cost.js';
 
-const lastCapturedHeaders = new Map<string, GroqRateLimitHeaders>();
+const lastCapturedHeaders = new Map<string, RateLimitSnapshot>();
 const usageCapturePromises = new Map<string, Promise<AnthropicTokenUsage | null>[]>();
 
-export function getLastCapturedAnthropicHeaders(providerId: string): GroqRateLimitHeaders | null {
+export function getLastCapturedAnthropicHeaders(providerId: string): RateLimitSnapshot | null {
   return lastCapturedHeaders.get(providerId) ?? null;
 }
 
@@ -187,7 +188,7 @@ export function createAnthropicProvider(providerConfig: ProviderConfig) {
     captureAnthropicUsage(providerConfig.id, response, getInferenceGeo(fetchInit));
     if (debugQuota) {
       const base = parseAnthropicRateLimitHeaders(response.headers);
-      lastCapturedHeaders.set(providerConfig.id, base);
+      lastCapturedHeaders.set(providerConfig.id, groqHeadersToSnapshot(base));
       const extended = parseAnthropicExtendedHeaders(response.headers);
       log('quota', `Anthropic rate-limit headers`, { base, extended });
     }

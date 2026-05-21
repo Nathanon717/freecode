@@ -1,6 +1,6 @@
 # src/providers/anthropic-cost.ts - Anthropic Cost Estimates
 
-**Role:** Estimates Anthropic API cost from captured usage metadata and Anthropic model pricing.
+**Role:** Estimates Anthropic API cost from captured usage metadata and verified pricing rates. The primary production path uses `estimateAnthropicCostVerified` (fed by `pricing-verifier.ts`); `estimateAnthropicCost` with an `AnthropicPricingTable` is retained for tests and the legacy HTML-scraper path.
 
 ## Exports
 
@@ -12,34 +12,32 @@ resetAnthropicSessionCost(): void
 addAnthropicSessionCost(estimate): number
 getAnthropicSessionCost(): number
 formatUsdCeil(usd): string
-describeCostEstimate(estimate): string
+describeCostEstimate(estimate, opts?: { colored?: boolean }): string
 describeCostEstimateBreakdown(estimate): string | null
 modelPricingKey(modelId: string): string
 parseAnthropicPricingHtml(html, fetchedAt?): AnthropicPricingTable
 getAnthropicPricing(): Promise<AnthropicPricingTable>
 estimateAnthropicCost(modelId, usage, pricingTable): CostEstimate
+estimateAnthropicCostVerified(modelId, usage, rates: VerifiedRates): CostEstimate
 ```
 
 ## Pricing Source
 
-`getAnthropicPricing()` fetches the Anthropic pricing page once per process and parses model rows into a normalized pricing table. If the fetch or parse fails, it falls back to a bundled table dated `2026-05-19`.
+The production path calls `estimateAnthropicCostVerified` with a `VerifiedRates` object from `pricing-verifier.ts`. Cache tiers (5m write, 1h write, cache read) are derived from the verified input price using standard Anthropic multipliers (1.25×, 2×, 0.1×).
 
-`modelPricingKey()` normalizes versioned model IDs such as `claude-haiku-4-5-20251001` to pricing keys such as `claude-haiku-4-5`.
+`getAnthropicPricing()` (legacy) fetches the Anthropic pricing HTML page and falls back to a bundled table if parsing fails.
 
 ## Cost Calculation
 
-`estimateAnthropicCost()` requires raw Anthropic usage. When usage or model pricing is unavailable, it returns a `CostEstimate` with `usd: null` and warnings.
+`estimateAnthropicCostVerified()` short-circuits to `usd: null` with `confidence: 'disagree'` when sources disagree. Otherwise it delegates to `estimateAnthropicCost` and attaches the confidence level.
 
-When pricing is available, it estimates:
+`estimateAnthropicCost()` requires raw Anthropic usage and estimates input, output, 5m/1h cache writes, and cache reads. US inference (`inferenceGeo: 'us'`) applies a 1.1× multiplier.
 
-- input tokens
-- output tokens
-- 5-minute cache writes
-- 1-hour cache writes
-- cache reads
+## Formatting, Colors, And Session Totals
 
-If `inferenceGeo` is `us`, the estimate applies the 1.1x US inference multiplier.
+`describeCostEstimate(estimate, { colored: true })` returns chalk-colored text based on `confidence`:
+- `agreed` → green price
+- `litellm-only` / `openrouter-only` → yellow price + source label
+- `disagree` → red "sources disagree"
 
-## Formatting And Session Totals
-
-`formatUsdCeil()` rounds tiny values up to a visible precision. `addAnthropicSessionCost()` accumulates successful estimates in a process-local total, and `resetAnthropicSessionCost()` clears that total when a new session starts or `/clear` runs.
+`formatUsdCeil()` rounds tiny values up to a visible precision. `addAnthropicSessionCost()` accumulates estimates in a process-local total; `resetAnthropicSessionCost()` clears it on `/clear` or new session.

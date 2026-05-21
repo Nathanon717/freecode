@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import type { GroqRateLimitHeaders } from '../providers/quota/headers.js';
+import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 
 const ESC = '\x1b[';
 
@@ -9,7 +9,7 @@ let lastInputBuf = '';
 let lastTokenCount = 0;
 let lastSuggestions: string[] = [];
 let lastInlineCompletion: string | null = null;
-let lastQuota: { quota: GroqRateLimitHeaders; capturedAt: number } | null = null;
+let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
 let lastModelStatus = '';
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -64,7 +64,7 @@ export function setTokenCount(tokenCount: number): void {
   lastTokenCount = tokenCount;
 }
 
-export function setQuotaSnapshot(quota: GroqRateLimitHeaders | null): void {
+export function setQuotaSnapshot(quota: RateLimitSnapshot | null): void {
   lastQuota = quota ? { quota, capturedAt: Date.now() } : null;
 }
 
@@ -138,20 +138,20 @@ function formatQuotaStatus(now = Date.now()): string {
   if (!lastQuota) return '';
 
   const elapsedMs = now - lastQuota.capturedAt;
-  const requests = estimateBucket(
-    lastQuota.quota.remainingRequests,
-    lastQuota.quota.limitRequests,
-    lastQuota.quota.resetRequestsMs,
-    elapsedMs
-  );
-  const tokens = estimateBucket(
-    lastQuota.quota.remainingTokens,
-    lastQuota.quota.limitTokens,
-    lastQuota.quota.resetTokensMs,
-    elapsedMs
-  );
+  const parts: string[] = [];
 
-  return `${formatBucketStatus('R', requests)} | ${formatBucketStatus('T', tokens)}`;
+  for (const bucket of lastQuota.quota) {
+    if (bucket.resetMs !== undefined) {
+      const est = estimateBucket(bucket.remaining, bucket.limit, bucket.resetMs, elapsedMs);
+      parts.push(formatBucketStatus(bucket.label, est));
+    } else {
+      const remaining = bucket.remaining?.toString() ?? '?';
+      const limit = bucket.limit?.toString() ?? '?';
+      parts.push(`${bucket.label} ${remaining}/${limit}`);
+    }
+  }
+
+  return parts.join(' | ');
 }
 
 function fitStatusRightSide(width: number, parts: string[], now = Date.now()): string {

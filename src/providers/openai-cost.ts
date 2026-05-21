@@ -1,4 +1,5 @@
 import { formatUsdCeil, type CostEstimate, type CostEstimateBreakdown } from './anthropic-cost.js';
+import type { VerifiedRates } from './pricing-verifier.js';
 
 export const OPENAI_PRICING_URL = 'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json';
 
@@ -156,6 +157,7 @@ export function estimateOpenAICost(
   };
 }
 
+
 function unavailable(table: OpenAIPricingTable, warnings: string[]): CostEstimate {
   return {
     usd: null,
@@ -164,5 +166,70 @@ function unavailable(table: OpenAIPricingTable, warnings: string[]): CostEstimat
     sourceUrl: OPENAI_PRICING_URL,
     fetchedAt: table.fetchedAt,
     warnings,
+  };
+}
+
+export function estimateOpenAICostVerified(
+  modelId: string,
+  promptTokens: number | undefined,
+  completionTokens: number | undefined,
+  rates: VerifiedRates
+): CostEstimate {
+  if (rates.confidence === 'disagree' || rates.inputPerMillion === null || rates.outputPerMillion === null) {
+    return {
+      usd: null,
+      formattedUsd: 'cost unavailable',
+      source: 'live',
+      sourceUrl: '',
+      fetchedAt: new Date().toISOString(),
+      confidence: 'disagree',
+      warnings: [],
+    };
+  }
+
+  if (promptTokens === undefined || completionTokens === undefined) {
+    return {
+      usd: null,
+      formattedUsd: 'cost unavailable',
+      source: 'live',
+      sourceUrl: '',
+      fetchedAt: new Date().toISOString(),
+      confidence: rates.confidence,
+      warnings: ['token usage unavailable'],
+    };
+  }
+
+  const inputUsd = (promptTokens * rates.inputPerMillion) / 1_000_000;
+  const outputUsd = (completionTokens * rates.outputPerMillion) / 1_000_000;
+  const usd = inputUsd + outputUsd;
+
+  const breakdown: CostEstimateBreakdown = {
+    inputTokens: promptTokens,
+    outputTokens: completionTokens,
+    cacheWrite5mTokens: 0,
+    cacheWrite1hTokens: 0,
+    cacheReadTokens: 0,
+    inputPerMillion: rates.inputPerMillion,
+    outputPerMillion: rates.outputPerMillion,
+    cacheWrite5mPerMillion: 0,
+    cacheWrite1hPerMillion: 0,
+    cacheReadPerMillion: 0,
+    inputUsd,
+    outputUsd,
+    cacheWrite5mUsd: 0,
+    cacheWrite1hUsd: 0,
+    cacheReadUsd: 0,
+    multiplier: 1,
+  };
+
+  return {
+    usd,
+    formattedUsd: formatUsdCeil(usd),
+    source: 'live',
+    sourceUrl: '',
+    fetchedAt: new Date().toISOString(),
+    breakdown,
+    confidence: rates.confidence,
+    warnings: [],
   };
 }

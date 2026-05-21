@@ -14,6 +14,7 @@ import {
   formatUsdCeil,
   resetAnthropicSessionCost,
 } from '../providers/anthropic-cost.js';
+import { addOpenAISessionCost } from '../providers/openai-cost.js';
 import { formatCapturedProviderUsages } from '../providers/adapters/openai-compat.js';
 import { showBanner } from './banner.js';
 import { showHelp } from './slash-commands.js';
@@ -182,11 +183,12 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
     runtime.session.addAssistantMessage(result.text);
     runtime.session.saveExchange(input, result.text, result.usage.totalTokens);
 
-    if (result.providerId === 'anthropic') {
-      const sessionTotal = addAnthropicSessionCost(result.costEstimate);
-      console.log(chalk.gray(
-        `Estimated API cost: ${describeCostEstimate(result.costEstimate)} this turn | ${formatUsdCeil(sessionTotal)} session`
-      ));
+    if (result.providerId === 'anthropic' || result.providerId === 'openai') {
+      const sessionTotal = result.providerId === 'anthropic'
+        ? addAnthropicSessionCost(result.costEstimate)
+        : addOpenAISessionCost(result.costEstimate);
+      const costStr = describeCostEstimate(result.costEstimate, { colored: true });
+      console.log(chalk.gray('Estimated API cost: ') + costStr + chalk.gray(` this turn | ${formatUsdCeil(sessionTotal)} session`));
       const breakdown = describeCostEstimateBreakdown(result.costEstimate);
       if (breakdown) console.log(chalk.gray(breakdown));
     }

@@ -16,6 +16,7 @@ import {
   describeCostEstimateBreakdown,
   formatUsdCeil,
 } from './providers/anthropic-cost.js';
+import { addOpenAISessionCost } from './providers/openai-cost.js';
 import { formatCapturedProviderUsages } from './providers/adapters/openai-compat.js';
 import { getOllamaModels } from './providers/ollama.js';
 import { route, testAllProviders } from './providers/router.js';
@@ -126,9 +127,12 @@ async function testSingle() {
     console.log(result.text);
     console.log();
     console.log(chalk.gray(`Tokens used: ${result.usage.totalTokens} | using ${result.providerId}:${result.modelId}`));
-    if (result.providerId === 'anthropic') {
-      const sessionTotal = addAnthropicSessionCost(result.costEstimate);
-      console.log(chalk.gray(`Estimated API cost: ${describeCostEstimate(result.costEstimate)} this turn | ${formatUsdCeil(sessionTotal)} session`));
+    if (result.providerId === 'anthropic' || result.providerId === 'openai') {
+      const sessionTotal = result.providerId === 'anthropic'
+        ? addAnthropicSessionCost(result.costEstimate)
+        : addOpenAISessionCost(result.costEstimate);
+      const costStr = describeCostEstimate(result.costEstimate, { colored: true });
+      console.log(chalk.gray('Estimated API cost: ') + costStr + chalk.gray(` this turn | ${formatUsdCeil(sessionTotal)} session`));
       const breakdown = describeCostEstimateBreakdown(result.costEstimate);
       if (breakdown) console.log(chalk.gray(breakdown));
     }
