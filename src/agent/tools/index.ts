@@ -5,6 +5,7 @@ import { shellTool } from './shell.js';
 import { listDirTool } from './list-dir.js';
 import { logError } from '../../logger.js';
 import { loadConfig } from '../../config/index.js';
+import { toErrorMessage } from '../../util/errors.js';
 import chalk from 'chalk';
 import { z } from 'zod';
 import type { CoreTool } from 'ai';
@@ -33,7 +34,7 @@ interface ToolTraceEvent {
   error?: string;
 }
 
-function formatArgs(args: Record<string, unknown>): string {
+export function formatArgs(args: Record<string, unknown>): string {
   return Object.entries(args)
     .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
     .join(', ');
@@ -93,7 +94,7 @@ function withLogging(name: string, t: AnyCoreTool): AnyCoreTool {
         if (preview) process.stderr.write(preview + '\n');
         return result;
       } catch (err) {
-        appendToolTrace({ tool: name, args: displayArgs, error: err instanceof Error ? err.message : String(err) });
+        appendToolTrace({ tool: name, args: displayArgs, error: toErrorMessage(err) });
         toolError(name, err);
         logError('tool', `${name} threw`, err);
         throw err;

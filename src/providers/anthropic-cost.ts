@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import type { PricingConfidence, VerifiedRates } from './pricing-verifier.js';
+import { toErrorMessage } from '../util/errors.js';
 
 export const ANTHROPIC_PRICING_URL = 'https://platform.claude.com/docs/en/about-claude/pricing';
 export const ANTHROPIC_USAGE_COST_URL = 'https://docs.anthropic.com/en/api/data-usage-cost-api';
@@ -81,8 +82,20 @@ const FALLBACK_MODELS: Record<string, AnthropicModelPricing> = {
   'claude-haiku-3-5': pricing('Claude Haiku 3.5', 0.8, 4),
 };
 
+export function createSessionCostTracker() {
+  let total = 0;
+  return {
+    reset() { total = 0; },
+    add(estimate: CostEstimate | null | undefined): number {
+      if (estimate?.usd != null) total += estimate.usd;
+      return total;
+    },
+    get() { return total; },
+  };
+}
+
 let pricingPromise: Promise<AnthropicPricingTable> | null = null;
-let sessionTotalUsd = 0;
+const _anthropicTracker = createSessionCostTracker();
 
 function pricing(modelName: string, inputPerMillion: number, outputPerMillion: number): AnthropicModelPricing {
   return {
@@ -95,20 +108,9 @@ function pricing(modelName: string, inputPerMillion: number, outputPerMillion: n
   };
 }
 
-export function resetAnthropicSessionCost(): void {
-  sessionTotalUsd = 0;
-}
-
-export function addAnthropicSessionCost(estimate: CostEstimate | null | undefined): number {
-  if (estimate?.usd !== null && estimate?.usd !== undefined) {
-    sessionTotalUsd += estimate.usd;
-  }
-  return sessionTotalUsd;
-}
-
-export function getAnthropicSessionCost(): number {
-  return sessionTotalUsd;
-}
+export function resetAnthropicSessionCost(): void { _anthropicTracker.reset(); }
+export function addAnthropicSessionCost(estimate: CostEstimate | null | undefined): number { return _anthropicTracker.add(estimate); }
+export function getAnthropicSessionCost(): number { return _anthropicTracker.get(); }
 
 export function formatUsdCeil(usd: number | null | undefined): string {
   if (usd === null || usd === undefined || !Number.isFinite(usd)) return 'cost unavailable';
@@ -249,8 +251,7 @@ export async function getAnthropicPricing(): Promise<AnthropicPricingTable> {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return parseAnthropicPricingHtml(await response.text());
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return fallbackPricingTable(`live fetch failed: ${message}`);
+      return fallbackPricingTable(`live fetch failed: ${toErrorMessage(error)}`);
     }
   })();
   return pricingPromise;

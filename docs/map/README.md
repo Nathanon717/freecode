@@ -27,6 +27,9 @@ Do not duplicate reference facts that belong in generated docs.
 ```text
 src/
 |-- index.ts                      -> [CLI entry point](index.md)
+|-- util/
+|   |-- guards.ts                 -> [Shared type guards](util/guards.md)
+|   `-- errors.ts                 -> [Error message utilities](util/errors.md)
 |-- logger.ts                     -> [Diagnostic logging](logger.md)
 |-- scenario-classification.ts    -> [Scenario LLM/non-LLM classifier](scenario-classification.md)
 |-- agent/

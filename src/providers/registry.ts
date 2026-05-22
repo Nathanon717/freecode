@@ -3,7 +3,7 @@ import type { ModelConfig, ProviderConfig } from './types.js';
 import { getProviderCache, updateProviderCache } from './model-cache.js';
 import { createOpenAICompatProvider } from './adapters/openai-compat.js';
 import { createAnthropicProvider } from './adapters/anthropic.js';
-import { loadConfig } from '../config/index.js';
+import { resolveApiKey } from '../config/index.js';
 
 const initializedProviders = new Set<string>();
 
@@ -20,9 +20,7 @@ async function initOpenRouterModels(): Promise<void> {
   const entry = PROVIDER_REGISTRY.find(p => p.id === 'openrouter');
   if (!entry) return;
 
-  const config = loadConfig();
-  const apiKey = process.env[entry.apiKeyEnvVar] || config.providers[entry.id]?.apiKey;
-  if (!apiKey) return;
+  if (!resolveApiKey(entry)) return;
 
   try {
     const res = await fetch('https://openrouter.ai/api/v1/models');
@@ -351,8 +349,7 @@ export function resolveModel(modelPreference: string): ResolvedModel {
     throw new Error(`Unknown provider: "${providerId}"`);
   }
 
-  const config = loadConfig();
-  const apiKey = process.env[provider.apiKeyEnvVar] || config.providers[provider.id]?.apiKey;
+  const apiKey = resolveApiKey(provider);
   if (!apiKey) {
     throw new Error(`No API key configured for ${provider.name}. Use /keys to check.`);
   }

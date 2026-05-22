@@ -1,9 +1,11 @@
 import type { CoreMessage, CoreTool } from 'ai';
 import { createHash } from 'crypto';
-import { loadConfig } from '../../config/index.js';
+import { loadConfig, resolveApiKey } from '../../config/index.js';
 import { formatOpenAICompatHttpError, type CapturedProviderUsage } from './openai-compat.js';
 import type { ProviderConfig } from '../types.js';
 import type { ConfirmToolCall } from '../../agent/tools/index.js';
+import { isRecord } from '../../util/guards.js';
+import { toErrorMessage } from '../../util/errors.js';
 
 type JsonObject = Record<string, unknown>;
 
@@ -50,10 +52,6 @@ interface OpenAIResponseBody {
 
 const OPENAI_RESPONSES_URL = 'https://api.openai.com/v1/responses';
 const OPENAI_INPUT_TOKENS_URL = 'https://api.openai.com/v1/responses/input_tokens';
-
-function isRecord(value: unknown): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function stringifyContent(content: unknown): string {
   if (typeof content === 'string') return content;
@@ -201,8 +199,7 @@ function inputTokenPayload(payload: OpenAIResponsesRequestPayload): OpenAIRespon
 }
 
 export function getOpenAIApiKey(provider: ProviderConfig): string | null {
-  const config = loadConfig();
-  return process.env[provider.apiKeyEnvVar] || config.providers[provider.id]?.apiKey || null;
+  return resolveApiKey(provider) ?? null;
 }
 
 async function postOpenAIResponses(
@@ -297,8 +294,7 @@ async function executeFunctionCall(
     const result = await tool.execute(args, { abortSignal: signal });
     return { type: 'function_call_output', call_id: callId, output: stringifyContent(result) };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return { type: 'function_call_output', call_id: callId, output: `Tool call failed: ${message}` };
+    return { type: 'function_call_output', call_id: callId, output: `Tool call failed: ${toErrorMessage(error)}` };
   }
 }
 

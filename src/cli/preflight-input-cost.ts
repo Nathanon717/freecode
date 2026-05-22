@@ -11,6 +11,7 @@ import {
   hashOpenAIResponsesPayload,
 } from '../providers/adapters/openai-responses.js';
 import type { PreflightInputCost } from './terminal-ui.js';
+import { toErrorMessage } from '../util/errors.js';
 
 interface OpenAIPreflightControllerOptions {
   getMessages: () => CoreMessage[];
@@ -143,7 +144,7 @@ export function createOpenAIPreflightInputController(options: OpenAIPreflightCon
         } catch (error) {
           if (runSequence !== sequence) return;
           if (error instanceof Error && error.name === 'AbortError') return;
-          apply(unavailable(providerId, modelId, error instanceof Error ? error.message : String(error)));
+          apply(unavailable(providerId, modelId, toErrorMessage(error)));
         }
       })();
     }, debounceMs);

@@ -27,6 +27,7 @@ import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
+import { toErrorMessage } from '../util/errors.js';
 
 let systemPromptLogged = false;
 
@@ -81,7 +82,7 @@ export async function agentLoop(
     supportsTools = resolved.supportsTools;
   } catch (error) {
     logError('stream', 'resolveModel failed', error);
-    const errMsg = error instanceof Error ? error.message : 'Failed to resolve model';
+    const errMsg = toErrorMessage(error);
     process.stdout.write(`Error: ${errMsg}\n`);
     return {
       text: `Error: ${errMsg}`,

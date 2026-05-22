@@ -1,5 +1,6 @@
-import { formatUsdCeil, type CostEstimate, type CostEstimateBreakdown } from './anthropic-cost.js';
+import { createSessionCostTracker, formatUsdCeil, type CostEstimate, type CostEstimateBreakdown } from './anthropic-cost.js';
 import type { VerifiedRates } from './pricing-verifier.js';
+import { toErrorMessage } from '../util/errors.js';
 
 export const OPENAI_PRICING_URL = 'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json';
 
@@ -17,21 +18,38 @@ interface OpenAIPricingTable {
 }
 
 let pricingPromise: Promise<OpenAIPricingTable> | null = null;
-let sessionTotalUsd = 0;
+const _openaiTracker = createSessionCostTracker();
 
-export function resetOpenAISessionCost(): void {
-  sessionTotalUsd = 0;
-}
+export function resetOpenAISessionCost(): void { _openaiTracker.reset(); }
+export function addOpenAISessionCost(estimate: CostEstimate | null | undefined): number { return _openaiTracker.add(estimate); }
+export function getOpenAISessionCost(): number { return _openaiTracker.get(); }
 
-export function addOpenAISessionCost(estimate: CostEstimate | null | undefined): number {
-  if (estimate?.usd !== null && estimate?.usd !== undefined) {
-    sessionTotalUsd += estimate.usd;
-  }
-  return sessionTotalUsd;
-}
-
-export function getOpenAISessionCost(): number {
-  return sessionTotalUsd;
+function openAICostBreakdown(
+  promptTokens: number,
+  completionTokens: number,
+  inputPerMillion: number,
+  outputPerMillion: number,
+  inputUsd: number,
+  outputUsd: number,
+): CostEstimateBreakdown {
+  return {
+    inputTokens: promptTokens,
+    outputTokens: completionTokens,
+    cacheWrite5mTokens: 0,
+    cacheWrite1hTokens: 0,
+    cacheReadTokens: 0,
+    inputPerMillion,
+    outputPerMillion,
+    cacheWrite5mPerMillion: 0,
+    cacheWrite1hPerMillion: 0,
+    cacheReadPerMillion: 0,
+    inputUsd,
+    outputUsd,
+    cacheWrite5mUsd: 0,
+    cacheWrite1hUsd: 0,
+    cacheReadUsd: 0,
+    multiplier: 1,
+  };
 }
 
 type LiteLLMEntry = {
@@ -71,8 +89,7 @@ export async function getOpenAIPricing(): Promise<OpenAIPricingTable> {
       const json = await response.json() as Record<string, LiteLLMEntry>;
       return parseLiteLLMPricing(json);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return { source: 'unavailable', fetchedAt: new Date().toISOString(), models: {}, _fetchError: message } as OpenAIPricingTable & { _fetchError: string };
+      return { source: 'unavailable', fetchedAt: new Date().toISOString(), models: {}, _fetchError: toErrorMessage(error) } as OpenAIPricingTable & { _fetchError: string };
     }
   })();
   return pricingPromise;
@@ -127,32 +144,13 @@ export function estimateOpenAICost(
   const outputUsd = (completionTokens * p.outputPerMillion) / 1_000_000;
   const usd = inputUsd + outputUsd;
 
-  const breakdown: CostEstimateBreakdown = {
-    inputTokens: promptTokens,
-    outputTokens: completionTokens,
-    cacheWrite5mTokens: 0,
-    cacheWrite1hTokens: 0,
-    cacheReadTokens: 0,
-    inputPerMillion: p.inputPerMillion,
-    outputPerMillion: p.outputPerMillion,
-    cacheWrite5mPerMillion: 0,
-    cacheWrite1hPerMillion: 0,
-    cacheReadPerMillion: 0,
-    inputUsd,
-    outputUsd,
-    cacheWrite5mUsd: 0,
-    cacheWrite1hUsd: 0,
-    cacheReadUsd: 0,
-    multiplier: 1,
-  };
-
   return {
     usd,
     formattedUsd: formatUsdCeil(usd),
     source: 'live',
     sourceUrl: OPENAI_PRICING_URL,
     fetchedAt: pricingTable.fetchedAt,
-    breakdown,
+    breakdown: openAICostBreakdown(promptTokens, completionTokens, p.inputPerMillion, p.outputPerMillion, inputUsd, outputUsd),
     warnings: key !== modelId ? [`matched ${modelId} to ${key}`] : [],
   };
 }
@@ -203,32 +201,13 @@ export function estimateOpenAICostVerified(
   const outputUsd = (completionTokens * rates.outputPerMillion) / 1_000_000;
   const usd = inputUsd + outputUsd;
 
-  const breakdown: CostEstimateBreakdown = {
-    inputTokens: promptTokens,
-    outputTokens: completionTokens,
-    cacheWrite5mTokens: 0,
-    cacheWrite1hTokens: 0,
-    cacheReadTokens: 0,
-    inputPerMillion: rates.inputPerMillion,
-    outputPerMillion: rates.outputPerMillion,
-    cacheWrite5mPerMillion: 0,
-    cacheWrite1hPerMillion: 0,
-    cacheReadPerMillion: 0,
-    inputUsd,
-    outputUsd,
-    cacheWrite5mUsd: 0,
-    cacheWrite1hUsd: 0,
-    cacheReadUsd: 0,
-    multiplier: 1,
-  };
-
   return {
     usd,
     formattedUsd: formatUsdCeil(usd),
     source: 'live',
     sourceUrl: '',
     fetchedAt: new Date().toISOString(),
-    breakdown,
+    breakdown: openAICostBreakdown(promptTokens, completionTokens, rates.inputPerMillion, rates.outputPerMillion, inputUsd, outputUsd),
     confidence: rates.confidence,
     warnings: [],
   };

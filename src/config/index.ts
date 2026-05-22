@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir } from 'os';
-import type { Config } from '../providers/types.js';
+import type { Config, ProviderConfig } from '../providers/types.js';
 import { log, logError } from '../logger.js';
 
 const DEFAULT_CONFIG: Config = {
@@ -48,13 +48,21 @@ function getApiKeyFromEnv(providerId: string): string | undefined {
   return undefined;
 }
 
+export function getConfigDir(): string {
+  return process.env.FREECODE_HOME ?? join(homedir(), '.config', 'freecode');
+}
+
+export function resolveApiKey(provider: ProviderConfig): string | undefined {
+  return process.env[provider.apiKeyEnvVar] || loadConfig().providers[provider.id]?.apiKey || undefined;
+}
+
 let cachedConfig: Config | null = null;
 
 export function loadConfig(): Config {
   if (cachedConfig) return cachedConfig;
   let config = { ...DEFAULT_CONFIG };
-  
-  const configDir = process.env.FREECODE_HOME ?? join(homedir(), '.config', 'freecode');
+
+  const configDir = getConfigDir();
   const globalConfigPath = join(configDir, 'config.json');
   const globalConfig = loadJsonFile<Partial<Config>>(globalConfigPath);
   if (globalConfig) {
@@ -91,7 +99,7 @@ export function loadConfig(): Config {
 }
 
 export function getConfigPaths(): { globalPath: string; localPath: string } {
-  const configDir = process.env.FREECODE_HOME ?? join(homedir(), '.config', 'freecode');
+  const configDir = getConfigDir();
   return {
     globalPath: join(configDir, 'config.json'),
     localPath: join(process.cwd(), '.freecoderc'),

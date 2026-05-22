@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { homedir } from 'os';
 import { join } from 'path';
+import { getConfigDir } from '../config/index.js';
 import { logError } from '../logger.js';
 
 export interface RawCachedModel {
@@ -18,7 +18,7 @@ interface ModelCacheEntry {
 
 type ModelCache = Record<string, ModelCacheEntry>;
 
-const CONFIG_DIR = process.env.FREECODE_HOME ?? join(homedir(), '.config', 'freecode');
+const CONFIG_DIR = getConfigDir();
 const CACHE_PATH = join(CONFIG_DIR, 'model-cache.json');
 
 function load(): ModelCache {

@@ -1,6 +1,6 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import type { ProviderConfig } from '../types.js';
-import { loadConfig } from '../../config/index.js';
+import { resolveApiKey } from '../../config/index.js';
 import {
   parseAnthropicRateLimitHeaders,
   parseAnthropicExtendedHeaders,
@@ -165,11 +165,7 @@ function captureAnthropicUsage(providerId: string, response: Response, inference
 }
 
 export function createAnthropicProvider(providerConfig: ProviderConfig) {
-  const config = loadConfig();
-  const apiKey =
-    process.env[providerConfig.apiKeyEnvVar] ||
-    config.providers[providerConfig.id]?.apiKey;
-
+  const apiKey = resolveApiKey(providerConfig);
   if (!apiKey) throw new Error(`No API key for ${providerConfig.id}`);
 
   const debugQuota = process.env['DEBUG_QUOTA'] !== '0';

@@ -3,7 +3,7 @@ import type { Interface } from 'readline';
 import chalk from 'chalk';
 import { runConfigCommand } from '../commands/config.js';
 import { runModelCommand } from '../commands/model.js';
-import type { ToolCallConfirmation, ToolCallPreview } from '../agent/tools/index.js';
+import { formatArgs, type ToolCallConfirmation, type ToolCallPreview } from '../agent/tools/index.js';
 import { getCommandCompletion, getFilteredCommands } from './slash-commands.js';
 import { printScriptedScenarioList, runEvalMenu, runTestMenu } from './scenario-menu.js';
 import type { SessionController } from './session-controller.js';
@@ -36,12 +36,6 @@ function askQuestion(rl: Interface, prompt: string): Promise<string> {
       resolve(answer);
     });
   });
-}
-
-function formatToolArgs(args: Record<string, unknown>): string {
-  return Object.entries(args)
-    .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
-    .join(', ');
 }
 
 function drawToolApprovalMenu(selected: ToolApprovalChoice): void {
@@ -132,7 +126,7 @@ async function confirmToolCallInteractive(rl: Interface, preview: ToolCallPrevie
   rl.resume();
 
   try {
-    const args = formatToolArgs(preview.args);
+    const args = formatArgs(preview.args);
     console.log(chalk.cyan(`\nTool request: ${preview.name}(${args})`));
 
     const choice = await readToolApprovalMenu(rl);
@@ -151,7 +145,7 @@ async function confirmToolCallInteractive(rl: Interface, preview: ToolCallPrevie
 }
 
 export async function denyToolCallWithPreview(preview: ToolCallPreview): Promise<ToolCallConfirmation> {
-  console.log(chalk.cyan(`\nTool request: ${preview.name}(${formatToolArgs(preview.args)})`));
+  console.log(chalk.cyan(`\nTool request: ${preview.name}(${formatArgs(preview.args)})`));
   return { approved: false };
 }
 
@@ -364,7 +358,7 @@ export function createScriptedMode(scriptPath: string, projectRoot: string): Cli
       return line;
     },
     confirmToolCall: async (preview) => {
-      console.log(chalk.cyan(`\nTool request: ${preview.name}(${formatToolArgs(preview.args)})`));
+      console.log(chalk.cyan(`\nTool request: ${preview.name}(${formatArgs(preview.args)})`));
 
       const choice = parseScriptedToolChoice(lines[lineIdx]);
       if (choice) {

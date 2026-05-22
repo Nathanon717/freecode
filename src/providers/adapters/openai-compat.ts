@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import type { ProviderConfig } from '../types.js';
-import { loadConfig } from '../../config/index.js';
+import { resolveApiKey } from '../../config/index.js';
+import { isRecord } from '../../util/guards.js';
 import {
   parseGroqRateLimitHeaders,
   groqHeadersToSnapshot,
@@ -89,10 +90,6 @@ export function formatCapturedProviderUsages(usages: CapturedProviderUsage[] | n
     usage,
   }));
   return JSON.stringify(usages.length === 1 ? payload[0] : payload, null, 2);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function formatRetryAfter(value: string | null): string | null {
@@ -190,11 +187,7 @@ export function openAIModelDisallowsTemperature(modelId: string): boolean {
 }
 
 export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
-  const config = loadConfig();
-  const apiKey =
-    process.env[providerConfig.apiKeyEnvVar] ||
-    config.providers[providerConfig.id]?.apiKey ||
-    'placeholder';
+  const apiKey = resolveApiKey(providerConfig) ?? 'placeholder';
 
   // Capture Groq rate-limit headers unless explicitly disabled (DEBUG_QUOTA=0).
   // Defaults to ON so Phase-1 observation works out of the box.

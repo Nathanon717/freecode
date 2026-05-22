@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import type { Interface } from 'readline';
-import { getConfigPaths, loadConfig, readRawConfig, writeConfigFile } from '../config/index.js';
+import { getConfigPaths, readRawConfig, resolveApiKey, writeConfigFile } from '../config/index.js';
 import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/registry.js';
 import type { Config, ModelConfig, ProviderConfig } from '../providers/types.js';
 import { getProviderCache, markModelSelected } from '../providers/model-cache.js';
@@ -51,12 +51,10 @@ function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, mod
 
 export async function getSelectableModels(): Promise<ModelMenuItem[]> {
   await initDynamicProviders();
-  const config = loadConfig();
   const items: ModelMenuItem[] = [];
 
   for (const provider of PROVIDER_REGISTRY) {
-    const apiKey = process.env[provider.apiKeyEnvVar] || config.providers[provider.id]?.apiKey;
-    if (!apiKey) continue;
+    if (!resolveApiKey(provider)) continue;
     addProviderModels(items, provider, provider.models);
   }
 

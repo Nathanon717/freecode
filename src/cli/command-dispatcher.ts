@@ -1,7 +1,8 @@
 import chalk from 'chalk';
 import { agentLoop, type AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';
-import { loadConfig } from '../config/index.js';
+import { loadConfig, resolveApiKey } from '../config/index.js';
+import { toErrorMessage } from '../util/errors.js';
 import { log } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/registry.js';
 import { getAllModelDataSources, type ModelDataSourceKind } from '../providers/model-sources.js';
@@ -132,12 +133,10 @@ function showModelStatus(runtime: CommandRuntime): void {
   if (runtime.modelListMode === 'current-only') return;
 
   console.log(chalk.dim('\nAvailable providers:\n'));
-  const config = loadConfig();
   let any = false;
 
   for (const provider of PROVIDER_REGISTRY) {
-    const apiKey = process.env[provider.apiKeyEnvVar] || config.providers[provider.id]?.apiKey;
-    if (!apiKey) continue;
+    if (!resolveApiKey(provider)) continue;
     any = true;
     console.log(chalk.bold.green(provider.name));
     for (const model of provider.models) {
@@ -185,8 +184,8 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
 
     console.log();
   } catch (error) {
-    log('error', 'agentLoop threw', { error: error instanceof Error ? error.message : String(error) });
-    console.log(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+    log('error', 'agentLoop threw', { error: toErrorMessage(error) });
+    console.log(chalk.red(`Error: ${toErrorMessage(error)}`));
     console.log();
   } finally {
     await runtime.afterAgentCall?.();
