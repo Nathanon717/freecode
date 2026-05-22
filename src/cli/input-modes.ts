@@ -19,12 +19,14 @@ import {
   setInputBuffer,
   setInlineCompletion,
   setModelStatus,
+  setPreflightInputCost,
   setQuotaSnapshot,
   setSuggestions,
   setTokenCount,
   setupBottomUI,
   teardownBottomUI,
 } from './terminal-ui.js';
+import { createOpenAIPreflightInputController } from './preflight-input-cost.js';
 
 type ToolApprovalChoice = 'approve' | 'deny';
 
@@ -170,7 +172,12 @@ function parseScriptedToolChoice(input: string | undefined): ToolApprovalChoice 
   return null;
 }
 
-async function readLineWithAutocomplete(rl: Interface, tokenCount: number): Promise<string> {
+async function readLineWithAutocomplete(
+  rl: Interface,
+  tokenCount: number,
+  session: SessionController,
+  getSelectedModel: () => string,
+): Promise<string> {
   if (!process.stdin.isTTY) {
     return askQuestion(rl, chalk.green('> '));
   }
@@ -178,6 +185,7 @@ async function readLineWithAutocomplete(rl: Interface, tokenCount: number): Prom
   setTokenCount(tokenCount);
   setInputBuffer('');
   setInlineCompletion(null);
+  setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: Date.now() });
   setSuggestions(getFilteredCommands(''));
   drawBottomUI();
 
@@ -191,6 +199,7 @@ async function readLineWithAutocomplete(rl: Interface, tokenCount: number): Prom
       const input = getInputBuffer();
       setInlineCompletion(getCommandCompletion(input));
       setSuggestions(getFilteredCommands(input));
+      preflight.schedule(input);
       drawBottomUI();
     }
 
@@ -202,7 +211,15 @@ async function readLineWithAutocomplete(rl: Interface, tokenCount: number): Prom
       process.stdin.removeListener('data', onData);
       process.stdin.setRawMode(false);
       process.stdin.pause();
+      preflight.stop();
     }
+
+    const preflight = createOpenAIPreflightInputController({
+      getMessages: () => session.messages,
+      getSelectedModel,
+      setPreflightInputCost,
+      redraw: drawBottomUI,
+    });
 
     function onData(data: string) {
       if (data === '\x03') {
@@ -271,7 +288,7 @@ export function createInteractiveMode(
   setSelectedModel: (model: string) => void,
 ): CliSessionMode {
   return {
-    readInput: (tokenCount) => readLineWithAutocomplete(rl, tokenCount),
+    readInput: (tokenCount) => readLineWithAutocomplete(rl, tokenCount, session, getSelectedModel),
     confirmToolCall: (preview) => confirmToolCallInteractive(rl, preview),
     modelListMode: 'full',
     beforeAgentCall: () => {
@@ -279,6 +296,7 @@ export function createInteractiveMode(
       setTokenCount(session.getContextTokenCount());
       setInputBuffer('');
       setInlineCompletion(null);
+      setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: Date.now() });
       setSuggestions([]);
     },
     afterAgentCall: () => {
@@ -287,6 +305,7 @@ export function createInteractiveMode(
         setTokenCount(session.getContextTokenCount());
         setInputBuffer('');
         setInlineCompletion(null);
+        setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: Date.now() });
         setSuggestions(getFilteredCommands(''));
         drawBottomUI();
       }
@@ -317,6 +336,7 @@ export function createInteractiveMode(
         setupBottomUI();
         setInputBuffer('');
         setInlineCompletion(null);
+        setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: Date.now() });
         setSuggestions(getFilteredCommands(''));
         drawBottomUI();
       }

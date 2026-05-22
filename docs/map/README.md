@@ -48,6 +48,7 @@ src/
 |   |-- scenario-catalog.ts       -> [Scenario discovery/runner](cli/scenario-catalog.md)
 |   |-- scenario-menu.ts          -> [Scenario menus](cli/scenario-menu.md)
 |   |-- session-controller.ts     -> [Conversation/session state](cli/session-controller.md)
+|   |-- preflight-input-cost.ts   -> [OpenAI live input cost controller](cli/preflight-input-cost.md)
 |   |-- session-runner.ts         -> [CLI session loop](cli/session-runner.md)
 |   |-- slash-commands.ts         -> [Slash command list/completion](cli/slash-commands.md)
 |   `-- terminal-ui.ts            -> [Bottom-pinned terminal UI](cli/terminal-ui.md)
@@ -71,6 +72,7 @@ src/
     |-- pricing-verifier.ts       -> [Dual-source pricing verifier](providers/pricing-verifier.md)
     |-- adapters/
     |   |-- openai-compat.ts      -> [OpenAI-compatible adapter](providers/adapters/openai-compat.md)
+    |   |-- openai-responses.ts   -> [Direct OpenAI Responses adapter](providers/adapters/openai-responses.md)
     |   `-- anthropic.ts          -> [Anthropic adapter](providers/adapters/anthropic.md)
     `-- quota/
         `-- headers.ts            -> [Provider rate-limit parsing](providers/quota/headers.md)

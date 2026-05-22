@@ -5,8 +5,6 @@ import { loadConfig } from '../config/index.js';
 import { log } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/registry.js';
 import { getAllModelDataSources, type ModelDataSourceKind } from '../providers/model-sources.js';
-import { testAllProviders } from '../providers/router.js';
-import { detectOllama } from '../providers/ollama.js';
 import {
   addAnthropicSessionCost,
   describeCostEstimate,
@@ -129,39 +127,26 @@ export function formatQuotaReset(ms: number | null, raw: string | null): string 
   return parts.join('');
 }
 
-async function showModelStatus(runtime: CommandRuntime): Promise<void> {
-  console.log(chalk.blue('Current model: ' + runtime.getSelectedModel()));
+function showModelStatus(runtime: CommandRuntime): void {
+  console.log(chalk.blue('Current model: ' + (runtime.getSelectedModel() || chalk.dim('(none)'))));
   if (runtime.modelListMode === 'current-only') return;
 
-  console.log(chalk.dim('Available providers:\n'));
-  const [statuses, ollamaModels] = await Promise.all([testAllProviders(), detectOllama()]);
-  const statusMap = new Map(statuses.map(s => [s.providerId, s]));
+  console.log(chalk.dim('\nAvailable providers:\n'));
+  const config = loadConfig();
   let any = false;
 
   for (const provider of PROVIDER_REGISTRY) {
-    const status = statusMap.get(provider.id);
-    if (!status) continue;
-    const statusIcon = status.ok ? chalk.green('OK') : chalk.red('FAIL');
-    const errorInfo = status.error ? chalk.red(` - ${status.error}`) : '';
-    console.log(chalk.bold(`${provider.name}`) + ' ' + statusIcon + errorInfo);
-    if (status.ok) {
-      any = true;
-      for (const model of provider.models) {
-        console.log(chalk.cyan(`  ${model.displayName}`) + chalk.gray(` [${provider.id}:${model.id}]`));
-      }
-    }
-  }
-
-  if (ollamaModels.length > 0) {
+    const apiKey = process.env[provider.apiKeyEnvVar] || config.providers[provider.id]?.apiKey;
+    if (!apiKey) continue;
     any = true;
-    console.log(chalk.bold.green('Ollama (local)') + ' ' + chalk.green('OK'));
-    for (const model of ollamaModels) {
-      console.log(chalk.cyan(`  ollama:${model.id}`) + chalk.gray(` (${model.displayName})`));
+    console.log(chalk.bold.green(provider.name));
+    for (const model of provider.models) {
+      console.log(chalk.cyan(`  ${model.displayName}`) + chalk.gray(` [${provider.id}:${model.id}]`));
     }
   }
 
   if (!any) {
-    console.log(chalk.red('\nNo providers available.'));
+    console.log(chalk.red('No providers configured. Set an API key to get started.'));
   }
 }
 
@@ -226,7 +211,7 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
     } else if (runtime.runModelMenu) {
       await runtime.runModelMenu();
     } else {
-      await showModelStatus(runtime);
+      showModelStatus(runtime);
     }
     return 'continue';
   }

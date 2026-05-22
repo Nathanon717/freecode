@@ -6,7 +6,6 @@ import { log, logError } from '../logger.js';
 
 const DEFAULT_CONFIG: Config = {
   providers: {},
-  useOllama: true,
   toolRationale: true,
 };
 
@@ -34,7 +33,6 @@ function getApiKeyFromEnv(providerId: string): string | undefined {
     llm7: 'LLM7_API_KEY',
     github: 'GITHUB_TOKEN',
     cohere: 'COHERE_API_KEY',
-    ollama: 'OLLAMA_API_KEY',
     cerebras: 'CEREBRAS_API_KEY',
     mistral: 'MISTRAL_API_KEY',
     anthropic: 'ANTHROPIC_API_KEY',
@@ -71,7 +69,7 @@ export function loadConfig(): Config {
   delete (config as Record<string, unknown>)['preferLocal'];
   
   const configuredProviders: Config['providers'] = {};
-  const providerIds = ['groq', 'openrouter', 'siliconflow', 'nvidia', 'llm7', 'github', 'cohere', 'cerebras', 'mistral', 'openai', 'anthropic', 'cloudflare', 'zai'];
+  const providerIds = ['groq', 'openrouter', 'siliconflow', 'nvidia', 'llm7', 'github', 'cohere', 'cerebras', 'mistral', 'openai', 'anthropic', 'cloudflare', 'zai'] as const;
   
   for (const providerId of providerIds) {
     const apiKey = getApiKeyFromEnv(providerId);

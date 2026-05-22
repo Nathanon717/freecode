@@ -15,7 +15,7 @@ Everything else in the npm scripts works the same.
 
 ## Applying the container session key
 
-The container does not have an `ANTHROPIC_API_KEY` environment variable set. If you need to make LLM calls (e.g. running freecode itself, not just building or testing), you must configure the session key first — it is the only key available in this environment.
+The container does not have an `ANTHROPIC_API_KEY` environment variable set. If you need to make LLM calls, you must configure the session key first — it is the only key available in this environment. WARNING!!! YOU MUST ASK FOR EXPLICIT PERMISSION FROM THE USER BEFORE DOING THIS!
 
 The session key is a short-lived token tied to the current Claude Code session. It lives at:
 
@@ -54,4 +54,3 @@ node dist/index.js --test
 - The token expires when the session ends. Repeat the step above at the start of each new session.
 - This token bills against the account's Anthropic plan usage — it is not free quota.
 - Do not commit the token or the generated `~/.config/freecode/config.json` to the repository.
-- For a permanent setup, use a real `ANTHROPIC_API_KEY` from console.anthropic.com set as an environment variable in your Claude Code session settings.

@@ -44,7 +44,14 @@ npm run pty:session -- screen <SESSION_ID>
 npm run pty:session -- stop <SESSION_ID>
 ```
 
-Control chars: Enter `$'\r'`, Tab `$'\t'`, Escape `$'\x1b'`, Ctrl-C `$'\x03'`, arrows `$'\x1b[A'`/`$'\x1b[B'`. Multiple key args are concatenated.
+Always send typed text and control keys as **separate steps** — combining them in one `printf` (e.g. `printf '/model\r'`) may type the text but skip the key action.
+
+For slash commands and all control chars, use `printf` + stdin — `$'\r'`-style args are unreliable on Windows:
+
+```bash
+printf '/model' | npm run pty:session -- send <SESSION_ID> -   # type
+printf '\r'     | npm run pty:session -- send <SESSION_ID> -   # submit
+```
 
 Full reference — patterns, flags, lifecycle: `docs/pty-session.md`
 

@@ -35,7 +35,7 @@ During that window, every Anthropic response is cloned and parsed as JSON SSE. U
 - `message_start.message.usage`
 - `message_delta.usage`
 
-Captured fields include input/output tokens, cache creation/read tokens, optional 5-minute and 1-hour cache write buckets, server tool usage, and `inference_geo` from the request body when present. `agent/loop.ts` also returns this merged usage as `providerUsage` so CLI and MCP callers can print it after the response.
+Captured fields include input/output tokens, cache creation/read tokens, optional 5-minute and 1-hour cache write buckets, server tool usage, and `inference_geo` from the request body when present. `agent/loop.ts` also returns this merged usage as `providerUsage` so the CLI can print it after the response.
 
 ## Session Ingress Tokens
 

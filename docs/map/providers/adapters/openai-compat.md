@@ -50,7 +50,7 @@ The parser reads:
 - Responses-style JSON `response.usage`
 - SSE `data:` chunks with either shape, keeping the last usage-bearing chunk
 
-Captured usage is intentionally not interpreted for billing; CLI and MCP callers print the raw JSON returned by the provider.
+Captured usage is intentionally not interpreted for billing; the CLI prints the raw JSON returned by the provider.
 
 ## `createOllamaProvider`
 

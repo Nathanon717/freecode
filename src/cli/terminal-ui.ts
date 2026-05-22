@@ -13,6 +13,25 @@ let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
 let lastModelStatus = '';
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 
+export interface PreflightInputCost {
+  state: 'idle' | 'pending' | 'ready' | 'unavailable';
+  providerId: string;
+  modelId: string;
+  inputTokens?: number;
+  inputUsd?: number | null;
+  formattedInputUsd?: string;
+  payloadHash?: string;
+  updatedAt: number;
+  warning?: string;
+}
+
+let lastPreflightInputCost: PreflightInputCost = {
+  state: 'idle',
+  providerId: '',
+  modelId: '',
+  updatedAt: 0,
+};
+
 function rows(): number { return process.stdout.rows || 24; }
 function cols(): number { return process.stdout.columns || 80; }
 
@@ -78,6 +97,10 @@ export function setSuggestions(suggestions: string[]): void {
 
 export function setInlineCompletion(completion: string | null): void {
   lastInlineCompletion = completion;
+}
+
+export function setPreflightInputCost(snapshot: PreflightInputCost): void {
+  lastPreflightInputCost = snapshot;
 }
 
 function formatDuration(ms: number): string {
@@ -154,15 +177,40 @@ function formatQuotaStatus(now = Date.now()): string {
   return parts.join(' | ');
 }
 
+function formatPreflightInputCost(): string {
+  if (lastPreflightInputCost.state === 'pending') return 'input tok: counting';
+  if (lastPreflightInputCost.state === 'unavailable') {
+    const warning = lastPreflightInputCost.warning ? `: ${lastPreflightInputCost.warning}` : '';
+    return `input tok failed${warning}`;
+  }
+  if (lastPreflightInputCost.state === 'idle' && lastPreflightInputCost.warning) {
+    return `input tok off: ${lastPreflightInputCost.warning}`;
+  }
+  if (lastPreflightInputCost.state !== 'ready' || lastPreflightInputCost.inputTokens === undefined) return '';
+  const tokenText = `${lastPreflightInputCost.inputTokens.toLocaleString('en-US')} in tok`;
+  const costText = lastPreflightInputCost.formattedInputUsd
+    ? `${lastPreflightInputCost.formattedInputUsd} input`
+    : 'input cost unavailable';
+  return `${tokenText} | ${costText}`;
+}
+
 function fitStatusRightSide(width: number, parts: string[], now = Date.now()): string {
   const nonEmptyParts = parts.filter(Boolean);
   let rightStr = nonEmptyParts.join(' | ');
   if (rightStr.length <= width) return rightStr;
 
+  const preflightStr = parts.length >= 3 ? parts[1] ?? '' : '';
   const statusStr = nonEmptyParts[nonEmptyParts.length - 1] ?? '';
+  const tokenStr = `${padNumberText(lastTokenCount.toString(), 5)} ctx tokens`;
+
+  const withoutModel = [preflightStr, statusStr].filter(Boolean).join(' | ');
+  if (withoutModel.length <= width) return withoutModel;
+
+  const preflightWithTokens = [preflightStr, tokenStr].filter(Boolean).join(' | ');
+  if (preflightStr && preflightWithTokens.length <= width) return preflightWithTokens;
+
   if (statusStr.length <= width) return statusStr;
 
-  const tokenStr = `${padNumberText(lastTokenCount.toString(), 5)} ctx tokens`;
   if (tokenStr.length >= width) return tokenStr.slice(0, width);
 
   const quotaStr = formatQuotaStatus(now);
@@ -175,9 +223,10 @@ function fitStatusRightSide(width: number, parts: string[], now = Date.now()): s
 
 export function composeBottomRightStatus(width: number, now = Date.now()): string {
   const quotaStr = formatQuotaStatus(now);
+  const preflightStr = formatPreflightInputCost();
   const tokenStr = `${padNumberText(lastTokenCount.toString(), 5)} ctx tokens`;
   const statusStr = quotaStr ? `${quotaStr} | ${tokenStr}` : tokenStr;
-  return fitStatusRightSide(width, [lastModelStatus, statusStr], now);
+  return fitStatusRightSide(width, [lastModelStatus, preflightStr, statusStr], now);
 }
 
 export function composeBottomStatusLine(width: number, now = Date.now()): string {

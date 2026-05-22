@@ -6,9 +6,14 @@ import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { classifyScenario } from '../../src/scenario-classification.js';
+import { PROVIDER_REGISTRY } from '../../src/providers/registry.js';
 import { assertScenarioExpectations } from './assertions/index.js';
 import type { ScenarioExpectations, ToolTraceEvent } from './assertions/index.js';
 import type { TtyScenario } from './pty/run-tty-scenario.js';
+
+// Env vars to strip from TTY test processes so provider API fetches don't
+// make live network requests (TTY scenarios are non-LLM by definition).
+const PROVIDER_API_KEY_VARS = new Set(PROVIDER_REGISTRY.map(p => p.apiKeyEnvVar));
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
@@ -110,13 +115,16 @@ for (const { file, scenario } of runnableScenarios) {
     let ttyScreen = '';
     try {
       const { runTtyScenario } = await import('./pty/run-tty-scenario.js');
+      const ttyBaseEnv = Object.fromEntries(
+        Object.entries(process.env).filter(([k]) => !PROVIDER_API_KEY_VARS.has(k)),
+      );
       const result = await runTtyScenario({
         scenarioName: scenario.name,
         tty: scenario.tty,
         entry: DIST_ENTRY,
         cwd: ROOT,
         env: {
-          ...process.env,
+          ...ttyBaseEnv,
           FREECODE_HOME: tmpHome,
           DEBUG_QUOTA: '0',
           FORCE_COLOR: process.env.FORCE_COLOR ?? '1',

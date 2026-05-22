@@ -1,6 +1,6 @@
 import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
-import { route } from '../providers/router.js';
+import { getProvider, resolveModel } from '../providers/registry.js';
 import { buildSystemPrompt } from './system-prompt.js';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
 import {
@@ -19,6 +19,10 @@ import {
   type CostEstimate,
 } from '../providers/anthropic-cost.js';
 import { estimateOpenAICostVerified } from '../providers/openai-cost.js';
+import {
+  buildOpenAIResponsesPayload,
+  generateOpenAIResponses,
+} from '../providers/adapters/openai-responses.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
@@ -68,16 +72,16 @@ export async function agentLoop(
   let supportsTools: boolean;
 
   setProjectRoot(projectRoot);
-  log('stream', `agentLoop called`, { modelPreference: modelPreference ?? '(auto)', historyLength: messages.length, projectRoot });
+  log('stream', `agentLoop called`, { modelPreference: modelPreference ?? '(none)', historyLength: messages.length, projectRoot });
   try {
-    const routed = await route(modelPreference);
-    languageModel = routed.model;
-    providerId = routed.providerId;
-    modelId = routed.modelId;
-    supportsTools = routed.supportsTools;
+    const resolved = resolveModel(modelPreference ?? '');
+    languageModel = resolved.model;
+    providerId = resolved.providerId;
+    modelId = resolved.modelId;
+    supportsTools = resolved.supportsTools;
   } catch (error) {
-    logError('stream', 'Route failed', error);
-    const errMsg = error instanceof Error ? error.message : 'Failed to route to provider';
+    logError('stream', 'resolveModel failed', error);
+    const errMsg = error instanceof Error ? error.message : 'Failed to resolve model';
     process.stdout.write(`Error: ${errMsg}\n`);
     return {
       text: `Error: ${errMsg}`,
@@ -104,37 +108,61 @@ export async function agentLoop(
 
   log('stream', `Calling streamText`, { supportsTools, maxSteps: supportsTools ? 10 : undefined });
   try {
-    if (providerId === 'anthropic') {
+    if (providerId === 'openai') {
+      const provider = getProvider(providerId);
+      if (!provider) throw new Error(`Unknown provider: "${providerId}"`);
+      const tools = supportsTools ? createTools(options.confirmToolCall) : undefined;
+      const payload = buildOpenAIResponsesPayload({
+        modelId,
+        systemPrompt,
+        messages,
+        ...(tools ? { tools } : {}),
+      });
+      const generated = await generateOpenAIResponses(provider, payload, tools, options.confirmToolCall);
+      fullText = generated.text;
+      if (fullText) process.stdout.write(fullText);
+      if (fullText && !fullText.endsWith('\n')) process.stdout.write('\n');
+      totalTokens = generated.usage.totalTokens;
+      promptTokens = generated.usage.promptTokens;
+      outputTokens = generated.usage.outputTokens;
+      providerUsage = generated.providerUsage;
+      const rates = await getOpenAIVerifiedRates(modelId);
+      costEstimate = estimateOpenAICostVerified(modelId, promptTokens, outputTokens, rates);
+      log('stream', 'OpenAI Responses complete', { textLength: fullText.length, totalTokens, promptTokens, outputTokens });
+      log('stream', 'OpenAI cost estimate', costEstimate);
+    } else if (providerId === 'anthropic') {
       beginAnthropicUsageCapture(providerId);
     } else {
       beginProviderUsageCapture(providerId);
     }
-    const result: unknown = await streamText({
-      model: languageModel,
-      system: systemPrompt,
-      messages,
-      ...(supportsTools ? { tools: createTools(options.confirmToolCall), maxSteps: 10 } : {}),
-    });
+    if (providerId !== 'openai') {
+      const result: unknown = await streamText({
+        model: languageModel,
+        system: systemPrompt,
+        messages,
+        ...(supportsTools ? { tools: createTools(options.confirmToolCall), maxSteps: 10 } : {}),
+      });
 
-    const typedResult = result as {
-      textStream: AsyncIterable<string>;
-      usage: Promise<{ totalTokens: number; promptTokens?: number; completionTokens?: number; outputTokens?: number }>;
-    };
+      const typedResult = result as {
+        textStream: AsyncIterable<string>;
+        usage: Promise<{ totalTokens: number; promptTokens?: number; completionTokens?: number; outputTokens?: number }>;
+      };
 
-    let chunkCount = 0;
-    for await (const chunk of typedResult.textStream) {
-      process.stdout.write(chunk);
-      fullText += chunk;
-      chunkCount++;
+      let chunkCount = 0;
+      for await (const chunk of typedResult.textStream) {
+        process.stdout.write(chunk);
+        fullText += chunk;
+        chunkCount++;
+      }
+      if (fullText && !fullText.endsWith('\n')) {
+        process.stdout.write('\n');
+      }
+      const usage = await typedResult.usage;
+      totalTokens = usage?.totalTokens ?? 0;
+      promptTokens = usage?.promptTokens;
+      outputTokens = usage?.completionTokens ?? usage?.outputTokens;
+      log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
     }
-    if (fullText && !fullText.endsWith('\n')) {
-      process.stdout.write('\n');
-    }
-    const usage = await typedResult.usage;
-    totalTokens = usage?.totalTokens ?? 0;
-    promptTokens = usage?.promptTokens;
-    outputTokens = usage?.completionTokens ?? usage?.outputTokens;
-    log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
 
     if (providerId === 'anthropic') {
       const [anthropicUsage, rates] = await Promise.all([
@@ -154,15 +182,7 @@ export async function agentLoop(
         }];
       }
       log('stream', 'Anthropic cost estimate', costEstimate);
-    } else if (providerId === 'openai') {
-      providerUsage = await endProviderUsageCapture(providerId);
-      if (providerUsage.length > 0) {
-        log('stream', 'Provider usage captured', providerUsage);
-      }
-      const rates = await getOpenAIVerifiedRates(modelId);
-      costEstimate = estimateOpenAICostVerified(modelId, promptTokens, outputTokens, rates);
-      log('stream', 'OpenAI cost estimate', costEstimate);
-    } else {
+    } else if (providerId !== 'openai') {
       providerUsage = await endProviderUsageCapture(providerId);
       if (providerUsage.length > 0) {
         log('stream', 'Provider usage captured', providerUsage);

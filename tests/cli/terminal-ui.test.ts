@@ -4,6 +4,7 @@ import {
   composeBottomStatusLine,
   getInlineCompletionSuffix,
   setModelStatus,
+  setPreflightInputCost,
   setQuotaSnapshot,
   setTokenCount,
 } from '../../src/cli/terminal-ui.js';
@@ -13,6 +14,7 @@ describe('bottom pinned status section', () => {
     vi.useRealTimers();
     setModelStatus('', '');
     setQuotaSnapshot(null);
+    setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: 0 });
     setTokenCount(0);
   });
 
@@ -21,16 +23,10 @@ describe('bottom pinned status section', () => {
     vi.useFakeTimers();
     vi.setSystemTime(now);
 
-    setQuotaSnapshot({
-      limitRequests: 1000,
-      remainingRequests: 974,
-      limitTokens: 12000,
-      remainingTokens: 12000,
-      resetRequestsMs: 2_205_000,
-      resetTokensMs: 0,
-      resetRequestsRaw: null,
-      resetTokensRaw: null,
-    });
+    setQuotaSnapshot([
+      { label: 'R', remaining: 974, limit: 1000, resetMs: 2_205_000 },
+      { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
+    ]);
     setTokenCount(123);
 
     expect(composeBottomStatusLine(123, now.getTime())).toBe(
@@ -44,16 +40,10 @@ describe('bottom pinned status section', () => {
     vi.setSystemTime(now);
 
     setModelStatus('groq', 'llama-3.3-70b-versatile');
-    setQuotaSnapshot({
-      limitRequests: 1000,
-      remainingRequests: 985,
-      limitTokens: 12000,
-      remainingTokens: 12000,
-      resetRequestsMs: 1_287_000,
-      resetTokensMs: 0,
-      resetRequestsRaw: null,
-      resetTokensRaw: null,
-    });
+    setQuotaSnapshot([
+      { label: 'R', remaining: 985, limit: 1000, resetMs: 1_287_000 },
+      { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
+    ]);
     setTokenCount(123);
 
     const status = composeBottomRightStatus(62, now.getTime());
@@ -70,29 +60,17 @@ describe('bottom pinned status section', () => {
     vi.useFakeTimers();
     vi.setSystemTime(now);
 
-    setQuotaSnapshot({
-      limitRequests: 1000,
-      remainingRequests: 9,
-      limitTokens: 12000,
-      remainingTokens: 89,
-      resetRequestsMs: 2_000,
-      resetTokensMs: 0,
-      resetRequestsRaw: null,
-      resetTokensRaw: null,
-    });
+    setQuotaSnapshot([
+      { label: 'R', remaining: 9, limit: 1000, resetMs: 2_000 },
+      { label: 'T', remaining: 89, limit: 12000, resetMs: 0 },
+    ]);
     setTokenCount(7);
     const lowValues = composeBottomRightStatus(80, now.getTime());
 
-    setQuotaSnapshot({
-      limitRequests: 1000,
-      remainingRequests: 986,
-      limitTokens: 12000,
-      remainingTokens: 12000,
-      resetRequestsMs: 1_188_000,
-      resetTokensMs: 0,
-      resetRequestsRaw: null,
-      resetTokensRaw: null,
-    });
+    setQuotaSnapshot([
+      { label: 'R', remaining: 986, limit: 1000, resetMs: 1_188_000 },
+      { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
+    ]);
     setTokenCount(289);
     const highValues = composeBottomRightStatus(80, now.getTime());
 
@@ -100,6 +78,77 @@ describe('bottom pinned status section', () => {
       expect(highValues.indexOf(label)).toBe(lowValues.indexOf(label));
     }
     expect(highValues.indexOf('ctx tokens')).toBe(lowValues.indexOf('ctx tokens'));
+  });
+
+  it('renders OpenAI preflight input tokens and input cost when available', () => {
+    setTokenCount(123);
+    setPreflightInputCost({
+      state: 'ready',
+      providerId: 'openai',
+      modelId: 'gpt-5',
+      inputTokens: 12431,
+      inputUsd: 0.0186,
+      formattedInputUsd: '$0.0186',
+      payloadHash: 'abc',
+      updatedAt: Date.now(),
+    });
+
+    const status = composeBottomRightStatus(80);
+
+    expect(status).toContain('12,431 in tok | $0.0186 input');
+    expect(status).toContain('123 ctx tokens');
+    expect(status.length).toBeLessThanOrEqual(80);
+  });
+
+  it('renders pending and failed OpenAI preflight states loudly', () => {
+    setTokenCount(123);
+    setPreflightInputCost({
+      state: 'pending',
+      providerId: 'openai',
+      modelId: 'gpt-5',
+      updatedAt: Date.now(),
+    });
+    expect(composeBottomRightStatus(80)).toContain('input tok: counting');
+
+    setPreflightInputCost({
+      state: 'unavailable',
+      providerId: 'openai',
+      modelId: 'gpt-5',
+      warning: 'HTTP 401',
+      updatedAt: Date.now(),
+    });
+    expect(composeBottomRightStatus(80)).toContain('input tok failed: HTTP 401');
+
+    setPreflightInputCost({
+      state: 'idle',
+      providerId: 'openai',
+      modelId: 'gpt-5',
+      warning: 'OPENAI_API_KEY missing',
+      updatedAt: Date.now(),
+    });
+    expect(composeBottomRightStatus(80)).toContain('input tok off: OPENAI_API_KEY missing');
+  });
+
+  it('drops model status before dropping OpenAI preflight input cost', () => {
+    setModelStatus('openai', 'gpt-5.4-nano-2026-03-17');
+    setTokenCount(123);
+    setPreflightInputCost({
+      state: 'ready',
+      providerId: 'openai',
+      modelId: 'gpt-5.4-nano-2026-03-17',
+      inputTokens: 12431,
+      inputUsd: 0.0186,
+      formattedInputUsd: '$0.0186',
+      payloadHash: 'abc',
+      updatedAt: Date.now(),
+    });
+
+    const status = composeBottomRightStatus(62);
+
+    expect(status).not.toContain('openai -');
+    expect(status).toContain('12,431 in tok | $0.0186 input');
+    expect(status).toContain('123 ctx tokens');
+    expect(status.length).toBeLessThanOrEqual(62);
   });
 });
 

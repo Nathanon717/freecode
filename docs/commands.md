@@ -16,11 +16,12 @@ This table is generated from `package.json`.
 | `npm run docs:generate` | `tsx scripts/generate-docs.ts` |
 | `npm run eval` | `npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-llm --details` |
 | `npm run inspect:tty` | `tsx tests/harness/pty/inspect.ts` |
-| `npm run pty:session` | `tsx tests/harness/pty/session.ts` |
+| `npm run pty:session` | `cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts` |
 | `npm run start` | `node dist/index.js` |
 | `npm run test` | `tsx src/index.ts --test` |
 | `npm run test-all` | `tsx src/index.ts --test-all` |
 | `npm run test-env` | `node test-env.js` |
+| `npm run test:pty` | `vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts` |
 | `npm run unit` | `vitest run` |
 | `npm run unit:watch` | `vitest` |
 | `npm run verify` | `npm run build && npm run docs:check && npm run verify:scenarios` |

@@ -15,6 +15,7 @@
     "test-all": "tsx src/index.ts --test-all",
     "unit": "vitest run",
     "unit:watch": "vitest",
+    "test:pty": "vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts",
     "coverage": "vitest run --coverage",
     "test-env": "node test-env.js",
     "docs:generate": "tsx scripts/generate-docs.ts",
@@ -25,7 +26,7 @@
     "verify:e2e": "npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-tty",
     "eval": "npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-llm --details",
     "inspect:tty": "tsx tests/harness/pty/inspect.ts",
-    "pty:session": "tsx tests/harness/pty/session.ts"
+    "pty:session": "cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts"
   },
   "keywords": [
     "cli",
@@ -46,6 +47,7 @@
     "@types/node": "^22.19.17",
     "@vitest/coverage-v8": "^4.1.4",
     "@xterm/headless": "^6.0.0",
+    "cross-env": "^10.1.0",
     "node-pty": "^1.1.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",

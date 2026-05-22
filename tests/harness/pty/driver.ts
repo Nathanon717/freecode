@@ -48,6 +48,9 @@ export function createPtyDriver(opts: PtyDriverOptions): PtyDriver {
     rows,
     cwd: opts.cwd,
     env: { TERM: 'xterm-color', ...opts.env },
+    // On Windows, useConptyDll avoids fork()ing conpty_console_list_agent on
+    // kill(), which otherwise briefly flashes a cmd window.
+    useConptyDll: process.platform === 'win32',
   });
 
   let raw = '';

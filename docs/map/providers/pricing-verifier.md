@@ -13,7 +13,7 @@
 - `VerifiedRates` — `{ confidence, inputPerMillion, outputPerMillion }`
 - `LITELLM_PRICING_URL` / `OPENROUTER_MODELS_URL` — source URLs
 
-**Agreement logic:** Prices are considered equal when within 2% of each other on both input and output rates. If only one source returns a rate the result is `litellm-only` or `openrouter-only`. If both are present but diverge beyond tolerance the result is `disagree`.
+**Agreement logic:** Prices are considered equal when within 2% of each other on both input and output rates. If only one source returns a rate the result is `litellm-only` or `openrouter-only`. If both are present but diverge beyond tolerance the result is `disagree`. Lookup normalizes common provider key differences, including date suffixes, provider prefixes, and Anthropic hyphenated versus dotted version IDs such as `claude-opus-4-5` / `anthropic/claude-opus-4.5`.
 
 **Key neighbors:** `anthropic-cost.ts` / `openai-cost.ts` (consume `VerifiedRates`), `agent/loop.ts` (caller), `cli/command-dispatcher.ts` (renders confidence as color via `describeCostEstimate`).
 

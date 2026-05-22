@@ -1,6 +1,6 @@
 # src/db/client.ts - Session Storage
 
-**Role:** JSON-file persistence for sessions and messages. Used by the CLI and MCP server.
+**Role:** JSON-file persistence for sessions and messages. Used by the CLI.
 
 ## Storage Location
 

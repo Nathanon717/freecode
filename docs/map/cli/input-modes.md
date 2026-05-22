@@ -15,6 +15,7 @@
 - Uses raw stdin for prompt input.
 - Supports Ctrl+C exit, Enter submit, Tab completion, Backspace, Escape clear, and printable character input.
 - Shows inline command completion plus filtered suggestions from `slash-commands.ts`.
+- Starts an OpenAI-only preflight input-cost controller while editing, debounced from input changes and stopped on submit/cancel/teardown.
 - Tears down the bottom UI during agent output, config editor, model picker, and tool approval prompts.
 - `/model` without an argument opens `runModelCommand()` so interactive users can pick from configured provider models and detected Ollama models.
 - Tool approval uses a two-item Approve/Deny menu; denial can include user feedback to the agent.

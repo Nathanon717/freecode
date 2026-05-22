@@ -24,11 +24,11 @@ export interface ProviderConfig {
   paid?: boolean;
   modelsSource?: 'static' | 'live';
   modelIdBlocklist?: string[];
+  modelIdExactBlocklist?: string[];
 }
 
 export interface Config {
   providers: Partial<Record<string, { apiKey?: string }>>;
-  preferredModel?: string;
-  useOllama: boolean;
+  defaultModel?: string;
   toolRationale: boolean;
 }

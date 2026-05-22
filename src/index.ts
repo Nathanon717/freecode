@@ -18,8 +18,7 @@ import {
 } from './providers/anthropic-cost.js';
 import { addOpenAISessionCost } from './providers/openai-cost.js';
 import { formatCapturedProviderUsages } from './providers/adapters/openai-compat.js';
-import { getOllamaModels } from './providers/ollama.js';
-import { route, testAllProviders } from './providers/router.js';
+import { PROVIDER_REGISTRY, resolveModel } from './providers/registry.js';
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 const projectRoot = process.cwd();
@@ -35,10 +34,10 @@ async function main() {
   }
 
   const config = loadConfig();
-  selectedModel = config.preferredModel ?? '';
+  selectedModel = config.defaultModel ?? '';
 
   if (args.includes('--test-all')) {
-    await testAll();
+    testAll();
     rl.close();
     return;
   }
@@ -82,12 +81,8 @@ async function main() {
 
   showBanner();
 
-  try {
-    const probe = await route(selectedModel || undefined);
-    log('router', `Startup probe OK -> ${probe.providerId}:${probe.modelId}`);
-  } catch (err) {
-    log('router', 'Startup probe failed - no providers available', { error: err instanceof Error ? err.message : String(err) });
-    console.log(chalk.yellow('No providers available. Use /model to configure.\n'));
+  if (!selectedModel) {
+    console.log(chalk.yellow('No model selected. Use /model to choose one.\n'));
   }
 
   session.createSession();
@@ -112,8 +107,13 @@ async function main() {
 async function testSingle() {
   console.log(chalk.blue('Testing freecode...\n'));
 
+  if (!selectedModel) {
+    console.log(chalk.red('No model configured. Set a default with /model (press Space).'));
+    return;
+  }
+
   try {
-    const { providerId, modelId } = await route();
+    const { providerId, modelId } = resolveModel(selectedModel);
     console.log(chalk.green(`Selected provider: ${providerId}`));
     console.log(chalk.green(`Selected model: ${modelId}\n`));
 
@@ -150,30 +150,24 @@ async function testSingle() {
   }
 }
 
-async function testAll() {
-  console.log(chalk.blue('Testing all providers...\n'));
+function testAll() {
+  console.log(chalk.blue('Provider key status:\n'));
 
-  const results = await testAllProviders();
+  const config = loadConfig();
+  let configured = 0;
 
-  for (const status of results) {
-    const statusColor = status.ok ? chalk.green : chalk.red;
-    const statusIcon = status.ok ? 'OK' : 'FAIL';
-
-    console.log(statusColor(`[${statusIcon}] ${status.providerName}`));
-
-    if (status.ok) {
-      console.log(chalk.gray(`    Provider ID: ${status.providerId}`));
+  for (const provider of PROVIDER_REGISTRY) {
+    const apiKey = process.env[provider.apiKeyEnvVar] || config.providers[provider.id]?.apiKey;
+    if (apiKey) {
+      console.log(chalk.green(`[OK]   ${provider.name}`) + chalk.gray(` (${provider.id})`));
+      configured++;
     } else {
-      console.log(chalk.red(`    Error: ${status.error}`));
+      console.log(chalk.dim(`[    ] ${provider.name}`) + chalk.gray(` (${provider.id})`));
     }
-
-    console.log('');
   }
 
-  const working = results.filter((r) => r.ok).length;
-  const total = results.length;
-
-  console.log(chalk.blue(`${working}/${total} providers available`));
+  console.log('');
+  console.log(chalk.blue(`${configured}/${PROVIDER_REGISTRY.length} providers configured`));
 }
 
 main().catch((error) => {

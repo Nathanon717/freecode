@@ -11,10 +11,32 @@ Scenario tests live in `tests/scenarios/*.scenario.json` and run through `tests/
 npm run verify        # build + non-LLM, non-TTY scenarios only
 npm run verify:fast   # non-LLM, non-TTY scenarios only, no rebuild
 npm run verify:e2e    # build + TTY screen scenarios only (slow, require a PTY)
+npm run test:pty      # PTY driver + session manager vitest unit tests (require a PTY)
 npm run eval          # build + LLM eval scenarios with detailed breakdown
 ```
 
 `npm run verify` is the normal post-change safety check and never calls an LLM or spawns a PTY. `verify:e2e` runs the interactive TTY screen tests — keep them separate because they require `node-pty` and are significantly slower than script-mode scenarios. Use evals only when you explicitly want provider-backed tests.
+
+## PTY unit tests
+
+Two vitest test files exercise the PTY harness itself rather than freecode's UI:
+
+- **`tests/harness/pty/driver.test.ts`** — unit tests for `createPtyDriver` using a minimal `node -e` subprocess. Covers: raw output capture, snapshot, transcript (scrollback), `waitForText` returning false on timeout, exit detection, `exitCode`, `kill`, and keystroke delivery. Does not require a freecode build.
+- **`tests/harness/pty/session.test.ts`** — integration tests for the persistent TCP session manager (`session.ts`). Exercises the full RPC round-trip: `start` → `screen` → `send` → `stop`. Skips automatically when `dist/index.js` is absent; run `npm run build` first.
+
+Run them with:
+
+```powershell
+npm run test:pty
+```
+
+Or as part of the full vitest suite:
+
+```powershell
+npm run unit
+```
+
+**Windows / ConPTY gotcha**: `node -e "..."` subprocesses spawned through ConPTY crash at startup (CSPRNG init) unless the parent's full `process.env` is forwarded. Always pass `env: { ...process.env }` when creating a driver with an arbitrary node subprocess as the command.
 
 Inside the CLI, run `/test` to open the non-LLM verification menu. Run `/eval` to list provider-backed evals, see the checks each one performs, and select one or many evals to run sequentially. `/eval` accepts numbers, names, comma/space-separated selections, and numeric ranges such as `1-3`.
 

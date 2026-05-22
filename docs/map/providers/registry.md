@@ -26,9 +26,9 @@ For the generated provider table, see [providers.md](../../providers.md).
 - Anthropic has `type: "anthropic"` and `paid: true`; routing uses the native Anthropic adapter instead of the OpenAI-compatible adapter.
 - Cloudflare Workers AI uses a `baseUrl` templated from `process.env.CLOUDFLARE_ACCOUNT_ID` at module load time; requires both `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_KEY` env vars.
 - Ollama is not in `PROVIDER_REGISTRY`; it is detected dynamically in [ollama.md](ollama.md).
-- Providers with `modelsSource: 'live'` (openrouter, groq, siliconflow, cerebras, mistral) have their model list fetched from the provider's `/v1/models` API at runtime via `initDynamicProviders()`. There are no hardcoded fallback model lists; on fetch failure the cache from `model-cache.ts` is used instead. OpenRouter uses a public endpoint; the others require their respective API keys.
+- Providers with `modelsSource: 'live'` (openrouter, groq, siliconflow, cerebras, mistral, openai, anthropic) have their model list fetched from the provider's `/v1/models` API at runtime via `initDynamicProviders()`. There are no hardcoded fallback model lists; on fetch failure the cache from `model-cache.ts` is used instead. All live fetches are gated on the provider's API key being present — if no key is configured, the fetch is skipped entirely.
 - After fetching, live-provider model lists are deduplicated by `displayName`: when multiple IDs resolve to the same name (aliases), the versioned ID (date-stamped or semver) is kept and aliases are dropped.
-- Each live provider has a `modelIdBlocklist: string[]` — models whose IDs contain any listed substring are excluded from the displayed list. All are currently empty; populate before committing when adding a new live provider (fetch the full list first and ask the user what to block).
+- Live providers can use `modelIdBlocklist` for substring filters and `modelIdExactBlocklist` for exact ID filters before models are displayed. OpenAI uses the exact filter for `chat-latest` so versioned `*-chat-latest` models remain visible.
 - `initDynamicProviders` calls `updateProviderCache` on every successful fetch to persist results and detect new/removed models.
 
 ## Key Neighbors

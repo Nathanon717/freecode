@@ -16,4 +16,4 @@
 
 ## Important Behavior
 
-This module is intentionally stateful. A single process can switch roots between CLI sessions or MCP calls, so callers must set the root before invoking tools.
+This module is intentionally stateful. A single process can switch roots between CLI sessions, so callers must set the root before invoking tools.

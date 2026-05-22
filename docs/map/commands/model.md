@@ -12,10 +12,11 @@ interface ModelMenuItem {
   displayName: string;
   modelsSource?: 'static' | 'live';
   isNew?: boolean;
-  pricing?: { input: number; output: number; confidence: PricingConfidence };  // input/output per million tokens
+  pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
 }
 
 getSelectableModels(): Promise<ModelMenuItem[]>
+buildAllItemLines(items, selected, currentModel, removedByProvider)
 
 runModelCommand(
   rl: Interface,
@@ -28,10 +29,9 @@ runModelCommand(
 
 `getSelectableModels()`:
 
-1. Calls `testAllProviders()` and `getOpenAIPricing()` in parallel.
-2. Adds every model from each healthy registry provider.
-3. Adds detected Ollama models when the Ollama status is healthy.
-4. Attaches `pricing` to Anthropic and OpenAI models via `getAnthropicVerifiedRates` / `getOpenAIVerifiedRates` (both fetched in parallel). Pricing is omitted when confidence is `'disagree'`.
+1. Calls `initDynamicProviders()` so live provider model lists are current.
+2. Adds every model from configured registry providers with an API key.
+3. Attaches `pricing` to Anthropic and OpenAI models via `getAnthropicVerifiedRates` / `getOpenAIVerifiedRates` (both fetched in parallel). Agreed prices render green, single-source prices render yellow, and source disagreements render as red `sources disagree`.
 
 The selected model string is always `providerId:modelId`.
 
@@ -41,7 +41,7 @@ The selected model string is always `providerId:modelId`.
 
 - Up/Down moves the selected row, wrapping at the ends.
 - Enter applies the selected `provider:model`.
-- Space applies the selected `provider:model` and writes it as `preferredModel` in the global config.
+- Space applies the selected `provider:model` and writes it as `defaultModel` in the global config.
 - Esc closes without changing the model.
 - Ctrl+C exits the process.
 

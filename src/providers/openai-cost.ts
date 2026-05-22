@@ -233,3 +233,22 @@ export function estimateOpenAICostVerified(
     warnings: [],
   };
 }
+
+export function estimateOpenAIInputCostVerified(
+  inputTokens: number,
+  rates: VerifiedRates
+): { inputUsd: number | null; formattedInputUsd: string; warning?: string } {
+  if (rates.confidence === 'disagree' || rates.inputPerMillion === null) {
+    return {
+      inputUsd: null,
+      formattedInputUsd: 'input cost unavailable',
+      warning: 'pricing unavailable or disputed',
+    };
+  }
+
+  const inputUsd = (inputTokens * rates.inputPerMillion) / 1_000_000;
+  return {
+    inputUsd,
+    formattedInputUsd: formatUsdCeil(inputUsd),
+  };
+}

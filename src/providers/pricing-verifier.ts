@@ -60,13 +60,34 @@ function findRate(key: string, map: RateMap): { input: number; output: number } 
   if (map[key]) return map[key];
   const base = key.replace(/-(20\d{6,}|latest|preview)$/i, '').replace(/:.*$/, '');
   if (map[base]) return map[base];
+  const keyVariants = rateKeyVariants(key);
+  const baseVariants = rateKeyVariants(base);
+  for (const variant of [...keyVariants, ...baseVariants]) {
+    if (map[variant]) return map[variant];
+  }
   for (const [k, v] of Object.entries(map)) {
     const kb = k.replace(/-(20\d{6,}|latest|preview)$/i, '').replace(/:.*$/, '');
-    if (kb === key || kb === base) return v;
+    const mapVariants = rateKeyVariants(kb);
+    if (
+      kb === key
+      || kb === base
+      || mapVariants.some(variant => keyVariants.includes(variant) || baseVariants.includes(variant))
+    ) return v;
   }
   const candidates = Object.keys(map).filter(k => k.startsWith(key + '-') || k.startsWith(base + '-'));
   if (candidates.length > 0) return map[candidates.sort().at(-1)!];
   return undefined;
+}
+
+function rateKeyVariants(key: string): string[] {
+  const variants = new Set<string>();
+  const withoutProviderPrefix = key.replace(/^[^/]+\//, '');
+  for (const candidate of [key, withoutProviderPrefix]) {
+    variants.add(candidate);
+    variants.add(candidate.replace(/-(\d+)-(\d+)(?=$|[-_])/g, '-$1.$2'));
+    variants.add(candidate.replace(/-(\d+)\.(\d+)(?=$|[-_])/g, '-$1-$2'));
+  }
+  return [...variants];
 }
 
 function withinTolerance(a: number, b: number): boolean {

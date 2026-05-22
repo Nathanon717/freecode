@@ -1,6 +1,6 @@
 # src/agent/loop.ts - Agent Loop
 
-**Role:** Executes one model turn. It routes to a provider, sets the active project root, builds the system prompt, streams text, optionally enables tools, and returns response metadata.
+**Role:** Executes one model turn. It routes to a provider, sets the active project root, builds the system prompt, streams or generates text, optionally enables tools, and returns response metadata.
 
 ## Exports
 
@@ -36,7 +36,11 @@ setProjectRoot(projectRoot)
 route(modelPreference)
   -> on failure, return synthetic error result
 buildSystemPrompt()
-if provider is Anthropic:
+if provider is OpenAI:
+  build Responses payload
+  call direct Responses adapter
+  estimate OpenAI turn cost from exact Responses usage
+else if provider is Anthropic:
   begin usage capture
 streamText({
   model,
@@ -71,7 +75,8 @@ return AgentLoopResult
 - [providers/router.md](../providers/router.md): resolves provider/model.
 - [system-prompt.md](system-prompt.md): builds the prompt.
 - [tools/index.md](tools/index.md): creates tool wrappers.
-- [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md) and [providers/adapters/anthropic.md](../providers/adapters/anthropic.md): capture provider metadata and usage details.
+- [providers/adapters/openai-responses.md](../providers/adapters/openai-responses.md): direct OpenAI Responses generation and usage capture.
+- [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md) and [providers/adapters/anthropic.md](../providers/adapters/anthropic.md): capture provider metadata and usage details for other providers.
 
 ## Error Handling
 

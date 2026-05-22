@@ -1,20 +1,11 @@
 import chalk from 'chalk';
 import type { Interface } from 'readline';
-import { getConfigPaths, readRawConfig, writeConfigFile } from '../config/index.js';
-import { PROVIDER_REGISTRY } from '../providers/registry.js';
-import { getOllamaModels } from '../providers/ollama.js';
-import { testAllProviders } from '../providers/router.js';
+import { getConfigPaths, loadConfig, readRawConfig, writeConfigFile } from '../config/index.js';
+import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/registry.js';
 import type { Config, ModelConfig, ProviderConfig } from '../providers/types.js';
 import { getProviderCache, markModelSelected } from '../providers/model-cache.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import type { PricingConfidence } from '../providers/pricing-verifier.js';
-
-interface ProviderStatus {
-  providerId: string;
-  providerName: string;
-  ok: boolean;
-  error?: string;
-}
 
 export interface ModelMenuItem {
   providerId: string;
@@ -23,7 +14,7 @@ export interface ModelMenuItem {
   displayName: string;
   modelsSource?: 'static' | 'live';
   isNew?: boolean;
-  pricing?: { input: number; output: number; confidence: PricingConfidence };
+  pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
 }
 
 function modelPreference(item: ModelMenuItem): string {
@@ -35,13 +26,13 @@ function formatPricingLabel(input: number, output: number): string {
   return `${fmt(input)}/${fmt(output)}/MTok`;
 }
 
-function savePreferredModel(model: string): void {
+function saveDefaultModel(model: string): void {
   const paths = getConfigPaths();
   const existing = readRawConfig(paths.globalPath) as Record<string, unknown> | null ?? {};
   delete existing['preferLocal'];
   writeConfigFile(paths.globalPath, {
     ...existing,
-    preferredModel: model,
+    defaultModel: model,
   } as Partial<Config>);
 }
 
@@ -59,26 +50,14 @@ function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, mod
 }
 
 export async function getSelectableModels(): Promise<ModelMenuItem[]> {
-  const statuses = await testAllProviders();
-  const statusMap = new Map<string, ProviderStatus>(statuses.map(status => [status.providerId, status]));
+  await initDynamicProviders();
+  const config = loadConfig();
   const items: ModelMenuItem[] = [];
 
   for (const provider of PROVIDER_REGISTRY) {
-    if (statusMap.get(provider.id)?.ok) {
-      addProviderModels(items, provider, provider.models);
-    }
-  }
-
-  if (statusMap.get('ollama')?.ok) {
-    const ollamaModels = await getOllamaModels();
-    for (const model of ollamaModels) {
-      items.push({
-        providerId: 'ollama',
-        providerName: 'Ollama (local)',
-        modelId: model.id,
-        displayName: model.displayName,
-      });
-    }
+    const apiKey = process.env[provider.apiKeyEnvVar] || config.providers[provider.id]?.apiKey;
+    if (!apiKey) continue;
+    addProviderModels(items, provider, provider.models);
   }
 
   const pricedItems = items.filter(i => i.providerId === 'anthropic' || i.providerId === 'openai');
@@ -90,7 +69,9 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
 
   for (let i = 0; i < pricedItems.length; i++) {
     const rates = pricingResults[i];
-    if (rates.inputPerMillion !== null && rates.outputPerMillion !== null && rates.confidence !== 'disagree') {
+    if (rates.confidence === 'disagree') {
+      pricedItems[i].pricing = { input: null, output: null, confidence: rates.confidence };
+    } else if (rates.inputPerMillion !== null && rates.outputPerMillion !== null) {
       pricedItems[i].pricing = { input: rates.inputPerMillion, output: rates.outputPerMillion, confidence: rates.confidence };
     }
   }
@@ -98,7 +79,7 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
   return items;
 }
 
-function buildAllItemLines(
+export function buildAllItemLines(
   items: ModelMenuItem[],
   selected: number,
   currentModel: string,
@@ -135,9 +116,13 @@ function buildAllItemLines(
     const marker = current ? chalk.green(' current') : '';
     const newBadge = item.isNew ? chalk.yellow(' new') : '';
     const pricingBadge = item.pricing
-      ? (item.pricing.confidence === 'agreed'
-          ? chalk.green(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`)
-          : chalk.yellow(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`))
+      ? (item.pricing.confidence === 'disagree'
+          ? chalk.red(' sources disagree')
+          : item.pricing.input !== null && item.pricing.output !== null
+            ? (item.pricing.confidence === 'agreed'
+                ? chalk.green(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`)
+                : chalk.yellow(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`))
+            : '')
       : '';
     itemLines.push(`  ${cursor} ${renderedName}${newBadge}${pricingBadge} ${chalk.dim(id)}${marker}`);
   }
@@ -282,7 +267,7 @@ export async function runModelCommand(
         const item = items[selected];
         const choice = modelPreference(item);
         setSelectedModel(choice);
-        savePreferredModel(choice);
+        saveDefaultModel(choice);
         markModelSelected(item.providerId, item.modelId);
         cleanup();
         console.log(chalk.blue(`Model set to: ${choice}`));
