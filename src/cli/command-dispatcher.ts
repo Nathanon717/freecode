@@ -1,3 +1,4 @@
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import chalk from 'chalk';
 import { agentLoop, type AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';
@@ -163,6 +164,22 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
     }
 
     await runtime.onAgentResult?.(result);
+
+    const resultJsonPath = process.env['FREECODE_RESULT_JSON'];
+    if (resultJsonPath) {
+      try {
+        const entry = {
+          totalTokens: result.usage.totalTokens,
+          promptTokens: result.usage.promptTokens,
+          outputTokens: result.usage.outputTokens,
+          providerId: result.providerId,
+          modelId: result.modelId,
+        };
+        const existing: unknown[] = existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) : [];
+        existing.push(entry);
+        writeFileSync(resultJsonPath, JSON.stringify(existing, null, 2), 'utf-8');
+      } catch {}
+    }
 
     runtime.session.addAssistantMessage(result.text);
     runtime.session.saveExchange(input, result.text, result.usage.totalTokens);

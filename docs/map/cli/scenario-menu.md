@@ -6,9 +6,9 @@
 
 | Symbol | Description |
 |--------|-------------|
-| `printScriptedScenarioList(projectRoot, requiresLlm)` | Non-interactive list rendering for `--script` mode. |
+| `printScriptedScenarioList(projectRoot)` | Non-interactive list of non-LLM verification scenarios for `--script` mode. |
 | `runTestMenu(rl, projectRoot)` | Interactive single-select non-LLM verification menu. |
-| `runEvalMenu(rl, projectRoot)` | Interactive multi-select LLM eval menu with explicit confirmation. |
+| `runEvalMenu(rl, projectRoot, getSelectedModel)` | Interactive eval menu backed by `playground/eval/` scenarios. |
 
 ## `/test`
 
@@ -19,10 +19,11 @@
 
 ## `/eval`
 
-- Filters summaries where `requiresLlm` is true.
-- Supports multiple names/numbers and ranges through `parseScenarioSelection()`.
-- Requires `y/yes` confirmation before running real LLM evals.
-- Runs each selected scenario with `--details`.
+- Discovers numbered scenario folders in `playground/eval/` (requires `prompt.md` + `eval/check.ts`).
+- Allows picking one by number/id prefix, or `all` to run every scenario.
+- Requires `y/yes` confirmation before running.
+- Passes `FREECODE_MODEL` env var so the subprocess uses the currently selected model.
+- Runs each scenario via `node --import tsx playground/eval/run.ts <id>` with `stdio: 'inherit'`.
 
 ## Terminal Integration
 

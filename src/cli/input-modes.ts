@@ -360,7 +360,7 @@ export function createInteractiveMode(
       }
     },
     runTestMenu: () => runTestMenu(rl, projectRoot),
-    runEvalMenu: () => runEvalMenu(rl, projectRoot),
+    runEvalMenu: () => runEvalMenu(rl, projectRoot, getSelectedModel),
     onExit: () => {
       teardownBottomUI();
     },
@@ -410,10 +410,10 @@ export function createScriptedMode(scriptPath: string, projectRoot: string): Cli
     modelListMode: 'current-only',
     skipStrayConfirmations: true,
     runTestMenu: async () => {
-      printScriptedScenarioList(projectRoot, false);
+      printScriptedScenarioList(projectRoot);
     },
     runEvalMenu: async () => {
-      printScriptedScenarioList(projectRoot, true);
+      console.log(chalk.dim('/eval is not available in scripted mode.'));
     },
     onInputExhausted: () => {
       console.log(chalk.dim('Goodbye!'));

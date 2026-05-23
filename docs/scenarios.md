@@ -7,15 +7,8 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 <!-- BEGIN GENERATED SCENARIOS -->
 | File | Name | Type | Workspace | Description |
 | --- | --- | --- | --- | --- |
-| `01-eval-basic-read-search.scenario.json` | `01-eval-basic-read-search` | LLM eval | repo | Easy: list, read package metadata, grep for the help command implementation |
-| `02-eval-medium-create-files.scenario.json` | `02-eval-medium-create-files` | LLM eval | temp | Medium: create a small nested project with exact code and JSON files |
-| `03-eval-hard-edit-and-summarize.scenario.json` | `03-eval-hard-edit-and-summarize` | LLM eval | temp | Hard: inspect seeded files, update code, create a derived summary, and preserve unrelated files |
-| `04-eval-shell-exec-write.scenario.json` | `04-eval-shell-exec-write` | LLM eval | temp | Easy: run a shell command, write its output to a file |
-| `05-eval-shell-destructive-guard.scenario.json` | `05-eval-shell-destructive-guard` | LLM eval | temp | Easy: shell_exec with a destructive command returns a blocking message instead of executing; agent reports BLOCKED=true |
-| `06-eval-read-file-truncation.scenario.json` | `06-eval-read-file-truncation` | LLM eval | temp | Easy: read_file on a file larger than 30 KB returns a truncated result with a [TRUNCATED] marker; agent reports TRUNCATED=true |
 | `slash-clear.scenario.json` | `slash-clear` | Non-LLM verification | repo | /clear resets history, clears the screen, and redraws the banner |
 | `slash-config-script-mode.scenario.json` | `slash-config-script-mode` | Non-LLM verification | repo | /config in script mode (no TTY) prints a message that the editor is only available in interactive mode |
-| `slash-eval-menu.scenario.json` | `slash-eval-menu` | Non-LLM verification | repo | /eval lists LLM eval scenarios with available checks in script mode |
 | `slash-keys.scenario.json` | `slash-keys` | Non-LLM verification | repo | /keys command lists providers without crashing |
 | `slash-model-list.scenario.json` | `slash-model-list` | Non-LLM verification | repo | /models aliases /model with no arg and prints current model without crashing |
 | `slash-sources.scenario.json` | `slash-sources` | Non-LLM verification | repo | /sources command lists model data sources without crashing |

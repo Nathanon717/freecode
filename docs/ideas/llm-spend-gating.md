@@ -89,3 +89,7 @@ classifier wouldn't — another reason to favor it.
 
 Sketch the concrete settings.json `ask`/`deny` rules + the env-wrapper that strips
 `*_API_KEY` for agent-driven freecode runs.
+
+
+hello this is the user expanding on this concept. this idea also relates to another idea i have: llm call mocking. the agent (you, not freecode) should be able to test and inspect any and all UI states, even ones that normally require llm calls.
+so im thinking of 3 pty modes: 1 where llm calls are mocked, which claude/codex can run freely without permission, another where only the free llm providors are available and openai and anthropic are not which does require permission, and another where all llms are available including paid which also requires permissions

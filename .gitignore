@@ -15,6 +15,9 @@ dont look/
 playground/*
 !playground/challenges/
 !playground/challenges/**
+!playground/eval/
+!playground/eval/**
+playground/eval/*/work/
 __pycache__/
 *.pyc
 

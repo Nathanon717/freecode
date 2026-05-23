@@ -1,13 +1,41 @@
+import { existsSync, readdirSync, readFileSync } from 'fs';
+import { join, resolve, dirname } from 'path';
+import { spawnSync } from 'child_process';
+import { fileURLToPath } from 'url';
 import type { Interface } from 'readline';
 import chalk from 'chalk';
 import {
   findScenario,
   getScenarioSummaries,
-  parseScenarioSelection,
   runScenario,
   type TestScenarioSummary,
 } from './scenario-catalog.js';
+
 import { isBottomUIActive, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
+
+const _dirname = dirname(fileURLToPath(import.meta.url));
+const PLAYGROUND_EVAL_DIR = resolve(_dirname, '..', '..', 'playground', 'eval');
+
+interface PlaygroundScenario {
+  id: string;
+  firstLine: string;
+}
+
+function discoverPlaygroundScenarios(): PlaygroundScenario[] {
+  if (!existsSync(PLAYGROUND_EVAL_DIR)) return [];
+  return readdirSync(PLAYGROUND_EVAL_DIR, { withFileTypes: true })
+    .filter(d => d.isDirectory() && /^\d{3}-/.test(d.name))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .filter(d => {
+      const dir = join(PLAYGROUND_EVAL_DIR, d.name);
+      return existsSync(join(dir, 'prompt.md')) && existsSync(join(dir, 'eval', 'check.ts'));
+    })
+    .map(d => {
+      const promptPath = join(PLAYGROUND_EVAL_DIR, d.name, 'prompt.md');
+      const firstLine = readFileSync(promptPath, 'utf-8').trim().split('\n')[0].slice(0, 80);
+      return { id: d.name, firstLine };
+    });
+}
 
 async function askQuestion(rl: Interface, prompt: string): Promise<string> {
   return new Promise((resolve) => {
@@ -30,16 +58,11 @@ function printScenarioMenu(title: string, scenarios: TestScenarioSummary[], show
   });
 }
 
-export function printScriptedScenarioList(projectRoot: string, requiresLlm: boolean): void {
-  const scenarios = getScenarioSummaries(projectRoot).filter(s => s.requiresLlm === requiresLlm);
-  console.log(chalk.bold(requiresLlm ? 'LLM eval scenarios\n' : 'Verification scenarios\n'));
+export function printScriptedScenarioList(projectRoot: string): void {
+  const scenarios = getScenarioSummaries(projectRoot).filter(s => !s.requiresLlm);
+  console.log(chalk.bold('Verification scenarios\n'));
   for (const scenario of scenarios) {
-    if (requiresLlm) {
-      const checks = scenario.checks.length > 0 ? ` | checks: ${scenario.checks.join(', ')}` : '';
-      console.log(`${scenario.name} [eval]${scenario.description ? ` - ${scenario.description}` : ''}${checks}`);
-    } else {
-      console.log(`${scenario.name} [verify]${scenario.description ? ` - ${scenario.description}` : ''}`);
-    }
+    console.log(`${scenario.name} [verify]${scenario.description ? ` - ${scenario.description}` : ''}`);
   }
 }
 
@@ -83,53 +106,56 @@ export async function runTestMenu(rl: Interface, projectRoot: string): Promise<v
   }
 }
 
-export async function runEvalMenu(rl: Interface, projectRoot: string): Promise<void> {
+export async function runEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string): Promise<void> {
   const restoreBottomUI = isBottomUIActive();
   teardownBottomUI();
   rl.resume();
 
   try {
-    const scenarios = getScenarioSummaries(projectRoot).filter(s => s.requiresLlm);
+    const scenarios = discoverPlaygroundScenarios();
     if (scenarios.length === 0) {
-      console.log(chalk.yellow('No LLM eval scenarios found at tests/scenarios/*.scenario.json'));
+      console.log(chalk.yellow('No eval scenarios found in playground/eval/.'));
       return;
     }
 
-    printScenarioMenu('LLM eval scenarios', scenarios, true);
-    console.log(chalk.gray('\nEnter numbers/names separated by spaces or commas. Ranges like 1-3 are allowed. Blank cancels.'));
+    console.log(chalk.bold('Eval scenarios\n'));
+    scenarios.forEach((s, idx) => {
+      console.log(`${String(idx + 1).padStart(2, ' ')}. ${chalk.cyan(s.id)}  ${chalk.gray(s.firstLine)}`);
+    });
 
-    const choice = (await askQuestion(rl, chalk.green('eval> '))).trim();
+    console.log(chalk.gray('\nEnter a number or id to run one, "all" to run all, or blank to cancel.'));
+
+    const choice = (await askQuestion(rl, chalk.green('eval> '))).trim().toLowerCase();
     if (!choice) return;
 
-    const selected = parseScenarioSelection(choice, scenarios);
-    if (selected.length === 0) {
-      console.log(chalk.red(`Unknown eval selection: ${choice}`));
-      return;
+    let selected: PlaygroundScenario[];
+    if (choice === 'all') {
+      selected = scenarios;
+    } else {
+      const byIndex = /^\d+$/.test(choice) ? scenarios[parseInt(choice, 10) - 1] : undefined;
+      const byId = scenarios.find(s => s.id === choice || s.id.startsWith(choice));
+      const match = byIndex ?? byId;
+      if (!match) {
+        console.log(chalk.red(`Unknown eval scenario: ${choice}`));
+        return;
+      }
+      selected = [match];
     }
 
-    const answer = (await askQuestion(rl, chalk.yellow(`Run ${selected.length} eval${selected.length === 1 ? '' : 's'} against real LLM provider(s)? [y/n] `))).trim().toLowerCase();
+    const model = getSelectedModel();
+    const answer = (await askQuestion(rl, chalk.yellow(`Run ${selected.length} eval${selected.length === 1 ? '' : 's'} using ${model || 'default model'}? [y/n] `))).trim().toLowerCase();
     if (answer !== 'y' && answer !== 'yes') {
       console.log(chalk.dim('Cancelled.'));
       return;
     }
 
-    let passed = 0;
-    let failed = 0;
+    const runScript = join(PLAYGROUND_EVAL_DIR, 'run.ts');
     for (const scenario of selected) {
-      console.log(chalk.dim(`\nRunning ${scenario.name}...\n`));
-      const result = runScenario(projectRoot, scenario.name, true);
-      if (result.output.trim()) console.log(result.output.trimEnd());
-      if (result.status === 0) {
-        console.log(chalk.green(`\n${scenario.name} passed.`));
-        passed++;
-      } else {
-        console.log(chalk.red(`\n${scenario.name} failed.`));
-        failed++;
-      }
+      spawnSync(process.execPath, ['--import', 'tsx', runScript, scenario.id], {
+        stdio: 'inherit',
+        env: { ...process.env, ...(model ? { FREECODE_MODEL: model } : {}) },
+      });
     }
-
-    const color = failed === 0 ? chalk.green : chalk.red;
-    console.log(color(`\nEval results: ${passed} passed, ${failed} failed`));
   } finally {
     rl.pause();
     if (restoreBottomUI && process.stdin.isTTY) setupBottomUI();

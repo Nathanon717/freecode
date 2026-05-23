@@ -34,7 +34,7 @@ async function main() {
   }
 
   const config = loadConfig();
-  selectedModel = config.defaultModel ?? '';
+  selectedModel = process.env['FREECODE_MODEL'] ?? config.defaultModel ?? '';
 
   if (args.includes('--test-all')) {
     testAll();

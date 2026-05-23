@@ -14,7 +14,6 @@ This table is generated from `package.json`.
 | `npm run dev` | `tsx src/index.ts` |
 | `npm run docs:check` | `tsx scripts/generate-docs.ts && tsx scripts/check-map.ts` |
 | `npm run docs:generate` | `tsx scripts/generate-docs.ts` |
-| `npm run eval` | `npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-llm --details` |
 | `npm run pty:session` | `cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts` |
 | `npm run start` | `node dist/index.js` |
 | `npm run test` | `tsx src/index.ts --test` |

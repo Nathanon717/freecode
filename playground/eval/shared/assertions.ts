@@ -1,0 +1,82 @@
+import { existsSync, readFileSync } from 'fs';
+import { join, resolve, sep } from 'path';
+import type { CheckResult, ToolCall, TokenUsage } from './types.js';
+
+export function assertFileExists(workDir: string, filename: string): CheckResult {
+  const exists = existsSync(join(workDir, filename));
+  return {
+    name: `file exists: ${filename}`,
+    kind: 'assertion',
+    pass: exists,
+    message: exists ? undefined : `${filename} not found in work dir`,
+  };
+}
+
+export function assertFileContent(workDir: string, filename: string, expected: string): CheckResult {
+  const filePath = join(workDir, filename);
+  if (!existsSync(filePath)) {
+    return { name: `file content: ${filename}`, kind: 'assertion', pass: false, message: `${filename} does not exist` };
+  }
+  const actual = readFileSync(filePath, 'utf-8');
+  const pass = actual === expected;
+  return {
+    name: `file content: ${filename}`,
+    kind: 'assertion',
+    pass,
+    message: pass ? undefined : `expected "${expected}", got "${actual}"`,
+  };
+}
+
+export function assertNoUnnecessaryTools(toolCalls: ToolCall[], allowedTools: string[]): CheckResult {
+  const unnecessary = toolCalls.filter(t => !allowedTools.includes(t.tool));
+  const pass = unnecessary.length === 0;
+  return {
+    name: 'no unnecessary tools',
+    kind: 'assertion',
+    pass,
+    message: pass ? undefined : `unnecessary: ${[...new Set(unnecessary.map(t => t.tool))].join(', ')}`,
+  };
+}
+
+export function assertStayedInWorkDir(toolCalls: ToolCall[], workDir: string): CheckResult {
+  const resolvedWork = resolve(workDir);
+  const prefix = resolvedWork + sep;
+  const violations: string[] = [];
+
+  for (const call of toolCalls) {
+    for (const [key, val] of Object.entries(call.args)) {
+      if (typeof val !== 'string') continue;
+      if (key !== 'path' && key !== 'directory') continue;
+      // Only flag paths that look absolute (contain a drive letter or start with /)
+      if (!val.startsWith('/') && !/^[A-Za-z]:/.test(val)) continue;
+      const abs = resolve(val);
+      if (abs !== resolvedWork && !abs.startsWith(prefix)) {
+        violations.push(`${call.tool}(${key}="${val}")`);
+      }
+    }
+  }
+
+  const pass = violations.length === 0;
+  return {
+    name: 'stayed in work dir',
+    kind: 'assertion',
+    pass,
+    message: pass ? undefined : `tool calls outside work dir: ${violations.join(', ')}`,
+  };
+}
+
+export function statTokens(tokens: TokenUsage): CheckResult {
+  const parts = [`total: ${tokens.total}`];
+  if (tokens.prompt !== undefined) parts.push(`prompt: ${tokens.prompt}`);
+  if (tokens.output !== undefined) parts.push(`output: ${tokens.output}`);
+  return { name: 'token usage', kind: 'stat', value: tokens.total, note: parts.join(', ') };
+}
+
+export function statToolCalls(toolCalls: ToolCall[]): CheckResult {
+  return {
+    name: 'tool calls',
+    kind: 'stat',
+    value: toolCalls.length,
+    note: toolCalls.map(t => t.tool).join(' → ') || '(none)',
+  };
+}
