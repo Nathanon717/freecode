@@ -16,7 +16,7 @@ Modes provide:
 - `readInput(tokenCount)`: returns the next input or `null` when exhausted.
 - `confirmToolCall`: approval callback passed to tools.
 - `modelListMode`: `full` or `current-only`.
-- Hooks for agent calls, screen clearing, scenario menus, config, model picker, exit, and input exhaustion.
+- Hooks for dispatch, agent calls, screen clearing, scenario menus, config, model picker, exit, and input exhaustion.
 
 ## Flow
 
@@ -26,7 +26,9 @@ while true:
   if input is null:
     mode.onInputExhausted()
     return
+  mode.beforeDispatch()
   result = dispatchCommand(input, runtime)
+  mode.afterDispatch()
   if result is "exit":
     mode.onExit()
     return

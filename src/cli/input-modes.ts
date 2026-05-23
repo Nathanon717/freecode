@@ -14,11 +14,13 @@ import {
   drawBottomUI,
   getInputBuffer,
   isBottomUIActive,
+  parkCursorAboveBottomUI,
   parkCursorInScrollRegion,
   resetSubmittedInputArea,
   setInputBuffer,
   setInlineCompletion,
   setModelStatus,
+  setOpenAIDailySpend,
   setPreflightInputCost,
   setQuotaSnapshot,
   setSuggestions,
@@ -27,6 +29,7 @@ import {
   teardownBottomUI,
 } from './terminal-ui.js';
 import { createOpenAIPreflightInputController } from './preflight-input-cost.js';
+import { refreshOpenAIDailySpend } from './openai-daily-spend.js';
 
 type ToolApprovalChoice = 'approve' | 'deny';
 
@@ -42,6 +45,21 @@ function drawToolApprovalMenu(selected: ToolApprovalChoice): void {
   const approve = selected === 'approve' ? chalk.inverse('> Approve') : '  Approve';
   const deny = selected === 'deny' ? chalk.inverse('> Deny') : '  Deny';
   process.stdout.write(`\r\x1b[2K${approve}\n\r\x1b[2K${deny}`);
+}
+
+function resetBottomPromptState(session: SessionController): void {
+  setTokenCount(session.getContextTokenCount());
+  setInputBuffer('');
+  setInlineCompletion(null);
+  setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: Date.now() });
+  setSuggestions(getFilteredCommands(''));
+}
+
+function refreshFooterDailySpend(): void {
+  refreshOpenAIDailySpend({
+    setOpenAIDailySpend,
+    redraw: drawBottomUI,
+  });
 }
 
 async function readToolApprovalMenu(rl: Interface): Promise<ToolApprovalChoice> {
@@ -181,6 +199,7 @@ async function readLineWithAutocomplete(
   setInlineCompletion(null);
   setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: Date.now() });
   setSuggestions(getFilteredCommands(''));
+  refreshFooterDailySpend();
   drawBottomUI();
 
   return new Promise<string>((resolve) => {
@@ -229,7 +248,7 @@ async function readLineWithAutocomplete(
         setSuggestions([]);
         resetSubmittedInputArea();
         parkCursorInScrollRegion();
-        process.stdout.write(chalk.green('> ') + submitted + '\n');
+        process.stdout.write(chalk.green('> ') + submitted + '\r\n');
         cleanup();
         resolve(submitted);
         return;
@@ -287,20 +306,13 @@ export function createInteractiveMode(
     modelListMode: 'full',
     beforeAgentCall: () => {
       if (process.stdin.isTTY) teardownBottomUI();
-      setTokenCount(session.getContextTokenCount());
-      setInputBuffer('');
-      setInlineCompletion(null);
-      setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: Date.now() });
-      setSuggestions([]);
+      resetBottomPromptState(session);
     },
     afterAgentCall: () => {
       if (process.stdin.isTTY) {
         setupBottomUI();
-        setTokenCount(session.getContextTokenCount());
-        setInputBuffer('');
-        setInlineCompletion(null);
-        setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: Date.now() });
-        setSuggestions(getFilteredCommands(''));
+        resetBottomPromptState(session);
+        refreshFooterDailySpend();
         drawBottomUI();
       }
     },
@@ -313,6 +325,20 @@ export function createInteractiveMode(
     onAgentResult: (result) => {
       setModelStatus(result.providerId, result.modelId);
       setQuotaSnapshot(result.quota);
+    },
+    beforeDispatch: () => {
+      if (process.stdin.isTTY) {
+        teardownBottomUI();
+        parkCursorAboveBottomUI();
+      }
+    },
+    afterDispatch: () => {
+      if (process.stdin.isTTY) {
+        setupBottomUI();
+        resetBottomPromptState(session);
+        refreshFooterDailySpend();
+        drawBottomUI();
+      }
     },
     runConfig: async () => {
       teardownBottomUI();
@@ -328,10 +354,8 @@ export function createInteractiveMode(
       rl.pause();
       if (process.stdin.isTTY) {
         setupBottomUI();
-        setInputBuffer('');
-        setInlineCompletion(null);
-        setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: Date.now() });
-        setSuggestions(getFilteredCommands(''));
+        resetBottomPromptState(session);
+        refreshFooterDailySpend();
         drawBottomUI();
       }
     },

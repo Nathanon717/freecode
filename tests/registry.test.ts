@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { PROVIDER_REGISTRY, getProvider, getAllProviders } from '../src/providers/registry.js';
+import { PROVIDER_REGISTRY, getProvider } from '../src/providers/registry.js';
 
 describe('Provider Registry', () => {
   describe('PROVIDER_REGISTRY', () => {
     it('should have all expected providers', () => {
       const providerIds = PROVIDER_REGISTRY.map(p => p.id);
-      
+
       expect(providerIds).toContain('groq');
       expect(providerIds).toContain('openrouter');
       expect(providerIds).toContain('siliconflow');
@@ -16,10 +16,13 @@ describe('Provider Registry', () => {
       expect(providerIds).toContain('cerebras');
       expect(providerIds).toContain('mistral');
       expect(providerIds).toContain('anthropic');
+      expect(providerIds).toContain('openai');
+      expect(providerIds).toContain('cloudflare');
+      expect(providerIds).toContain('zai');
     });
 
-    it('should have 10 providers total', () => {
-      expect(PROVIDER_REGISTRY).toHaveLength(10);
+    it('should have 13 providers total', () => {
+      expect(PROVIDER_REGISTRY).toHaveLength(13);
     });
 
     it('each provider should have required fields', () => {
@@ -37,8 +40,9 @@ describe('Provider Registry', () => {
       });
     });
 
-    it('each provider should have at least one model', () => {
-      PROVIDER_REGISTRY.forEach(provider => {
+    it('static-model providers should have at least one model', () => {
+      const staticProviders = PROVIDER_REGISTRY.filter(p => p.modelsSource !== 'live');
+      staticProviders.forEach(provider => {
         expect(provider.models.length).toBeGreaterThan(0);
       });
     });
@@ -56,7 +60,7 @@ describe('Provider Registry', () => {
   describe('getProvider', () => {
     it('should return provider by id', () => {
       const provider = getProvider('groq');
-      
+
       expect(provider).toBeDefined();
       expect(provider?.id).toBe('groq');
       expect(provider?.name).toBe('Groq');
@@ -64,47 +68,21 @@ describe('Provider Registry', () => {
 
     it('should return undefined for unknown provider', () => {
       const provider = getProvider('unknown-provider');
-      
+
       expect(provider).toBeUndefined();
     });
 
     it('should return provider with correct baseUrl', () => {
       const provider = getProvider('openrouter');
-      
+
       expect(provider?.baseUrl).toBe('https://openrouter.ai/api/v1');
     });
 
-    it('should return provider with correct models', () => {
+    it('should return provider with live model source', () => {
       const provider = getProvider('groq');
-      
-      expect(provider?.models).toHaveLength(11);
-      expect(provider?.models[0].id).toBe('allam-2-7b');
-    });
-  });
 
-  describe('getAllProviders', () => {
-    it('should return array of providers', () => {
-      const providers = getAllProviders();
-      
-      expect(Array.isArray(providers)).toBe(true);
-      expect(providers.length).toBe(10);
-    });
-
-    it('should return copy of registry', () => {
-      const providers = getAllProviders();
-      const originalFirst = PROVIDER_REGISTRY[0];
-      
-      providers[0].id = 'modified';
-      
-      expect(PROVIDER_REGISTRY[0].id).toBe(originalFirst.id);
-    });
-
-    it('should contain all expected provider types', () => {
-      const providers = getAllProviders();
-      const types = providers.map(p => p.type);
-      
-      expect(types.filter(t => t === 'openai-compat')).toHaveLength(9);
-      expect(types.filter(t => t === 'anthropic')).toHaveLength(1);
+      expect(provider?.modelsSource).toBe('live');
+      expect(provider?.models).toEqual([]);
     });
   });
 
@@ -112,6 +90,18 @@ describe('Provider Registry', () => {
     it('Ollama should not be in registry (handled separately)', () => {
       const ollama = getProvider('ollama');
       expect(ollama).toBeUndefined();
+    });
+
+    it('paid providers should be marked correctly', () => {
+      expect(getProvider('openai')?.paid).toBe(true);
+      expect(getProvider('anthropic')?.paid).toBe(true);
+      expect(getProvider('groq')?.paid).toBeFalsy();
+    });
+
+    it('provider types are correct', () => {
+      const types = PROVIDER_REGISTRY.map(p => p.type);
+      expect(types.filter(t => t === 'openai-compat')).toHaveLength(12);
+      expect(types.filter(t => t === 'anthropic')).toHaveLength(1);
     });
   });
 });

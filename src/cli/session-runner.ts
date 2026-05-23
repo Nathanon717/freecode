@@ -17,6 +17,8 @@ export interface CliSessionMode {
   runModelMenu?(): Promise<void>;
   runTestMenu(): Promise<void>;
   runEvalMenu(): Promise<void>;
+  beforeDispatch?(): void | Promise<void>;
+  afterDispatch?(): void | Promise<void>;
   onExit?(): void | Promise<void>;
   onInputExhausted?(): void | Promise<void>;
 }
@@ -39,24 +41,30 @@ export async function runCliSession(options: CliSessionRunnerOptions): Promise<v
       return;
     }
 
-    const result = await dispatchCommand(input, {
-      projectRoot,
-      session,
-      getSelectedModel,
-      setSelectedModel,
-      confirmToolCall: mode.confirmToolCall,
-      modelListMode: mode.modelListMode,
-      skipStrayConfirmations: mode.skipStrayConfirmations,
-      beforeAgentCall: mode.beforeAgentCall,
-      afterAgentCall: mode.afterAgentCall,
-      onAgentResult: mode.onAgentResult,
-      beforeScreenClear: mode.beforeScreenClear,
-      afterScreenClear: mode.afterScreenClear,
-      runConfig: mode.runConfig,
-      runModelMenu: mode.runModelMenu,
-      runTestMenu: mode.runTestMenu,
-      runEvalMenu: mode.runEvalMenu,
-    });
+    let result: Awaited<ReturnType<typeof dispatchCommand>>;
+    await mode.beforeDispatch?.();
+    try {
+      result = await dispatchCommand(input, {
+        projectRoot,
+        session,
+        getSelectedModel,
+        setSelectedModel,
+        confirmToolCall: mode.confirmToolCall,
+        modelListMode: mode.modelListMode,
+        skipStrayConfirmations: mode.skipStrayConfirmations,
+        beforeAgentCall: mode.beforeAgentCall,
+        afterAgentCall: mode.afterAgentCall,
+        onAgentResult: mode.onAgentResult,
+        beforeScreenClear: mode.beforeScreenClear,
+        afterScreenClear: mode.afterScreenClear,
+        runConfig: mode.runConfig,
+        runModelMenu: mode.runModelMenu,
+        runTestMenu: mode.runTestMenu,
+        runEvalMenu: mode.runEvalMenu,
+      });
+    } finally {
+      await mode.afterDispatch?.();
+    }
 
     if (result === 'exit') {
       await mode.onExit?.();

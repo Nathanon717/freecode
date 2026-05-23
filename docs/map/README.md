@@ -52,6 +52,7 @@ src/
 |   |-- scenario-menu.ts          -> [Scenario menus](cli/scenario-menu.md)
 |   |-- session-controller.ts     -> [Conversation/session state](cli/session-controller.md)
 |   |-- preflight-input-cost.ts   -> [OpenAI live input cost controller](cli/preflight-input-cost.md)
+|   |-- openai-daily-spend.ts     -> [OpenAI daily spend footer](cli/openai-daily-spend.md)
 |   |-- session-runner.ts         -> [CLI session loop](cli/session-runner.md)
 |   |-- slash-commands.ts         -> [Slash command list/completion](cli/slash-commands.md)
 |   `-- terminal-ui.ts            -> [Bottom-pinned terminal UI](cli/terminal-ui.md)

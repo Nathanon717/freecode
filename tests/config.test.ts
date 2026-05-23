@@ -15,7 +15,8 @@ describe('Config Module', () => {
   const apiKeysToClear = [
     'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'SILICONFLOW_API_KEY',
     'NVIDIA_API_KEY', 'LLM7_API_KEY', 'GITHUB_TOKEN', 'COHERE_API_KEY',
-    'CEREBRAS_API_KEY', 'MISTRAL_API_KEY', 'ANTHROPIC_API_KEY', 'OLLAMA_API_KEY'
+    'CEREBRAS_API_KEY', 'MISTRAL_API_KEY', 'ANTHROPIC_API_KEY',
+    'OPENAI_API_KEY', 'CLOUDFLARE_API_KEY', 'ZAI_API_KEY',
   ];
 
   beforeEach(() => {
@@ -35,7 +36,6 @@ describe('Config Module', () => {
       const config = loadConfig();
 
       expect(config.toolRationale).toBe(true);
-      expect(config.useOllama).toBe(true);
       expect(config.providers).toEqual({});
     });
 
@@ -74,15 +74,13 @@ describe('Config Module', () => {
       const { existsSync, readFileSync } = await import('fs');
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
-        useOllama: false,
-        toolRationale: true
+        toolRationale: false
       }));
 
       const { loadConfig } = await import('../src/config/index.js');
       const config = loadConfig();
 
-      expect(config.useOllama).toBe(false);
-      expect(config.toolRationale).toBe(true);
+      expect(config.toolRationale).toBe(false);
     });
 
     it('should handle malformed JSON gracefully', async () => {
@@ -94,7 +92,6 @@ describe('Config Module', () => {
       const config = loadConfig();
 
       expect(config.toolRationale).toBe(true);
-      expect(config.useOllama).toBe(true);
     });
   });
 });

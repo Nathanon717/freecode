@@ -11,6 +11,7 @@ State setters/getters:
 - `setTokenCount()`
 - `setQuotaSnapshot()`
 - `setModelStatus()`
+- `setOpenAIDailySpend()`
 - `setPreflightInputCost()`
 - `setSuggestions()`
 - `setInlineCompletion()`
@@ -22,6 +23,7 @@ Rendering/control:
 - `getInlineCompletionSuffix()`
 - `drawBottomUI()`
 - `parkCursorInScrollRegion()`
+- `parkCursorAboveBottomUI()`
 - `setupBottomUI()`
 - `teardownBottomUI()`
 - `resetSubmittedInputArea()`
@@ -34,7 +36,7 @@ The module uses ANSI scroll-region controls so normal output scrolls above the r
 2 + suggestion_count
 ```
 
-The input row shows the prompt and inline completion. The status row right-aligns model, OpenAI preflight input cost, quota, and context-token information.
+The input row shows the prompt and inline completion. The status row right-aligns model, OpenAI daily spend, OpenAI preflight input cost, quota, and context-token information.
 
 ## Preflight Input Cost
 

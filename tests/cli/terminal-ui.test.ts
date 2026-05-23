@@ -4,6 +4,7 @@ import {
   composeBottomStatusLine,
   getInlineCompletionSuffix,
   setModelStatus,
+  setOpenAIDailySpend,
   setPreflightInputCost,
   setQuotaSnapshot,
   setTokenCount,
@@ -13,6 +14,7 @@ describe('bottom pinned status section', () => {
   afterEach(() => {
     vi.useRealTimers();
     setModelStatus('', '');
+    setOpenAIDailySpend({ state: 'idle', updatedAt: 0 });
     setQuotaSnapshot(null);
     setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: 0 });
     setTokenCount(0);
@@ -98,6 +100,56 @@ describe('bottom pinned status section', () => {
     expect(status).toContain('12,431 in tok | $0.0186 input');
     expect(status).toContain('123 ctx tokens');
     expect(status.length).toBeLessThanOrEqual(80);
+  });
+
+  it('renders OpenAI daily spend when available', () => {
+    setTokenCount(123);
+    setOpenAIDailySpend({
+      state: 'ready',
+      amountUsd: 1.23,
+      formattedAmountUsd: '$1.23',
+      updatedAt: Date.now(),
+    });
+
+    const status = composeBottomRightStatus(80);
+
+    expect(status).toContain('OpenAI today $1.23');
+    expect(status).toContain('123 ctx tokens');
+  });
+
+  it('renders OpenAI daily spend missing-key and failure states', () => {
+    setTokenCount(123);
+    setOpenAIDailySpend({
+      state: 'idle',
+      warning: 'OPENAI_ADMIN_KEY missing',
+      updatedAt: Date.now(),
+    });
+    expect(composeBottomRightStatus(80)).toContain('OpenAI spend off: OPENAI_ADMIN_KEY missing');
+
+    setOpenAIDailySpend({
+      state: 'unavailable',
+      warning: 'OpenAI costs HTTP 401',
+      updatedAt: Date.now(),
+    });
+    expect(composeBottomRightStatus(80)).toContain('OpenAI spend failed: OpenAI costs HTTP 401');
+  });
+
+  it('drops model before dropping OpenAI daily spend', () => {
+    setModelStatus('openai', 'gpt-5.4-nano-2026-03-17');
+    setTokenCount(123);
+    setOpenAIDailySpend({
+      state: 'ready',
+      amountUsd: 1.23,
+      formattedAmountUsd: '$1.23',
+      updatedAt: Date.now(),
+    });
+
+    const status = composeBottomRightStatus(44);
+
+    expect(status).not.toContain('openai -');
+    expect(status).toContain('OpenAI today $1.23');
+    expect(status).toContain('123 ctx tokens');
+    expect(status.length).toBeLessThanOrEqual(44);
   });
 
   it('renders pending and failed OpenAI preflight states loudly', () => {

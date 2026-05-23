@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
+import type { OpenAIDailySpend } from './openai-daily-spend.js';
 
 const ESC = '\x1b[';
 
@@ -11,6 +12,7 @@ let lastSuggestions: string[] = [];
 let lastInlineCompletion: string | null = null;
 let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
 let lastModelStatus = '';
+let lastOpenAIDailySpend: OpenAIDailySpend = { state: 'idle', updatedAt: 0 };
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 
 export interface PreflightInputCost {
@@ -101,6 +103,10 @@ export function setInlineCompletion(completion: string | null): void {
 
 export function setPreflightInputCost(snapshot: PreflightInputCost): void {
   lastPreflightInputCost = snapshot;
+}
+
+export function setOpenAIDailySpend(snapshot: OpenAIDailySpend): void {
+  lastOpenAIDailySpend = snapshot;
 }
 
 function formatDuration(ms: number): string {
@@ -194,17 +200,37 @@ function formatPreflightInputCost(): string {
   return `${tokenText} | ${costText}`;
 }
 
+function formatOpenAIDailySpend(): string {
+  if (lastOpenAIDailySpend.state === 'pending') return 'OpenAI today: loading';
+  if (lastOpenAIDailySpend.state === 'idle' && lastOpenAIDailySpend.warning) {
+    return `OpenAI spend off: ${lastOpenAIDailySpend.warning}`;
+  }
+  if (lastOpenAIDailySpend.state === 'unavailable') {
+    const warning = lastOpenAIDailySpend.warning ? `: ${lastOpenAIDailySpend.warning}` : '';
+    return `OpenAI spend failed${warning}`;
+  }
+  if (lastOpenAIDailySpend.state !== 'ready') return '';
+  return `OpenAI today ${lastOpenAIDailySpend.formattedAmountUsd ?? 'cost unavailable'}`;
+}
+
 function fitStatusRightSide(width: number, parts: string[], now = Date.now()): string {
   const nonEmptyParts = parts.filter(Boolean);
   let rightStr = nonEmptyParts.join(' | ');
   if (rightStr.length <= width) return rightStr;
 
-  const preflightStr = parts.length >= 3 ? parts[1] ?? '' : '';
+  const dailySpendStr = parts.length >= 4 ? parts[1] ?? '' : '';
+  const preflightStr = parts.length >= 4 ? parts[2] ?? '' : parts.length >= 3 ? parts[1] ?? '' : '';
   const statusStr = nonEmptyParts[nonEmptyParts.length - 1] ?? '';
   const tokenStr = `${padNumberText(lastTokenCount.toString(), 5)} ctx tokens`;
 
-  const withoutModel = [preflightStr, statusStr].filter(Boolean).join(' | ');
+  const withoutModel = [dailySpendStr, preflightStr, statusStr].filter(Boolean).join(' | ');
   if (withoutModel.length <= width) return withoutModel;
+
+  const withoutModelOrDailySpend = [preflightStr, statusStr].filter(Boolean).join(' | ');
+  if (withoutModelOrDailySpend.length <= width) return withoutModelOrDailySpend;
+
+  const dailySpendWithTokens = [dailySpendStr, tokenStr].filter(Boolean).join(' | ');
+  if (dailySpendStr && dailySpendWithTokens.length <= width) return dailySpendWithTokens;
 
   const preflightWithTokens = [preflightStr, tokenStr].filter(Boolean).join(' | ');
   if (preflightStr && preflightWithTokens.length <= width) return preflightWithTokens;
@@ -223,10 +249,11 @@ function fitStatusRightSide(width: number, parts: string[], now = Date.now()): s
 
 export function composeBottomRightStatus(width: number, now = Date.now()): string {
   const quotaStr = formatQuotaStatus(now);
+  const dailySpendStr = formatOpenAIDailySpend();
   const preflightStr = formatPreflightInputCost();
   const tokenStr = `${padNumberText(lastTokenCount.toString(), 5)} ctx tokens`;
   const statusStr = quotaStr ? `${quotaStr} | ${tokenStr}` : tokenStr;
-  return fitStatusRightSide(width, [lastModelStatus, preflightStr, statusStr], now);
+  return fitStatusRightSide(width, [lastModelStatus, dailySpendStr, preflightStr, statusStr], now);
 }
 
 export function composeBottomStatusLine(width: number, now = Date.now()): string {
@@ -284,6 +311,10 @@ export function drawBottomUI() {
 export function parkCursorInScrollRegion() {
   if (!bottomActive) return;
   moveTo(rows() - lastReservedRows, 1);
+}
+
+export function parkCursorAboveBottomUI() {
+  moveTo(Math.max(1, rows() - 2), 1);
 }
 
 export function setupBottomUI() {
