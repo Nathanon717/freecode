@@ -13,7 +13,7 @@ Use `pty:session` whenever you want to:
 - Confirm a slash command works end-to-end in the live TUI
 - Do anything in freecode that a human would do at the terminal
 
-For one-shot batch assertions in automated tests, prefer `npm run inspect:tty` or a TTY scenario file instead (see `docs/testing-scenarios.md`).
+For one-shot batch assertions in automated tests, prefer a TTY scenario file instead (see `docs/testing-scenarios.md`).
 
 ## Workflow
 

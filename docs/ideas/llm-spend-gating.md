@@ -28,7 +28,7 @@ Token-spending calls are exactly two `fetch`es:
 - `src/providers/adapters/openai-compat.ts:229`
 
 Reached only when a generation fires: `npm run eval`, or a prompt submitted to the agent
-(via the binary, `inspect:tty`, or `pty:session send`).
+(via the binary or `pty:session send`).
 
 Separately, `registry.ts` and `pricing-verifier.ts` fetch model lists / pricing — these
 hit provider APIs but spend **no tokens**. Open question: do we count those as

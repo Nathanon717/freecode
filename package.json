@@ -25,7 +25,6 @@
     "verify:fast": "npm run docs:check && npm run verify:scenarios",
     "verify:e2e": "npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-tty",
     "eval": "npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-llm --details",
-    "inspect:tty": "tsx tests/harness/pty/inspect.ts",
     "pty:session": "cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts"
   },
   "keywords": [

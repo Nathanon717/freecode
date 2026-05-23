@@ -153,13 +153,16 @@ Set `requiresLlm: false` and omit `turns`/`expect`; the `tty` block fully descri
 - `exitCode`: Expected exit code when it exits.
 - `mask`: Optional regex strings stripped from the screen before substring checks, for volatile content (e.g. token counts).
 
-Run `npm run inspect:tty -- '<json>'` to drive the live CLI with a one-off interaction sequence and print the rendered screen after each step — the fastest way to visually verify a UI change without writing a full scenario file. Pass inline JSON matching the `tty` block shape, or a path to a JSON file:
+Use `npm run pty:session` to drive the live CLI interactively and print the rendered screen after each step — the fastest way to visually verify a UI change without writing a full scenario file:
 
 ```bash
-npm run inspect:tty -- '{"steps":[{"name":"open model picker","send":"/model"},{"name":"press enter","send":"\r","quietMs":1000}]}'
+ID=$(npm run pty:session -- start 2>&1 | grep SESSION_ID | cut -d= -f2)
+printf '/model' | npm run pty:session -- send "$ID" -   # type command
+printf '\r'     | npm run pty:session -- send "$ID" -   # submit
+npm run pty:session -- stop "$ID"
 ```
 
-`screenContains` and `screenAbsent` in each step are optional: if present, the tool prints `✓`/`✗` inline alongside the screen snapshot so the same invocation doubles as a quick assertion check.
+See `docs/pty-session.md` for the full reference, control character table, and common patterns.
 
 Run `npx tsx tests/harness/pty/demo.ts` for a fixed startup-through-`/clear` walkthrough. The harness driver lives in `tests/harness/pty/driver.ts` and the scenario runner in `tests/harness/pty/run-tty-scenario.ts`.
 
