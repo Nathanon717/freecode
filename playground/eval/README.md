@@ -56,3 +56,4 @@ Each check in an `EvalReport` has a `kind`:
 |---|------|------------|------|
 | 001 | hello-world | Trivial | Create hello.txt |
 | 002 | edit-config | Easy | Change one field in config.json without touching others |
+| 003 | run-fix-script | Easy | Run a Python script, inspect a syntax error, fix it, and rerun |

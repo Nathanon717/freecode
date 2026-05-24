@@ -1,0 +1,1 @@
+Run analyze_numbers.py. It currently has a syntax error. Inspect the failure, fix the script, then run it again to confirm it prints the expected summary.
