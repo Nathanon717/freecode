@@ -38,9 +38,7 @@ Two kinds of checks:
 
 **New (playground):**
 - `playground/eval/README.md`
-- `playground/eval/run.ts` — CLI entry: `npm run eval:playground [prefix]`
 - `playground/eval/shared/types.ts` — `EvalRunResult`, `CheckResult`, `EvalReport`
-- `playground/eval/shared/runner.ts` — `resetWorkDir()`, `runScenario()`
 - `playground/eval/shared/assertions.ts` — common assertion and stat helpers
 - `playground/eval/001-hello-world/prompt.md`
 - `playground/eval/001-hello-world/start/.gitkeep`
@@ -48,9 +46,9 @@ Two kinds of checks:
 
 **Modified (source):**
 - `src/cli/command-dispatcher.ts` — adds `FREECODE_RESULT_JSON` env var support
+- `src/cli/scenario-menu.ts` — `runEvalMenu` contains the eval execution logic (reset workdir, run agent, score results)
 
 **Modified (config):**
-- `package.json` — adds `eval:playground` script
 - `.gitignore` — un-ignores `playground/eval/**`, re-ignores `playground/eval/*/work/`
 
 ## Scenario 001: hello-world

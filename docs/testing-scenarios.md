@@ -8,14 +8,12 @@ Scenario tests live in `tests/scenarios/*.scenario.json` and run through `tests/
 ## Commands
 
 ```powershell
-npm run verify        # build + non-LLM, non-TTY scenarios only
-npm run verify:fast   # non-LLM, non-TTY scenarios only, no rebuild
-npm run verify:e2e    # build + TTY screen scenarios only (slow, require a PTY)
+npm test              # build + docs check + all non-LLM scenarios including TTY + unit tests (no PTY)
 npm run test:pty      # PTY driver + session manager vitest unit tests (require a PTY)
 npm run eval          # build + LLM eval scenarios with detailed breakdown
 ```
 
-`npm run verify` is the normal post-change safety check and never calls an LLM or spawns a PTY. `verify:e2e` runs the interactive TTY screen tests — keep them separate because they require `node-pty` and are significantly slower than script-mode scenarios. Use evals only when you explicitly want provider-backed tests.
+`npm test` is the normal post-change safety check and never calls an LLM. Use evals only when you explicitly want provider-backed tests.
 
 ## PTY unit tests
 
@@ -30,10 +28,10 @@ Run them with:
 npm run test:pty
 ```
 
-Or as part of the full vitest suite:
+Or as part of the full test suite (excluding PTY tests):
 
 ```powershell
-npm run unit
+npm test
 ```
 
 **Windows / ConPTY gotcha**: `node -e "..."` subprocesses spawned through ConPTY crash at startup (CSPRNG init) unless the parent's full `process.env` is forwarded. Always pass `env: { ...process.env }` when creating a driver with an arbitrary node subprocess as the command.
@@ -88,7 +86,7 @@ For the generated scenario inventory, see [scenarios.md](scenarios.md).
 
 - `name`: Stable kebab-case identifier shown in harness output.
 - `description`: Human-readable purpose of the scenario.
-- `requiresLlm`: Set `true` for prompts that call a provider. These are skipped by `verify` and `verify:fast`, and shown under `/eval`.
+- `requiresLlm`: Set `true` for prompts that call a provider. These are skipped by `verify` and shown under `/eval`.
 - `config`: Optional temporary `config.json` contents written under the scenario's isolated `FREECODE_HOME`.
 - `workspace`: Use `"temp"` for file-writing or project-mutating scenarios. Omit it or use `"repo"` for structural CLI checks.
 - `filesBefore`: Optional seed files written before the CLI runs. Use with `workspace: "temp"` for edit/preservation scenarios.

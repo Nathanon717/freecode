@@ -10,12 +10,12 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 - Run npm scripts as `npm.cmd run ...` or `cmd /c npm.cmd run ...`; do not rely on the PowerShell `npm` shim.
 - Run `npm.cmd run build` after every code change.
 - Before broad source reads, start with `docs/map/README.md` and the relevant map page.
-- Do not run LLM evals without asking first. LLM evals are `/eval` or `npm.cmd run eval`.
+- Do not run LLM evals without asking first. LLM evals run via the `/eval` slash command inside freecode.
 
 ## Verification
 
-- For any change touching `src/`, run `npm.cmd run verify:fast` before reporting completion. Build, docs, and scenario failures are blockers.
-- `verify:fast` skips TTY screen scenarios (they are slow and require a PTY). Run `npm.cmd run verify:e2e` to run TTY scenarios only.
+- For any change touching `src/`, run `npm.cmd test` before reporting completion. Build, docs, and scenario failures are blockers.
+- `npm test` runs build + docs check + all non-LLM scenarios including TTY + all unit tests except PTY (~14s).
 - For quick visual checks of the interactive TUI (e.g. after adding a provider, open the model picker to confirm it appears), use `npm run pty:session`. Start a session, send keystrokes step by step, read the rendered screen. See `docs/pty-session.md` for full reference and examples.
 - If a user-visible behavior changes, ensure it has scenario coverage in `tests/scenarios/` or docs coverage, as appropriate.
 - If generated reference sources change, update the source of truth first, then run `npm.cmd run docs:generate`. Do not hand-edit generated sections.

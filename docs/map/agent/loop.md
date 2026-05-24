@@ -39,6 +39,7 @@ buildSystemPrompt()
 if provider is OpenAI:
   build Responses payload
   call direct Responses adapter
+  write transcript step dividers around tool-producing Responses iterations
   estimate OpenAI turn cost from exact Responses usage
 else if provider is Anthropic:
   begin usage capture
@@ -46,7 +47,7 @@ streamText({
   model,
   system,
   messages,
-  ...(supportsTools ? { tools: createTools(confirmToolCall), maxSteps: 10 } : {})
+  ...(supportsTools ? { tools: createTools(confirmToolCall), maxSteps: 10, onStepFinish } : {})
 })
 for await chunk of textStream:
   write chunk to stdout
@@ -67,6 +68,7 @@ return AgentLoopResult
 
 - Tools are only passed when the routed provider reports `supportsTools: true`.
 - `maxSteps: 10` allows multi-step tool use.
+- Tool-enabled turns write visible transcript dividers before tool execution and after each tool-producing model step.
 - Tool approval is delegated to the supplied `confirmToolCall`.
 - Tool wrappers serialize execution so concurrent tool calls do not mutate files in parallel.
 
@@ -81,7 +83,7 @@ return AgentLoopResult
 ## Error Handling
 
 - Routing errors do not throw; they return `providerId: "none"`, `modelId: "none"`, zero tokens, and an error text.
-- Stream errors are logged and returned with any partial text plus an appended error message. Anthropic usage capture is ended on this path so any available partial cost metadata can still be returned.
+- Stream errors are logged and returned with any partial text plus an appended detailed error message. API errors include parsed provider fields such as `code`, `type`, and `failed_generation` when the SDK exposes them. Anthropic usage capture is ended on this path so any available partial cost metadata can still be returned.
 
 ## Update Triggers
 

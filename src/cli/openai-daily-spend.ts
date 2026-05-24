@@ -31,6 +31,7 @@ interface CostsResponse {
 interface OpenAIDailySpendRefreshOptions {
   setOpenAIDailySpend: (snapshot: OpenAIDailySpend) => void;
   redraw: () => void;
+  modelPreference?: string | (() => string);
   fetchCosts?: typeof fetchOpenAITodayCosts;
   now?: () => Date;
 }
@@ -58,6 +59,17 @@ function formatUsd(value: number): string {
 
 function getAdminApiKey(): string | null {
   return process.env.OPENAI_ADMIN_KEY || null;
+}
+
+function resolveModelPreference(modelPreference: OpenAIDailySpendRefreshOptions['modelPreference']): string | undefined {
+  return typeof modelPreference === 'function' ? modelPreference() : modelPreference;
+}
+
+export function isOpenAIModelPreference(modelPreference: string | undefined): boolean {
+  if (!modelPreference) return false;
+  const colonIdx = modelPreference.indexOf(':');
+  if (colonIdx === -1) return false;
+  return modelPreference.slice(0, colonIdx) === 'openai' && modelPreference.slice(colonIdx + 1).length > 0;
 }
 
 function getResults(bucket: CostsBucket): CostsResult[] {
@@ -124,6 +136,12 @@ export async function fetchOpenAITodayCosts(now = new Date()): Promise<OpenAIDai
 }
 
 export function refreshOpenAIDailySpend(options: OpenAIDailySpendRefreshOptions): void {
+  if (options.modelPreference !== undefined && !isOpenAIModelPreference(resolveModelPreference(options.modelPreference))) {
+    options.setOpenAIDailySpend({ state: 'idle', updatedAt: Date.now() });
+    options.redraw();
+    return;
+  }
+
   const now = options.now?.() ?? new Date();
   if (cachedSnapshot && Date.now() - cachedSnapshot.updatedAt < CACHE_TTL_MS) {
     options.setOpenAIDailySpend(cachedSnapshot);
@@ -138,14 +156,22 @@ export function refreshOpenAIDailySpend(options: OpenAIDailySpendRefreshOptions)
   inFlight = (async () => {
     try {
       cachedSnapshot = await (options.fetchCosts ?? fetchOpenAITodayCosts)(now);
-      options.setOpenAIDailySpend(cachedSnapshot);
+      options.setOpenAIDailySpend(
+        options.modelPreference !== undefined && !isOpenAIModelPreference(resolveModelPreference(options.modelPreference))
+          ? { state: 'idle', updatedAt: Date.now() }
+          : cachedSnapshot
+      );
     } catch (error) {
       cachedSnapshot = {
         state: 'unavailable',
         updatedAt: Date.now(),
         warning: error instanceof Error ? error.message : String(error),
       };
-      options.setOpenAIDailySpend(cachedSnapshot);
+      options.setOpenAIDailySpend(
+        options.modelPreference !== undefined && !isOpenAIModelPreference(resolveModelPreference(options.modelPreference))
+          ? { state: 'idle', updatedAt: Date.now() }
+          : cachedSnapshot
+      );
     } finally {
       inFlight = null;
       options.redraw();

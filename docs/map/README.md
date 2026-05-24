@@ -55,6 +55,7 @@ src/
 |   |-- openai-daily-spend.ts     -> [OpenAI daily spend footer](cli/openai-daily-spend.md)
 |   |-- session-runner.ts         -> [CLI session loop](cli/session-runner.md)
 |   |-- slash-commands.ts         -> [Slash command list/completion](cli/slash-commands.md)
+|   |-- transcript-renderer.ts    -> [Agent transcript formatting](cli/transcript-renderer.md)
 |   `-- terminal-ui.ts            -> [Bottom-pinned terminal UI](cli/terminal-ui.md)
 |-- commands/
 |   |-- config.ts                 -> [Interactive /config editor](commands/config.md)

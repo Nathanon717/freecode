@@ -23,11 +23,12 @@ import {
   buildOpenAIResponsesPayload,
   generateOpenAIResponses,
 } from '../providers/adapters/openai-responses.js';
+import { writeTranscriptStepDivider } from '../cli/transcript-renderer.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
-import { toErrorMessage } from '../util/errors.js';
+import { toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
 
 let systemPromptLogged = false;
 
@@ -113,6 +114,7 @@ export async function agentLoop(
       const provider = getProvider(providerId);
       if (!provider) throw new Error(`Unknown provider: "${providerId}"`);
       const tools = supportsTools ? createTools(options.confirmToolCall) : undefined;
+      if (tools) writeTranscriptStepDivider();
       const payload = buildOpenAIResponsesPayload({
         modelId,
         systemPrompt,
@@ -137,11 +139,18 @@ export async function agentLoop(
       beginProviderUsageCapture(providerId);
     }
     if (providerId !== 'openai') {
+      if (supportsTools) writeTranscriptStepDivider();
       const result: unknown = await streamText({
         model: languageModel,
         system: systemPrompt,
         messages,
-        ...(supportsTools ? { tools: createTools(options.confirmToolCall), maxSteps: 10 } : {}),
+        ...(supportsTools ? {
+          tools: createTools(options.confirmToolCall),
+          maxSteps: 10,
+          onStepFinish: (event) => {
+            if (event.toolCalls.length > 0) writeTranscriptStepDivider();
+          },
+        } : {}),
       });
 
       const typedResult = result as {
@@ -224,7 +233,7 @@ export async function agentLoop(
     }
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);
     log('stream', 'streamText error details', serializeError(error));
-    const errMsg = error instanceof Error ? error.message : (typeof error === 'object' && error !== null ? JSON.stringify(error) : String(error));
+    const errMsg = toDetailedErrorMessage(error);
     if (fullText && !fullText.endsWith('\n')) process.stdout.write('\n');
     process.stdout.write(`Error: ${errMsg}\n`);
     return {

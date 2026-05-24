@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { runConfigCommand } from '../commands/config.js';
 import { runModelCommand } from '../commands/model.js';
 import { formatArgs, type ToolCallConfirmation, type ToolCallPreview } from '../agent/tools/index.js';
+import { loadConfig } from '../config/index.js';
 import { getCommandCompletion, getFilteredCommands } from './slash-commands.js';
 import { printScriptedScenarioList, runEvalMenu, runTestMenu } from './scenario-menu.js';
 import type { SessionController } from './session-controller.js';
@@ -16,6 +17,7 @@ import {
   isBottomUIActive,
   parkCursorAboveBottomUI,
   parkCursorInScrollRegion,
+  printTurnDivider,
   resetSubmittedInputArea,
   setInputBuffer,
   setInlineCompletion,
@@ -55,10 +57,20 @@ function resetBottomPromptState(session: SessionController): void {
   setSuggestions(getFilteredCommands(''));
 }
 
-function refreshFooterDailySpend(): void {
+function applyModelStatus(model: string): void {
+  const idx = model.indexOf(':');
+  if (idx !== -1) {
+    setModelStatus(model.slice(0, idx), model.slice(idx + 1));
+  } else if (model) {
+    setModelStatus('', model);
+  }
+}
+
+function refreshFooterDailySpend(getSelectedModel: () => string): void {
   refreshOpenAIDailySpend({
     setOpenAIDailySpend,
     redraw: drawBottomUI,
+    modelPreference: getSelectedModel,
   });
 }
 
@@ -144,9 +156,6 @@ async function confirmToolCallInteractive(rl: Interface, preview: ToolCallPrevie
   rl.resume();
 
   try {
-    const args = formatArgs(preview.args);
-    console.log(chalk.cyan(`\nTool request: ${preview.name}(${args})`));
-
     const choice = await readToolApprovalMenu(rl);
     if (choice === 'approve') return { approved: true };
 
@@ -160,11 +169,6 @@ async function confirmToolCallInteractive(rl: Interface, preview: ToolCallPrevie
     rl.pause();
     if (restoreBottomUI && process.stdin.isTTY) setupBottomUI();
   }
-}
-
-export async function denyToolCallWithPreview(preview: ToolCallPreview): Promise<ToolCallConfirmation> {
-  console.log(chalk.cyan(`\nTool request: ${preview.name}(${formatArgs(preview.args)})`));
-  return { approved: false };
 }
 
 function formatScriptedToolMenu(choice: ToolApprovalChoice): void {
@@ -199,7 +203,7 @@ async function readLineWithAutocomplete(
   setInlineCompletion(null);
   setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: Date.now() });
   setSuggestions(getFilteredCommands(''));
-  refreshFooterDailySpend();
+  refreshFooterDailySpend(getSelectedModel);
   drawBottomUI();
 
   return new Promise<string>((resolve) => {
@@ -293,6 +297,24 @@ async function readLineWithAutocomplete(
   });
 }
 
+const TOOL_CALL_LIMIT = 10;
+
+async function askContinueAfterLimit(rl: Interface, count: number): Promise<boolean> {
+  const restoreBottomUI = isBottomUIActive();
+  teardownBottomUI();
+  rl.resume();
+  try {
+    const answer = await askQuestion(
+      rl,
+      chalk.yellow(`\n${count} tool calls used this turn. Continue? [Y/n] `),
+    );
+    return answer.trim().toLowerCase() !== 'n';
+  } finally {
+    rl.pause();
+    if (restoreBottomUI && process.stdin.isTTY) setupBottomUI();
+  }
+}
+
 export function createInteractiveMode(
   rl: Interface,
   projectRoot: string,
@@ -300,19 +322,38 @@ export function createInteractiveMode(
   getSelectedModel: () => string,
   setSelectedModel: (model: string) => void,
 ): CliSessionMode {
+  applyModelStatus(getSelectedModel());
+  const config = loadConfig();
+  let toolCallsThisTurn = 0;
+
+  async function confirmToolCall(preview: ToolCallPreview): Promise<ToolCallConfirmation> {
+    toolCallsThisTurn++;
+    if (toolCallsThisTurn % TOOL_CALL_LIMIT === 0) {
+      const shouldContinue = await askContinueAfterLimit(rl, toolCallsThisTurn);
+      if (!shouldContinue) return { approved: false, message: 'Stopped by user after tool call limit.' };
+    }
+    if (config.toolConfirmation === 'auto') {
+      console.log(chalk.dim(`Auto-approved: ${preview.name}(${formatArgs(preview.args)})`));
+      return { approved: true };
+    }
+    return confirmToolCallInteractive(rl, preview);
+  }
+
   return {
     readInput: (tokenCount) => readLineWithAutocomplete(rl, tokenCount, session, getSelectedModel),
-    confirmToolCall: (preview) => confirmToolCallInteractive(rl, preview),
+    confirmToolCall,
     modelListMode: 'full',
     beforeAgentCall: () => {
+      toolCallsThisTurn = 0;
       if (process.stdin.isTTY) teardownBottomUI();
       resetBottomPromptState(session);
+      printTurnDivider();
     },
     afterAgentCall: () => {
       if (process.stdin.isTTY) {
         setupBottomUI();
         resetBottomPromptState(session);
-        refreshFooterDailySpend();
+        refreshFooterDailySpend(getSelectedModel);
         drawBottomUI();
       }
     },
@@ -336,7 +377,7 @@ export function createInteractiveMode(
       if (process.stdin.isTTY) {
         setupBottomUI();
         resetBottomPromptState(session);
-        refreshFooterDailySpend();
+        refreshFooterDailySpend(getSelectedModel);
         drawBottomUI();
       }
     },
@@ -352,10 +393,11 @@ export function createInteractiveMode(
       rl.resume();
       await runModelCommand(rl, getSelectedModel(), setSelectedModel);
       rl.pause();
+      applyModelStatus(getSelectedModel());
       if (process.stdin.isTTY) {
         setupBottomUI();
         resetBottomPromptState(session);
-        refreshFooterDailySpend();
+        refreshFooterDailySpend(getSelectedModel);
         drawBottomUI();
       }
     },
@@ -374,6 +416,10 @@ export function createScriptedMode(scriptPath: string, projectRoot: string): Cli
     .filter(line => line.length > 0);
   let lineIdx = 0;
 
+  const autoConfirm = process.env['FREECODE_AUTO_CONFIRM'] === '1';
+  const maxToolCalls = parseInt(process.env['FREECODE_MAX_TOOL_CALLS'] ?? '10', 10);
+  let autoCallCount = 0;
+
   return {
     readInput: async () => {
       if (lineIdx >= lines.length) return null;
@@ -382,7 +428,15 @@ export function createScriptedMode(scriptPath: string, projectRoot: string): Cli
       return line;
     },
     confirmToolCall: async (preview) => {
-      console.log(chalk.cyan(`\nTool request: ${preview.name}(${formatArgs(preview.args)})`));
+      if (autoConfirm) {
+        autoCallCount++;
+        if (autoCallCount > maxToolCalls) {
+          console.log(chalk.red(`Auto-confirm limit of ${maxToolCalls} tool calls reached; denying.`));
+          return { approved: false, message: `Auto-confirm limit of ${maxToolCalls} tool calls reached.` };
+        }
+        process.stderr.write(chalk.dim('Auto-approved.\n'));
+        return { approved: true };
+      }
 
       const choice = parseScriptedToolChoice(lines[lineIdx]);
       if (choice) {

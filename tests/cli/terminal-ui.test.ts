@@ -36,7 +36,7 @@ describe('bottom pinned status section', () => {
     );
   });
 
-  it('keeps context token count visible when model and quota status are too wide', () => {
+  it('keeps model and token count visible when quota status is too wide', () => {
     const now = new Date('2026-05-18T12:00:00.000Z');
     vi.useFakeTimers();
     vi.setSystemTime(now);
@@ -50,10 +50,9 @@ describe('bottom pinned status section', () => {
 
     const status = composeBottomRightStatus(62, now.getTime());
 
-    expect(status).toContain('R  985/1000');
-    expect(status).toContain('T 12000/12000');
-    expect(status).toContain('|   123 ctx tokens');
+    expect(status).toContain('groq - llama-3.3-70b-versatile');
     expect(status).toContain('123 ctx tokens');
+    expect(status).not.toContain('R  985/1000');
     expect(status.length).toBeLessThanOrEqual(62);
   });
 
@@ -134,7 +133,7 @@ describe('bottom pinned status section', () => {
     expect(composeBottomRightStatus(80)).toContain('OpenAI spend failed: OpenAI costs HTTP 401');
   });
 
-  it('drops model before dropping OpenAI daily spend', () => {
+  it('drops OpenAI daily spend before dropping model', () => {
     setModelStatus('openai', 'gpt-5.4-nano-2026-03-17');
     setTokenCount(123);
     setOpenAIDailySpend({
@@ -146,9 +145,8 @@ describe('bottom pinned status section', () => {
 
     const status = composeBottomRightStatus(44);
 
-    expect(status).not.toContain('openai -');
-    expect(status).toContain('OpenAI today $1.23');
-    expect(status).toContain('123 ctx tokens');
+    expect(status).toContain('openai - gpt-5.4-nano-2026-03-17');
+    expect(status).not.toContain('OpenAI today $1.23');
     expect(status.length).toBeLessThanOrEqual(44);
   });
 
@@ -181,7 +179,7 @@ describe('bottom pinned status section', () => {
     expect(composeBottomRightStatus(80)).toContain('input tok off: OPENAI_API_KEY missing');
   });
 
-  it('drops model status before dropping OpenAI preflight input cost', () => {
+  it('drops OpenAI preflight input cost before dropping model', () => {
     setModelStatus('openai', 'gpt-5.4-nano-2026-03-17');
     setTokenCount(123);
     setPreflightInputCost({
@@ -197,8 +195,8 @@ describe('bottom pinned status section', () => {
 
     const status = composeBottomRightStatus(62);
 
-    expect(status).not.toContain('openai -');
-    expect(status).toContain('12,431 in tok | $0.0186 input');
+    expect(status).toContain('openai - gpt-5.4-nano-2026-03-17');
+    expect(status).not.toContain('12,431 in tok | $0.0186 input');
     expect(status).toContain('123 ctx tokens');
     expect(status.length).toBeLessThanOrEqual(62);
   });

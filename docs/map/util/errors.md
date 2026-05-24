@@ -2,10 +2,11 @@
 
 **Purpose:** Shared error-formatting utilities.
 
-**Read when:** You need a consistent way to extract a string message from an `unknown` catch value.
+**Read when:** You need a consistent way to extract a string message from an `unknown` catch value, or to surface provider/API details from structured error payloads.
 
 **Exports:**
-- `toErrorMessage(error)` — returns `error.message` for `Error` instances, `String(error)` otherwise.
+- `toErrorMessage(error)` - returns `error.message` for `Error` instances, `String(error)` otherwise.
+- `toDetailedErrorMessage(error)` - includes parsed provider details such as `code`, `type`, `param`, `failed_generation`, response bodies, and a `tool_use_failed` diagnosis when available.
 
 **Key neighbors:** `src/agent/loop.ts`, `src/agent/tools/index.ts`, `src/cli/command-dispatcher.ts`, `src/cli/preflight-input-cost.ts`, `src/providers/anthropic-cost.ts`, `src/providers/openai-cost.ts`
 

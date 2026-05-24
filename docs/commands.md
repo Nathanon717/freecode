@@ -16,16 +16,10 @@ This table is generated from `package.json`.
 | `npm run docs:generate` | `tsx scripts/generate-docs.ts` |
 | `npm run pty:session` | `cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts` |
 | `npm run start` | `node dist/index.js` |
-| `npm run test` | `tsx src/index.ts --test` |
-| `npm run test-all` | `tsx src/index.ts --test-all` |
-| `npm run test-env` | `node test-env.js` |
+| `npm run test` | `npm run build && npm run docs:check && npm run verify:scenarios && vitest run --exclude tests/harness/pty/driver.test.ts --exclude tests/harness/pty/session.test.ts` |
 | `npm run test:pty` | `vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts` |
-| `npm run unit` | `vitest run` |
 | `npm run unit:watch` | `vitest` |
-| `npm run verify` | `npm run build && npm run docs:check && npm run verify:scenarios` |
-| `npm run verify:e2e` | `npm run build && tsx tests/harness/run-scenarios.ts --no-build --only-tty` |
-| `npm run verify:fast` | `npm run docs:check && npm run verify:scenarios` |
-| `npm run verify:scenarios` | `tsx tests/harness/run-scenarios.ts --no-build --skip-llm --skip-tty` |
+| `npm run verify:scenarios` | `tsx tests/harness/run-scenarios.ts --no-build --skip-llm` |
 <!-- END GENERATED NPM SCRIPTS -->
 
 ## Slash Commands

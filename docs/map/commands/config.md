@@ -24,4 +24,4 @@
 
 ## Terminal Behavior
 
-Requires a TTY. It pauses readline, enables raw mode, hides the cursor, handles arrow/space/enter keys, then restores stdin and cursor state in cleanup.
+Requires a TTY. It pauses readline, enables raw mode, hides the cursor, and handles arrow/space/enter keys. `q` or Esc closes the editor. On cleanup it erases its own rendered rows (computing wrapped row count against terminal width) and restores stdin and cursor state, so the prompt returns to a clean screen like the `/model` picker.

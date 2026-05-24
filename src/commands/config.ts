@@ -5,7 +5,7 @@ import type { Config } from '../providers/types.js';
 
 // ── Setting definitions ───────────────────────────────────────────────────────
 
-type BoolKey = 'useOllama' | 'toolRationale';
+type BoolKey = 'toolRationale' | 'showProviderUsage';
 
 interface BoolSetting {
   type: 'boolean';
@@ -19,8 +19,8 @@ interface BoolSetting {
 type Setting = BoolSetting;
 
 const SETTINGS: Setting[] = [
-  { type: 'boolean', key: 'useOllama',     label: 'Use Ollama',         description: 'Enable Ollama local model auto-detection' },
-  { type: 'boolean', key: 'toolRationale', label: 'Tool rationale',    description: 'Ask model to explain each tool call before executing' },
+  { type: 'boolean', key: 'toolRationale', label: 'Tool rationale', description: 'Ask model to explain each tool call before executing' },
+  { type: 'boolean', key: 'showProviderUsage', label: 'Provider usage', description: 'Print token/rate-limit usage from the provider after each turn' },
 ];
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
@@ -97,17 +97,29 @@ export async function runConfigCommand(rl: Interface): Promise<void> {
     values[s.key] = effective[s.key as keyof Config];
   }
 
-  let sel       = 0;
-  let lineCount = 0;
+  let sel      = 0;
+  let rowCount = 0;
+
+  // Count the terminal rows a rendered line occupies, accounting for wrapping
+  // of its visible (ANSI-stripped) width against the current terminal width.
+  function renderedRows(lines: string[]): number {
+    const cols = process.stdout.columns || 80;
+    let total = 0;
+    for (const line of lines) {
+      const visible = line.replace(/\x1b\[[0-9;]*m/g, '').length;
+      total += Math.max(1, Math.ceil(visible / cols));
+    }
+    return total;
+  }
 
   function redraw(): void {
     const lines = buildScreen(values, sel, paths.globalPath);
-    if (lineCount > 0) {
+    if (rowCount > 0) {
       // Move cursor up, go to column 1, clear to end of screen.
-      process.stdout.write(`\x1b[${lineCount}A\r\x1b[J`);
+      process.stdout.write(`\x1b[${rowCount}A\r\x1b[J`);
     }
     process.stdout.write(lines.join('\n') + '\n');
-    lineCount = lines.length;
+    rowCount = renderedRows(lines);
   }
 
   return new Promise<void>((resolve) => {
@@ -164,7 +176,8 @@ export async function runConfigCommand(rl: Interface): Promise<void> {
       process.stdin.removeListener('data', onData);
       process.stdin.setRawMode(false);
       process.stdin.pause();
-      process.stdout.write('\x1b[?25h'); // restore cursor
+      if (rowCount > 0) process.stdout.write(`\x1b[${rowCount}A\r\x1b[J`);
+      process.stdout.write('\x1b[?25h');
       rl.resume();
     }
 

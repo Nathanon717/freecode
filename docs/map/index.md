@@ -18,14 +18,12 @@ None. This is the `#!/usr/bin/env node` executable entry point.
 2. Sets `projectRoot` to `process.cwd()`.
 3. Enables diagnostic logging when `-log` is present.
 4. Loads config and seeds the selected model from `config.preferredModel`.
-5. Routes to a flag mode, script mode, or interactive mode. Ollama is probed lazily within each path (via `route()` / `testAllProviders()`) rather than unconditionally on startup — this avoids a network round-trip in scripted/scenario mode.
+5. Routes to script mode or interactive mode. Ollama is probed lazily within each path (via `route()`) rather than unconditionally on startup — this avoids a network round-trip in scripted/scenario mode.
 
 ## Modes
 
 | Mode | Trigger | Behavior |
 |------|---------|----------|
-| Provider smoke test | `--test` | Routes once, sends `Say "freecode is alive" and nothing else.`, denies tool calls, and prints output/usage plus any captured raw provider usage metadata. |
-| Provider status | `--test-all` | Calls `testAllProviders()` and prints pass/fail status for configured providers. |
 | Scripted CLI | `--script <file>` | Creates a session and runs `runCliSession()` with `createScriptedMode()`. |
 | Interactive CLI | default | Shows banner, performs a startup route probe, sets up bottom UI on TTY, and runs `runCliSession()` with `createInteractiveMode()`. |
 | Logging | `-log` | Enables stderr logging before other startup work. |
@@ -35,7 +33,6 @@ None. This is the `#!/usr/bin/env node` executable entry point.
 - Owns the selected model string, defaulting to `config.preferredModel` when configured.
 - Owns process-level readline creation/closure.
 - Does not implement slash commands directly; command handling lives in [cli/command-dispatcher.md](cli/command-dispatcher.md).
-- Prints Anthropic cost estimates in `--test` mode when the selected provider is Anthropic, and raw provider usage metadata when captured.
 
 ## Key Neighbors
 

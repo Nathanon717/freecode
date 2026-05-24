@@ -74,11 +74,23 @@ export async function runTtyScenario(opts: {
       const label = step.name ?? `step ${i + 1}`;
 
       if (step.send) driver.send(step.send);
+
+      // Explicit waitFor: required, 8s budget.
       if (step.waitFor) {
         const seen = await driver.waitForText(step.waitFor, 8000);
         if (!seen) failures.push(`[${label}] waitFor not seen: ${JSON.stringify(step.waitFor)}`);
       }
-      await driver.settle(step.quietMs ?? 350);
+
+      // Auto-derive from first screenContains with a short budget. Many strings
+      // appear as raw text ("> /cle", "for commands") and arrive in <100ms. Some
+      // are rendered via cursor-positioning escapes ("Tool rationale") and won't
+      // appear raw — those let the short timeout expire and fall back to the full
+      // silence-settle below, adding only ~150ms overhead.
+      let fastConfirmed = false;
+      if (!step.waitFor && step.screenContains?.[0]) {
+        fastConfirmed = await driver.waitForText(step.screenContains[0], 150);
+      }
+      await driver.settle(step.quietMs ?? (fastConfirmed ? 100 : 350));
 
       const screen = applyMask(driver.snapshot().join('\n'), tty.mask);
       for (const needle of step.screenContains ?? []) {

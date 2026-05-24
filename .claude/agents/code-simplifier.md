@@ -71,7 +71,7 @@ End with a **Summary Table**:
 **Never apply changes without explicit approval.** After presenting all proposals:
 - Ask the user: "Which of these changes would you like me to apply? You can approve individual items, categories, or all."
 - Apply only what is approved.
-- After applying approved changes, run `npm run build` to verify nothing broke, then run `npm run verify:fast` if any `src/` files were touched.
+- After applying approved changes, run `npm test` if any `src/` files were touched.
 - Report the actual line delta achieved.
 
 ### 5. Quality Gates
@@ -94,7 +94,7 @@ Before finalizing any proposal, verify:
 
 ## Environment Notes
 
-This project runs in a Linux Claude Code web container. Use `npm run ...` (not `npm.cmd run ...`). Run `npm run build` after every code change. Run `npm run verify:fast` before reporting completion on any `src/` changes.
+This project runs in a Linux Claude Code web container. Use `npm run ...` (not `npm.cmd run ...`). Run `npm test` before reporting completion on any `src/` changes.
 
 **Update your agent memory** as you discover patterns in this codebase — naming conventions used, structural decisions made, recurring complexity hotspots, and areas already simplified. This builds up institutional knowledge so future simplification sessions start from a stronger baseline.
 

@@ -28,7 +28,9 @@ export function assertFileContent(workDir: string, filename: string, expected: s
 }
 
 export function assertNoUnnecessaryTools(toolCalls: ToolCall[], allowedTools: string[]): CheckResult {
-  const unnecessary = toolCalls.filter(t => !allowedTools.includes(t.tool));
+  // A single leading list_dir is always permitted — models often orient themselves first.
+  const calls = toolCalls.length > 0 && toolCalls[0].tool === 'list_dir' ? toolCalls.slice(1) : toolCalls;
+  const unnecessary = calls.filter(t => !allowedTools.includes(t.tool));
   const pass = unnecessary.length === 0;
   return {
     name: 'no unnecessary tools',

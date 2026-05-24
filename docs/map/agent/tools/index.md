@@ -48,7 +48,7 @@ The effective order is:
 
 1. `withRationale` when `loadConfig().toolRationale` is true. It adds a required `rationale` string to the Zod schema and strips it before calling the real tool.
 2. `withConfirmation`. It calls the mode-supplied approval callback and returns a denial string to the model when rejected or no callback exists.
-3. `withLogging`. It writes tool calls/results to stderr and appends JSON trace events to `FREECODE_TRACE_JSON` when set.
+3. `withLogging`. It formats tool calls/results through `cli/transcript-renderer.ts`, writes them to the configured transcript stream, and appends JSON trace events to `FREECODE_TRACE_JSON` when set.
 4. `withSerializedExecution`. It chains tool calls through one promise queue.
 
 ## Trace Events
@@ -65,3 +65,5 @@ Trace entries contain:
 ```
 
 Trace failures are swallowed so test tracing cannot break an agent run.
+
+Visible transcript output defaults to stderr. Set `FREECODE_TRANSCRIPT_STREAM=stdout` for captured eval/scripted runs that need to replay the same transcript in stdout, and `FREECODE_TRANSCRIPT_MAX_RESULT_LINES` to override the default result preview limit.

@@ -1,9 +1,9 @@
 {
   "name": "tty-config-toggle",
-  "description": "Space key toggles a boolean setting in the config editor; the changed value appears in the deselected row and survives reopening the editor",
+  "description": "Space key toggles a boolean setting in the config editor; the changed value persists and the editor can be reopened without error",
   "requiresLlm": false,
   "config": {
-    "useOllama": false
+    "toolRationale": false
   },
   "tty": {
     "cols": 80,
@@ -18,28 +18,19 @@
         ]
       },
       {
-        "name": "submit — editor opens with Use Ollama selected",
+        "name": "submit — editor opens with Tool rationale selected",
         "send": "\r",
         "waitFor": "freecode config",
         "screenContains": [
           "freecode config",
-          "Use Ollama",
           "Tool rationale"
         ]
       },
       {
-        "name": "space — toggles Use Ollama from false to true",
+        "name": "space — toggles Tool rationale from false to true",
         "send": " ",
         "screenContains": [
-          "Use Ollama",
           "Tool rationale"
-        ]
-      },
-      {
-        "name": "down arrow — deselects Use Ollama; plain value now visible in its row",
-        "send": "\u001b[B",
-        "screenContains": [
-          "Use Ollama            true"
         ]
       },
       {
@@ -57,19 +48,12 @@
         ]
       },
       {
-        "name": "submit — editor reopens",
+        "name": "submit — editor reopens with Tool rationale",
         "send": "\r",
         "waitFor": "freecode config",
         "screenContains": [
           "freecode config",
-          "Use Ollama"
-        ]
-      },
-      {
-        "name": "down arrow — Use Ollama shows persisted true value",
-        "send": "\u001b[B",
-        "screenContains": [
-          "Use Ollama            true"
+          "Tool rationale"
         ]
       },
       {

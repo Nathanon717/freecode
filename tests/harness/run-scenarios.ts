@@ -93,16 +93,23 @@ const runnableScenarios = scenarios.filter(({ scenario }) => {
   return true;
 });
 
-for (const { file, scenario } of runnableScenarios) {
-  if (onlyScenario && scenario.name !== onlyScenario && file !== onlyScenario && file !== `${onlyScenario}.scenario.json`) {
-    continue;
-  }
+// Run TTY scenarios in parallel — each spawns its own isolated PTY process.
+const ttyScenarios = runnableScenarios.filter(({ file, scenario }) => {
+  if (onlyScenario && scenario.name !== onlyScenario && file !== onlyScenario && file !== `${onlyScenario}.scenario.json`) return false;
+  return !!scenario.tty;
+});
 
-  if (scenario.tty) {
+if (ttyScenarios.length > 0) {
+  const { runTtyScenario } = await import('./pty/run-tty-scenario.js');
+  const ttyBaseEnv = Object.fromEntries(
+    Object.entries(process.env).filter(([k]) => !PROVIDER_API_KEY_VARS.has(k)),
+  );
+
+  const ttyResults = await Promise.all(ttyScenarios.map(async ({ scenario }) => {
     if (showDetails) {
       console.log(`\n  ${chalk.cyan('RUN')}   ${chalk.cyan(scenario.name)}`);
       console.log(`        ${chalk.dim(scenario.description || '(no description)')}`);
-      console.log(`        type: ${chalk.yellow('TTY screen verification')} | steps: ${chalk.magenta(String(scenario.tty.steps.length))}`);
+      console.log(`        type: ${chalk.yellow('TTY screen verification')} | steps: ${chalk.magenta(String(scenario.tty!.steps.length))}`);
     }
 
     const tmpHome = join(tmpdir(), `freecode-tty-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -114,21 +121,12 @@ for (const { file, scenario } of runnableScenarios) {
     let ttyFailures: string[] = [];
     let ttyScreen = '';
     try {
-      const { runTtyScenario } = await import('./pty/run-tty-scenario.js');
-      const ttyBaseEnv = Object.fromEntries(
-        Object.entries(process.env).filter(([k]) => !PROVIDER_API_KEY_VARS.has(k)),
-      );
       const result = await runTtyScenario({
         scenarioName: scenario.name,
-        tty: scenario.tty,
+        tty: scenario.tty!,
         entry: DIST_ENTRY,
         cwd: ROOT,
-        env: {
-          ...ttyBaseEnv,
-          FREECODE_HOME: tmpHome,
-          DEBUG_QUOTA: '0',
-          FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
-        },
+        env: { ...ttyBaseEnv, FREECODE_HOME: tmpHome, DEBUG_QUOTA: '0', FORCE_COLOR: process.env.FORCE_COLOR ?? '1' },
       });
       ttyFailures = result.failures;
       ttyScreen = result.transcript;
@@ -136,23 +134,33 @@ for (const { file, scenario } of runnableScenarios) {
       ttyFailures = [`tty harness error: ${err instanceof Error ? err.message : String(err)}`];
     }
 
-    if (ttyFailures.length === 0) {
-      console.log(`  ${chalk.green('PASS')}  ${chalk.cyan(scenario.name)}`);
+    try { rmSync(tmpHome, { recursive: true, force: true }); } catch {}
+    return { name: scenario.name, failures: ttyFailures, screen: ttyScreen };
+  }));
+
+  for (const { name, failures, screen } of ttyResults) {
+    if (failures.length === 0) {
+      console.log(`  ${chalk.green('PASS')}  ${chalk.cyan(name)}`);
       passed++;
     } else {
-      console.log(`  ${chalk.red('FAIL')}  ${chalk.cyan(scenario.name)}`);
-      for (const f of ttyFailures) console.log(`          ${chalk.red(f)}`);
+      console.log(`  ${chalk.red('FAIL')}  ${chalk.cyan(name)}`);
+      for (const f of failures) console.log(`          ${chalk.red(f)}`);
       failed++;
     }
     if (showDetails || process.env.VERBOSE) {
       console.log(chalk.dim('--- rendered screen ---'));
-      console.log(ttyScreen.trimEnd() || chalk.dim('(empty)'));
+      console.log(screen.trimEnd() || chalk.dim('(empty)'));
       console.log(chalk.dim('--- end screen ---'));
     }
+  }
+}
 
-    try { rmSync(tmpHome, { recursive: true, force: true }); } catch {}
+for (const { file, scenario } of runnableScenarios) {
+  if (onlyScenario && scenario.name !== onlyScenario && file !== onlyScenario && file !== `${onlyScenario}.scenario.json`) {
     continue;
   }
+
+  if (scenario.tty) continue; // already handled above
 
   if (showDetails) {
     const checks: string[] = [];

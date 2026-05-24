@@ -215,36 +215,26 @@ function formatOpenAIDailySpend(): string {
 
 function fitStatusRightSide(width: number, parts: string[], now = Date.now()): string {
   const nonEmptyParts = parts.filter(Boolean);
-  let rightStr = nonEmptyParts.join(' | ');
+  const rightStr = nonEmptyParts.join(' | ');
   if (rightStr.length <= width) return rightStr;
 
+  const modelStr = parts[0] ?? '';
   const dailySpendStr = parts.length >= 4 ? parts[1] ?? '' : '';
   const preflightStr = parts.length >= 4 ? parts[2] ?? '' : parts.length >= 3 ? parts[1] ?? '' : '';
   const statusStr = nonEmptyParts[nonEmptyParts.length - 1] ?? '';
   const tokenStr = `${padNumberText(lastTokenCount.toString(), 5)} ctx tokens`;
 
-  const withoutModel = [dailySpendStr, preflightStr, statusStr].filter(Boolean).join(' | ');
-  if (withoutModel.length <= width) return withoutModel;
+  const withoutPreflight = [modelStr, dailySpendStr, statusStr].filter(Boolean).join(' | ');
+  if (withoutPreflight.length <= width) return withoutPreflight;
 
-  const withoutModelOrDailySpend = [preflightStr, statusStr].filter(Boolean).join(' | ');
-  if (withoutModelOrDailySpend.length <= width) return withoutModelOrDailySpend;
+  const withoutPreflightAndSpend = [modelStr, statusStr].filter(Boolean).join(' | ');
+  if (withoutPreflightAndSpend.length <= width) return withoutPreflightAndSpend;
 
-  const dailySpendWithTokens = [dailySpendStr, tokenStr].filter(Boolean).join(' | ');
-  if (dailySpendStr && dailySpendWithTokens.length <= width) return dailySpendWithTokens;
+  const modelWithTokens = [modelStr, tokenStr].filter(Boolean).join(' | ');
+  if (modelWithTokens.length <= width) return modelWithTokens;
 
-  const preflightWithTokens = [preflightStr, tokenStr].filter(Boolean).join(' | ');
-  if (preflightStr && preflightWithTokens.length <= width) return preflightWithTokens;
-
-  if (statusStr.length <= width) return statusStr;
-
-  if (tokenStr.length >= width) return tokenStr.slice(0, width);
-
-  const quotaStr = formatQuotaStatus(now);
-  const separator = ' | ';
-  const availableQuotaWidth = Math.max(0, width - tokenStr.length - separator.length);
-  if (!quotaStr || availableQuotaWidth === 0) return tokenStr;
-
-  return `${quotaStr.slice(0, availableQuotaWidth)}${separator}${tokenStr}`;
+  if (modelStr.length <= width) return modelStr;
+  return modelStr.slice(0, width);
 }
 
 export function composeBottomRightStatus(width: number, now = Date.now()): string {
@@ -308,6 +298,10 @@ export function drawBottomUI() {
   process.stdout.write(output);
 }
 
+export function printTurnDivider() {
+  process.stdout.write(chalk.gray('─'.repeat(cols())) + '\n');
+}
+
 export function parkCursorInScrollRegion() {
   if (!bottomActive) return;
   moveTo(rows() - lastReservedRows, 1);
@@ -336,9 +330,14 @@ export function teardownBottomUI() {
     clearInterval(refreshTimer);
     refreshTimer = null;
   }
-  resetScrollRegion();
-  moveTo(rows(), 1);
-  process.stdout.write('\n');
+  const toClear = lastReservedRows;
+  let output = '';
+  for (let i = 0; i < toClear; i++) {
+    output += moveToSequence(rows() - toClear + 1 + i, 1) + clearLineSequence();
+  }
+  output += `${ESC}r`;
+  output += moveToSequence(rows() - toClear, 1);
+  process.stdout.write(output);
 }
 
 export function resetSubmittedInputArea() {

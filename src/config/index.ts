@@ -7,6 +7,8 @@ import { log, logError } from '../logger.js';
 const DEFAULT_CONFIG: Config = {
   providers: {},
   toolRationale: true,
+  showProviderUsage: false,
+  toolConfirmation: 'ask',
 };
 
 function loadJsonFile<T>(path: string): T | null {

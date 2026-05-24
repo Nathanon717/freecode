@@ -194,7 +194,7 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
       if (breakdown) console.log(chalk.gray(breakdown));
     }
     const providerUsage = formatCapturedProviderUsages(result.providerUsage);
-    if (providerUsage) {
+    if (providerUsage && loadConfig().showProviderUsage) {
       console.log(chalk.gray('Provider usage:'));
       console.log(chalk.gray(providerUsage));
     }

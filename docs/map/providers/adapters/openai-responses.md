@@ -22,6 +22,7 @@
 - Converts text CoreMessages to Responses input message items and function outputs to `function_call_output` items.
 - Exposes Freecode tools as Responses `function` tools with JSON schemas matching the existing tool parameters.
 - Strips transient response item IDs before replaying function-call items in stateless tool loops.
+- Emits the shared transcript step divider after each function-call step so the direct Responses path matches AI SDK `streamText` step boundaries.
 - Captures raw OpenAI usage from JSON responses for downstream display and cost estimation.
 
 ## Key Neighbors
@@ -32,4 +33,4 @@
 
 ## Update Triggers
 
-Update this page when the Responses payload, count endpoint parsing, tool schema mapping, generation loop, or usage capture changes.
+Update this page when the Responses payload, count endpoint parsing, tool schema mapping, generation loop, transcript step handling, or usage capture changes.

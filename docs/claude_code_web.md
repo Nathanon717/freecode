@@ -42,11 +42,10 @@ print('Key written, length:', len(token))
 " "$(cat /home/claude/.claude/remote/.session_ingress_token)"
 ```
 
-Then build and verify the provider is reachable:
+Then build and verify the provider key is visible:
 
 ```bash
 npm run build
-node dist/index.js --test
 ```
 
 ### Important caveats

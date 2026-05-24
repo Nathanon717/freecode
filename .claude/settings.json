@@ -1,1 +1,8 @@
-{}
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm.cmd run verify *)",
+      "Bash(npm.cmd run docs:check *)"
+    ]
+  }
+}

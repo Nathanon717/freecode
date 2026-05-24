@@ -1,0 +1,39 @@
+{
+  "name": "tty-eval-menu",
+  "description": "Submitting /eval opens the standalone eval picker showing available scenarios; pressing Esc closes it and restores the input prompt",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /eval",
+        "send": "/eval",
+        "screenContains": [
+          "> /eval"
+        ]
+      },
+      {
+        "name": "submit — eval picker opens with scenario list",
+        "send": "\r",
+        "waitFor": "Eval scenarios",
+        "screenContains": [
+          "Eval scenarios",
+          "001-hello-world"
+        ]
+      },
+      {
+        "name": "press Esc — picker closes, prompt returns",
+        "send": "\u001b",
+        "waitFor": "for commands",
+        "screenContains": [
+          "> / for commands"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

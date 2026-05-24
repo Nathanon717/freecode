@@ -10,6 +10,14 @@ import chalk from 'chalk';
 import { z } from 'zod';
 import type { CoreTool } from 'ai';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
+import {
+  formatArgs,
+  formatToolCallLine,
+  formatToolErrorLine,
+  formatToolResultPreview,
+  getTranscriptRuntimeOptions,
+  getTranscriptStream,
+} from '../../cli/transcript-renderer.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyCoreTool = CoreTool<any, any>;
@@ -34,19 +42,18 @@ interface ToolTraceEvent {
   error?: string;
 }
 
-export function formatArgs(args: Record<string, unknown>): string {
-  return Object.entries(args)
-    .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
-    .join(', ');
+export { formatArgs } from '../../cli/transcript-renderer.js';
+
+function toolOut(): NodeJS.WritableStream {
+  return getTranscriptStream();
 }
 
 function toolCall(name: string, args: Record<string, unknown>): void {
-  process.stderr.write(chalk.cyan(`${name}(${formatArgs(args)})\n`));
+  toolOut().write(formatToolCallLine(name, args) + '\n');
 }
 
 function toolError(name: string, err: unknown): void {
-  const msg = err instanceof Error ? err.message : String(err);
-  process.stderr.write(chalk.red(`${name}() failed: ${msg}\n`));
+  toolOut().write(formatToolErrorLine(name, err) + '\n');
 }
 
 function appendToolTrace(event: ToolTraceEvent): void {
@@ -64,18 +71,6 @@ function appendToolTrace(event: ToolTraceEvent): void {
   }
 }
 
-function formatToolOutput(result: unknown, maxLines = 30): string {
-  const raw = typeof result === 'string' ? result : JSON.stringify(result, null, 2) ?? '';
-  const trimmed = raw.trimEnd();
-  if (!trimmed) return '';
-  const lines = trimmed.split('\n');
-  const shown = lines.slice(0, maxLines);
-  const indented = shown.map(l => chalk.dim('  ' + l)).join('\n');
-  return lines.length > maxLines
-    ? indented + chalk.dim(`\n  ... (${lines.length - maxLines} more lines)`)
-    : indented;
-}
-
 function withLogging(name: string, t: AnyCoreTool): AnyCoreTool {
   if (!t.execute) return t;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -85,13 +80,13 @@ function withLogging(name: string, t: AnyCoreTool): AnyCoreTool {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     execute: async (args: any, opts: any) => {
       const { rationale, ...displayArgs } = args;
-      if (rationale) process.stderr.write(chalk.white(rationale) + '\n');
+      if (rationale) toolOut().write(chalk.white(rationale) + '\n');
       toolCall(name, displayArgs);
       try {
         const result = await original(args, opts);
         appendToolTrace({ tool: name, args: displayArgs, result });
-        const preview = formatToolOutput(result);
-        if (preview) process.stderr.write(preview + '\n');
+        const preview = formatToolResultPreview(result, getTranscriptRuntimeOptions());
+        if (preview) toolOut().write(preview + '\n');
         return result;
       } catch (err) {
         appendToolTrace({ tool: name, args: displayArgs, error: toErrorMessage(err) });

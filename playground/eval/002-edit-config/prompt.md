@@ -1,0 +1,1 @@
+Edit config.json to change the theme to "dark". Do not modify any other values.

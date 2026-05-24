@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   fetchOpenAITodayCosts,
+  isOpenAIModelPreference,
   refreshOpenAIDailySpend,
   resetOpenAIDailySpendCache,
   type OpenAIDailySpend,
@@ -92,5 +93,38 @@ describe('OpenAI daily spend footer data', () => {
 
     expect(fetchCosts).toHaveBeenCalledTimes(1);
     expect(snapshots.at(-1)).toMatchObject({ state: 'ready', amountUsd: 0.42 });
+  });
+
+  it('only refreshes and displays daily spend for selected OpenAI models', async () => {
+    expect(isOpenAIModelPreference('openai:gpt-5')).toBe(true);
+    expect(isOpenAIModelPreference('groq:llama')).toBe(false);
+    expect(isOpenAIModelPreference('openai:')).toBe(false);
+
+    const snapshots: OpenAIDailySpend[] = [];
+    const fetchCosts = vi.fn(async () => ({
+      state: 'ready' as const,
+      amountUsd: 0.42,
+      formattedAmountUsd: '$0.42',
+      updatedAt: Date.now(),
+    }));
+
+    refreshOpenAIDailySpend({
+      modelPreference: 'openai:gpt-5',
+      fetchCosts,
+      setOpenAIDailySpend: (snapshot) => snapshots.push(snapshot),
+      redraw: vi.fn(),
+    });
+    await vi.waitFor(() => expect(fetchCosts).toHaveBeenCalledTimes(1));
+    expect(snapshots.at(-1)).toMatchObject({ state: 'ready', amountUsd: 0.42 });
+
+    refreshOpenAIDailySpend({
+      modelPreference: 'groq:llama',
+      fetchCosts,
+      setOpenAIDailySpend: (snapshot) => snapshots.push(snapshot),
+      redraw: vi.fn(),
+    });
+
+    expect(fetchCosts).toHaveBeenCalledTimes(1);
+    expect(snapshots.at(-1)).toMatchObject({ state: 'idle' });
   });
 });

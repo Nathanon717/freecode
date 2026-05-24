@@ -4,6 +4,21 @@
 
 Source: `tests/harness/pty/session.ts`
 
+## Reviewing screens for correctness
+
+When you capture a screen after a command, don't just check that the expected content is present — check the **layout** too. Common rendering bugs look like:
+
+- **Status line text bleeding into scroll content**: `211 ctx tokens` or other right-aligned status text appears on the same row as output text instead of being pinned to the last row.
+- **Stale bottom UI rows**: the prompt hint (`> / for commands`) or status bar content remains visible inside an interactive UI (config editor, model picker, etc.) because the rows weren't cleared on teardown.
+- **Garbage suffix on a line**: a line like `Eval scenariosds` where the trailing characters (`ds`) are leftover from a previous render that wasn't fully overwritten.
+
+For each screen you review, explicitly check:
+1. Is any status bar / token count text appearing mid-output instead of only on the bottom status row?
+2. Are any prompt hints (`> / for commands`) visible inside an interactive UI that should own the full screen?
+3. Do any output lines have unexpected trailing characters that don't belong?
+
+These are easy to miss when scanning for functional correctness — look for them deliberately.
+
 ## When to use this
 
 Use `pty:session` whenever you want to:

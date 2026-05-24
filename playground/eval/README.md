@@ -13,11 +13,9 @@ Use the `/eval` slash command inside the freecode app. It will show a list of sc
 ```
 playground/eval/
 ├── README.md              — this file
-├── run.ts                 — CLI entry point
 ├── shared/
 │   ├── types.ts           — EvalRunResult, CheckResult, EvalReport
-│   ├── assertions.ts      — assertion and stat helper functions
-│   └── runner.ts          — resetWorkDir(), runScenario()
+│   └── assertions.ts      — assertion and stat helper functions
 └── NNN-scenario-name/
     ├── prompt.md          — the exact prompt sent to the agent
     ├── start/             — pristine starting state (never modified)
@@ -57,3 +55,4 @@ Each check in an `EvalReport` has a `kind`:
 | # | Name | Difficulty | Task |
 |---|------|------------|------|
 | 001 | hello-world | Trivial | Create hello.txt |
+| 002 | edit-config | Easy | Change one field in config.json without touching others |

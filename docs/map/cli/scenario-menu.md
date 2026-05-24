@@ -20,10 +20,13 @@
 ## `/eval`
 
 - Discovers numbered scenario folders in `playground/eval/` (requires `prompt.md` + `eval/check.ts`).
-- Allows picking one by number/id prefix, or `all` to run every scenario.
+- Opens a raw-mode standalone picker (Up/Down navigate, Enter run one, `a` run all, Esc close); the picker erases its rendered rows on close like the `/model` and `/config` pages.
 - Requires `y/yes` confirmation before running.
-- Passes `FREECODE_MODEL` env var so the subprocess uses the currently selected model.
-- Runs each scenario via `node --import tsx playground/eval/run.ts <id>` with `stdio: 'inherit'`.
+- Resets each scenario's `work/` dir from `start/`, then spawns the compiled freecode agent via `--script` mode.
+- Sets `FREECODE_TRANSCRIPT_STREAM=stdout` so the captured eval run replays the same transcript formatter used by normal tool logging.
+- Summarizes structured model API errors after the captured transcript, including provider `code`, `type`, `param`, `failed_generation`, and a `tool_use_failed` diagnosis when the provider omits the referenced failed generation payload.
+- Dynamically imports each scenario's `eval/check.ts` to score the result and print a pass/fail report.
+- Passes the currently selected model via `FREECODE_MODEL` env var to the agent subprocess.
 
 ## Terminal Integration
 
