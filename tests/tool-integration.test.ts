@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFile, unlink, mkdir, readdir, stat } from 'fs/promises';
+import { writeFile, unlink, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { readFileTool } from '../src/agent/tools/read-file.js';
 import { writeFileTool } from '../src/agent/tools/write-file.js';
+import { editFileTool } from '../src/agent/tools/edit-file.js';
 import { listDirTool } from '../src/agent/tools/list-dir.js';
 import { grepTool } from '../src/agent/tools/grep.js';
 
@@ -30,18 +31,90 @@ describe('tool integration: write_file', () => {
     expect(result).toContain('tests/temp/test-write.txt');
   });
 
-  it('overwrites existing file', async () => {
-    await writeFileTool.execute({
+  it('rejects an existing file', async () => {
+    await mkdir(TEST_DIR, { recursive: true }).catch(() => {});
+    await writeFile(join(TEST_DIR, 'test-write.txt'), 'existing content');
+
+    const result = await writeFileTool.execute({
       path: 'tests/temp/test-write.txt',
       content: 'updated content',
     });
-    const result = await readFileTool.execute({ path: 'tests/temp/test-write.txt' });
-    expect(result).toBe('updated content');
+
+    expect(result).toContain('Error writing file');
+    const readResult = await readFileTool.execute({ path: 'tests/temp/test-write.txt' });
+    expect(readResult).toBe('existing content');
   });
 
   afterEach(async () => {
     try {
       await unlink(join(TEST_DIR, 'test-write.txt'));
+    } catch {}
+  });
+});
+
+describe('tool integration: edit_file', () => {
+  beforeEach(async () => {
+    await mkdir(TEST_DIR, { recursive: true }).catch(() => {});
+  });
+
+  it('replaces one exact text occurrence', async () => {
+    await writeFile(join(TEST_DIR, 'test-edit.txt'), 'alpha\nbeta\ngamma\n');
+    await readFileTool.execute({ path: 'tests/temp/test-edit.txt' });
+
+    const result = await editFileTool.execute({
+      path: 'tests/temp/test-edit.txt',
+      old_text: 'beta',
+      new_text: 'delta',
+    });
+
+    expect(result).toContain('Edited tests/temp/test-edit.txt');
+    await expect(readFileTool.execute({ path: 'tests/temp/test-edit.txt' })).resolves.toBe('alpha\ndelta\ngamma\n');
+  });
+
+  it('rejects missing old_text', async () => {
+    await writeFile(join(TEST_DIR, 'test-edit.txt'), 'alpha\nbeta\n');
+    await readFileTool.execute({ path: 'tests/temp/test-edit.txt' });
+
+    const result = await editFileTool.execute({
+      path: 'tests/temp/test-edit.txt',
+      old_text: 'missing',
+      new_text: 'delta',
+    });
+
+    expect(result).toContain('old_text not found');
+  });
+
+  it('rejects ambiguous old_text', async () => {
+    await writeFile(join(TEST_DIR, 'test-edit.txt'), 'alpha\nbeta\nbeta\n');
+    await readFileTool.execute({ path: 'tests/temp/test-edit.txt' });
+
+    const result = await editFileTool.execute({
+      path: 'tests/temp/test-edit.txt',
+      old_text: 'beta',
+      new_text: 'delta',
+    });
+
+    expect(result).toContain('old_text appears multiple times');
+  });
+
+  it('rejects edits before the file has been read', async () => {
+    await writeFile(join(TEST_DIR, 'test-edit-unread.txt'), 'alpha\nbeta\n');
+
+    const result = await editFileTool.execute({
+      path: 'tests/temp/test-edit-unread.txt',
+      old_text: 'beta',
+      new_text: 'delta',
+    });
+
+    expect(result).toBe('Error editing file: tests/temp/test-edit-unread.txt must be read first');
+  });
+
+  afterEach(async () => {
+    try {
+      await unlink(join(TEST_DIR, 'test-edit.txt'));
+    } catch {}
+    try {
+      await unlink(join(TEST_DIR, 'test-edit-unread.txt'));
     } catch {}
   });
 });

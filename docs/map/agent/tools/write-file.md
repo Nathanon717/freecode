@@ -1,6 +1,6 @@
 # src/agent/tools/write-file.ts - write_file Tool
 
-**Role:** Creates or overwrites a UTF-8 file relative to the active project root.
+**Role:** Creates a new UTF-8 file relative to the active project root.
 
 ## Export
 
@@ -20,6 +20,6 @@ writeFileTool: CoreTool
 - Resolves with `join(projectRoot, path)`.
 - Creates parent directories recursively with async `mkdir(dir, { recursive: true })`.
 - Normalizes double-escaped `\\n` and `\\t` sequences into real newlines/tabs.
-- Overwrites the target file with UTF-8 content.
+- Writes with exclusive create mode and fails if the target file already exists.
 - Returns `Wrote <n> bytes to <path>` on success.
 - Returns an error string instead of throwing on failure.

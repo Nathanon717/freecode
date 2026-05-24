@@ -1,0 +1,1 @@
+Run analyze_orders.py. It currently fails because the script does not match the data shape. Inspect the failure and the input data, fix the script, then run it again to confirm it prints the expected shipped-order summary.

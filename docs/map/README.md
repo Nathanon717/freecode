@@ -41,6 +41,7 @@ src/
 |       |-- index.ts              -> [Tool registry/wrappers](agent/tools/index.md)
 |       |-- read-file.ts          -> [read_file](agent/tools/read-file.md)
 |       |-- write-file.ts         -> [write_file](agent/tools/write-file.md)
+|       |-- edit-file.ts          -> [edit_file](agent/tools/edit-file.md)
 |       |-- grep.ts               -> [grep](agent/tools/grep.md)
 |       |-- list-dir.ts           -> [list_dir](agent/tools/list-dir.md)
 |       `-- shell.ts              -> [shell_exec](agent/tools/shell.md)

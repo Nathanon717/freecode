@@ -1,5 +1,6 @@
 import { readFileTool } from './read-file.js';
 import { writeFileTool } from './write-file.js';
+import { editFileTool } from './edit-file.js';
 import { grepTool } from './grep.js';
 import { shellTool } from './shell.js';
 import { listDirTool } from './list-dir.js';
@@ -178,6 +179,7 @@ export function createTools(confirmToolCall?: ConfirmToolCall) {
   return {
     read_file:  wrap('read_file',  readFileTool,  useRationale, queueExecution, confirmToolCall),
     write_file: wrap('write_file', writeFileTool, useRationale, queueExecution, confirmToolCall),
+    edit_file:  wrap('edit_file',  editFileTool,  useRationale, queueExecution, confirmToolCall),
     grep:       wrap('grep',       grepTool,      useRationale, queueExecution, confirmToolCall),
     shell_exec: wrap('shell_exec', shellTool,     useRationale, queueExecution, confirmToolCall),
     list_dir:   wrap('list_dir',   listDirTool,   useRationale, queueExecution, confirmToolCall),
@@ -186,4 +188,4 @@ export function createTools(confirmToolCall?: ConfirmToolCall) {
 
 export const allTools = createTools();
 
-export { readFileTool, writeFileTool, grepTool, shellTool, listDirTool };
+export { readFileTool, writeFileTool, editFileTool, grepTool, shellTool, listDirTool };

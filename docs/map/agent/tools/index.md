@@ -27,6 +27,7 @@ Individual tools are re-exported for tests:
 ```text
 readFileTool
 writeFileTool
+editFileTool
 grepTool
 shellTool
 listDirTool
@@ -38,6 +39,7 @@ listDirTool
 |-----|------|--------|
 | `read_file` | `readFileTool` | `./read-file` |
 | `write_file` | `writeFileTool` | `./write-file` |
+| `edit_file` | `editFileTool` | `./edit-file` |
 | `grep` | `grepTool` | `./grep` |
 | `shell_exec` | `shellTool` | `./shell` |
 | `list_dir` | `listDirTool` | `./list-dir` |

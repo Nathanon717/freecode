@@ -56,8 +56,11 @@ function discoverPlaygroundScenarios(): PlaygroundScenario[] {
 function resetEvalWorkDir(scenarioDir: string): void {
   const startDir = join(scenarioDir, 'start');
   const workDir = join(scenarioDir, 'work');
+  const runDir = join(scenarioDir, '.run');
   if (existsSync(workDir)) rmSync(workDir, { recursive: true, force: true });
+  if (existsSync(runDir)) rmSync(runDir, { recursive: true, force: true });
   mkdirSync(workDir, { recursive: true });
+  mkdirSync(runDir, { recursive: true });
   if (existsSync(startDir)) {
     const entries = readdirSync(startDir).filter(f => f !== '.gitkeep');
     if (entries.length > 0) {
@@ -78,9 +81,11 @@ function loadEvalConfig(scenarioDir: string): EvalConfig {
 
 function executeEvalScenario(scenarioDir: string, prompt: string, model?: string): EvalRunResult {
   const workDir = join(scenarioDir, 'work');
-  const traceFile = join(workDir, '.eval-trace.json');
-  const resultFile = join(workDir, '.eval-result.json');
-  const scriptFile = join(workDir, '.eval-script.txt');
+  const runDir = join(scenarioDir, '.run');
+  mkdirSync(runDir, { recursive: true });
+  const traceFile = join(runDir, 'trace.json');
+  const resultFile = join(runDir, 'result.json');
+  const scriptFile = join(runDir, 'script.txt');
   writeFileSync(scriptFile, prompt, 'utf-8');
 
   const evalConfig = loadEvalConfig(scenarioDir);
@@ -473,7 +478,7 @@ export async function runEvalMenu(rl: Interface, _projectRoot: string, getSelect
 
       console.log(chalk.dim('─'.repeat(60)));
 
-      const resultInputPath = join(result.workDir, '.eval-result-input.json');
+      const resultInputPath = join(scenarioDir, '.run', 'result-input.json');
       writeFileSync(resultInputPath, JSON.stringify(result));
       const checkProc = spawnSync(TSX_BIN, [RUN_CHECK_SCRIPT, checkPath, resultInputPath], {
         encoding: 'utf-8',

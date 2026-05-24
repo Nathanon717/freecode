@@ -5,7 +5,7 @@ import { join, dirname } from 'path';
 import { projectRoot } from '../context.js';
 
 export const writeFileTool = tool({
-  description: 'Write content to a file at the given path. Use this to create or edit files. Always include the complete new file content.',
+  description: 'Create a new file at the given path. Fails if the file already exists. Use edit_file for existing files.',
   parameters: z.object({
     path: z.string().describe('Relative path from project root'),
     content: z.string().describe('The complete content to write to the file'),
@@ -17,7 +17,7 @@ export const writeFileTool = tool({
       await mkdir(dir, { recursive: true });
       // Some models double-escape newlines/tabs in tool call arguments
       const normalized = content.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
-      await writeFile(fullPath, normalized, 'utf-8');
+      await writeFile(fullPath, normalized, { encoding: 'utf-8', flag: 'wx' });
       return `Wrote ${normalized.length} bytes to ${path}`;
     } catch (error) {
       if (error instanceof Error) {

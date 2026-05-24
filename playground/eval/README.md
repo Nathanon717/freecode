@@ -20,15 +20,16 @@ playground/eval/
     ├── prompt.md          — the exact prompt sent to the agent
     ├── start/             — pristine starting state (never modified)
     ├── work/              — agent's working dir (reset from start before each run)
+    ├── .run/              — harness-only prompt, trace, and result artifacts
     └── eval/
         └── check.ts       — exports check(result): EvalReport
 ```
 
 ## How a scenario runs
 
-1. `work/` is deleted and re-created as a copy of `start/`
-2. The agent is spawned with `cwd = work/`, fed the prompt from `prompt.md`, and all tool calls are auto-approved
-3. Tool calls are captured via `FREECODE_TRACE_JSON`; token usage via `FREECODE_RESULT_JSON`
+1. `work/` is deleted and re-created as a copy of `start/`; `.run/` is reset for harness artifacts
+2. The agent is spawned with `cwd = work/`, fed the prompt from `.run/script.txt`, and all tool calls are auto-approved
+3. Tool calls are captured via `FREECODE_TRACE_JSON`; token usage via `FREECODE_RESULT_JSON`, both under `.run/`
 4. `eval/check.ts` receives the full `EvalRunResult` and returns an `EvalReport`
 
 ## Path enforcement
@@ -56,4 +57,5 @@ Each check in an `EvalReport` has a `kind`:
 |---|------|------------|------|
 | 001 | hello-world | Trivial | Create hello.txt |
 | 002 | edit-config | Easy | Change one field in config.json without touching others |
-| 003 | run-fix-script | Easy | Run a Python script, inspect a syntax error, fix it, and rerun |
+| 003 | python-missing-semicolon | Easy | Run a Python script, inspect a syntax error, fix it, and rerun |
+| 004 | python-data-shape-error | Medium | Run a Python script, inspect a runtime data-shape error, fix it, and rerun |

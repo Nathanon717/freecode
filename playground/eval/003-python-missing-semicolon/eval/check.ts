@@ -125,7 +125,7 @@ function assertRanFailedThenFixed(toolCalls: ToolCall[]): CheckResult {
 
 export function check(result: EvalRunResult): EvalReport {
   return {
-    scenarioId: '003-run-fix-script',
+    scenarioId: '003-python-missing-semicolon',
     checks: [
       assertFileExists(result.workDir, 'analyze_numbers.py'),
       assertScriptRuns(result.workDir),
