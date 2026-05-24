@@ -10,7 +10,7 @@ The map is maintained incrementally:
 4. Update only map pages for changed files whose purpose, ownership, exports, dependencies, or read/use guidance changed.
 5. Update this file when source files are added, removed, renamed, or moved.
 
-`npm run docs:check` runs `scripts/check-map.ts`, which checks that every `src/**/*.ts` file has a matching map page and that map pages still point to existing source files. It intentionally does not regenerate semantic summaries; agents keep those current from the focused diff.
+`npm run docs:generate` checks generated reference docs first. If they are current, it leaves them untouched; if they are stale, it regenerates them. It then runs `scripts/check-map.ts`, which checks that every `src/**/*.ts` file has a matching map page and that map pages still point to existing source files. It intentionally does not regenerate semantic summaries; agents keep those current from the focused diff.
 
 Map pages should be short and operational. Prefer:
 

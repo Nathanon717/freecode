@@ -29,7 +29,7 @@
 ## How to verify
 
 ```powershell
-cmd /c npm.cmd run docs:check
+cmd /c npm.cmd run docs:generate
 cmd /c npm.cmd run build
 cmd /c npm.cmd run verify:fast
 ```

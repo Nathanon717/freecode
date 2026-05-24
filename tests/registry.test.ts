@@ -103,5 +103,6 @@ describe('Provider Registry', () => {
       expect(types.filter(t => t === 'openai-compat')).toHaveLength(12);
       expect(types.filter(t => t === 'anthropic')).toHaveLength(1);
     });
+
   });
 });

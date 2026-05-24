@@ -58,7 +58,10 @@ function escapeMarkdownCell(value: string): string {
 }
 
 function formatModels(models: typeof PROVIDER_REGISTRY[number]['models']): string {
-  return models.map(model => `\`${model.id}\``).join('<br>');
+  return [...models]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map(model => `\`${model.id}\``)
+    .join('<br>');
 }
 
 function providerReference(): string {

@@ -16,10 +16,10 @@ Use this directory as the project handbook. Generated reference pages report fac
 
 ## Maintenance
 
-Run generated-doc checks before reporting docs work complete:
+Run `docs:generate` before reporting docs work complete. It checks generated docs first; if they are current, it does not rewrite them, and if they are stale, it regenerates them.
 
 ```powershell
-npm run docs:check
+npm run docs:generate
 ```
 
 When generated sources change, update the source of truth first, then run:

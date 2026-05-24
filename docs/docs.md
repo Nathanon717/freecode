@@ -11,12 +11,10 @@ Do not hand-edit content between `BEGIN GENERATED` and `END GENERATED` markers. 
 
 ```powershell
 npm run docs:generate
-npm run docs:check
 npm test
 ```
 
-- `docs:generate` rewrites generated sections.
-- `docs:check` verifies generated sections are current, then checks that `docs/map/` structurally covers `src/`.
+- `docs:generate` checks generated sections first. If they are current, it exits without rewriting them; if they are stale, it regenerates them, then checks that `docs/map/` structurally covers `src/`.
 
 Use `cmd /c npm.cmd ...` if PowerShell blocks npm scripts or `bash.exe` cannot launch.
 
@@ -85,8 +83,7 @@ To add one:
 
 Before reporting a docs-related or user-visible change complete:
 
-- Run `npm run docs:generate` if generated sources changed.
-- Run `npm run docs:check`.
+- Run `npm run docs:generate`.
 - Run `npm test` for changes that touch `src/` or scenario behavior.
 - Confirm generated sections were not hand-edited.
 - Confirm major architectural decisions are captured as ADRs.

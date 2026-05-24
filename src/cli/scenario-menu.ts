@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, mkdirSync, rmSync, cpSync, writeFileSync } from 'fs';
-import { join, resolve, dirname } from 'path';
+import { join, resolve, dirname, relative } from 'path';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import type { Interface } from 'readline';
@@ -331,7 +331,7 @@ function buildEvalPickerScreen(scenarios: PlaygroundScenario[], selected: number
   return lines;
 }
 
-export async function runEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string): Promise<void> {
+export async function runEvalMenu(rl: Interface, projectRoot: string, getSelectedModel: () => string): Promise<void> {
   const restoreBottomUI = isBottomUIActive();
   teardownBottomUI();
   rl.resume();
@@ -432,6 +432,8 @@ export async function runEvalMenu(rl: Interface, _projectRoot: string, getSelect
 
     for (const scenario of chosen) {
       const scenarioDir = join(PLAYGROUND_EVAL_DIR, scenario.id);
+      const workDir = join(scenarioDir, 'work');
+      const relativeWorkDir = relative(projectRoot, workDir).replace(/\\/g, '/');
       const promptPath = join(scenarioDir, 'prompt.md');
       const checkPath = join(scenarioDir, 'eval', 'check.ts');
 
@@ -443,6 +445,7 @@ export async function runEvalMenu(rl: Interface, _projectRoot: string, getSelect
       const prompt = readFileSync(promptPath, 'utf-8').trim();
 
       console.log(chalk.bold.cyan(`\n── ${scenario.id} ──────────────────────────────────────────`));
+      console.log(chalk.gray(relativeWorkDir));
       console.log(chalk.bold('Prompt:'));
       console.log(chalk.white(prompt));
       console.log(chalk.dim('─'.repeat(60)));

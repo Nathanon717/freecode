@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toDetailedErrorMessage, toErrorMessage } from '../src/util/errors.js';
+import { isProviderToolUseFailed, toDetailedErrorMessage, toErrorMessage } from '../src/util/errors.js';
 
 describe('error formatting', () => {
   it('keeps the compact error message helper unchanged', () => {
@@ -39,5 +39,21 @@ describe('error formatting', () => {
     const formatted = toDetailedErrorMessage(error);
     expect(formatted).toContain('code: tool_use_failed');
     expect(formatted).toContain('provider rejected the model output as an invalid tool/function call');
+  });
+
+  it('detects provider-side tool call rejections from SDK error payloads', () => {
+    const error = new Error('Failed to call a function');
+    Object.assign(error, {
+      data: {
+        error: {
+          message: 'Failed to call a function. See failed_generation.',
+          type: 'invalid_request_error',
+          code: 'tool_use_failed',
+        },
+      },
+    });
+
+    expect(isProviderToolUseFailed(error)).toBe(true);
+    expect(isProviderToolUseFailed(new Error('boom'))).toBe(false);
   });
 });

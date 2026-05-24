@@ -28,7 +28,7 @@ import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
-import { toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
+import { isProviderToolUseFailed, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
 
 let systemPromptLogged = false;
 
@@ -140,38 +140,60 @@ export async function agentLoop(
     }
     if (providerId !== 'openai') {
       if (supportsTools) writeTranscriptStepDivider();
-      const result: unknown = await streamText({
-        model: languageModel,
-        system: systemPrompt,
-        messages,
-        ...(supportsTools ? {
-          tools: createTools(options.confirmToolCall),
-          maxSteps: 10,
-          onStepFinish: (event) => {
-            if (event.toolCalls.length > 0) writeTranscriptStepDivider();
-          },
-        } : {}),
-      });
+      let activeMessages = messages;
+      let toolUseFailureRetries = 0;
 
-      const typedResult = result as {
-        textStream: AsyncIterable<string>;
-        usage: Promise<{ totalTokens: number; promptTokens?: number; completionTokens?: number; outputTokens?: number }>;
-      };
+      while (true) {
+        try {
+          const result: unknown = await streamText({
+            model: languageModel,
+            system: systemPrompt,
+            messages: activeMessages,
+            ...(supportsTools ? {
+              tools: createTools(options.confirmToolCall),
+              maxSteps: 10,
+              onStepFinish: (event) => {
+                if (event.toolCalls.length > 0) writeTranscriptStepDivider();
+              },
+            } : {}),
+          });
 
-      let chunkCount = 0;
-      for await (const chunk of typedResult.textStream) {
-        process.stdout.write(chunk);
-        fullText += chunk;
-        chunkCount++;
+          const typedResult = result as {
+            textStream: AsyncIterable<string>;
+            usage: Promise<{ totalTokens: number; promptTokens?: number; completionTokens?: number; outputTokens?: number }>;
+          };
+
+          let chunkCount = 0;
+          for await (const chunk of typedResult.textStream) {
+            process.stdout.write(chunk);
+            fullText += chunk;
+            chunkCount++;
+          }
+          if (fullText && !fullText.endsWith('\n')) {
+            process.stdout.write('\n');
+          }
+          const usage = await typedResult.usage;
+          totalTokens = usage?.totalTokens ?? 0;
+          promptTokens = usage?.promptTokens;
+          outputTokens = usage?.completionTokens ?? usage?.outputTokens;
+          log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
+          break;
+        } catch (error) {
+          if (supportsTools && fullText.length === 0 && toolUseFailureRetries < 1 && isProviderToolUseFailed(error)) {
+            toolUseFailureRetries++;
+            log('stream', 'Retrying after provider rejected malformed tool call', serializeError(error));
+            activeMessages = [
+              ...messages,
+              {
+                role: 'user',
+                content: 'The provider rejected your previous response because it contained an invalid tool/function call. Retry the same task. When calling a tool, call exactly one valid tool at a time, use the exact tool name, and provide arguments as valid JSON matching the tool schema. String arguments containing JSON or newlines must be escaped as JSON strings.',
+              },
+            ];
+            continue;
+          }
+          throw error;
+        }
       }
-      if (fullText && !fullText.endsWith('\n')) {
-        process.stdout.write('\n');
-      }
-      const usage = await typedResult.usage;
-      totalTokens = usage?.totalTokens ?? 0;
-      promptTokens = usage?.promptTokens;
-      outputTokens = usage?.completionTokens ?? usage?.outputTokens;
-      log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
     }
 
     if (providerId === 'anthropic') {

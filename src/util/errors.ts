@@ -51,6 +51,12 @@ function apiErrorDetailsFromUnknown(value: unknown): ApiErrorDetails | null {
   return apiErrorDetailsFromObject(value);
 }
 
+function apiErrorDetailsFromError(error: Error): ApiErrorDetails | null {
+  const body = responseBodyFromError(error);
+  const bodyDetails = body ? apiErrorDetailsFromUnknown(body) : null;
+  return bodyDetails ?? apiErrorDetailsFromUnknown(dataFromError(error));
+}
+
 function responseBodyFromError(error: Error): string | undefined {
   const value = (error as Error & { responseBody?: unknown }).responseBody;
   return typeof value === 'string' && value.trim() ? value : undefined;
@@ -90,9 +96,7 @@ export function toDetailedErrorMessage(error: unknown): string {
 
   if (error instanceof Error) {
     const body = responseBodyFromError(error);
-    const bodyDetails = body ? apiErrorDetailsFromUnknown(body) : null;
-    const dataDetails = apiErrorDetailsFromUnknown(dataFromError(error));
-    const details = bodyDetails ?? dataDetails;
+    const details = apiErrorDetailsFromError(error);
     if (details) detailLines.push(...formatApiErrorDetails(details, baseMessage));
     if (body && !details && body !== baseMessage) detailLines.push(`response body: ${body}`);
   } else {
@@ -103,4 +107,11 @@ export function toDetailedErrorMessage(error: unknown): string {
   return detailLines.length === 0
     ? baseMessage
     : `${baseMessage}\nDetails:\n${detailLines.map(line => `  ${line}`).join('\n')}`;
+}
+
+export function isProviderToolUseFailed(error: unknown): boolean {
+  const details = error instanceof Error
+    ? apiErrorDetailsFromError(error)
+    : apiErrorDetailsFromUnknown(error);
+  return details?.code === 'tool_use_failed';
 }
