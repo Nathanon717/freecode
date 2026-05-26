@@ -393,9 +393,9 @@ export function createInteractiveMode(
       toolCallsThisTurn = 0;
       if (process.stdin.isTTY) teardownBottomUI();
       resetBottomPromptState(session);
-      printTurnDivider();
     },
     afterAgentCall: () => {
+      printTurnDivider();
       if (process.stdin.isTTY) {
         setupBottomUI();
         resetBottomPromptState(session);

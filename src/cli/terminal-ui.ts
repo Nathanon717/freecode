@@ -323,7 +323,7 @@ function drawInputArea() {
     output += moveToSequence(topBarRow - n + i, 1) + chalk.gray('  ' + lastSuggestions[i]);
   }
 
-  output += moveToSequence(topBarRow, 1) + chalk.white('─'.repeat(w));
+  output += moveToSequence(topBarRow, 1) + getBannerColor()('─'.repeat(w));
 
   const inlineSuffix = getInlineCompletionSuffix(lastInputBuf, lastInlineCompletion);
   const inputText = lastInputBuf
@@ -331,7 +331,7 @@ function drawInputArea() {
     : chalk.gray('/ for commands');
   output += moveToSequence(inputRow, 1) + getBannerColor()('> ') + inputText;
 
-  output += moveToSequence(bottomBarRow, 1) + chalk.white('─'.repeat(w));
+  output += moveToSequence(bottomBarRow, 1) + getBannerColor()('─'.repeat(w));
 
   // Park cursor at the typing position.
   output += moveToSequence(inputRow, 3 + lastInputBuf.length);

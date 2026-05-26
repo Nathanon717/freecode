@@ -57,6 +57,8 @@ async function main() {
     return;
   }
 
+  if (process.stdin.isTTY) setupFooterUI();
+
   showBanner();
 
   if (!selectedModel) {
@@ -64,8 +66,6 @@ async function main() {
   }
 
   session.createSession();
-
-  if (process.stdin.isTTY) setupFooterUI();
   await runCliSession({
     projectRoot,
     session,
