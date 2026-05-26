@@ -288,13 +288,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     models: [
       { id: 'glm-4.7-flash', displayName: 'GLM-4.7 Flash (free)', contextWindow: 128000 },
       { id: 'glm-4.5-flash', displayName: 'GLM-4.5 Flash (free)', contextWindow: 128000 },
-      { id: 'glm-5.1', displayName: 'GLM-5.1', contextWindow: 128000 },
-      { id: 'glm-5-turbo', displayName: 'GLM-5 Turbo', contextWindow: 128000 },
-      { id: 'glm-5', displayName: 'GLM-5', contextWindow: 128000 },
-      { id: 'glm-4.7', displayName: 'GLM-4.7', contextWindow: 128000 },
-      { id: 'glm-4.6', displayName: 'GLM-4.6', contextWindow: 128000 },
-      { id: 'glm-4.5', displayName: 'GLM-4.5', contextWindow: 128000 },
-      { id: 'glm-4.5-air', displayName: 'GLM-4.5 Air', contextWindow: 128000 },
     ],
   },
   {

@@ -81,7 +81,7 @@ function withLogging(name: string, t: AnyCoreTool): AnyCoreTool {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     execute: async (args: any, opts: any) => {
       const { rationale, ...displayArgs } = args;
-      if (rationale) toolOut().write(chalk.cyan(rationale) + '\n');
+      if (rationale) toolOut().write('\n' + chalk.cyan(rationale) + '\n');
       toolCall(name, displayArgs);
       try {
         const result = await original(args, opts);

@@ -12,6 +12,7 @@ import {
 } from './scenario-catalog.js';
 
 import { isBottomUIActive, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
+import { runRawPicker } from './raw-picker.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const PLAYGROUND_EVAL_DIR = resolve(_dirname, '..', '..', 'playground', 'eval');
@@ -353,42 +354,16 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
 
     // ── Raw-mode list picker ──────────────────────────────────────────────
     let pickerSel = 0;
-    let lineCount = 0;
 
-    function redraw(): void {
-      const lines = buildEvalPickerScreen(scenarios, pickerSel);
-      if (lineCount > 0) process.stdout.write(`\x1b[${lineCount}A\r\x1b[J`);
-      process.stdout.write(lines.join('\n') + '\n');
-      lineCount = lines.length;
-    }
-
-    const chosen = await new Promise<PlaygroundScenario[] | null>((resolve) => {
-      rl.pause();
-      process.stdin.setRawMode(true);
-      process.stdin.resume();
-      process.stdin.setEncoding('utf8');
-      process.stdout.write('\x1b[?25l');
-      redraw();
-
-      const onData = (data: string): void => {
-        if (data === '\x03') { pickerCleanup(); process.exit(0); }
-        if (data === '\x1b') { pickerCleanup(); resolve(null); return; }
-        if (data === '\x1b[A') { pickerSel = (pickerSel - 1 + scenarios.length) % scenarios.length; redraw(); return; }
-        if (data === '\x1b[B') { pickerSel = (pickerSel + 1) % scenarios.length; redraw(); return; }
-        if (data === '\r' || data === '\n') { pickerCleanup(); resolve([scenarios[pickerSel]]); return; }
-        if (data === 'a' || data === 'A') { pickerCleanup(); resolve([...scenarios]); return; }
-      };
-
-      function pickerCleanup(): void {
-        process.stdin.removeListener('data', onData);
-        process.stdin.setRawMode(false);
-        process.stdin.pause();
-        if (lineCount > 0) process.stdout.write(`\x1b[${lineCount}A\r\x1b[J`);
-        process.stdout.write('\x1b[?25h');
-        rl.resume();
-      }
-
-      process.stdin.on('data', onData);
+    const chosen = await runRawPicker<PlaygroundScenario[] | null>(rl, {
+      render: () => buildEvalPickerScreen(scenarios, pickerSel),
+      onKey(key, redraw, close) {
+        if (key === '\x1b') { close(null); return; }
+        if (key === '\x1b[A') { pickerSel = (pickerSel - 1 + scenarios.length) % scenarios.length; redraw(); return; }
+        if (key === '\x1b[B') { pickerSel = (pickerSel + 1) % scenarios.length; redraw(); return; }
+        if (key === '\r' || key === '\n') { close([scenarios[pickerSel]]); return; }
+        if (key === 'a' || key === 'A') { close([...scenarios]); return; }
+      },
     });
 
     if (!chosen) return;

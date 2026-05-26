@@ -56,14 +56,19 @@ function drawToolApprovalMenu(selected: ToolApprovalChoice): void {
 }
 
 // Draws the tool menu options at absolute terminal rows, above the pinned footer.
-// approveRow = r - reserved - 1, denyRow = r - reserved.
-function drawToolApprovalMenuAbsolute(selected: ToolApprovalChoice, r: number, reserved: number): void {
+// headerRow = r - reserved - 2, approveRow = r - reserved - 1, denyRow = r - reserved.
+// Parks the cursor at the selected row so it doesn't drift into the footer.
+function drawToolApprovalMenuAbsolute(selected: ToolApprovalChoice, r: number, reserved: number, header?: string): void {
   const approve = selected === 'approve' ? chalk.inverse('> Approve') : '  Approve';
   const deny = selected === 'deny' ? chalk.inverse('> Deny') : '  Deny';
+  const w = process.stdout.columns || 80;
+  const headerText = header ? chalk.cyan(header.slice(0, w - 1)) : '';
+  const cursorRow = selected === 'approve' ? r - reserved - 1 : r - reserved;
   process.stdout.write(
-    `\x1b[${r - reserved - 2};1H\x1b[2K` +
+    `\x1b[${r - reserved - 2};1H\x1b[2K${headerText}` +
     `\x1b[${r - reserved - 1};1H\x1b[2K${approve}` +
-    `\x1b[${r - reserved};1H\x1b[2K${deny}`,
+    `\x1b[${r - reserved};1H\x1b[2K${deny}` +
+    `\x1b[${cursorRow};1H`,
   );
 }
 
@@ -92,8 +97,9 @@ function refreshFooterDailySpend(getSelectedModel: () => string): void {
   });
 }
 
-async function readToolApprovalMenu(rl: Interface): Promise<ToolApprovalChoice> {
+async function readToolApprovalMenu(rl: Interface, header?: string): Promise<ToolApprovalChoice> {
   if (!process.stdin.isTTY) {
+    rl.resume();
     while (true) {
       const answer = (await askQuestion(rl, chalk.yellow('Approve this tool call? [approve/deny] '))).trim().toLowerCase();
       if (answer === '' || answer === 'approve' || answer === 'a' || answer === 'y' || answer === 'yes') return 'approve';
@@ -108,20 +114,26 @@ async function readToolApprovalMenu(rl: Interface): Promise<ToolApprovalChoice> 
   if (useAbsolute) {
     const r = getRows();
     const reserved = getLastReservedRows();
-    drawToolApprovalMenuAbsolute(selected, r, reserved);
+    drawToolApprovalMenuAbsolute(selected, r, reserved, header);
   } else {
     drawToolApprovalMenu(selected);
   }
 
   return new Promise<ToolApprovalChoice>((resolve) => {
     rl.pause();
+
+    // Remove readline's stdin listeners to prevent history-recall side-effects while in raw mode.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const savedListeners = process.stdin.rawListeners('data') as ((...args: any[]) => void)[];
+    process.stdin.removeAllListeners('data');
+
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
 
     function redraw() {
       if (useAbsolute) {
-        drawToolApprovalMenuAbsolute(selected, getRows(), getLastReservedRows());
+        drawToolApprovalMenuAbsolute(selected, getRows(), getLastReservedRows(), header);
       } else {
         process.stdout.write('\r\x1b[1A');
         drawToolApprovalMenu(selected);
@@ -132,6 +144,10 @@ async function readToolApprovalMenu(rl: Interface): Promise<ToolApprovalChoice> 
       process.stdin.removeListener('data', onData);
       process.stdin.setRawMode(false);
       process.stdin.pause();
+      // Restore readline's listeners.
+      for (const listener of savedListeners) {
+        process.stdin.on('data', listener);
+      }
     }
 
     function finish(choice: ToolApprovalChoice) {
@@ -182,10 +198,11 @@ async function readToolApprovalMenu(rl: Interface): Promise<ToolApprovalChoice> 
 async function confirmToolCallInteractive(rl: Interface, preview: ToolCallPreview): Promise<ToolCallConfirmation> {
   const restoreInputUI = isBottomUIActive();
   teardownBottomUI();
-  rl.resume();
+
+  const header = `${preview.name}(${formatArgs(preview.args)})`;
 
   try {
-    const choice = await readToolApprovalMenu(rl);
+    const choice = await readToolApprovalMenu(rl, header);
     if (choice === 'approve') return { approved: true };
 
     rl.resume();

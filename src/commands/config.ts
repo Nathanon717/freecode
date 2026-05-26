@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import type { Interface } from 'readline';
 import { getConfigPaths, loadConfig, readRawConfig, resolveModelSettings, writeConfigFile } from '../config/index.js';
 import type { Config, OverridableSettings } from '../providers/types.js';
+import { runRawPicker } from '../cli/raw-picker.js';
 
 // ── Setting definitions ───────────────────────────────────────────────────────
 
@@ -218,6 +219,16 @@ function cycleOverride(current: TabValue, direction: 1 | -1): TabValue {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
+function renderedRows(lines: string[]): number {
+  const cols = process.stdout.columns || 80;
+  let total = 0;
+  for (const line of lines) {
+    const visible = line.replace(/\x1b\[[0-9;]*m/g, '').length;
+    total += Math.max(1, Math.ceil(visible / cols));
+  }
+  return total;
+}
+
 export async function runConfigCommand(rl: Interface, currentModel = ''): Promise<void> {
   if (!process.stdin.isTTY) {
     console.log(chalk.red('Config editor requires an interactive terminal.'));
@@ -227,10 +238,7 @@ export async function runConfigCommand(rl: Interface, currentModel = ''): Promis
   const paths = getConfigPaths();
   const tabs = getAvailableTabs(currentModel);
   let activeTab: Tab = 'global';
-
-  // sel: -1 = tab row, 0..N-1 = setting row
   let sel = 0;
-  let rowCount = 0;
 
   function currentValues(): Record<string, TabValue> {
     if (activeTab === 'global') return loadGlobalValues() as Record<string, TabValue>;
@@ -247,72 +255,39 @@ export async function runConfigCommand(rl: Interface, currentModel = ''): Promis
   let values = currentValues();
   let effective = effectiveValues();
 
-  function renderedRows(lines: string[]): number {
-    const cols = process.stdout.columns || 80;
-    let total = 0;
-    for (const line of lines) {
-      const visible = line.replace(/\x1b\[[0-9;]*m/g, '').length;
-      total += Math.max(1, Math.ceil(visible / cols));
-    }
-    return total;
-  }
+  await runRawPicker<void>(rl, {
+    render: () => buildScreen(activeTab, tabs, values, effective, sel, paths.globalPath, currentModel),
+    countLines: renderedRows,
+    onExitClear(rowCount) {
+      const r = process.stdout.rows || 24;
+      // Reset scroll region to full screen so \x1b[J covers all rows (including
+      // any content that leaked below the active scroll region on Windows ConPTY).
+      process.stdout.write('\x1b[r');
+      process.stdout.write(`\x1b[${rowCount}A\r\x1b[J`);
+      // Restore the scroll region that teardownBottomUI set before us.
+      process.stdout.write(`\x1b[1;${r - 2}r`);
+    },
+    onKey(key, redraw, close) {
+      if (key === 'q' || key === 'Q' || key === '\x1b') { close(); return; }
 
-  function redraw(): void {
-    const lines = buildScreen(activeTab, tabs, values, effective, sel, paths.globalPath, currentModel);
-    if (rowCount > 0) process.stdout.write(`\x1b[${rowCount}A\r\x1b[J`);
-    process.stdout.write(lines.join('\n') + '\n');
-    rowCount = renderedRows(lines);
-  }
-
-  return new Promise<void>((resolve) => {
-    rl.pause();
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdout.write('\x1b[?25l');
-
-    redraw();
-
-    const onData = (data: string): void => {
-      if (data === '\x03') {
-        cleanup();
-        process.exit(0);
-      }
-
-      if (data === 'q' || data === 'Q' || data === '\x1b') {
-        cleanup();
-        resolve();
-        return;
-      }
-
-      // Up arrow
-      if (data === '\x1b[A') {
-        if (sel > 0) {
-          sel--;
-        } else if (sel === 0) {
-          sel = -1; // move to tab row
-        }
+      if (key === '\x1b[A') {
+        if (sel > 0) sel--;
+        else if (sel === 0) sel = -1;
         redraw();
         return;
       }
 
-      // Down arrow
-      if (data === '\x1b[B') {
-        if (sel === -1) {
-          sel = 0;
-        } else if (sel < SETTINGS.length - 1) {
-          sel++;
-        }
+      if (key === '\x1b[B') {
+        if (sel === -1) sel = 0;
+        else if (sel < SETTINGS.length - 1) sel++;
         redraw();
         return;
       }
 
-      // Left / right arrows
-      if (data === '\x1b[C' || data === '\x1b[D' || data === ' ' || data === '\r') {
-        const direction: 1 | -1 = (data === '\x1b[D') ? -1 : 1;
+      if (key === '\x1b[C' || key === '\x1b[D' || key === ' ' || key === '\r') {
+        const direction: 1 | -1 = (key === '\x1b[D') ? -1 : 1;
 
         if (sel === -1) {
-          // Tab row: left/right switch tab
           const idx = tabs.indexOf(activeTab);
           const newIdx = Math.max(0, Math.min(tabs.length - 1, idx + direction));
           if (newIdx !== idx) {
@@ -337,27 +312,7 @@ export async function runConfigCommand(rl: Interface, currentModel = ''): Promis
           effective = effectiveValues();
         }
         redraw();
-        return;
       }
-    };
-
-    function cleanup(): void {
-      process.stdin.removeListener('data', onData);
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-      if (rowCount > 0) {
-        const r = process.stdout.rows || 24;
-        // Reset scroll region to full screen so \x1b[J covers all rows (including
-        // any content that leaked below the active scroll region on Windows ConPTY).
-        process.stdout.write('\x1b[r');
-        process.stdout.write(`\x1b[${rowCount}A\r\x1b[J`);
-        // Restore the scroll region that teardownBottomUI set before us.
-        process.stdout.write(`\x1b[1;${r - 2}r`);
-      }
-      process.stdout.write('\x1b[?25h');
-      rl.resume();
-    }
-
-    process.stdin.on('data', onData);
+    },
   });
 }

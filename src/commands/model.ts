@@ -6,6 +6,7 @@ import type { Config, ModelConfig, ProviderConfig } from '../providers/types.js'
 import { getProviderCache, markModelSelected } from '../providers/model-cache.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import type { PricingConfidence } from '../providers/pricing-verifier.js';
+import { runRawPicker } from '../cli/raw-picker.js';
 
 export interface ModelMenuItem {
   providerId: string;
@@ -177,6 +178,8 @@ function buildScreen(
   return { lines, newViewStart };
 }
 
+type ModelPickResult = { item: ModelMenuItem; saveDefault: boolean } | null;
+
 export async function runModelCommand(
   rl: Interface,
   currentModel: string,
@@ -206,85 +209,28 @@ export async function runModelCommand(
   const currentIndex = items.findIndex(item => modelPreference(item) === currentModel);
   let selected = currentIndex >= 0 ? currentIndex : 0;
   let viewStart = 0;
-  let lineCount = 1;
 
-  function redraw(): void {
-    const { lines, newViewStart } = buildScreen(items, selected, currentModel, viewStart, removedByProvider);
-    viewStart = newViewStart;
-    if (lineCount > 0) {
-      process.stdout.write(`\x1b[${lineCount}A\r\x1b[J`);
-    }
-    process.stdout.write(lines.join('\n') + '\n');
-    lineCount = lines.length;
-  }
-
-  return new Promise<void>((resolve) => {
-    rl.pause();
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdout.write('\x1b[?25l');
-
-    redraw();
-
-    const onData = (data: string): void => {
-      if (data === '\x03') {
-        cleanup();
-        process.exit(0);
-      }
-
-      if (data === '\x1b') {
-        cleanup();
-        resolve();
-        return;
-      }
-
-      if (data === '\x1b[A') {
-        selected = (selected - 1 + items.length) % items.length;
-        redraw();
-        return;
-      }
-
-      if (data === '\x1b[B') {
-        selected = (selected + 1) % items.length;
-        redraw();
-        return;
-      }
-
-      if (data === '\r' || data === '\n') {
-        const item = items[selected];
-        const choice = modelPreference(item);
-        setSelectedModel(choice);
-        markModelSelected(item.providerId, item.modelId);
-        cleanup();
-        console.log(chalk.blue(`Model set to: ${choice}`));
-        resolve();
-      }
-
-      if (data === ' ') {
-        const item = items[selected];
-        const choice = modelPreference(item);
-        setSelectedModel(choice);
-        saveDefaultModel(choice);
-        markModelSelected(item.providerId, item.modelId);
-        cleanup();
-        console.log(chalk.blue(`Model set to: ${choice}`));
-        console.log(chalk.green(`Default model set to: ${choice}`));
-        resolve();
-      }
-    };
-
-    function cleanup(): void {
-      process.stdin.removeListener('data', onData);
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-      if (lineCount > 0) {
-        process.stdout.write(`\x1b[${lineCount}A\r\x1b[J`);
-      }
-      process.stdout.write('\x1b[?25h');
-      rl.resume();
-    }
-
-    process.stdin.on('data', onData);
+  const result = await runRawPicker<ModelPickResult>(rl, {
+    render(): string[] {
+      const { lines, newViewStart } = buildScreen(items, selected, currentModel, viewStart, removedByProvider);
+      viewStart = newViewStart;
+      return lines;
+    },
+    onKey(key, redraw, close) {
+      if (key === '\x1b') { close(null); return; }
+      if (key === '\x1b[A') { selected = (selected - 1 + items.length) % items.length; redraw(); return; }
+      if (key === '\x1b[B') { selected = (selected + 1) % items.length; redraw(); return; }
+      if (key === '\r' || key === '\n') { close({ item: items[selected], saveDefault: false }); return; }
+      if (key === ' ') { close({ item: items[selected], saveDefault: true }); return; }
+    },
   });
+
+  if (result) {
+    const choice = modelPreference(result.item);
+    setSelectedModel(choice);
+    markModelSelected(result.item.providerId, result.item.modelId);
+    if (result.saveDefault) saveDefaultModel(choice);
+    console.log(chalk.blue(`Model set to: ${choice}`));
+    if (result.saveDefault) console.log(chalk.green(`Default model set to: ${choice}`));
+  }
 }

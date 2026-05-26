@@ -7,6 +7,7 @@ const ESC = '\x1b[';
 
 let footerActive = false;
 let inputUIActive = false;
+let footerTimerSuspended = false;
 let lastReservedRows = 2;
 let lastInputBuf = '';
 let lastTokenCount = 0;
@@ -70,6 +71,9 @@ export function isBottomUIActive(): boolean {
 export function isFooterUIActive(): boolean {
   return footerActive;
 }
+
+export function suspendFooterTimer(): void { footerTimerSuspended = true; }
+export function resumeFooterTimer(): void { footerTimerSuspended = false; }
 
 export function getRows(): number { return rows(); }
 export function getLastReservedRows(): number { return lastReservedRows; }
@@ -267,17 +271,25 @@ export function getInlineCompletionSuffix(input: string, completion: string | nu
   return completion.slice(input.length);
 }
 
-// Draws the two footer rows (r-1 blank, r status line). Does not move the cursor.
-function drawFooter() {
-  if (!footerActive) return;
+// Returns the footer escape sequence without writing it.
+export function composeFooterOutput(): string {
+  if (!footerActive) return '';
   const w = cols();
   const r = rows();
   const rightStr = composeBottomRightStatus(Math.max(0, w - 1));
   const padding = Math.max(0, w - 1 - rightStr.length);
   let output = '';
+  output += '\x1b[s'; // save cursor
   output += moveToSequence(r - 1, 1) + clearLineSequence();
   output += moveToSequence(r, 1) + ' '.repeat(padding) + chalk.gray(rightStr);
-  process.stdout.write(output);
+  output += '\x1b[u'; // restore cursor
+  return output;
+}
+
+// Draws the two footer rows (r-1 blank, r status line). Saves and restores the cursor position.
+export function drawFooter() {
+  const output = composeFooterOutput();
+  if (output) process.stdout.write(output);
 }
 
 // Draws the three input-area rows (top bar, input line, bottom bar) plus any suggestion rows.
@@ -353,7 +365,7 @@ export function setupFooterUI() {
   footerActive = true;
   lastReservedRows = 2;
   refreshTimer = setInterval(() => {
-    if (footerActive) {
+    if (footerActive && !footerTimerSuspended) {
       drawFooter();
       if (inputUIActive) drawInputArea();
     }

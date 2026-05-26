@@ -49,6 +49,7 @@ src/
 |   |-- banner.ts                 -> [Startup banner](cli/banner.md)
 |   |-- command-dispatcher.ts     -> [Slash command dispatch](cli/command-dispatcher.md)
 |   |-- input-modes.ts            -> [Interactive/scripted input modes](cli/input-modes.md)
+|   |-- raw-picker.ts             -> [Shared raw-mode picker primitive](cli/raw-picker.md)
 |   |-- scenario-catalog.ts       -> [Scenario discovery/runner](cli/scenario-catalog.md)
 |   |-- scenario-menu.ts          -> [Scenario menus](cli/scenario-menu.md)
 |   |-- session-controller.ts     -> [Conversation/session state](cli/session-controller.md)
