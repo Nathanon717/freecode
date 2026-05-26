@@ -1,6 +1,6 @@
 # src/agent/tools/shell.ts - shell_exec Tool
 
-**Role:** Executes shell commands in the active project root with a simple destructive-command guard.
+**Role:** Executes shell commands in the active project root with a regex-based destructive-command guard.
 
 ## Exports
 
@@ -18,15 +18,13 @@ isDestructiveCommand(command: string): boolean
 
 ## Destructive Patterns
 
-The guard checks lowercase command text for:
+The guard checks command text with word-boundary regexes for:
 
 ```text
-rm 
-rm -
+rm
 rmdir
 del /f
-del 
-format
+format <drive>:
 git push
 git pull
 remove-item

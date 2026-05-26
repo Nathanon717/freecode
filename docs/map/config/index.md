@@ -10,14 +10,17 @@
 | `getConfigPaths` | `() => { globalPath: string; localPath: string }` | Return global and local config paths. |
 | `readRawConfig` | `(path: string) => Partial<Config> \| null` | Read one JSON config file without merging. |
 | `writeConfigFile` | `(path: string, data: Partial<Config>) => void` | Write JSON config and clear the cache. |
+| `resolveModelSettings` | `(selectedModel: string) => Required<OverridableSettings>` | Resolve effective settings for a `provider:model` string using model > provider > global priority. |
 
 ## Defaults
 
 ```typescript
 {
   providers: {},
-  useOllama: true,
   toolRationale: true,
+  showProviderUsage: false,
+  toolConfirmation: 'ask',
+  parallelTools: true,
 }
 ```
 

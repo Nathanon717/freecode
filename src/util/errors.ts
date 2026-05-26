@@ -98,7 +98,11 @@ export function toDetailedErrorMessage(error: unknown): string {
     const body = responseBodyFromError(error);
     const details = apiErrorDetailsFromError(error);
     if (details) detailLines.push(...formatApiErrorDetails(details, baseMessage));
-    if (body && !details && body !== baseMessage) detailLines.push(`response body: ${body}`);
+    if (body && body.trimStart().startsWith('<')) {
+      detailLines.push('response body is HTML — likely a gateway/proxy error (check API key or network config)');
+    } else if (body && !details && body !== baseMessage) {
+      detailLines.push(`response body: ${body}`);
+    }
   } else {
     const details = apiErrorDetailsFromUnknown(error);
     if (details) detailLines.push(...formatApiErrorDetails(details, baseMessage));
@@ -107,6 +111,36 @@ export function toDetailedErrorMessage(error: unknown): string {
   return detailLines.length === 0
     ? baseMessage
     : `${baseMessage}\nDetails:\n${detailLines.map(line => `  ${line}`).join('\n')}`;
+}
+
+// Adapted from https://github.com/badlogic/pi-mono/blob/main/packages/ai/src/utils/overflow.ts
+// and opencode packages/opencode/src/provider/error.ts
+const OVERFLOW_PATTERNS = [
+  /prompt is too long/i,                                           // Anthropic
+  /input is too long for requested model/i,                        // Amazon Bedrock
+  /exceeds the context window/i,                                   // OpenAI
+  /input token count.*exceeds the maximum/i,                       // Google Gemini
+  /maximum prompt length is \d+/i,                                 // xAI Grok
+  /reduce the length of the messages/i,                            // Groq
+  /maximum context length is \d+ tokens/i,                         // OpenRouter / DeepSeek / vLLM
+  /exceeds the limit of \d+/i,                                     // GitHub Copilot
+  /exceeds the available context size/i,                           // llama.cpp
+  /greater than the context length/i,                              // LM Studio
+  /context window exceeds limit/i,                                 // MiniMax
+  /exceeded model token limit/i,                                   // Kimi / Moonshot
+  /context[_ ]length[_ ]exceeded/i,                                // generic
+  /request entity too large/i,                                     // HTTP 413
+  /context length is only \d+ tokens/i,                            // vLLM
+  /input length.*exceeds.*context length/i,                        // vLLM
+  /prompt too long; exceeded (?:max )?context length/i,            // Ollama
+  /too large for model with \d+ maximum context length/i,          // Mistral
+  /model_context_window_exceeded/i,                                // z.ai
+  /^4(00|13)\s*(status code)?\s*\(no body\)/i,                     // Cerebras / Mistral bare 400/413
+];
+
+export function isContextOverflowError(error: unknown): boolean {
+  const msg = toDetailedErrorMessage(error);
+  return OVERFLOW_PATTERNS.some(p => p.test(msg));
 }
 
 export function isProviderToolUseFailed(error: unknown): boolean {

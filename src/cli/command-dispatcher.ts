@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import chalk from 'chalk';
 import { agentLoop, type AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';
-import { loadConfig, resolveApiKey } from '../config/index.js';
+import { loadConfig, resolveApiKey, resolveModelSettings } from '../config/index.js';
 import { toErrorMessage } from '../util/errors.js';
 import { log } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/registry.js';
@@ -194,7 +194,8 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
       if (breakdown) console.log(chalk.gray(breakdown));
     }
     const providerUsage = formatCapturedProviderUsages(result.providerUsage);
-    if (providerUsage && loadConfig().showProviderUsage) {
+    const effectiveSettings = resolveModelSettings(runtime.getSelectedModel());
+    if (providerUsage && effectiveSettings.showProviderUsage) {
       console.log(chalk.gray('Provider usage:'));
       console.log(chalk.gray(providerUsage));
     }

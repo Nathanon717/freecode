@@ -6,7 +6,7 @@ import { showBanner } from './cli/banner.js';
 import { createInteractiveMode, createScriptedMode } from './cli/input-modes.js';
 import { SessionController } from './cli/session-controller.js';
 import { runCliSession } from './cli/session-runner.js';
-import { setupBottomUI } from './cli/terminal-ui.js';
+import { setupFooterUI } from './cli/terminal-ui.js';
 import { loadConfig } from './config/index.js';
 import { enableLog } from './logger.js';
 
@@ -65,7 +65,7 @@ async function main() {
 
   session.createSession();
 
-  if (process.stdin.isTTY) setupBottomUI();
+  if (process.stdin.isTTY) setupFooterUI();
   await runCliSession({
     projectRoot,
     session,

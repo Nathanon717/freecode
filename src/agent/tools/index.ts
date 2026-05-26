@@ -81,7 +81,7 @@ function withLogging(name: string, t: AnyCoreTool): AnyCoreTool {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     execute: async (args: any, opts: any) => {
       const { rationale, ...displayArgs } = args;
-      if (rationale) toolOut().write(chalk.white(rationale) + '\n');
+      if (rationale) toolOut().write(chalk.cyan(rationale) + '\n');
       toolCall(name, displayArgs);
       try {
         const result = await original(args, opts);
@@ -172,9 +172,8 @@ function wrap(name: string, t: AnyCoreTool, useRationale: boolean, queueExecutio
   );
 }
 
-const useRationale = loadConfig().toolRationale;
-
-export function createTools(confirmToolCall?: ConfirmToolCall) {
+export function createTools(confirmToolCall?: ConfirmToolCall, toolRationale?: boolean) {
+  const useRationale = toolRationale ?? loadConfig().toolRationale;
   const queueExecution = createToolExecutionQueue();
   return {
     read_file:  wrap('read_file',  readFileTool,  useRationale, queueExecution, confirmToolCall),

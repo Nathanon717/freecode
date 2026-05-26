@@ -71,7 +71,7 @@ After completing a new feature or significant change, ask:
 
 > "Want me to write a session log for this?"
 
-Only create a log if the user confirms. Session log instructions and examples live in `docs/sessions/README.md`.
+Only create a log if the user confirms. Write logs to `docs/sessions/YYYY-MM-DD-slug.md`. Full instructions in `docs/sessions/README.md`.
 
 ## Project Notes
 

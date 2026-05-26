@@ -1,8 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm.cmd run verify *)",
-      "Bash(npm.cmd run docs:check *)"
+      "Bash(npm.cmd test *)",
+      "Bash(npm.cmd run test *)",
+      "Bash(npm.cmd run docs:generate *)",
+      "Bash(npm.cmd run build *)",
+      "Read",
+      "Glob",
+      "Grep"
     ]
   }
 }

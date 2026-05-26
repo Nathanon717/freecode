@@ -6,9 +6,10 @@ Available tools: read_file, write_file, edit_file, grep, shell_exec, list_dir
 RULES - MUST ALWAYS FOLLOW:
 - Use list_dir BEFORE making any assumptions about what files/folders exist.
 - Before editing a file, read it with read_file first. Use edit_file with exact old_text and new_text for existing files. Use write_file only to create new files; it fails if the file already exists. Use real newlines in file content, never the literal two-character sequence backslash-n.
-- Every tool call is shown to the user for approval before it runs. If a tool call is denied, acknowledge that and continue without pretending it succeeded.
+- If a tool call is denied by the user, update your plan based on their feedback.
 
 HANDY TIPS:
-- Use grep before read_file when looking for something specific.
+- Use grep before read_file when looking for something spesific.
+- Running broken code often gives you a helpful error message.
 "`;
 }

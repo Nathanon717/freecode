@@ -26,6 +26,8 @@ export interface OpenAIResponsesPayloadOptions {
   systemPrompt: string;
   messages: CoreMessage[];
   tools?: Record<string, CoreTool>;
+  toolRationale?: boolean;
+  parallelTools?: boolean;
 }
 
 export interface OpenAIResponsesRequestPayload {
@@ -88,14 +90,14 @@ function coreMessageToResponsesInput(message: CoreMessage): JsonObject[] {
   }];
 }
 
-function maybeRationaleProperty(): JsonObject {
-  return loadConfig().toolRationale
+function maybeRationaleProperty(toolRationale: boolean): JsonObject {
+  return toolRationale
     ? { rationale: { type: 'string', description: 'One sentence: why you are calling this tool right now' } }
     : {};
 }
 
-function toolSchema(name: string): JsonObject {
-  const rationale = maybeRationaleProperty();
+function toolSchema(name: string, toolRationale: boolean): JsonObject {
+  const rationale = maybeRationaleProperty(toolRationale);
   switch (name) {
     case 'read_file':
       return {
@@ -155,26 +157,28 @@ function toolSchema(name: string): JsonObject {
   }
 }
 
-function responsesTools(tools: Record<string, CoreTool> | undefined): JsonObject[] | undefined {
+function responsesTools(tools: Record<string, CoreTool> | undefined, toolRationale: boolean): JsonObject[] | undefined {
   if (!tools) return undefined;
   const converted = Object.entries(tools).map(([name, tool]) => ({
     type: 'function',
     name,
     description: 'description' in tool && typeof tool.description === 'string' ? tool.description : '',
-    parameters: toolSchema(name),
+    parameters: toolSchema(name, toolRationale),
     strict: false,
   }));
   return converted.length > 0 ? converted : undefined;
 }
 
 export function buildOpenAIResponsesPayload(options: OpenAIResponsesPayloadOptions): OpenAIResponsesRequestPayload {
-  const tools = responsesTools(options.tools);
+  const toolRationale = options.toolRationale ?? loadConfig().toolRationale;
+  const tools = responsesTools(options.tools, toolRationale);
+  const disableParallel = tools && options.parallelTools === false;
   return {
     model: options.modelId,
     instructions: options.systemPrompt,
     input: options.messages.flatMap(coreMessageToResponsesInput),
     store: false,
-    ...(tools ? { tools, parallel_tool_calls: false as const } : {}),
+    ...(tools ? { tools, ...(disableParallel ? { parallel_tool_calls: false as const } : {}) } : {}),
   };
 }
 

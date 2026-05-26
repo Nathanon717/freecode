@@ -14,7 +14,10 @@ import {
   backspaceInputBuffer,
   drawBottomUI,
   getInputBuffer,
+  getLastReservedRows,
+  getRows,
   isBottomUIActive,
+  isFooterUIActive,
   parkCursorAboveBottomUI,
   parkCursorInScrollRegion,
   printTurnDivider,
@@ -28,7 +31,10 @@ import {
   setSuggestions,
   setTokenCount,
   setupBottomUI,
+  setupFooterUI,
+  setupInputUI,
   teardownBottomUI,
+  teardownFooterUI,
 } from './terminal-ui.js';
 import { createOpenAIPreflightInputController } from './preflight-input-cost.js';
 import { refreshOpenAIDailySpend } from './openai-daily-spend.js';
@@ -47,6 +53,18 @@ function drawToolApprovalMenu(selected: ToolApprovalChoice): void {
   const approve = selected === 'approve' ? chalk.inverse('> Approve') : '  Approve';
   const deny = selected === 'deny' ? chalk.inverse('> Deny') : '  Deny';
   process.stdout.write(`\r\x1b[2K${approve}\n\r\x1b[2K${deny}`);
+}
+
+// Draws the tool menu options at absolute terminal rows, above the pinned footer.
+// approveRow = r - reserved - 1, denyRow = r - reserved.
+function drawToolApprovalMenuAbsolute(selected: ToolApprovalChoice, r: number, reserved: number): void {
+  const approve = selected === 'approve' ? chalk.inverse('> Approve') : '  Approve';
+  const deny = selected === 'deny' ? chalk.inverse('> Deny') : '  Deny';
+  process.stdout.write(
+    `\x1b[${r - reserved - 2};1H\x1b[2K` +
+    `\x1b[${r - reserved - 1};1H\x1b[2K${approve}` +
+    `\x1b[${r - reserved};1H\x1b[2K${deny}`,
+  );
 }
 
 function resetBottomPromptState(session: SessionController): void {
@@ -85,8 +103,15 @@ async function readToolApprovalMenu(rl: Interface): Promise<ToolApprovalChoice> 
   }
 
   let selected: ToolApprovalChoice = 'approve';
-  console.log(chalk.yellow('Select tool action:'));
-  drawToolApprovalMenu(selected);
+
+  const useAbsolute = isFooterUIActive();
+  if (useAbsolute) {
+    const r = getRows();
+    const reserved = getLastReservedRows();
+    drawToolApprovalMenuAbsolute(selected, r, reserved);
+  } else {
+    drawToolApprovalMenu(selected);
+  }
 
   return new Promise<ToolApprovalChoice>((resolve) => {
     rl.pause();
@@ -95,8 +120,12 @@ async function readToolApprovalMenu(rl: Interface): Promise<ToolApprovalChoice> 
     process.stdin.setEncoding('utf8');
 
     function redraw() {
-      process.stdout.write('\r\x1b[1A');
-      drawToolApprovalMenu(selected);
+      if (useAbsolute) {
+        drawToolApprovalMenuAbsolute(selected, getRows(), getLastReservedRows());
+      } else {
+        process.stdout.write('\r\x1b[1A');
+        drawToolApprovalMenu(selected);
+      }
     }
 
     function cleanup() {
@@ -151,7 +180,7 @@ async function readToolApprovalMenu(rl: Interface): Promise<ToolApprovalChoice> 
 }
 
 async function confirmToolCallInteractive(rl: Interface, preview: ToolCallPreview): Promise<ToolCallConfirmation> {
-  const restoreBottomUI = isBottomUIActive();
+  const restoreInputUI = isBottomUIActive();
   teardownBottomUI();
   rl.resume();
 
@@ -167,12 +196,11 @@ async function confirmToolCallInteractive(rl: Interface, preview: ToolCallPrevie
     };
   } finally {
     rl.pause();
-    if (restoreBottomUI && process.stdin.isTTY) setupBottomUI();
+    if (restoreInputUI && process.stdin.isTTY) setupInputUI();
   }
 }
 
 function formatScriptedToolMenu(choice: ToolApprovalChoice): void {
-  console.log(chalk.yellow('Select tool action:'));
   console.log(choice === 'approve' ? chalk.inverse('> Approve') : '  Approve');
   console.log(choice === 'deny' ? chalk.inverse('> Deny') : '  Deny');
 }
@@ -204,6 +232,7 @@ async function readLineWithAutocomplete(
   setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: Date.now() });
   setSuggestions(getFilteredCommands(''));
   refreshFooterDailySpend(getSelectedModel);
+  setupInputUI();
   drawBottomUI();
 
   return new Promise<string>((resolve) => {
@@ -241,7 +270,7 @@ async function readLineWithAutocomplete(
     function onData(data: string) {
       if (data === '\x03') {
         cleanup();
-        teardownBottomUI();
+        teardownFooterUI();
         process.exit(0);
       }
 
@@ -384,7 +413,7 @@ export function createInteractiveMode(
     runConfig: async () => {
       teardownBottomUI();
       rl.resume();
-      await runConfigCommand(rl);
+      await runConfigCommand(rl, getSelectedModel());
       rl.pause();
       if (process.stdin.isTTY) setupBottomUI();
     },
@@ -404,7 +433,7 @@ export function createInteractiveMode(
     runTestMenu: () => runTestMenu(rl, projectRoot),
     runEvalMenu: () => runEvalMenu(rl, projectRoot, getSelectedModel),
     onExit: () => {
-      teardownBottomUI();
+      teardownFooterUI();
     },
   };
 }

@@ -27,10 +27,19 @@ export interface ProviderConfig {
   modelIdExactBlocklist?: string[];
 }
 
+export interface OverridableSettings {
+  toolRationale?: boolean;
+  showProviderUsage?: boolean;
+  parallelTools?: boolean;
+}
+
 export interface Config {
   providers: Partial<Record<string, { apiKey?: string }>>;
   defaultModel?: string;
   toolRationale: boolean;
   showProviderUsage: boolean;
   toolConfirmation: 'ask' | 'auto';
+  parallelTools: boolean;
+  providerOverrides?: Record<string, OverridableSettings>;
+  modelOverrides?: Record<string, OverridableSettings>;
 }

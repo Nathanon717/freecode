@@ -6,11 +6,18 @@ import { projectRoot } from '../context.js';
 
 const execAsync = promisify(exec);
 
-const DESTRUCTIVE_PATTERNS = ['rm ', 'rm -', 'rmdir', 'del /f', 'del ', 'format', 'git push', 'git pull', 'remove-item'];
+const DESTRUCTIVE_PATTERNS = [
+  /\brm\b/i,
+  /\brmdir\b/i,
+  /\bdel\b/i,
+  /\bformat\b\s+[a-z]:/i,
+  /\bgit\s+push\b/i,
+  /\bgit\s+pull\b/i,
+  /\bremove-item\b/i,
+];
 
 export const isDestructiveCommand = (command: string): boolean => {
-  const lower = command.toLowerCase();
-  return DESTRUCTIVE_PATTERNS.some((p) => lower.includes(p));
+  return DESTRUCTIVE_PATTERNS.some((pattern) => pattern.test(command));
 };
 
 export const shellTool = tool({

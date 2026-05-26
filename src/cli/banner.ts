@@ -36,7 +36,21 @@ function nextBannerColor(): ChalkInstance {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     writeFileSync(COLOR_STATE_PATH, JSON.stringify({ idx }), 'utf-8');
   } catch { /* ignore */ }
+  currentBannerColorIdx = idx;
   const [r, g, b] = PASTEL_COLORS[idx];
+  return chalk.rgb(r, g, b);
+}
+
+let currentBannerColorIdx = 0;
+try {
+  if (existsSync(COLOR_STATE_PATH)) {
+    const saved = JSON.parse(readFileSync(COLOR_STATE_PATH, 'utf-8')) as { idx: number };
+    currentBannerColorIdx = saved.idx % PASTEL_COLORS.length;
+  }
+} catch { /* ignore */ }
+
+export function getBannerColor(): ChalkInstance {
+  const [r, g, b] = PASTEL_COLORS[currentBannerColorIdx];
   return chalk.rgb(r, g, b);
 }
 

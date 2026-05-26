@@ -84,6 +84,7 @@ return AgentLoopResult
 
 - Routing errors do not throw; they return `providerId: "none"`, `modelId: "none"`, zero tokens, and an error text.
 - Stream errors are logged and returned with any partial text plus an appended detailed error message. API errors include parsed provider fields such as `code`, `type`, and `failed_generation` when the SDK exposes them. Anthropic usage capture is ended on this path so any available partial cost metadata can still be returned.
+- Context-overflow errors (`isContextOverflowError`) are detected as a distinct subcase: a specific multi-line user-facing message is printed to stdout explaining the limit was exceeded and suggesting starting a new session or switching to a larger-context model via `/model`. The returned `text` carries a condensed single-line version of this message.
 
 ## Update Triggers
 

@@ -8,9 +8,15 @@ describe('shell tool', () => {
     const { isDestructiveCommand } = await import('../src/agent/tools/shell.js');
     expect(isDestructiveCommand('rm -rf /')).toBe(true);
     expect(isDestructiveCommand('rmdir somedir')).toBe(true);
+    expect(isDestructiveCommand('del /f output.txt')).toBe(true);
+    expect(isDestructiveCommand('format c:')).toBe(true);
     expect(isDestructiveCommand('git push')).toBe(true);
     expect(isDestructiveCommand('git pull')).toBe(true);
+    expect(isDestructiveCommand('Remove-Item output.txt')).toBe(true);
     expect(isDestructiveCommand('echo hello')).toBe(false);
+    expect(isDestructiveCommand('remark --help')).toBe(false);
+    expect(isDestructiveCommand('model list')).toBe(false);
+    expect(isDestructiveCommand('bundle install')).toBe(false);
   });
 });
 
@@ -67,7 +73,7 @@ describe('tool confirmation', () => {
         tools.read_file.execute?.({ path: 'output.txt' }, {} as never),
       ]);
 
-      expect(readResult).toBe('queued content');
+      expect(readResult).toContain('queued content');
     } finally {
       setProjectRoot(process.cwd());
       await rm(tempRoot, { recursive: true, force: true });

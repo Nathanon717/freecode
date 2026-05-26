@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir } from 'os';
-import type { Config, ProviderConfig } from '../providers/types.js';
+import type { Config, OverridableSettings, ProviderConfig } from '../providers/types.js';
 import { log, logError } from '../logger.js';
 
 const DEFAULT_CONFIG: Config = {
@@ -9,6 +9,7 @@ const DEFAULT_CONFIG: Config = {
   toolRationale: true,
   showProviderUsage: false,
   toolConfirmation: 'ask',
+  parallelTools: true,
 };
 
 function loadJsonFile<T>(path: string): T | null {
@@ -120,4 +121,25 @@ export function writeConfigFile(path: string, data: Partial<Config>): void {
   }
   writeFileSync(path, JSON.stringify(data, null, 2), 'utf-8');
   cachedConfig = null;
+}
+
+export function resolveModelSettings(selectedModel: string): Required<OverridableSettings> {
+  const config = loadConfig();
+  const colonIdx = selectedModel.indexOf(':');
+  const providerId = colonIdx !== -1 ? selectedModel.slice(0, colonIdx) : '';
+
+  const global = {
+    toolRationale: config.toolRationale,
+    showProviderUsage: config.showProviderUsage,
+    parallelTools: config.parallelTools,
+  };
+
+  const providerOver = providerId ? config.providerOverrides?.[providerId] : undefined;
+  const modelOver = config.modelOverrides?.[selectedModel];
+
+  return {
+    toolRationale: modelOver?.toolRationale ?? providerOver?.toolRationale ?? global.toolRationale,
+    showProviderUsage: modelOver?.showProviderUsage ?? providerOver?.showProviderUsage ?? global.showProviderUsage,
+    parallelTools: modelOver?.parallelTools ?? providerOver?.parallelTools ?? global.parallelTools,
+  };
 }

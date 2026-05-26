@@ -28,7 +28,9 @@ import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
-import { isProviderToolUseFailed, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
+import { isContextOverflowError, isProviderToolUseFailed, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
+import { resolveModelSettings } from '../config/index.js';
+import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
 
 let systemPromptLogged = false;
 
@@ -68,6 +70,12 @@ export async function agentLoop(
   modelPreference?: string,
   options: AgentLoopOptions = {}
 ): Promise<AgentLoopResult> {
+  if (process.env.FREECODE_NO_LLM === '1') {
+    const msg = 'LLM calls blocked (FREECODE_NO_LLM=1)';
+    process.stdout.write(`Error: ${msg}\n`);
+    return { text: `Error: ${msg}`, usage: { totalTokens: 0 }, providerId: 'none', modelId: 'none', quota: null };
+  }
+
   let languageModel: LanguageModel;
   let providerId: string;
   let modelId: string;
@@ -75,6 +83,8 @@ export async function agentLoop(
 
   setProjectRoot(projectRoot);
   log('stream', `agentLoop called`, { modelPreference: modelPreference ?? '(none)', historyLength: messages.length, projectRoot });
+  const modelSettings = resolveModelSettings(modelPreference ?? '');
+
   try {
     const resolved = resolveModel(modelPreference ?? '');
     languageModel = resolved.model;
@@ -109,17 +119,21 @@ export async function agentLoop(
   }
 
   log('stream', `Calling streamText`, { supportsTools, maxSteps: supportsTools ? 10 : undefined });
+  if (!modelSettings.parallelTools && providerId !== 'openai' && providerId !== 'anthropic') {
+    setParallelToolsDisabled(providerId, true);
+  }
   try {
     if (providerId === 'openai') {
       const provider = getProvider(providerId);
       if (!provider) throw new Error(`Unknown provider: "${providerId}"`);
       const tools = supportsTools ? createTools(options.confirmToolCall) : undefined;
-      if (tools) writeTranscriptStepDivider();
       const payload = buildOpenAIResponsesPayload({
         modelId,
         systemPrompt,
         messages,
         ...(tools ? { tools } : {}),
+        toolRationale: modelSettings.toolRationale,
+        parallelTools: modelSettings.parallelTools,
       });
       const generated = await generateOpenAIResponses(provider, payload, tools, options.confirmToolCall);
       fullText = generated.text;
@@ -139,7 +153,6 @@ export async function agentLoop(
       beginProviderUsageCapture(providerId);
     }
     if (providerId !== 'openai') {
-      if (supportsTools) writeTranscriptStepDivider();
       let activeMessages = messages;
       let toolUseFailureRetries = 0;
 
@@ -150,7 +163,7 @@ export async function agentLoop(
             system: systemPrompt,
             messages: activeMessages,
             ...(supportsTools ? {
-              tools: createTools(options.confirmToolCall),
+              tools: createTools(options.confirmToolCall, modelSettings.toolRationale),
               maxSteps: 10,
               onStepFinish: (event) => {
                 if (event.toolCalls.length > 0) writeTranscriptStepDivider();
@@ -252,14 +265,29 @@ export async function agentLoop(
       }
     } else {
       providerUsage = await endProviderUsageCapture(providerId);
+      if (process.env['DEBUG_QUOTA'] !== '0') {
+        const headers = getLastCapturedHeaders(providerId);
+        if (headers) quota = headers;
+      }
     }
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);
     log('stream', 'streamText error details', serializeError(error));
     const errMsg = toDetailedErrorMessage(error);
     if (fullText && !fullText.endsWith('\n')) process.stdout.write('\n');
-    process.stdout.write(`Error: ${errMsg}\n`);
+    if (isContextOverflowError(error)) {
+      process.stdout.write(
+        `Error: Context window exceeded — the conversation history is too long for this model.\n` +
+        `  • Start a new session to clear history, or\n` +
+        `  • Switch to a model with a larger context window (e.g. /model).\n`,
+      );
+    } else {
+      process.stdout.write(`Error: ${errMsg}\n`);
+    }
+    const displayError = isContextOverflowError(error)
+      ? 'Context window exceeded — start a new session or switch to a model with a larger context window.'
+      : errMsg;
     return {
-      text: fullText + `\n\nError: ${errMsg}`,
+      text: fullText + `\n\nError: ${displayError}`,
       usage: { totalTokens, promptTokens, outputTokens },
       providerId,
       modelId,
@@ -267,6 +295,8 @@ export async function agentLoop(
       providerUsage,
       costEstimate,
     };
+  } finally {
+    setParallelToolsDisabled(providerId, false);
   }
 
   return {

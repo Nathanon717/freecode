@@ -22,6 +22,6 @@ editFileTool: CoreTool
 - Requires the relative path to have been successfully read with `read_file` first.
 - Normalizes double-escaped `\\n` and `\\t` sequences in `old_text` and `new_text`.
 - Rejects empty, missing, or ambiguous `old_text`.
-- Writes the updated file as UTF-8.
+- Writes the updated file as UTF-8 while preserving the original LF vs CRLF line ending style.
 - Returns `Edited <path>: replaced <old> bytes with <new> bytes` on success.
 - Returns an error string instead of throwing on failure.

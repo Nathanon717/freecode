@@ -24,6 +24,14 @@ export interface CapturedProviderUsage {
 const lastCapturedHeaders = new Map<string, RateLimitSnapshot>();
 const usageCapturePromises = new Map<string, Promise<CapturedProviderUsage | null>[]>();
 
+// Set before a streamText call to inject parallel_tool_calls:false for that provider.
+const parallelToolsDisabled = new Set<string>();
+
+export function setParallelToolsDisabled(providerId: string, disabled: boolean): void {
+  if (disabled) parallelToolsDisabled.add(providerId);
+  else parallelToolsDisabled.delete(providerId);
+}
+
 export async function formatOpenAICompatHttpError(providerName: string, response: Response): Promise<string | null> {
   if (response.ok) return null;
 
@@ -219,14 +227,16 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
           } catch { /* ignore — leave body untouched */ }
         }
 
+        if (parallelToolsDisabled.has(providerConfig.id) && patchedInit?.body) {
+          try {
+            const body = JSON.parse(patchedInit.body as string);
+            if (Array.isArray(body.tools) && body.tools.length > 0) {
+              patchedInit = { ...patchedInit, body: JSON.stringify({ ...body, parallel_tool_calls: false }) };
+            }
+          } catch { /* ignore — leave body untouched */ }
+        }
+
         const response = await globalThis.fetch(input, patchedInit);
-        const httpError = await formatOpenAICompatHttpError(providerConfig.name, response);
-        if (httpError) {
-          throw new Error(httpError);
-        }
-        if (shouldCaptureUsage) {
-          captureProviderUsage(providerConfig.id, response);
-        }
         if (shouldCapture) {
           let snapshot: RateLimitSnapshot;
           if (providerConfig.id === 'mistral') {
@@ -237,6 +247,13 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
             snapshot = groqHeadersToSnapshot(parseGroqRateLimitHeaders(response.headers));
           }
           if (snapshot.length > 0) lastCapturedHeaders.set(providerConfig.id, snapshot);
+        }
+        const httpError = await formatOpenAICompatHttpError(providerConfig.name, response);
+        if (httpError) {
+          throw new Error(httpError);
+        }
+        if (shouldCaptureUsage) {
+          captureProviderUsage(providerConfig.id, response);
         }
         return response;
       }

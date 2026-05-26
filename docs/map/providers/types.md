@@ -33,11 +33,21 @@ interface ProviderConfig {
   modelIdExactBlocklist?: string[];  // exact filters for live model IDs
 }
 
+interface OverridableSettings {
+  toolRationale?: boolean;
+  showProviderUsage?: boolean;
+  parallelTools?: boolean;
+}
+
 interface Config {
   providers: Partial<Record<string, { apiKey?: string }>>;
-  preferredModel?: string;
-  useOllama: boolean;
+  defaultModel?: string;
   toolRationale: boolean;
+  showProviderUsage: boolean;
+  toolConfirmation: 'ask' | 'auto';
+  parallelTools: boolean;
+  providerOverrides?: Record<string, OverridableSettings>;
+  modelOverrides?: Record<string, OverridableSettings>;
 }
 ```
 

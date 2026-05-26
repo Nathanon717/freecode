@@ -1,10 +1,12 @@
 import chalk from 'chalk';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import type { OpenAIDailySpend } from './openai-daily-spend.js';
+import { getBannerColor } from './banner.js';
 
 const ESC = '\x1b[';
 
-let bottomActive = false;
+let footerActive = false;
+let inputUIActive = false;
 let lastReservedRows = 2;
 let lastInputBuf = '';
 let lastTokenCount = 0;
@@ -62,8 +64,15 @@ function clearLine() {
 }
 
 export function isBottomUIActive(): boolean {
-  return bottomActive;
+  return inputUIActive;
 }
+
+export function isFooterUIActive(): boolean {
+  return footerActive;
+}
+
+export function getRows(): number { return rows(); }
+export function getLastReservedRows(): number { return lastReservedRows; }
 
 export function getInputBuffer(): string {
   return lastInputBuf;
@@ -258,12 +267,27 @@ export function getInlineCompletionSuffix(input: string, completion: string | nu
   return completion.slice(input.length);
 }
 
-export function drawBottomUI() {
-  if (!bottomActive) return;
+// Draws the two footer rows (r-1 blank, r status line). Does not move the cursor.
+function drawFooter() {
+  if (!footerActive) return;
+  const w = cols();
+  const r = rows();
+  const rightStr = composeBottomRightStatus(Math.max(0, w - 1));
+  const padding = Math.max(0, w - 1 - rightStr.length);
+  let output = '';
+  output += moveToSequence(r - 1, 1) + clearLineSequence();
+  output += moveToSequence(r, 1) + ' '.repeat(padding) + chalk.gray(rightStr);
+  process.stdout.write(output);
+}
+
+// Draws the three input-area rows (top bar, input line, bottom bar) plus any suggestion rows.
+// Leaves the cursor on the input line.
+function drawInputArea() {
+  if (!inputUIActive) return;
   const w = cols();
   const r = rows();
   const n = lastSuggestions.length;
-  const reserved = 2 + n;
+  const reserved = 5 + n;
   const prevReserved = lastReservedRows;
 
   if (reserved !== prevReserved) {
@@ -271,31 +295,41 @@ export function drawBottomUI() {
     lastReservedRows = reserved;
   }
 
-  const inputRow = r - 1;
-  const statusRow = r;
-  const toClear = Math.max(reserved, prevReserved);
+  const topBarRow = r - 4;
+  const inputRow = r - 3;
+  const bottomBarRow = r - 2;
+
+  // Clear all input-area + suggestion rows (never touch footer rows r-1 and r).
+  const toClearRows = Math.max(reserved, prevReserved) - 2;
   let output = '';
-  for (let i = 0; i < toClear; i++) {
-    output += moveToSequence(r - toClear + 1 + i, 1) + clearLineSequence();
+  for (let i = 0; i < toClearRows; i++) {
+    output += moveToSequence(r - 2 - toClearRows + 1 + i, 1) + clearLineSequence();
   }
 
+  // Suggestions sit above the top bar.
   for (let i = 0; i < n; i++) {
-    output += moveToSequence(inputRow - n + i, 1) + chalk.gray('  ' + lastSuggestions[i]);
+    output += moveToSequence(topBarRow - n + i, 1) + chalk.gray('  ' + lastSuggestions[i]);
   }
+
+  output += moveToSequence(topBarRow, 1) + chalk.white('─'.repeat(w));
 
   const inlineSuffix = getInlineCompletionSuffix(lastInputBuf, lastInlineCompletion);
   const inputText = lastInputBuf
     ? lastInputBuf + chalk.gray(inlineSuffix)
     : chalk.gray('/ for commands');
-  output += moveToSequence(inputRow, 1) + chalk.green('> ') + inputText;
+  output += moveToSequence(inputRow, 1) + getBannerColor()('> ') + inputText;
 
-  const availableRightWidth = Math.max(0, w - 1);
-  const rightStr = composeBottomRightStatus(availableRightWidth);
-  const padding = Math.max(0, w - 1 - rightStr.length);
-  output += moveToSequence(statusRow, 1) + ' '.repeat(padding) + chalk.gray(rightStr);
+  output += moveToSequence(bottomBarRow, 1) + chalk.white('─'.repeat(w));
+
+  // Park cursor at the typing position.
   output += moveToSequence(inputRow, 3 + lastInputBuf.length);
 
   process.stdout.write(output);
+}
+
+export function drawBottomUI() {
+  drawFooter();
+  drawInputArea();
 }
 
 export function printTurnDivider() {
@@ -303,62 +337,113 @@ export function printTurnDivider() {
 }
 
 export function parkCursorInScrollRegion() {
-  if (!bottomActive) return;
+  if (!footerActive) return;
   moveTo(rows() - lastReservedRows, 1);
 }
 
 export function parkCursorAboveBottomUI() {
-  moveTo(Math.max(1, rows() - 2), 1);
+  moveTo(Math.max(1, rows() - lastReservedRows), 1);
 }
 
-export function setupBottomUI() {
-  if (bottomActive) return;
-  bottomActive = true;
+// --- Setup / teardown ---------------------------------------------------------
+
+// Sets up the footer (bottom 2 rows). Stays active across agent runs.
+export function setupFooterUI() {
+  if (footerActive) return;
+  footerActive = true;
   lastReservedRows = 2;
   refreshTimer = setInterval(() => {
-    if (bottomActive) drawBottomUI();
+    if (footerActive) {
+      drawFooter();
+      if (inputUIActive) drawInputArea();
+    }
   }, 1000);
   setScrollRegion(1, rows() - 2);
-  moveTo(rows() - 2, 1);
-  drawBottomUI();
+  drawFooter();
 }
 
+// Sets up the input area (3 rows above footer). Call after setupFooterUI.
+export function setupInputUI() {
+  if (inputUIActive) return;
+  inputUIActive = true;
+  const r = rows();
+  const n = lastSuggestions.length;
+  const reserved = 5 + n;
+  // Scroll the current scroll region (1 to r-2) up by 3 rows so that any command
+  // output near the bottom is not overwritten when the input area rows are drawn.
+  process.stdout.write(`${ESC}${r - 2};1H\n\n\n`);
+  setScrollRegion(1, r - reserved);
+  lastReservedRows = reserved;
+  drawInputArea();
+}
+
+// Convenience: sets up footer + input together.
+export function setupBottomUI() {
+  setupFooterUI();
+  setupInputUI();
+}
+
+// Tears down the input area only. Footer stays active.
 export function teardownBottomUI() {
-  if (!bottomActive) return;
-  bottomActive = false;
+  if (!inputUIActive) return;
+  inputUIActive = false;
+  const r = rows();
+  const toClearRows = lastReservedRows - 2;
+  let output = '';
+  for (let i = 0; i < toClearRows; i++) {
+    output += moveToSequence(r - 2 - toClearRows + 1 + i, 1) + clearLineSequence();
+  }
+  setScrollRegion(1, r - 2);
+  lastReservedRows = 2;
+  process.stdout.write(output);
+}
+
+// Tears down everything (footer + input). Use on process exit.
+export function teardownFooterUI() {
+  teardownBottomUI();
+  if (!footerActive) return;
+  footerActive = false;
   if (refreshTimer) {
     clearInterval(refreshTimer);
     refreshTimer = null;
   }
-  const toClear = lastReservedRows;
+  const r = rows();
   let output = '';
-  for (let i = 0; i < toClear; i++) {
-    output += moveToSequence(rows() - toClear + 1 + i, 1) + clearLineSequence();
-  }
+  output += moveToSequence(r - 1, 1) + clearLineSequence();
+  output += moveToSequence(r, 1) + clearLineSequence();
   output += `${ESC}r`;
-  output += moveToSequence(rows() - toClear, 1);
+  output += moveToSequence(r - 2, 1);
   process.stdout.write(output);
 }
 
+// Clears and redraws the input area after a prompt is submitted.
+// The footer rows are left untouched.
 export function resetSubmittedInputArea() {
-  if (lastReservedRows !== 2) {
-    setScrollRegion(1, rows() - 2);
-    lastReservedRows = 2;
+  if (!inputUIActive) return;
+  const r = rows();
+  const n = lastSuggestions.length;
+  const reserved = 5 + n;
+  if (lastReservedRows !== reserved) {
+    setScrollRegion(1, r - reserved);
+    lastReservedRows = reserved;
   }
-  moveTo(rows() - 1, 1);
-  clearLine();
-  moveTo(rows(), 1);
-  clearLine();
+  const toClear = reserved - 2;
+  let output = '';
+  for (let i = 0; i < toClear; i++) {
+    output += moveToSequence(r - 2 - toClear + 1 + i, 1) + clearLineSequence();
+  }
+  process.stdout.write(output);
+  drawInputArea();
 }
 
 process.stdout.on('resize', () => {
-  if (!bottomActive) return;
+  if (!footerActive) return;
   setScrollRegion(1, rows() - lastReservedRows);
   drawBottomUI();
 });
 
 process.on('exit', () => {
-  if (bottomActive) {
+  if (footerActive || inputUIActive) {
     resetScrollRegion();
     moveTo(rows(), 1);
   }

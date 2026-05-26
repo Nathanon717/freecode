@@ -11,9 +11,14 @@ import { assertScenarioExpectations } from './assertions/index.js';
 import type { ScenarioExpectations, ToolTraceEvent } from './assertions/index.js';
 import type { TtyScenario } from './pty/run-tty-scenario.js';
 
-// Env vars to strip from TTY test processes so provider API fetches don't
-// make live network requests (TTY scenarios are non-LLM by definition).
+// Env vars to strip from all non-LLM test processes so provider API fetches
+// can't make live network requests.
 const PROVIDER_API_KEY_VARS = new Set(PROVIDER_REGISTRY.map(p => p.apiKeyEnvVar));
+
+// Base env with all provider API keys removed, used for every non-LLM subprocess.
+const safeBaseEnv = Object.fromEntries(
+  Object.entries(process.env).filter(([k]) => !PROVIDER_API_KEY_VARS.has(k)),
+);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
@@ -101,9 +106,6 @@ const ttyScenarios = runnableScenarios.filter(({ file, scenario }) => {
 
 if (ttyScenarios.length > 0) {
   const { runTtyScenario } = await import('./pty/run-tty-scenario.js');
-  const ttyBaseEnv = Object.fromEntries(
-    Object.entries(process.env).filter(([k]) => !PROVIDER_API_KEY_VARS.has(k)),
-  );
 
   const ttyResults = await Promise.all(ttyScenarios.map(async ({ scenario }) => {
     if (showDetails) {
@@ -126,7 +128,7 @@ if (ttyScenarios.length > 0) {
         tty: scenario.tty!,
         entry: DIST_ENTRY,
         cwd: ROOT,
-        env: { ...ttyBaseEnv, FREECODE_HOME: tmpHome, DEBUG_QUOTA: '0', FORCE_COLOR: process.env.FORCE_COLOR ?? '1' },
+        env: { ...safeBaseEnv, FREECODE_HOME: tmpHome, DEBUG_QUOTA: '0', FORCE_COLOR: process.env.FORCE_COLOR ?? '1' },
       });
       ttyFailures = result.failures;
       ttyScreen = result.transcript;
@@ -209,10 +211,11 @@ for (const { file, scenario } of runnableScenarios) {
     const result = spawnSync(process.execPath, cliArgs, {
       cwd: scenario.workspace === 'temp' ? tmpWorkspace : ROOT,
       env: {
-        ...process.env,
+        ...safeBaseEnv,
         FREECODE_HOME: tmpHome,
         DEBUG_QUOTA: '0',
         FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
+        ...(scenario.requiresLlm ? {} : { FREECODE_NO_LLM: '1' }),
         ...(scenario.expect.toolTrace ? { FREECODE_TRACE_JSON: traceFile } : {}),
       },
       timeout: 60000,
