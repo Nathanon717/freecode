@@ -6,17 +6,16 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 ## Required Rules
 
-- Windows only. Run commands in PowerShell or cmd, not WSL. **Exception:** when running in a Claude Code web container (Linux), use `npm run ...` instead of `npm.cmd run ...`. See `docs/claude_code_web.md`.
-- Run npm scripts as `npm.cmd run ...` or `cmd /c npm.cmd run ...`; do not rely on the PowerShell `npm` shim.
-- Run `npm.cmd run build` after every code change.
+- Windows only. Run commands in PowerShell or cmd. **Exception:** when running in a Claude Code web container (Linux), use `npm run ...` instead of `npm.cmd run ...`. See `docs/claude_code_web.md`.
+- Run npm scripts as `npm.cmd run ...`;
 - Before broad source reads, start with `docs/map/README.md` and the relevant map page.
 - Do not run LLM evals without asking first. LLM evals run via the `/eval` slash command inside freecode.
 
 ## Verification
 
-- For any change touching `src/`, run `npm.cmd test` before reporting completion. Build, docs, and scenario failures are blockers.
+- For any change touching `src/`, run `npm.cmd test` before reporting completion. Build, docs, and scenario failures are blockers. Never end your turn 
 - `npm test` runs build + `docs:generate` + all non-LLM scenarios including TTY + all unit tests except PTY (~14s).
-- For quick visual checks of the interactive TUI (e.g. after adding a provider, open the model picker to confirm it appears), use `npm run pty:session`. Start a session, send keystrokes step by step, read the rendered screen. See `docs/pty-session.md` for full reference and examples.
+- For quick visual checks of the interactive TUI (e.g. after adding a provider, open the model picker to confirm it appears), use `pty`. Start a session, send keystrokes step by step, read the rendered screen. See `docs/pty-session.md` for full reference and examples.
 - If a user-visible behavior changes, ensure it has scenario coverage in `tests/scenarios/` or docs coverage, as appropriate.
 - If generated reference sources change, update the source of truth first, then run `npm.cmd run docs:generate`. It checks generated docs first; if they are already current, it stops without rewriting them, and if they are stale, it regenerates them. Do not hand-edit generated sections.
 - Run `npm.cmd run docs:generate` before reporting docs-related or user-visible changes complete.
@@ -25,32 +24,40 @@ Command details live in `docs/commands.md`. Scenario details live in `docs/scena
 
 ## Interactive Freecode Sessions
 
-To drive the live freecode TUI as an agent (open menus, send keystrokes, read the rendered screen), use `npm run pty:session`. A persistent PTY daemon holds a real terminal session open; you interact with it step by step.
+To drive the live freecode TUI as an agent (open menus, send keystrokes, read the rendered screen), use `pty`. A persistent PTY daemon holds a real terminal session open; you interact with it step by step.
 
-```bash
+**No session ID needed.** `start` and `goto` write the active session to a state file; subsequent `send`, `screen`, and `stop` calls pick it up automatically.
+
+```powershell
 # Start a session — prints SESSION_ID and the initial screen
-npm run pty:session -- start
+pty start
 
-# Send keystrokes, get the resulting screen
-npm run pty:session -- send <SESSION_ID> <keys>
+# Navigate directly to a named screen (auto-starts if needed)
+pty goto models --screen
+
+# Send keystrokes, get the resulting screen (no ID required)
+pty send <keys>
 
 # Wait for agent output to finish before snapshotting
-npm run pty:session -- send <SESSION_ID> $'some prompt\r' --wait-for "for commands"
+pty send "some prompt" --wait-for "for commands"
+printf '\r' | pty send -
 
 # Read the screen without sending input
-npm run pty:session -- screen <SESSION_ID>
+pty screen
 
 # Kill the session when done
-npm run pty:session -- stop <SESSION_ID>
+pty stop
 ```
+
+Available screens for `goto`: `home`, `models`, `config`, `eval`
 
 Always send typed text and control keys as **separate steps** — combining them in one `printf` (e.g. `printf '/model\r'`) may type the text but skip the key action.
 
 For slash commands and all control chars, use `printf` + stdin — `$'\r'`-style args are unreliable on Windows:
 
-```bash
-printf '/model' | npm run pty:session -- send <SESSION_ID> -   # type
-printf '\r'     | npm run pty:session -- send <SESSION_ID> -   # submit
+```powershell
+printf '/model' | pty send -   # type
+printf '\r'     | pty send -   # submit
 ```
 
 Full reference — patterns, flags, lifecycle: `docs/pty-session.md`

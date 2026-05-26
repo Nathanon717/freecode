@@ -6,19 +6,24 @@
  *   session.ts start [--cols N] [--rows N]
  *       Spawns a freecode PTY daemon, prints SESSION_ID and the initial screen.
  *
- *   session.ts send <id> <keys> [<keys>...] [--wait-for <text>] [--quiet-ms N]
+ *   session.ts goto <screen> [--screen] [--cols N] [--rows N]
+ *       Navigate to a named screen (home/models/config/eval) via BFS pathfinding.
+ *       Auto-starts a session if none is running. Prints the screen when --screen is set.
+ *
+ *   session.ts send [<id>] <keys> [<keys>...] [--wait-for <text>] [--quiet-ms N]
  *       Sends keystrokes to a running session, prints the resulting screen.
+ *       <id> is optional when a session was started with start/goto.
  *       Keys are raw strings; use shell ANSI-C quoting for control chars:
  *         Tab     $'\t'     Enter   $'\r'     Escape  $'\x1b'     Ctrl-C  $'\x03'
  *       Multiple key args are concatenated in order.
  *       Pass "-" as the keys arg to read from stdin — useful for slash-prefixed
  *       commands that MSYS would otherwise mangle:
- *         printf '/model' | npm run pty:session -- send <id> -
+ *         printf '/model' | npm run pty:session -- send -
  *
- *   session.ts screen <id>
+ *   session.ts screen [<id>]
  *       Prints the current screen without sending any input.
  *
- *   session.ts stop <id>
+ *   session.ts stop [<id>]
  *       Kills the session and cleans up.
  *
  * The --server flag is internal – used by 'start' to launch the daemon process.
@@ -36,6 +41,65 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..', '..');
 const DIST_ENTRY = join(ROOT, 'dist', 'index.js');
 const SESSION_DIR = join(tmpdir(), 'freecode-sessions');
+const ACTIVE_FILE = join(SESSION_DIR, 'active.json');
+
+// ── active session state ─────────────────────────────────────────────────────
+
+interface ActiveSession { id: string; screen: string; }
+
+function readActive(): ActiveSession | null {
+  if (!existsSync(ACTIVE_FILE)) return null;
+  try { return JSON.parse(readFileSync(ACTIVE_FILE, 'utf8')); } catch { return null; }
+}
+
+function writeActive(state: ActiveSession): void {
+  mkdirSync(SESSION_DIR, { recursive: true });
+  writeFileSync(ACTIVE_FILE, JSON.stringify(state));
+}
+
+function clearActive(): void {
+  try { unlinkSync(ACTIVE_FILE); } catch { /* already gone */ }
+}
+
+function resolveId(explicit: string | undefined): string {
+  if (explicit && explicit !== 'undefined') return explicit;
+  const active = readActive();
+  if (!active) { console.error('No active session. Run: pty start'); process.exit(1); }
+  return active.id;
+}
+
+// ── nav graph ────────────────────────────────────────────────────────────────
+
+// steps are sent as separate RPCs so each gets its own settle window.
+// This matters for slash commands: '/model\r' sent as one chunk doesn't
+// trigger execution — the app needs to settle after typing before \r submits.
+const NAV: Record<string, { steps: string[]; to: string }[]> = {
+  home:   [
+    { steps: ['/model', '\r'], to: 'models' },
+    { steps: ['/config', '\r'], to: 'config' },
+    { steps: ['/eval',   '\r'], to: 'eval' },
+  ],
+  models: [{ steps: ['\x1b'], to: 'home' }],
+  config: [{ steps: ['\x1b'], to: 'home' }],
+  eval:   [{ steps: ['\x1b'], to: 'home' }],
+};
+
+function bfsPath(from: string, to: string): { steps: string[]; to: string }[] | null {
+  if (from === to) return [];
+  const visited = new Set<string>([from]);
+  const queue: { screen: string; path: { keys: string; to: string }[] }[] = [{ screen: from, path: [] }];
+  while (queue.length) {
+    const { screen, path } = queue.shift()!;
+    for (const edge of (NAV[screen] ?? [])) {
+      if (visited.has(edge.to)) continue;
+      const newPath = [...path, edge];
+      if (edge.to === to) return newPath;
+      visited.add(edge.to);
+      queue.push({ screen: edge.to, path: newPath });
+    }
+  }
+  return null;
+}
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 // Ready file stores the TCP port the daemon is listening on.
@@ -165,6 +229,7 @@ async function cmdStart(cols: number, rows: number): Promise<void> {
       try { unlinkSync(flagPath(existingId)); } catch { /* already gone */ }
     });
   }
+  clearActive();
 
   const id = randomBytes(6).toString('hex');
   const tsxCli = join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
@@ -182,16 +247,18 @@ async function cmdStart(cols: number, rows: number): Promise<void> {
   }
   if (!existsSync(flag)) { console.error('Session never became ready (timeout)'); process.exit(1); }
 
+  writeActive({ id, screen: 'home' });
   const res = await rpc(id, { type: 'screen' });
   console.log(`SESSION_ID=${id}`);
   printScreen(res.screen as string[], cols);
 }
 
 async function cmdSend(
-  id: string,
+  explicitId: string | undefined,
   keys: string,
   opts: { waitFor?: string; quietMs?: number; cols: number },
 ): Promise<void> {
+  const id = resolveId(explicitId);
   // Allow keys to be read from stdin (pass "-" as the keys arg) so that
   // slash-prefixed commands like "/model" aren't mangled by MSYS path conversion.
   if (keys === '-') keys = readFileSync(0, 'utf8');
@@ -200,17 +267,53 @@ async function cmdSend(
   printScreen(res.screen as string[], opts.cols);
 }
 
-async function cmdScreen(id: string, cols: number): Promise<void> {
+async function cmdScreen(explicitId: string | undefined, cols: number): Promise<void> {
+  const id = resolveId(explicitId);
   const res = await rpc(id, { type: 'screen' });
   if ('error' in res) { console.error('Error:', res.error); process.exit(1); }
   printScreen(res.screen as string[], cols);
 }
 
-async function cmdStop(id: string): Promise<void> {
+async function cmdStop(explicitId: string | undefined): Promise<void> {
+  const id = resolveId(explicitId);
   await rpc(id, { type: 'stop' }).catch(() => {
     try { unlinkSync(flagPath(id)); } catch { /* already gone */ }
   });
+  clearActive();
   console.log('stopped');
+}
+
+async function cmdGoto(
+  screen: string,
+  opts: { showScreen: boolean; cols: number; rows: number },
+): Promise<void> {
+  let active = readActive();
+  if (!active) {
+    await cmdStart(opts.cols, opts.rows);
+    active = readActive()!;
+  }
+
+  const startScreen = active.screen;
+  const path = bfsPath(startScreen, screen);
+  if (path === null) {
+    console.error(`No path from '${startScreen}' to '${screen}'. Known screens: ${Object.keys(NAV).join(', ')}`);
+    process.exit(1);
+  }
+
+  for (const edge of path) {
+    for (const keys of edge.steps) {
+      await rpc(active.id, { type: 'send', keys });
+    }
+    active.screen = edge.to;
+    writeActive(active);
+  }
+
+  console.log(`navigated: ${startScreen} → ${screen}`);
+
+  if (opts.showScreen) {
+    const res = await rpc(active.id, { type: 'screen' });
+    printScreen(res.screen as string[], opts.cols);
+  }
 }
 
 // ── entry ────────────────────────────────────────────────────────────────────
@@ -220,31 +323,56 @@ async function main(): Promise<void> {
   let cols = 80, rows = 24;
   let waitFor: string | undefined;
   let quietMs: number | undefined;
+  let showScreen = false;
   const args: string[] = [];
 
   for (let i = 0; i < raw.length; i++) {
-    if      (raw[i] === '--cols'     && raw[i + 1]) cols    = parseInt(raw[++i], 10);
-    else if (raw[i] === '--rows'     && raw[i + 1]) rows    = parseInt(raw[++i], 10);
-    else if (raw[i] === '--wait-for' && raw[i + 1]) waitFor = raw[++i];
-    else if (raw[i] === '--quiet-ms' && raw[i + 1]) quietMs = parseInt(raw[++i], 10);
+    if      (raw[i] === '--cols'     && raw[i + 1]) cols       = parseInt(raw[++i], 10);
+    else if (raw[i] === '--rows'     && raw[i + 1]) rows       = parseInt(raw[++i], 10);
+    else if (raw[i] === '--wait-for' && raw[i + 1]) waitFor    = raw[++i];
+    else if (raw[i] === '--quiet-ms' && raw[i + 1]) quietMs    = parseInt(raw[++i], 10);
+    else if (raw[i] === '--screen')                 showScreen = true;
     else args.push(raw[i]);
   }
 
-  const [cmd, id, ...keyParts] = args;
+  const [cmd, ...rest] = args;
+
+  // For send/screen/stop: if rest[0] looks like a session ID (12 hex chars),
+  // treat it as an explicit ID. Otherwise fall back to active.json.
+  const looksLikeId = (s: string | undefined) => s !== undefined && /^[0-9a-f]{12}$/.test(s);
 
   switch (cmd) {
-    case '--server': return runServer(id, cols, rows);
+    case '--server': return runServer(rest[0], cols, rows);
     case 'start':   return cmdStart(cols, rows);
-    case 'send':    return cmdSend(id, keyParts.join(''), { waitFor, quietMs, cols });
-    case 'screen':  return cmdScreen(id, cols);
-    case 'stop':    return cmdStop(id);
+    case 'goto': {
+      const [screen] = rest;
+      if (!screen) { console.error('Usage: goto <screen> [--screen]'); process.exit(1); }
+      return cmdGoto(screen, { showScreen, cols, rows });
+    }
+    case 'send': {
+      const hasId = looksLikeId(rest[0]);
+      const id = hasId ? rest[0] : undefined;
+      const keyParts = hasId ? rest.slice(1) : rest;
+      return cmdSend(id, keyParts.join(''), { waitFor, quietMs, cols });
+    }
+    case 'screen': {
+      const id = looksLikeId(rest[0]) ? rest[0] : undefined;
+      return cmdScreen(id, cols);
+    }
+    case 'stop': {
+      const id = looksLikeId(rest[0]) ? rest[0] : undefined;
+      return cmdStop(id);
+    }
     default:
       console.error(
         'Usage:\n' +
         '  session.ts start [--cols N] [--rows N]\n' +
-        '  session.ts send <id> <keys> [--wait-for <text>] [--quiet-ms N]\n' +
-        '  session.ts screen <id>\n' +
-        '  session.ts stop <id>',
+        '  session.ts goto <screen> [--screen] [--cols N] [--rows N]\n' +
+        '  session.ts send [<id>] <keys> [--wait-for <text>] [--quiet-ms N]\n' +
+        '  session.ts screen [<id>]\n' +
+        '  session.ts stop [<id>]\n' +
+        '\n' +
+        'Screens: ' + Object.keys(NAV).join(', '),
       );
       process.exit(1);
   }
