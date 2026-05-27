@@ -54,6 +54,8 @@ pty stop
 
 Spawns a freecode daemon in a real PTY and waits for the prompt to be ready. Defaults: `--cols 80 --rows 24`. Does **not** print any output unless `--screen` is passed, in which case it prints the initial screen render.
 
+> **Matching a specific terminal size:** only override if you need pixel-perfect layout verification — e.g. `--cols 120 --rows 28`. Otherwise leave the defaults.
+
 Output format:
 ```
 ────────────────────────────── (cols wide)

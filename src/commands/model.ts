@@ -148,7 +148,9 @@ function buildScreen(
 ): { lines: string[]; newViewStart: number } {
   const HEADER = 4;   // blank + title + hint + blank
   const CHROME = 3;   // top indicator + bottom indicator + trailing blank
-  const termHeight = process.stdout.rows ?? 24;
+  // Subtract 2: the raw-picker draws from the scroll-region bottom, so each
+  // newline scrolls up. With r lines we'd push the header 2 rows off-screen.
+  const termHeight = (process.stdout.rows ?? 24) - 2;
   const maxItemLines = Math.max(4, termHeight - HEADER - CHROME);
 
   const { itemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, removedByProvider);
