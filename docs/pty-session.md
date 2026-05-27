@@ -90,7 +90,9 @@ Kills the daemon and cleans up the socket and flag files under `/tmp/freecode-se
 
 ## Windows (local) notes
 
-The PTY session works on both Windows and Linux. Two things differ when running in Git Bash on Windows:
+The PTY session works on both Windows and Linux. Run `npm.cmd link` once from the project root to put `pty` on PATH in Git Bash and PowerShell. Linux containers handle this automatically via `devcontainer.json`.
+
+Two things additionally differ when running in Git Bash on Windows:
 
 **Slash commands get mangled by MSYS path conversion.** Git Bash rewrites arguments that look like Unix paths — `/model` becomes `C:/Program Files/Git/model`. Pass `-` as the keys arg and pipe the input via stdin to bypass this entirely:
 

@@ -1,3 +1,3 @@
 {
-  "postCreateCommand": "ln -sf /workspaces/freecode/pty /home/codespace/.local/bin/pty"
+  "postCreateCommand": "npm link"
 }

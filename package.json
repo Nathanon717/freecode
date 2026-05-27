@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "freecode": "dist/index.js"
+    "freecode": "dist/index.js",
+    "pty": "./pty"
   },
   "scripts": {
     "build": "tsc",

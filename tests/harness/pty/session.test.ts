@@ -48,7 +48,7 @@ describe.skipIf(!hasDist)('PTY session manager', () => {
   });
 
   it('start spawns a daemon and prints initial screen', () => {
-    const { stdout, exitCode } = runSession(['start']);
+    const { stdout, exitCode } = runSession(['start', '--screen']);
     expect(exitCode, 'start exited non-zero').toBe(0);
     expect(stdout).toContain('for commands');
   }, 35000);
