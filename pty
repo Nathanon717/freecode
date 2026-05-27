@@ -1,2 +1,6 @@
 #!/usr/bin/env bash
-npm.cmd run pty:session -- "$@"
+if [[ "$(uname)" == "Linux" || "$(uname)" == "Darwin" ]]; then
+  npm run pty:session -- "$@"
+else
+  npm.cmd run pty:session -- "$@"
+fi

@@ -120,6 +120,21 @@ async function grepWithFindstr(pattern: string, cwd: string): Promise<string> {
   }
 }
 
+async function grepWithGrep(pattern: string, cwd: string): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync(
+      'grep', ['-rn', '--include=*', '-E', pattern, '.'],
+      { cwd, timeout: 10000, maxBuffer: 10 * 1024 * 1024 },
+    );
+    if (!stdout.trim()) return 'No matches found';
+    const lines = stdout.split('\n').filter((l) => l.trim()).slice(0, 100);
+    return lines.join('\n');
+  } catch (err: any) {
+    if (err.code === 1) return 'No matches found';
+    throw err;
+  }
+}
+
 export const grepTool = tool({
   description:
     'Search for a regex pattern in files. Uses ripgrep when available for fast, accurate results. ' +
@@ -135,7 +150,10 @@ export const grepTool = tool({
       if (await rgAvailable) {
         return await grepWithRg(pattern, cwd, include);
       }
-      return await grepWithFindstr(pattern, cwd);
+      if (process.platform === 'win32') {
+        return await grepWithFindstr(pattern, cwd);
+      }
+      return await grepWithGrep(pattern, cwd);
     } catch (error) {
       return `Error searching: ${error instanceof Error ? error.message : String(error)}`;
     }

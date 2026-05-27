@@ -4,15 +4,14 @@
  *
  * Commands:
  *   session.ts start [--cols N] [--rows N]
- *       Spawns a freecode PTY daemon, prints SESSION_ID and the initial screen.
+ *       Spawns a freecode PTY daemon and prints the initial screen.
  *
  *   session.ts goto <screen> [--screen] [--cols N] [--rows N]
  *       Navigate to a named screen (home/models/config/eval) via BFS pathfinding.
  *       Auto-starts a session if none is running. Prints the screen when --screen is set.
  *
- *   session.ts send [<id>] <keys> [<keys>...] [--wait-for <text>] [--quiet-ms N]
- *       Sends keystrokes to a running session, prints the resulting screen.
- *       <id> is optional when a session was started with start/goto.
+ *   session.ts send <keys> [<keys>...] [--wait-for <text>] [--quiet-ms N]
+ *       Sends keystrokes to the running session, prints the resulting screen.
  *       Keys are raw strings; use shell ANSI-C quoting for control chars:
  *         Tab     $'\t'     Enter   $'\r'     Escape  $'\x1b'     Ctrl-C  $'\x03'
  *       Multiple key args are concatenated in order.
@@ -20,10 +19,10 @@
  *       commands that MSYS would otherwise mangle:
  *         printf '/model' | npm run pty:session -- send -
  *
- *   session.ts screen [<id>]
+ *   session.ts screen
  *       Prints the current screen without sending any input.
  *
- *   session.ts stop [<id>]
+ *   session.ts stop
  *       Kills the session and cleans up.
  *
  * The --server flag is internal – used by 'start' to launch the daemon process.
@@ -61,8 +60,7 @@ function clearActive(): void {
   try { unlinkSync(ACTIVE_FILE); } catch { /* already gone */ }
 }
 
-function resolveId(explicit: string | undefined): string {
-  if (explicit && explicit !== 'undefined') return explicit;
+function resolveId(): string {
   const active = readActive();
   if (!active) { console.error('No active session. Run: pty start'); process.exit(1); }
   return active.id;
@@ -216,7 +214,7 @@ function rpc(id: string, msg: object): Promise<Record<string, unknown>> {
 
 // ── commands ─────────────────────────────────────────────────────────────────
 
-async function cmdStart(cols: number, rows: number): Promise<void> {
+async function cmdStart(cols: number, rows: number, showScreen = false): Promise<void> {
   mkdirSync(SESSION_DIR, { recursive: true });
 
   // Stop any existing sessions before starting a new one.
@@ -248,17 +246,17 @@ async function cmdStart(cols: number, rows: number): Promise<void> {
   if (!existsSync(flag)) { console.error('Session never became ready (timeout)'); process.exit(1); }
 
   writeActive({ id, screen: 'home' });
-  const res = await rpc(id, { type: 'screen' });
-  console.log(`SESSION_ID=${id}`);
-  printScreen(res.screen as string[], cols);
+  if (showScreen) {
+    const res = await rpc(id, { type: 'screen' });
+    printScreen(res.screen as string[], cols);
+  }
 }
 
 async function cmdSend(
-  explicitId: string | undefined,
   keys: string,
   opts: { waitFor?: string; quietMs?: number; cols: number },
 ): Promise<void> {
-  const id = resolveId(explicitId);
+  const id = resolveId();
   // Allow keys to be read from stdin (pass "-" as the keys arg) so that
   // slash-prefixed commands like "/model" aren't mangled by MSYS path conversion.
   if (keys === '-') keys = readFileSync(0, 'utf8');
@@ -267,15 +265,15 @@ async function cmdSend(
   printScreen(res.screen as string[], opts.cols);
 }
 
-async function cmdScreen(explicitId: string | undefined, cols: number): Promise<void> {
-  const id = resolveId(explicitId);
+async function cmdScreen(cols: number): Promise<void> {
+  const id = resolveId();
   const res = await rpc(id, { type: 'screen' });
   if ('error' in res) { console.error('Error:', res.error); process.exit(1); }
   printScreen(res.screen as string[], cols);
 }
 
-async function cmdStop(explicitId: string | undefined): Promise<void> {
-  const id = resolveId(explicitId);
+async function cmdStop(): Promise<void> {
+  const id = resolveId();
   await rpc(id, { type: 'stop' }).catch(() => {
     try { unlinkSync(flagPath(id)); } catch { /* already gone */ }
   });
@@ -337,40 +335,25 @@ async function main(): Promise<void> {
 
   const [cmd, ...rest] = args;
 
-  // For send/screen/stop: if rest[0] looks like a session ID (12 hex chars),
-  // treat it as an explicit ID. Otherwise fall back to active.json.
-  const looksLikeId = (s: string | undefined) => s !== undefined && /^[0-9a-f]{12}$/.test(s);
-
   switch (cmd) {
     case '--server': return runServer(rest[0], cols, rows);
-    case 'start':   return cmdStart(cols, rows);
+    case 'start':   return cmdStart(cols, rows, showScreen);
     case 'goto': {
       const [screen] = rest;
       if (!screen) { console.error('Usage: goto <screen> [--screen]'); process.exit(1); }
       return cmdGoto(screen, { showScreen, cols, rows });
     }
-    case 'send': {
-      const hasId = looksLikeId(rest[0]);
-      const id = hasId ? rest[0] : undefined;
-      const keyParts = hasId ? rest.slice(1) : rest;
-      return cmdSend(id, keyParts.join(''), { waitFor, quietMs, cols });
-    }
-    case 'screen': {
-      const id = looksLikeId(rest[0]) ? rest[0] : undefined;
-      return cmdScreen(id, cols);
-    }
-    case 'stop': {
-      const id = looksLikeId(rest[0]) ? rest[0] : undefined;
-      return cmdStop(id);
-    }
+    case 'send':   return cmdSend(rest.join(''), { waitFor, quietMs, cols });
+    case 'screen': return cmdScreen(cols);
+    case 'stop':   return cmdStop();
     default:
       console.error(
         'Usage:\n' +
         '  session.ts start [--cols N] [--rows N]\n' +
         '  session.ts goto <screen> [--screen] [--cols N] [--rows N]\n' +
-        '  session.ts send [<id>] <keys> [--wait-for <text>] [--quiet-ms N]\n' +
-        '  session.ts screen [<id>]\n' +
-        '  session.ts stop [<id>]\n' +
+        '  session.ts send <keys> [--wait-for <text>] [--quiet-ms N]\n' +
+        '  session.ts screen\n' +
+        '  session.ts stop\n' +
         '\n' +
         'Screens: ' + Object.keys(NAV).join(', '),
       );

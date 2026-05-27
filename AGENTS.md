@@ -27,16 +27,16 @@ Command details live in `docs/commands.md`. Scenario details live in `docs/scena
 
 To drive the live freecode TUI as an agent (open menus, send keystrokes, read the rendered screen), use `pty`. A persistent PTY daemon holds a real terminal session open; you interact with it step by step.
 
-**No session ID needed.** `start` and `goto` write the active session to a state file; subsequent `send`, `screen`, and `stop` calls pick it up automatically.
+`start` and `goto` write the active session to a state file; subsequent `send`, `screen`, and `stop` calls pick it up automatically.
 
 ```powershell
-# Start a session — prints SESSION_ID and the initial screen
+# Start a session (prints initial screen)
 pty start
 
 # Navigate directly to a named screen (auto-starts if needed)
 pty goto models --screen
 
-# Send keystrokes, get the resulting screen (no ID required)
+# Send keystrokes, get the resulting screen
 pty send <keys>
 
 # Wait for agent output to finish before snapshotting

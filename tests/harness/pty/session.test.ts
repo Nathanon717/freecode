@@ -43,59 +43,39 @@ function runSession(args: string[]): SessionResult {
 }
 
 describe.skipIf(!hasDist)('PTY session manager', () => {
-  // Shared across tests in document order — each test advances the session state.
-  let sessionId: string | null = null;
-
   afterAll(() => {
-    if (sessionId) {
-      runSession(['stop', sessionId]);
-      sessionId = null;
-    }
+    runSession(['stop']);
   });
 
-  it('start spawns a daemon, prints SESSION_ID and initial screen', () => {
+  it('start spawns a daemon and prints initial screen', () => {
     const { stdout, exitCode } = runSession(['start']);
-    expect(exitCode, `start exited non-zero`).toBe(0);
-
-    const idLine = stdout.split('\n').find(l => l.startsWith('SESSION_ID='));
-    expect(idLine, 'SESSION_ID line missing from start output').toBeDefined();
-
-    sessionId = idLine!.slice('SESSION_ID='.length).trim();
-    expect(sessionId).toMatch(/^[0-9a-f]{12}$/, 'SESSION_ID should be 12 hex chars');
-
-    // The initial screen should contain the interactive prompt
+    expect(exitCode, 'start exited non-zero').toBe(0);
     expect(stdout).toContain('for commands');
   }, 35000);
 
   it('screen returns the current rendered screen without altering state', () => {
-    expect(sessionId, 'depends on start test').toBeTruthy();
-    const { stdout, exitCode } = runSession(['screen', sessionId!]);
+    const { stdout, exitCode } = runSession(['screen']);
     expect(exitCode).toBe(0);
     expect(stdout).toContain('for commands');
   }, 15000);
 
   it('send delivers keystrokes and returns updated screen', () => {
-    expect(sessionId, 'depends on start test').toBeTruthy();
     // Typing "/" opens the autocomplete suggestion list
-    const { stdout, exitCode } = runSession(['send', sessionId!, '/']);
+    const { stdout, exitCode } = runSession(['send', '/']);
     expect(exitCode).toBe(0);
     expect(stdout).toContain('/clear');
   }, 15000);
 
   it('send escape resets the prompt', () => {
-    expect(sessionId, 'depends on previous send test').toBeTruthy();
     // ESC clears the current input
-    const { stdout, exitCode } = runSession(['send', sessionId!, '\x1b']);
+    const { stdout, exitCode } = runSession(['send', '\x1b']);
     expect(exitCode).toBe(0);
-    // After escape, autocomplete list should be gone and base prompt back
     expect(stdout).toContain('for commands');
   }, 15000);
 
   it('stop terminates the session and prints "stopped"', () => {
-    expect(sessionId, 'depends on start test').toBeTruthy();
-    const { stdout, exitCode } = runSession(['stop', sessionId!]);
+    const { stdout, exitCode } = runSession(['stop']);
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe('stopped');
-    sessionId = null;
   }, 15000);
 });

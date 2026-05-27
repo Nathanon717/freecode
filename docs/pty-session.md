@@ -33,10 +33,10 @@ For one-shot batch assertions in automated tests, prefer a TTY scenario file ins
 ## Workflow
 
 ```bash
-# 1. Start a session — prints SESSION_ID and the initial screen
-pty start
+# 1. Start a session (add --screen to also print the initial screen)
+pty start --screen
 
-# 2. Navigate to a named screen (no ID needed)
+# 2. Navigate to a named screen
 pty goto models --screen
 
 # 3. Send keystrokes
@@ -46,17 +46,16 @@ pty send <keys>
 pty stop
 ```
 
-`start` and `goto` write the active session to `active.json` in the session dir, so subsequent `send`, `screen`, and `stop` need no explicit ID.
+`start` and `goto` write the active session to `active.json` in the session dir, so subsequent `send`, `screen`, and `stop` pick it up automatically.
 
 ## Commands
 
-### `start [--cols N] [--rows N]`
+### `start [--screen] [--cols N] [--rows N]`
 
-Spawns a freecode daemon in a real PTY, waits for the prompt to be ready, and prints the initial screen. Defaults: `--cols 80 --rows 24`.
+Spawns a freecode daemon in a real PTY and waits for the prompt to be ready. Defaults: `--cols 80 --rows 24`. Does **not** print any output unless `--screen` is passed, in which case it prints the initial screen render.
 
 Output format:
 ```
-SESSION_ID=abc123def456
 ────────────────────────────── (cols wide)
 [rendered screen lines]
 ──────────────────────────────
@@ -68,7 +67,7 @@ Navigates from the current screen to `<screen>` by BFS-pathfinding through the n
 
 **Available screens:** `home`, `models`, `config`, `eval`
 
-### `send [<id>] <keys> [<keys>...] [--wait-for <text>] [--quiet-ms N]`
+### `send <keys> [<keys>...] [--wait-for <text>] [--quiet-ms N]`
 
 Writes keystrokes to the running session and prints the screen after output settles.
 
@@ -81,11 +80,11 @@ Writes keystrokes to the running session and prints the screen after output sett
 - `--wait-for <text>`: wait for a specific string to appear in the raw output stream before snapshotting. Use this when a keystroke triggers LLM work — wait for `"for commands"` to know the prompt is back.
 - `--quiet-ms N`: override the settle window (default 350 ms). Increase for slow renders.
 
-### `screen [<id>]`
+### `screen`
 
 Snapshot the current screen without sending any input. Useful for confirming state after an async operation completes.
 
-### `stop [<id>]`
+### `stop`
 
 Kills the daemon and cleans up the socket and flag files under `/tmp/freecode-sessions/`. Clears `active.json`.
 
@@ -169,5 +168,5 @@ pty screen
 
 - The daemon persists until `stop` is called or the process is killed.
 - Each session gets an isolated `FREECODE_HOME` temp directory so it never conflicts with other sessions or the developer's real config.
-- A flag file under the OS temp dir (`freecode-sessions/<id>.ready`) stores the daemon's TCP port and is cleaned up on `stop` or process exit.
-- Multiple sessions can run simultaneously.
+- A flag file under the OS temp dir (`freecode-sessions/<hex>.ready`) stores the daemon's TCP port and is cleaned up on `stop` or process exit.
+- Only one session runs at a time — `start` stops any existing session before spawning a new one.
