@@ -37,6 +37,32 @@ function saveDefaultModel(model: string): void {
   } as Partial<Config>);
 }
 
+type GroupMode = 'provider' | 'model';
+
+// Normalize a model ID so that the same model offered under different provider
+// namespaces or with date-version suffixes still maps to the same canonical key.
+// Examples: "openai/gpt-oss-120b" → "gpt-oss-120b", "gpt-4o-2024-11-20" → "gpt-4o",
+//           "liquid/lfm-2.5:free" → "lfm-2.5", "@cf/meta/llama-3.3-70b" → "llama-3.3-70b"
+function normalizeModelId(id: string): string {
+  let s = id.toLowerCase();
+  // Strip router/tier suffixes like :free
+  s = s.replace(/:[a-z]+$/, '');
+  // Strip provider namespace prefix(es): owner/model or @scope/owner/model
+  s = s.replace(/^(?:[^/]+\/){1,2}(?=[^/]+$)/, '');
+  // Strip date suffixes: -MM-YYYY (Cohere style), then -YYYY or -YYYY-MM-DD
+  s = s.replace(/-\d{2}-\d{4}$/, '');
+  s = s.replace(/-\d{4}(?:-\d{2}-\d{2})?$/, '');
+  return s;
+}
+
+// Pick the most readable display name from a group of items for the group header.
+// Prefers names without path separators; among those, picks the shortest.
+function canonicalDisplayName(groupItems: ModelMenuItem[]): string {
+  const clean = groupItems.filter(m => !m.displayName.includes('/'));
+  const pool = clean.length > 0 ? clean : groupItems;
+  return pool.reduce((a, b) => a.displayName.length <= b.displayName.length ? a : b).displayName;
+}
+
 function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, models: ModelConfig[]): void {
   for (const model of models) {
     items.push({
@@ -48,6 +74,30 @@ function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, mod
       isNew: model.isNew,
     });
   }
+}
+
+function buildDisplayList(items: ModelMenuItem[], groupMode: GroupMode): ModelMenuItem[] {
+  if (groupMode === 'provider') return items;
+
+  const modelGroups = new Map<string, ModelMenuItem[]>();
+  for (const item of items) {
+    const key = normalizeModelId(item.modelId);
+    if (!modelGroups.has(key)) modelGroups.set(key, []);
+    modelGroups.get(key)!.push(item);
+  }
+
+  const distinctProviderCount = (g: ModelMenuItem[]) => new Set(g.map(m => m.providerId)).size;
+
+  const sorted = [...modelGroups.entries()].sort((a, b) => {
+    const da = distinctProviderCount(a[1]);
+    const db = distinctProviderCount(b[1]);
+    if (db !== da) return db - da;
+    return a[0].localeCompare(b[0]);
+  });
+
+  const multi = sorted.filter(([, g]) => distinctProviderCount(g) >= 2).flatMap(([, g]) => g);
+  const single = sorted.filter(([, g]) => distinctProviderCount(g) === 1).flatMap(([, g]) => g);
+  return [...multi, ...single];
 }
 
 export async function getSelectableModels(): Promise<ModelMenuItem[]> {
@@ -83,7 +133,12 @@ export function buildAllItemLines(
   selected: number,
   currentModel: string,
   removedByProvider: Map<string, string[]>,
+  groupMode: GroupMode = 'provider',
 ): { itemLines: string[]; selectedLineIdx: number } {
+  if (groupMode === 'model') {
+    return buildModelGroupedItemLines(items, selected, currentModel);
+  }
+
   const itemLines: string[] = [];
   let lastProvider = '';
   let selectedLineIdx = 0;
@@ -137,6 +192,83 @@ export function buildAllItemLines(
   return { itemLines, selectedLineIdx };
 }
 
+function buildModelGroupedItemLines(
+  items: ModelMenuItem[],
+  selected: number,
+  currentModel: string,
+): { itemLines: string[]; selectedLineIdx: number } {
+  // items is already in model-grouped display order (multi-provider first, then single)
+  const itemLines: string[] = [];
+  let selectedLineIdx = 0;
+
+  // Precompute per-normalized-id provider count and canonical display name
+  const groupMembers = new Map<string, ModelMenuItem[]>();
+  for (const item of items) {
+    const key = normalizeModelId(item.modelId);
+    if (!groupMembers.has(key)) groupMembers.set(key, []);
+    groupMembers.get(key)!.push(item);
+  }
+  const modelProviderCounts = new Map<string, number>(
+    [...groupMembers.entries()].map(([k, g]) => [k, new Set(g.map(m => m.providerId)).size])
+  );
+  const groupDisplayNames = new Map<string, string>(
+    [...groupMembers.entries()].map(([k, g]) => [k, canonicalDisplayName(g)])
+  );
+
+  let lastNormalizedId = '';
+  let inOtherSection = false;
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const normalizedId = normalizeModelId(item.modelId);
+    const providerCount = modelProviderCounts.get(normalizedId) ?? 1;
+    const isMulti = providerCount >= 2;
+
+    if (!isMulti && !inOtherSection) {
+      if (lastNormalizedId) itemLines.push('');
+      itemLines.push(`  ${chalk.bold('Other')}`);
+      inOtherSection = true;
+      lastNormalizedId = '__other__';
+    }
+
+    if (isMulti && normalizedId !== lastNormalizedId) {
+      if (lastNormalizedId) itemLines.push('');
+      const headerName = groupDisplayNames.get(normalizedId) ?? item.displayName;
+      itemLines.push(`  ${chalk.bold(headerName)} ${chalk.dim(`· ${providerCount} providers`)}`);
+      lastNormalizedId = normalizedId;
+    }
+
+    if (i === selected) selectedLineIdx = itemLines.length;
+
+    const preference = modelPreference(item);
+    const active = i === selected;
+    const current = preference === currentModel;
+    const cursor = active ? chalk.cyan('>') : ' ';
+    const marker = current ? chalk.green(' current') : '';
+    const pricingBadge = item.pricing
+      ? (item.pricing.confidence === 'disagree'
+          ? chalk.red(' sources disagree')
+          : item.pricing.input !== null && item.pricing.output !== null
+            ? (item.pricing.confidence === 'agreed'
+                ? chalk.green(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`)
+                : chalk.yellow(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`))
+            : '')
+      : '';
+
+    if (isMulti) {
+      const renderedProvider = active ? chalk.inverse(item.providerName) : chalk.cyan(item.providerName);
+      itemLines.push(`  ${cursor} ${renderedProvider}${pricingBadge} ${chalk.dim(item.providerId)}${marker}`);
+    } else {
+      const newBadge = item.isNew ? chalk.yellow(' new') : '';
+      const id = `${item.providerId}:${item.modelId}`;
+      const renderedName = active ? chalk.inverse(item.displayName) : chalk.cyan(item.displayName);
+      itemLines.push(`  ${cursor} ${renderedName}${newBadge}${pricingBadge} ${chalk.dim(id)}${marker}`);
+    }
+  }
+
+  return { itemLines, selectedLineIdx };
+}
+
 // Returns rendered lines and updated viewStart.
 // Total line count is always fixed so cursor-up redraws stay stable.
 function buildScreen(
@@ -145,6 +277,7 @@ function buildScreen(
   currentModel: string,
   viewStart: number,
   removedByProvider: Map<string, string[]>,
+  groupMode: GroupMode,
 ): { lines: string[]; newViewStart: number } {
   const HEADER = 4;   // blank + title + hint + blank
   const CHROME = 3;   // top indicator + bottom indicator + trailing blank
@@ -153,7 +286,7 @@ function buildScreen(
   const termHeight = (process.stdout.rows ?? 24) - 2;
   const maxItemLines = Math.max(4, termHeight - HEADER - CHROME);
 
-  const { itemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, removedByProvider);
+  const { itemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, removedByProvider, groupMode);
 
   // Scroll viewStart to keep selectedLineIdx visible
   let newViewStart = viewStart;
@@ -166,10 +299,13 @@ function buildScreen(
   // Pad to maxItemLines so total output height is constant
   while (visibleLines.length < maxItemLines) visibleLines.push('');
 
+  const tabHint = groupMode === 'provider'
+    ? chalk.dim('Tab group by model, ')
+    : chalk.dim('Tab group by provider, ');
   const lines: string[] = [];
   lines.push('');
   lines.push(`  ${chalk.bold.cyan('Select model')}`);
-  lines.push(`  ${chalk.dim('Up/Down navigate, Enter select, Space select + default, Esc close')}`);
+  lines.push(`  ${tabHint}${chalk.dim('Up/Down navigate, Enter select, Space select + default, Esc close')}`);
   lines.push('');
 
   lines.push(newViewStart > 0 ? chalk.dim('  · · ·') : '');
@@ -208,22 +344,34 @@ export async function runModelCommand(
     }
   }
 
-  const currentIndex = items.findIndex(item => modelPreference(item) === currentModel);
+  let groupMode: GroupMode = 'provider';
+  let displayItems = buildDisplayList(items, groupMode);
+  const currentIndex = displayItems.findIndex(item => modelPreference(item) === currentModel);
   let selected = currentIndex >= 0 ? currentIndex : 0;
   let viewStart = 0;
 
   const result = await runRawPicker<ModelPickResult>(rl, {
     render(): string[] {
-      const { lines, newViewStart } = buildScreen(items, selected, currentModel, viewStart, removedByProvider);
+      const { lines, newViewStart } = buildScreen(displayItems, selected, currentModel, viewStart, removedByProvider, groupMode);
       viewStart = newViewStart;
       return lines;
     },
     onKey(key, redraw, close) {
       if (key === '\x1b') { close(null); return; }
-      if (key === '\x1b[A') { selected = (selected - 1 + items.length) % items.length; redraw(); return; }
-      if (key === '\x1b[B') { selected = (selected + 1) % items.length; redraw(); return; }
-      if (key === '\r' || key === '\n') { close({ item: items[selected], saveDefault: false }); return; }
-      if (key === ' ') { close({ item: items[selected], saveDefault: true }); return; }
+      if (key === '\x1b[A') { selected = (selected - 1 + displayItems.length) % displayItems.length; redraw(); return; }
+      if (key === '\x1b[B') { selected = (selected + 1) % displayItems.length; redraw(); return; }
+      if (key === '\r' || key === '\n') { close({ item: displayItems[selected], saveDefault: false }); return; }
+      if (key === ' ') { close({ item: displayItems[selected], saveDefault: true }); return; }
+      if (key === '\t') {
+        const currentItem = displayItems[selected];
+        groupMode = groupMode === 'provider' ? 'model' : 'provider';
+        displayItems = buildDisplayList(items, groupMode);
+        viewStart = 0;
+        const newIdx = displayItems.findIndex(item => modelPreference(item) === modelPreference(currentItem));
+        selected = newIdx >= 0 ? newIdx : 0;
+        redraw();
+        return;
+      }
     },
   });
 

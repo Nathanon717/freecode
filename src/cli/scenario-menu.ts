@@ -11,7 +11,7 @@ import {
   type TestScenarioSummary,
 } from './scenario-catalog.js';
 
-import { isBottomUIActive, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
+import { isBottomUIActive, setModelStatus, setTokenCount, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
 import { runRawPicker } from './raw-picker.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
@@ -484,6 +484,13 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       resetEvalWorkDir(scenarioDir);
       const result = await executeEvalScenario(scenarioDir, prompt, model || undefined);
 
+      // Update footer with the model and token count from the eval run.
+      const evalModel = model || '';
+      const colonIdx = evalModel.indexOf(':');
+      if (colonIdx !== -1) setModelStatus(evalModel.slice(0, colonIdx), evalModel.slice(colonIdx + 1));
+      else if (evalModel) setModelStatus('', evalModel);
+      setTokenCount(result.tokens.total);
+
       if (!result.stdout.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim()) {
         console.log(chalk.dim('(no output)'));
       }
@@ -505,11 +512,11 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
 
       const resultInputPath = join(scenarioDir, '.run', 'result-input.json');
       writeFileSync(resultInputPath, JSON.stringify(result));
-      const checkProc = spawnSync(TSX_BIN, [RUN_CHECK_SCRIPT, checkPath, resultInputPath], {
-        encoding: 'utf-8',
-        timeout: 30_000,
-        shell: true,
-      });
+      const checkProc = spawnSync(
+        `"${TSX_BIN}"`,
+        [`"${RUN_CHECK_SCRIPT}"`, `"${checkPath}"`, `"${resultInputPath}"`],
+        { encoding: 'utf-8', timeout: 30_000, shell: true },
+      );
       if (checkProc.error || !checkProc.stdout?.trim()) {
         const detail = checkProc.error?.message ?? checkProc.stderr?.trim() ?? `exit ${checkProc.status}`;
         throw new Error(`check script failed for ${scenario.id}: ${detail}`);

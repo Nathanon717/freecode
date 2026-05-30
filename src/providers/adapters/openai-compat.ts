@@ -100,6 +100,15 @@ export function formatCapturedProviderUsages(usages: CapturedProviderUsage[] | n
   return JSON.stringify(usages.length === 1 ? payload[0] : payload, null, 2);
 }
 
+function parseRetryAfterMs(value: string | null): number {
+  if (!value) return 1000;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.ceil(seconds) * 1000;
+  const date = Date.parse(value);
+  if (!Number.isNaN(date)) return Math.max(1000, date - Date.now());
+  return 1000;
+}
+
 function formatRetryAfter(value: string | null): string | null {
   if (!value) return null;
   const seconds = Number(value);
@@ -236,7 +245,13 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
           } catch { /* ignore — leave body untouched */ }
         }
 
-        const response = await globalThis.fetch(input, patchedInit);
+        let response = await globalThis.fetch(input, patchedInit);
+        if (providerConfig.id === 'groq' && response.status === 429) {
+          const delayMs = parseRetryAfterMs(response.headers.get('retry-after'));
+          process.stdout.write(`\nGroq rate-limited — retrying in ${Math.ceil(delayMs / 1000)}s...\n`);
+          await new Promise(r => setTimeout(r, delayMs));
+          response = await globalThis.fetch(input, patchedInit);
+        }
         if (shouldCapture) {
           let snapshot: RateLimitSnapshot;
           if (providerConfig.id === 'mistral') {
