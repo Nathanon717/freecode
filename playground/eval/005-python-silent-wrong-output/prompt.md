@@ -1,0 +1,1 @@
+Run report.py. It runs without error but the revenue figure is wrong. Investigate the discrepancy, fix the calculation, and rerun to confirm the correct output.

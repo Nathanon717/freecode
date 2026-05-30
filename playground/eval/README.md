@@ -59,3 +59,6 @@ Each check in an `EvalReport` has a `kind`:
 | 002 | edit-config | Easy | Change one field in config.json without touching others |
 | 003 | python-missing-semicolon | Easy | Run a Python script, inspect a syntax error, fix it, and rerun |
 | 004 | python-data-shape-error | Medium | Run a Python script, inspect a runtime data-shape error, fix it, and rerun |
+| 005 | python-silent-wrong-output | Hard | Run a script that exits 0 but produces wrong numbers; reason about the logic bug, fix, and rerun |
+| 006 | python-interface-mismatch | Hard | Run a two-file project; read both files to understand the interface contract, fix the caller to match the module |
+| 007 | python-two-bug-cascade | Hard | Fix two latent bugs that surface one at a time across separate run-fail-fix cycles |

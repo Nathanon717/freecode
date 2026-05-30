@@ -10,6 +10,7 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 - Run npm scripts as `npm.cmd run ...`;
 - Before broad source reads, start with `docs/map/README.md` and the relevant map page.
 - Do not run LLM evals without asking first. LLM evals run via the `/eval` slash command inside freecode.
+- Never prefix Bash commands with `cd <dir> &&` when already in that directory — it triggers a permission prompt on the `cd` even if the actual command is allowed.
 
 ## Verification
 

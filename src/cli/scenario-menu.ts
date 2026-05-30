@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, mkdirSync, rmSync, cpSync, writeFileSync } from 'fs';
 import { join, resolve, dirname, relative } from 'path';
-import { spawnSync } from 'child_process';
+import { spawnSync, spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import type { Interface } from 'readline';
 import chalk from 'chalk';
@@ -19,6 +19,7 @@ const PLAYGROUND_EVAL_DIR = resolve(_dirname, '..', '..', 'playground', 'eval');
 const DIST_ENTRY = resolve(_dirname, '..', '..', 'dist', 'index.js');
 const TSX_BIN = resolve(_dirname, '..', '..', 'node_modules', '.bin', 'tsx.cmd');
 const RUN_CHECK_SCRIPT = resolve(_dirname, '..', '..', 'playground', 'eval', 'run-check.ts');
+const EVAL_HISTORY_FILE = resolve(_dirname, '..', '..', 'playground', 'eval', 'eval-history.json');
 
 // Eval types (structural mirror of playground/eval/shared/types.ts)
 interface EvalToolCall { tool: string; args: Record<string, unknown>; }
@@ -32,6 +33,23 @@ interface EvalCheckResult {
   pass?: boolean; message?: string; value?: string | number; note?: string;
 }
 interface EvalReport { scenarioId: string; checks: EvalCheckResult[]; }
+
+interface EvalHistoryEntry {
+  timestamp: string;
+  scenarioId: string;
+  model: string;
+  pass: boolean;
+  tokens: EvalTokenUsage;
+}
+
+function appendEvalHistory(entry: EvalHistoryEntry): void {
+  let history: EvalHistoryEntry[] = [];
+  if (existsSync(EVAL_HISTORY_FILE)) {
+    try { history = JSON.parse(readFileSync(EVAL_HISTORY_FILE, 'utf-8')); } catch {}
+  }
+  history.push(entry);
+  writeFileSync(EVAL_HISTORY_FILE, JSON.stringify(history, null, 2) + '\n', 'utf-8');
+}
 
 interface PlaygroundScenario {
   id: string;
@@ -80,7 +98,7 @@ function loadEvalConfig(scenarioDir: string): EvalConfig {
   try { return JSON.parse(readFileSync(configPath, 'utf-8')) as EvalConfig; } catch { return {}; }
 }
 
-function executeEvalScenario(scenarioDir: string, prompt: string, model?: string): EvalRunResult {
+async function executeEvalScenario(scenarioDir: string, prompt: string, model?: string): Promise<EvalRunResult> {
   const workDir = join(scenarioDir, 'work');
   const runDir = join(scenarioDir, '.run');
   mkdirSync(runDir, { recursive: true });
@@ -92,21 +110,58 @@ function executeEvalScenario(scenarioDir: string, prompt: string, model?: string
   const evalConfig = loadEvalConfig(scenarioDir);
   const maxToolCalls = evalConfig.maxToolCalls ?? 10;
 
-  const proc = spawnSync(process.execPath, [DIST_ENTRY, '--script', scriptFile], {
-    cwd: workDir,
-    env: {
-      ...process.env,
-      ...(model ? { FREECODE_MODEL: model } : {}),
-      FREECODE_TRACE_JSON: traceFile,
-      FREECODE_TRANSCRIPT_STREAM: 'stdout',
-      FREECODE_RESULT_JSON: resultFile,
-      FREECODE_AUTO_CONFIRM: '1',
-      FREECODE_MAX_TOOL_CALLS: String(maxToolCalls),
-      DEBUG_QUOTA: '0',
-      FORCE_COLOR: '1',
-    },
-    timeout: 120_000,
-    encoding: 'utf-8',
+  const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+  let headerSkipped = false;
+  let stdoutChunks: string[] = [];
+  let stderrChunks: string[] = [];
+
+  const exitCode = await new Promise<number>((resolve) => {
+    const proc = spawn(process.execPath, [DIST_ENTRY, '--script', scriptFile], {
+      cwd: workDir,
+      env: {
+        ...process.env,
+        ...(model ? { FREECODE_MODEL: model } : {}),
+        FREECODE_TRACE_JSON: traceFile,
+        FREECODE_TRANSCRIPT_STREAM: 'stdout',
+        FREECODE_RESULT_JSON: resultFile,
+        FREECODE_AUTO_CONFIRM: '1',
+        FREECODE_MAX_TOOL_CALLS: String(maxToolCalls),
+        DEBUG_QUOTA: '0',
+        FORCE_COLOR: '1',
+      },
+    });
+
+    let partialLine = '';
+
+    const handleChunk = (chunk: Buffer | string): void => {
+      const text = typeof chunk === 'string' ? chunk : chunk.toString('utf-8');
+      stdoutChunks.push(text);
+      const combined = partialLine + text;
+      const lines = combined.split('\n');
+      partialLine = lines.pop() ?? '';
+      for (const line of lines) {
+        if (!headerSkipped && stripAnsi(line).startsWith('> ')) continue;
+        headerSkipped = true;
+        process.stdout.write(line + '\n');
+      }
+    };
+
+    proc.stdout.on('data', handleChunk);
+    proc.stderr.on('data', (chunk: Buffer | string) => {
+      stderrChunks.push(typeof chunk === 'string' ? chunk : chunk.toString('utf-8'));
+    });
+
+    const timer = setTimeout(() => { proc.kill(); resolve(1); }, 120_000);
+
+    proc.on('close', (code) => {
+      clearTimeout(timer);
+      if (partialLine) {
+        if (headerSkipped || !stripAnsi(partialLine).startsWith('> ')) {
+          process.stdout.write(partialLine);
+        }
+      }
+      resolve(code ?? 1);
+    });
   });
 
   let toolCalls: EvalToolCall[] = [];
@@ -125,9 +180,9 @@ function executeEvalScenario(scenarioDir: string, prompt: string, model?: string
   const hasOutput = agentResults.some(r => r.outputTokens !== undefined);
 
   return {
-    exitCode: proc.status ?? 1,
-    stdout: proc.stdout ?? '',
-    stderr: proc.stderr ?? '',
+    exitCode,
+    stdout: stdoutChunks.join(''),
+    stderr: stderrChunks.join(''),
     toolCalls,
     tokens: {
       total: totalTokens,
@@ -424,20 +479,12 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       console.log(chalk.bold('Prompt:'));
       console.log(chalk.white(prompt));
       console.log(chalk.dim('─'.repeat(60)));
-      process.stdout.write(chalk.dim(`\nRunning...`));
+      console.log('');
 
       resetEvalWorkDir(scenarioDir);
-      const result = executeEvalScenario(scenarioDir, prompt, model || undefined);
+      const result = await executeEvalScenario(scenarioDir, prompt, model || undefined);
 
-      process.stdout.write('\r\x1b[2K');
-      const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
-      const outputLines = result.stdout.split('\n');
-      let echoEnd = 0;
-      while (echoEnd < outputLines.length && stripAnsi(outputLines[echoEnd]).startsWith('> ')) echoEnd++;
-      const strippedOutput = outputLines.slice(echoEnd).join('\n');
-      if (strippedOutput.trim()) {
-        process.stdout.write(strippedOutput.trimEnd() + '\n');
-      } else {
+      if (!result.stdout.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim()) {
         console.log(chalk.dim('(no output)'));
       }
 
@@ -472,6 +519,14 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       const allPassed = report.checks.filter(c => c.kind === 'assertion').every(c => c.pass);
 
       printEvalReport(report);
+
+      appendEvalHistory({
+        timestamp: new Date().toISOString(),
+        scenarioId: scenario.id,
+        model: model || 'default',
+        pass: allPassed,
+        tokens: result.tokens,
+      });
 
       if (allPassed) passed++; else failed++;
     }
