@@ -1,5 +1,6 @@
 import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
+import chalk from 'chalk';
 import { getProvider, resolveModel } from '../providers/registry.js';
 import { buildSystemPrompt } from './system-prompt.js';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
@@ -28,9 +29,11 @@ import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
-import { isContextOverflowError, isProviderToolUseFailed, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
+import { isContextOverflowError, isInvalidToolArgumentsError, isNoSuchToolError, isProviderToolUseFailed, isToolsNotSupportedError, isUserAbortError, invalidToolName, noSuchToolAvailableList, noSuchToolName, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
 import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
+import { runPromptToolsLoop } from './prompt-tools.js';
+import { isModelNoNativeTools, markModelNoNativeTools } from '../providers/model-traits.js';
 
 let systemPromptLogged = false;
 
@@ -155,8 +158,13 @@ export async function agentLoop(
     if (providerId !== 'openai') {
       let activeMessages = messages;
       let toolUseFailureRetries = 0;
+      let usePromptToolsFallback = supportsTools && isModelNoNativeTools(providerId, modelId);
 
       while (true) {
+        if (usePromptToolsFallback) {
+          log('stream', `Skipping native tools for ${providerId}:${modelId} (saved trait)`);
+          break;
+        }
         try {
           const result: unknown = await streamText({
             model: languageModel,
@@ -192,20 +200,69 @@ export async function agentLoop(
           log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
           break;
         } catch (error) {
-          if (supportsTools && fullText.length === 0 && toolUseFailureRetries < 1 && isProviderToolUseFailed(error)) {
-            toolUseFailureRetries++;
-            log('stream', 'Retrying after provider rejected malformed tool call', serializeError(error));
-            activeMessages = [
-              ...messages,
-              {
-                role: 'user',
-                content: 'The provider rejected your previous response because it contained an invalid tool/function call. Retry the same task. When calling a tool, call exactly one valid tool at a time, use the exact tool name, and provide arguments as valid JSON matching the tool schema. String arguments containing JSON or newlines must be escaped as JSON strings.',
-              },
-            ];
-            continue;
+          if (supportsTools && fullText.length === 0 && !usePromptToolsFallback && isToolsNotSupportedError(error)) {
+            usePromptToolsFallback = true;
+            markModelNoNativeTools(providerId, modelId);
+            process.stdout.write(`Note: ${modelId} doesn't support native tool calling — saved. Using prompt-based tools now and automatically next time.\n`);
+            log('stream', 'Tool calling rejected by provider; falling back to prompt-based tool protocol', serializeError(error));
+            break;
+          }
+          if (supportsTools && toolUseFailureRetries < 1) {
+            if (fullText.length === 0 && isProviderToolUseFailed(error)) {
+              toolUseFailureRetries++;
+              log('stream', 'Retrying after provider rejected malformed tool call', serializeError(error));
+              activeMessages = [
+                ...messages,
+                {
+                  role: 'user',
+                  content: 'The provider rejected your previous response because it contained an invalid tool/function call. Retry the same task. When calling a tool, call exactly one valid tool at a time, use the exact tool name, and provide arguments as valid JSON matching the tool schema. String arguments containing JSON or newlines must be escaped as JSON strings.',
+                },
+              ];
+              continue;
+            }
+            if (isNoSuchToolError(error)) {
+              toolUseFailureRetries++;
+              fullText = '';
+              const available = noSuchToolAvailableList(error) ?? 'read_file, write_file, edit_file, grep, shell_exec, list_dir';
+              const badName = noSuchToolName(error);
+              const nameHint = badName
+                ? ` You called "${badName}", which does not exist. Do not use namespace prefixes (e.g. "repo_browser.") — use the plain name only.`
+                : '';
+              log('stream', 'Retrying after model called non-existent tool', serializeError(error));
+              activeMessages = [
+                ...messages,
+                {
+                  role: 'user',
+                  content: `You called a tool that does not exist.${nameHint} The only available tools are: ${available}. Retry your task using only these exact tool names.`,
+                },
+              ];
+              continue;
+            }
+            if (isInvalidToolArgumentsError(error)) {
+              toolUseFailureRetries++;
+              fullText = '';
+              const name = invalidToolName(error) ?? 'unknown';
+              log('stream', 'Retrying after model provided invalid tool arguments', serializeError(error));
+              activeMessages = [
+                ...messages,
+                {
+                  role: 'user',
+                  content: `Your call to "${name}" was rejected because the arguments did not match the tool's parameter schema. Check the required parameter names and types, then retry.`,
+                },
+              ];
+              continue;
+            }
           }
           throw error;
         }
+      }
+
+      if (usePromptToolsFallback) {
+        const ptResult = await runPromptToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale);
+        fullText = ptResult.text;
+        totalTokens = ptResult.totalTokens;
+        promptTokens = ptResult.promptTokens;
+        outputTokens = ptResult.outputTokens;
       }
     }
 
@@ -269,6 +326,17 @@ export async function agentLoop(
         const headers = getLastCapturedHeaders(providerId);
         if (headers) quota = headers;
       }
+    }
+    if (isUserAbortError(error)) {
+      return {
+        text: fullText,
+        usage: { totalTokens, promptTokens, outputTokens },
+        providerId,
+        modelId,
+        quota,
+        providerUsage,
+        costEstimate,
+      };
     }
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);
     log('stream', 'streamText error details', serializeError(error));

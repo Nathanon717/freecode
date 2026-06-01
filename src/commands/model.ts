@@ -4,9 +4,12 @@ import { getConfigPaths, readRawConfig, resolveApiKey, writeConfigFile } from '.
 import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/registry.js';
 import type { Config, ModelConfig, ProviderConfig } from '../providers/types.js';
 import { getProviderCache, markModelSelected } from '../providers/model-cache.js';
+import { clearModelNewFlag } from '../providers/registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import type { PricingConfidence } from '../providers/pricing-verifier.js';
 import { runRawPicker } from '../cli/raw-picker.js';
+import { loadCanonicalGroups, type CanonicalModelGroups } from '../providers/canonical-models.js';
+import { getNoNativeToolsModels } from '../providers/model-traits.js';
 
 export interface ModelMenuItem {
   providerId: string;
@@ -15,6 +18,7 @@ export interface ModelMenuItem {
   displayName: string;
   modelsSource?: 'static' | 'live';
   isNew?: boolean;
+  noNativeTools?: boolean;
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
 }
 
@@ -39,30 +43,6 @@ function saveDefaultModel(model: string): void {
 
 type GroupMode = 'provider' | 'model';
 
-// Normalize a model ID so that the same model offered under different provider
-// namespaces or with date-version suffixes still maps to the same canonical key.
-// Examples: "openai/gpt-oss-120b" → "gpt-oss-120b", "gpt-4o-2024-11-20" → "gpt-4o",
-//           "liquid/lfm-2.5:free" → "lfm-2.5", "@cf/meta/llama-3.3-70b" → "llama-3.3-70b"
-function normalizeModelId(id: string): string {
-  let s = id.toLowerCase();
-  // Strip router/tier suffixes like :free
-  s = s.replace(/:[a-z]+$/, '');
-  // Strip provider namespace prefix(es): owner/model or @scope/owner/model
-  s = s.replace(/^(?:[^/]+\/){1,2}(?=[^/]+$)/, '');
-  // Strip date suffixes: -MM-YYYY (Cohere style), then -YYYY or -YYYY-MM-DD
-  s = s.replace(/-\d{2}-\d{4}$/, '');
-  s = s.replace(/-\d{4}(?:-\d{2}-\d{2})?$/, '');
-  return s;
-}
-
-// Pick the most readable display name from a group of items for the group header.
-// Prefers names without path separators; among those, picks the shortest.
-function canonicalDisplayName(groupItems: ModelMenuItem[]): string {
-  const clean = groupItems.filter(m => !m.displayName.includes('/'));
-  const pool = clean.length > 0 ? clean : groupItems;
-  return pool.reduce((a, b) => a.displayName.length <= b.displayName.length ? a : b).displayName;
-}
-
 function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, models: ModelConfig[]): void {
   for (const model of models) {
     items.push({
@@ -76,28 +56,57 @@ function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, mod
   }
 }
 
-function buildDisplayList(items: ModelMenuItem[], groupMode: GroupMode): ModelMenuItem[] {
+// Returns items in canonical-file order for the model-grouped tab view.
+// Named groups (in file order) come first; then the "other" key; then anything not in the file.
+function buildDisplayList(items: ModelMenuItem[], groupMode: GroupMode, canonicalGroups: CanonicalModelGroups): ModelMenuItem[] {
   if (groupMode === 'provider') return items;
 
-  const modelGroups = new Map<string, ModelMenuItem[]>();
+  const itemByEntry = new Map<string, ModelMenuItem>();
   for (const item of items) {
-    const key = normalizeModelId(item.modelId);
-    if (!modelGroups.has(key)) modelGroups.set(key, []);
-    modelGroups.get(key)!.push(item);
+    itemByEntry.set(`${item.providerId}:${item.modelId}`, item);
   }
 
-  const distinctProviderCount = (g: ModelMenuItem[]) => new Set(g.map(m => m.providerId)).size;
+  const result: ModelMenuItem[] = [];
+  const placed = new Set<string>();
 
-  const sorted = [...modelGroups.entries()].sort((a, b) => {
-    const da = distinctProviderCount(a[1]);
-    const db = distinctProviderCount(b[1]);
-    if (db !== da) return db - da;
-    return a[0].localeCompare(b[0]);
-  });
+  for (const [groupName, members] of Object.entries(canonicalGroups)) {
+    if (groupName === 'other') continue;
+    for (const entry of members) {
+      const item = itemByEntry.get(entry);
+      if (item && !placed.has(entry)) {
+        result.push(item);
+        placed.add(entry);
+      }
+    }
+  }
 
-  const multi = sorted.filter(([, g]) => distinctProviderCount(g) >= 2).flatMap(([, g]) => g);
-  const single = sorted.filter(([, g]) => distinctProviderCount(g) === 1).flatMap(([, g]) => g);
-  return [...multi, ...single];
+  for (const entry of (canonicalGroups['other'] ?? [])) {
+    const item = itemByEntry.get(entry);
+    if (item && !placed.has(entry)) {
+      result.push(item);
+      placed.add(entry);
+    }
+  }
+
+  for (const item of items) {
+    const key = `${item.providerId}:${item.modelId}`;
+    if (!placed.has(key)) result.push(item);
+  }
+
+  return result;
+}
+
+export function filterModelItems(items: ModelMenuItem[], query: string): ModelMenuItem[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return items;
+
+  return items.filter(item => [
+    item.providerId,
+    item.providerName,
+    item.modelId,
+    item.displayName,
+    modelPreference(item),
+  ].some(value => value.toLowerCase().includes(normalized)));
 }
 
 export async function getSelectableModels(): Promise<ModelMenuItem[]> {
@@ -107,6 +116,13 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
   for (const provider of PROVIDER_REGISTRY) {
     if (!resolveApiKey(provider)) continue;
     addProviderModels(items, provider, provider.models);
+  }
+
+  const noNativeTools = getNoNativeToolsModels();
+  for (const item of items) {
+    if (noNativeTools.has(`${item.providerId}:${item.modelId}`)) {
+      item.noNativeTools = true;
+    }
   }
 
   const pricedItems = items.filter(i => i.providerId === 'anthropic' || i.providerId === 'openai');
@@ -134,9 +150,10 @@ export function buildAllItemLines(
   currentModel: string,
   removedByProvider: Map<string, string[]>,
   groupMode: GroupMode = 'provider',
+  canonicalGroups: CanonicalModelGroups = {},
 ): { itemLines: string[]; selectedLineIdx: number } {
   if (groupMode === 'model') {
-    return buildModelGroupedItemLines(items, selected, currentModel);
+    return buildModelGroupedItemLines(items, selected, currentModel, canonicalGroups);
   }
 
   const itemLines: string[] = [];
@@ -169,6 +186,7 @@ export function buildAllItemLines(
     const renderedName = active ? chalk.inverse(item.displayName) : chalk.cyan(item.displayName);
     const marker = current ? chalk.green(' current') : '';
     const newBadge = item.isNew ? chalk.yellow(' new') : '';
+    const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
     const pricingBadge = item.pricing
       ? (item.pricing.confidence === 'disagree'
           ? chalk.red(' sources disagree')
@@ -178,10 +196,9 @@ export function buildAllItemLines(
                 : chalk.yellow(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`))
             : '')
       : '';
-    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${pricingBadge} ${chalk.dim(id)}${marker}`);
+    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge} ${chalk.dim(id)}${marker}`);
   }
 
-  // trailing removed models for the last provider group
   if (lastProvider) {
     const removed = removedByProvider.get(lastProvider) ?? [];
     for (const id of removed) {
@@ -196,46 +213,48 @@ function buildModelGroupedItemLines(
   items: ModelMenuItem[],
   selected: number,
   currentModel: string,
+  canonicalGroups: CanonicalModelGroups,
 ): { itemLines: string[]; selectedLineIdx: number } {
-  // items is already in model-grouped display order (multi-provider first, then single)
+  // Reverse map: "provider:modelId" → group name (first match wins)
+  const entryToGroup = new Map<string, string>();
+  for (const [groupName, members] of Object.entries(canonicalGroups)) {
+    for (const entry of members) {
+      if (!entryToGroup.has(entry)) entryToGroup.set(entry, groupName);
+    }
+  }
+
+  // Count distinct providers per named group to decide row display style.
+  const groupProviders = new Map<string, Set<string>>();
+  for (const item of items) {
+    const group = entryToGroup.get(`${item.providerId}:${item.modelId}`);
+    if (!group || group === 'other') continue;
+    if (!groupProviders.has(group)) groupProviders.set(group, new Set());
+    groupProviders.get(group)!.add(item.providerId);
+  }
+
   const itemLines: string[] = [];
   let selectedLineIdx = 0;
-
-  // Precompute per-normalized-id provider count and canonical display name
-  const groupMembers = new Map<string, ModelMenuItem[]>();
-  for (const item of items) {
-    const key = normalizeModelId(item.modelId);
-    if (!groupMembers.has(key)) groupMembers.set(key, []);
-    groupMembers.get(key)!.push(item);
-  }
-  const modelProviderCounts = new Map<string, number>(
-    [...groupMembers.entries()].map(([k, g]) => [k, new Set(g.map(m => m.providerId)).size])
-  );
-  const groupDisplayNames = new Map<string, string>(
-    [...groupMembers.entries()].map(([k, g]) => [k, canonicalDisplayName(g)])
-  );
-
-  let lastNormalizedId = '';
+  let lastGroup = '';
   let inOtherSection = false;
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    const normalizedId = normalizeModelId(item.modelId);
-    const providerCount = modelProviderCounts.get(normalizedId) ?? 1;
-    const isMulti = providerCount >= 2;
+    const entry = `${item.providerId}:${item.modelId}`;
+    const group = entryToGroup.get(entry) ?? 'other';
+    const isNamed = group !== 'other';
 
-    if (!isMulti && !inOtherSection) {
-      if (lastNormalizedId) itemLines.push('');
+    if (!isNamed && !inOtherSection) {
+      if (lastGroup) itemLines.push('');
       itemLines.push(`  ${chalk.bold('Other')}`);
       inOtherSection = true;
-      lastNormalizedId = '__other__';
+      lastGroup = 'other';
     }
 
-    if (isMulti && normalizedId !== lastNormalizedId) {
-      if (lastNormalizedId) itemLines.push('');
-      const headerName = groupDisplayNames.get(normalizedId) ?? item.displayName;
-      itemLines.push(`  ${chalk.bold(headerName)} ${chalk.dim(`· ${providerCount} providers`)}`);
-      lastNormalizedId = normalizedId;
+    if (isNamed && group !== lastGroup) {
+      if (lastGroup) itemLines.push('');
+      const provCount = groupProviders.get(group)?.size ?? 1;
+      itemLines.push(`  ${chalk.bold(group)} ${chalk.dim(`· ${provCount} provider${provCount !== 1 ? 's' : ''}`)}`);
+      lastGroup = group;
     }
 
     if (i === selected) selectedLineIdx = itemLines.length;
@@ -255,22 +274,23 @@ function buildModelGroupedItemLines(
             : '')
       : '';
 
-    if (isMulti) {
+    if (isNamed && (groupProviders.get(group)?.size ?? 1) >= 2) {
+      // Multiple providers offer this model — show provider name per row.
       const renderedProvider = active ? chalk.inverse(item.providerName) : chalk.cyan(item.providerName);
-      itemLines.push(`  ${cursor} ${renderedProvider}${pricingBadge} ${chalk.dim(item.providerId)}${marker}`);
+      const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
+      itemLines.push(`  ${cursor} ${renderedProvider}${ptBadge}${pricingBadge} ${chalk.dim(item.providerId)}${marker}`);
     } else {
       const newBadge = item.isNew ? chalk.yellow(' new') : '';
+      const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
       const id = `${item.providerId}:${item.modelId}`;
       const renderedName = active ? chalk.inverse(item.displayName) : chalk.cyan(item.displayName);
-      itemLines.push(`  ${cursor} ${renderedName}${newBadge}${pricingBadge} ${chalk.dim(id)}${marker}`);
+      itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge} ${chalk.dim(id)}${marker}`);
     }
   }
 
   return { itemLines, selectedLineIdx };
 }
 
-// Returns rendered lines and updated viewStart.
-// Total line count is always fixed so cursor-up redraws stay stable.
 function buildScreen(
   items: ModelMenuItem[],
   selected: number,
@@ -278,17 +298,19 @@ function buildScreen(
   viewStart: number,
   removedByProvider: Map<string, string[]>,
   groupMode: GroupMode,
+  canonicalGroups: CanonicalModelGroups,
+  filterQuery: string,
 ): { lines: string[]; newViewStart: number } {
-  const HEADER = 4;   // blank + title + hint + blank
-  const CHROME = 3;   // top indicator + bottom indicator + trailing blank
-  // Subtract 2: the raw-picker draws from the scroll-region bottom, so each
-  // newline scrolls up. With r lines we'd push the header 2 rows off-screen.
+  const HEADER = 5;
+  const CHROME = 3;
   const termHeight = (process.stdout.rows ?? 24) - 2;
   const maxItemLines = Math.max(4, termHeight - HEADER - CHROME);
 
-  const { itemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, removedByProvider, groupMode);
+  const { itemLines: rawItemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, removedByProvider, groupMode, canonicalGroups);
+  const itemLines = rawItemLines.length > 0
+    ? rawItemLines
+    : [`  ${chalk.dim('No models match the current filter')}`];
 
-  // Scroll viewStart to keep selectedLineIdx visible
   let newViewStart = viewStart;
   if (selectedLineIdx < newViewStart) newViewStart = Math.max(0, selectedLineIdx - 2);
   if (selectedLineIdx >= newViewStart + maxItemLines) newViewStart = selectedLineIdx - maxItemLines + 1;
@@ -296,15 +318,18 @@ function buildScreen(
 
   const viewEnd = Math.min(newViewStart + maxItemLines, itemLines.length);
   const visibleLines = itemLines.slice(newViewStart, viewEnd);
-  // Pad to maxItemLines so total output height is constant
   while (visibleLines.length < maxItemLines) visibleLines.push('');
 
   const tabHint = groupMode === 'provider'
     ? chalk.dim('Tab group by model, ')
     : chalk.dim('Tab group by provider, ');
+  const filterLabel = filterQuery
+    ? `${chalk.dim('Filter: ')}${chalk.cyan(filterQuery)}`
+    : chalk.dim('Type to filter, Backspace clears characters');
   const lines: string[] = [];
   lines.push('');
   lines.push(`  ${chalk.bold.cyan('Select model')}`);
+  lines.push(`  ${filterLabel}`);
   lines.push(`  ${tabHint}${chalk.dim('Up/Down navigate, Enter select, Space select + default, Esc close')}`);
   lines.push('');
 
@@ -317,6 +342,10 @@ function buildScreen(
 }
 
 type ModelPickResult = { item: ModelMenuItem; saveDefault: boolean } | null;
+
+function printableChars(key: string): string {
+  return [...key].filter(c => c >= ' ' && c !== '\x7f').join('');
+}
 
 export async function runModelCommand(
   rl: Interface,
@@ -344,33 +373,88 @@ export async function runModelCommand(
     }
   }
 
+  const canonicalGroups = loadCanonicalGroups();
   let groupMode: GroupMode = 'provider';
-  let displayItems = buildDisplayList(items, groupMode);
+  let filterQuery = '';
+  let unfilteredDisplayItems = buildDisplayList(items, groupMode, canonicalGroups);
+  let displayItems = filterModelItems(unfilteredDisplayItems, filterQuery);
   const currentIndex = displayItems.findIndex(item => modelPreference(item) === currentModel);
   let selected = currentIndex >= 0 ? currentIndex : 0;
   let viewStart = 0;
 
+  function refreshDisplayItems(preferred?: ModelMenuItem): void {
+    unfilteredDisplayItems = buildDisplayList(items, groupMode, canonicalGroups);
+    displayItems = filterModelItems(unfilteredDisplayItems, filterQuery);
+    viewStart = 0;
+
+    if (displayItems.length === 0) {
+      selected = 0;
+      return;
+    }
+
+    const preferredModel = preferred ? modelPreference(preferred) : undefined;
+    const preferredIndex = preferredModel
+      ? displayItems.findIndex(item => modelPreference(item) === preferredModel)
+      : -1;
+    if (preferredIndex >= 0) {
+      selected = preferredIndex;
+    } else {
+      selected = Math.min(selected, displayItems.length - 1);
+    }
+  }
+
   const result = await runRawPicker<ModelPickResult>(rl, {
     render(): string[] {
-      const { lines, newViewStart } = buildScreen(displayItems, selected, currentModel, viewStart, removedByProvider, groupMode);
+      const { lines, newViewStart } = buildScreen(displayItems, selected, currentModel, viewStart, removedByProvider, groupMode, canonicalGroups, filterQuery);
       viewStart = newViewStart;
       return lines;
     },
     onKey(key, redraw, close) {
       if (key === '\x1b') { close(null); return; }
-      if (key === '\x1b[A') { selected = (selected - 1 + displayItems.length) % displayItems.length; redraw(); return; }
-      if (key === '\x1b[B') { selected = (selected + 1) % displayItems.length; redraw(); return; }
-      if (key === '\r' || key === '\n') { close({ item: displayItems[selected], saveDefault: false }); return; }
-      if (key === ' ') { close({ item: displayItems[selected], saveDefault: true }); return; }
+      if (key === '\x1b[A') {
+        if (displayItems.length > 0) selected = (selected - 1 + displayItems.length) % displayItems.length;
+        redraw();
+        return;
+      }
+      if (key === '\x1b[B') {
+        if (displayItems.length > 0) selected = (selected + 1) % displayItems.length;
+        redraw();
+        return;
+      }
+      if (key === '\r' || key === '\n') {
+        if (displayItems.length > 0) close({ item: displayItems[selected], saveDefault: false });
+        return;
+      }
+      if (key === ' ') {
+        if (filterQuery) {
+          filterQuery += ' ';
+          refreshDisplayItems(displayItems[selected]);
+          redraw();
+        } else if (displayItems.length > 0) {
+          close({ item: displayItems[selected], saveDefault: true });
+        }
+        return;
+      }
       if (key === '\t') {
         const currentItem = displayItems[selected];
         groupMode = groupMode === 'provider' ? 'model' : 'provider';
-        displayItems = buildDisplayList(items, groupMode);
-        viewStart = 0;
-        const newIdx = displayItems.findIndex(item => modelPreference(item) === modelPreference(currentItem));
-        selected = newIdx >= 0 ? newIdx : 0;
+        refreshDisplayItems(currentItem);
         redraw();
         return;
+      }
+      if (key === '\x7f' || key === '\b') {
+        if (filterQuery.length > 0) {
+          filterQuery = filterQuery.slice(0, -1);
+          refreshDisplayItems(displayItems[selected]);
+          redraw();
+        }
+        return;
+      }
+      const typed = printableChars(key);
+      if (typed) {
+        filterQuery += typed;
+        refreshDisplayItems(displayItems[selected]);
+        redraw();
       }
     },
   });
@@ -379,6 +463,7 @@ export async function runModelCommand(
     const choice = modelPreference(result.item);
     setSelectedModel(choice);
     markModelSelected(result.item.providerId, result.item.modelId);
+    clearModelNewFlag(result.item.providerId, result.item.modelId);
     if (result.saveDefault) saveDefaultModel(choice);
     console.log(chalk.blue(`Model set to: ${choice}`));
     if (result.saveDefault) console.log(chalk.green(`Default model set to: ${choice}`));

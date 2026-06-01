@@ -23,6 +23,10 @@ export function formatToolCallLine(name: string, args: Record<string, unknown>):
   return chalk.cyan(`${name}(${formatArgs(args)})`);
 }
 
+export function formatPromptToolCallLine(name: string, args: Record<string, unknown>): string {
+  return chalk.blueBright(`~ ${name}(${formatArgs(args)})`);
+}
+
 export function formatToolErrorLine(name: string, err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
   return chalk.red(`${name}() failed: ${msg}`);

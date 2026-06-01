@@ -56,10 +56,11 @@ export function updateProviderCache(providerId: string, models: RawCachedModel[]
   const prevIds = new Set(prev?.models.map(m => m.id) ?? []);
   const nextIds = new Set(models.map(m => m.id));
 
-  const newIds = models.filter(m => !prevIds.has(m.id)).map(m => m.id);
+  // Don't mark anything new on first fetch — that's just seeding the cache, not new arrivals.
+  const newIds = prev ? models.filter(m => !prevIds.has(m.id)).map(m => m.id) : [];
   const removedIds = (prev?.models ?? []).filter(m => !nextIds.has(m.id)).map(m => m.id);
 
-  if (newIds.length === 0 && removedIds.length === 0) return { newIds: [], removedIds: [] };
+  if (prev && newIds.length === 0 && removedIds.length === 0) return { newIds: [], removedIds: [] };
 
   const existingNewIds = (prev?.newIds ?? []).filter(id => nextIds.has(id));
   const mergedNewIds = [...new Set([...existingNewIds, ...newIds])];

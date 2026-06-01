@@ -1,4 +1,5 @@
 import { existsSync, readdirSync, readFileSync, mkdirSync, rmSync, cpSync, writeFileSync } from 'fs';
+import { createHash } from 'crypto';
 import { join, resolve, dirname, relative } from 'path';
 import { spawnSync, spawn } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -10,6 +11,7 @@ import {
   runScenario,
   type TestScenarioSummary,
 } from './scenario-catalog.js';
+import { loadCanonicalGroups, getCanonicalGroupKey, type CanonicalModelGroups } from '../providers/canonical-models.js';
 
 import { isBottomUIActive, setModelStatus, setTokenCount, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
 import { runRawPicker } from './raw-picker.js';
@@ -29,7 +31,7 @@ interface EvalRunResult {
   toolCalls: EvalToolCall[]; tokens: EvalTokenUsage; workDir: string;
 }
 interface EvalCheckResult {
-  name: string; kind: 'assertion' | 'stat';
+  name: string; kind: 'assertion' | 'stat' | 'warning';
   pass?: boolean; message?: string; value?: string | number; note?: string;
 }
 interface EvalReport { scenarioId: string; checks: EvalCheckResult[]; }
@@ -39,16 +41,99 @@ interface EvalHistoryEntry {
   scenarioId: string;
   model: string;
   pass: boolean;
+  warnings?: boolean;
   tokens: EvalTokenUsage;
+  scenarioHash?: string;
+}
+
+function loadEvalHistory(): EvalHistoryEntry[] {
+  if (!existsSync(EVAL_HISTORY_FILE)) return [];
+  try { return JSON.parse(readFileSync(EVAL_HISTORY_FILE, 'utf-8')); } catch { return []; }
 }
 
 function appendEvalHistory(entry: EvalHistoryEntry): void {
-  let history: EvalHistoryEntry[] = [];
-  if (existsSync(EVAL_HISTORY_FILE)) {
-    try { history = JSON.parse(readFileSync(EVAL_HISTORY_FILE, 'utf-8')); } catch {}
+  const history = loadEvalHistory();
+  const latest = history.filter(e =>
+    e.scenarioId !== entry.scenarioId ||
+    e.model !== entry.model ||
+    e.scenarioHash !== entry.scenarioHash,
+  );
+  latest.push(entry);
+  writeFileSync(EVAL_HISTORY_FILE, JSON.stringify(latest, null, 2) + '\n', 'utf-8');
+}
+
+function collectFilesRecursive(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  const result: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    if (entry.name === '.gitkeep') continue;
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) result.push(...collectFilesRecursive(fullPath));
+    else result.push(fullPath);
   }
-  history.push(entry);
-  writeFileSync(EVAL_HISTORY_FILE, JSON.stringify(history, null, 2) + '\n', 'utf-8');
+  return result;
+}
+
+function computeScenarioHash(scenarioDir: string): string {
+  const hash = createHash('sha256');
+  const files = [
+    join(scenarioDir, 'prompt.md'),
+    join(scenarioDir, 'eval.config.json'),
+    ...collectFilesRecursive(join(scenarioDir, 'eval')),
+    ...collectFilesRecursive(join(scenarioDir, 'start')),
+  ];
+  for (const filePath of files) {
+    if (existsSync(filePath)) {
+      hash.update(relative(scenarioDir, filePath));
+      hash.update('\0');
+      hash.update(readFileSync(filePath));
+      hash.update('\0');
+    }
+  }
+  return hash.digest('hex');
+}
+
+type EvalStatus = 'grey' | 'green' | 'red' | 'orange';
+
+function getEquivalentModels(model: string, groups: CanonicalModelGroups): Set<string> {
+  if (!model) return new Set(['default']);
+
+  const colonIdx = model.indexOf(':');
+  if (colonIdx !== -1) {
+    const providerId = model.slice(0, colonIdx);
+    const modelId = model.slice(colonIdx + 1);
+    const groupKey = getCanonicalGroupKey(providerId, modelId, groups);
+    if (groupKey && groupKey !== 'other') return new Set(groups[groupKey] ?? []);
+  }
+  return new Set([model]);
+}
+
+export function getEvalStatus(
+  scenarioId: string,
+  currentHash: string,
+  model: string,
+  history: EvalHistoryEntry[],
+  groups: CanonicalModelGroups,
+): EvalStatus {
+  const equivalentModels = getEquivalentModels(model, groups);
+  const relevant = history.filter(
+    e => e.scenarioId === scenarioId && equivalentModels.has(e.model) && e.scenarioHash === currentHash,
+  );
+  if (relevant.length === 0) return 'grey';
+  const latest = relevant.reduce((newest, entry) =>
+    entry.timestamp > newest.timestamp ? entry : newest,
+  );
+  if (!latest.pass) return 'red';
+  return latest.warnings ? 'orange' : 'green';
+}
+
+function statusCircle(status: EvalStatus): string {
+  switch (status) {
+    case 'green': return chalk.green('●');
+    case 'red': return chalk.red('●');
+    case 'orange': return chalk.hex('#FFA500')('●');
+    case 'grey': return chalk.gray('●');
+  }
 }
 
 interface PlaygroundScenario {
@@ -115,6 +200,10 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
   let stdoutChunks: string[] = [];
   let stderrChunks: string[] = [];
 
+  if (!existsSync(DIST_ENTRY)) {
+    throw new Error(`dist/index.js not found — run \`npm run build\` before running evals`);
+  }
+
   const exitCode = await new Promise<number>((resolve) => {
     const proc = spawn(process.execPath, [DIST_ENTRY, '--script', scriptFile], {
       cwd: workDir,
@@ -160,7 +249,12 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
           process.stdout.write(partialLine);
         }
       }
-      resolve(code ?? 1);
+      const exitCode = code ?? 1;
+      if (exitCode !== 0 && stderrChunks.length > 0) {
+        const stderrText = stderrChunks.join('').trim();
+        if (stderrText) process.stderr.write(chalk.red(`\n[agent stderr]\n${stderrText}\n`));
+      }
+      resolve(exitCode);
     });
   });
 
@@ -195,6 +289,7 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
 
 function printEvalReport(report: EvalReport): void {
   const assertions = report.checks.filter(c => c.kind === 'assertion');
+  const warnings = report.checks.filter(c => c.kind === 'warning');
   const stats = report.checks.filter(c => c.kind === 'stat');
   const passed = assertions.filter(c => c.pass).length;
   const total = assertions.length;
@@ -208,6 +303,15 @@ function printEvalReport(report: EvalReport): void {
     const name = check.pass ? chalk.dim(check.name) : check.name;
     console.log(`  ${icon}  ${name}`);
     if (!check.pass && check.message) console.log(`     ${chalk.red(check.message)}`);
+  }
+
+  const firedWarnings = warnings.filter(c => !c.pass);
+  if (firedWarnings.length > 0) {
+    console.log(chalk.hex('#FFA500')('\n  Warnings:'));
+    for (const w of firedWarnings) {
+      console.log(chalk.hex('#FFA500')(`    ! ${w.name}`));
+      if (w.message) console.log(chalk.hex('#FFA500')(`      ${w.message}`));
+    }
   }
 
   if (stats.length > 0) {
@@ -370,7 +474,14 @@ function extractApiErrors(stdout: string): ApiError[] {
   return errors;
 }
 
-function buildEvalPickerScreen(scenarios: PlaygroundScenario[], selected: number): string[] {
+function buildEvalPickerScreen(
+  scenarios: PlaygroundScenario[],
+  selected: number,
+  history: EvalHistoryEntry[],
+  model: string,
+  scenarioHashes: Map<string, string>,
+  groups: CanonicalModelGroups,
+): string[] {
   const lines: string[] = [];
   lines.push('');
   lines.push(`  ${chalk.bold.cyan('Eval scenarios')}`);
@@ -381,7 +492,9 @@ function buildEvalPickerScreen(scenarios: PlaygroundScenario[], selected: number
     const active = i === selected;
     const cursor = active ? chalk.cyan('>') : ' ';
     const label = active ? chalk.inverse(s.id) : chalk.cyan(s.id);
-    lines.push(`  ${cursor} ${label}  ${chalk.dim(s.firstLine)}`);
+    const hash = scenarioHashes.get(s.id) ?? '';
+    const circle = statusCircle(getEvalStatus(s.id, hash, model, history, groups));
+    lines.push(`  ${cursor} ${circle} ${label}  ${chalk.dim(s.firstLine)}`);
   }
   lines.push('');
   return lines;
@@ -399,10 +512,20 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       return;
     }
 
+    const evalHistory = loadEvalHistory();
+    const canonicalGroups = loadCanonicalGroups();
+    const scenarioHashes = new Map(scenarios.map(s => [
+      s.id,
+      computeScenarioHash(join(PLAYGROUND_EVAL_DIR, s.id)),
+    ]));
+
     if (!process.stdin.isTTY) {
       console.log(chalk.bold('Eval scenarios\n'));
+      const model = getSelectedModel();
       for (const s of scenarios) {
-        console.log(`  ${chalk.cyan(s.id)}  ${chalk.gray(s.firstLine)}`);
+        const hash = scenarioHashes.get(s.id) ?? '';
+        const circle = statusCircle(getEvalStatus(s.id, hash, model, evalHistory, canonicalGroups));
+        console.log(`  ${circle} ${chalk.cyan(s.id)}  ${chalk.gray(s.firstLine)}`);
       }
       return;
     }
@@ -411,7 +534,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
     let pickerSel = 0;
 
     const chosen = await runRawPicker<PlaygroundScenario[] | null>(rl, {
-      render: () => buildEvalPickerScreen(scenarios, pickerSel),
+      render: () => buildEvalPickerScreen(scenarios, pickerSel, evalHistory, getSelectedModel(), scenarioHashes, canonicalGroups),
       onKey(key, redraw, close) {
         if (key === '\x1b') { close(null); return; }
         if (key === '\x1b[A') { pickerSel = (pickerSel - 1 + scenarios.length) % scenarios.length; redraw(); return; }
@@ -524,6 +647,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       const report: EvalReport = JSON.parse(checkProc.stdout);
 
       const allPassed = report.checks.filter(c => c.kind === 'assertion').every(c => c.pass);
+      const hasWarnings = report.checks.some(c => c.kind === 'warning' && !c.pass);
 
       printEvalReport(report);
 
@@ -532,7 +656,9 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
         scenarioId: scenario.id,
         model: model || 'default',
         pass: allPassed,
+        warnings: allPassed && hasWarnings,
         tokens: result.tokens,
+        scenarioHash: computeScenarioHash(scenarioDir),
       });
 
       if (allPassed) passed++; else failed++;

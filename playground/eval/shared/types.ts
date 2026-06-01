@@ -28,7 +28,7 @@ export interface EvalRunResult {
   workDir: string;
 }
 
-export type CheckKind = 'assertion' | 'stat';
+export type CheckKind = 'assertion' | 'stat' | 'warning';
 
 export interface CheckResult {
   name: string;

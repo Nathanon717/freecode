@@ -4,6 +4,10 @@
 
 This file is intentionally short. Keep detailed reference material in `docs/` and link to it from here.
 
+NEVER EVER EVER CD INTO THE FREECODE PROJECT ROOT FOLDER YOU ARE ALREADY THERE. NEVERRRR USE BASH TOOL LIKE:
+cd path/to/freecode/root && [some command] 
+JUST DO THE COMMAND, IF YOU USE CD LIKE THIS, THAT IS A A CRITIAL ERROR AND THE USER WILL DIEEE!
+
 ## Required Rules
 
 - Windows only. Run commands in PowerShell or cmd. **Exception:** when running in a Claude Code web container (Linux), use `npm run ...` instead of `npm.cmd run ...`. See `docs/claude_code_web.md`.
@@ -25,43 +29,7 @@ Command details live in `docs/commands.md`. Scenario details live in `docs/scena
 
 ## Interactive Freecode Sessions
 
-To drive the live freecode TUI as an agent (open menus, send keystrokes, read the rendered screen), use `pty`. A persistent PTY daemon holds a real terminal session open; you interact with it step by step.
-
-`start` and `goto` write the active session to a state file; subsequent `send`, `screen`, and `stop` calls pick it up automatically.
-
-```powershell
-# Start a session (use --screen to also print the initial screen)
-pty start --screen
-
-# Navigate directly to a named screen (auto-starts if needed)
-pty goto models --screen
-
-# Send keystrokes, get the resulting screen
-pty send <keys>
-
-# Wait for agent output to finish before snapshotting
-pty send "some prompt" --wait-for "for commands"
-printf '\r' | pty send -
-
-# Read the screen without sending input
-pty screen
-
-# Kill the session when done
-pty stop
-```
-
-Available screens for `goto`: `home`, `models`, `config`, `eval`
-
-Always send typed text and control keys as **separate steps** — combining them in one `printf` (e.g. `printf '/model\r'`) may type the text but skip the key action.
-
-For slash commands and all control chars, use `printf` + stdin — `$'\r'`-style args are unreliable on Windows:
-
-```powershell
-printf '/model' | pty send -   # type
-printf '\r'     | pty send -   # submit
-```
-
-Full reference — patterns, flags, lifecycle: `docs/pty-session.md`
+To drive the live freecode TUI as an agent, use `pty`. See `docs/pty-session.md` for commands, patterns, control characters, and lifecycle details.
 
 ## Documentation
 

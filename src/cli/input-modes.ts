@@ -5,6 +5,7 @@ import { runConfigCommand } from '../commands/config.js';
 import { runModelCommand } from '../commands/model.js';
 import { formatArgs, type ToolCallConfirmation, type ToolCallPreview } from '../agent/tools/index.js';
 import { loadConfig } from '../config/index.js';
+import { UserAbortError } from '../util/errors.js';
 import { getCommandCompletion, getFilteredCommands } from './slash-commands.js';
 import { printScriptedScenarioList, runEvalMenu, runTestMenu } from './scenario-menu.js';
 import type { SessionController } from './session-controller.js';
@@ -97,7 +98,7 @@ function refreshFooterDailySpend(getSelectedModel: () => string): void {
   });
 }
 
-async function readToolApprovalMenu(rl: Interface, header?: string): Promise<ToolApprovalChoice> {
+async function readToolApprovalMenu(rl: Interface, header?: string): Promise<ToolApprovalChoice | null> {
   if (!process.stdin.isTTY) {
     rl.resume();
     while (true) {
@@ -119,7 +120,7 @@ async function readToolApprovalMenu(rl: Interface, header?: string): Promise<Too
     drawToolApprovalMenu(selected);
   }
 
-  return new Promise<ToolApprovalChoice>((resolve) => {
+  return new Promise<ToolApprovalChoice | null>((resolve) => {
     rl.pause();
 
     // Remove readline's stdin listeners to prevent history-recall side-effects while in raw mode.
@@ -150,7 +151,7 @@ async function readToolApprovalMenu(rl: Interface, header?: string): Promise<Too
       }
     }
 
-    function finish(choice: ToolApprovalChoice) {
+    function finish(choice: ToolApprovalChoice | null) {
       cleanup();
       resolve(choice);
     }
@@ -164,6 +165,12 @@ async function readToolApprovalMenu(rl: Interface, header?: string): Promise<Too
       if (data === '\r' || data === '\n') {
         process.stdout.write('\n');
         finish(selected);
+        return;
+      }
+
+      if (data === '\x1b') {
+        process.stdout.write('\n');
+        finish(null);
         return;
       }
 
@@ -195,6 +202,75 @@ async function readToolApprovalMenu(rl: Interface, header?: string): Promise<Too
   });
 }
 
+function askQuestionOrEscape(rl: Interface, prompt: string): Promise<string | null> {
+  if (!process.stdin.isTTY) {
+    return new Promise<string | null>((resolve) => {
+      rl.resume();
+      rl.question(prompt, (answer) => resolve(answer.trim()));
+    });
+  }
+
+  return new Promise<string | null>((resolve) => {
+    process.stdout.write(prompt);
+    let buffer = '';
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const savedListeners = process.stdin.rawListeners('data') as ((...args: any[]) => void)[];
+    process.stdin.removeAllListeners('data');
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+
+    function cleanup() {
+      process.stdin.removeListener('data', onData);
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+      for (const listener of savedListeners) {
+        process.stdin.on('data', listener);
+      }
+    }
+
+    function onData(data: string) {
+      if (data === '\x03') {
+        cleanup();
+        process.exit(0);
+      }
+
+      if (data === '\r' || data === '\n') {
+        process.stdout.write('\n');
+        cleanup();
+        resolve(buffer);
+        return;
+      }
+
+      if (data === '\x1b') {
+        process.stdout.write('\n');
+        cleanup();
+        resolve(null);
+        return;
+      }
+
+      if (data.startsWith('\x1b[') || data.startsWith('\x1bO')) return;
+
+      if (data === '\x7f' || data === '\x08') {
+        if (buffer.length > 0) {
+          buffer = buffer.slice(0, -1);
+          process.stdout.write('\r\x1b[2K' + prompt + buffer);
+        }
+        return;
+      }
+
+      const printable = [...data].filter(c => c >= ' ').join('');
+      if (printable) {
+        buffer += printable;
+        process.stdout.write(printable);
+      }
+    }
+
+    process.stdin.on('data', onData);
+  });
+}
+
 async function confirmToolCallInteractive(rl: Interface, preview: ToolCallPreview): Promise<ToolCallConfirmation> {
   const restoreInputUI = isBottomUIActive();
   teardownBottomUI();
@@ -202,15 +278,16 @@ async function confirmToolCallInteractive(rl: Interface, preview: ToolCallPrevie
   const header = `${preview.name}(${formatArgs(preview.args)})`;
 
   try {
-    const choice = await readToolApprovalMenu(rl, header);
-    if (choice === 'approve') return { approved: true };
+    while (true) {
+      const choice = await readToolApprovalMenu(rl, header);
+      if (choice === null) throw new UserAbortError();
+      if (choice === 'approve') return { approved: true };
 
-    rl.resume();
-    const message = (await askQuestion(rl, chalk.yellow('Tell the agent what to do instead: '))).trim();
-    return {
-      approved: false,
-      message,
-    };
+      const message = await askQuestionOrEscape(rl, chalk.yellow('Tell the agent what to do instead: '));
+      if (message === null) throw new UserAbortError();
+
+      return { approved: false, message };
+    }
   } finally {
     rl.pause();
     if (restoreInputUI && process.stdin.isTTY) setupInputUI();

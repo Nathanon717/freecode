@@ -4,6 +4,7 @@ import { getProviderCache, updateProviderCache } from './model-cache.js';
 import { createOpenAICompatProvider } from './adapters/openai-compat.js';
 import { createAnthropicProvider } from './adapters/anthropic.js';
 import { resolveApiKey } from '../config/index.js';
+import { syncLiveModels } from './canonical-models.js';
 
 const initializedProviders = new Set<string>();
 
@@ -39,10 +40,12 @@ async function initOpenRouterModels(): Promise<void> {
       .filter(m => m.id.endsWith(':free'))
       .map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
     entry.models = free;
+    syncLiveModels('openrouter', entry.models.map(m => m.id));
   } catch {
     const cached = getProviderCache('openrouter');
     if (cached) {
       entry.models = cached.models.filter(m => m.id.endsWith(':free'));
+      syncLiveModels('openrouter', entry.models.map(m => m.id));
     }
   }
 }
@@ -105,12 +108,14 @@ async function initProviderModels(providerId: string, apiKey: string | undefined
     const newIdSet = new Set(newIds);
     const filtered = preferAliasOverDated(deduplicateByDisplayName(applyBlocklist(normalized, blocklist, exactBlocklist)));
     entry.models = filtered.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
+    syncLiveModels(providerId, entry.models.map(m => m.id));
   } catch {
     const cached = getProviderCache(providerId);
     if (cached) {
       entry.models = preferAliasOverDated(deduplicateByDisplayName(applyBlocklist(cached.models, blocklist, exactBlocklist)));
       const newIdSet = new Set(cached.newIds);
       entry.models = entry.models.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
+      syncLiveModels(providerId, entry.models.map(m => m.id));
     }
   }
 }
@@ -142,11 +147,13 @@ async function initAnthropicModels(): Promise<void> {
     const { newIds } = updateProviderCache('anthropic', normalized);
     const newIdSet = new Set(newIds);
     entry.models = normalized.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
+    syncLiveModels('anthropic', entry.models.map(m => m.id));
   } catch {
     const cached = getProviderCache('anthropic');
     if (cached) {
       const newIdSet = new Set(cached.newIds);
       entry.models = cached.models.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
+      syncLiveModels('anthropic', entry.models.map(m => m.id));
     }
   }
 }
@@ -315,6 +322,13 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
 
 export function getProvider(id: string): ProviderConfig | undefined {
   return PROVIDER_REGISTRY.find(p => p.id === id);
+}
+
+export function clearModelNewFlag(providerId: string, modelId: string): void {
+  const provider = PROVIDER_REGISTRY.find(p => p.id === providerId);
+  if (!provider) return;
+  const model = provider.models.find(m => m.id === modelId);
+  if (model) delete model.isNew;
 }
 
 export interface ResolvedModel {

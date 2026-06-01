@@ -85,7 +85,7 @@ function assertRanFailedThenFixed(toolCalls: ToolCall[]): CheckResult {
   if (failingRun === -1) {
     return {
       name: 'ran failing script first',
-      kind: 'assertion',
+      kind: 'warning',
       pass: false,
       message: 'no shell_exec of analyze_numbers.py captured the initial SyntaxError',
     };

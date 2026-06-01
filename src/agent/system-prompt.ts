@@ -9,7 +9,6 @@ RULES - MUST ALWAYS FOLLOW:
 - If a tool call is denied by the user, update your plan based on their feedback. Do NOT try to make the same tool call again.
 
 HANDY TIPS:
-- Use grep before read_file when looking for something spesific.
 - Running broken code often gives you a helpful error message.
 "`;
 }

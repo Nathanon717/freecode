@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatOpenAICompatHttpError,
   getOpenAICompatProviderHeaders,
+  normalizeMistralToolCallSse,
   openAIModelDisallowsTemperature,
 } from '../src/providers/adapters/openai-compat.js';
 
@@ -75,6 +76,24 @@ describe('Router Logic', () => {
       expect(openAIModelDisallowsTemperature('gpt-4o')).toBe(false);
       expect(openAIModelDisallowsTemperature('openai/gpt-5.5')).toBe(false);
       expect(openAIModelDisallowsTemperature('llama-3.3-70b')).toBe(false);
+    });
+  });
+
+  describe('Mistral stream compatibility', () => {
+    it('adds missing function type to streamed tool-call deltas', () => {
+      const sse = [
+        'data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"read_file","arguments":"{}"}}]}}]}',
+        '',
+        'data: [DONE]',
+        '',
+      ].join('\n');
+
+      expect(normalizeMistralToolCallSse(sse)).toBe([
+        'data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"read_file","arguments":"{}"},"type":"function"}]}}]}',
+        '',
+        'data: [DONE]',
+        '',
+      ].join('\n'));
     });
   });
 });

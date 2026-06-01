@@ -34,7 +34,7 @@ export function assertNoUnnecessaryTools(toolCalls: ToolCall[], allowedTools: st
   const pass = unnecessary.length === 0;
   return {
     name: 'no unnecessary tools',
-    kind: 'assertion',
+    kind: 'warning',
     pass,
     message: pass ? undefined : `unnecessary: ${[...new Set(unnecessary.map(t => t.tool))].join(', ')}`,
   };

@@ -171,6 +171,69 @@ function parseProviderUsageFromSse(providerId: string, body: string): CapturedPr
   return lastUsage;
 }
 
+function normalizeMistralToolCallDelta(value: unknown): unknown {
+  if (!isRecord(value)) return value;
+  const choices = value['choices'];
+  if (!Array.isArray(choices)) return value;
+
+  let changed = false;
+  const nextChoices = choices.map(choice => {
+    if (!isRecord(choice)) return choice;
+    const delta = choice['delta'];
+    if (!isRecord(delta)) return choice;
+    const toolCalls = delta['tool_calls'];
+    if (!Array.isArray(toolCalls)) return choice;
+
+    const nextToolCalls = toolCalls.map(toolCall => {
+      if (!isRecord(toolCall)) return toolCall;
+      if (toolCall['type'] === 'function') return toolCall;
+      if (!isRecord(toolCall['function'])) return toolCall;
+      changed = true;
+      return { ...toolCall, type: 'function' };
+    });
+
+    return {
+      ...choice,
+      delta: {
+        ...delta,
+        tool_calls: nextToolCalls,
+      },
+    };
+  });
+
+  return changed ? { ...value, choices: nextChoices } : value;
+}
+
+export function normalizeMistralToolCallSse(body: string): string {
+  return body.split(/(\r?\n)/).map(part => {
+    if (!part.startsWith('data:')) return part;
+    const data = part.slice('data:'.length).trim();
+    if (!data || data === '[DONE]') return part;
+
+    try {
+      const normalized = normalizeMistralToolCallDelta(JSON.parse(data) as unknown);
+      return `data: ${JSON.stringify(normalized)}`;
+    } catch {
+      return part;
+    }
+  }).join('');
+}
+
+async function normalizeMistralToolCallResponse(response: Response): Promise<Response> {
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!response.ok || !contentType.includes('text/event-stream')) return response;
+
+  const body = await response.clone().text();
+  const normalized = normalizeMistralToolCallSse(body);
+  if (normalized === body) return response;
+
+  return new Response(normalized, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
+}
+
 async function parseProviderUsage(providerId: string, response: Response): Promise<CapturedProviderUsage | null> {
   const body = await response.clone().text();
   const contentType = response.headers.get('content-type') ?? '';
@@ -248,8 +311,20 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         let response = await globalThis.fetch(input, patchedInit);
         if (providerConfig.id === 'groq' && response.status === 429) {
           const delayMs = parseRetryAfterMs(response.headers.get('retry-after'));
-          process.stdout.write(`\nGroq rate-limited — retrying in ${Math.ceil(delayMs / 1000)}s...\n`);
-          await new Promise(r => setTimeout(r, delayMs));
+          await new Promise<void>(resolve => {
+            let remaining = Math.ceil(delayMs / 1000);
+            process.stdout.write(`\nGroq rate-limited — retrying in ${remaining}s...`);
+            const tick = setInterval(() => {
+              remaining -= 1;
+              if (remaining <= 0) {
+                clearInterval(tick);
+                process.stdout.write(`\r\x1b[2KGroq rate-limited — retrying now...\n`);
+                resolve();
+              } else {
+                process.stdout.write(`\rGroq rate-limited — retrying in ${remaining}s...`);
+              }
+            }, 1000);
+          });
           response = await globalThis.fetch(input, patchedInit);
         }
         if (shouldCapture) {
@@ -266,6 +341,9 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         const httpError = await formatOpenAICompatHttpError(providerConfig.name, response);
         if (httpError) {
           throw new Error(httpError);
+        }
+        if (providerConfig.id === 'mistral') {
+          response = await normalizeMistralToolCallResponse(response);
         }
         if (shouldCaptureUsage) {
           captureProviderUsage(providerConfig.id, response);

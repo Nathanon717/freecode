@@ -35,6 +35,7 @@ src/
 |-- agent/
 |   |-- context.ts                -> [Mutable project root](agent/context.md)
 |   |-- loop.ts                   -> [Agent loop](agent/loop.md)
+|   |-- prompt-tools.ts           -> [Prompt-based tool harness](agent/prompt-tools.md)
 |   |-- system-prompt.ts          -> [System prompt](agent/system-prompt.md)
 |   |-- token-count.ts            -> [Context token estimator](agent/token-count.md)
 |   `-- tools/
@@ -69,8 +70,10 @@ src/
 `-- providers/
     |-- index.ts                  -> [Provider re-exports](providers/index.md)
     |-- types.ts                  -> [Provider/config types](providers/types.md)
+    |-- canonical-models.ts       -> [Canonical model groups](providers/canonical-models.md)
     |-- model-sources.ts          -> [Model data sources](providers/model-sources.md)
     |-- registry.ts               -> [Provider registry](providers/registry.md)
+    |-- model-traits.ts           -> [Model traits store](providers/model-traits.md)
     |-- model-cache.ts            -> [Live model list cache](providers/model-cache.md)
     |-- router.ts                 -> [Routing logic](providers/router.md)
     |-- ollama.ts                 -> [Ollama detection](providers/ollama.md)

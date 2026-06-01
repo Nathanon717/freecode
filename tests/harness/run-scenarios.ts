@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
-import { spawnSync } from 'child_process';
+import { spawnSync, spawn } from 'child_process';
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
@@ -157,118 +157,130 @@ if (ttyScenarios.length > 0) {
   }
 }
 
-for (const { file, scenario } of runnableScenarios) {
-  if (onlyScenario && scenario.name !== onlyScenario && file !== onlyScenario && file !== `${onlyScenario}.scenario.json`) {
-    continue;
-  }
+const nonTtyScenarios = runnableScenarios.filter(({ file, scenario }) => {
+  if (onlyScenario && scenario.name !== onlyScenario && file !== onlyScenario && file !== `${onlyScenario}.scenario.json`) return false;
+  return !scenario.tty;
+});
 
-  if (scenario.tty) continue; // already handled above
-
-  if (showDetails) {
-    const checks: string[] = [];
-    if (scenario.expect.exitCode !== undefined) checks.push(`exitCode=${scenario.expect.exitCode}`);
-    if (scenario.expect.stdoutContains?.length) checks.push(`stdoutContains=${scenario.expect.stdoutContains.length}`);
-    if (scenario.expect.stdoutAbsent?.length) checks.push(`stdoutAbsent=${scenario.expect.stdoutAbsent.length}`);
-    if (scenario.expect.files?.length) checks.push(`files=${scenario.expect.files.length}`);
-    if (scenario.expect.toolTrace) checks.push('toolTrace');
-    console.log(`\n  ${chalk.cyan('RUN')}   ${chalk.cyan(scenario.name)}`);
-    console.log(`        ${chalk.dim(scenario.description || '(no description)')}`);
-    console.log(`        type: ${chalk.yellow(scenario.requiresLlm ? 'LLM eval' : 'non-LLM verification')} | workspace: ${chalk.magenta(scenario.workspace ?? 'repo')}`);
-    console.log(`        checks: ${checks.length > 0 ? checks.join(', ') : chalk.dim('(none)')}`);
-  }
-
-  const tmpHome = join(tmpdir(), `freecode-verify-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  const tmpWorkspace = join(tmpdir(), `freecode-workspace-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  mkdirSync(tmpHome, { recursive: true });
-  if (scenario.workspace === 'temp') mkdirSync(tmpWorkspace, { recursive: true });
-  if (scenario.filesBefore?.length) {
-    for (const file of scenario.filesBefore) {
-      const fullPath = join(tmpWorkspace, file.path);
-      mkdirSync(dirname(fullPath), { recursive: true });
-      writeFileSync(fullPath, file.content, 'utf-8');
+if (nonTtyScenarios.length > 0) {
+  const nonTtyResults = await Promise.all(nonTtyScenarios.map(async ({ scenario }) => {
+    const tmpHome = join(tmpdir(), `freecode-verify-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const tmpWorkspace = join(tmpdir(), `freecode-workspace-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    mkdirSync(tmpHome, { recursive: true });
+    if (scenario.workspace === 'temp') mkdirSync(tmpWorkspace, { recursive: true });
+    if (scenario.filesBefore?.length) {
+      for (const f of scenario.filesBefore) {
+        const fullPath = join(tmpWorkspace, f.path);
+        mkdirSync(dirname(fullPath), { recursive: true });
+        writeFileSync(fullPath, f.content, 'utf-8');
+      }
     }
-  }
 
-  const inputLines = scenario.turns.map(t => t.input).join('\n');
-  const inputFile = join(tmpHome, 'input.txt');
-  writeFileSync(inputFile, inputLines, 'utf-8');
-  const traceFile = join(tmpHome, 'trace.json');
-  if (scenario.config) {
-    writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(scenario.config, null, 2), 'utf-8');
-  }
+    const inputLines = scenario.turns.map(t => t.input).join('\n');
+    const inputFile = join(tmpHome, 'input.txt');
+    writeFileSync(inputFile, inputLines, 'utf-8');
+    const traceFile = join(tmpHome, 'trace.json');
+    if (scenario.config) {
+      writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(scenario.config, null, 2), 'utf-8');
+    }
 
-  const cliArgs: string[] = [DIST_ENTRY];
-  if (scenario.flags) cliArgs.push(...scenario.flags);
-  if (scenario.model) { cliArgs.push('--model'); cliArgs.push(scenario.model); }
-  cliArgs.push('--script', inputFile);
+    const cliArgs: string[] = [DIST_ENTRY];
+    if (scenario.flags) cliArgs.push(...scenario.flags);
+    if (scenario.model) { cliArgs.push('--model'); cliArgs.push(scenario.model); }
+    cliArgs.push('--script', inputFile);
 
-  let stdout = '';
-  let stderr = '';
-  let exitCode = 0;
-  let trace: ToolTraceEvent[] = [];
+    let stdout = '';
+    let stderr = '';
+    let exitCode = 0;
+    let trace: ToolTraceEvent[] = [];
 
-  try {
-    const result = spawnSync(process.execPath, cliArgs, {
-      cwd: scenario.workspace === 'temp' ? tmpWorkspace : ROOT,
-      env: {
-        ...safeBaseEnv,
-        FREECODE_HOME: tmpHome,
-        DEBUG_QUOTA: '0',
-        FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
-        ...(scenario.requiresLlm ? {} : { FREECODE_NO_LLM: '1' }),
-        ...(scenario.expect.toolTrace ? { FREECODE_TRACE_JSON: traceFile } : {}),
-      },
-      timeout: 60000,
-      encoding: 'utf-8',
+    try {
+      const result = await new Promise<{ stdout: string; stderr: string; exitCode: number }>((resolve) => {
+        const child = spawn(process.execPath, cliArgs, {
+          cwd: scenario.workspace === 'temp' ? tmpWorkspace : ROOT,
+          env: {
+            ...safeBaseEnv,
+            FREECODE_HOME: tmpHome,
+            DEBUG_QUOTA: '0',
+            FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
+            ...(scenario.requiresLlm ? {} : { FREECODE_NO_LLM: '1' }),
+            ...(scenario.expect.toolTrace ? { FREECODE_TRACE_JSON: traceFile } : {}),
+          },
+        });
+        let out = '';
+        let err = '';
+        child.stdout?.on('data', (d: Buffer) => { out += d.toString(); });
+        child.stderr?.on('data', (d: Buffer) => { err += d.toString(); });
+        child.on('close', (code) => resolve({ stdout: out, stderr: err, exitCode: code ?? 1 }));
+        child.on('error', (e) => resolve({ stdout: out, stderr: err + `\nHarness error: ${e.message}`, exitCode: 1 }));
+        setTimeout(() => { child.kill(); resolve({ stdout: out, stderr: err + '\nHarness error: timeout', exitCode: 1 }); }, 60000);
+      });
+      stdout = result.stdout;
+      stderr = result.stderr;
+      exitCode = result.exitCode;
+      if (existsSync(traceFile)) {
+        trace = JSON.parse(readFileSync(traceFile, 'utf-8')) as ToolTraceEvent[];
+      }
+    } catch (err) {
+      stderr += `\nHarness error: ${err instanceof Error ? err.message : String(err)}`;
+      exitCode = 1;
+    }
+
+    const workspaceRoot = scenario.workspace === 'temp' ? tmpWorkspace : ROOT;
+    const failures = assertScenarioExpectations({
+      expect: scenario.expect,
+      stdout,
+      stderr,
+      exitCode,
+      trace,
+      workspaceRoot,
+      workspace: scenario.workspace ?? 'repo',
     });
-    stdout = result.stdout ?? '';
-    stderr = result.stderr ?? '';
-    exitCode = result.status ?? 1;
-    if (existsSync(traceFile)) {
-      trace = JSON.parse(readFileSync(traceFile, 'utf-8')) as ToolTraceEvent[];
+
+    try { rmSync(tmpHome, { recursive: true, force: true }); } catch {}
+    if (scenario.workspace === 'temp') {
+      try { rmSync(tmpWorkspace, { recursive: true, force: true }); } catch {}
     }
-  } catch (err) {
-    stderr += `\nHarness error: ${err instanceof Error ? err.message : String(err)}`;
-    exitCode = exitCode || 1;
-  }
 
-  const workspaceRoot = scenario.workspace === 'temp' ? tmpWorkspace : ROOT;
-  const failures = assertScenarioExpectations({
-    expect: scenario.expect,
-    stdout,
-    stderr,
-    exitCode,
-    trace,
-    workspaceRoot,
-    workspace: scenario.workspace ?? 'repo',
-  });
+    return { scenario, failures, stdout, stderr, exitCode, trace };
+  }));
 
-  if (failures.length === 0) {
-    console.log(`  ${chalk.green('PASS')}  ${chalk.cyan(scenario.name)}`);
+  for (const { scenario, failures, stdout, stderr, exitCode, trace } of nonTtyResults) {
     if (showDetails) {
-      const calls = trace.map(event => event.tool);
-      console.log(`        exitCode: ${chalk.green(String(exitCode))}`);
-      if (scenario.expect.files?.length) {
-        console.log(`        file checks: ${scenario.expect.files.map(f => f.path).join(', ')}`);
-      }
-      if (scenario.expect.toolTrace) {
-        console.log(`        tools: ${calls.join(' -> ') || '(none)'}`);
-      }
-      printCapturedOutput(stdout, stderr);
+      const checks: string[] = [];
+      if (scenario.expect.exitCode !== undefined) checks.push(`exitCode=${scenario.expect.exitCode}`);
+      if (scenario.expect.stdoutContains?.length) checks.push(`stdoutContains=${scenario.expect.stdoutContains.length}`);
+      if (scenario.expect.stdoutAbsent?.length) checks.push(`stdoutAbsent=${scenario.expect.stdoutAbsent.length}`);
+      if (scenario.expect.files?.length) checks.push(`files=${scenario.expect.files.length}`);
+      if (scenario.expect.toolTrace) checks.push('toolTrace');
+      console.log(`\n  ${chalk.cyan('RUN')}   ${chalk.cyan(scenario.name)}`);
+      console.log(`        ${chalk.dim(scenario.description || '(no description)')}`);
+      console.log(`        type: ${chalk.yellow(scenario.requiresLlm ? 'LLM eval' : 'non-LLM verification')} | workspace: ${chalk.magenta(scenario.workspace ?? 'repo')}`);
+      console.log(`        checks: ${checks.length > 0 ? checks.join(', ') : chalk.dim('(none)')}`);
     }
-    passed++;
-  } else {
-    console.log(`  ${chalk.red('FAIL')}  ${chalk.cyan(scenario.name)}`);
-    for (const f of failures) console.log(`          ${chalk.red(f)}`);
-    if (showDetails || process.env.VERBOSE) {
-      printCapturedOutput(stdout, stderr);
-    }
-    failed++;
-  }
 
-  try { rmSync(tmpHome, { recursive: true, force: true }); } catch {}
-  if (scenario.workspace === 'temp') {
-    try { rmSync(tmpWorkspace, { recursive: true, force: true }); } catch {}
+    if (failures.length === 0) {
+      console.log(`  ${chalk.green('PASS')}  ${chalk.cyan(scenario.name)}`);
+      if (showDetails) {
+        const calls = trace.map(event => event.tool);
+        console.log(`        exitCode: ${chalk.green(String(exitCode))}`);
+        if (scenario.expect.files?.length) {
+          console.log(`        file checks: ${scenario.expect.files.map(f => f.path).join(', ')}`);
+        }
+        if (scenario.expect.toolTrace) {
+          console.log(`        tools: ${calls.join(' -> ') || '(none)'}`);
+        }
+        printCapturedOutput(stdout, stderr);
+      }
+      passed++;
+    } else {
+      console.log(`  ${chalk.red('FAIL')}  ${chalk.cyan(scenario.name)}`);
+      for (const f of failures) console.log(`          ${chalk.red(f)}`);
+      if (showDetails || process.env.VERBOSE) {
+        printCapturedOutput(stdout, stderr);
+      }
+      failed++;
+    }
   }
 }
 

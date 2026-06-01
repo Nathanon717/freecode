@@ -12,7 +12,7 @@ import {
 
 // SCORES = [72, 85, 91, 68, 79, 88, 95, 74]
 // count=8, sum=652, mean=81.5, median=(79+85)/2=82.0
-const expectedOutput = 'count=8\ntotal=652\naverage=81.50\nmedian=82.00\n';
+const expectedOutput = 'count=8\nsum=652\nmean=81.50\nmedian=82.00\n';
 
 function normalizeNewlines(value: string): string {
   return value.replace(/\r\n/g, '\n');
@@ -156,7 +156,7 @@ function assertEditedPipelineThenReran(toolCalls: ToolCall[]): CheckResult {
     i > editAfter &&
     call.tool === 'shell_exec' &&
     commandMentionsPipeline(call) &&
-    resultText(call).includes('average=81.50')
+    resultText(call).includes('mean=81.50')
   );
 
   return {

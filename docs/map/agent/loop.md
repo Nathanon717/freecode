@@ -71,6 +71,7 @@ return AgentLoopResult
 - Tool-enabled turns write visible transcript dividers before tool execution and after each tool-producing model step.
 - Tool approval is delegated to the supplied `confirmToolCall`.
 - Tool wrappers serialize execution so concurrent tool calls do not mutate files in parallel.
+- If the provider rejects tool use at runtime (`isToolsNotSupportedError`), the loop automatically retries via `runPromptToolsLoop` from `prompt-tools.ts`, which uses a text-based `<tool_call>` protocol instead of native function calling.
 
 ## Key Neighbors
 

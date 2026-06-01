@@ -6,13 +6,14 @@ import { shellTool } from './shell.js';
 import { listDirTool } from './list-dir.js';
 import { logError } from '../../logger.js';
 import { loadConfig } from '../../config/index.js';
-import { toErrorMessage } from '../../util/errors.js';
+import { isUserAbortError, toErrorMessage } from '../../util/errors.js';
 import chalk from 'chalk';
 import { z } from 'zod';
 import type { CoreTool } from 'ai';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import {
   formatArgs,
+  formatPromptToolCallLine,
   formatToolCallLine,
   formatToolErrorLine,
   formatToolResultPreview,
@@ -72,7 +73,7 @@ function appendToolTrace(event: ToolTraceEvent): void {
   }
 }
 
-function withLogging(name: string, t: AnyCoreTool): AnyCoreTool {
+function withLogging(name: string, t: AnyCoreTool, promptTools = false): AnyCoreTool {
   if (!t.execute) return t;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const original = t.execute as (args: any, opts: any) => Promise<any>;
@@ -82,7 +83,10 @@ function withLogging(name: string, t: AnyCoreTool): AnyCoreTool {
     execute: async (args: any, opts: any) => {
       const { rationale, ...displayArgs } = args;
       if (rationale) toolOut().write('\n' + chalk.cyan(rationale) + '\n');
-      toolCall(name, displayArgs);
+      const callLine = promptTools
+        ? formatPromptToolCallLine(name, displayArgs)
+        : formatToolCallLine(name, displayArgs);
+      toolOut().write(callLine + '\n');
       try {
         const result = await original(args, opts);
         appendToolTrace({ tool: name, args: displayArgs, result });
@@ -90,6 +94,7 @@ function withLogging(name: string, t: AnyCoreTool): AnyCoreTool {
         if (preview) toolOut().write(preview + '\n');
         return result;
       } catch (err) {
+        if (isUserAbortError(err)) throw err;
         appendToolTrace({ tool: name, args: displayArgs, error: toErrorMessage(err) });
         toolError(name, err);
         logError('tool', `${name} threw`, err);
@@ -165,23 +170,23 @@ function createToolExecutionQueue(): QueuedToolExecution {
   };
 }
 
-function wrap(name: string, t: AnyCoreTool, useRationale: boolean, queueExecution: QueuedToolExecution, confirmToolCall?: ConfirmToolCall): AnyCoreTool {
+function wrap(name: string, t: AnyCoreTool, useRationale: boolean, queueExecution: QueuedToolExecution, confirmToolCall?: ConfirmToolCall, promptTools = false): AnyCoreTool {
   return withSerializedExecution(
-    withLogging(name, withConfirmation(name, useRationale ? withRationale(t) : t, confirmToolCall)),
+    withLogging(name, withConfirmation(name, useRationale ? withRationale(t) : t, confirmToolCall), promptTools),
     queueExecution,
   );
 }
 
-export function createTools(confirmToolCall?: ConfirmToolCall, toolRationale?: boolean) {
+export function createTools(confirmToolCall?: ConfirmToolCall, toolRationale?: boolean, promptTools = false) {
   const useRationale = toolRationale ?? loadConfig().toolRationale;
   const queueExecution = createToolExecutionQueue();
   return {
-    read_file:  wrap('read_file',  readFileTool,  useRationale, queueExecution, confirmToolCall),
-    write_file: wrap('write_file', writeFileTool, useRationale, queueExecution, confirmToolCall),
-    edit_file:  wrap('edit_file',  editFileTool,  useRationale, queueExecution, confirmToolCall),
-    grep:       wrap('grep',       grepTool,      useRationale, queueExecution, confirmToolCall),
-    shell_exec: wrap('shell_exec', shellTool,     useRationale, queueExecution, confirmToolCall),
-    list_dir:   wrap('list_dir',   listDirTool,   useRationale, queueExecution, confirmToolCall),
+    read_file:  wrap('read_file',  readFileTool,  useRationale, queueExecution, confirmToolCall, promptTools),
+    write_file: wrap('write_file', writeFileTool, useRationale, queueExecution, confirmToolCall, promptTools),
+    edit_file:  wrap('edit_file',  editFileTool,  useRationale, queueExecution, confirmToolCall, promptTools),
+    grep:       wrap('grep',       grepTool,      useRationale, queueExecution, confirmToolCall, promptTools),
+    shell_exec: wrap('shell_exec', shellTool,     useRationale, queueExecution, confirmToolCall, promptTools),
+    list_dir:   wrap('list_dir',   listDirTool,   useRationale, queueExecution, confirmToolCall, promptTools),
   };
 }
 

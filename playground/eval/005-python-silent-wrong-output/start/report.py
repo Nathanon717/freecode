@@ -17,7 +17,7 @@ def load_sales(path):
 def compute_revenue(rows):
     total = 0.0
     for row in rows:
-        total += row["qty"] + row["unit_price"]  # BUG: should be qty * unit_price
+        total += row["qty"] + row["unit_price"]
     return total
 
 

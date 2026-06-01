@@ -16,7 +16,8 @@ interface ModelMenuItem {
 }
 
 getSelectableModels(): Promise<ModelMenuItem[]>
-buildAllItemLines(items, selected, currentModel, removedByProvider)
+buildAllItemLines(items, selected, currentModel, removedByProvider, groupMode?, canonicalGroups?)
+filterModelItems(items, query)
 
 runModelCommand(
   rl: Interface,
@@ -39,6 +40,7 @@ The selected model string is always `providerId:modelId`.
 
 `runModelCommand()` requires an interactive terminal. It draws a temporary raw-mode screen grouped by provider:
 
+- Type printable characters to filter by provider, display name, model ID, or `provider:model`; Backspace removes filter characters.
 - Up/Down moves the selected row, wrapping at the ends.
 - Enter applies the selected `provider:model`.
 - Space applies the selected `provider:model` and writes it as `defaultModel` in the global config.
@@ -46,3 +48,11 @@ The selected model string is always `providerId:modelId`.
 - Ctrl+C exits the process.
 
 The command owns raw stdin only while the picker is open, then restores the readline interface before returning.
+
+## Sort Flow
+
+Before the main picker opens, `runModelCommand` checks for new models (from `model-cache.ts` `isNew` flag) that have no entry in `canonical-models.json`. If any exist, a sort flow runs first: for each unsorted model the user is shown a list of existing canonical groups to assign it to, or can type a new group name to create one. Results are saved to `canonical-models.json` and the picker then uses the updated groups for its model-grouped view.
+
+## Canonical Groups Integration
+
+The model-grouped tab view (`Tab` key) uses `canonical-models.json` (via `providers/canonical-models.ts`) for section headers. A model assigned to a canonical group always gets its own named section regardless of how many providers offer it (single-provider canonical models escape "Other"). The section header is the canonical name; each row shows the provider name.

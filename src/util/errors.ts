@@ -1,5 +1,16 @@
 import { isRecord } from './guards.js';
 
+export class UserAbortError extends Error {
+  constructor() {
+    super('Aborted by user');
+    this.name = 'UserAbortError';
+  }
+}
+
+export function isUserAbortError(error: unknown): boolean {
+  return error instanceof UserAbortError;
+}
+
 export function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -148,4 +159,46 @@ export function isProviderToolUseFailed(error: unknown): boolean {
     ? apiErrorDetailsFromError(error)
     : apiErrorDetailsFromUnknown(error);
   return details?.code === 'tool_use_failed';
+}
+
+export function isNoSuchToolError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AI_NoSuchToolError';
+}
+
+export function noSuchToolName(error: unknown): string | null {
+  const name = (error as Error & { toolName?: string }).toolName;
+  return typeof name === 'string' ? name : null;
+}
+
+export function noSuchToolAvailableList(error: unknown): string | null {
+  const tools = (error as Error & { availableTools?: string[] }).availableTools;
+  return Array.isArray(tools) && tools.length > 0 ? tools.join(', ') : null;
+}
+
+export function isInvalidToolArgumentsError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AI_InvalidToolArgumentsError';
+}
+
+export function invalidToolName(error: unknown): string | null {
+  const name = (error as Error & { toolName?: string }).toolName;
+  return typeof name === 'string' ? name : null;
+}
+
+const TOOLS_NOT_SUPPORTED_PATTERNS = [
+  /does not support tool/i,
+  /does not support function/i,
+  /tool_choice is not supported/i,
+  /tools? (is|are) not supported/i,
+  /tool calling.*not supported/i,         // Groq: `tool calling` is not supported with this model
+  /function calling is not supported/i,
+  /tool use is not supported/i,
+  /tool_use is not supported/i,
+  /tool_calls? not supported/i,
+  /doesn'?t support tools/i,
+  /not support.*function call/i,
+];
+
+export function isToolsNotSupportedError(error: unknown): boolean {
+  const msg = toDetailedErrorMessage(error);
+  return TOOLS_NOT_SUPPORTED_PATTERNS.some(p => p.test(msg));
 }
