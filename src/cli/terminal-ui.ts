@@ -373,9 +373,13 @@ export function composeFooterOutput(): string {
   }
 
   // Draw primary row (row r): eval status on the left, main status on the right.
+  // Clamp primaryRight to the space remaining after leftStr to prevent line overflow.
   const primaryRight = rightRows[0] ?? '';
-  const middle = Math.max(leftStr ? 1 : 0, w - 1 - leftStr.length - primaryRight.length);
-  output += moveToSequence(r, 1) + chalk.cyan(leftStr) + ' '.repeat(middle) + chalk.gray(primaryRight);
+  const leftUsed = leftStr.length + (leftStr ? 1 : 0);
+  const rightAvail = Math.max(0, w - 1 - leftUsed);
+  const safeRight = primaryRight.slice(0, rightAvail);
+  const middle = Math.max(leftStr ? 1 : 0, w - 1 - leftStr.length - safeRight.length);
+  output += moveToSequence(r, 1) + chalk.cyan(leftStr) + ' '.repeat(middle) + chalk.gray(safeRight);
 
   output += '\x1b[u'; // restore cursor
   return output;

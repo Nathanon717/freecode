@@ -41,7 +41,7 @@ function saveDefaultModel(model: string): void {
   } as Partial<Config>);
 }
 
-type GroupMode = 'provider' | 'model';
+type GroupMode = 'pretty' | 'provider' | 'model';
 
 function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, models: ModelConfig[]): void {
   for (const model of models) {
@@ -59,7 +59,7 @@ function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, mod
 // Returns items in canonical-file order for the model-grouped tab view.
 // Named groups (in file order) come first; then the "other" key; then anything not in the file.
 function buildDisplayList(items: ModelMenuItem[], groupMode: GroupMode, canonicalGroups: CanonicalModelGroups): ModelMenuItem[] {
-  if (groupMode === 'provider') return items;
+  if (groupMode !== 'model') return items;
 
   const itemByEntry = new Map<string, ModelMenuItem>();
   for (const item of items) {
@@ -149,12 +149,14 @@ export function buildAllItemLines(
   selected: number,
   currentModel: string,
   removedByProvider: Map<string, string[]>,
-  groupMode: GroupMode = 'provider',
+  groupMode: GroupMode = 'pretty',
   canonicalGroups: CanonicalModelGroups = {},
 ): { itemLines: string[]; selectedLineIdx: number } {
   if (groupMode === 'model') {
     return buildModelGroupedItemLines(items, selected, currentModel, canonicalGroups);
   }
+
+  const showId = groupMode === 'provider';
 
   const itemLines: string[] = [];
   let lastProvider = '';
@@ -196,7 +198,7 @@ export function buildAllItemLines(
                 : chalk.yellow(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`))
             : '')
       : '';
-    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge} ${chalk.dim(id)}${marker}`);
+    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge}${showId ? ` ${chalk.dim(id)}` : ''}${marker}`);
   }
 
   if (lastProvider) {
@@ -320,9 +322,11 @@ function buildScreen(
   const visibleLines = itemLines.slice(newViewStart, viewEnd);
   while (visibleLines.length < maxItemLines) visibleLines.push('');
 
-  const tabHint = groupMode === 'provider'
-    ? chalk.dim('Tab group by model, ')
-    : chalk.dim('Tab group by provider, ');
+  const tabHint = groupMode === 'pretty'
+    ? chalk.dim('Tab show model IDs, ')
+    : groupMode === 'provider'
+      ? chalk.dim('Tab group by model, ')
+      : chalk.dim('Tab clean view, ');
   const filterLabel = filterQuery
     ? `${chalk.dim('Filter: ')}${chalk.cyan(filterQuery)}`
     : chalk.dim('Type to filter, Backspace clears characters');
@@ -374,7 +378,7 @@ export async function runModelCommand(
   }
 
   const canonicalGroups = loadCanonicalGroups();
-  let groupMode: GroupMode = 'provider';
+  let groupMode: GroupMode = 'pretty';
   let filterQuery = '';
   let unfilteredDisplayItems = buildDisplayList(items, groupMode, canonicalGroups);
   let displayItems = filterModelItems(unfilteredDisplayItems, filterQuery);
@@ -437,7 +441,8 @@ export async function runModelCommand(
       }
       if (key === '\t') {
         const currentItem = displayItems[selected];
-        groupMode = groupMode === 'provider' ? 'model' : 'provider';
+        const cycle: GroupMode[] = ['pretty', 'provider', 'model'];
+        groupMode = cycle[(cycle.indexOf(groupMode) + 1) % cycle.length];
         refreshDisplayItems(currentItem);
         redraw();
         return;

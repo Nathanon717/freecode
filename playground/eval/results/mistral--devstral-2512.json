@@ -18,5 +18,81 @@
       "total": 0
     },
     "scenarioHash": "d18057aa58d79384ffec2938ee242f7256d5a43f4566ea3393766c0cf86d6a1e"
+  },
+  {
+    "timestamp": "2026-06-01T17:31:02.273Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:devstral-2512",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2669,
+      "prompt": 2611,
+      "output": 58
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-01T17:31:23.516Z",
+    "scenarioId": "002-edit-config",
+    "model": "mistral:devstral-2512",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 5755,
+      "prompt": 5615,
+      "output": 140
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-01T17:31:49.816Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "mistral:devstral-2512",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 7974,
+      "prompt": 7740,
+      "output": 234
+    },
+    "scenarioHash": "fcc4b55c2fc6f2822a74b463454c91af2a79941c9caf52585e6f37b0f3889f2b"
+  },
+  {
+    "timestamp": "2026-06-01T17:32:07.714Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "mistral:devstral-2512",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "c081a9aa552faad8b4c5795d18d01e434cb624636c3bf93273cd28f06df54243"
+  },
+  {
+    "timestamp": "2026-06-01T17:32:42.197Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "mistral:devstral-2512",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 10544,
+      "prompt": 10102,
+      "output": 442
+    },
+    "scenarioHash": "d42f4103a3565af48065360beee8069eafe1f6a123a22c4534e62b49f32b739d"
+  },
+  {
+    "timestamp": "2026-06-01T17:33:18.300Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "mistral:devstral-2512",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 11055,
+      "prompt": 10543,
+      "output": 512
+    },
+    "scenarioHash": "07a59670a105001ada57e61c02a80e6f48dae15db66a1c6fc0a7cd6ae6fcddce"
   }
 ]
