@@ -20,5 +20,81 @@
       "output": 58
     },
     "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  },
+  {
+    "timestamp": "2026-06-01T14:46:03.849Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:mistral-medium-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2669,
+      "prompt": 2611,
+      "output": 58
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-01T14:46:16.815Z",
+    "scenarioId": "002-edit-config",
+    "model": "mistral:mistral-medium-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 5663,
+      "prompt": 5483,
+      "output": 180
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-01T14:46:28.597Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "mistral:mistral-medium-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 9417,
+      "prompt": 9190,
+      "output": 227
+    },
+    "scenarioHash": "fcc4b55c2fc6f2822a74b463454c91af2a79941c9caf52585e6f37b0f3889f2b"
+  },
+  {
+    "timestamp": "2026-06-01T14:46:45.114Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "mistral:mistral-medium-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 13550,
+      "prompt": 13055,
+      "output": 495
+    },
+    "scenarioHash": "c081a9aa552faad8b4c5795d18d01e434cb624636c3bf93273cd28f06df54243"
+  },
+  {
+    "timestamp": "2026-06-01T14:47:01.088Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "mistral:mistral-medium-2508",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "d42f4103a3565af48065360beee8069eafe1f6a123a22c4534e62b49f32b739d"
+  },
+  {
+    "timestamp": "2026-06-01T14:48:30.126Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "mistral:mistral-medium-2508",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 10807,
+      "prompt": 10337,
+      "output": 470
+    },
+    "scenarioHash": "07a59670a105001ada57e61c02a80e6f48dae15db66a1c6fc0a7cd6ae6fcddce"
   }
 ]

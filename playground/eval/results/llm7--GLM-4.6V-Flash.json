@@ -1,0 +1,41 @@
+[
+  {
+    "timestamp": "2026-06-01T14:40:27.993Z",
+    "scenarioId": "001-hello-world",
+    "model": "llm7:GLM-4.6V-Flash",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-01T14:40:48.856Z",
+    "scenarioId": "002-edit-config",
+    "model": "llm7:GLM-4.6V-Flash",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-01T14:41:44.982Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "llm7:GLM-4.6V-Flash",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "fcc4b55c2fc6f2822a74b463454c91af2a79941c9caf52585e6f37b0f3889f2b"
+  }
+]

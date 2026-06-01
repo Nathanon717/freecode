@@ -98,5 +98,83 @@
       "total": 0
     },
     "scenarioHash": "c6c375ab7f1c5dfa99590dc85c9d56b29bd8d100f2f32ec11215b77b215a4513"
+  },
+  {
+    "timestamp": "2026-06-01T11:47:04.140Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2878,
+      "prompt": 2817,
+      "output": 61
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-01T11:47:14.549Z",
+    "scenarioId": "002-edit-config",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 6760,
+      "prompt": 6521,
+      "output": 239
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-01T11:47:34.812Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 6942,
+      "prompt": 6761,
+      "output": 181
+    },
+    "scenarioHash": "fcc4b55c2fc6f2822a74b463454c91af2a79941c9caf52585e6f37b0f3889f2b"
+  },
+  {
+    "timestamp": "2026-06-01T11:48:20.124Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 8942,
+      "prompt": 8481,
+      "output": 461
+    },
+    "scenarioHash": "148997a0b920e63451ccde77726caf56f2c725b2652fa47044d24fa050b04842"
+  },
+  {
+    "timestamp": "2026-06-01T11:56:19.636Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 10698,
+      "prompt": 10485,
+      "output": 213
+    },
+    "scenarioHash": "fea6edbc5412bee6bfc9d93fabc0cd2b0a74a3c8a5a729e9c277710bf1c0f5d1"
+  },
+  {
+    "timestamp": "2026-06-01T11:57:03.813Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 8940,
+      "prompt": 8474,
+      "output": 466
+    },
+    "scenarioHash": "4d10bb23a70d76f14317c6e0778765915fd19dfcb8183e4fc04086a9dd81189d"
   }
 ]

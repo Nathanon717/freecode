@@ -309,7 +309,7 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         }
 
         let response = await globalThis.fetch(input, patchedInit);
-        if (providerConfig.id === 'groq' && response.status === 429) {
+        for (let attempt = 0; providerConfig.id === 'groq' && response.status === 429 && attempt < 5; attempt++) {
           const delayMs = parseRetryAfterMs(response.headers.get('retry-after'));
           await new Promise<void>(resolve => {
             let remaining = Math.ceil(delayMs / 1000);

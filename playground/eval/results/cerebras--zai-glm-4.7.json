@@ -18,5 +18,16 @@
       "total": 0
     },
     "scenarioHash": "d18057aa58d79384ffec2938ee242f7256d5a43f4566ea3393766c0cf86d6a1e"
+  },
+  {
+    "timestamp": "2026-06-01T14:45:29.882Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "cerebras:zai-glm-4.7",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "c794a7c2838705474f04b381e70a33d7b94140c55eb966ae71c448eb9063e382"
   }
 ]

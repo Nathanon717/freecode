@@ -147,5 +147,44 @@
       "total": 0
     },
     "scenarioHash": "c6c375ab7f1c5dfa99590dc85c9d56b29bd8d100f2f32ec11215b77b215a4513"
+  },
+  {
+    "timestamp": "2026-06-01T14:48:57.878Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2893,
+      "prompt": 2710,
+      "output": 183
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-01T14:49:06.113Z",
+    "scenarioId": "002-edit-config",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 4135,
+      "prompt": 3856,
+      "output": 279
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-01T14:49:13.238Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 5740,
+      "prompt": 5412,
+      "output": 328
+    },
+    "scenarioHash": "fcc4b55c2fc6f2822a74b463454c91af2a79941c9caf52585e6f37b0f3889f2b"
   }
 ]

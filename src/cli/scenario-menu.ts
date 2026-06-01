@@ -19,7 +19,7 @@ import { runRawPicker } from './raw-picker.js';
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const PLAYGROUND_EVAL_DIR = resolve(_dirname, '..', '..', 'playground', 'eval');
 const DIST_ENTRY = resolve(_dirname, '..', '..', 'dist', 'index.js');
-const TSX_BIN = resolve(_dirname, '..', '..', 'node_modules', '.bin', 'tsx.cmd');
+const TSX_BIN = resolve(_dirname, '..', '..', 'node_modules', '.bin', process.platform === 'win32' ? 'tsx.cmd' : 'tsx');
 const RUN_CHECK_SCRIPT = resolve(_dirname, '..', '..', 'playground', 'eval', 'run-check.ts');
 const EVAL_HISTORY_FILE = resolve(_dirname, '..', '..', 'playground', 'eval', 'eval-history.json');
 const EVAL_RESULTS_DIR = resolve(_dirname, '..', '..', 'playground', 'eval', 'results');
