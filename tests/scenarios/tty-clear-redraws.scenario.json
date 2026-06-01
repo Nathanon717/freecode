@@ -18,7 +18,7 @@
         "name": "submit — terminal clears, banner redraws, prompt returns",
         "send": "\r",
         "screenContains": [
-          ".d888",
+          "freecode",
           "> / for commands"
         ],
         "quietMs": 800

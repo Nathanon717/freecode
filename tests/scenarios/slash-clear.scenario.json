@@ -6,7 +6,7 @@
     { "input": "/clear" }
   ],
   "expect": {
-    "stdoutContains": ["Chat history cleared", ".d888", "Goodbye"],
+    "stdoutContains": ["Chat history cleared", "freecode", "Goodbye"],
     "stdoutAbsent": ["Error:"],
     "exitCode": 0
   }

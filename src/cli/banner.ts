@@ -54,9 +54,7 @@ export function getBannerColor(): ChalkInstance {
   return chalk.rgb(r, g, b);
 }
 
-export function showBanner() {
-  clearEntireTerminal();
-  console.log(nextBannerColor()([
+const FULL_BANNER = [
   '',
   ' //////////////////////////////////////////////////////////////////////////////',
   ' //                                                                          //',
@@ -71,5 +69,21 @@ export function showBanner() {
   ' //                                                                          //',
   ' //////////////////////////////////////////////////////////////////////////////',
   '',
-  ].join('\n')));
+].join('\n');
+
+const COMPACT_BANNER = [
+  '',
+  ' /////////////////////',
+  ' //                 //',
+  ' //    freecode     //',
+  ' //                 //',
+  ' /////////////////////',
+  '',
+].join('\n');
+
+export function showBanner() {
+  clearEntireTerminal();
+  const cols = process.stdout.columns ?? 80;
+  const banner = cols < 82 ? COMPACT_BANNER : FULL_BANNER;
+  console.log(nextBannerColor()(banner));
 }

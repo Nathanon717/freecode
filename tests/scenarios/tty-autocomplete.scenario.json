@@ -9,7 +9,7 @@
     "steps": [
       {
         "name": "startup banner + idle prompt",
-        "screenContains": [".d888", "> / for commands"]
+        "screenContains": ["freecode", "> / for commands"]
       },
       {
         "name": "type / shows full command list",

@@ -73,11 +73,34 @@ Navigates from the current screen to `<screen>` by BFS-pathfinding through the n
 
 Writes keystrokes to the running session and prints the screen after output settles.
 
-- Multiple key arguments are **concatenated in order**: `pty send m o` sends `"mo"`.
-- Pass **`-`** as the keys argument to read keystrokes from stdin. Use this for any input that starts with `/` (slash commands), which Git Bash on Windows would otherwise mangle into a Windows path:
+- Multiple key arguments are **concatenated in order**: `pty send h e l l o` sends `"hello"`.
+- **Named key aliases** — use these instead of raw escape sequences:
+
+  | Alias                | Key        |
+  |----------------------|------------|
+  | `enter` or `ent`     | Enter (CR) |
+  | `esc` or `escape`    | Escape     |
+  | `up`                 | Up arrow   |
+  | `down`               | Down arrow |
+  | `left`               | Left arrow |
+  | `right`              | Right arrow|
+  | `space`              | Space      |
+  | `tab`                | Tab        |
+
   ```bash
-  printf '/model' | pty send -   # type command
-  printf '\r'     | pty send -   # submit (separate step)
+  pty send down down enter   # arrow down twice, then select
+  pty send esc               # dismiss a menu
+  ```
+
+- **Slash commands auto-submit** — a `/command` argument automatically appends Enter, so you don't need a separate step:
+  ```bash
+  pty send /model    # types /model and submits — no extra enter needed
+  pty send /config   # same
+  ```
+
+- Pass **`-`** as the keys argument to read keystrokes from stdin (slash commands from stdin also auto-submit). Use this on Windows to avoid MSYS path mangling:
+  ```bash
+  printf '/model' | pty send -   # types /model and submits
   ```
 - `--wait-for <text>`: wait for a specific string to appear in the raw output stream before snapshotting. Use this when a keystroke triggers LLM work — wait for `"for commands"` to know the prompt is back.
 - `--quiet-ms N`: override the settle window (default 350 ms). Increase for slow renders.
@@ -116,19 +139,23 @@ printf '\x1b[B' | pty send -
 
 ## Control characters
 
-Use `printf` piped to stdin to send control characters reliably on Windows:
+On any platform, use the named key aliases described in the `send` section above — they work as positional arguments directly:
+
+```bash
+pty send enter        # Enter
+pty send esc          # Escape
+pty send up           # Up arrow
+pty send down down    # Down arrow twice
+```
+
+For keys without an alias (Ctrl-C, Backspace, etc.) use `printf` piped to stdin:
 
 | Key        | stdin form           |
 |------------|----------------------|
-| Enter      | `printf '\r'`        |
-| Tab        | `printf '\t'`        |
-| Escape     | `printf '\x1b'`      |
 | Ctrl-C     | `printf '\x03'`      |
 | Backspace  | `printf '\x7f'`      |
-| Up arrow   | `printf '\x1b[A'`    |
-| Down arrow | `printf '\x1b[B'`    |
 
-On Linux/Mac only, you can pass these as positional args using Bash ANSI-C quoting (`$'\r'`, `$'\x1b[B'`, etc.).
+On Linux/Mac you can also pass raw escape sequences as positional args using Bash ANSI-C quoting (`$'\r'`, `$'\x1b[B'`, etc.).
 
 ## Common patterns
 
@@ -137,27 +164,35 @@ On Linux/Mac only, you can pass these as positional args using Bash ANSI-C quoti
 ```bash
 pty start
 pty goto models --screen
-printf '\x1b[B' | pty send -   # arrow down
-printf '\r'     | pty send -   # select
+pty send down    # arrow down
+pty send enter   # select
 pty stop
 ```
 
-Always send typed text and control keys (Enter, arrow keys, Tab) as **separate steps**. Combining them in one `printf` (e.g. `printf '/model\r'`) may type the text but skip the key action.
+Always send typed text and control keys (Enter, arrow keys, Tab) as **separate steps**. Combining them in one call (e.g. `pty send hello enter`) is fine; just don't expect a single `printf '/model\r'` to work — the app needs to settle between typing and submitting.
+
+### Open a slash command directly
+
+```bash
+pty start --screen
+pty send /model   # types /model and auto-submits; opens model picker
+pty stop
+```
 
 ### Type a slash command with autocomplete
 
 ```bash
-printf '/' | pty send -   # open suggestion list
+printf '/' | pty send -   # open suggestion list (on Windows; or: pty send /)
 pty send he               # filter to /help
-printf '\t' | pty send -  # accept inline completion
-printf '\r' | pty send -  # submit
+pty send tab              # accept inline completion
+pty send enter            # submit
 ```
 
 ### Send a prompt to the agent and wait for it to finish
 
 ```bash
-pty send "list the files here" --wait-for "for commands"
-printf '\r' | pty send -
+pty send "list the files here"
+pty send enter --wait-for "for commands"
 ```
 
 The `--wait-for "for commands"` waits until the prompt is live again, which means the agent turn is complete.

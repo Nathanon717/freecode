@@ -289,6 +289,12 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
     return 'continue';
   }
 
+  if (trimmed.startsWith('/')) {
+    const name = trimmed.split(' ')[0];
+    console.log(chalk.red(`No command: ${name}`));
+    return 'continue';
+  }
+
   await sendToAgent(trimmed, runtime);
   return 'continue';
 }

@@ -3,26 +3,27 @@
  * Persistent PTY session manager – lets an agent drive freecode interactively.
  *
  * Commands:
- *   session.ts start [--cols N] [--rows N]
+ *   pty start [mobile|m] [--cols N] [--rows N]
  *       Spawns a freecode PTY daemon and prints the initial screen.
+ *       The 'mobile' (or 'm') preset uses --cols 51 --rows 20 --screen.
  *
- *   session.ts goto <screen> [--screen] [--cols N] [--rows N]
+ *   pty goto <screen> [--screen] [--cols N] [--rows N]
  *       Navigate to a named screen (home/models/config/eval) via BFS pathfinding.
  *       Auto-starts a session if none is running. Prints the screen when --screen is set.
  *
- *   session.ts send <keys> [<keys>...] [--wait-for <text>] [--quiet-ms N]
+ *   pty send <keys> [<keys>...] [--wait-for <text>] [--quiet-ms N]
  *       Sends keystrokes to the running session, prints the resulting screen.
- *       Keys are raw strings; use shell ANSI-C quoting for control chars:
- *         Tab     $'\t'     Enter   $'\r'     Escape  $'\x1b'     Ctrl-C  $'\x03'
- *       Multiple key args are concatenated in order.
- *       Pass "-" as the keys arg to read from stdin — useful for slash-prefixed
- *       commands that MSYS would otherwise mangle:
- *         printf '/model' | npm run pty:session -- send -
+ *       Named key aliases: enter/ent, esc/escape, up, down, left, right, space, tab
+ *         pty send down down enter
+ *       Slash commands auto-submit (Enter appended automatically):
+ *         pty send /model
+ *       Pass "-" to read from stdin (slash commands from stdin also auto-submit):
+ *         printf '/model' | pty send -
  *
- *   session.ts screen
+ *   pty screen
  *       Prints the current screen without sending any input.
  *
- *   session.ts stop
+ *   pty stop
  *       Kills the session and cleans up.
  *
  * The --server flag is internal – used by 'start' to launch the daemon process.
@@ -44,7 +45,7 @@ const ACTIVE_FILE = join(SESSION_DIR, 'active.json');
 
 // ── active session state ─────────────────────────────────────────────────────
 
-interface ActiveSession { id: string; screen: string; }
+interface ActiveSession { id: string; screen: string; mobile?: boolean; }
 
 function readActive(): ActiveSession | null {
   if (!existsSync(ACTIVE_FILE)) return null;
@@ -71,9 +72,9 @@ function resolveId(): string {
 // steps are sent as separate RPCs so each gets its own settle window.
 // This matters for slash commands: '/model\r' sent as one chunk doesn't
 // trigger execution — the app needs to settle after typing before \r submits.
-const NAV: Record<string, { steps: string[]; to: string }[]> = {
+const NAV: Record<string, { steps: string[]; to: string; waitFor?: string }[]> = {
   home:   [
-    { steps: ['/model', '\r'], to: 'models' },
+    { steps: ['/model', '\r'], to: 'models', waitFor: 'Esc close' },
     { steps: ['/config', '\r'], to: 'config' },
     { steps: ['/eval',   '\r'], to: 'eval' },
   ],
@@ -82,10 +83,12 @@ const NAV: Record<string, { steps: string[]; to: string }[]> = {
   eval:   [{ steps: ['\x1b'], to: 'home' }],
 };
 
-function bfsPath(from: string, to: string): { steps: string[]; to: string }[] | null {
+type NavEdge = { steps: string[]; to: string; waitFor?: string };
+
+function bfsPath(from: string, to: string): NavEdge[] | null {
   if (from === to) return [];
   const visited = new Set<string>([from]);
-  const queue: { screen: string; path: { keys: string; to: string }[] }[] = [{ screen: from, path: [] }];
+  const queue: { screen: string; path: NavEdge[] }[] = [{ screen: from, path: [] }];
   while (queue.length) {
     const { screen, path } = queue.shift()!;
     for (const edge of (NAV[screen] ?? [])) {
@@ -212,9 +215,34 @@ function rpc(id: string, msg: object): Promise<Record<string, unknown>> {
   });
 }
 
+// ── key aliases ──────────────────────────────────────────────────────────────
+
+const KEY_ALIASES: Record<string, string> = {
+  enter:  '\r',
+  ent:    '\r',
+  return: '\r',
+  esc:    '\x1b',
+  escape: '\x1b',
+  up:     '\x1b[A',
+  down:   '\x1b[B',
+  right:  '\x1b[C',
+  left:   '\x1b[D',
+  space:  ' ',
+  tab:    '\t',
+};
+
+// Resolve a single send argument: named key aliases map to their escape sequences;
+// slash commands get Enter appended so callers don't need a separate step.
+function resolveKey(arg: string): string {
+  const alias = KEY_ALIASES[arg.toLowerCase()];
+  if (alias !== undefined) return alias;
+  if (arg.startsWith('/')) return arg + '\r';
+  return arg;
+}
+
 // ── commands ─────────────────────────────────────────────────────────────────
 
-async function cmdStart(cols: number, rows: number, showScreen = false): Promise<void> {
+async function cmdStart(cols: number, rows: number, showScreen = false, mobile = false): Promise<void> {
   mkdirSync(SESSION_DIR, { recursive: true });
 
   // Stop any existing sessions before starting a new one.
@@ -245,7 +273,7 @@ async function cmdStart(cols: number, rows: number, showScreen = false): Promise
   }
   if (!existsSync(flag)) { console.error('Session never became ready (timeout)'); process.exit(1); }
 
-  writeActive({ id, screen: 'home' });
+  writeActive({ id, screen: 'home', mobile });
   if (showScreen) {
     const res = await rpc(id, { type: 'screen' });
     printScreen(res.screen as string[], cols);
@@ -259,7 +287,10 @@ async function cmdSend(
   const id = resolveId();
   // Allow keys to be read from stdin (pass "-" as the keys arg) so that
   // slash-prefixed commands like "/model" aren't mangled by MSYS path conversion.
-  if (keys === '-') keys = readFileSync(0, 'utf8');
+  if (keys === '-') {
+    keys = readFileSync(0, 'utf8');
+    if (keys.startsWith('/') && !keys.includes('\r') && !keys.includes('\n')) keys += '\r';
+  }
   const res = await rpc(id, { type: 'send', keys, waitFor: opts.waitFor, quietMs: opts.quietMs });
   if ('error' in res) { console.error('Error:', res.error); process.exit(1); }
   printScreen(res.screen as string[], opts.cols);
@@ -299,8 +330,10 @@ async function cmdGoto(
   }
 
   for (const edge of path) {
-    for (const keys of edge.steps) {
-      await rpc(active.id, { type: 'send', keys });
+    const lastIdx = edge.steps.length - 1;
+    for (let i = 0; i < edge.steps.length; i++) {
+      const isLast = i === lastIdx;
+      await rpc(active.id, { type: 'send', keys: edge.steps[i], ...(isLast && edge.waitFor ? { waitFor: edge.waitFor } : {}) });
     }
     active.screen = edge.to;
     writeActive(active);
@@ -337,27 +370,41 @@ async function main(): Promise<void> {
 
   switch (cmd) {
     case '--server': return runServer(rest[0], cols, rows);
-    case 'start':   return cmdStart(cols, rows, showScreen);
+    case 'start': {
+      const mobile = rest[0] === 'mobile' || rest[0] === 'm';
+      if (mobile) {
+        if (cols === 80) cols = 51;
+        if (rows === 24) rows = 20;
+        showScreen = true;
+      }
+      return cmdStart(cols, rows, showScreen, mobile);
+    }
     case 'goto': {
       const [screen] = rest;
       if (!screen) { console.error('Usage: goto <screen> [--screen]'); process.exit(1); }
-      return cmdGoto(screen, { showScreen, cols, rows });
+      return cmdGoto(screen, { showScreen: showScreen || !!(readActive()?.mobile), cols, rows });
     }
-    case 'send':   return cmdSend(rest.join(''), { waitFor, quietMs, cols });
+    case 'send': {
+      const keyStr = rest.length === 1 && rest[0] === '-' ? '-' : rest.map(resolveKey).join('');
+      return cmdSend(keyStr, { waitFor, quietMs, cols });
+    }
     case 'screen': return cmdScreen(cols);
     case 'stop':   return cmdStop();
     default:
-      console.error(
+      console.log(
         'Usage:\n' +
-        '  session.ts start [--cols N] [--rows N]\n' +
-        '  session.ts goto <screen> [--screen] [--cols N] [--rows N]\n' +
-        '  session.ts send <keys> [--wait-for <text>] [--quiet-ms N]\n' +
-        '  session.ts screen\n' +
-        '  session.ts stop\n' +
+        '  pty start [mobile|m] [--cols N] [--rows N]\n' +
+        '  pty goto <screen> [--screen] [--cols N] [--rows N]\n' +
+        '  pty send <keys> [--wait-for <text>] [--quiet-ms N]\n' +
+        '  pty screen\n' +
+        '  pty stop\n' +
+        '\n' +
+        'Key aliases: enter/ent, esc/escape, up, down, left, right, space, tab\n' +
+        'Slash commands auto-submit: pty send /model  ==  type /model + Enter\n' +
         '\n' +
         'Screens: ' + Object.keys(NAV).join(', '),
       );
-      process.exit(1);
+      process.exit(0);
   }
 }
 
