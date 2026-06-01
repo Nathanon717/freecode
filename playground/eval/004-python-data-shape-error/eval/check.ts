@@ -94,7 +94,7 @@ function assertInspectedData(toolCalls: ToolCall[]): CheckResult {
 
   return {
     name: 'inspected input data',
-    kind: 'assertion',
+    kind: 'warning',
     pass: inspected,
     message: inspected ? undefined : 'no tool call captured inspection of orders.csv',
   };
@@ -110,7 +110,7 @@ function assertRanFailedThenFixed(toolCalls: ToolCall[]): CheckResult {
   if (failingRun === -1) {
     return {
       name: 'ran failing script first',
-      kind: 'assertion',
+      kind: 'warning',
       pass: false,
       message: 'no shell_exec of analyze_orders.py captured the initial KeyError',
     };

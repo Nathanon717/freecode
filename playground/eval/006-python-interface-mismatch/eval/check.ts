@@ -89,7 +89,7 @@ function assertRanFailingScript(toolCalls: ToolCall[]): CheckResult {
 
   return {
     name: 'ran failing script first',
-    kind: 'assertion',
+    kind: 'warning',
     pass: failingRun !== undefined,
     message: failingRun ? undefined : 'no shell_exec of pipeline.py captured the initial KeyError',
   };
@@ -106,7 +106,7 @@ function assertInspectedStatsModule(toolCalls: ToolCall[]): CheckResult {
 
   return {
     name: 'inspected stats module',
-    kind: 'assertion',
+    kind: 'warning',
     pass: inspected,
     message: inspected ? undefined : 'no tool call shows the agent read stats.py to understand its return shape',
   };
@@ -139,7 +139,7 @@ function assertEditedPipelineThenReran(toolCalls: ToolCall[]): CheckResult {
   );
 
   if (failingRun === -1) {
-    return { name: 'edited pipeline then reran', kind: 'assertion', pass: false, message: 'initial KeyError run not found' };
+    return { name: 'edited pipeline then reran', kind: 'warning', pass: false, message: 'initial KeyError run not found' };
   }
 
   const editAfter = toolCalls.findIndex((call, i) =>

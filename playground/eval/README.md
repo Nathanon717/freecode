@@ -41,7 +41,31 @@ The agent's tools resolve relative paths against `work/` (via `projectRoot = cwd
 Each check in an `EvalReport` has a `kind`:
 
 - **`assertion`** — pass/fail with an informative failure message. Failures show in red. The pass rate is printed in the header.
+- **`warning`** — pass/fail, but a failure does not count against the assertion pass rate. Shown in yellow. Use for process/methodology checks where a correct outcome can still be reached without the expected behavior.
 - **`stat`** — informational only (e.g. token count, tool sequence). Always shown in the Stats section; never affects pass/fail.
+
+## What should be a `warning` vs an `assertion`
+
+**Use `warning`** when the check measures *how* the agent worked, not *whether* it succeeded:
+
+| Pattern | Example checks |
+|---------|---------------|
+| Ran the script to observe the error before fixing | `ran failing script first`, `encountered first bug (ValueError)`, `first run exits 0 with wrong output` |
+| Read/inspected relevant input files or modules before editing | `inspected input data`, `inspected stats module` |
+| Used the expected tool sequence (orient → inspect → fix → verify) | Early-exit guards in cascade checks when a preceding run is not found |
+| Fixed both bugs across two separate cycles rather than in one shot | `encountered second bug (StatisticsError)` |
+
+**Use `assertion`** when a failure means the output is wrong or the agent made an incorrect change:
+
+| Pattern | Example checks |
+|---------|---------------|
+| Final script produces the expected output | `script runs` |
+| Required files exist with correct content | `file exists`, `file content` |
+| Input/reference files were not corrupted | `preserved input data`, `preserved stats module` |
+| Agent stayed within its working directory | `stayed in work dir` |
+| Agent made a necessary edit at all | `edited after inspecting failure`, `no edit to pipeline.py after the KeyError` |
+
+**Rule of thumb:** if `assertScriptRuns` passes, a failing process check should be a `warning`. If `assertScriptRuns` fails and this check directly explains *why* (e.g. the file was never edited), it should be an `assertion`.
 
 ## Writing a new scenario
 

@@ -88,7 +88,7 @@ function assertFirstRunSucceededWithWrongOutput(toolCalls: ToolCall[]): CheckRes
 
   return {
     name: 'first run exits 0 with wrong output',
-    kind: 'assertion',
+    kind: 'warning',
     pass: wrongRun !== undefined,
     message: wrongRun ? undefined : `no shell_exec of report.py found that produced the buggy revenue=49.50 (expected the agent to run the script before fixing it)`,
   };
@@ -102,7 +102,7 @@ function assertInspectedData(toolCalls: ToolCall[]): CheckResult {
 
   return {
     name: 'inspected input data',
-    kind: 'assertion',
+    kind: 'warning',
     pass: inspected,
     message: inspected ? undefined : 'no tool call captured inspection of sales.csv',
   };
@@ -118,7 +118,7 @@ function assertEditedThenReran(toolCalls: ToolCall[]): CheckResult {
   if (wrongRun === -1) {
     return {
       name: 'edited then reran',
-      kind: 'assertion',
+      kind: 'warning',
       pass: false,
       message: 'initial wrong-output run not found in tool calls',
     };

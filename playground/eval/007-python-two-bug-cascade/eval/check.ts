@@ -80,7 +80,7 @@ function assertEncounteredFirstBug(toolCalls: ToolCall[]): CheckResult {
 
   return {
     name: 'encountered first bug (ValueError)',
-    kind: 'assertion',
+    kind: 'warning',
     pass: run !== undefined,
     message: run ? undefined : 'no shell_exec of analyze_grades.py produced a ValueError — agent may not have run the script before fixing it',
   };
@@ -111,7 +111,7 @@ function assertEncounteredSecondBug(toolCalls: ToolCall[]): CheckResult {
 
   return {
     name: 'encountered second bug (StatisticsError)',
-    kind: 'assertion',
+    kind: 'warning',
     pass: secondFailure !== -1,
     message: secondFailure === -1
       ? 'no shell_exec after the first edit produced a StatisticsError — both bugs may have been fixed in one shot without observing the second failure'
@@ -128,7 +128,7 @@ function assertTwoEditCycles(toolCalls: ToolCall[]): CheckResult {
   );
 
   if (firstValueError === -1) {
-    return { name: 'two edit cycles', kind: 'assertion', pass: false, message: 'first ValueError run not found' };
+    return { name: 'two edit cycles', kind: 'warning', pass: false, message: 'first ValueError run not found' };
   }
 
   const editAfterFirst = toolCalls.findIndex((call, i) =>
