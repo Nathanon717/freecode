@@ -171,7 +171,7 @@ function parseProviderUsageFromSse(providerId: string, body: string): CapturedPr
   return lastUsage;
 }
 
-function normalizeMistralToolCallDelta(value: unknown): unknown {
+function normalizeOpenAICompatToolCallDelta(value: unknown): unknown {
   if (!isRecord(value)) return value;
   const choices = value['choices'];
   if (!Array.isArray(choices)) return value;
@@ -204,14 +204,14 @@ function normalizeMistralToolCallDelta(value: unknown): unknown {
   return changed ? { ...value, choices: nextChoices } : value;
 }
 
-export function normalizeMistralToolCallSse(body: string): string {
+export function normalizeOpenAICompatToolCallSse(body: string): string {
   return body.split(/(\r?\n)/).map(part => {
     if (!part.startsWith('data:')) return part;
     const data = part.slice('data:'.length).trim();
     if (!data || data === '[DONE]') return part;
 
     try {
-      const normalized = normalizeMistralToolCallDelta(JSON.parse(data) as unknown);
+      const normalized = normalizeOpenAICompatToolCallDelta(JSON.parse(data) as unknown);
       return `data: ${JSON.stringify(normalized)}`;
     } catch {
       return part;
@@ -219,12 +219,12 @@ export function normalizeMistralToolCallSse(body: string): string {
   }).join('');
 }
 
-async function normalizeMistralToolCallResponse(response: Response): Promise<Response> {
+async function normalizeOpenAICompatToolCallResponse(response: Response): Promise<Response> {
   const contentType = response.headers.get('content-type') ?? '';
   if (!response.ok || !contentType.includes('text/event-stream')) return response;
 
   const body = await response.clone().text();
-  const normalized = normalizeMistralToolCallSse(body);
+  const normalized = normalizeOpenAICompatToolCallSse(body);
   if (normalized === body) return response;
 
   return new Response(normalized, {
@@ -342,9 +342,7 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         if (httpError) {
           throw new Error(httpError);
         }
-        if (providerConfig.id === 'mistral') {
-          response = await normalizeMistralToolCallResponse(response);
-        }
+        response = await normalizeOpenAICompatToolCallResponse(response);
         if (shouldCaptureUsage) {
           captureProviderUsage(providerConfig.id, response);
         }

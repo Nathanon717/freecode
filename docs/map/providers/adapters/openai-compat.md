@@ -11,7 +11,7 @@ endProviderUsageCapture(providerId: string): Promise<CapturedProviderUsage[]>
 formatCapturedProviderUsages(usages): string | null
 formatOpenAICompatHttpError(providerName, response): Promise<string | null>
 getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined
-normalizeMistralToolCallSse(body: string): string
+normalizeOpenAICompatToolCallSse(body: string): string
 openAIModelDisallowsTemperature(modelId: string): boolean
 createOpenAICompatProvider(providerConfig: ProviderConfig)
 createOllamaProvider()
@@ -30,7 +30,7 @@ For direct OpenAI requests, the custom fetch removes `temperature` from models m
 
 Non-OK HTTP responses are parsed for OpenAI-compatible `{ error: { message, code } }` bodies before throwing so callers see provider-specific API key, credit, model, or rate-limit details instead of a generic SDK error.
 
-For direct Mistral streaming responses, the custom fetch normalizes tool-call SSE chunks by adding a missing `type: "function"` on `delta.tool_calls[]` entries so the OpenAI SDK stream parser accepts Mistral's otherwise-compatible function-call deltas.
+For streaming responses, the custom fetch normalizes tool-call SSE chunks by adding a missing `type: "function"` on `delta.tool_calls[]` entries so the OpenAI SDK stream parser accepts otherwise-compatible function-call deltas from providers such as Mistral and LLM7.
 
 ## Groq Header Capture
 
