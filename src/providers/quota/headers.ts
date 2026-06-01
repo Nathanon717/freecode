@@ -284,8 +284,8 @@ export function parseMistralRateLimitSnapshot(
   const rt = headerNum(headers, 'x-ratelimit-remaining-tokens-minute');
   const lt = headerNum(headers, 'x-ratelimit-limit-tokens-minute');
   const buckets: RateLimitSnapshot = [];
-  if (rr !== null || lr !== null) buckets.push({ label: 'R', remaining: rr, limit: lr });
-  if (rt !== null || lt !== null) buckets.push({ label: 'T', remaining: rt, limit: lt });
+  if (rr !== null || lr !== null) buckets.push({ label: 'Rm', remaining: rr, limit: lr });
+  if (rt !== null || lt !== null) buckets.push({ label: 'Tm', remaining: rt, limit: lt });
   return buckets;
 }
 

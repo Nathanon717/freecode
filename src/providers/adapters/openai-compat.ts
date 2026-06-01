@@ -219,6 +219,66 @@ export function normalizeOpenAICompatToolCallSse(body: string): string {
   }).join('');
 }
 
+/**
+ * Convert a non-streaming OpenAI-compatible JSON response into SSE format.
+ *
+ * Mistral only returns x-ratelimit-* headers on non-streaming responses. We
+ * strip stream:true from the request so we get those headers, then synthesize
+ * SSE here so the rest of the pipeline (AI SDK, normalizer, usage capture) is
+ * unchanged.
+ */
+export function mistralJsonToSse(json: unknown): string {
+  if (!isRecord(json)) return 'data: [DONE]\n\n';
+
+  const id = typeof json.id === 'string' ? json.id : '';
+  const model = typeof json.model === 'string' ? json.model : '';
+  const created = typeof json.created === 'number' ? json.created : 0;
+  const usage = isRecord(json.usage) ? json.usage : null;
+  const choices = Array.isArray(json.choices) ? json.choices : [];
+
+  const parts: string[] = [];
+  const emit = (obj: Record<string, unknown>) => {
+    parts.push(`data: ${JSON.stringify(obj)}\n\n`);
+  };
+  const chunk = (chunkChoices: unknown[], extra?: Record<string, unknown>) => {
+    emit({ id, object: 'chat.completion.chunk', created, model, choices: chunkChoices, ...extra });
+  };
+
+  for (const choice of choices) {
+    if (!isRecord(choice)) continue;
+    const message = isRecord(choice.message) ? choice.message : {};
+    const finishReason = typeof choice.finish_reason === 'string' ? choice.finish_reason : null;
+    const idx = typeof choice.index === 'number' ? choice.index : 0;
+    const content = typeof message.content === 'string' ? message.content : null;
+    const rawToolCalls = Array.isArray(message.tool_calls) ? message.tool_calls : null;
+
+    if (rawToolCalls && rawToolCalls.length > 0) {
+      const deltaToolCalls = rawToolCalls.map((tc, i) => {
+        if (!isRecord(tc)) return tc;
+        const fn = isRecord(tc.function) ? tc.function : {};
+        return {
+          index: typeof tc.index === 'number' ? tc.index : i,
+          id: typeof tc.id === 'string' ? tc.id : '',
+          type: 'function',
+          function: {
+            name: typeof fn.name === 'string' ? fn.name : '',
+            arguments: typeof fn.arguments === 'string' ? fn.arguments : '',
+          },
+        };
+      });
+      chunk([{ index: idx, delta: { role: 'assistant', content: content ?? null, tool_calls: deltaToolCalls }, finish_reason: null }]);
+      chunk([{ index: idx, delta: {}, finish_reason: finishReason ?? 'tool_calls' }]);
+    } else {
+      chunk([{ index: idx, delta: { role: 'assistant', content: content ?? '' }, finish_reason: null }]);
+      chunk([{ index: idx, delta: {}, finish_reason: finishReason ?? 'stop' }]);
+    }
+  }
+
+  if (usage) chunk([], { usage });
+  parts.push('data: [DONE]\n\n');
+  return parts.join('');
+}
+
 async function normalizeOpenAICompatToolCallResponse(response: Response): Promise<Response> {
   const contentType = response.headers.get('content-type') ?? '';
   if (!response.ok || !contentType.includes('text/event-stream')) return response;
@@ -289,6 +349,17 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         }
 
         let patchedInit = init;
+        let mistralForcedNonStream = false;
+        if (providerConfig.id === 'mistral' && patchedInit?.body) {
+          try {
+            const body = JSON.parse(patchedInit.body as string);
+            if (body.stream) {
+              const { stream: _s, stream_options: _so, ...rest } = body;
+              patchedInit = { ...patchedInit, body: JSON.stringify(rest) };
+              mistralForcedNonStream = true;
+            }
+          } catch { /* leave body untouched */ }
+        }
         if (shouldStripTemperature && init?.body) {
           try {
             const body = JSON.parse(init.body as string);
@@ -341,6 +412,13 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         const httpError = await formatOpenAICompatHttpError(providerConfig.name, response);
         if (httpError) {
           throw new Error(httpError);
+        }
+        if (mistralForcedNonStream && response.ok) {
+          const jsonBody = await response.json().catch(() => null);
+          const sseText = mistralJsonToSse(jsonBody);
+          const sseHeaders = new Headers(response.headers);
+          sseHeaders.set('content-type', 'text/event-stream; charset=utf-8');
+          response = new Response(sseText, { status: 200, statusText: 'OK', headers: sseHeaders });
         }
         response = await normalizeOpenAICompatToolCallResponse(response);
         if (shouldCaptureUsage) {
