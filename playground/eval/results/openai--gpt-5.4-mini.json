@@ -1,0 +1,35 @@
+[
+  {
+    "timestamp": "2026-05-31T21:49:32.046Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "openai:gpt-5.4-mini",
+    "pass": false,
+    "tokens": {
+      "total": 1717,
+      "prompt": 1640,
+      "output": 77
+    }
+  },
+  {
+    "timestamp": "2026-05-31T21:56:48.139Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "openai:gpt-5.4-mini",
+    "pass": false,
+    "tokens": {
+      "total": 1599,
+      "prompt": 1528,
+      "output": 71
+    }
+  },
+  {
+    "timestamp": "2026-05-31T22:08:26.719Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "openai:gpt-5.4-mini",
+    "pass": false,
+    "tokens": {
+      "total": 1606,
+      "prompt": 1546,
+      "output": 60
+    }
+  }
+]

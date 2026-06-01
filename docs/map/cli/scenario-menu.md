@@ -22,7 +22,7 @@
 
 - Discovers numbered scenario folders in `playground/eval/` (requires `prompt.md` + `eval/check.ts`).
 - Opens a raw-mode standalone picker (Up/Down navigate, Enter run one, `a` run all, Esc close); the picker erases its rendered rows on close like the `/model` and `/config` pages.
-- Shows one status circle per scenario from the most recent matching `eval-history.json` entry, constrained by the current scenario hash and selected model; green means latest pass, orange means latest pass with warnings, red means latest fail, and named canonical groups can share history while the `other` bucket is treated as unrelated exact models.
+- Shows one status circle per scenario from the most recent matching entry in `playground/eval/results/{model-slug}.json`, constrained by the current scenario hash and selected model; green means latest pass, orange means latest pass with warnings, red means latest fail, and named canonical groups can share history while the `other` bucket is treated as unrelated exact models. Results are stored per-model so files never conflict on `git pull`.
 - Requires `y/yes` confirmation before running.
 - Resets each scenario's `work/` dir from `start/`, stores harness artifacts in sibling `.run/`, then spawns the compiled freecode agent via `--script` mode with `cwd = work/`.
 - Sets `FREECODE_TRANSCRIPT_STREAM=stdout` so the captured eval run replays the same transcript formatter used by normal tool logging.

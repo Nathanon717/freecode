@@ -1,0 +1,12 @@
+[
+  {
+    "timestamp": "2026-05-31T23:59:18.651Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:ministral-3b-2512",
+    "pass": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  }
+]

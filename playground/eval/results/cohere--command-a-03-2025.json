@@ -1,0 +1,50 @@
+[
+  {
+    "timestamp": "2026-05-31T22:58:27.317Z",
+    "scenarioId": "001-hello-world",
+    "model": "cohere:command-a-03-2025",
+    "pass": true,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  },
+  {
+    "timestamp": "2026-05-31T22:58:37.863Z",
+    "scenarioId": "002-edit-config",
+    "model": "cohere:command-a-03-2025",
+    "pass": true,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "d18057aa58d79384ffec2938ee242f7256d5a43f4566ea3393766c0cf86d6a1e"
+  },
+  {
+    "timestamp": "2026-05-31T22:58:54.313Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "cohere:command-a-03-2025",
+    "pass": true,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "84974ca853aa515c49d14c9e61f7f83f011d3b1534a66e76a0d6b7870dc6d0a2"
+  },
+  {
+    "timestamp": "2026-05-31T22:59:26.672Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "cohere:command-a-03-2025",
+    "pass": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "010272fd8a783cd412bb29e49ade90c000ed43f3e6ccbcc30b8cc6ec0ff2b7b9"
+  }
+]

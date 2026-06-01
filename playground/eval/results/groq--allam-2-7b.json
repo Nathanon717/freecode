@@ -1,0 +1,12 @@
+[
+  {
+    "timestamp": "2026-05-31T23:32:11.044Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:allam-2-7b",
+    "pass": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  }
+]

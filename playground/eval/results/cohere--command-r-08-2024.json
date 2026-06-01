@@ -1,0 +1,36 @@
+[
+  {
+    "timestamp": "2026-05-31T23:11:36.566Z",
+    "scenarioId": "001-hello-world",
+    "model": "cohere:command-r-08-2024",
+    "pass": true,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  },
+  {
+    "timestamp": "2026-05-31T23:11:49.607Z",
+    "scenarioId": "002-edit-config",
+    "model": "cohere:command-r-08-2024",
+    "pass": true,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "d18057aa58d79384ffec2938ee242f7256d5a43f4566ea3393766c0cf86d6a1e"
+  },
+  {
+    "timestamp": "2026-05-31T23:12:29.506Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "cohere:command-r-08-2024",
+    "pass": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "84974ca853aa515c49d14c9e61f7f83f011d3b1534a66e76a0d6b7870dc6d0a2"
+  }
+]

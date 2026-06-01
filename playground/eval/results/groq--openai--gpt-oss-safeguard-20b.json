@@ -1,0 +1,38 @@
+[
+  {
+    "timestamp": "2026-05-31T23:51:51.706Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:openai/gpt-oss-safeguard-20b",
+    "pass": true,
+    "tokens": {
+      "total": 1985,
+      "prompt": 1776,
+      "output": 209
+    },
+    "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  },
+  {
+    "timestamp": "2026-05-31T23:51:58.687Z",
+    "scenarioId": "002-edit-config",
+    "model": "groq:openai/gpt-oss-safeguard-20b",
+    "pass": true,
+    "tokens": {
+      "total": 4145,
+      "prompt": 3867,
+      "output": 278
+    },
+    "scenarioHash": "d18057aa58d79384ffec2938ee242f7256d5a43f4566ea3393766c0cf86d6a1e"
+  },
+  {
+    "timestamp": "2026-05-31T23:52:38.358Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:openai/gpt-oss-safeguard-20b",
+    "pass": true,
+    "tokens": {
+      "total": 5123,
+      "prompt": 4674,
+      "output": 449
+    },
+    "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  }
+]

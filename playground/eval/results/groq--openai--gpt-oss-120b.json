@@ -1,0 +1,151 @@
+[
+  {
+    "timestamp": "2026-05-31T21:46:05.698Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "tokens": {
+      "total": 1935,
+      "prompt": 1802,
+      "output": 133
+    }
+  },
+  {
+    "timestamp": "2026-05-31T21:46:23.849Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": false,
+    "tokens": {
+      "total": 10062,
+      "prompt": 9278,
+      "output": 784
+    }
+  },
+  {
+    "timestamp": "2026-05-31T21:47:54.021Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": false,
+    "tokens": {
+      "total": 9970,
+      "prompt": 9269,
+      "output": 701
+    }
+  },
+  {
+    "timestamp": "2026-05-31T21:48:51.518Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": false,
+    "tokens": {
+      "total": 13974,
+      "prompt": 12982,
+      "output": 992
+    }
+  },
+  {
+    "timestamp": "2026-05-31T22:00:02.047Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": false,
+    "tokens": {
+      "total": 9793,
+      "prompt": 9169,
+      "output": 624
+    }
+  },
+  {
+    "timestamp": "2026-05-31T23:20:20.447Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "tokens": {
+      "total": 2901,
+      "prompt": 2712,
+      "output": 189
+    },
+    "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  },
+  {
+    "timestamp": "2026-05-31T23:20:25.603Z",
+    "scenarioId": "002-edit-config",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "tokens": {
+      "total": 4183,
+      "prompt": 3859,
+      "output": 324
+    },
+    "scenarioHash": "d18057aa58d79384ffec2938ee242f7256d5a43f4566ea3393766c0cf86d6a1e"
+  },
+  {
+    "timestamp": "2026-05-31T23:20:31.532Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": false,
+    "tokens": {
+      "total": 5787,
+      "prompt": 5477,
+      "output": 310
+    },
+    "scenarioHash": "84974ca853aa515c49d14c9e61f7f83f011d3b1534a66e76a0d6b7870dc6d0a2"
+  },
+  {
+    "timestamp": "2026-05-31T23:23:40.375Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "tokens": {
+      "total": 5797,
+      "prompt": 5477,
+      "output": 320
+    },
+    "scenarioHash": "b1be753336367c202b25d241e2a2773f52e708c144e2854100b4db98130bdf12"
+  },
+  {
+    "timestamp": "2026-05-31T23:23:53.048Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": false,
+    "tokens": {
+      "total": 8164,
+      "prompt": 7627,
+      "output": 537
+    },
+    "scenarioHash": "010272fd8a783cd412bb29e49ade90c000ed43f3e6ccbcc30b8cc6ec0ff2b7b9"
+  },
+  {
+    "timestamp": "2026-05-31T23:25:37.243Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "tokens": {
+      "total": 7325,
+      "prompt": 6962,
+      "output": 363
+    },
+    "scenarioHash": "3be33eb09d25c903fc09582d1727b22ba337e744c86be5b6fe00e92a760b659f"
+  },
+  {
+    "timestamp": "2026-05-31T23:26:06.214Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": false,
+    "tokens": {
+      "total": 8329,
+      "prompt": 7564,
+      "output": 765
+    },
+    "scenarioHash": "cccf1dd9acd0ae9028b71e7bf68cdeb9a125a2148a24c3dbe20fcf3874f7c20b"
+  },
+  {
+    "timestamp": "2026-05-31T23:27:27.783Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "c6c375ab7f1c5dfa99590dc85c9d56b29bd8d100f2f32ec11215b77b215a4513"
+  }
+]

@@ -1,0 +1,24 @@
+[
+  {
+    "timestamp": "2026-05-31T23:59:50.442Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:mistral-medium-2508",
+    "pass": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  },
+  {
+    "timestamp": "2026-06-01T00:05:21.332Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:mistral-medium-2508",
+    "pass": true,
+    "tokens": {
+      "total": 2669,
+      "prompt": 2611,
+      "output": 58
+    },
+    "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  }
+]

@@ -1,0 +1,11 @@
+[
+  {
+    "timestamp": "2026-05-31T21:38:33.758Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:qwen/qwen3-32b",
+    "pass": false,
+    "tokens": {
+      "total": 0
+    }
+  }
+]

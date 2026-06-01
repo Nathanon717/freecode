@@ -22,6 +22,15 @@ const DIST_ENTRY = resolve(_dirname, '..', '..', 'dist', 'index.js');
 const TSX_BIN = resolve(_dirname, '..', '..', 'node_modules', '.bin', 'tsx.cmd');
 const RUN_CHECK_SCRIPT = resolve(_dirname, '..', '..', 'playground', 'eval', 'run-check.ts');
 const EVAL_HISTORY_FILE = resolve(_dirname, '..', '..', 'playground', 'eval', 'eval-history.json');
+const EVAL_RESULTS_DIR = resolve(_dirname, '..', '..', 'playground', 'eval', 'results');
+
+function modelSlug(model: string): string {
+  return model.replace(/[:/]/g, '--');
+}
+
+function modelResultFile(model: string): string {
+  return join(EVAL_RESULTS_DIR, `${modelSlug(model)}.json`);
+}
 
 // Eval types (structural mirror of playground/eval/shared/types.ts)
 interface EvalToolCall { tool: string; args: Record<string, unknown>; }
@@ -46,20 +55,60 @@ interface EvalHistoryEntry {
   scenarioHash?: string;
 }
 
+function loadModelResults(model: string): EvalHistoryEntry[] {
+  const file = modelResultFile(model);
+  if (!existsSync(file)) return [];
+  try { return JSON.parse(readFileSync(file, 'utf-8')); } catch { return []; }
+}
+
 function loadEvalHistory(): EvalHistoryEntry[] {
-  if (!existsSync(EVAL_HISTORY_FILE)) return [];
-  try { return JSON.parse(readFileSync(EVAL_HISTORY_FILE, 'utf-8')); } catch { return []; }
+  // Migrate flat history file into per-model files on first load
+  if (existsSync(EVAL_HISTORY_FILE)) {
+    try {
+      const legacy: EvalHistoryEntry[] = JSON.parse(readFileSync(EVAL_HISTORY_FILE, 'utf-8'));
+      if (legacy.length > 0) {
+        mkdirSync(EVAL_RESULTS_DIR, { recursive: true });
+        const byModel = new Map<string, EvalHistoryEntry[]>();
+        for (const e of legacy) {
+          const group = byModel.get(e.model) ?? [];
+          group.push(e);
+          byModel.set(e.model, group);
+        }
+        for (const [model, entries] of byModel) {
+          const file = modelResultFile(model);
+          const existing = loadModelResults(model);
+          const merged = [...existing];
+          for (const e of entries) {
+            if (!merged.some(x => x.scenarioId === e.scenarioId && x.model === e.model && x.scenarioHash === e.scenarioHash))
+              merged.push(e);
+          }
+          writeFileSync(file, JSON.stringify(merged, null, 2) + '\n', 'utf-8');
+        }
+        // Remove the flat file once migrated
+        rmSync(EVAL_HISTORY_FILE);
+      }
+    } catch { /* ignore migration errors */ }
+  }
+
+  if (!existsSync(EVAL_RESULTS_DIR)) return [];
+  const all: EvalHistoryEntry[] = [];
+  for (const f of readdirSync(EVAL_RESULTS_DIR)) {
+    if (!f.endsWith('.json')) continue;
+    try { all.push(...JSON.parse(readFileSync(join(EVAL_RESULTS_DIR, f), 'utf-8'))); } catch { /* skip */ }
+  }
+  return all;
 }
 
 function appendEvalHistory(entry: EvalHistoryEntry): void {
-  const history = loadEvalHistory();
-  const latest = history.filter(e =>
+  mkdirSync(EVAL_RESULTS_DIR, { recursive: true });
+  const existing = loadModelResults(entry.model);
+  const latest = existing.filter(e =>
     e.scenarioId !== entry.scenarioId ||
     e.model !== entry.model ||
     e.scenarioHash !== entry.scenarioHash,
   );
   latest.push(entry);
-  writeFileSync(EVAL_HISTORY_FILE, JSON.stringify(latest, null, 2) + '\n', 'utf-8');
+  writeFileSync(modelResultFile(entry.model), JSON.stringify(latest, null, 2) + '\n', 'utf-8');
 }
 
 function collectFilesRecursive(dir: string): string[] {

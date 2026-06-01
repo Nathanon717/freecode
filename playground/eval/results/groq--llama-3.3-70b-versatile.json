@@ -1,0 +1,102 @@
+[
+  {
+    "timestamp": "2026-05-30T10:22:47.385Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": false,
+    "tokens": {
+      "total": 0
+    }
+  },
+  {
+    "timestamp": "2026-05-30T10:37:52.571Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": false,
+    "tokens": {
+      "total": 11016,
+      "prompt": 10794,
+      "output": 222
+    }
+  },
+  {
+    "timestamp": "2026-05-31T22:17:03.999Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "tokens": {
+      "total": 2878,
+      "prompt": 2817,
+      "output": 61
+    },
+    "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  },
+  {
+    "timestamp": "2026-05-31T22:17:10.389Z",
+    "scenarioId": "002-edit-config",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": false,
+    "tokens": {
+      "total": 4768,
+      "prompt": 4611,
+      "output": 157
+    },
+    "scenarioHash": "d18057aa58d79384ffec2938ee242f7256d5a43f4566ea3393766c0cf86d6a1e"
+  },
+  {
+    "timestamp": "2026-05-31T22:20:10.307Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "tokens": {
+      "total": 8932,
+      "prompt": 8760,
+      "output": 172
+    },
+    "scenarioHash": "84974ca853aa515c49d14c9e61f7f83f011d3b1534a66e76a0d6b7870dc6d0a2"
+  },
+  {
+    "timestamp": "2026-05-31T22:22:15.008Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "010272fd8a783cd412bb29e49ade90c000ed43f3e6ccbcc30b8cc6ec0ff2b7b9"
+  },
+  {
+    "timestamp": "2026-05-31T22:24:18.596Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "tokens": {
+      "total": 5487,
+      "prompt": 5232,
+      "output": 255
+    },
+    "scenarioHash": "3be33eb09d25c903fc09582d1727b22ba337e744c86be5b6fe00e92a760b659f"
+  },
+  {
+    "timestamp": "2026-05-31T22:24:30.656Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": false,
+    "tokens": {
+      "total": 9085,
+      "prompt": 8619,
+      "output": 466
+    },
+    "scenarioHash": "cccf1dd9acd0ae9028b71e7bf68cdeb9a125a2148a24c3dbe20fcf3874f7c20b"
+  },
+  {
+    "timestamp": "2026-05-31T23:19:44.258Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "c6c375ab7f1c5dfa99590dc85c9d56b29bd8d100f2f32ec11215b77b215a4513"
+  }
+]
