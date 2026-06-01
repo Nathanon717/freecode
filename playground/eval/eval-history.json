@@ -1,0 +1,15 @@
+[
+  {
+    "timestamp": "2026-06-01T11:13:28.055Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2884,
+      "prompt": 2710,
+      "output": 174
+    },
+    "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  }
+]
