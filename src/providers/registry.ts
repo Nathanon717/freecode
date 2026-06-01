@@ -177,7 +177,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     baseUrl: 'https://api.groq.com/openai/v1',
     apiKeyEnvVar: 'GROQ_API_KEY',
     modelsSource: 'live',
-    modelIdBlocklist: [],
+    modelIdBlocklist: ['llama-prompt-guard', 'canopylabs', 'whisper'],
     models: [],
   },
   {

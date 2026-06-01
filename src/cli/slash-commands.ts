@@ -51,7 +51,7 @@ export function getCommandCompletion(input: string): string | null {
 export function getFilteredCommands(input: string): string[] {
   const commands = getRawFilteredCommands(input);
   const completion = getCommandCompletion(input);
-  if (!completion) return commands;
+  if (!completion) return commands.filter(cmd => cmd !== input.toLowerCase());
 
   return commands.filter(cmd => cmd !== completion);
 }

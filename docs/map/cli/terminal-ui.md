@@ -30,13 +30,13 @@ Rendering/control:
 
 ## Layout
 
-The module uses ANSI scroll-region controls so normal output scrolls above the reserved bottom rows. Reserved rows are:
+The module uses ANSI scroll-region controls so normal output scrolls above the reserved bottom rows.
 
-```text
-2 + suggestion_count
-```
+**Footer** (always active): 2 rows normally; expands to 3 rows when content overflows at narrow terminal widths (only when the input UI is not active). The bottom row carries the primary status (model + quota/ctx); the row above carries secondary content (OpenAI daily spend, preflight cost). `footerRowCount` tracks the current size and the scroll region is updated inline when it changes.
 
-The input row shows the prompt and inline completion. The status row right-aligns model, OpenAI daily spend, OpenAI preflight input cost, quota, and context-token information.
+**Input UI** (active while the user is typing): 3 rows above the footer (top bar, input line, bottom bar) plus one row per suggestion. Total reserved = `footerRowCount + 3 + suggestion_count`.
+
+The input row shows the prompt and inline completion. The status row right-aligns model, OpenAI daily spend, OpenAI preflight input cost, quota, and context-token count (displayed as `N ctx`).
 
 ## Preflight Input Cost
 

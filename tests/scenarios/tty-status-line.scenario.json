@@ -10,7 +10,7 @@
       {
         "name": "status line shows ctx tokens at idle",
         "screenContains": [
-          "ctx tokens"
+          "ctx"
         ]
       }
     ],

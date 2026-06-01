@@ -59,5 +59,44 @@
       "output": 2137
     },
     "scenarioHash": "c081a9aa552faad8b4c5795d18d01e434cb624636c3bf93273cd28f06df54243"
+  },
+  {
+    "timestamp": "2026-06-01T16:29:11.095Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:openai/gpt-oss-20b",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 9433,
+      "prompt": 8834,
+      "output": 599
+    },
+    "scenarioHash": "d42f4103a3565af48065360beee8069eafe1f6a123a22c4534e62b49f32b739d"
+  },
+  {
+    "timestamp": "2026-06-01T16:29:49.967Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:openai/gpt-oss-20b",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 9875,
+      "prompt": 8922,
+      "output": 953
+    },
+    "scenarioHash": "07a59670a105001ada57e61c02a80e6f48dae15db66a1c6fc0a7cd6ae6fcddce"
+  },
+  {
+    "timestamp": "2026-06-01T16:30:15.143Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "groq:openai/gpt-oss-20b",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 11696,
+      "prompt": 10992,
+      "output": 704
+    },
+    "scenarioHash": "c794a7c2838705474f04b381e70a33d7b94140c55eb966ae71c448eb9063e382"
   }
 ]

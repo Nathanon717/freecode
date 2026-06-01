@@ -18,4 +18,9 @@ describe('slash command completion', () => {
     expect(getCommandCompletion('/e')).toBe('/eval');
     expect(suggestions).not.toContain('/eval');
   });
+
+  it('excludes the exact command from the suggestion list when already fully typed', () => {
+    expect(getCommandCompletion('/model')).toBeNull();
+    expect(getFilteredCommands('/model')).not.toContain('/model');
+  });
 });

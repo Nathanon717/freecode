@@ -1,0 +1,15 @@
+[
+  {
+    "timestamp": "2026-06-01T16:36:34.574Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:meta-llama/llama-4-scout-17b-16e-instruct",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 3517,
+      "prompt": 3446,
+      "output": 71
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  }
+]

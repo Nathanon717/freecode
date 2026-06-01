@@ -8,6 +8,7 @@ const ESC = '\x1b[';
 let footerActive = false;
 let inputUIActive = false;
 let footerTimerSuspended = false;
+let footerRowCount = 2;
 let lastReservedRows = 2;
 let lastInputBuf = '';
 let lastTokenCount = 0;
@@ -17,6 +18,8 @@ let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
 let lastModelStatus = '';
 let lastOpenAIDailySpend: OpenAIDailySpend = { state: 'idle', updatedAt: 0 };
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
+let evalRunLabel: string | null = null;
+let evalRunStart = 0;
 
 export interface PreflightInputCost {
   state: 'idle' | 'pending' | 'ready' | 'unavailable';
@@ -40,8 +43,12 @@ let lastPreflightInputCost: PreflightInputCost = {
 function rows(): number { return process.stdout.rows || 24; }
 function cols(): number { return process.stdout.columns || 80; }
 
+function setScrollRegionSequence(top: number, bottom: number): string {
+  return `${ESC}${top};${bottom}r`;
+}
+
 function setScrollRegion(top: number, bottom: number) {
-  process.stdout.write(`${ESC}${top};${bottom}r`);
+  process.stdout.write(setScrollRegionSequence(top, bottom));
 }
 
 function resetScrollRegion() {
@@ -120,6 +127,17 @@ export function setPreflightInputCost(snapshot: PreflightInputCost): void {
 
 export function setOpenAIDailySpend(snapshot: OpenAIDailySpend): void {
   lastOpenAIDailySpend = snapshot;
+}
+
+export function setEvalRunning(label: string | null): void {
+  evalRunLabel = label;
+  if (label !== null) evalRunStart = Date.now();
+}
+
+function formatEvalRunStatus(now = Date.now()): string {
+  if (!evalRunLabel) return '';
+  const elapsed = Math.floor((now - evalRunStart) / 1000);
+  return `eval: ${evalRunLabel} · ${elapsed}s`;
 }
 
 function formatDuration(ms: number): string {
@@ -226,37 +244,77 @@ function formatOpenAIDailySpend(): string {
   return `OpenAI today ${lastOpenAIDailySpend.formattedAmountUsd ?? 'cost unavailable'}`;
 }
 
-function fitStatusRightSide(width: number, parts: string[], now = Date.now()): string {
-  const nonEmptyParts = parts.filter(Boolean);
-  const rightStr = nonEmptyParts.join(' | ');
-  if (rightStr.length <= width) return rightStr;
+// Lays out the right-side footer content into 1..rowBudget rows.
+// result[0] = bottom (primary) row, result[1] = row above, result[2] = top row.
+// Budget=1 matches the old single-row drop behaviour (existing tests rely on this).
+function layoutFooterRightRows(width: number, rowBudget: number, now = Date.now()): string[] {
+  const quotaStr = formatQuotaStatus(now);
+  const tokenStr = `${padNumberText(lastTokenCount.toString(), 5)} ctx`;
+  const statusStr = quotaStr ? `${quotaStr} | ${tokenStr}` : tokenStr;
+  const preflightStr = formatPreflightInputCost();
+  const dailySpendStr = formatOpenAIDailySpend();
+  const modelStr = lastModelStatus;
 
-  const modelStr = parts[0] ?? '';
-  const dailySpendStr = parts.length >= 4 ? parts[1] ?? '' : '';
-  const preflightStr = parts.length >= 4 ? parts[2] ?? '' : parts.length >= 3 ? parts[1] ?? '' : '';
-  const statusStr = nonEmptyParts[nonEmptyParts.length - 1] ?? '';
-  const tokenStr = `${padNumberText(lastTokenCount.toString(), 5)} ctx tokens`;
+  const secondaryParts = [dailySpendStr, preflightStr].filter(Boolean);
+  const secondaryStr = secondaryParts.join(' | ');
 
-  const withoutPreflight = [modelStr, dailySpendStr, statusStr].filter(Boolean).join(' | ');
-  if (withoutPreflight.length <= width) return withoutPreflight;
+  // Single-row fallback — drops least-important content progressively.
+  function singleRow(): string {
+    const full = [modelStr, ...secondaryParts, statusStr].filter(Boolean).join(' | ');
+    if (full.length <= width) return full;
 
-  const withoutPreflightAndSpend = [modelStr, statusStr].filter(Boolean).join(' | ');
-  if (withoutPreflightAndSpend.length <= width) return withoutPreflightAndSpend;
+    const withoutPreflight = [modelStr, dailySpendStr, statusStr].filter(Boolean).join(' | ');
+    if (withoutPreflight.length <= width) return withoutPreflight;
 
-  const modelWithTokens = [modelStr, tokenStr].filter(Boolean).join(' | ');
-  if (modelWithTokens.length <= width) return modelWithTokens;
+    const withoutSecondary = [modelStr, statusStr].filter(Boolean).join(' | ');
+    if (withoutSecondary.length <= width) return withoutSecondary;
 
-  if (modelStr.length <= width) return modelStr;
-  return modelStr.slice(0, width);
+    const withTokenOnly = [modelStr, tokenStr].filter(Boolean).join(' | ');
+    if (withTokenOnly.length <= width) return withTokenOnly;
+
+    if (modelStr && modelStr.length <= width) return modelStr;
+    return (modelStr || tokenStr).slice(0, width);
+  }
+
+  if (rowBudget <= 1) return [singleRow()];
+
+  // Multi-row: try fitting everything on the primary row first.
+  const full = [modelStr, ...secondaryParts, statusStr].filter(Boolean).join(' | ');
+  if (full.length <= width) return [full];
+
+  // Split: primary = model + quota/ctx, secondary row = spend + preflight.
+  const primaryStr = [modelStr, statusStr].filter(Boolean).join(' | ');
+  if (primaryStr.length <= width) {
+    if (!secondaryStr || secondaryStr.length <= width) {
+      return secondaryStr ? [primaryStr, secondaryStr] : [primaryStr];
+    }
+  }
+
+  // Primary still too wide — drop quota to bare ctx on the primary row.
+  const minPrimaryStr = [modelStr, tokenStr].filter(Boolean).join(' | ');
+  if (minPrimaryStr.length <= width) {
+    const upperCombined = [secondaryStr, quotaStr].filter(Boolean).join(' | ');
+    if (!upperCombined || upperCombined.length <= width) {
+      return upperCombined ? [minPrimaryStr, upperCombined] : [minPrimaryStr];
+    }
+    // Upper content overflows one row; use a third row if budget allows.
+    if (rowBudget >= 3 && quotaStr && quotaStr.length <= width) {
+      if (secondaryStr && secondaryStr.length <= width) {
+        return [minPrimaryStr, quotaStr, secondaryStr]; // secondary topmost
+      }
+      return [minPrimaryStr, quotaStr];
+    }
+    // Budget=2: prefer quota over secondary on the one available upper row.
+    if (quotaStr && quotaStr.length <= width) return [minPrimaryStr, quotaStr];
+    if (secondaryStr && secondaryStr.length <= width) return [minPrimaryStr, secondaryStr];
+    return [minPrimaryStr];
+  }
+
+  return [singleRow()];
 }
 
 export function composeBottomRightStatus(width: number, now = Date.now()): string {
-  const quotaStr = formatQuotaStatus(now);
-  const dailySpendStr = formatOpenAIDailySpend();
-  const preflightStr = formatPreflightInputCost();
-  const tokenStr = `${padNumberText(lastTokenCount.toString(), 5)} ctx tokens`;
-  const statusStr = quotaStr ? `${quotaStr} | ${tokenStr}` : tokenStr;
-  return fitStatusRightSide(width, [lastModelStatus, dailySpendStr, preflightStr, statusStr], now);
+  return layoutFooterRightRows(width, 1, now)[0];
 }
 
 export function composeBottomStatusLine(width: number, now = Date.now()): string {
@@ -272,16 +330,53 @@ export function getInlineCompletionSuffix(input: string, completion: string | nu
 }
 
 // Returns the footer escape sequence without writing it.
+// Uses row r-1 (and optionally r-2) for secondary/tertiary content when the
+// terminal is too narrow to fit everything on the primary row.  The footer
+// always reserves at least 2 rows; a 3rd row is only used when input UI is
+// not active (to avoid shifting the input area unexpectedly).
 export function composeFooterOutput(): string {
   if (!footerActive) return '';
   const w = cols();
   const r = rows();
-  const rightStr = composeBottomRightStatus(Math.max(0, w - 1));
-  const padding = Math.max(0, w - 1 - rightStr.length);
+  const now = Date.now();
+  const leftStr = formatEvalRunStatus(now);
+
+  // When input is active cap at 2 rows so the input area is not disturbed.
+  const maxRows = inputUIActive ? 2 : 3;
+  const rightRows = layoutFooterRightRows(Math.max(0, w - 1), maxRows, now);
+  const neededCount = Math.max(2, rightRows.length);
+
   let output = '';
   output += '\x1b[s'; // save cursor
-  output += moveToSequence(r - 1, 1) + clearLineSequence();
-  output += moveToSequence(r, 1) + ' '.repeat(padding) + chalk.gray(rightStr);
+
+  if (neededCount !== footerRowCount) {
+    footerRowCount = neededCount;
+    if (inputUIActive) {
+      const n = lastSuggestions.length;
+      const reserved = footerRowCount + 3 + n;
+      output += setScrollRegionSequence(1, r - reserved);
+      lastReservedRows = reserved;
+    } else {
+      output += setScrollRegionSequence(1, r - footerRowCount);
+      lastReservedRows = footerRowCount;
+    }
+  }
+
+  // Clear all footer rows.
+  for (let i = 0; i < footerRowCount; i++) {
+    output += moveToSequence(r - footerRowCount + 1 + i, 1) + clearLineSequence();
+  }
+
+  // Draw auxiliary rows above the primary row (index 1 = r-1, index 2 = r-2).
+  for (let i = 1; i < rightRows.length; i++) {
+    output += moveToSequence(r - i, 1) + chalk.gray(rightRows[i]);
+  }
+
+  // Draw primary row (row r): eval status on the left, main status on the right.
+  const primaryRight = rightRows[0] ?? '';
+  const middle = Math.max(leftStr ? 1 : 0, w - 1 - leftStr.length - primaryRight.length);
+  output += moveToSequence(r, 1) + chalk.cyan(leftStr) + ' '.repeat(middle) + chalk.gray(primaryRight);
+
   output += '\x1b[u'; // restore cursor
   return output;
 }
@@ -299,7 +394,7 @@ function drawInputArea() {
   const w = cols();
   const r = rows();
   const n = lastSuggestions.length;
-  const reserved = 5 + n;
+  const reserved = footerRowCount + 3 + n;
   const prevReserved = lastReservedRows;
 
   if (reserved !== prevReserved) {
@@ -307,15 +402,15 @@ function drawInputArea() {
     lastReservedRows = reserved;
   }
 
-  const topBarRow = r - 4;
-  const inputRow = r - 3;
-  const bottomBarRow = r - 2;
+  const topBarRow = r - footerRowCount - 2;
+  const inputRow = r - footerRowCount - 1;
+  const bottomBarRow = r - footerRowCount;
 
-  // Clear all input-area + suggestion rows (never touch footer rows r-1 and r).
-  const toClearRows = Math.max(reserved, prevReserved) - 2;
+  // Clear all input-area + suggestion rows (never touch footer rows).
+  const toClearRows = Math.max(reserved, prevReserved) - footerRowCount;
   let output = '';
   for (let i = 0; i < toClearRows; i++) {
-    output += moveToSequence(r - 2 - toClearRows + 1 + i, 1) + clearLineSequence();
+    output += moveToSequence(r - footerRowCount - toClearRows + 1 + i, 1) + clearLineSequence();
   }
 
   // Suggestions sit above the top bar.
@@ -359,10 +454,11 @@ export function parkCursorAboveBottomUI() {
 
 // --- Setup / teardown ---------------------------------------------------------
 
-// Sets up the footer (bottom 2 rows). Stays active across agent runs.
+// Sets up the footer (bottom 2+ rows). Stays active across agent runs.
 export function setupFooterUI() {
   if (footerActive) return;
   footerActive = true;
+  footerRowCount = 2;
   lastReservedRows = 2;
   refreshTimer = setInterval(() => {
     if (footerActive && !footerTimerSuspended) {
@@ -380,10 +476,10 @@ export function setupInputUI() {
   inputUIActive = true;
   const r = rows();
   const n = lastSuggestions.length;
-  const reserved = 5 + n;
-  // Scroll the current scroll region (1 to r-2) up by 3 rows so that any command
-  // output near the bottom is not overwritten when the input area rows are drawn.
-  process.stdout.write(`${ESC}${r - 2};1H\n\n\n`);
+  const reserved = footerRowCount + 3 + n;
+  // Scroll the current scroll region up by 3 rows so that any command output
+  // near the bottom is not overwritten when the input area rows are drawn.
+  process.stdout.write(`${ESC}${r - footerRowCount};1H\n\n\n`);
   setScrollRegion(1, r - reserved);
   lastReservedRows = reserved;
   drawInputArea();
@@ -400,13 +496,13 @@ export function teardownBottomUI() {
   if (!inputUIActive) return;
   inputUIActive = false;
   const r = rows();
-  const toClearRows = lastReservedRows - 2;
+  const toClearRows = lastReservedRows - footerRowCount;
   let output = '';
   for (let i = 0; i < toClearRows; i++) {
-    output += moveToSequence(r - 2 - toClearRows + 1 + i, 1) + clearLineSequence();
+    output += moveToSequence(r - footerRowCount - toClearRows + 1 + i, 1) + clearLineSequence();
   }
-  setScrollRegion(1, r - 2);
-  lastReservedRows = 2;
+  setScrollRegion(1, r - footerRowCount);
+  lastReservedRows = footerRowCount;
   process.stdout.write(output);
 }
 
@@ -421,11 +517,13 @@ export function teardownFooterUI() {
   }
   const r = rows();
   let output = '';
-  output += moveToSequence(r - 1, 1) + clearLineSequence();
-  output += moveToSequence(r, 1) + clearLineSequence();
+  for (let i = 0; i < footerRowCount; i++) {
+    output += moveToSequence(r - footerRowCount + 1 + i, 1) + clearLineSequence();
+  }
   output += `${ESC}r`;
-  output += moveToSequence(r - 2, 1);
+  output += moveToSequence(r - footerRowCount, 1);
   process.stdout.write(output);
+  footerRowCount = 2;
 }
 
 // Clears and redraws the input area after a prompt is submitted.
@@ -434,15 +532,16 @@ export function resetSubmittedInputArea() {
   if (!inputUIActive) return;
   const r = rows();
   const n = lastSuggestions.length;
-  const reserved = 5 + n;
-  if (lastReservedRows !== reserved) {
+  const reserved = footerRowCount + 3 + n;
+  const prevReserved = lastReservedRows;
+  if (reserved !== prevReserved) {
     setScrollRegion(1, r - reserved);
     lastReservedRows = reserved;
   }
-  const toClear = reserved - 2;
+  const toClear = Math.max(reserved, prevReserved) - footerRowCount;
   let output = '';
   for (let i = 0; i < toClear; i++) {
-    output += moveToSequence(r - 2 - toClear + 1 + i, 1) + clearLineSequence();
+    output += moveToSequence(r - footerRowCount - toClear + 1 + i, 1) + clearLineSequence();
   }
   process.stdout.write(output);
   drawInputArea();

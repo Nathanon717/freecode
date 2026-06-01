@@ -13,7 +13,7 @@ import {
 } from './scenario-catalog.js';
 import { loadCanonicalGroups, getCanonicalGroupKey, type CanonicalModelGroups } from '../providers/canonical-models.js';
 
-import { isBottomUIActive, setModelStatus, setTokenCount, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
+import { isBottomUIActive, setEvalRunning, setModelStatus, setTokenCount, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
 import { runRawPicker } from './raw-picker.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
@@ -654,7 +654,13 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       console.log('');
 
       resetEvalWorkDir(scenarioDir);
-      const result = await executeEvalScenario(scenarioDir, prompt, model || undefined);
+      setEvalRunning(scenario.id);
+      let result: EvalRunResult;
+      try {
+        result = await executeEvalScenario(scenarioDir, prompt, model || undefined);
+      } finally {
+        setEvalRunning(null);
+      }
 
       // Update footer with the model and token count from the eval run.
       const evalModel = model || '';
