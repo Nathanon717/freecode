@@ -25,3 +25,4 @@ __pycache__/
 # generated
 *.js.map
 *.d.ts.map
+poe-cookies.json

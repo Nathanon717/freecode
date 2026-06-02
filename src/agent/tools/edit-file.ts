@@ -60,10 +60,7 @@ export const editFileTool = tool({
 
       return `Edited ${path}: replaced ${normalizedOldText.length} bytes with ${normalizedNewText.length} bytes`;
     } catch (error) {
-      if (error instanceof Error) {
-        return `Error editing file: ${error.message}`;
-      }
-      return 'Error editing file: unknown error';
+      return `Error editing file: ${error instanceof Error ? error.message : String(error)}`;
     }
   },
 });

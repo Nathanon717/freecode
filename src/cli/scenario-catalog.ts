@@ -3,6 +3,7 @@ import { join } from 'path';
 import { spawnSync } from 'child_process';
 import { createRequire } from 'module';
 import { classifyScenario } from '../scenario-classification.js';
+import { logError } from '../logger.js';
 
 const require = createRequire(import.meta.url);
 
@@ -27,8 +28,8 @@ export function getScenarioSummaries(projectRoot: string): TestScenarioSummary[]
   return readdirSync(scenariosDir)
     .filter(file => file.endsWith('.scenario.json'))
     .sort()
-    .map(file => {
-      const raw = JSON.parse(readFileSync(join(scenariosDir, file), 'utf-8')) as {
+    .flatMap(file => {
+      let raw: {
         name?: string;
         description?: string;
         requiresLlm?: unknown;
@@ -42,6 +43,12 @@ export function getScenarioSummaries(projectRoot: string): TestScenarioSummary[]
           toolTrace?: unknown;
         };
       };
+      try {
+        raw = JSON.parse(readFileSync(join(scenariosDir, file), 'utf-8')) as typeof raw;
+      } catch (err) {
+        logError('scenario', `Failed to parse ${file} — skipping`, err);
+        return [];
+      }
       const checks: string[] = [];
       if (raw.expect?.exitCode !== undefined) checks.push(`exit ${raw.expect.exitCode}`);
       if (raw.expect?.stdoutContains?.length) checks.push(`${raw.expect.stdoutContains.length} output contains`);
@@ -50,14 +57,14 @@ export function getScenarioSummaries(projectRoot: string): TestScenarioSummary[]
       if (raw.expect?.toolTrace) checks.push('tool trace');
       const classification = classifyScenario(raw);
       if (classification.errors.length > 0) checks.push(`classification error: ${classification.errors.join('; ')}`);
-      return {
+      return [{
         name: raw.name ?? file.replace(/\.scenario\.json$/, ''),
         description: raw.description ?? '',
         requiresLlm: classification.inferredRequiresLlm,
         file,
         workspace: raw.workspace ?? 'repo',
         checks,
-      };
+      }];
     });
 }
 

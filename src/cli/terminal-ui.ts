@@ -466,8 +466,11 @@ export function setupFooterUI() {
   lastReservedRows = 2;
   refreshTimer = setInterval(() => {
     if (footerActive && !footerTimerSuspended) {
+      const prevFooterRowCount = footerRowCount;
       drawFooter();
-      if (inputUIActive) drawInputArea();
+      // Only redraw the input area if the footer row count changed (affects reserved rows).
+      // Unconditional redraws park the cursor at the bottom, causing Termux to snap the viewport.
+      if (inputUIActive && footerRowCount !== prevFooterRowCount) drawInputArea();
     }
   }, 1000);
   setScrollRegion(1, rows() - 2);

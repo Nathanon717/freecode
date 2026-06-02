@@ -5,6 +5,7 @@ import { createOpenAICompatProvider } from './adapters/openai-compat.js';
 import { createAnthropicProvider } from './adapters/anthropic.js';
 import { resolveApiKey } from '../config/index.js';
 import { syncLiveModels } from './canonical-models.js';
+import { logError } from '../logger.js';
 
 const initializedProviders = new Set<string>();
 
@@ -41,7 +42,8 @@ async function initOpenRouterModels(): Promise<void> {
       .map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
     entry.models = free;
     syncLiveModels('openrouter', entry.models.map(m => m.id));
-  } catch {
+  } catch (err) {
+    logError('registry', 'Failed to fetch OpenRouter models, using cache', err);
     const cached = getProviderCache('openrouter');
     if (cached) {
       entry.models = cached.models.filter(m => m.id.endsWith(':free'));
@@ -109,7 +111,8 @@ async function initProviderModels(providerId: string, apiKey: string | undefined
     const filtered = preferAliasOverDated(deduplicateByDisplayName(applyBlocklist(normalized, blocklist, exactBlocklist)));
     entry.models = filtered.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
     syncLiveModels(providerId, entry.models.map(m => m.id));
-  } catch {
+  } catch (err) {
+    logError('registry', `Failed to fetch ${providerId} models, using cache`, err);
     const cached = getProviderCache(providerId);
     if (cached) {
       entry.models = preferAliasOverDated(deduplicateByDisplayName(applyBlocklist(cached.models, blocklist, exactBlocklist)));
@@ -148,7 +151,8 @@ async function initAnthropicModels(): Promise<void> {
     const newIdSet = new Set(newIds);
     entry.models = normalized.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
     syncLiveModels('anthropic', entry.models.map(m => m.id));
-  } catch {
+  } catch (err) {
+    logError('registry', 'Failed to fetch Anthropic models, using cache', err);
     const cached = getProviderCache('anthropic');
     if (cached) {
       const newIdSet = new Set(cached.newIds);

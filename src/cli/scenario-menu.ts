@@ -15,6 +15,7 @@ import { loadCanonicalGroups, getCanonicalGroupKey, type CanonicalModelGroups } 
 
 import { isBottomUIActive, setEvalRunning, setModelStatus, setTokenCount, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
 import { runRawPicker } from './raw-picker.js';
+import { logError } from '../logger.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const PLAYGROUND_EVAL_DIR = resolve(_dirname, '..', '..', 'playground', 'eval');
@@ -58,7 +59,10 @@ interface EvalHistoryEntry {
 function loadModelResults(model: string): EvalHistoryEntry[] {
   const file = modelResultFile(model);
   if (!existsSync(file)) return [];
-  try { return JSON.parse(readFileSync(file, 'utf-8')); } catch { return []; }
+  try { return JSON.parse(readFileSync(file, 'utf-8')); } catch (err) {
+    logError('eval', `Failed to parse results file ${file}`, err);
+    return [];
+  }
 }
 
 function loadEvalHistory(): EvalHistoryEntry[] {
@@ -87,14 +91,16 @@ function loadEvalHistory(): EvalHistoryEntry[] {
         // Remove the flat file once migrated
         rmSync(EVAL_HISTORY_FILE);
       }
-    } catch { /* ignore migration errors */ }
+    } catch (err) { logError('eval', 'History file migration failed', err); }
   }
 
   if (!existsSync(EVAL_RESULTS_DIR)) return [];
   const all: EvalHistoryEntry[] = [];
   for (const f of readdirSync(EVAL_RESULTS_DIR)) {
     if (!f.endsWith('.json')) continue;
-    try { all.push(...JSON.parse(readFileSync(join(EVAL_RESULTS_DIR, f), 'utf-8'))); } catch { /* skip */ }
+    try { all.push(...JSON.parse(readFileSync(join(EVAL_RESULTS_DIR, f), 'utf-8'))); } catch (err) {
+      logError('eval', `Failed to parse eval result file ${f}`, err);
+    }
   }
   return all;
 }
@@ -229,7 +235,10 @@ interface EvalConfig {
 function loadEvalConfig(scenarioDir: string): EvalConfig {
   const configPath = join(scenarioDir, 'eval.config.json');
   if (!existsSync(configPath)) return {};
-  try { return JSON.parse(readFileSync(configPath, 'utf-8')) as EvalConfig; } catch { return {}; }
+  try { return JSON.parse(readFileSync(configPath, 'utf-8')) as EvalConfig; } catch (err) {
+    logError('eval', `Failed to parse eval.config.json in ${scenarioDir}`, err);
+    return {};
+  }
 }
 
 async function executeEvalScenario(scenarioDir: string, prompt: string, model?: string): Promise<EvalRunResult> {
@@ -309,13 +318,17 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
 
   let toolCalls: EvalToolCall[] = [];
   if (existsSync(traceFile)) {
-    try { toolCalls = JSON.parse(readFileSync(traceFile, 'utf-8')); } catch {}
+    try { toolCalls = JSON.parse(readFileSync(traceFile, 'utf-8')); } catch (err) {
+      logError('eval', `Failed to parse trace file ${traceFile}`, err);
+    }
   }
 
   interface AgentEntry { totalTokens: number; promptTokens?: number; outputTokens?: number; }
   let agentResults: AgentEntry[] = [];
   if (existsSync(resultFile)) {
-    try { agentResults = JSON.parse(readFileSync(resultFile, 'utf-8')); } catch {}
+    try { agentResults = JSON.parse(readFileSync(resultFile, 'utf-8')); } catch (err) {
+      logError('eval', `Failed to parse result file ${resultFile}`, err);
+    }
   }
 
   const totalTokens = agentResults.reduce((s, r) => s + (r.totalTokens ?? 0), 0);
@@ -691,9 +704,9 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       const resultInputPath = join(scenarioDir, '.run', 'result-input.json');
       writeFileSync(resultInputPath, JSON.stringify(result));
       const checkProc = spawnSync(
-        `"${TSX_BIN}"`,
-        [`"${RUN_CHECK_SCRIPT}"`, `"${checkPath}"`, `"${resultInputPath}"`],
-        { encoding: 'utf-8', timeout: 30_000, shell: true },
+        TSX_BIN,
+        [RUN_CHECK_SCRIPT, checkPath, resultInputPath],
+        { encoding: 'utf-8', timeout: 30_000 },
       );
       if (checkProc.error || !checkProc.stdout?.trim()) {
         const detail = checkProc.error?.message ?? checkProc.stderr?.trim() ?? `exit ${checkProc.status}`;

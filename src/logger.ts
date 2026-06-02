@@ -36,7 +36,6 @@ export function log(category: string, message: string, data?: unknown): void {
 }
 
 export function logError(category: string, message: string, err: unknown): void {
-  if (!enabled) return;
   let errMsg: string;
   if (err instanceof Error) {
     errMsg = err.message;
@@ -46,5 +45,7 @@ export function logError(category: string, message: string, err: unknown): void 
     errMsg = String(err);
   }
   const errStack = err instanceof Error && err.stack ? `\n${chalk.dim(err.stack)}` : '';
-  log('error', `[${category}] ${message}: ${chalk.red(errMsg)}${errStack}`);
+  const ts = chalk.dim(`[${timestamp()}]`);
+  const tag = chalk.red('[error]');
+  process.stderr.write(`${ts} ${tag} [${category}] ${message}: ${chalk.red(errMsg)}${errStack}\n`);
 }

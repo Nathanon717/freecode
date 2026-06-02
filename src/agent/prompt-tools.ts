@@ -3,7 +3,7 @@ import type { CoreMessage, LanguageModel } from 'ai';
 import chalk from 'chalk';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
 import { writeTranscriptStepDivider } from '../cli/transcript-renderer.js';
-import { log } from '../logger.js';
+import { log, logError } from '../logger.js';
 import { isUserAbortError } from '../util/errors.js';
 
 const PROMPT_TOOLS_ADDENDUM = `
@@ -73,8 +73,8 @@ export function parseToolCalls(text: string): ParsedToolCall[] {
           startIdx: match.index,
         });
       }
-    } catch {
-      // malformed JSON inside a tool_call block — skip it
+    } catch (err) {
+      logError('prompt-tools', `Malformed JSON in <tool_call> block (offset ${match.index})`, err);
     }
   }
   return calls;

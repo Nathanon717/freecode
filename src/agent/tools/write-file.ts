@@ -20,10 +20,7 @@ export const writeFileTool = tool({
       await writeFile(fullPath, normalized, { encoding: 'utf-8', flag: 'wx' });
       return `Wrote ${normalized.length} bytes to ${path}`;
     } catch (error) {
-      if (error instanceof Error) {
-        return `Error writing file: ${error.message}`;
-      }
-      return 'Error writing file: unknown error';
+      return `Error writing file: ${error instanceof Error ? error.message : String(error)}`;
     }
   },
 });

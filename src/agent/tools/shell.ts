@@ -38,10 +38,7 @@ export const shellTool = tool({
       if (!result) return 'Command completed with no output';
       return result;
     } catch (error) {
-      if (error instanceof Error) {
-        return `Error: ${error.message}`;
-      }
-      return 'Error: unknown error';
+      return `Error: ${error instanceof Error ? error.message : String(error)}`;
     }
   },
 });

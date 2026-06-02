@@ -68,8 +68,8 @@ function appendToolTrace(event: ToolTraceEvent): void {
       : [];
     existing.push(event);
     writeFileSync(tracePath, JSON.stringify(existing, null, 2), 'utf-8');
-  } catch {
-    // Tracing must never affect the agent run.
+  } catch (err) {
+    logError('tool', `Failed to write trace to ${tracePath}`, err);
   }
 }
 

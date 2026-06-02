@@ -31,10 +31,7 @@ export const listDirTool = tool({
       const files = stats.filter((s) => !s.isDirectory).map((s) => s.name).sort();
       return [...dirs, ...files].join('\n');
     } catch (error) {
-      if (error instanceof Error) {
-        return `Error listing directory: ${error.message}`;
-      }
-      return 'Error listing directory: unknown error';
+      return `Error listing directory: ${error instanceof Error ? error.message : String(error)}`;
     }
   },
 });

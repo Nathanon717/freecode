@@ -4,7 +4,7 @@ import { agentLoop, type AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';
 import { loadConfig, resolveApiKey, resolveModelSettings } from '../config/index.js';
 import { toErrorMessage } from '../util/errors.js';
-import { log } from '../logger.js';
+import { log, logError } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/registry.js';
 import { getAllModelDataSources, type ModelDataSourceKind } from '../providers/model-sources.js';
 import {
@@ -178,7 +178,9 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
         const existing: unknown[] = existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) : [];
         existing.push(entry);
         writeFileSync(resultJsonPath, JSON.stringify(existing, null, 2), 'utf-8');
-      } catch {}
+      } catch (err) {
+        logError('eval', `Failed to write result JSON to ${resultJsonPath}`, err);
+      }
     }
 
     runtime.session.addAssistantMessage(result.text);
