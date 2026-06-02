@@ -1,0 +1,15 @@
+[
+  {
+    "timestamp": "2026-06-01T18:18:31.852Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "anthropic:claude-sonnet-4-6",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 34535,
+      "prompt": 66028,
+      "output": 1737
+    },
+    "scenarioHash": "bf556b5620217ae5721d275252ffcb681f40b2e696c1c94431fdd6a73ff9d92e"
+  }
+]

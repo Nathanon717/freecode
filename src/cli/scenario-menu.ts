@@ -13,14 +13,14 @@ import {
 } from './scenario-catalog.js';
 import { loadCanonicalGroups, getCanonicalGroupKey, type CanonicalModelGroups } from '../providers/canonical-models.js';
 
-import { isBottomUIActive, setEvalRunning, setModelStatus, setTokenCount, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
+import { isBottomUIActive, setEvalRunning, setModelStatus, setQuotaSnapshot, setTokenCount, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
 import { runRawPicker } from './raw-picker.js';
 import { logError } from '../logger.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const PLAYGROUND_EVAL_DIR = resolve(_dirname, '..', '..', 'playground', 'eval');
 const DIST_ENTRY = resolve(_dirname, '..', '..', 'dist', 'index.js');
-const TSX_BIN = resolve(_dirname, '..', '..', 'node_modules', '.bin', process.platform === 'win32' ? 'tsx.cmd' : 'tsx');
+const TSX_CLI = resolve(_dirname, '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs');
 const RUN_CHECK_SCRIPT = resolve(_dirname, '..', '..', 'playground', 'eval', 'run-check.ts');
 const EVAL_HISTORY_FILE = resolve(_dirname, '..', '..', 'playground', 'eval', 'eval-history.json');
 const EVAL_RESULTS_DIR = resolve(_dirname, '..', '..', 'playground', 'eval', 'results');
@@ -39,6 +39,7 @@ interface EvalTokenUsage { total: number; prompt?: number; output?: number; }
 interface EvalRunResult {
   exitCode: number; stdout: string; stderr: string;
   toolCalls: EvalToolCall[]; tokens: EvalTokenUsage; workDir: string;
+  quota: unknown;
 }
 interface EvalCheckResult {
   name: string; kind: 'assertion' | 'stat' | 'warning';
@@ -129,6 +130,17 @@ function collectFilesRecursive(dir: string): string[] {
   return result;
 }
 
+// Drop CR from CRLF so the hash is identical regardless of git autocrlf / OS.
+function stripCarriageReturns(content: Buffer): Buffer {
+  const out = Buffer.allocUnsafe(content.length);
+  let len = 0;
+  for (let i = 0; i < content.length; i++) {
+    if (content[i] === 0x0d && content[i + 1] === 0x0a) continue;
+    out[len++] = content[i];
+  }
+  return out.subarray(0, len);
+}
+
 function computeScenarioHash(scenarioDir: string): string {
   const hash = createHash('sha256');
   const files = [
@@ -139,9 +151,12 @@ function computeScenarioHash(scenarioDir: string): string {
   ];
   for (const filePath of files) {
     if (existsSync(filePath)) {
-      hash.update(relative(scenarioDir, filePath));
+      // Forward-slash the path and normalize line endings so the hash is
+      // stable across Windows/Linux and git's autocrlf rewriting. This lets
+      // committed eval results stay green after a pull on a different OS.
+      hash.update(relative(scenarioDir, filePath).replace(/\\/g, '/'));
       hash.update('\0');
-      hash.update(readFileSync(filePath));
+      hash.update(stripCarriageReturns(readFileSync(filePath)));
       hash.update('\0');
     }
   }
@@ -273,7 +288,6 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
         FREECODE_RESULT_JSON: resultFile,
         FREECODE_AUTO_CONFIRM: '1',
         FREECODE_MAX_TOOL_CALLS: String(maxToolCalls),
-        DEBUG_QUOTA: '0',
         FORCE_COLOR: '1',
       },
     });
@@ -323,7 +337,7 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
     }
   }
 
-  interface AgentEntry { totalTokens: number; promptTokens?: number; outputTokens?: number; }
+  interface AgentEntry { totalTokens: number; promptTokens?: number; outputTokens?: number; quota?: unknown; }
   let agentResults: AgentEntry[] = [];
   if (existsSync(resultFile)) {
     try { agentResults = JSON.parse(readFileSync(resultFile, 'utf-8')); } catch (err) {
@@ -334,6 +348,7 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
   const totalTokens = agentResults.reduce((s, r) => s + (r.totalTokens ?? 0), 0);
   const hasPrompt = agentResults.some(r => r.promptTokens !== undefined);
   const hasOutput = agentResults.some(r => r.outputTokens !== undefined);
+  const lastQuota = [...agentResults].reverse().find(r => r.quota !== undefined)?.quota ?? null;
 
   return {
     exitCode,
@@ -346,6 +361,7 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
       output: hasOutput ? agentResults.reduce((s, r) => s + (r.outputTokens ?? 0), 0) : undefined,
     },
     workDir,
+    quota: lastQuota,
   };
 }
 
@@ -675,12 +691,13 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
         setEvalRunning(null);
       }
 
-      // Update footer with the model and token count from the eval run.
+      // Update footer with the model, token count, and quota from the eval run.
       const evalModel = model || '';
       const colonIdx = evalModel.indexOf(':');
       if (colonIdx !== -1) setModelStatus(evalModel.slice(0, colonIdx), evalModel.slice(colonIdx + 1));
       else if (evalModel) setModelStatus('', evalModel);
       setTokenCount(result.tokens.total);
+      setQuotaSnapshot(Array.isArray(result.quota) ? result.quota : null);
 
       if (!result.stdout.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim()) {
         console.log(chalk.dim('(no output)'));
@@ -704,8 +721,8 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       const resultInputPath = join(scenarioDir, '.run', 'result-input.json');
       writeFileSync(resultInputPath, JSON.stringify(result));
       const checkProc = spawnSync(
-        TSX_BIN,
-        [RUN_CHECK_SCRIPT, checkPath, resultInputPath],
+        process.execPath,
+        [TSX_CLI, RUN_CHECK_SCRIPT, checkPath, resultInputPath],
         { encoding: 'utf-8', timeout: 30_000 },
       );
       if (checkProc.error || !checkProc.stdout?.trim()) {

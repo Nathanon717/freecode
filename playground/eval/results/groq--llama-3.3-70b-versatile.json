@@ -32,18 +32,6 @@
     "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
   },
   {
-    "timestamp": "2026-05-31T22:17:10.389Z",
-    "scenarioId": "002-edit-config",
-    "model": "groq:llama-3.3-70b-versatile",
-    "pass": false,
-    "tokens": {
-      "total": 4768,
-      "prompt": 4611,
-      "output": 157
-    },
-    "scenarioHash": "d18057aa58d79384ffec2938ee242f7256d5a43f4566ea3393766c0cf86d6a1e"
-  },
-  {
     "timestamp": "2026-05-31T22:20:10.307Z",
     "scenarioId": "003-python-missing-semicolon",
     "model": "groq:llama-3.3-70b-versatile",
@@ -202,5 +190,44 @@
       "output": 213
     },
     "scenarioHash": "d42f4103a3565af48065360beee8069eafe1f6a123a22c4534e62b49f32b739d"
+  },
+  {
+    "timestamp": "2026-06-02T20:45:06.254Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 5236,
+      "prompt": 5042,
+      "output": 194
+    },
+    "scenarioHash": "b1be753336367c202b25d241e2a2773f52e708c144e2854100b4db98130bdf12"
+  },
+  {
+    "timestamp": "2026-06-02T20:46:03.195Z",
+    "scenarioId": "002-edit-config",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 6540,
+      "prompt": 6355,
+      "output": 185
+    },
+    "scenarioHash": "d18057aa58d79384ffec2938ee242f7256d5a43f4566ea3393766c0cf86d6a1e"
+  },
+  {
+    "timestamp": "2026-06-02T21:16:23.572Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 22597,
+      "prompt": 22142,
+      "output": 455
+    },
+    "scenarioHash": "c794a7c2838705474f04b381e70a33d7b94140c55eb966ae71c448eb9063e382"
   }
 ]

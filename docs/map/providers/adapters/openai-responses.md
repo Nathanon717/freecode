@@ -9,6 +9,7 @@
 - `getOpenAIApiKey(provider)` - resolves the OpenAI key from env/config.
 - `countOpenAIResponsesInputTokens(provider, payload, signal?)` - calls `POST /v1/responses/input_tokens` and parses `input_tokens`.
 - `generateOpenAIResponses(provider, payload, tools, confirmToolCall?)` - calls `POST /v1/responses`, executes function calls, and loops up to 10 tool steps.
+- `getLastCapturedOpenAIHeaders(providerId)` - returns the rate-limit `RateLimitSnapshot` from the most recent Responses call, or `null`.
 
 ## Read When
 
@@ -24,6 +25,7 @@
 - Strips transient response item IDs before replaying function-call items in stateless tool loops.
 - Emits the shared transcript step divider after each function-call step so the direct Responses path matches AI SDK `streamText` step boundaries.
 - Captures raw OpenAI usage from JSON responses for downstream display and cost estimation.
+- When `DEBUG_QUOTA !== "0"`, parses the `x-ratelimit-*` response headers (same shape as Groq) into a `RateLimitSnapshot` stored per provider; `agent/loop.ts` reads it via `getLastCapturedOpenAIHeaders()` to drive the live-usage display. The openai-compat custom fetch is bypassed on this path, so capture must live here.
 
 ## Key Neighbors
 
@@ -33,4 +35,4 @@
 
 ## Update Triggers
 
-Update this page when the Responses payload, count endpoint parsing, tool schema mapping, generation loop, transcript step handling, or usage capture changes.
+Update this page when the Responses payload, count endpoint parsing, tool schema mapping, generation loop, transcript step handling, usage capture, or rate-limit header capture changes.

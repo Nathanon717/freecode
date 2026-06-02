@@ -174,6 +174,7 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
           outputTokens: result.usage.outputTokens,
           providerId: result.providerId,
           modelId: result.modelId,
+          quota: result.quota ?? undefined,
         };
         const existing: unknown[] = existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) : [];
         existing.push(entry);

@@ -23,6 +23,7 @@ import { estimateOpenAICostVerified } from '../providers/openai-cost.js';
 import {
   buildOpenAIResponsesPayload,
   generateOpenAIResponses,
+  getLastCapturedOpenAIHeaders,
 } from '../providers/adapters/openai-responses.js';
 import { writeTranscriptStepDivider } from '../cli/transcript-renderer.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
@@ -292,7 +293,7 @@ export async function agentLoop(
     }
 
     if (process.env['DEBUG_QUOTA'] !== '0') {
-      const headers = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
+      const headers = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId) ?? getLastCapturedOpenAIHeaders(providerId);
       if (headers) {
         quota = headers;
         log('quota', `Rate limit headers captured`, headers);
@@ -319,6 +320,10 @@ export async function agentLoop(
       if (promptTokens !== undefined || outputTokens !== undefined) {
         const rates = await getOpenAIVerifiedRates(modelId);
         costEstimate = estimateOpenAICostVerified(modelId, promptTokens, outputTokens, rates);
+      }
+      if (process.env['DEBUG_QUOTA'] !== '0') {
+        const headers = getLastCapturedOpenAIHeaders(providerId);
+        if (headers) quota = headers;
       }
     } else {
       providerUsage = await endProviderUsageCapture(providerId);
