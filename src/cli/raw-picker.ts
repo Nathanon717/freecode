@@ -1,6 +1,19 @@
 import type { Interface } from 'readline';
 import { composeFooterOutput, drawFooter, getRows, resumeFooterTimer, suspendFooterTimer } from './terminal-ui.js';
 
+// Counts the actual terminal rows a set of rendered lines occupies, accounting
+// for soft-wrapping at the current terminal width. Use this as `countLines` in
+// RawPickerOptions when lines may exceed 80 columns.
+export function countWrappedLines(lines: string[]): number {
+  const w = process.stdout.columns || 80;
+  let total = 0;
+  for (const line of lines) {
+    const visible = line.replace(/\x1b\[[0-9;]*m/g, '').length;
+    total += Math.max(1, Math.ceil(visible / w));
+  }
+  return total;
+}
+
 export interface RawPickerOptions<T = void> {
   render: () => string[];
   onKey: (key: string, redraw: () => void, close: (result: T) => void) => void;

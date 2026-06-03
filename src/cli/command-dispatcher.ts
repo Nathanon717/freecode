@@ -287,8 +287,8 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
     resetAnthropicSessionCost();
     await runtime.beforeScreenClear?.();
     showBanner();
-    await runtime.afterScreenClear?.();
     console.log(chalk.dim('Chat history cleared.'));
+    await runtime.afterScreenClear?.();
     return 'continue';
   }
 

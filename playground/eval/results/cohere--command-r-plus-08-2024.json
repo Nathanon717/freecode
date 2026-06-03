@@ -76,5 +76,18 @@
       "output": 0
     },
     "scenarioHash": "07a59670a105001ada57e61c02a80e6f48dae15db66a1c6fc0a7cd6ae6fcddce"
+  },
+  {
+    "timestamp": "2026-06-02T22:19:40.626Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "cohere:command-r-plus-08-2024",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "c794a7c2838705474f04b381e70a33d7b94140c55eb966ae71c448eb9063e382"
   }
 ]

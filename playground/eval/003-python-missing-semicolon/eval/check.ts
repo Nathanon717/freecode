@@ -16,10 +16,14 @@ function normalizeNewlines(value: string): string {
   return value.replace(/\r\n/g, '\n');
 }
 
-function assertScriptRuns(workDir: string): CheckResult {
+type ScriptRunResult =
+  | { ok: true; stdout: string; command: string }
+  | { ok: false; message: string };
+
+function runScript(workDir: string): ScriptRunResult {
   const scriptPath = join(workDir, 'analyze_numbers.py');
   if (!existsSync(scriptPath)) {
-    return { name: 'script runs', kind: 'assertion', pass: false, message: 'analyze_numbers.py does not exist' };
+    return { ok: false, message: 'analyze_numbers.py does not exist' };
   }
 
   const candidates = [
@@ -39,23 +43,36 @@ function assertScriptRuns(workDir: string): CheckResult {
       failures.push(`${candidate.command}: ${run.error.message}`);
       continue;
     }
-    const stdout = normalizeNewlines(run.stdout);
-    const pass = run.status === 0 && stdout === expectedOutput;
-    return {
-      name: 'script runs',
-      kind: 'assertion',
-      pass,
-      message: pass
-        ? undefined
-        : `${candidate.command} exited ${run.status}; stdout=${JSON.stringify(stdout)} stderr=${JSON.stringify(run.stderr)}`,
-    };
+    if (run.status !== 0) {
+      return { ok: false, message: `${candidate.command} exited ${run.status}; stderr=${JSON.stringify(run.stderr)}` };
+    }
+    return { ok: true, stdout: normalizeNewlines(run.stdout), command: candidate.command };
   }
 
+  return { ok: false, message: `no Python executable available (${failures.join('; ')})` };
+}
+
+function assertScriptRuns(workDir: string): CheckResult {
+  const result = runScript(workDir);
   return {
     name: 'script runs',
     kind: 'assertion',
-    pass: false,
-    message: `no Python executable available (${failures.join('; ')})`,
+    pass: result.ok,
+    message: result.ok ? undefined : result.message,
+  };
+}
+
+function assertCorrectOutput(workDir: string): CheckResult {
+  const result = runScript(workDir);
+  if (!result.ok) {
+    return { name: 'correct output', kind: 'assertion', pass: false, message: result.message };
+  }
+  const pass = result.stdout === expectedOutput;
+  return {
+    name: 'correct output',
+    kind: 'assertion',
+    pass,
+    message: pass ? undefined : `stdout=${JSON.stringify(result.stdout)} expected=${JSON.stringify(expectedOutput)}`,
   };
 }
 
@@ -129,6 +146,7 @@ export function check(result: EvalRunResult): EvalReport {
     checks: [
       assertFileExists(result.workDir, 'analyze_numbers.py'),
       assertScriptRuns(result.workDir),
+      assertCorrectOutput(result.workDir),
       assertRanFailedThenFixed(result.toolCalls),
       assertNoUnnecessaryTools(result.toolCalls, ['read_file', 'write_file', 'edit_file', 'shell_exec', 'list_dir']),
       assertStayedInWorkDir(result.toolCalls, result.workDir),

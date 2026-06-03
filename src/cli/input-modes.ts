@@ -3,6 +3,7 @@ import type { Interface } from 'readline';
 import chalk from 'chalk';
 import { runConfigCommand } from '../commands/config.js';
 import { runModelCommand } from '../commands/model.js';
+import { showBanner } from './banner.js';
 import { formatArgs, type ToolCallConfirmation, type ToolCallPreview } from '../agent/tools/index.js';
 import { loadConfig } from '../config/index.js';
 import { UserAbortError } from '../util/errors.js';
@@ -290,6 +291,17 @@ async function confirmToolCallInteractive(rl: Interface, preview: ToolCallPrevie
     }
   } finally {
     rl.pause();
+    // Clear the 3 absolute rows (header, approve, deny) drawn by drawToolApprovalMenuAbsolute
+    // before any scroll that would move them out of reach.
+    if (isFooterUIActive()) {
+      const r = getRows();
+      const reserved = getLastReservedRows();
+      process.stdout.write(
+        `\x1b[${r - reserved - 2};1H\x1b[2K` +
+        `\x1b[${r - reserved - 1};1H\x1b[2K` +
+        `\x1b[${r - reserved};1H\x1b[2K`,
+      );
+    }
     if (restoreInputUI && process.stdin.isTTY) setupInputUI();
   }
 }
@@ -509,15 +521,22 @@ export function createInteractiveMode(
       rl.resume();
       await runConfigCommand(rl, getSelectedModel());
       rl.pause();
-      if (process.stdin.isTTY) setupBottomUI();
+      if (process.stdin.isTTY) {
+        showBanner();
+        setupBottomUI();
+        resetBottomPromptState(session);
+        refreshFooterDailySpend(getSelectedModel);
+        drawBottomUI();
+      }
     },
     runModelMenu: async () => {
       teardownBottomUI();
       rl.resume();
-      await runModelCommand(rl, getSelectedModel(), setSelectedModel);
+      const pickerShown = await runModelCommand(rl, getSelectedModel(), setSelectedModel);
       rl.pause();
       applyModelStatus(getSelectedModel());
       if (process.stdin.isTTY) {
+        if (pickerShown) showBanner();
         setupBottomUI();
         resetBottomPromptState(session);
         refreshFooterDailySpend(getSelectedModel);

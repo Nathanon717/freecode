@@ -59,13 +59,16 @@ Each check in an `EvalReport` has a `kind`:
 
 | Pattern | Example checks |
 |---------|---------------|
-| Final script produces the expected output | `script runs` |
+| Script exits 0 | `script runs` |
+| Script produces the expected output | `correct output`, `output matches expected` |
 | Required files exist with correct content | `file exists`, `file content` |
 | Input/reference files were not corrupted | `preserved input data`, `preserved stats module` |
 | Agent stayed within its working directory | `stayed in work dir` |
 | Agent made a necessary edit at all | `edited after inspecting failure`, `no edit to pipeline.py after the KeyError` |
 
-**Rule of thumb:** if `assertScriptRuns` passes, a failing process check should be a `warning`. If `assertScriptRuns` fails and this check directly explains *why* (e.g. the file was never edited), it should be an `assertion`.
+**Keep `script runs` and `correct output` as separate checks.** `script runs` should only verify the process exited 0. Output correctness belongs in a distinct `correct output` check. Combining them produces misleading results: the check fails saying "script runs" when the script ran fine but printed wrong output.
+
+**Rule of thumb:** if `script runs` passes, a failing process check should be a `warning`. If `script runs` fails and this check directly explains *why* (e.g. the file was never edited), it should be an `assertion`.
 
 ## Writing a new scenario
 

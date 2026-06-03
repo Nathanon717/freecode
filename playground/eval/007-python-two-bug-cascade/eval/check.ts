@@ -16,7 +16,11 @@ function normalizeNewlines(value: string): string {
   return value.replace(/\r\n/g, '\n');
 }
 
-function assertScriptRuns(workDir: string): CheckResult {
+type ScriptRunResult =
+  | { ok: true; stdout: string; command: string }
+  | { ok: false; message: string };
+
+function runScript(workDir: string): ScriptRunResult {
   const scriptPath = join(workDir, 'analyze_grades.py');
   const candidates = [
     { command: 'python', args: [scriptPath] },
@@ -35,23 +39,41 @@ function assertScriptRuns(workDir: string): CheckResult {
       failures.push(`${candidate.command}: ${run.error.message}`);
       continue;
     }
-    const stdout = normalizeNewlines(run.stdout);
-    const pass = run.status === 0 && stdout === expectedOutput;
-    return {
-      name: 'script runs',
-      kind: 'assertion',
-      pass,
-      message: pass
-        ? undefined
-        : `${candidate.command} exited ${run.status}; stdout=${JSON.stringify(stdout)} stderr=${JSON.stringify(run.stderr)}`,
-    };
+    if (run.status !== 0) {
+      return {
+        ok: false,
+        message: `${candidate.command} exited ${run.status}; stderr=${JSON.stringify(run.stderr)}`,
+      };
+    }
+    return { ok: true, stdout: normalizeNewlines(run.stdout), command: candidate.command };
   }
 
+  return { ok: false, message: `no Python executable available (${failures.join('; ')})` };
+}
+
+function assertScriptRuns(workDir: string): CheckResult {
+  const result = runScript(workDir);
   return {
     name: 'script runs',
     kind: 'assertion',
-    pass: false,
-    message: `no Python executable available (${failures.join('; ')})`,
+    pass: result.ok,
+    message: result.ok ? undefined : result.message,
+  };
+}
+
+function assertCorrectOutput(workDir: string): CheckResult {
+  const result = runScript(workDir);
+  if (!result.ok) {
+    return { name: 'correct output', kind: 'assertion', pass: false, message: result.message };
+  }
+  const pass = result.stdout === expectedOutput;
+  return {
+    name: 'correct output',
+    kind: 'assertion',
+    pass,
+    message: pass
+      ? undefined
+      : `stdout=${JSON.stringify(result.stdout)} expected=${JSON.stringify(expectedOutput)}`,
   };
 }
 
@@ -120,6 +142,10 @@ function assertEncounteredSecondBug(toolCalls: ToolCall[]): CheckResult {
 }
 
 function assertTwoEditCycles(toolCalls: ToolCall[]): CheckResult {
+  // Process check only: did the agent fix the two bugs across two separate
+  // run-fail-fix cycles? A correct one-shot fix (both bugs patched in a single
+  // edit) still produces the right output, so this is a `warning`, not an
+  // `assertion` — final correctness is covered by `script runs`.
   // Verify: run → fail (ValueError) → edit → run → fail (StatisticsError) → edit → run → pass
   const firstValueError = toolCalls.findIndex(call =>
     call.tool === 'shell_exec' &&
@@ -138,7 +164,7 @@ function assertTwoEditCycles(toolCalls: ToolCall[]): CheckResult {
   );
 
   if (editAfterFirst === -1) {
-    return { name: 'two edit cycles', kind: 'assertion', pass: false, message: 'no edit after ValueError' };
+    return { name: 'two edit cycles', kind: 'warning', pass: false, message: 'no edit after ValueError' };
   }
 
   const statisticsError = toolCalls.findIndex((call, i) =>
@@ -149,7 +175,7 @@ function assertTwoEditCycles(toolCalls: ToolCall[]): CheckResult {
   );
 
   if (statisticsError === -1) {
-    return { name: 'two edit cycles', kind: 'assertion', pass: false, message: 'StatisticsError not encountered after first fix' };
+    return { name: 'two edit cycles', kind: 'warning', pass: false, message: 'StatisticsError not encountered after first fix' };
   }
 
   const editAfterSecond = toolCalls.findIndex((call, i) =>
@@ -159,7 +185,7 @@ function assertTwoEditCycles(toolCalls: ToolCall[]): CheckResult {
   );
 
   if (editAfterSecond === -1) {
-    return { name: 'two edit cycles', kind: 'assertion', pass: false, message: 'no second edit after StatisticsError' };
+    return { name: 'two edit cycles', kind: 'warning', pass: false, message: 'no second edit after StatisticsError' };
   }
 
   const passingRun = toolCalls.findIndex((call, i) =>
@@ -171,7 +197,7 @@ function assertTwoEditCycles(toolCalls: ToolCall[]): CheckResult {
 
   return {
     name: 'two edit cycles',
-    kind: 'assertion',
+    kind: 'warning',
     pass: passingRun !== -1,
     message: passingRun === -1 ? 'no successful run after second edit' : undefined,
   };
@@ -184,6 +210,7 @@ export function check(result: EvalRunResult): EvalReport {
       assertFileExists(result.workDir, 'analyze_grades.py'),
       assertFileExists(result.workDir, 'grades.csv'),
       assertScriptRuns(result.workDir),
+      assertCorrectOutput(result.workDir),
       assertEncounteredFirstBug(result.toolCalls),
       assertEncounteredSecondBug(result.toolCalls),
       assertTwoEditCycles(result.toolCalls),

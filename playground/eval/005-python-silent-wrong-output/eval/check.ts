@@ -38,17 +38,17 @@ function assertScriptRuns(workDir: string): CheckResult {
     const stdout = normalizeNewlines(run.stdout);
     const pass = run.status === 0 && stdout === expectedOutput;
     return {
-      name: 'script runs',
+      name: 'output matches expected',
       kind: 'assertion',
       pass,
       message: pass
         ? undefined
-        : `${candidate.command} exited ${run.status}; stdout=${JSON.stringify(stdout)} stderr=${JSON.stringify(run.stderr)}`,
+        : `expected ${JSON.stringify(expectedOutput)} but got stdout=${JSON.stringify(stdout)} stderr=${JSON.stringify(run.stderr)} (exit ${run.status})`,
     };
   }
 
   return {
-    name: 'script runs',
+    name: 'output matches expected',
     kind: 'assertion',
     pass: false,
     message: `no Python executable available (${failures.join('; ')})`,

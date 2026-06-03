@@ -19,7 +19,7 @@ This table is generated from `src/providers/registry.ts`. Run `npm run docs:gene
 | 10 | Cloudflare Workers AI | `cloudflare` | openai-compat | `CLOUDFLARE_API_KEY` | Yes | No | `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`<br>`@cf/meta/llama-3.1-8b-instruct`<br>`@cf/meta/llama-3.3-70b-instruct-fp8-fast`<br>`@cf/qwen/qwen2.5-coder-32b-instruct` |
 | 11 | Z.ai (ZhipuAI) | `zai` | openai-compat | `ZAI_API_KEY` | Yes | No | `glm-4.5-flash`<br>`glm-4.7-flash` |
 | 12 | OpenAI | `openai` | openai-compat | `OPENAI_API_KEY` | Yes | Yes | `gpt-4`<br>`gpt-4-turbo`<br>`gpt-4.1`<br>`gpt-4.1-mini`<br>`gpt-4.1-nano`<br>`gpt-4o`<br>`gpt-4o-mini`<br>`gpt-5`<br>`gpt-5-chat-latest`<br>`gpt-5-codex`<br>`gpt-5-mini`<br>`gpt-5-nano`<br>`gpt-5-pro`<br>`gpt-5.1`<br>`gpt-5.1-chat-latest`<br>`gpt-5.1-codex`<br>`gpt-5.1-codex-max`<br>`gpt-5.1-codex-mini`<br>`gpt-5.2`<br>`gpt-5.2-chat-latest`<br>`gpt-5.2-codex`<br>`gpt-5.2-pro`<br>`gpt-5.3-chat-latest`<br>`gpt-5.3-codex`<br>`gpt-5.4`<br>`gpt-5.4-mini`<br>`gpt-5.4-nano`<br>`gpt-5.4-pro`<br>`gpt-5.5`<br>`gpt-5.5-pro`<br>`o1`<br>`o1-pro`<br>`o3`<br>`o3-mini`<br>`o4-mini` |
-| 13 | Anthropic | `anthropic` | anthropic | `ANTHROPIC_API_KEY` | Yes | Yes | `claude-haiku-4-5-20251001`<br>`claude-opus-4-1-20250805`<br>`claude-opus-4-20250514`<br>`claude-opus-4-5-20251101`<br>`claude-opus-4-6`<br>`claude-opus-4-7`<br>`claude-opus-4-8`<br>`claude-sonnet-4-20250514`<br>`claude-sonnet-4-5-20250929`<br>`claude-sonnet-4-6` |
+| 13 | Anthropic | `anthropic` | anthropic | `ANTHROPIC_API_KEY` | Yes | Yes |  |
 <!-- END GENERATED PROVIDERS -->
 
 ## Testing Providers

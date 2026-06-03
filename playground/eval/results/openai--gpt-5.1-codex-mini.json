@@ -9,5 +9,16 @@
       "prompt": 2373,
       "output": 63
     }
+  },
+  {
+    "timestamp": "2026-06-02T23:47:14.584Z",
+    "scenarioId": "001-hello-world",
+    "model": "openai:gpt-5.1-codex-mini",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
   }
 ]

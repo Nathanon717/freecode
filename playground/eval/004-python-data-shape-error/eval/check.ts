@@ -18,10 +18,14 @@ function normalizeNewlines(value: string): string {
   return value.replace(/\r\n/g, '\n');
 }
 
-function assertScriptRuns(workDir: string): CheckResult {
+type ScriptRunResult =
+  | { ok: true; stdout: string; command: string }
+  | { ok: false; message: string };
+
+function runScript(workDir: string): ScriptRunResult {
   const scriptPath = join(workDir, 'analyze_orders.py');
   if (!existsSync(scriptPath)) {
-    return { name: 'script runs', kind: 'assertion', pass: false, message: 'analyze_orders.py does not exist' };
+    return { ok: false, message: 'analyze_orders.py does not exist' };
   }
 
   const candidates = [
@@ -41,24 +45,36 @@ function assertScriptRuns(workDir: string): CheckResult {
       failures.push(`${candidate.command}: ${run.error.message}`);
       continue;
     }
-    const stdout = normalizeNewlines(run.stdout);
-    const stderr = normalizeNewlines(run.stderr);
-    const pass = run.status === 0 && stdout === expectedOutput;
-    return {
-      name: 'script runs',
-      kind: 'assertion',
-      pass,
-      message: pass
-        ? undefined
-        : `${candidate.command} exited ${run.status}; stdout=${JSON.stringify(stdout)} stderr=${JSON.stringify(stderr)}`,
-    };
+    if (run.status !== 0) {
+      return { ok: false, message: `${candidate.command} exited ${run.status}; stderr=${JSON.stringify(normalizeNewlines(run.stderr))}` };
+    }
+    return { ok: true, stdout: normalizeNewlines(run.stdout), command: candidate.command };
   }
 
+  return { ok: false, message: `no Python executable available (${failures.join('; ')})` };
+}
+
+function assertScriptRuns(workDir: string): CheckResult {
+  const result = runScript(workDir);
   return {
     name: 'script runs',
     kind: 'assertion',
-    pass: false,
-    message: `no Python executable available (${failures.join('; ')})`,
+    pass: result.ok,
+    message: result.ok ? undefined : result.message,
+  };
+}
+
+function assertCorrectOutput(workDir: string): CheckResult {
+  const result = runScript(workDir);
+  if (!result.ok) {
+    return { name: 'correct output', kind: 'assertion', pass: false, message: result.message };
+  }
+  const pass = result.stdout === expectedOutput;
+  return {
+    name: 'correct output',
+    kind: 'assertion',
+    pass,
+    message: pass ? undefined : `stdout=${JSON.stringify(result.stdout)} expected=${JSON.stringify(expectedOutput)}`,
   };
 }
 
@@ -173,8 +189,11 @@ function assertUsesQtyColumn(workDir: string): CheckResult {
   const script = readFileSync(scriptPath, 'utf-8');
   const pass = script.includes('["qty"]') || script.includes("['qty']");
   return {
+    // Redundant/brittle: if `script runs` passes the qty column was already read
+    // correctly, and an agent may legitimately access it via .get()/fieldnames.
+    // Keep as a warning so it never produces a false negative.
     name: 'uses data schema',
-    kind: 'assertion',
+    kind: 'warning',
     pass,
     message: pass ? undefined : 'fixed script does not appear to read the qty column',
   };
@@ -187,6 +206,7 @@ export function check(result: EvalRunResult): EvalReport {
       assertFileExists(result.workDir, 'analyze_orders.py'),
       assertFileExists(result.workDir, 'orders.csv'),
       assertScriptRuns(result.workDir),
+      assertCorrectOutput(result.workDir),
       assertRanFailedThenFixed(result.toolCalls),
       assertInspectedData(result.toolCalls),
       assertCsvNotEdited(result.toolCalls, result.workDir),

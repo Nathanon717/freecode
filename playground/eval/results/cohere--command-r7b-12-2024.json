@@ -1,0 +1,28 @@
+[
+  {
+    "timestamp": "2026-06-02T22:26:55.224Z",
+    "scenarioId": "001-hello-world",
+    "model": "cohere:command-r7b-12-2024",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-02T22:27:12.346Z",
+    "scenarioId": "002-edit-config",
+    "model": "cohere:command-r7b-12-2024",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  }
+]

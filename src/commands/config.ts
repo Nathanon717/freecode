@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import type { Interface } from 'readline';
 import { getConfigPaths, loadConfig, readRawConfig, resolveModelSettings, writeConfigFile } from '../config/index.js';
 import type { Config, OverridableSettings } from '../providers/types.js';
-import { runRawPicker } from '../cli/raw-picker.js';
+import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
 
 // ── Setting definitions ───────────────────────────────────────────────────────
 
@@ -219,16 +219,6 @@ function cycleOverride(current: TabValue, direction: 1 | -1): TabValue {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-function renderedRows(lines: string[]): number {
-  const cols = process.stdout.columns || 80;
-  let total = 0;
-  for (const line of lines) {
-    const visible = line.replace(/\x1b\[[0-9;]*m/g, '').length;
-    total += Math.max(1, Math.ceil(visible / cols));
-  }
-  return total;
-}
-
 export async function runConfigCommand(rl: Interface, currentModel = ''): Promise<void> {
   if (!process.stdin.isTTY) {
     console.log(chalk.red('Config editor requires an interactive terminal.'));
@@ -257,7 +247,7 @@ export async function runConfigCommand(rl: Interface, currentModel = ''): Promis
 
   await runRawPicker<void>(rl, {
     render: () => buildScreen(activeTab, tabs, values, effective, sel, paths.globalPath, currentModel),
-    countLines: renderedRows,
+    countLines: countWrappedLines,
     onExitClear(rowCount) {
       const r = process.stdout.rows || 24;
       // Reset scroll region to full screen so \x1b[J covers all rows (including

@@ -12,13 +12,23 @@ import {
 
 // SCORES = [72, 85, 91, 68, 79, 88, 95, 74]
 // count=8, sum=652, mean=81.5, median=(79+85)/2=82.0
-const expectedOutput = 'count=8\nsum=652\nmean=81.50\nmedian=82.00\n';
+// The prompt does not dictate the print labels, only that the caller match the
+// module's return shape. Accept either the module's key names (sum/mean) or the
+// caller's original display labels (total/average) — both are correct fixes.
+const expectedOutputs = [
+  'count=8\nsum=652\nmean=81.50\nmedian=82.00\n',
+  'count=8\ntotal=652\naverage=81.50\nmedian=82.00\n',
+];
 
 function normalizeNewlines(value: string): string {
   return value.replace(/\r\n/g, '\n');
 }
 
-function assertScriptRuns(workDir: string): CheckResult {
+type ScriptRunResult =
+  | { ok: true; stdout: string; command: string }
+  | { ok: false; message: string };
+
+function runScript(workDir: string): ScriptRunResult {
   const scriptPath = join(workDir, 'pipeline.py');
   const candidates = [
     { command: 'python', args: [scriptPath] },
@@ -37,23 +47,38 @@ function assertScriptRuns(workDir: string): CheckResult {
       failures.push(`${candidate.command}: ${run.error.message}`);
       continue;
     }
-    const stdout = normalizeNewlines(run.stdout);
-    const pass = run.status === 0 && stdout === expectedOutput;
-    return {
-      name: 'script runs',
-      kind: 'assertion',
-      pass,
-      message: pass
-        ? undefined
-        : `${candidate.command} exited ${run.status}; stdout=${JSON.stringify(stdout)} stderr=${JSON.stringify(run.stderr)}`,
-    };
+    if (run.status !== 0) {
+      return { ok: false, message: `${candidate.command} exited ${run.status}; stderr=${JSON.stringify(run.stderr)}` };
+    }
+    return { ok: true, stdout: normalizeNewlines(run.stdout), command: candidate.command };
   }
 
+  return { ok: false, message: `no Python executable available (${failures.join('; ')})` };
+}
+
+function assertScriptRuns(workDir: string): CheckResult {
+  const result = runScript(workDir);
   return {
     name: 'script runs',
     kind: 'assertion',
-    pass: false,
-    message: `no Python executable available (${failures.join('; ')})`,
+    pass: result.ok,
+    message: result.ok ? undefined : result.message,
+  };
+}
+
+function assertCorrectOutput(workDir: string): CheckResult {
+  const result = runScript(workDir);
+  if (!result.ok) {
+    return { name: 'correct output', kind: 'assertion', pass: false, message: result.message };
+  }
+  const pass = expectedOutputs.includes(result.stdout);
+  return {
+    name: 'correct output',
+    kind: 'assertion',
+    pass,
+    message: pass
+      ? undefined
+      : `stdout=${JSON.stringify(result.stdout)} expected one of ${JSON.stringify(expectedOutputs)}`,
   };
 }
 
@@ -156,7 +181,7 @@ function assertEditedPipelineThenReran(toolCalls: ToolCall[]): CheckResult {
     i > editAfter &&
     call.tool === 'shell_exec' &&
     commandMentionsPipeline(call) &&
-    resultText(call).includes('mean=81.50')
+    (resultText(call).includes('mean=81.50') || resultText(call).includes('average=81.50'))
   );
 
   return {
@@ -174,6 +199,7 @@ export function check(result: EvalRunResult): EvalReport {
       assertFileExists(result.workDir, 'pipeline.py'),
       assertFileExists(result.workDir, 'stats.py'),
       assertScriptRuns(result.workDir),
+      assertCorrectOutput(result.workDir),
       assertRanFailingScript(result.toolCalls),
       assertInspectedStatsModule(result.toolCalls),
       assertFixedCallerNotModule(result.workDir),

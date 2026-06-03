@@ -1,6 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import type { ProviderConfig } from '../types.js';
-import { resolveApiKey } from '../../config/index.js';
+import { loadConfig, resolveApiKey } from '../../config/index.js';
 import { isRecord } from '../../util/guards.js';
 import {
   parseGroqRateLimitHeaders,
@@ -380,19 +380,24 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         }
 
         let response = await globalThis.fetch(input, patchedInit);
-        for (let attempt = 0; providerConfig.id === 'groq' && response.status === 429 && attempt < 5; attempt++) {
-          const delayMs = parseRetryAfterMs(response.headers.get('retry-after'));
+        const maxWaitMs = loadConfig().retryMaxWaitSeconds * 1000;
+        for (let attempt = 0; response.status === 429 && attempt < 5; attempt++) {
+          const retryHeader = response.headers.get('retry-after');
+          if (!retryHeader) break;
+          const delayMs = parseRetryAfterMs(retryHeader);
+          if (delayMs > maxWaitMs) break;
           await new Promise<void>(resolve => {
             let remaining = Math.ceil(delayMs / 1000);
-            process.stdout.write(`\nGroq rate-limited — retrying in ${remaining}s...`);
+            const name = providerConfig.name;
+            process.stdout.write(`\n${name} rate-limited — retrying in ${remaining}s...`);
             const tick = setInterval(() => {
               remaining -= 1;
               if (remaining <= 0) {
                 clearInterval(tick);
-                process.stdout.write(`\r\x1b[2KGroq rate-limited — retrying now...\n`);
+                process.stdout.write(`\r\x1b[2K${name} rate-limited — retrying now...\n`);
                 resolve();
               } else {
-                process.stdout.write(`\rGroq rate-limited — retrying in ${remaining}s...`);
+                process.stdout.write(`\r${name} rate-limited — retrying in ${remaining}s...`);
               }
             }, 1000);
           });

@@ -229,5 +229,53 @@
       "output": 455
     },
     "scenarioHash": "c794a7c2838705474f04b381e70a33d7b94140c55eb966ae71c448eb9063e382"
+  },
+  {
+    "timestamp": "2026-06-02T21:20:40.237Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 8700,
+      "prompt": 8298,
+      "output": 402
+    },
+    "scenarioHash": "07a59670a105001ada57e61c02a80e6f48dae15db66a1c6fc0a7cd6ae6fcddce"
+  },
+  {
+    "timestamp": "2026-06-03T00:36:14.779Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "6d78e16fcd3cfcb941da3436f4fd667dff335b3ffd9e90498f0f5f0be605c874"
+  },
+  {
+    "timestamp": "2026-06-03T00:36:46.675Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "b4e9909e47569f579d18b91a293c7daf1ba915ad2ec6e25d960001b8288ebb71"
+  },
+  {
+    "timestamp": "2026-06-03T00:37:39.138Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 8957,
+      "prompt": 8774,
+      "output": 183
+    },
+    "scenarioHash": "2c6feafffa8dfe4e4519b0276201609e605f75539b9ce83c377a39f2e577db3b"
   }
 ]

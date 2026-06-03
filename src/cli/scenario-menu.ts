@@ -14,7 +14,7 @@ import {
 import { loadCanonicalGroups, getCanonicalGroupKey, type CanonicalModelGroups } from '../providers/canonical-models.js';
 
 import { isBottomUIActive, setEvalRunning, setModelStatus, setQuotaSnapshot, setTokenCount, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
-import { runRawPicker } from './raw-picker.js';
+import { countWrappedLines, runRawPicker } from './raw-picker.js';
 import { logError } from '../logger.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
@@ -613,6 +613,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
 
     const chosen = await runRawPicker<PlaygroundScenario[] | null>(rl, {
       render: () => buildEvalPickerScreen(scenarios, pickerSel, evalHistory, getSelectedModel(), scenarioHashes, canonicalGroups),
+      countLines: countWrappedLines,
       onKey(key, redraw, close) {
         if (key === '\x1b') { close(null); return; }
         if (key === '\x1b[A') { pickerSel = (pickerSel - 1 + scenarios.length) % scenarios.length; redraw(); return; }

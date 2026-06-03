@@ -10,6 +10,7 @@ const DEFAULT_CONFIG: Config = {
   showProviderUsage: false,
   toolConfirmation: 'ask',
   parallelTools: true,
+  retryMaxWaitSeconds: 10,
 };
 
 function loadJsonFile<T>(path: string): T | null {

@@ -7,7 +7,7 @@ import { getProviderCache, markModelSelected } from '../providers/model-cache.js
 import { clearModelNewFlag } from '../providers/registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import type { PricingConfidence } from '../providers/pricing-verifier.js';
-import { runRawPicker } from '../cli/raw-picker.js';
+import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
 import { loadCanonicalGroups, type CanonicalModelGroups } from '../providers/canonical-models.js';
 import { getNoNativeToolsModels } from '../providers/model-traits.js';
 
@@ -351,14 +351,16 @@ function printableChars(key: string): string {
   return [...key].filter(c => c >= ' ' && c !== '\x7f').join('');
 }
 
+// Returns true if the interactive picker was shown (screen left blank on close),
+// false for early exits that leave text output behind.
 export async function runModelCommand(
   rl: Interface,
   currentModel: string,
   setSelectedModel: (model: string) => void,
-): Promise<void> {
+): Promise<boolean> {
   if (!process.stdin.isTTY) {
     console.log(chalk.red('Model picker requires an interactive terminal.'));
-    return;
+    return false;
   }
 
   console.log(chalk.dim('Loading available models...'));
@@ -366,7 +368,7 @@ export async function runModelCommand(
 
   if (items.length === 0) {
     console.log(chalk.red('No configured providers or local models are available.'));
-    return;
+    return false;
   }
 
   const removedByProvider = new Map<string, string[]>();
@@ -413,6 +415,7 @@ export async function runModelCommand(
       viewStart = newViewStart;
       return lines;
     },
+    countLines: countWrappedLines,
     onKey(key, redraw, close) {
       if (key === '\x1b') { close(null); return; }
       if (key === '\x1b[A') {
@@ -473,4 +476,5 @@ export async function runModelCommand(
     console.log(chalk.blue(`Model set to: ${choice}`));
     if (result.saveDefault) console.log(chalk.green(`Default model set to: ${choice}`));
   }
+  return true;
 }

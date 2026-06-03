@@ -42,4 +42,5 @@ export interface Config {
   parallelTools: boolean;
   providerOverrides?: Record<string, OverridableSettings>;
   modelOverrides?: Record<string, OverridableSettings>;
+  retryMaxWaitSeconds: number;
 }

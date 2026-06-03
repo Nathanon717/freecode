@@ -1,6 +1,6 @@
 # src/providers/adapters/openai-compat.ts - OpenAI-Compatible Adapter
 
-**Role:** Creates `@ai-sdk/openai` provider factories for registry providers and Ollama, captures Groq rate-limit headers, and captures raw usage metadata from OpenAI-compatible responses.
+**Role:** Creates `@ai-sdk/openai` provider factories for registry providers and Ollama, captures rate-limit headers, auto-retries short 429 waits, and captures raw usage metadata from OpenAI-compatible responses.
 
 ## Exports
 
@@ -24,7 +24,7 @@ Calls `createOpenAI()` with:
 - `baseURL` from `providerConfig.baseUrl`
 - `apiKey` from `process.env[providerConfig.apiKeyEnvVar]`, then `loadConfig().providers[providerConfig.id]?.apiKey`, then `placeholder`
 - `headers` from `getOpenAICompatProviderHeaders()`, currently OpenRouter `HTTP-Referer` and `X-Title`
-- optional custom `fetch` for Groq quota capture, OpenAI temperature stripping, raw usage capture, or provider HTTP error formatting
+- optional custom `fetch` for quota capture, OpenAI temperature stripping, raw usage capture, or provider HTTP error formatting
 
 For direct OpenAI requests, the custom fetch removes `temperature` from models matched by `openAIModelDisallowsTemperature()` because those models only accept OpenAI's default temperature.
 
@@ -32,16 +32,13 @@ Non-OK HTTP responses are parsed for OpenAI-compatible `{ error: { message, code
 
 For streaming responses, the custom fetch normalizes tool-call SSE chunks by adding a missing `type: "function"` on `delta.tool_calls[]` entries so the OpenAI SDK stream parser accepts otherwise-compatible function-call deltas from providers such as Mistral and LLM7.
 
-## Groq Header Capture
+## 429 Auto-Retry
 
-When `DEBUG_QUOTA !== "0"` and `providerConfig.id === "groq"`, a wrapped fetch:
+When any provider returns HTTP 429 with a `retry-after` header, and the delay is ≤ `config.retryMaxWaitSeconds` (default 10), the custom fetch shows a live countdown and retries automatically (up to 5 attempts). If the delay exceeds the threshold, the error is thrown immediately. Set `retryMaxWaitSeconds: 0` in config to disable retries.
 
-1. Optionally logs request tool schemas when `DEBUG_TOOLS=1`.
-2. Calls `globalThis.fetch(input, init)`.
-3. Parses `x-ratelimit-*` response headers with `parseGroqRateLimitHeaders()`.
-4. Stores the parsed headers in a module-level `Map` keyed by provider ID.
+## Rate-Limit Header Capture
 
-`agent/loop.ts` reads that map after a streamed turn.
+When `DEBUG_QUOTA !== "0"`, a wrapped fetch parses `x-ratelimit-*` headers for Groq, Mistral, and Cerebras and stores them in a module-level `Map` keyed by provider ID. `agent/loop.ts` reads that map after a streamed turn.
 
 ## Usage Capture
 
