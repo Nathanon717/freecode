@@ -3,6 +3,7 @@ import type { Interface } from 'readline';
 import chalk from 'chalk';
 import { runConfigCommand } from '../commands/config.js';
 import { runModelCommand } from '../commands/model.js';
+import { runClaudeHelpCommand } from '../commands/claude-help.js';
 import { showBanner } from './banner.js';
 import { formatArgs, type ToolCallConfirmation, type ToolCallPreview } from '../agent/tools/index.js';
 import { loadConfig } from '../config/index.js';
@@ -550,6 +551,7 @@ export function createInteractiveMode(
         drawBottomUI();
       }
     },
+    runClaudeHelp: (userMessage) => runClaudeHelpCommand(rl, userMessage),
     runTestMenu: () => runTestMenu(rl, projectRoot),
     runEvalMenu: () => runEvalMenu(rl, projectRoot, getSelectedModel),
     onExit: () => {

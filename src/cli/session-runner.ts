@@ -15,6 +15,7 @@ export interface CliSessionMode {
   afterScreenClear?(): void | Promise<void>;
   runConfig?(): Promise<void>;
   runModelMenu?(): Promise<void>;
+  runClaudeHelp?(userMessage: string): Promise<void>;
   runTestMenu(): Promise<void>;
   runEvalMenu(): Promise<void>;
   beforeDispatch?(): void | Promise<void>;

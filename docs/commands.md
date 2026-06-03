@@ -29,6 +29,7 @@ This table is generated from `src/cli/slash-commands.ts`.
 | Command | Description |
 | --- | --- |
 | `/clear` | Clear screen and chat history |
+| `/claude` | Ask Claude to diagnose a problem using recent terminal output |
 | `/config` | Open interactive config |
 | `/eval` | Show and run LLM eval scenarios |
 | `/help` | Show this help |

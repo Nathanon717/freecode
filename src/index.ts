@@ -2,6 +2,7 @@
 
 import { createInterface } from 'readline';
 import chalk from 'chalk';
+import { installScreenBuffer } from './util/screen-buffer.js';
 import { showBanner } from './cli/banner.js';
 import { createInteractiveMode, createScriptedMode } from './cli/input-modes.js';
 import { SessionController } from './cli/session-controller.js';
@@ -10,6 +11,8 @@ import { setupFooterUI, setRetryBanner } from './cli/terminal-ui.js';
 import { registerRetryBannerSink } from './providers/adapters/openai-compat.js';
 import { loadConfig } from './config/index.js';
 import { enableLog } from './logger.js';
+
+installScreenBuffer();
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 const projectRoot = process.cwd();

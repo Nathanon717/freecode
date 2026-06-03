@@ -38,6 +38,7 @@ export interface CommandRuntime {
   afterScreenClear?(): void | Promise<void>;
   runConfig?(): Promise<void>;
   runModelMenu?(): Promise<void>;
+  runClaudeHelp?(userMessage: string): Promise<void>;
   runTestMenu(): Promise<void>;
   runEvalMenu(): Promise<void>;
 }
@@ -241,6 +242,16 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
       await runtime.runConfig();
     } else {
       console.log(chalk.dim('/config is only available in interactive mode.'));
+    }
+    return 'continue';
+  }
+
+  if (normalized === '/claude' || normalized.startsWith('/claude ')) {
+    const userMessage = trimmed.slice('/claude'.length).trim();
+    if (runtime.runClaudeHelp) {
+      await runtime.runClaudeHelp(userMessage);
+    } else {
+      console.log(chalk.dim('/claude is only available in interactive mode.'));
     }
     return 'continue';
   }

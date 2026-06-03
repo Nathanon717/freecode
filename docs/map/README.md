@@ -29,7 +29,8 @@ src/
 |-- index.ts                      -> [CLI entry point](index.md)
 |-- util/
 |   |-- guards.ts                 -> [Shared type guards](util/guards.md)
-|   `-- errors.ts                 -> [Error message utilities](util/errors.md)
+|   |-- errors.ts                 -> [Error message utilities](util/errors.md)
+|   `-- screen-buffer.ts          -> [Stdout ring buffer for /claude](util/screen-buffer.md)
 |-- logger.ts                     -> [Diagnostic logging](logger.md)
 |-- scenario-classification.ts    -> [Scenario LLM/non-LLM classifier](scenario-classification.md)
 |-- agent/
@@ -62,7 +63,8 @@ src/
 |   `-- terminal-ui.ts            -> [Bottom-pinned terminal UI](cli/terminal-ui.md)
 |-- commands/
 |   |-- config.ts                 -> [Interactive /config editor](commands/config.md)
-|   `-- model.ts                  -> [Interactive /model picker](commands/model.md)
+|   |-- model.ts                  -> [Interactive /model picker](commands/model.md)
+|   `-- claude-help.ts            -> [/claude diagnosis command](commands/claude-help.md)
 |-- config/
 |   `-- index.ts                  -> [Config loader](config/index.md)
 |-- db/
