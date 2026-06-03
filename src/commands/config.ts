@@ -15,12 +15,25 @@ interface BoolSetting {
   description: string;
 }
 
-type Setting = BoolSetting;
+interface NumericSetting {
+  type: 'number';
+  key: keyof Config;
+  label: string;
+  description: string;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+  globalOnly: true;
+}
+
+type Setting = BoolSetting | NumericSetting;
 
 const SETTINGS: Setting[] = [
   { type: 'boolean', key: 'toolRationale',    label: 'Tool rationale',   description: 'Ask model to explain each tool call before executing' },
   { type: 'boolean', key: 'showProviderUsage', label: 'Provider usage',   description: 'Print token/rate-limit usage from the provider after each turn' },
   { type: 'boolean', key: 'parallelTools',     label: 'Parallel tools',   description: 'Allow model to call multiple tools in the same response' },
+  { type: 'number',  key: 'retryMaxWaitSeconds', label: 'Max retry wait', description: 'Max seconds to wait before retrying a rate-limited request', min: 5, max: 300, step: 5, unit: 's', globalOnly: true },
 ];
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -42,10 +55,10 @@ function getAvailableTabs(currentModel: string): Tab[] {
 // Global tab: boolean. Provider/Model tabs: boolean | undefined (undefined = inherit from parent).
 type TabValue = boolean | undefined;
 
-function loadGlobalValues(): Record<string, boolean> {
+function loadGlobalValues(): Record<string, boolean | number> {
   const cfg = loadConfig();
-  const vals: Record<string, boolean> = {};
-  for (const s of SETTINGS) vals[s.key] = cfg[s.key as keyof Config] as boolean;
+  const vals: Record<string, boolean | number> = {};
+  for (const s of SETTINGS) vals[s.key] = cfg[s.key as keyof Config] as boolean | number;
   return vals;
 }
 
@@ -72,13 +85,20 @@ function loadOverrideValues(tab: Tab, currentModel: string, globalPath: string):
 
 const LABEL_W = 20;
 
-function renderGlobalValue(value: boolean, selected: boolean): string {
+function renderGlobalValue(value: boolean | number, selected: boolean, setting: Setting): string {
+  if (setting.type === 'number') {
+    const s = setting as NumericSetting;
+    const display = `${value}${s.unit}`;
+    if (selected) return `${chalk.dim('←')} ${chalk.cyan.bold(display)} ${chalk.dim('→')}`;
+    return chalk.cyan(display);
+  }
+  const v = value as boolean;
   if (selected) {
-    const t = value  ? chalk.green.bold('true')  : chalk.dim('true');
-    const f = !value ? chalk.red.bold('false') : chalk.dim('false');
+    const t = v  ? chalk.green.bold('true')  : chalk.dim('true');
+    const f = !v ? chalk.red.bold('false') : chalk.dim('false');
     return `${chalk.dim('←')} ${f}  ${t} ${chalk.dim('→')}`;
   }
-  return value ? chalk.green('true') : chalk.red('false');
+  return v ? chalk.green('true') : chalk.red('false');
 }
 
 function renderOverrideValue(value: TabValue, effectiveValue: boolean, selected: boolean): string {
@@ -117,7 +137,7 @@ function buildTabLine(tabs: Tab[], activeTab: Tab, tabSelected: boolean, current
 function buildScreen(
   tab: Tab,
   tabs: Tab[],
-  values: Record<string, TabValue>,
+  values: Record<string, TabValue | number>,
   effectiveValues: Record<string, boolean>,
   sel: number,
   globalPath: string,
@@ -135,16 +155,17 @@ function buildScreen(
 
   for (let i = 0; i < SETTINGS.length; i++) {
     const s = SETTINGS[i];
+    if (tab !== 'global' && 'globalOnly' in s && s.globalOnly) continue;
     const active = i === sel;
     const cursor = active ? chalk.cyan('▶') : ' ';
     const label  = active ? chalk.bold(s.label.padEnd(LABEL_W)) : chalk.reset(s.label.padEnd(LABEL_W));
-    const effectiveVal = effectiveValues[s.key];
+    const effectiveVal = effectiveValues[s.key as string];
 
     let valueStr: string;
     if (tab === 'global') {
-      valueStr = renderGlobalValue(values[s.key] as boolean, active);
+      valueStr = renderGlobalValue(values[s.key] as boolean | number, active, s);
     } else {
-      valueStr = renderOverrideValue(values[s.key], effectiveVal, active);
+      valueStr = renderOverrideValue(values[s.key] as TabValue, effectiveVal, active);
     }
 
     const desc = chalk.dim(s.description);
@@ -161,7 +182,7 @@ function buildScreen(
 
 // ── Persistence ───────────────────────────────────────────────────────────────
 
-function saveGlobalSetting(globalPath: string, key: string, value: boolean): void {
+function saveGlobalSetting(globalPath: string, key: string, value: boolean | number): void {
   const existing = (readRawConfig(globalPath) as Record<string, unknown>) ?? {};
   delete existing['preferLocal'];
   existing[key] = value;
@@ -206,6 +227,10 @@ function cycleGlobal(current: boolean, direction: 1 | -1): boolean {
   return !current;
 }
 
+function cycleNumeric(current: number, s: NumericSetting, direction: 1 | -1): number {
+  return Math.max(s.min, Math.min(s.max, current + direction * s.step));
+}
+
 // Cycle order (right): inherit → false → true → inherit
 // Cycle order (left):  inherit → true → false → inherit
 const CYCLE_RIGHT: TabValue[] = [undefined, false, true];
@@ -230,19 +255,22 @@ export async function runConfigCommand(rl: Interface, currentModel = ''): Promis
   let activeTab: Tab = 'global';
   let sel = 0;
 
-  function currentValues(): Record<string, TabValue> {
-    if (activeTab === 'global') return loadGlobalValues() as Record<string, TabValue>;
+  function currentValues(): Record<string, TabValue | number> {
+    if (activeTab === 'global') return loadGlobalValues() as Record<string, TabValue | number>;
     return loadOverrideValues(activeTab, currentModel, paths.globalPath);
   }
 
   function effectiveValues(): Record<string, boolean> {
     const resolved = resolveModelSettings(currentModel || ':');
     const vals: Record<string, boolean> = {};
-    for (const s of SETTINGS) vals[s.key] = resolved[s.key as keyof typeof resolved];
+    for (const s of SETTINGS) {
+      if ('globalOnly' in s && s.globalOnly) continue;
+      vals[s.key] = resolved[s.key as keyof typeof resolved];
+    }
     return vals;
   }
 
-  let values = currentValues();
+  let values: Record<string, TabValue | number> = currentValues();
   let effective = effectiveValues();
 
   await runRawPicker<void>(rl, {
@@ -291,12 +319,17 @@ export async function runConfigCommand(rl: Interface, currentModel = ''): Promis
 
         const setting = SETTINGS[sel];
         if (activeTab === 'global') {
-          const newVal = cycleGlobal(values[setting.key] as boolean, direction);
-          values[setting.key] = newVal;
+          let newVal: boolean | number;
+          if (setting.type === 'number') {
+            newVal = cycleNumeric(values[setting.key] as unknown as number, setting as NumericSetting, direction);
+          } else {
+            newVal = cycleGlobal(values[setting.key] as boolean, direction);
+          }
+          (values as Record<string, boolean | number>)[setting.key] = newVal;
           saveGlobalSetting(paths.globalPath, setting.key, newVal);
           effective = effectiveValues();
         } else {
-          const newVal = cycleOverride(values[setting.key], direction);
+          const newVal = cycleOverride(values[setting.key] as TabValue, direction);
           values[setting.key] = newVal;
           saveOverrideSetting(paths.globalPath, activeTab, currentModel, setting.key, newVal);
           effective = effectiveValues();

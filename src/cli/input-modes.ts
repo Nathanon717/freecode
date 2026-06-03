@@ -40,6 +40,7 @@ import {
 } from './terminal-ui.js';
 import { createOpenAIPreflightInputController } from './preflight-input-cost.js';
 import { refreshOpenAIDailySpend } from './openai-daily-spend.js';
+import { loadCachedQuota, saveQuotaToCache } from '../providers/quota/cache.js';
 
 type ToolApprovalChoice = 'approve' | 'deny';
 
@@ -85,7 +86,10 @@ function resetBottomPromptState(session: SessionController): void {
 function applyModelStatus(model: string): void {
   const idx = model.indexOf(':');
   if (idx !== -1) {
-    setModelStatus(model.slice(0, idx), model.slice(idx + 1));
+    const providerId = model.slice(0, idx);
+    setModelStatus(providerId, model.slice(idx + 1));
+    const cached = loadCachedQuota(providerId);
+    if (cached) setQuotaSnapshot(cached.snapshot);
   } else if (model) {
     setModelStatus('', model);
   }
@@ -501,6 +505,9 @@ export function createInteractiveMode(
     onAgentResult: (result) => {
       setModelStatus(result.providerId, result.modelId);
       setQuotaSnapshot(result.quota);
+      if (result.quota && result.providerId) {
+        saveQuotaToCache(result.providerId, result.quota);
+      }
     },
     beforeDispatch: () => {
       if (process.stdin.isTTY) {
@@ -551,7 +558,7 @@ export function createInteractiveMode(
   };
 }
 
-export function createScriptedMode(scriptPath: string, projectRoot: string): CliSessionMode {
+export function createScriptedMode(scriptPath: string, projectRoot: string, rl: Interface): CliSessionMode {
   const lines = readFileSync(scriptPath, 'utf-8')
     .split('\n')
     .map(line => line.trimEnd())
@@ -572,9 +579,9 @@ export function createScriptedMode(scriptPath: string, projectRoot: string): Cli
     confirmToolCall: async (preview) => {
       if (autoConfirm) {
         autoCallCount++;
-        if (autoCallCount > maxToolCalls) {
-          console.log(chalk.red(`Auto-confirm limit of ${maxToolCalls} tool calls reached; denying.`));
-          return { approved: false, message: `Auto-confirm limit of ${maxToolCalls} tool calls reached.` };
+        if (autoCallCount % maxToolCalls === 0) {
+          const shouldContinue = await askContinueAfterLimit(rl, autoCallCount);
+          if (!shouldContinue) return { approved: false, message: `Stopped after tool call limit of ${maxToolCalls}.` };
         }
         process.stderr.write(chalk.dim('Auto-approved.\n'));
         return { approved: true };

@@ -85,7 +85,8 @@ src/
     |   |-- openai-responses.ts   -> [Direct OpenAI Responses adapter](providers/adapters/openai-responses.md)
     |   `-- anthropic.ts          -> [Anthropic adapter](providers/adapters/anthropic.md)
     `-- quota/
-        `-- headers.ts            -> [Provider rate-limit parsing](providers/quota/headers.md)
+        |-- headers.ts            -> [Provider rate-limit parsing](providers/quota/headers.md)
+        `-- cache.ts              -> [Quota disk cache](providers/quota/cache.md)
 ```
 
 ## Main Flow

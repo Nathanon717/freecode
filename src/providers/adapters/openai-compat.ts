@@ -10,6 +10,12 @@ import {
   type RateLimitSnapshot,
 } from '../quota/headers.js';
 
+type RetryBannerSetter = (info: { name: string; label: string; targetMs: number } | null) => void;
+let retryBannerSink: RetryBannerSetter | null = null;
+export function registerRetryBannerSink(fn: RetryBannerSetter | null): void {
+  retryBannerSink = fn;
+}
+
 export interface CapturedProviderUsage {
   providerId: string;
   responseId?: string;
@@ -381,26 +387,36 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
 
         let response = await globalThis.fetch(input, patchedInit);
         const maxWaitMs = loadConfig().retryMaxWaitSeconds * 1000;
-        for (let attempt = 0; response.status === 429 && attempt < 5; attempt++) {
+        for (let attempt = 0; (response.status === 429 || response.status === 503) && attempt < 5; attempt++) {
           const retryHeader = response.headers.get('retry-after');
-          if (!retryHeader) break;
-          const delayMs = parseRetryAfterMs(retryHeader);
+          const is503 = response.status === 503;
+          if (!retryHeader && !is503) break;
+          const delayMs = retryHeader
+            ? parseRetryAfterMs(retryHeader)
+            : Math.min(2 ** attempt * 1000, maxWaitMs);
           if (delayMs > maxWaitMs) break;
-          await new Promise<void>(resolve => {
-            let remaining = Math.ceil(delayMs / 1000);
-            const name = providerConfig.name;
-            process.stdout.write(`\n${name} rate-limited — retrying in ${remaining}s...`);
-            const tick = setInterval(() => {
-              remaining -= 1;
-              if (remaining <= 0) {
-                clearInterval(tick);
-                process.stdout.write(`\r\x1b[2K${name} rate-limited — retrying now...\n`);
-                resolve();
-              } else {
-                process.stdout.write(`\r${name} rate-limited — retrying in ${remaining}s...`);
-              }
-            }, 1000);
-          });
+          const label = is503 && !retryHeader ? 'unavailable' : 'rate-limited';
+          const name = providerConfig.name;
+          if (retryBannerSink) {
+            retryBannerSink({ name, label, targetMs: Date.now() + delayMs });
+            await new Promise<void>(resolve => setTimeout(resolve, delayMs));
+            retryBannerSink(null);
+          } else {
+            await new Promise<void>(resolve => {
+              let remaining = Math.ceil(delayMs / 1000);
+              process.stdout.write(`\n${name} ${label} — retrying in ${remaining}s...`);
+              const tick = setInterval(() => {
+                remaining -= 1;
+                if (remaining <= 0) {
+                  clearInterval(tick);
+                  process.stdout.write(`\r\x1b[2K${name} ${label} — retrying now...\n`);
+                  resolve();
+                } else {
+                  process.stdout.write(`\r${name} ${label} — retrying in ${remaining}s...`);
+                }
+              }, 1000);
+            });
+          }
           response = await globalThis.fetch(input, patchedInit);
         }
         if (shouldCapture) {

@@ -20,6 +20,7 @@ let lastOpenAIDailySpend: OpenAIDailySpend = { state: 'idle', updatedAt: 0 };
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 let evalRunLabel: string | null = null;
 let evalRunStart = 0;
+let retryBannerInfo: { name: string; label: string; targetMs: number } | null = null;
 
 export interface PreflightInputCost {
   state: 'idle' | 'pending' | 'ready' | 'unavailable';
@@ -134,7 +135,16 @@ export function setEvalRunning(label: string | null): void {
   if (label !== null) evalRunStart = Date.now();
 }
 
+export function setRetryBanner(info: { name: string; label: string; targetMs: number } | null): void {
+  retryBannerInfo = info;
+}
+
 function formatEvalRunStatus(now = Date.now()): string {
+  if (retryBannerInfo) {
+    const remaining = Math.max(0, Math.ceil((retryBannerInfo.targetMs - now) / 1000));
+    if (remaining <= 0) return `${retryBannerInfo.name} ${retryBannerInfo.label} — retrying now...`;
+    return `${retryBannerInfo.name} ${retryBannerInfo.label} — retrying in ${remaining}s...`;
+  }
   if (!evalRunLabel) return '';
   const elapsed = Math.floor((now - evalRunStart) / 1000);
   return `eval: ${evalRunLabel} · ${elapsed}s`;
@@ -465,12 +475,14 @@ export function setupFooterUI() {
   footerRowCount = 2;
   lastReservedRows = 2;
   refreshTimer = setInterval(() => {
-    if (footerActive && !footerTimerSuspended) {
+    if (footerActive) {
       const prevFooterRowCount = footerRowCount;
       drawFooter();
       // Only redraw the input area if the footer row count changed (affects reserved rows).
       // Unconditional redraws park the cursor at the bottom, causing Termux to snap the viewport.
-      if (inputUIActive && footerRowCount !== prevFooterRowCount) drawInputArea();
+      // Skip input redraw when suspended (e.g. raw picker open) — footer-only updates are safe
+      // because composeFooterOutput uses save/restore cursor.
+      if (!footerTimerSuspended && inputUIActive && footerRowCount !== prevFooterRowCount) drawInputArea();
     }
   }, 1000);
   setScrollRegion(1, rows() - 2);

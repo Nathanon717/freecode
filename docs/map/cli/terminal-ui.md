@@ -15,6 +15,7 @@ State setters/getters:
 - `setPreflightInputCost()`
 - `setSuggestions()`
 - `setInlineCompletion()`
+- `setRetryBanner(info | null)` — sets a rate-limit countdown shown on the footer left side; `info` has `{ name, label, targetMs }` and remaining seconds are computed from `targetMs` each footer refresh
 
 Rendering/control:
 

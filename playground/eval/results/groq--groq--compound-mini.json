@@ -1,0 +1,15 @@
+[
+  {
+    "timestamp": "2026-06-03T10:57:57.289Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:groq/compound-mini",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  }
+]

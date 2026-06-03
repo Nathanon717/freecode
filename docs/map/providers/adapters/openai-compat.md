@@ -34,7 +34,9 @@ For streaming responses, the custom fetch normalizes tool-call SSE chunks by add
 
 ## 429 Auto-Retry
 
-When any provider returns HTTP 429 with a `retry-after` header, and the delay is ≤ `config.retryMaxWaitSeconds` (default 10), the custom fetch shows a live countdown and retries automatically (up to 5 attempts). If the delay exceeds the threshold, the error is thrown immediately. Set `retryMaxWaitSeconds: 0` in config to disable retries.
+When any provider returns HTTP 429 with a `retry-after` header, and the delay is ≤ `config.retryMaxWaitSeconds` (default 10), the custom fetch retries automatically (up to 5 attempts). If the delay exceeds the threshold, the error is thrown immediately. Set `retryMaxWaitSeconds: 0` in config to disable retries.
+
+During the wait, if a retry banner sink has been registered via `registerRetryBannerSink()`, the countdown appears in the TUI footer (driven by `terminal-ui`'s 1s refresh — no separate timer needed). Otherwise (non-TTY / scripted mode), a `\r`-based live countdown is written to stdout. `registerRetryBannerSink` is called from `src/index.ts` when `process.stdin.isTTY` is true.
 
 ## Rate-Limit Header Capture
 

@@ -1,0 +1,26 @@
+[
+  {
+    "timestamp": "2026-06-03T11:01:59.480Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:llama-3.1-8b-instant",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2540,
+      "prompt": 2508,
+      "output": 32
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-03T11:02:09.072Z",
+    "scenarioId": "002-edit-config",
+    "model": "groq:llama-3.1-8b-instant",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  }
+]

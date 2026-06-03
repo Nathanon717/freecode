@@ -280,6 +280,7 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
   const exitCode = await new Promise<number>((resolve) => {
     const proc = spawn(process.execPath, [DIST_ENTRY, '--script', scriptFile], {
       cwd: workDir,
+      stdio: ['inherit', 'pipe', 'pipe'],
       env: {
         ...process.env,
         ...(model ? { FREECODE_MODEL: model } : {}),
@@ -661,6 +662,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
     // ── Run ───────────────────────────────────────────────────────────────
     let passed = 0;
     let failed = 0;
+    let incomplete = 0;
 
     for (const scenario of chosen) {
       const scenarioDir = join(PLAYGROUND_EVAL_DIR, scenario.id);
@@ -719,6 +721,12 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
 
       console.log(chalk.dim('─'.repeat(60)));
 
+      if (result.exitCode !== 0) {
+        console.log(chalk.yellow(`\nINCOMPLETE  ${chalk.bold(scenario.id)}  (agent did not finish — circle status unchanged)`));
+        incomplete++;
+        continue;
+      }
+
       const resultInputPath = join(scenarioDir, '.run', 'result-input.json');
       writeFileSync(resultInputPath, JSON.stringify(result));
       const checkProc = spawnSync(
@@ -752,8 +760,13 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
 
     if (chosen.length > 1) {
       console.log('');
-      const color = failed > 0 ? chalk.red : chalk.green;
-      console.log(color(`Results: ${passed} passed, ${failed} failed`));
+      const parts = [
+        passed > 0 ? chalk.green(`${passed} passed`) : null,
+        failed > 0 ? chalk.red(`${failed} failed`) : null,
+        incomplete > 0 ? chalk.yellow(`${incomplete} incomplete`) : null,
+      ].filter(Boolean);
+      const color = failed > 0 ? chalk.red : incomplete > 0 ? chalk.yellow : chalk.green;
+      console.log(color(`Results: ${parts.join(', ')}`));
     }
   } finally {
     rl.pause();

@@ -6,7 +6,8 @@ import { showBanner } from './cli/banner.js';
 import { createInteractiveMode, createScriptedMode } from './cli/input-modes.js';
 import { SessionController } from './cli/session-controller.js';
 import { runCliSession } from './cli/session-runner.js';
-import { setupFooterUI } from './cli/terminal-ui.js';
+import { setupFooterUI, setRetryBanner } from './cli/terminal-ui.js';
+import { registerRetryBannerSink } from './providers/adapters/openai-compat.js';
 import { loadConfig } from './config/index.js';
 import { enableLog } from './logger.js';
 
@@ -39,7 +40,7 @@ async function main() {
     session.createSession();
     let mode;
     try {
-      mode = createScriptedMode(scriptPath, projectRoot);
+      mode = createScriptedMode(scriptPath, projectRoot, rl);
     } catch {
       console.error(`Error reading script file: ${scriptPath}`);
       process.exitCode = 1;
@@ -57,7 +58,10 @@ async function main() {
     return;
   }
 
-  if (process.stdin.isTTY) setupFooterUI();
+  if (process.stdin.isTTY) {
+    setupFooterUI();
+    registerRetryBannerSink(setRetryBanner);
+  }
 
   showBanner();
 
