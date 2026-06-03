@@ -60,6 +60,7 @@ export async function runCliSession(options: CliSessionRunnerOptions): Promise<v
         afterScreenClear: mode.afterScreenClear,
         runConfig: mode.runConfig,
         runModelMenu: mode.runModelMenu,
+        runClaudeHelp: mode.runClaudeHelp,
         runTestMenu: mode.runTestMenu,
         runEvalMenu: mode.runEvalMenu,
       });

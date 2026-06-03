@@ -256,7 +256,12 @@ function loadEvalConfig(scenarioDir: string): EvalConfig {
   }
 }
 
-async function executeEvalScenario(scenarioDir: string, prompt: string, model?: string): Promise<EvalRunResult> {
+interface CancellableEval {
+  promise: Promise<EvalRunResult>;
+  cancel: () => void;
+}
+
+function startEvalScenario(scenarioDir: string, prompt: string, model?: string): CancellableEval {
   const workDir = join(scenarioDir, 'work');
   const runDir = join(scenarioDir, '.run');
   mkdirSync(runDir, { recursive: true });
@@ -270,17 +275,19 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
 
   const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
   let headerSkipped = false;
-  let stdoutChunks: string[] = [];
-  let stderrChunks: string[] = [];
+  const stdoutChunks: string[] = [];
+  const stderrChunks: string[] = [];
 
   if (!existsSync(DIST_ENTRY)) {
     throw new Error(`dist/index.js not found — run \`npm run build\` before running evals`);
   }
 
-  const exitCode = await new Promise<number>((resolve) => {
+  let killProc: () => void = () => {};
+
+  const exitCodePromise = new Promise<number>((resolve) => {
     const proc = spawn(process.execPath, [DIST_ENTRY, '--script', scriptFile], {
       cwd: workDir,
-      stdio: ['inherit', 'pipe', 'pipe'],
+      stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
         ...(model ? { FREECODE_MODEL: model } : {}),
@@ -292,6 +299,8 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
         FORCE_COLOR: '1',
       },
     });
+
+    killProc = () => proc.kill();
 
     let partialLine = '';
 
@@ -331,39 +340,43 @@ async function executeEvalScenario(scenarioDir: string, prompt: string, model?: 
     });
   });
 
-  let toolCalls: EvalToolCall[] = [];
-  if (existsSync(traceFile)) {
-    try { toolCalls = JSON.parse(readFileSync(traceFile, 'utf-8')); } catch (err) {
-      logError('eval', `Failed to parse trace file ${traceFile}`, err);
+  const promise: Promise<EvalRunResult> = exitCodePromise.then((exitCode) => {
+    let toolCalls: EvalToolCall[] = [];
+    if (existsSync(traceFile)) {
+      try { toolCalls = JSON.parse(readFileSync(traceFile, 'utf-8')); } catch (err) {
+        logError('eval', `Failed to parse trace file ${traceFile}`, err);
+      }
     }
-  }
 
-  interface AgentEntry { totalTokens: number; promptTokens?: number; outputTokens?: number; quota?: unknown; }
-  let agentResults: AgentEntry[] = [];
-  if (existsSync(resultFile)) {
-    try { agentResults = JSON.parse(readFileSync(resultFile, 'utf-8')); } catch (err) {
-      logError('eval', `Failed to parse result file ${resultFile}`, err);
+    interface AgentEntry { totalTokens: number; promptTokens?: number; outputTokens?: number; quota?: unknown; }
+    let agentResults: AgentEntry[] = [];
+    if (existsSync(resultFile)) {
+      try { agentResults = JSON.parse(readFileSync(resultFile, 'utf-8')); } catch (err) {
+        logError('eval', `Failed to parse result file ${resultFile}`, err);
+      }
     }
-  }
 
-  const totalTokens = agentResults.reduce((s, r) => s + (r.totalTokens ?? 0), 0);
-  const hasPrompt = agentResults.some(r => r.promptTokens !== undefined);
-  const hasOutput = agentResults.some(r => r.outputTokens !== undefined);
-  const lastQuota = [...agentResults].reverse().find(r => r.quota !== undefined)?.quota ?? null;
+    const totalTokens = agentResults.reduce((s, r) => s + (r.totalTokens ?? 0), 0);
+    const hasPrompt = agentResults.some(r => r.promptTokens !== undefined);
+    const hasOutput = agentResults.some(r => r.outputTokens !== undefined);
+    const lastQuota = [...agentResults].reverse().find(r => r.quota !== undefined)?.quota ?? null;
 
-  return {
-    exitCode,
-    stdout: stdoutChunks.join(''),
-    stderr: stderrChunks.join(''),
-    toolCalls,
-    tokens: {
-      total: totalTokens,
-      prompt: hasPrompt ? agentResults.reduce((s, r) => s + (r.promptTokens ?? 0), 0) : undefined,
-      output: hasOutput ? agentResults.reduce((s, r) => s + (r.outputTokens ?? 0), 0) : undefined,
-    },
-    workDir,
-    quota: lastQuota,
-  };
+    return {
+      exitCode,
+      stdout: stdoutChunks.join(''),
+      stderr: stderrChunks.join(''),
+      toolCalls,
+      tokens: {
+        total: totalTokens,
+        prompt: hasPrompt ? agentResults.reduce((s, r) => s + (r.promptTokens ?? 0), 0) : undefined,
+        output: hasOutput ? agentResults.reduce((s, r) => s + (r.outputTokens ?? 0), 0) : undefined,
+      },
+      workDir,
+      quota: lastQuota,
+    };
+  });
+
+  return { promise, cancel: () => killProc() };
 }
 
 function printEvalReport(report: EvalReport): void {
@@ -688,10 +701,40 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       resetEvalWorkDir(scenarioDir);
       setEvalRunning(scenario.id);
       let result: EvalRunResult;
+      let cancelled = false;
+      const handle = startEvalScenario(scenarioDir, prompt, model || undefined);
+
+      // Listen for Esc to cancel the running eval; the already-printed output remains visible.
+      let cancelEscListener: (() => void) | null = null;
+      if (process.stdin.isTTY) {
+        rl.pause();
+        process.stdin.setRawMode(true);
+        process.stdin.resume();
+        process.stdin.setEncoding('utf8');
+        const onKey = (data: string): void => {
+          if (data === '\x03') { cancelEscListener?.(); process.exit(0); }
+          if (data === '\x1b') { cancelled = true; handle.cancel(); }
+        };
+        process.stdin.on('data', onKey);
+        cancelEscListener = () => {
+          process.stdin.removeListener('data', onKey);
+          process.stdin.setRawMode(false);
+          process.stdin.pause();
+          rl.resume();
+          cancelEscListener = null;
+        };
+      }
+
       try {
-        result = await executeEvalScenario(scenarioDir, prompt, model || undefined);
+        result = await handle.promise;
       } finally {
         setEvalRunning(null);
+        cancelEscListener?.();
+      }
+
+      if (cancelled) {
+        console.log(chalk.yellow('\nCancelled.'));
+        break;
       }
 
       // Update footer with the model, token count, and quota from the eval run.

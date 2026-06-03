@@ -323,5 +323,18 @@
       "output": 404
     },
     "scenarioHash": "2c6feafffa8dfe4e4519b0276201609e605f75539b9ce83c377a39f2e577db3b"
+  },
+  {
+    "timestamp": "2026-06-03T14:17:28.966Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 8753,
+      "prompt": 8019,
+      "output": 734
+    },
+    "scenarioHash": "2e3f1d8bd9807ff3c95043f12178a62b7bc89de4788e00edfc6bdc986a57cc53"
   }
 ]

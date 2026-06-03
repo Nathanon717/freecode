@@ -318,7 +318,7 @@
     "scenarioHash": "2e3f1d8bd9807ff3c95043f12178a62b7bc89de4788e00edfc6bdc986a57cc53"
   },
   {
-    "timestamp": "2026-06-03T11:28:25.683Z",
+    "timestamp": "2026-06-03T14:29:34.277Z",
     "scenarioId": "007-python-two-bug-cascade",
     "model": "groq:llama-3.3-70b-versatile",
     "pass": false,
