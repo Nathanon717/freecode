@@ -88,7 +88,7 @@ function stringifyContent(content: unknown): string {
       return JSON.stringify(part);
     }).join('\n');
   }
-  return String(content ?? '');
+  return content == null ? '' : JSON.stringify(content);
 }
 
 function contentBlock(type: 'input_text' | 'output_text', text: string): JsonObject {
@@ -318,7 +318,7 @@ async function executeFunctionCall(
     return { type: 'function_call_output', call_id: callId, output: `Tool call failed: unknown tool ${name}` };
   }
   try {
-    const result = await tool.execute(args, { abortSignal: signal });
+    const result: unknown = await tool.execute(args, { abortSignal: signal });
     return { type: 'function_call_output', call_id: callId, output: stringifyContent(result) };
   } catch (error) {
     return { type: 'function_call_output', call_id: callId, output: `Tool call failed: ${toErrorMessage(error)}` };

@@ -1,0 +1,15 @@
+[
+  {
+    "timestamp": "2026-06-03T18:44:05.971Z",
+    "scenarioId": "001-hello-world",
+    "model": "cloudflare:@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 459,
+      "prompt": 203,
+      "output": 256
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  }
+]

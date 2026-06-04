@@ -33,7 +33,7 @@ describe('OpenAI daily spend footer data', () => {
 
   it('fetches the current UTC day costs and sums USD results', async () => {
     process.env.OPENAI_ADMIN_KEY = 'admin-key';
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+    const fetchMock = vi.fn(() => Promise.resolve(new Response(JSON.stringify({
       data: [
         {
           object: 'bucket',
@@ -46,8 +46,8 @@ describe('OpenAI daily spend footer data', () => {
           ],
         },
       ],
-    }), { status: 200 }));
-    globalThis.fetch = fetchMock as typeof fetch;
+    }), { status: 200 })));
+    globalThis.fetch = fetchMock;
 
     const snapshot = await fetchOpenAITodayCosts(new Date('2026-05-22T12:34:00.000Z'));
     const url = new URL(String(fetchMock.mock.calls[0]?.[0]));
@@ -69,7 +69,7 @@ describe('OpenAI daily spend footer data', () => {
 
   it('reuses a fresh cached refresh snapshot', async () => {
     const snapshots: OpenAIDailySpend[] = [];
-    const fetchCosts = vi.fn(async () => ({
+    const fetchCosts = vi.fn(() => Promise.resolve({
       state: 'ready' as const,
       amountUsd: 0.42,
       formattedAmountUsd: '$0.42',
@@ -101,7 +101,7 @@ describe('OpenAI daily spend footer data', () => {
     expect(isOpenAIModelPreference('openai:')).toBe(false);
 
     const snapshots: OpenAIDailySpend[] = [];
-    const fetchCosts = vi.fn(async () => ({
+    const fetchCosts = vi.fn(() => Promise.resolve({
       state: 'ready' as const,
       amountUsd: 0.42,
       formattedAmountUsd: '$0.42',

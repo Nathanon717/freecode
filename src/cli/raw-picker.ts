@@ -21,6 +21,8 @@ export interface RawPickerOptions<T = void> {
   countLines?: (lines: string[]) => number;
   /** Replaces the default line-erase sequence on cleanup. Receives the line count at close time. */
   onExitClear?: (rowCount: number) => void;
+  /** Skip the viewport scroll-clear that normally pushes prior output off-screen before the picker draws. */
+  skipScrollClear?: boolean;
 }
 
 /**
@@ -98,10 +100,12 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
     suspendFooterTimer();
     process.stdout.write('\x1b[?25l');
 
-    // Move to the scroll-region bottom and scroll all old content above the
-    // viewport so stale echoes don't remain visible above the picker menu.
-    const r = getRows();
-    process.stdout.write(`\x1b[${r - 2};1H` + '\n'.repeat(r - 2));
+    if (!opts.skipScrollClear) {
+      // Move to the scroll-region bottom and scroll all old content above the
+      // viewport so stale echoes don't remain visible above the picker menu.
+      const r = getRows();
+      process.stdout.write(`\x1b[${r - 2};1H` + '\n'.repeat(r - 2));
+    }
 
     redraw();
 

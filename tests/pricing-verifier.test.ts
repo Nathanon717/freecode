@@ -3,7 +3,7 @@ import { buildAllItemLines } from '../src/commands/model.js';
 import { getAnthropicVerifiedRates } from '../src/providers/pricing-verifier.js';
 
 function mockPricingFetches(litellmEntries: Record<string, { input: number; output: number }>, openrouterEntries: Record<string, { input: number; output: number }>): void {
-  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+  vi.stubGlobal('fetch', vi.fn((url: string) => {
     if (url.includes('litellm')) {
       const json = Object.fromEntries(Object.entries(litellmEntries).map(([key, rate]) => [
         key,
@@ -12,7 +12,7 @@ function mockPricingFetches(litellmEntries: Record<string, { input: number; outp
           output_cost_per_token: rate.output / 1_000_000,
         },
       ]));
-      return new Response(JSON.stringify(json), { status: 200 });
+      return Promise.resolve(new Response(JSON.stringify(json), { status: 200 }));
     }
 
     const data = Object.entries(openrouterEntries).map(([id, rate]) => ({
@@ -22,7 +22,7 @@ function mockPricingFetches(litellmEntries: Record<string, { input: number; outp
         completion: String(rate.output / 1_000_000),
       },
     }));
-    return new Response(JSON.stringify({ data }), { status: 200 });
+    return Promise.resolve(new Response(JSON.stringify({ data }), { status: 200 }));
   }));
 }
 

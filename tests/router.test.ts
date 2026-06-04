@@ -87,7 +87,7 @@ describe('Router Logic', () => {
         .filter(l => l.startsWith('data:'))
         .map(l => l.slice('data:'.length).trim())
         .filter(d => d && d !== '[DONE]')
-        .map(d => JSON.parse(d));
+        .map(d => JSON.parse(d) as unknown);
     }
 
     it('converts a text response to SSE chunks with role, content, and finish_reason', () => {

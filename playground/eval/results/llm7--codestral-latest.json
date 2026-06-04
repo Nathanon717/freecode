@@ -161,5 +161,31 @@
       "total": 0
     },
     "scenarioHash": "2e3f1d8bd9807ff3c95043f12178a62b7bc89de4788e00edfc6bdc986a57cc53"
+  },
+  {
+    "timestamp": "2026-06-03T16:23:19.382Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "llm7:codestral-latest",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "50e55d5cd96e964d78253e8eecb7edfa0ee7de306c7442360feff839a186a814"
+  },
+  {
+    "timestamp": "2026-06-03T20:08:25.430Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "llm7:codestral-latest",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "980283ae8cf35b95b2d04f66c6020cdb380dbff3326da7894360a018559cd417"
   }
 ]

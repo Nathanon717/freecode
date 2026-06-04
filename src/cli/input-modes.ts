@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import { runConfigCommand } from '../commands/config.js';
 import { runModelCommand } from '../commands/model.js';
 import { runClaudeHelpCommand } from '../commands/claude-help.js';
-import { showBanner } from './banner.js';
+import { redrawBanner } from './banner.js';
 import { formatArgs, type ToolCallConfirmation, type ToolCallPreview } from '../agent/tools/index.js';
 import { loadConfig } from '../config/index.js';
 import { UserAbortError } from '../util/errors.js';
@@ -34,7 +34,6 @@ import {
   setSuggestions,
   setTokenCount,
   setupBottomUI,
-  setupFooterUI,
   setupInputUI,
   teardownBottomUI,
   teardownFooterUI,
@@ -530,7 +529,7 @@ export function createInteractiveMode(
       await runConfigCommand(rl, getSelectedModel());
       rl.pause();
       if (process.stdin.isTTY) {
-        showBanner();
+        redrawBanner();
         setupBottomUI();
         resetBottomPromptState(session);
         refreshFooterDailySpend(getSelectedModel);
@@ -544,7 +543,7 @@ export function createInteractiveMode(
       rl.pause();
       applyModelStatus(getSelectedModel());
       if (process.stdin.isTTY) {
-        if (pickerShown) showBanner();
+        if (pickerShown) redrawBanner();
         setupBottomUI();
         resetBottomPromptState(session);
         refreshFooterDailySpend(getSelectedModel);
@@ -572,13 +571,13 @@ export function createScriptedMode(scriptPath: string, projectRoot: string, rl: 
   let autoCallCount = 0;
 
   return {
-    readInput: async () => {
-      if (lineIdx >= lines.length) return null;
+    readInput: (): Promise<string | null> => {
+      if (lineIdx >= lines.length) return Promise.resolve(null);
       const line = lines[lineIdx++];
       console.log(chalk.green('> ') + line);
-      return line;
+      return Promise.resolve(line);
     },
-    confirmToolCall: async (preview) => {
+    confirmToolCall: async (_preview) => {
       if (autoConfirm) {
         autoCallCount++;
         if (autoCallCount % maxToolCalls === 0) {
@@ -614,11 +613,13 @@ export function createScriptedMode(scriptPath: string, projectRoot: string, rl: 
     },
     modelListMode: 'current-only',
     skipStrayConfirmations: true,
-    runTestMenu: async () => {
+    runTestMenu: (): Promise<void> => {
       printScriptedScenarioList(projectRoot);
+      return Promise.resolve();
     },
-    runEvalMenu: async () => {
+    runEvalMenu: (): Promise<void> => {
       console.log(chalk.dim('/eval is not available in scripted mode.'));
+      return Promise.resolve();
     },
     onInputExhausted: () => {
       console.log(chalk.dim('Goodbye!'));

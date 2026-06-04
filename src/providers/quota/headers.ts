@@ -98,7 +98,7 @@ export function parseGroqRateLimitHeaders(
   const get = (key: string): string | null =>
     headers instanceof Headers
       ? headers.get(key)
-      : ((headers as Record<string, string>)[key] ?? null);
+      : ((headers)[key] ?? null);
 
   const num = (key: string): number | null => {
     const v = get(key);
@@ -173,7 +173,7 @@ export function parseAnthropicRateLimitHeaders(
   const get = (key: string): string | null =>
     headers instanceof Headers
       ? headers.get(key)
-      : ((headers as Record<string, string>)[key] ?? null);
+      : ((headers)[key] ?? null);
 
   const num = (key: string): number | null => {
     const v = get(key);
@@ -204,7 +204,7 @@ export function parseAnthropicExtendedHeaders(
   const get = (key: string): string | null =>
     headers instanceof Headers
       ? headers.get(key)
-      : ((headers as Record<string, string>)[key] ?? null);
+      : ((headers)[key] ?? null);
 
   const num = (key: string): number | null => {
     const v = get(key);

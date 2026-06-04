@@ -33,19 +33,6 @@
     "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
   },
   {
-    "timestamp": "2026-06-01T17:31:23.516Z",
-    "scenarioId": "002-edit-config",
-    "model": "mistral:devstral-2512",
-    "pass": true,
-    "warnings": true,
-    "tokens": {
-      "total": 5755,
-      "prompt": 5615,
-      "output": 140
-    },
-    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
-  },
-  {
     "timestamp": "2026-06-01T17:31:49.816Z",
     "scenarioId": "003-python-missing-semicolon",
     "model": "mistral:devstral-2512",
@@ -94,5 +81,96 @@
       "output": 512
     },
     "scenarioHash": "07a59670a105001ada57e61c02a80e6f48dae15db66a1c6fc0a7cd6ae6fcddce"
+  },
+  {
+    "timestamp": "2026-06-03T17:58:16.716Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "mistral:devstral-2512",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 8198,
+      "prompt": 8045,
+      "output": 153
+    },
+    "scenarioHash": "23566b192bcd0097ebc7d8b529f82d94300040922dfb7c4d7d842c680bbaf527"
+  },
+  {
+    "timestamp": "2026-06-03T17:58:35.809Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "mistral:devstral-2512",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 11871,
+      "prompt": 11425,
+      "output": 446
+    },
+    "scenarioHash": "b68b8f29bde1b42cf89c36cbd2fd252397f088656f1ac2a2e993b281d5a4f19f"
+  },
+  {
+    "timestamp": "2026-06-03T17:58:57.369Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "mistral:devstral-2512",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 8967,
+      "prompt": 8705,
+      "output": 262
+    },
+    "scenarioHash": "2c6feafffa8dfe4e4519b0276201609e605f75539b9ce83c377a39f2e577db3b"
+  },
+  {
+    "timestamp": "2026-06-03T17:59:10.262Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "mistral:devstral-2512",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 9354,
+      "prompt": 8957,
+      "output": 397
+    },
+    "scenarioHash": "2e3f1d8bd9807ff3c95043f12178a62b7bc89de4788e00edfc6bdc986a57cc53"
+  },
+  {
+    "timestamp": "2026-06-03T17:59:44.689Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "mistral:devstral-2512",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 19252,
+      "prompt": 18737,
+      "output": 515
+    },
+    "scenarioHash": "50e55d5cd96e964d78253e8eecb7edfa0ee7de306c7442360feff839a186a814"
+  },
+  {
+    "timestamp": "2026-06-03T20:25:58.088Z",
+    "scenarioId": "002-edit-config",
+    "model": "mistral:devstral-2512",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 4708,
+      "prompt": 4647,
+      "output": 61
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-03T20:26:07.281Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "mistral:devstral-2512",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 8970,
+      "prompt": 8705,
+      "output": 265
+    },
+    "scenarioHash": "980283ae8cf35b95b2d04f66c6020cdb380dbff3326da7894360a018559cd417"
   }
 ]

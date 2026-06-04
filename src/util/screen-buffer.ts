@@ -3,7 +3,7 @@ const lineBuffer: string[] = [];
 let installed = false;
 
 function stripAnsi(str: string): string {
-  return str.replace(/\x1b(?:\[[0-9;?]*[A-Za-z]|[^\[])/g, '');
+  return str.replace(/\x1b(?:\[[0-9;?]*[A-Za-z]|[^[])/g, '');
 }
 
 export function installScreenBuffer(): void {
@@ -12,7 +12,7 @@ export function installScreenBuffer(): void {
 
   const original = process.stdout.write.bind(process.stdout);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
   (process.stdout as any).write = function (chunk: string | Buffer, ...args: unknown[]): boolean {
     if (typeof chunk === 'string') {
       const clean = stripAnsi(chunk).replace(/\r/g, '');
@@ -24,7 +24,7 @@ export function installScreenBuffer(): void {
         }
       }
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
     return (original as any)(chunk, ...args);
   };
 }

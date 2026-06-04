@@ -13,9 +13,11 @@ This table is generated from `package.json`.
 | `npm run coverage` | `vitest run --coverage` |
 | `npm run dev` | `tsx src/index.ts` |
 | `npm run docs:generate` | `tsx scripts/sync-docs.ts` |
+| `npm run lint` | `eslint src tests scripts` |
+| `npm run lint:fix` | `eslint src tests scripts --fix` |
 | `npm run pty:session` | `cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts` |
 | `npm run start` | `node dist/index.js` |
-| `npm run test` | `npm run build && npm run docs:generate && npm run verify:scenarios && vitest run --exclude tests/harness/pty/driver.test.ts --exclude tests/harness/pty/session.test.ts` |
+| `npm run test` | `npm run build && npm run docs:generate && npm run verify:scenarios && vitest run --reporter=dot --exclude tests/harness/pty/driver.test.ts --exclude tests/harness/pty/session.test.ts` |
 | `npm run test:pty` | `vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts` |
 | `npm run unit:watch` | `vitest` |
 | `npm run verify:scenarios` | `tsx tests/harness/run-scenarios.ts --no-build --skip-llm` |

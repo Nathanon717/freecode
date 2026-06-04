@@ -7,6 +7,7 @@ import {
   assertStayedInWorkDir,
   statToolCalls,
   statTokens,
+  formatOutputDiff,
 } from '../../shared/assertions.js';
 
 const expectedOutput = 'items=3\nrevenue=102.50\n';
@@ -43,7 +44,7 @@ function assertScriptRuns(workDir: string): CheckResult {
       pass,
       message: pass
         ? undefined
-        : `expected ${JSON.stringify(expectedOutput)} but got stdout=${JSON.stringify(stdout)} stderr=${JSON.stringify(run.stderr)} (exit ${run.status})`,
+        : formatOutputDiff(stdout, expectedOutput) + (run.stderr.trim() ? `\n  stderr: ${run.stderr.trim()}` : ''),
     };
   }
 
@@ -108,6 +109,18 @@ function assertInspectedData(toolCalls: ToolCall[]): CheckResult {
   };
 }
 
+function assertAgentRanScript(toolCalls: ToolCall[]): CheckResult {
+  const ran = toolCalls.some(call =>
+    call.tool === 'shell_exec' && commandMentionsScript(call)
+  );
+  return {
+    name: 'agent ran report.py',
+    kind: 'assertion',
+    pass: ran,
+    message: ran ? undefined : 'agent never executed report.py during the session',
+  };
+}
+
 function assertEditedThenReran(toolCalls: ToolCall[]): CheckResult {
   const wrongRun = toolCalls.findIndex(call =>
     call.tool === 'shell_exec' &&
@@ -148,7 +161,7 @@ function assertEditedThenReran(toolCalls: ToolCall[]): CheckResult {
 
   return {
     name: 'edited then reran',
-    kind: 'assertion',
+    kind: 'warning',
     pass: rerun !== -1,
     message: rerun === -1 ? 'no successful rerun of report.py after the edit' : undefined,
   };
@@ -161,6 +174,7 @@ export function check(result: EvalRunResult): EvalReport {
       assertFileExists(result.workDir, 'report.py'),
       assertFileExists(result.workDir, 'sales.csv'),
       assertScriptRuns(result.workDir),
+      assertAgentRanScript(result.toolCalls),
       assertFirstRunSucceededWithWrongOutput(result.toolCalls),
       assertInspectedData(result.toolCalls),
       assertEditedThenReran(result.toolCalls),

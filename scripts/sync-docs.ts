@@ -30,7 +30,7 @@ const generateArgs = ['--import', 'tsx', 'scripts/generate-docs.ts'];
 const check = run([...generateArgs, '--check'], 'pipe');
 
 if (check.status === 0) {
-  console.log('Generated docs are already current.');
+  // already current — silent
 } else if (check.output.includes('Generated docs are stale:')) {
   console.log('Generated docs are stale; regenerating.');
   runRequired(generateArgs);

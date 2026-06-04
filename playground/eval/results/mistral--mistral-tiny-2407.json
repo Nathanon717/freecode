@@ -1,0 +1,15 @@
+[
+  {
+    "timestamp": "2026-06-03T18:01:43.261Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:mistral-tiny-2407",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 2312,
+      "prompt": 2262,
+      "output": 50
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  }
+]

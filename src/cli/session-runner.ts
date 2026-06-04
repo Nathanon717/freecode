@@ -4,31 +4,31 @@ import { dispatchCommand, type ModelListMode } from './command-dispatcher.js';
 import type { SessionController } from './session-controller.js';
 
 export interface CliSessionMode {
-  readInput(tokenCount: number): Promise<string | null>;
+  readInput(this: void, tokenCount: number): Promise<string | null>;
   confirmToolCall: ConfirmToolCall;
   modelListMode: ModelListMode;
   skipStrayConfirmations?: boolean;
-  beforeAgentCall?(): void | Promise<void>;
-  afterAgentCall?(): void | Promise<void>;
-  onAgentResult?(result: AgentLoopResult): void | Promise<void>;
-  beforeScreenClear?(): void | Promise<void>;
-  afterScreenClear?(): void | Promise<void>;
-  runConfig?(): Promise<void>;
-  runModelMenu?(): Promise<void>;
-  runClaudeHelp?(userMessage: string): Promise<void>;
-  runTestMenu(): Promise<void>;
-  runEvalMenu(): Promise<void>;
-  beforeDispatch?(): void | Promise<void>;
-  afterDispatch?(): void | Promise<void>;
-  onExit?(): void | Promise<void>;
-  onInputExhausted?(): void | Promise<void>;
+  beforeAgentCall?(this: void): void | Promise<void>;
+  afterAgentCall?(this: void): void | Promise<void>;
+  onAgentResult?(this: void, result: AgentLoopResult): void | Promise<void>;
+  beforeScreenClear?(this: void): void | Promise<void>;
+  afterScreenClear?(this: void): void | Promise<void>;
+  runConfig?(this: void): Promise<void>;
+  runModelMenu?(this: void): Promise<void>;
+  runClaudeHelp?(this: void, userMessage: string): Promise<void>;
+  runTestMenu(this: void): Promise<void>;
+  runEvalMenu(this: void): Promise<void>;
+  beforeDispatch?(this: void): void | Promise<void>;
+  afterDispatch?(this: void): void | Promise<void>;
+  onExit?(this: void): void | Promise<void>;
+  onInputExhausted?(this: void): void | Promise<void>;
 }
 
 interface CliSessionRunnerOptions {
   projectRoot: string;
   session: SessionController;
-  getSelectedModel(): string;
-  setSelectedModel(model: string): void;
+  getSelectedModel(this: void): string;
+  setSelectedModel(this: void, model: string): void;
   mode: CliSessionMode;
 }
 

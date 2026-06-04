@@ -1,0 +1,39 @@
+[
+  {
+    "timestamp": "2026-06-03T19:40:50.465Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:ministral-8b-2512",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2271,
+      "prompt": 2228,
+      "output": 43
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-03T19:40:55.923Z",
+    "scenarioId": "002-edit-config",
+    "model": "mistral:ministral-8b-2512",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 4721,
+      "prompt": 4643,
+      "output": 78
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-03T19:41:09.520Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "mistral:ministral-8b-2512",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "23566b192bcd0097ebc7d8b529f82d94300040922dfb7c4d7d842c680bbaf527"
+  }
+]

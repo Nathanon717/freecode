@@ -32,17 +32,28 @@ export interface PtyDriver {
   kill(): void;
 }
 
+interface PtyProcess {
+  onData(cb: (d: string) => void): void;
+  onExit(cb: (e: { exitCode: number }) => void): void;
+  write(data: string): void;
+  kill(): void;
+}
+
+interface XtermLine { translateToString(trim: boolean): string; }
+interface XtermBuffer { baseY: number; length: number; getLine(i: number): XtermLine | null; }
+interface XtermTerminal { write(data: string, cb?: () => void): void; buffer: { active: XtermBuffer }; }
+
 export function createPtyDriver(opts: PtyDriverOptions): PtyDriver {
   // Required lazily so importing this module never crashes when the native
   // node-pty addon is unavailable; the caller sees the error at spawn time.
-  const pty = require('node-pty');
-  const { Terminal } = require('@xterm/headless');
+  const pty = require('node-pty') as { spawn: (...args: unknown[]) => PtyProcess };
+  const { Terminal } = require('@xterm/headless') as { Terminal: new (opts: Record<string, unknown>) => XtermTerminal };
 
   const cols = opts.cols ?? 80;
   const rows = opts.rows ?? 24;
-  const term = new Terminal({ cols, rows, allowProposedApi: true });
+  const term: XtermTerminal = new Terminal({ cols, rows, allowProposedApi: true });
 
-  const proc = pty.spawn(opts.command, opts.args, {
+  const proc: PtyProcess = pty.spawn(opts.command, opts.args, {
     name: 'xterm-color',
     cols,
     rows,

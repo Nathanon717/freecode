@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { readFile, writeFile, unlink, mkdir } from 'fs/promises';
+import { readFile, writeFile, rm, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { readFileTool } from '../src/agent/tools/read-file.js';
 import { writeFileTool } from '../src/agent/tools/write-file.js';
@@ -47,9 +47,7 @@ describe('tool integration: write_file', () => {
   });
 
   afterEach(async () => {
-    try {
-      await unlink(join(TEST_DIR, 'test-write.txt'));
-    } catch {}
+    await rm(join(TEST_DIR, 'test-write.txt'), { force: true });
   });
 });
 
@@ -125,12 +123,8 @@ describe('tool integration: edit_file', () => {
   });
 
   afterEach(async () => {
-    try {
-      await unlink(join(TEST_DIR, 'test-edit.txt'));
-    } catch {}
-    try {
-      await unlink(join(TEST_DIR, 'test-edit-unread.txt'));
-    } catch {}
+    await rm(join(TEST_DIR, 'test-edit.txt'), { force: true });
+    await rm(join(TEST_DIR, 'test-edit-unread.txt'), { force: true });
   });
 });
 
@@ -172,9 +166,7 @@ describe('tool integration: grep', () => {
   });
 
   afterEach(async () => {
-    try {
-      await unlink(GREP_TEST_FILE);
-    } catch {}
+    await rm(GREP_TEST_FILE, { force: true });
   });
 });
 
@@ -192,8 +184,6 @@ describe('tool integration: chaining', () => {
   });
 
   afterEach(async () => {
-    try {
-      await unlink(join(TEST_DIR, 'chain-test.txt'));
-    } catch {}
+    await rm(join(TEST_DIR, 'chain-test.txt'), { force: true });
   });
 });

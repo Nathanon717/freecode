@@ -37,6 +37,7 @@ type HelpAction = 'fix' | 'dismiss';
 async function showActionPicker(rl: Interface): Promise<HelpAction> {
   let selected: HelpAction = 'fix';
   return runRawPicker<HelpAction>(rl, {
+    skipScrollClear: true,
     render() {
       const fix = selected === 'fix' ? chalk.inverse('> Fix with Claude Code') : '  Fix with Claude Code';
       const dismiss = selected === 'dismiss' ? chalk.inverse('> Dismiss') : '  Dismiss';

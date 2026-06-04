@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { writeFileSync } from 'fs';
 import { createInterface } from 'readline';
 import chalk from 'chalk';
 import { installScreenBuffer } from './util/screen-buffer.js';
@@ -7,8 +8,8 @@ import { showBanner } from './cli/banner.js';
 import { createInteractiveMode, createScriptedMode } from './cli/input-modes.js';
 import { SessionController } from './cli/session-controller.js';
 import { runCliSession } from './cli/session-runner.js';
-import { setupFooterUI, setRetryBanner } from './cli/terminal-ui.js';
-import { registerRetryBannerSink } from './providers/adapters/openai-compat.js';
+import { setupFooterUI, setRetryBanner, setQuotaSnapshot } from './cli/terminal-ui.js';
+import { registerRetryBannerSink, registerQuotaUpdateSink } from './providers/adapters/openai-compat.js';
 import { loadConfig } from './config/index.js';
 import { enableLog } from './logger.js';
 
@@ -40,6 +41,13 @@ async function main() {
       return;
     }
 
+    const retryStatusFile = process.env['FREECODE_RETRY_STATUS_FILE'];
+    if (retryStatusFile) {
+      registerRetryBannerSink(info => {
+        try { writeFileSync(retryStatusFile, JSON.stringify(info)); } catch (err) { process.stderr.write(`[freecode] retry status write failed: ${String(err)}\n`); }
+      });
+    }
+
     session.createSession();
     let mode;
     try {
@@ -64,6 +72,7 @@ async function main() {
   if (process.stdin.isTTY) {
     setupFooterUI();
     registerRetryBannerSink(setRetryBanner);
+    registerQuotaUpdateSink(setQuotaSnapshot);
   }
 
   showBanner();

@@ -175,7 +175,7 @@ export function createAnthropicProvider(providerConfig: ProviderConfig) {
     // not x-api-key. Swap the header when we detect that format.
     let fetchInit = init;
     if (apiKey.startsWith('sk-ant-si-')) {
-      const headers = new Headers(init?.headers as Record<string, string> | undefined);
+      const headers = new Headers(init?.headers);
       headers.delete('x-api-key');
       headers.set('Authorization', `Bearer ${apiKey}`);
       fetchInit = { ...init, headers };

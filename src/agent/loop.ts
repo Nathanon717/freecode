@@ -1,6 +1,5 @@
 import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
-import chalk from 'chalk';
 import { getProvider, resolveModel } from '../providers/registry.js';
 import { buildSystemPrompt } from './system-prompt.js';
 import { createTools, type ConfirmToolCall } from './tools/index.js';

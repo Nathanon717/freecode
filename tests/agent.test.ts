@@ -23,18 +23,18 @@ describe('shell tool', () => {
 describe('tool confirmation', () => {
   it('executes an approved tool call', async () => {
     const { createTools } = await import('../src/agent/tools/index.js');
-    const tools = createTools(async () => true);
+    const tools = createTools(() => Promise.resolve(true));
 
-    const result = await tools.read_file.execute?.({ path: 'package.json' }, {} as never);
+    const result = await tools.read_file.execute?.({ path: 'package.json' }, {}) as string | undefined;
 
     expect(result).toContain('"name": "freecode"');
   });
 
   it('denies a rejected tool call before execution', async () => {
     const { createTools } = await import('../src/agent/tools/index.js');
-    const tools = createTools(async () => false);
+    const tools = createTools(() => Promise.resolve(false));
 
-    const result = await tools.read_file.execute?.({ path: 'package.json' }, {} as never);
+    const result = await tools.read_file.execute?.({ path: 'package.json' }, {}) as string | undefined;
 
     expect(result).toContain('Tool call denied by user');
     expect(result).toContain('read_file');
@@ -42,12 +42,12 @@ describe('tool confirmation', () => {
 
   it('includes user feedback when a denied tool call provides it', async () => {
     const { createTools } = await import('../src/agent/tools/index.js');
-    const tools = createTools(async () => ({
+    const tools = createTools(() => Promise.resolve({
       approved: false,
       message: 'Do not read that file; summarize the current directory instead.',
     }));
 
-    const result = await tools.read_file.execute?.({ path: 'package.json' }, {} as never);
+    const result = await tools.read_file.execute?.({ path: 'package.json' }, {}) as string | undefined;
 
     expect(result).toContain('Tool call denied by user');
     expect(result).toContain('User input after denial');
@@ -68,10 +68,10 @@ describe('tool confirmation', () => {
         return true;
       });
 
-      const [, readResult] = await Promise.all([
-        tools.write_file.execute?.({ path: 'output.txt', content: 'queued content' }, {} as never),
-        tools.read_file.execute?.({ path: 'output.txt' }, {} as never),
-      ]);
+      const [, readResult] = (await Promise.all([
+        tools.write_file.execute?.({ path: 'output.txt', content: 'queued content' }, {}),
+        tools.read_file.execute?.({ path: 'output.txt' }, {}),
+      ])) as [unknown, unknown];
 
       expect(readResult).toContain('queued content');
     } finally {

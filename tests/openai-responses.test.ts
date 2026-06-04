@@ -19,9 +19,9 @@ const provider: ProviderConfig = {
 
 function simpleTool(): CoreTool {
   return {
-    parameters: {} as never,
+    parameters: {},
     description: 'Echo a value',
-    execute: async (args: unknown) => `echo:${JSON.stringify(args)}`,
+    execute: (args: unknown) => Promise.resolve(`echo:${JSON.stringify(args)}`),
   };
 }
 
@@ -77,10 +77,10 @@ describe('OpenAI Responses adapter', () => {
 
   it('counts input tokens through /responses/input_tokens', async () => {
     process.env.OPENAI_API_KEY = 'test-key';
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+    const fetchMock = vi.fn(() => Promise.resolve(new Response(JSON.stringify({
       object: 'response.input_tokens',
       input_tokens: 123,
-    }), { status: 200 }));
+    }), { status: 200 })));
     vi.stubGlobal('fetch', fetchMock);
     const payload = buildOpenAIResponsesPayload({
       modelId: 'gpt-5',
@@ -90,19 +90,19 @@ describe('OpenAI Responses adapter', () => {
 
     await expect(countOpenAIResponsesInputTokens(provider, payload)).resolves.toMatchObject({
       inputTokens: 123,
-      payloadHash: expect.any(String),
+      payloadHash: expect.any(String) as string,
     });
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.openai.com/v1/responses/input_tokens',
       expect.objectContaining({ method: 'POST' }),
     );
     const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    expect(JSON.parse(String(request.body))).not.toHaveProperty('store');
+    expect(JSON.parse(request.body as string)).not.toHaveProperty('store');
   });
 
   it('generates with Responses and executes function calls for at most ten steps', async () => {
     process.env.OPENAI_API_KEY = 'test-key';
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+    const fetchMock = vi.fn(() => Promise.resolve(new Response(JSON.stringify({
       id: 'resp_tool',
       model: 'gpt-5',
       output: [{
@@ -112,7 +112,7 @@ describe('OpenAI Responses adapter', () => {
         arguments: '{"value":1}',
       }],
       usage: { input_tokens: 1, output_tokens: 2, total_tokens: 3 },
-    }), { status: 200 }));
+    }), { status: 200 })));
     vi.stubGlobal('fetch', fetchMock);
     const payload = buildOpenAIResponsesPayload({
       modelId: 'gpt-5',
@@ -161,7 +161,7 @@ describe('OpenAI Responses adapter', () => {
     await generateOpenAIResponses(provider, payload, { echo: simpleTool() });
 
     const secondRequest = fetchMock.mock.calls[1]?.[1] as RequestInit;
-    const secondBody = JSON.parse(String(secondRequest.body)) as { input: unknown[] };
+    const secondBody = JSON.parse(secondRequest.body as string) as { input: unknown[] };
     expect(JSON.stringify(secondBody.input)).not.toContain('rs_123');
     expect(secondBody.input).toEqual(expect.arrayContaining([
       expect.objectContaining({

@@ -67,7 +67,7 @@ describe('OpenAI preflight input cost controller', () => {
     vi.useFakeTimers();
     process.env.OPENAI_API_KEY = 'test-key';
     const snapshots: PreflightInputCost[] = [];
-    const countInputTokens = vi.fn(async (_provider, payload) => ({
+    const countInputTokens = vi.fn((_provider: unknown, payload: unknown) => Promise.resolve({
       inputTokens: 100,
       payloadHash: JSON.stringify(payload).length.toString(),
     }));
@@ -78,7 +78,7 @@ describe('OpenAI preflight input cost controller', () => {
       redraw: vi.fn(),
       debounceMs: 25,
       countInputTokens,
-      getRates: async () => ({ confidence: 'agreed', inputPerMillion: 2, outputPerMillion: 8 }),
+      getRates: () => Promise.resolve({ confidence: 'agreed' as const, inputPerMillion: 2, outputPerMillion: 8 }),
     });
 
     controller.schedule('hello');
@@ -117,7 +117,7 @@ describe('OpenAI preflight input cost controller', () => {
       redraw: vi.fn(),
       debounceMs: 1,
       countInputTokens,
-      getRates: async () => ({ confidence: 'agreed', inputPerMillion: 1, outputPerMillion: 1 }),
+      getRates: () => Promise.resolve({ confidence: 'agreed' as const, inputPerMillion: 1, outputPerMillion: 1 }),
     });
 
     controller.schedule('first');

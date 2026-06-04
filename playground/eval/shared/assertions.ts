@@ -2,6 +2,27 @@ import { existsSync, readFileSync } from 'fs';
 import { join, resolve, sep } from 'path';
 import type { CheckResult, ToolCall, TokenUsage } from './types.js';
 
+export function formatOutputDiff(actual: string, expected: string): string {
+  const gotLines = actual.split('\n');
+  const expLines = expected.split('\n');
+  const maxLen = Math.max(gotLines.length, expLines.length);
+  const parts: string[] = ['output mismatch:'];
+  for (let i = 0; i < maxLen; i++) {
+    const got = gotLines[i];
+    const exp = expLines[i];
+    if (got === exp) continue;
+    if (got !== undefined && exp !== undefined) {
+      parts.push(`  got:      ${got || '(empty)'}`);
+      parts.push(`  expected: ${exp || '(empty)'}`);
+    } else if (got !== undefined && got !== '') {
+      parts.push(`  extra got: ${got}`);
+    } else if (exp !== undefined && exp !== '') {
+      parts.push(`  missing:   ${exp}`);
+    }
+  }
+  return parts.join('\n');
+}
+
 export function assertFileExists(workDir: string, filename: string): CheckResult {
   const exists = existsSync(join(workDir, filename));
   return {

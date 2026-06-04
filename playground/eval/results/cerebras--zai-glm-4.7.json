@@ -29,5 +29,18 @@
       "total": 0
     },
     "scenarioHash": "c794a7c2838705474f04b381e70a33d7b94140c55eb966ae71c448eb9063e382"
+  },
+  {
+    "timestamp": "2026-06-03T18:25:04.215Z",
+    "scenarioId": "001-hello-world",
+    "model": "cerebras:zai-glm-4.7",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2613,
+      "prompt": 2432,
+      "output": 181
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
   }
 ]

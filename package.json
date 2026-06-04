@@ -12,13 +12,15 @@
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "test": "npm run build && npm run docs:generate && npm run verify:scenarios && vitest run --exclude tests/harness/pty/driver.test.ts --exclude tests/harness/pty/session.test.ts",
+    "test": "npm run build && npm run docs:generate && npm run verify:scenarios && vitest run --reporter=dot --exclude tests/harness/pty/driver.test.ts --exclude tests/harness/pty/session.test.ts",
     "test:pty": "vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts",
     "unit:watch": "vitest",
     "coverage": "vitest run --coverage",
     "docs:generate": "tsx scripts/sync-docs.ts",
     "verify:scenarios": "tsx tests/harness/run-scenarios.ts --no-build --skip-llm",
-    "pty:session": "cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts"
+    "pty:session": "cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts",
+    "lint": "eslint src tests scripts",
+    "lint:fix": "eslint src tests scripts --fix"
   },
   "keywords": [
     "cli",
@@ -35,14 +37,17 @@
     "chalk": "^5.3.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.19.17",
     "@vitest/coverage-v8": "^4.1.4",
     "@xterm/headless": "^6.0.0",
     "cross-env": "^10.1.0",
+    "eslint": "^10.4.1",
     "node-pty": "^1.1.0",
     "playwright": "^1.60.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
+    "typescript-eslint": "^8.60.1",
     "vitest": "^4.1.4"
   }
 }

@@ -16,6 +16,12 @@ export function registerRetryBannerSink(fn: RetryBannerSetter | null): void {
   retryBannerSink = fn;
 }
 
+type QuotaUpdateSink = (snapshot: RateLimitSnapshot) => void;
+let quotaUpdateSink: QuotaUpdateSink | null = null;
+export function registerQuotaUpdateSink(fn: QuotaUpdateSink | null): void {
+  quotaUpdateSink = fn;
+}
+
 export interface CapturedProviderUsage {
   providerId: string;
   responseId?: string;
@@ -183,14 +189,14 @@ function normalizeOpenAICompatToolCallDelta(value: unknown): unknown {
   if (!Array.isArray(choices)) return value;
 
   let changed = false;
-  const nextChoices = choices.map(choice => {
+  const nextChoices = choices.map((choice: unknown) => {
     if (!isRecord(choice)) return choice;
     const delta = choice['delta'];
     if (!isRecord(delta)) return choice;
     const toolCalls = delta['tool_calls'];
     if (!Array.isArray(toolCalls)) return choice;
 
-    const nextToolCalls = toolCalls.map(toolCall => {
+    const nextToolCalls = toolCalls.map((toolCall: unknown) => {
       if (!isRecord(toolCall)) return toolCall;
       if (toolCall['type'] === 'function') return toolCall;
       if (!isRecord(toolCall['function'])) return toolCall;
@@ -259,7 +265,7 @@ export function mistralJsonToSse(json: unknown): string {
     const rawToolCalls = Array.isArray(message.tool_calls) ? message.tool_calls : null;
 
     if (rawToolCalls && rawToolCalls.length > 0) {
-      const deltaToolCalls = rawToolCalls.map((tc, i) => {
+      const deltaToolCalls = rawToolCalls.map((tc: unknown, i: number) => {
         if (!isRecord(tc)) return tc;
         const fn = isRecord(tc.function) ? tc.function : {};
         return {
@@ -285,15 +291,32 @@ export function mistralJsonToSse(json: unknown): string {
   return parts.join('');
 }
 
-async function normalizeOpenAICompatToolCallResponse(response: Response): Promise<Response> {
+function normalizeOpenAICompatToolCallResponse(response: Response): Response {
   const contentType = response.headers.get('content-type') ?? '';
-  if (!response.ok || !contentType.includes('text/event-stream')) return response;
+  if (!response.ok || !contentType.includes('text/event-stream') || !response.body) return response;
 
-  const body = await response.clone().text();
-  const normalized = normalizeOpenAICompatToolCallSse(body);
-  if (normalized === body) return response;
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let remainder = '';
 
-  return new Response(normalized, {
+  const transformStream = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      const text = remainder + decoder.decode(chunk, { stream: true });
+      const lastNewline = text.lastIndexOf('\n');
+      if (lastNewline === -1) {
+        remainder = text;
+        return;
+      }
+      const complete = text.slice(0, lastNewline + 1);
+      remainder = text.slice(lastNewline + 1);
+      controller.enqueue(encoder.encode(normalizeOpenAICompatToolCallSse(complete)));
+    },
+    flush(controller) {
+      if (remainder) controller.enqueue(encoder.encode(normalizeOpenAICompatToolCallSse(remainder)));
+    },
+  });
+
+  return new Response(response.body.pipeThrough(transformStream), {
     status: response.status,
     statusText: response.statusText,
     headers: response.headers,
@@ -349,8 +372,9 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
     ? async (input, init) => {
         if (shouldCapture && process.env['DEBUG_TOOLS'] === '1' && init?.body) {
           try {
-            const body = JSON.parse(init.body as string);
-            process.stderr.write(`[groq-req] tools: ${JSON.stringify(body.tools?.map((t: { function?: { name: string; parameters: unknown } }) => ({ name: t.function?.name, schema: t.function?.parameters })), null, 2)}\n`);
+            const body = JSON.parse(init.body as string) as Record<string, unknown>;
+            const tools = Array.isArray(body['tools']) ? body['tools'] as { function?: { name: string; parameters: unknown } }[] : [];
+            process.stderr.write(`[groq-req] tools: ${JSON.stringify(tools.map(t => ({ name: t.function?.name, schema: t.function?.parameters })), null, 2)}\n`);
           } catch { /* ignore */ }
         }
 
@@ -358,8 +382,8 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         let mistralForcedNonStream = false;
         if (providerConfig.id === 'mistral' && patchedInit?.body) {
           try {
-            const body = JSON.parse(patchedInit.body as string);
-            if (body.stream) {
+            const body = JSON.parse(patchedInit.body as string) as Record<string, unknown>;
+            if (body['stream']) {
               const { stream: _s, stream_options: _so, ...rest } = body;
               patchedInit = { ...patchedInit, body: JSON.stringify(rest) };
               mistralForcedNonStream = true;
@@ -368,8 +392,8 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         }
         if (shouldStripTemperature && init?.body) {
           try {
-            const body = JSON.parse(init.body as string);
-            if (openAIModelDisallowsTemperature(body.model ?? '') && 'temperature' in body) {
+            const body = JSON.parse(init.body as string) as Record<string, unknown>;
+            if (openAIModelDisallowsTemperature(typeof body['model'] === 'string' ? body['model'] : '') && 'temperature' in body) {
               const { temperature: _t, ...rest } = body;
               patchedInit = { ...init, body: JSON.stringify(rest) };
             }
@@ -378,32 +402,45 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
 
         if (parallelToolsDisabled.has(providerConfig.id) && patchedInit?.body) {
           try {
-            const body = JSON.parse(patchedInit.body as string);
-            if (Array.isArray(body.tools) && body.tools.length > 0) {
+            const body = JSON.parse(patchedInit.body as string) as Record<string, unknown>;
+            const bodyTools = body['tools'];
+            if (Array.isArray(bodyTools) && bodyTools.length > 0) {
               patchedInit = { ...patchedInit, body: JSON.stringify({ ...body, parallel_tool_calls: false }) };
             }
           } catch { /* ignore — leave body untouched */ }
         }
+
+        const parseSnapshot = (headers: Headers): RateLimitSnapshot => {
+          if (providerConfig.id === 'mistral') return parseMistralRateLimitSnapshot(headers);
+          if (providerConfig.id === 'cerebras') return parseCerebrasRateLimitSnapshot(headers);
+          return groqHeadersToSnapshot(parseGroqRateLimitHeaders(headers));
+        };
 
         let response = await globalThis.fetch(input, patchedInit);
         const maxWaitMs = loadConfig().retryMaxWaitSeconds * 1000;
         for (let attempt = 0; (response.status === 429 || response.status === 503) && attempt < 5; attempt++) {
           const retryHeader = response.headers.get('retry-after');
           const is503 = response.status === 503;
-          if (!retryHeader && !is503) break;
-          const delayMs = retryHeader
+          const rawDelayMs = retryHeader
             ? parseRetryAfterMs(retryHeader)
             : Math.min(2 ** attempt * 1000, maxWaitMs);
-          if (delayMs > maxWaitMs) break;
+          const waitMs = Math.min(rawDelayMs, maxWaitMs);
           const label = is503 && !retryHeader ? 'unavailable' : 'rate-limited';
           const name = providerConfig.name;
+          if (shouldCapture && quotaUpdateSink) {
+            const snap = parseSnapshot(response.headers);
+            if (snap.length > 0) {
+              lastCapturedHeaders.set(providerConfig.id, snap);
+              quotaUpdateSink(snap);
+            }
+          }
           if (retryBannerSink) {
-            retryBannerSink({ name, label, targetMs: Date.now() + delayMs });
-            await new Promise<void>(resolve => setTimeout(resolve, delayMs));
+            retryBannerSink({ name, label, targetMs: Date.now() + waitMs });
+            await new Promise<void>(resolve => setTimeout(resolve, waitMs));
             retryBannerSink(null);
           } else {
             await new Promise<void>(resolve => {
-              let remaining = Math.ceil(delayMs / 1000);
+              let remaining = Math.ceil(waitMs / 1000);
               process.stdout.write(`\n${name} ${label} — retrying in ${remaining}s...`);
               const tick = setInterval(() => {
                 remaining -= 1;
@@ -420,14 +457,7 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
           response = await globalThis.fetch(input, patchedInit);
         }
         if (shouldCapture) {
-          let snapshot: RateLimitSnapshot;
-          if (providerConfig.id === 'mistral') {
-            snapshot = parseMistralRateLimitSnapshot(response.headers);
-          } else if (providerConfig.id === 'cerebras') {
-            snapshot = parseCerebrasRateLimitSnapshot(response.headers);
-          } else {
-            snapshot = groqHeadersToSnapshot(parseGroqRateLimitHeaders(response.headers));
-          }
+          const snapshot = parseSnapshot(response.headers);
           if (snapshot.length > 0) lastCapturedHeaders.set(providerConfig.id, snapshot);
         }
         const httpError = await formatOpenAICompatHttpError(providerConfig.name, response);
@@ -441,7 +471,7 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
           sseHeaders.set('content-type', 'text/event-stream; charset=utf-8');
           response = new Response(sseText, { status: 200, statusText: 'OK', headers: sseHeaders });
         }
-        response = await normalizeOpenAICompatToolCallResponse(response);
+        response = normalizeOpenAICompatToolCallResponse(response);
         if (shouldCaptureUsage) {
           captureProviderUsage(providerConfig.id, response);
         }

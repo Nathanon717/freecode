@@ -9,6 +9,7 @@ import {
   assertStayedInWorkDir,
   statToolCalls,
   statTokens,
+  formatOutputDiff,
 } from '../../shared/assertions.js';
 
 const expectedOutput = 'orders=2\nunits=5\nrevenue=37.75\n';
@@ -74,7 +75,7 @@ function assertCorrectOutput(workDir: string): CheckResult {
     name: 'correct output',
     kind: 'assertion',
     pass,
-    message: pass ? undefined : `stdout=${JSON.stringify(result.stdout)} expected=${JSON.stringify(expectedOutput)}`,
+    message: pass ? undefined : formatOutputDiff(result.stdout, expectedOutput),
   };
 }
 

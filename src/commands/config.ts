@@ -10,9 +10,10 @@ type OverridableKey = keyof OverridableSettings;
 
 interface BoolSetting {
   type: 'boolean';
-  key: OverridableKey;
+  key: OverridableKey | keyof Config;
   label: string;
   description: string;
+  globalOnly?: true;
 }
 
 interface NumericSetting {
@@ -34,6 +35,7 @@ const SETTINGS: Setting[] = [
   { type: 'boolean', key: 'showProviderUsage', label: 'Provider usage',   description: 'Print token/rate-limit usage from the provider after each turn' },
   { type: 'boolean', key: 'parallelTools',     label: 'Parallel tools',   description: 'Allow model to call multiple tools in the same response' },
   { type: 'number',  key: 'retryMaxWaitSeconds', label: 'Max retry wait', description: 'Max seconds to wait before retrying a rate-limited request', min: 5, max: 300, step: 5, unit: 's', globalOnly: true },
+  { type: 'boolean', key: 'showEvalDots',      label: 'Eval dots',        description: 'Show per-scenario eval result circles in the model picker', globalOnly: true },
 ];
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -58,7 +60,7 @@ type TabValue = boolean | undefined;
 function loadGlobalValues(): Record<string, boolean | number> {
   const cfg = loadConfig();
   const vals: Record<string, boolean | number> = {};
-  for (const s of SETTINGS) vals[s.key] = cfg[s.key as keyof Config] as boolean | number;
+  for (const s of SETTINGS) vals[s.key] = cfg[s.key] as boolean | number;
   return vals;
 }
 
@@ -87,7 +89,7 @@ const LABEL_W = 20;
 
 function renderGlobalValue(value: boolean | number, selected: boolean, setting: Setting): string {
   if (setting.type === 'number') {
-    const s = setting as NumericSetting;
+    const s = setting;
     const display = `${value}${s.unit}`;
     if (selected) return `${chalk.dim('←')} ${chalk.cyan.bold(display)} ${chalk.dim('→')}`;
     return chalk.cyan(display);
@@ -186,7 +188,7 @@ function saveGlobalSetting(globalPath: string, key: string, value: boolean | num
   const existing = (readRawConfig(globalPath) as Record<string, unknown>) ?? {};
   delete existing['preferLocal'];
   existing[key] = value;
-  writeConfigFile(globalPath, existing as Partial<Config>);
+  writeConfigFile(globalPath, existing);
 }
 
 function saveOverrideSetting(globalPath: string, tab: Tab, currentModel: string, key: string, value: TabValue): void {
@@ -218,12 +220,12 @@ function saveOverrideSetting(globalPath: string, tab: Tab, currentModel: string,
     else existing.modelOverrides = overrides;
   }
 
-  writeConfigFile(globalPath, existing as Partial<Config>);
+  writeConfigFile(globalPath, existing);
 }
 
 // ── Value cycling ─────────────────────────────────────────────────────────────
 
-function cycleGlobal(current: boolean, direction: 1 | -1): boolean {
+function cycleGlobal(current: boolean, _direction: 1 | -1): boolean {
   return !current;
 }
 
@@ -256,7 +258,7 @@ export async function runConfigCommand(rl: Interface, currentModel = ''): Promis
   let sel = 0;
 
   function currentValues(): Record<string, TabValue | number> {
-    if (activeTab === 'global') return loadGlobalValues() as Record<string, TabValue | number>;
+    if (activeTab === 'global') return loadGlobalValues();
     return loadOverrideValues(activeTab, currentModel, paths.globalPath);
   }
 
@@ -321,7 +323,7 @@ export async function runConfigCommand(rl: Interface, currentModel = ''): Promis
         if (activeTab === 'global') {
           let newVal: boolean | number;
           if (setting.type === 'number') {
-            newVal = cycleNumeric(values[setting.key] as unknown as number, setting as NumericSetting, direction);
+            newVal = cycleNumeric(values[setting.key] as unknown as number, setting, direction);
           } else {
             newVal = cycleGlobal(values[setting.key] as boolean, direction);
           }

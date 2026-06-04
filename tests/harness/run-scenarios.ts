@@ -120,7 +120,7 @@ if (ttyScenarios.length > 0) {
       writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(scenario.config, null, 2), 'utf-8');
     }
 
-    let ttyFailures: string[] = [];
+    let ttyFailures: string[];
     let ttyScreen = '';
     try {
       const result = await runTtyScenario({
@@ -136,13 +136,12 @@ if (ttyScenarios.length > 0) {
       ttyFailures = [`tty harness error: ${err instanceof Error ? err.message : String(err)}`];
     }
 
-    try { rmSync(tmpHome, { recursive: true, force: true }); } catch {}
+    try { rmSync(tmpHome, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpHome:', err); }
     return { name: scenario.name, failures: ttyFailures, screen: ttyScreen };
   }));
 
   for (const { name, failures, screen } of ttyResults) {
     if (failures.length === 0) {
-      console.log(`  ${chalk.green('PASS')}  ${chalk.cyan(name)}`);
       passed++;
     } else {
       console.log(`  ${chalk.red('FAIL')}  ${chalk.cyan(name)}`);
@@ -191,7 +190,7 @@ if (nonTtyScenarios.length > 0) {
 
     let stdout = '';
     let stderr = '';
-    let exitCode = 0;
+    let exitCode: number;
     let trace: ToolTraceEvent[] = [];
 
     try {
@@ -237,9 +236,9 @@ if (nonTtyScenarios.length > 0) {
       workspace: scenario.workspace ?? 'repo',
     });
 
-    try { rmSync(tmpHome, { recursive: true, force: true }); } catch {}
+    try { rmSync(tmpHome, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpHome:', err); }
     if (scenario.workspace === 'temp') {
-      try { rmSync(tmpWorkspace, { recursive: true, force: true }); } catch {}
+      try { rmSync(tmpWorkspace, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpWorkspace:', err); }
     }
 
     return { scenario, failures, stdout, stderr, exitCode, trace };
@@ -260,7 +259,6 @@ if (nonTtyScenarios.length > 0) {
     }
 
     if (failures.length === 0) {
-      console.log(`  ${chalk.green('PASS')}  ${chalk.cyan(scenario.name)}`);
       if (showDetails) {
         const calls = trace.map(event => event.tool);
         console.log(`        exitCode: ${chalk.green(String(exitCode))}`);
@@ -284,8 +282,9 @@ if (nonTtyScenarios.length > 0) {
   }
 }
 
-console.log('');
-const resultColor = failed > 0 ? chalk.red : chalk.green;
-console.log(resultColor(`Results: ${passed} passed, ${failed} failed`));
+if (failed > 0) {
+  console.log('');
+  console.log(chalk.red(`Results: ${passed} passed, ${failed} failed`));
+}
 
 process.exit(failed > 0 ? 1 : 0);

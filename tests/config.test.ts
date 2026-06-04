@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+vi.mock('../src/logger.js', () => ({ log: vi.fn(), logError: vi.fn(), enableLog: vi.fn() }));
+
 vi.mock('fs', () => ({
   readFileSync: vi.fn(),
   writeFileSync: vi.fn(),

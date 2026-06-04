@@ -49,7 +49,7 @@ interface ActiveSession { id: string; screen: string; mobile?: boolean; }
 
 function readActive(): ActiveSession | null {
   if (!existsSync(ACTIVE_FILE)) return null;
-  try { return JSON.parse(readFileSync(ACTIVE_FILE, 'utf8')); } catch { return null; }
+  try { return JSON.parse(readFileSync(ACTIVE_FILE, 'utf8')) as ActiveSession; } catch { return null; }
 }
 
 function writeActive(state: ActiveSession): void {
@@ -148,7 +148,7 @@ async function runServer(id: string, cols: number, rows: number): Promise<void> 
   const server = net.createServer(socket => {
     socket.on('error', () => { /* client may destroy() after receiving response */ });
     let buf = '';
-    socket.on('data', async chunk => {
+    const handleData = async (chunk: Buffer): Promise<void> => {
       buf += chunk.toString('utf8');
       const nl = buf.indexOf('\n');
       if (nl === -1) return;
@@ -156,7 +156,7 @@ async function runServer(id: string, cols: number, rows: number): Promise<void> 
       buf = buf.slice(nl + 1);
 
       let msg: Record<string, unknown>;
-      try { msg = JSON.parse(line); } catch { socket.write('{"error":"parse"}\n'); return; }
+      try { msg = JSON.parse(line) as Record<string, unknown>; } catch { socket.write('{"error":"parse"}\n'); return; }
 
       const respond = (obj: object) => socket.write(JSON.stringify(obj) + '\n');
       lastActivityAt = Date.now();
@@ -177,7 +177,8 @@ async function runServer(id: string, cols: number, rows: number): Promise<void> 
         server.close();
         process.exit(0);
       }
-    });
+    };
+    socket.on('data', (chunk) => { void handleData(chunk); });
   });
 
   process.on('exit', () => {
@@ -207,7 +208,7 @@ function rpc(id: string, msg: object): Promise<Record<string, unknown>> {
       if (nl !== -1) {
         const line = buf.slice(0, nl).trim();
         socket.destroy();
-        try { resolve(JSON.parse(line)); }
+        try { resolve(JSON.parse(line) as Record<string, unknown>); }
         catch { reject(new Error('bad response: ' + line)); }
       }
     });

@@ -46,5 +46,70 @@
       "output": 0
     },
     "scenarioHash": "010272fd8a783cd412bb29e49ade90c000ed43f3e6ccbcc30b8cc6ec0ff2b7b9"
+  },
+  {
+    "timestamp": "2026-06-03T16:49:54.054Z",
+    "scenarioId": "002-edit-config",
+    "model": "cohere:command-a-03-2025",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-03T16:50:50.108Z",
+    "scenarioId": "001-hello-world",
+    "model": "cohere:command-a-03-2025",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-03T16:52:30.229Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "cohere:command-a-03-2025",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "23566b192bcd0097ebc7d8b529f82d94300040922dfb7c4d7d842c680bbaf527"
+  },
+  {
+    "timestamp": "2026-06-03T16:53:01.548Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "cohere:command-a-03-2025",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "b68b8f29bde1b42cf89c36cbd2fd252397f088656f1ac2a2e993b281d5a4f19f"
+  },
+  {
+    "timestamp": "2026-06-03T16:53:22.084Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "cohere:command-a-03-2025",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "2c6feafffa8dfe4e4519b0276201609e605f75539b9ce83c377a39f2e577db3b"
   }
 ]

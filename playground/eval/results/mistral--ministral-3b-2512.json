@@ -8,5 +8,29 @@
       "total": 0
     },
     "scenarioHash": "9cb3d1d84540b9174f7ea149506b2a14af8894a9eb6351460612bca2dd3f09fa"
+  },
+  {
+    "timestamp": "2026-06-03T19:41:19.442Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:ministral-3b-2512",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2271,
+      "prompt": 2228,
+      "output": 43
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-03T19:41:28.107Z",
+    "scenarioId": "002-edit-config",
+    "model": "mistral:ministral-3b-2512",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
   }
 ]

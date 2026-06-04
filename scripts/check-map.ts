@@ -78,4 +78,3 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`Codebase map covers ${sourceFiles.length} source files.`);

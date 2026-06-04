@@ -24,6 +24,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyCoreTool = CoreTool<any, any>;
 type QueuedToolExecution = <T>(task: () => Promise<T>) => Promise<T>;
+type ToolExecuteFn = (args: Record<string, unknown>, opts: unknown) => Promise<unknown>;
 
 export interface ToolCallPreview {
   name: string;
@@ -50,10 +51,6 @@ function toolOut(): NodeJS.WritableStream {
   return getTranscriptStream();
 }
 
-function toolCall(name: string, args: Record<string, unknown>): void {
-  toolOut().write(formatToolCallLine(name, args) + '\n');
-}
-
 function toolError(name: string, err: unknown): void {
   toolOut().write(formatToolErrorLine(name, err) + '\n');
 }
@@ -75,14 +72,12 @@ function appendToolTrace(event: ToolTraceEvent): void {
 
 function withLogging(name: string, t: AnyCoreTool, promptTools = false): AnyCoreTool {
   if (!t.execute) return t;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const original = t.execute as (args: any, opts: any) => Promise<any>;
+  const original: ToolExecuteFn = t.execute as ToolExecuteFn;
   return {
     ...t,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    execute: async (args: any, opts: any) => {
+    execute: async (args: Record<string, unknown>, opts: unknown): Promise<unknown> => {
       const { rationale, ...displayArgs } = args;
-      if (rationale) toolOut().write('\n' + chalk.cyan(rationale) + '\n');
+      if (typeof rationale === 'string') toolOut().write('\n' + chalk.cyan(rationale) + '\n');
       const callLine = promptTools
         ? formatPromptToolCallLine(name, displayArgs)
         : formatToolCallLine(name, displayArgs);
@@ -106,12 +101,10 @@ function withLogging(name: string, t: AnyCoreTool, promptTools = false): AnyCore
 
 function withConfirmation(name: string, t: AnyCoreTool, confirmToolCall?: ConfirmToolCall): AnyCoreTool {
   if (!t.execute) return t;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const original = t.execute as (args: any, opts: any) => Promise<any>;
+  const original: ToolExecuteFn = t.execute as ToolExecuteFn;
   return {
     ...t,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    execute: async (args: any, opts: any) => {
+    execute: async (args: Record<string, unknown>, opts: unknown): Promise<unknown> => {
       const { rationale: _r, ...displayArgs } = args;
       if (!confirmToolCall) {
         return `Tool call denied: ${name} requires user confirmation, but no confirmation handler is available.`;
@@ -128,18 +121,14 @@ function withConfirmation(name: string, t: AnyCoreTool, confirmToolCall?: Confir
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function withRationale(t: AnyCoreTool): AnyCoreTool {
   if (!t.execute) return t;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const original = t.execute as (args: any, opts: any) => Promise<any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const original: ToolExecuteFn = t.execute as ToolExecuteFn;
   const extended = z.object({ rationale: z.string().describe('One sentence: why you are calling this tool right now') }).merge(t.parameters as z.ZodObject<z.ZodRawShape>);
   return {
     ...t,
     parameters: extended,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    execute: async (args: any, opts: any) => {
+    execute: async (args: Record<string, unknown>, opts: unknown): Promise<unknown> => {
       const { rationale: _r, ...rest } = args;
       return original(rest, opts);
     },
@@ -148,12 +137,10 @@ function withRationale(t: AnyCoreTool): AnyCoreTool {
 
 function withSerializedExecution(t: AnyCoreTool, queueExecution: QueuedToolExecution): AnyCoreTool {
   if (!t.execute) return t;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const original = t.execute as (args: any, opts: any) => Promise<any>;
+  const original: ToolExecuteFn = t.execute as ToolExecuteFn;
   return {
     ...t,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    execute: async (args: any, opts: any) => queueExecution(() => original(args, opts)),
+    execute: async (args: Record<string, unknown>, opts: unknown): Promise<unknown> => queueExecution(() => original(args, opts)),
   };
 }
 

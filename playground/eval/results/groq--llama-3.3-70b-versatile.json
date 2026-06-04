@@ -327,5 +327,301 @@
       "total": 0
     },
     "scenarioHash": "50e55d5cd96e964d78253e8eecb7edfa0ee7de306c7442360feff839a186a814"
+  },
+  {
+    "timestamp": "2026-06-03T20:05:50.477Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 4816,
+      "prompt": 4607,
+      "output": 209
+    },
+    "scenarioHash": "980283ae8cf35b95b2d04f66c6020cdb380dbff3326da7894360a018559cd417"
+  },
+  {
+    "timestamp": "2026-06-03T21:15:16.217Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 4574,
+      "prompt": 4453,
+      "output": 121
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 4,
+        "note": "shell_exec → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 4574,
+        "note": "total: 4574, prompt: 4453, output: 121"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-04T11:17:06.857Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 10005,
+      "prompt": 9683,
+      "output": 322
+    },
+    "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
+    "checks": [
+      {
+        "name": "file exists: analyze_orders.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "file content: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "uses data schema",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 9,
+        "note": "shell_exec → list_dir → read_file → read_file → edit_file → shell_exec → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 10005,
+        "note": "total: 10005, prompt: 9683, output: 322"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-04T11:17:37.030Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 4771,
+      "prompt": 4625,
+      "output": 146
+    },
+    "scenarioHash": "c473ee1da59fc7a92d6f3a714561b2c0805a079ca9a1b7d4ddfe8dfc1cd1f6bd",
+    "checks": [
+      {
+        "name": "file exists: report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: sales.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "output matches expected",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "agent ran report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "first run exits 0 with wrong output",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "edited then reran",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "shell_exec → list_dir → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 4771,
+        "note": "total: 4771, prompt: 4625, output: 146"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-04T11:17:55.901Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 7434,
+      "prompt": 7115,
+      "output": 319
+    },
+    "scenarioHash": "6aab8364aaf4eb4df5e231a5c80ef20cc4037a507d1542c7a534e59879ac329e",
+    "checks": [
+      {
+        "name": "file exists: pipeline.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: stats.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "inspected stats module",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "preserved stats module",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "edited pipeline then reran",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 7,
+        "note": "shell_exec → read_file → read_file → edit_file → edit_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 7434,
+        "note": "total: 7434, prompt: 7115, output: 319"
+      }
+    ]
   }
 ]

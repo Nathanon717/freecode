@@ -17,7 +17,8 @@ function stringifyContent(value: unknown): string {
     if (typeof record['content'] === 'string') return record['content'];
     return JSON.stringify(value);
   }
-  return String(value);
+  if (typeof value === 'bigint' || typeof value === 'symbol') return String(value);
+  return '';
 }
 
 export function estimateTextTokens(text: string): number {

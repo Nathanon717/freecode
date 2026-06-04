@@ -87,3 +87,10 @@ export function showBanner() {
   const banner = cols < 82 ? COMPACT_BANNER : FULL_BANNER;
   console.log(nextBannerColor()(banner));
 }
+
+export function redrawBanner() {
+  clearEntireTerminal();
+  const cols = process.stdout.columns ?? 80;
+  const banner = cols < 82 ? COMPACT_BANNER : FULL_BANNER;
+  console.log(getBannerColor()(banner));
+}

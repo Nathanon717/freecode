@@ -1,6 +1,9 @@
 import chalk from 'chalk';
+import { Writable } from 'stream';
 
-export type TranscriptStreamName = 'stdout' | 'stderr';
+export type TranscriptStreamName = 'stdout' | 'stderr' | 'null';
+
+const nullStream = new Writable({ write(_, __, cb) { cb(); } });
 
 export interface TranscriptRenderOptions {
   maxResultLines?: number;
@@ -61,7 +64,8 @@ function parseMaxResultLines(raw: string | undefined): number {
 }
 
 export function getTranscriptRuntimeOptions(env: NodeJS.ProcessEnv = process.env): TranscriptRuntimeOptions {
-  const stream = env['FREECODE_TRANSCRIPT_STREAM'] === 'stdout' ? 'stdout' : 'stderr';
+  const raw = env['FREECODE_TRANSCRIPT_STREAM'];
+  const stream: TranscriptStreamName = raw === 'stdout' ? 'stdout' : raw === 'null' ? 'null' : 'stderr';
   return {
     stream,
     maxResultLines: parseMaxResultLines(env['FREECODE_TRANSCRIPT_MAX_RESULT_LINES']),
@@ -69,6 +73,7 @@ export function getTranscriptRuntimeOptions(env: NodeJS.ProcessEnv = process.env
 }
 
 export function getTranscriptStream(options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions()): NodeJS.WritableStream {
+  if (options.stream === 'null') return nullStream;
   return options.stream === 'stdout' ? process.stdout : process.stderr;
 }
 

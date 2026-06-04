@@ -11,5 +11,29 @@
       "output": 71
     },
     "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-03T17:12:22.381Z",
+    "scenarioId": "002-edit-config",
+    "model": "groq:meta-llama/llama-4-scout-17b-16e-instruct",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 7489,
+      "prompt": 6985,
+      "output": 504
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-03T17:21:08.940Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:meta-llama/llama-4-scout-17b-16e-instruct",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "23566b192bcd0097ebc7d8b529f82d94300040922dfb7c4d7d842c680bbaf527"
   }
 ]

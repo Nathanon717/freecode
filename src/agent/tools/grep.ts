@@ -24,10 +24,11 @@ async function grepWithRg(pattern: string, cwd: string, include?: string): Promi
   let stdout: string;
   try {
     ({ stdout } = await execFileAsync('rg', args, { cwd, timeout: 10000, maxBuffer: 10 * 1024 * 1024 }));
-  } catch (err: any) {
+  } catch (err: unknown) {
     // exit code 1 = no matches, exit code 2 = partial (some inaccessible paths)
-    if (err.code === 1) return 'No matches found';
-    if (err.code === 2) stdout = err.stdout ?? '';
+    const e = err as { code?: number | string; stdout?: string };
+    if (e.code === 1) return 'No matches found';
+    if (e.code === 2) stdout = e.stdout ?? '';
     else throw err;
   }
 
@@ -129,8 +130,8 @@ async function grepWithGrep(pattern: string, cwd: string): Promise<string> {
     if (!stdout.trim()) return 'No matches found';
     const lines = stdout.split('\n').filter((l) => l.trim()).slice(0, 100);
     return lines.join('\n');
-  } catch (err: any) {
-    if (err.code === 1) return 'No matches found';
+  } catch (err: unknown) {
+    if ((err as { code?: number | string }).code === 1) return 'No matches found';
     throw err;
   }
 }

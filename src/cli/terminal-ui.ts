@@ -18,8 +18,7 @@ let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
 let lastModelStatus = '';
 let lastOpenAIDailySpend: OpenAIDailySpend = { state: 'idle', updatedAt: 0 };
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
-let evalRunLabel: string | null = null;
-let evalRunStart = 0;
+let _evalRunLabel: string | null = null;
 let retryBannerInfo: { name: string; label: string; targetMs: number } | null = null;
 
 export interface PreflightInputCost {
@@ -68,9 +67,6 @@ function clearLineSequence(): string {
   return `${ESC}2K`;
 }
 
-function clearLine() {
-  process.stdout.write(clearLineSequence());
-}
 
 export function isBottomUIActive(): boolean {
   return inputUIActive;
@@ -131,8 +127,7 @@ export function setOpenAIDailySpend(snapshot: OpenAIDailySpend): void {
 }
 
 export function setEvalRunning(label: string | null): void {
-  evalRunLabel = label;
-  if (label !== null) evalRunStart = Date.now();
+  _evalRunLabel = label;
 }
 
 export function setRetryBanner(info: { name: string; label: string; targetMs: number } | null): void {
@@ -145,9 +140,7 @@ function formatEvalRunStatus(now = Date.now()): string {
     if (remaining <= 0) return `${retryBannerInfo.name} ${retryBannerInfo.label} — retrying now...`;
     return `${retryBannerInfo.name} ${retryBannerInfo.label} — retrying in ${remaining}s...`;
   }
-  if (!evalRunLabel) return '';
-  const elapsed = Math.floor((now - evalRunStart) / 1000);
-  return `eval: ${evalRunLabel} · ${elapsed}s`;
+  return '';
 }
 
 function formatDuration(ms: number): string {

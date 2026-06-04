@@ -63,5 +63,57 @@
       "output": 227
     },
     "scenarioHash": "d42f4103a3565af48065360beee8069eafe1f6a123a22c4534e62b49f32b739d"
+  },
+  {
+    "timestamp": "2026-06-03T17:57:37.386Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "mistral:codestral-2508",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 9458,
+      "prompt": 9181,
+      "output": 277
+    },
+    "scenarioHash": "b68b8f29bde1b42cf89c36cbd2fd252397f088656f1ac2a2e993b281d5a4f19f"
+  },
+  {
+    "timestamp": "2026-06-03T17:57:43.868Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "mistral:codestral-2508",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 8611,
+      "prompt": 8486,
+      "output": 125
+    },
+    "scenarioHash": "2c6feafffa8dfe4e4519b0276201609e605f75539b9ce83c377a39f2e577db3b"
+  },
+  {
+    "timestamp": "2026-06-03T17:57:49.272Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "mistral:codestral-2508",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 5546,
+      "prompt": 5448,
+      "output": 98
+    },
+    "scenarioHash": "2e3f1d8bd9807ff3c95043f12178a62b7bc89de4788e00edfc6bdc986a57cc53"
+  },
+  {
+    "timestamp": "2026-06-03T20:25:35.352Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "mistral:codestral-2508",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 1335,
+      "prompt": 1115,
+      "output": 220
+    },
+    "scenarioHash": "23566b192bcd0097ebc7d8b529f82d94300040922dfb7c4d7d842c680bbaf527"
   }
 ]

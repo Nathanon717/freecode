@@ -1,0 +1,54 @@
+[
+  {
+    "timestamp": "2026-06-03T19:39:58.442Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:ministral-14b-2512",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2270,
+      "prompt": 2228,
+      "output": 42
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-03T19:40:08.076Z",
+    "scenarioId": "002-edit-config",
+    "model": "mistral:ministral-14b-2512",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 4730,
+      "prompt": 4647,
+      "output": 83
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-03T19:40:21.225Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "mistral:ministral-14b-2512",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 6808,
+      "prompt": 6567,
+      "output": 241
+    },
+    "scenarioHash": "23566b192bcd0097ebc7d8b529f82d94300040922dfb7c4d7d842c680bbaf527"
+  },
+  {
+    "timestamp": "2026-06-03T19:40:39.340Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "mistral:ministral-14b-2512",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 9219,
+      "prompt": 8946,
+      "output": 273
+    },
+    "scenarioHash": "b68b8f29bde1b42cf89c36cbd2fd252397f088656f1ac2a2e993b281d5a4f19f"
+  }
+]

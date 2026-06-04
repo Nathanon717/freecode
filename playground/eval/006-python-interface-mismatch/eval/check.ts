@@ -8,6 +8,7 @@ import {
   assertStayedInWorkDir,
   statToolCalls,
   statTokens,
+  formatOutputDiff,
 } from '../../shared/assertions.js';
 
 // SCORES = [72, 85, 91, 68, 79, 88, 95, 74]
@@ -78,7 +79,7 @@ function assertCorrectOutput(workDir: string): CheckResult {
     pass,
     message: pass
       ? undefined
-      : `stdout=${JSON.stringify(result.stdout)} expected one of ${JSON.stringify(expectedOutputs)}`,
+      : formatOutputDiff(result.stdout, expectedOutputs[0]) + `\n  (${expectedOutputs.length} accepted variants)`,
   };
 }
 

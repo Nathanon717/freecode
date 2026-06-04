@@ -25,6 +25,7 @@ export interface ProviderConfig {
   modelsSource?: 'static' | 'live';
   modelIdBlocklist?: string[];
   modelIdExactBlocklist?: string[];
+  modelTierBlocklist?: string[];
 }
 
 export interface OverridableSettings {
@@ -43,4 +44,5 @@ export interface Config {
   providerOverrides?: Record<string, OverridableSettings>;
   modelOverrides?: Record<string, OverridableSettings>;
   retryMaxWaitSeconds: number;
+  showEvalDots: boolean;
 }

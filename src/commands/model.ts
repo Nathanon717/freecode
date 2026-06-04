@@ -1,8 +1,8 @@
 import chalk from 'chalk';
 import type { Interface } from 'readline';
-import { getConfigPaths, readRawConfig, resolveApiKey, writeConfigFile } from '../config/index.js';
+import { getConfigPaths, loadConfig, readRawConfig, resolveApiKey, writeConfigFile } from '../config/index.js';
 import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/registry.js';
-import type { Config, ModelConfig, ProviderConfig } from '../providers/types.js';
+import type { ModelConfig, ProviderConfig } from '../providers/types.js';
 import { getProviderCache, markModelSelected } from '../providers/model-cache.js';
 import { clearModelNewFlag } from '../providers/registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
@@ -10,6 +10,7 @@ import type { PricingConfidence } from '../providers/pricing-verifier.js';
 import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
 import { loadCanonicalGroups, type CanonicalModelGroups } from '../providers/canonical-models.js';
 import { getNoNativeToolsModels } from '../providers/model-traits.js';
+import { loadEvalDotsData, buildEvalDots, type EvalDotsData } from '../cli/eval-dots.js';
 
 export interface ModelMenuItem {
   providerId: string;
@@ -20,6 +21,7 @@ export interface ModelMenuItem {
   isNew?: boolean;
   noNativeTools?: boolean;
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
+  evalDots?: string;
 }
 
 function modelPreference(item: ModelMenuItem): string {
@@ -33,12 +35,12 @@ function formatPricingLabel(input: number, output: number): string {
 
 function saveDefaultModel(model: string): void {
   const paths = getConfigPaths();
-  const existing = readRawConfig(paths.globalPath) as Record<string, unknown> | null ?? {};
-  delete existing['preferLocal'];
+  const existing = readRawConfig(paths.globalPath) ?? {};
+  delete (existing as Record<string, unknown>)['preferLocal'];
   writeConfigFile(paths.globalPath, {
     ...existing,
     defaultModel: model,
-  } as Partial<Config>);
+  });
 }
 
 type GroupMode = 'pretty' | 'provider' | 'model';
@@ -198,7 +200,8 @@ export function buildAllItemLines(
                 : chalk.yellow(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`))
             : '')
       : '';
-    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge}${showId ? ` ${chalk.dim(id)}` : ''}${marker}`);
+    const dotsBadge = item.evalDots ? ` ${item.evalDots}` : '';
+    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge}${showId ? ` ${chalk.dim(id)}` : ''}${dotsBadge}${marker}`);
   }
 
   if (lastProvider) {
@@ -276,17 +279,18 @@ function buildModelGroupedItemLines(
             : '')
       : '';
 
+    const dotsBadge = item.evalDots ? ` ${item.evalDots}` : '';
     if (isNamed && (groupProviders.get(group)?.size ?? 1) >= 2) {
       // Multiple providers offer this model — show provider name per row.
       const renderedProvider = active ? chalk.inverse(item.providerName) : chalk.cyan(item.providerName);
       const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
-      itemLines.push(`  ${cursor} ${renderedProvider}${ptBadge}${pricingBadge} ${chalk.dim(item.providerId)}${marker}`);
+      itemLines.push(`  ${cursor} ${renderedProvider}${ptBadge}${pricingBadge} ${chalk.dim(item.providerId)}${dotsBadge}${marker}`);
     } else {
       const newBadge = item.isNew ? chalk.yellow(' new') : '';
       const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
       const id = `${item.providerId}:${item.modelId}`;
       const renderedName = active ? chalk.inverse(item.displayName) : chalk.cyan(item.displayName);
-      itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge} ${chalk.dim(id)}${marker}`);
+      itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge} ${chalk.dim(id)}${dotsBadge}${marker}`);
     }
   }
 
@@ -380,6 +384,15 @@ export async function runModelCommand(
   }
 
   const canonicalGroups = loadCanonicalGroups();
+
+  if (loadConfig().showEvalDots) {
+    const evalData: EvalDotsData = loadEvalDotsData();
+    for (const item of items) {
+      const model = `${item.providerId}:${item.modelId}`;
+      item.evalDots = buildEvalDots(model, evalData, canonicalGroups);
+    }
+  }
+
   let groupMode: GroupMode = 'pretty';
   let filterQuery = '';
   let unfilteredDisplayItems = buildDisplayList(items, groupMode, canonicalGroups);

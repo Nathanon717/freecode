@@ -5,6 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    env: { FREECODE_TRANSCRIPT_STREAM: 'null' },
     coverage: {
       reporter: ['text', 'json', 'html'],
     },

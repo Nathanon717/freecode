@@ -7,6 +7,7 @@ import {
   assertStayedInWorkDir,
   statToolCalls,
   statTokens,
+  formatOutputDiff,
 } from '../../shared/assertions.js';
 
 // grades.csv: Math [70,80,90] mean=80 std=10.00; English [85,95] mean=90 std=7.07; Science [88] no std
@@ -73,7 +74,7 @@ function assertCorrectOutput(workDir: string): CheckResult {
     pass,
     message: pass
       ? undefined
-      : `stdout=${JSON.stringify(result.stdout)} expected=${JSON.stringify(expectedOutput)}`,
+      : formatOutputDiff(result.stdout, expectedOutput),
   };
 }
 

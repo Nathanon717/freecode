@@ -19,6 +19,7 @@ playground/*
 !playground/eval/**
 playground/eval/*/work/
 playground/eval/*/.run/
+playground/eval/*/.artifacts/
 __pycache__/
 *.pyc
 

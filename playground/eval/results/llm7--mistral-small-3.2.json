@@ -1,0 +1,65 @@
+[
+  {
+    "timestamp": "2026-06-03T17:55:40.811Z",
+    "scenarioId": "001-hello-world",
+    "model": "llm7:mistral-small-3.2",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-03T17:55:53.159Z",
+    "scenarioId": "002-edit-config",
+    "model": "llm7:mistral-small-3.2",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-03T17:56:07.297Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "llm7:mistral-small-3.2",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "23566b192bcd0097ebc7d8b529f82d94300040922dfb7c4d7d842c680bbaf527"
+  },
+  {
+    "timestamp": "2026-06-03T17:56:40.846Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "llm7:mistral-small-3.2",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "b68b8f29bde1b42cf89c36cbd2fd252397f088656f1ac2a2e993b281d5a4f19f"
+  },
+  {
+    "timestamp": "2026-06-03T19:58:43.465Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "llm7:mistral-small-3.2",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0,
+      "prompt": 0,
+      "output": 0
+    },
+    "scenarioHash": "2c6feafffa8dfe4e4519b0276201609e605f75539b9ce83c377a39f2e577db3b"
+  }
+]

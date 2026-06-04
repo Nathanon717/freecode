@@ -16,7 +16,7 @@ import {
 } from '../providers/anthropic-cost.js';
 import { addOpenAISessionCost } from '../providers/openai-cost.js';
 import { formatCapturedProviderUsages } from '../providers/adapters/openai-compat.js';
-import { showBanner } from './banner.js';
+import { redrawBanner } from './banner.js';
 import { showHelp } from './slash-commands.js';
 import type { SessionController } from './session-controller.js';
 
@@ -177,7 +177,7 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
           modelId: result.modelId,
           quota: result.quota ?? undefined,
         };
-        const existing: unknown[] = existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) : [];
+        const existing = (existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) as unknown[] : []);
         existing.push(entry);
         writeFileSync(resultJsonPath, JSON.stringify(existing, null, 2), 'utf-8');
       } catch (err) {
@@ -297,7 +297,7 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
     runtime.session.clearMessages();
     resetAnthropicSessionCost();
     await runtime.beforeScreenClear?.();
-    showBanner();
+    redrawBanner();
     console.log(chalk.dim('Chat history cleared.'));
     await runtime.afterScreenClear?.();
     return 'continue';

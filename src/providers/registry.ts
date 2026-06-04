@@ -92,20 +92,30 @@ async function initProviderModels(providerId: string, apiKey: string | undefined
 
   const blocklist = entry.modelIdBlocklist ?? [];
   const exactBlocklist = entry.modelIdExactBlocklist ?? [];
+  const tierBlocklist = entry.modelTierBlocklist ?? [];
 
   try {
     const res = await fetch(`${entry.baseUrl}/models`, {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = (await res.json()) as { data?: Record<string, unknown>[] };
-    const normalized = (json.data ?? [])
+    const json = (await res.json()) as { data?: Record<string, unknown>[] } | Record<string, unknown>[];
+    const data = Array.isArray(json) ? json : (json.data ?? []);
+    const normalized = data
       .filter(m => typeof m.id === 'string')
-      .map(m => ({
-        id: m.id as string,
-        displayName: typeof m.name === 'string' ? m.name : m.id as string,
-        ...(typeof m.context_window === 'number' ? { contextWindow: m.context_window } : {}),
-      }));
+      .filter(m => tierBlocklist.length === 0 || !tierBlocklist.includes(m.tier as string))
+      .map(m => {
+        const cw = m.context_window;
+        const contextWindow =
+          typeof cw === 'number' ? cw :
+          cw !== null && typeof cw === 'object' ? ((cw as Record<string, unknown>).tokens ?? (cw as Record<string, unknown>).chars) as number | undefined :
+          undefined;
+        return {
+          id: m.id as string,
+          displayName: typeof m.name === 'string' ? m.name : m.id as string,
+          ...(contextWindow != null ? { contextWindow } : {}),
+        };
+      });
     const { newIds } = updateProviderCache(providerId, normalized);
     const newIdSet = new Set(newIds);
     const filtered = preferAliasOverDated(deduplicateByDisplayName(applyBlocklist(normalized, blocklist, exactBlocklist)));
@@ -123,7 +133,7 @@ async function initProviderModels(providerId: string, apiKey: string | undefined
   }
 }
 
-const LIVE_PROVIDER_IDS = ['groq', 'siliconflow', 'cerebras', 'mistral', 'openai'] as const;
+const LIVE_PROVIDER_IDS = ['groq', 'siliconflow', 'cerebras', 'mistral', 'llm7', 'cohere', 'openai', 'nvidia'] as const;
 
 async function initAnthropicModels(): Promise<void> {
   if (initializedProviders.has('anthropic')) return;
@@ -181,7 +191,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     baseUrl: 'https://api.groq.com/openai/v1',
     apiKeyEnvVar: 'GROQ_API_KEY',
     modelsSource: 'live',
-    modelIdBlocklist: ['llama-prompt-guard', 'canopylabs', 'whisper'],
+    modelIdBlocklist: ['llama-prompt-guard', 'canopylabs', 'whisper', 'compound-mini'],
     models: [],
   },
   {
@@ -210,14 +220,10 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     type: 'openai-compat',
     baseUrl: 'https://integrate.api.nvidia.com/v1',
     apiKeyEnvVar: 'NVIDIA_API_KEY',
-    models: [
-      { id: 'meta/llama-3.3-70b-instruct', displayName: 'Llama 3.3 70B', contextWindow: 128000 },
-      { id: 'meta/llama-4-maverick-17b-128e-instruct', displayName: 'Llama 4 Maverick' },
-      { id: 'mistralai/mistral-large', displayName: 'Mistral Large', contextWindow: 128000 },
-      { id: 'deepseek-ai/deepseek-v4-flash', displayName: 'DeepSeek V4 Flash' },
-      { id: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', displayName: 'Nemotron Ultra 253B' },
-      { id: 'qwen/qwen3-next-80b-a3b-instruct', displayName: 'Qwen3 Next 80B' },
-    ],
+    modelsSource: 'live',
+    // Embedding, safety, reranking, and vision-only models that don't support chat completions
+    modelIdBlocklist: ['embed', 'retriev', 'rerank', 'guard', 'safety', 'deplot', 'kosmos', 'vila', 'reward', 'parse', 'nvclip', 'translate', 'detector', 'calibration', 'gliner', 'bge'],
+    models: [],
   },
   {
     id: 'llm7',
@@ -225,11 +231,10 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     type: 'openai-compat',
     baseUrl: 'https://api.llm7.io/v1',
     apiKeyEnvVar: 'LLM7_API_KEY',
-    models: [
-      { id: 'gpt-oss-20b', displayName: 'GPT-OSS 20B' },
-      { id: 'codestral-latest', displayName: 'Codestral' },
-      { id: 'GLM-4.6V-Flash', displayName: 'GLM 4.6V Flash' },
-    ],
+    modelsSource: 'live',
+    modelIdBlocklist: [],
+    modelTierBlocklist: ['pro'],
+    models: [],
   },
   {
     id: 'github',
@@ -250,12 +255,9 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     type: 'openai-compat',
     baseUrl: 'https://api.cohere.ai/compatibility/v1',
     apiKeyEnvVar: 'COHERE_API_KEY',
-    models: [
-      { id: 'command-a-03-2025', displayName: 'Command A', contextWindow: 256000 },
-      { id: 'command-r-plus-08-2024', displayName: 'Command R+', contextWindow: 128000 },
-      { id: 'command-r-08-2024', displayName: 'Command R', contextWindow: 128000 },
-      { id: 'command-r7b-12-2024', displayName: 'Command R7B', contextWindow: 128000 },
-    ],
+    modelsSource: 'live',
+    modelIdBlocklist: ['embed', 'rerank', 'transcribe', 'vision', 'translate'],
+    models: [],
   },
   {
     id: 'cerebras',
@@ -294,7 +296,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     id: 'zai',
     name: 'Z.ai (ZhipuAI)',
     type: 'openai-compat',
-    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    baseUrl: 'https://api.z.ai/api/paas/v4',
     apiKeyEnvVar: 'ZAI_API_KEY',
     models: [
       { id: 'glm-4.7-flash', displayName: 'GLM-4.7 Flash (free)', contextWindow: 128000 },
@@ -366,7 +368,7 @@ export function resolveModel(modelPreference: string): ResolvedModel {
   }
 
   const model = provider.type === 'anthropic'
-    ? createAnthropicProvider(provider)(modelId) as LanguageModel
+    ? createAnthropicProvider(provider)(modelId)
     : createOpenAICompatProvider(provider)(modelId) as LanguageModel;
 
   return {
