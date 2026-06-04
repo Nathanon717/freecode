@@ -41,6 +41,10 @@ if provider is OpenAI:
   call direct Responses adapter
   write transcript step dividers around tool-producing Responses iterations
   estimate OpenAI turn cost from exact Responses usage
+else if provider is mock:
+  run ordered fake fixture steps after building the real system prompt/tool list
+  execute scripted fake tool calls through the normal tool wrappers
+  feed tool results back as user messages until the fixture emits final text
 else if provider is Anthropic:
   begin usage capture
 streamText({
@@ -67,6 +71,7 @@ return AgentLoopResult
 ## Tool Behavior
 
 - Tools are only passed when the routed provider reports `supportsTools: true`.
+- For `mock:*` fake models, the loop does not call the AI SDK. It passes the real system prompt, message history, and available tool names into `runFakeModel()` so fixture matching can validate the model-facing shape without live provider access. If a fake step emits `toolCalls`, the loop executes them through `createTools()`, appends tool results as user messages, and continues until a final no-tool response.
 - `maxSteps: 10` allows multi-step tool use.
 - Tool-enabled turns write visible transcript dividers before tool execution and after each tool-producing model step.
 - Tool approval is delegated to the supplied `confirmToolCall`.
@@ -75,11 +80,12 @@ return AgentLoopResult
 
 ## Key Neighbors
 
-- [providers/router.md](../providers/router.md): resolves provider/model.
+- [providers/registry.md](../providers/registry.md): resolves provider/model.
 - [system-prompt.md](system-prompt.md): builds the prompt.
 - [tools/index.md](tools/index.md): creates tool wrappers.
 - [providers/adapters/openai-responses.md](../providers/adapters/openai-responses.md): direct OpenAI Responses generation and usage capture.
 - [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md) and [providers/adapters/anthropic.md](../providers/adapters/anthropic.md): capture provider metadata and usage details for other providers.
+- [providers/fake.md](../providers/fake.md): fake fixture runner for free agent-loop verification.
 
 ## Error Handling
 

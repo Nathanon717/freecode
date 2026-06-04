@@ -84,8 +84,7 @@ export function createOpenAIPreflightInputController(options: OpenAIPreflightCon
     }
 
     if (!selected) {
-      const selectedModel = options.getSelectedModel();
-      clear(providerId, modelId, selectedModel ? `selected ${selectedModel}` : 'no model selected');
+      clear(providerId, modelId);
       return;
     }
 

@@ -142,6 +142,18 @@ function toolSchema(name: string, toolRationale: boolean): JsonObject {
         required: ['path', 'content'],
         additionalProperties: false,
       };
+    case 'edit_file':
+      return {
+        type: 'object',
+        properties: {
+          ...rationale,
+          path: { type: 'string', description: 'Relative path from project root' },
+          old_text: { type: 'string', description: 'Exact text to replace; must appear exactly once in the file' },
+          new_text: { type: 'string', description: 'Replacement text' },
+        },
+        required: ['path', 'old_text', 'new_text'],
+        additionalProperties: false,
+      };
     case 'grep':
       return {
         type: 'object',
@@ -311,13 +323,13 @@ async function executeFunctionCall(
   const callId = typeof item.call_id === 'string' ? item.call_id : '';
   const tool = tools[name];
   let args: unknown = {};
-  if (typeof item.arguments === 'string' && item.arguments.trim()) {
-    args = JSON.parse(item.arguments) as unknown;
-  }
   if (!tool?.execute) {
     return { type: 'function_call_output', call_id: callId, output: `Tool call failed: unknown tool ${name}` };
   }
   try {
+    if (typeof item.arguments === 'string' && item.arguments.trim()) {
+      args = JSON.parse(item.arguments) as unknown;
+    }
     const result: unknown = await tool.execute(args, { abortSignal: signal });
     return { type: 'function_call_output', call_id: callId, output: stringifyContent(result) };
   } catch (error) {

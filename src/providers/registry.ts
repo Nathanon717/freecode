@@ -6,6 +6,13 @@ import { createAnthropicProvider } from './adapters/anthropic.js';
 import { resolveApiKey } from '../config/index.js';
 import { syncLiveModels } from './canonical-models.js';
 import { logError } from '../logger.js';
+import {
+  FAKE_MODEL_PREFIX,
+  FAKE_PROVIDER_ID,
+  createPlaceholderFakeLanguageModel,
+  fakeModelSupportsTools,
+  isFakeLlmMode,
+} from './fake.js';
 
 const initializedProviders = new Set<string>();
 
@@ -142,7 +149,7 @@ async function initAnthropicModels(): Promise<void> {
   const entry = PROVIDER_REGISTRY.find(p => p.id === 'anthropic');
   if (!entry) return;
 
-  const apiKey = process.env[entry.apiKeyEnvVar];
+  const apiKey = resolveApiKey(entry);
   if (!apiKey) return;
 
   try {
@@ -173,12 +180,16 @@ async function initAnthropicModels(): Promise<void> {
 }
 
 export async function initDynamicProviders(): Promise<void> {
+  if (isFakeLlmMode()) {
+    throw new Error('Live model discovery is blocked while FREECODE_FAKE_LLM=1');
+  }
+
   await Promise.all([
     initOpenRouterModels(),
     initAnthropicModels(),
     ...LIVE_PROVIDER_IDS.map(id => {
       const entry = PROVIDER_REGISTRY.find(p => p.id === id);
-      return initProviderModels(id, entry ? process.env[entry.apiKeyEnvVar] : undefined);
+      return initProviderModels(id, entry ? resolveApiKey(entry) : undefined);
     }),
   ]);
 }
@@ -356,6 +367,22 @@ export function resolveModel(modelPreference: string): ResolvedModel {
 
   const providerId = modelPreference.slice(0, colonIdx);
   const modelId = modelPreference.slice(colonIdx + 1);
+
+  if (isFakeLlmMode() && providerId !== FAKE_PROVIDER_ID) {
+    throw new Error(`Real provider access is blocked while FREECODE_FAKE_LLM=1: "${providerId}"`);
+  }
+
+  if (modelPreference.startsWith(FAKE_MODEL_PREFIX)) {
+    if (!isFakeLlmMode()) {
+      throw new Error(`Mock model "${modelPreference}" is only available when FREECODE_FAKE_LLM=1`);
+    }
+    return {
+      model: createPlaceholderFakeLanguageModel(),
+      providerId: FAKE_PROVIDER_ID,
+      modelId,
+      supportsTools: fakeModelSupportsTools(modelId),
+    };
+  }
 
   const provider = getProvider(providerId);
   if (!provider) {

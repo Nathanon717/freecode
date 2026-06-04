@@ -18,7 +18,7 @@ getNoNativeToolsModels(): Set<string>   // returns Set of "provider:modelId" str
 ## Key Neighbors
 
 - [agent/loop.md](../agent/loop.md): calls `markModelNoNativeTools` on first discovery and `isModelNoNativeTools` on every turn to skip native tools for known models.
-- [commands/model.md](model.md): calls `getNoNativeToolsModels` to show a `~tools` badge on affected models in the picker.
+- [commands/model.md](../commands/model.md): calls `getNoNativeToolsModels` to show a `~tools` badge on affected models in the picker.
 
 ## Update Triggers
 

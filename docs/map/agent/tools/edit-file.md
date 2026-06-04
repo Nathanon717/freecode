@@ -18,8 +18,8 @@ editFileTool: CoreTool
 
 ## Behavior
 
-- Resolves with `join(projectRoot, path)`.
-- Requires the relative path to have been successfully read with `read_file` first.
+- Resolves through `resolveProjectPath()`, rejecting absolute paths and `..` escapes outside the project root.
+- Requires the normalized relative path to have been successfully read with `read_file` first.
 - Normalizes double-escaped `\\n` and `\\t` sequences in `old_text` and `new_text`.
 - Rejects empty, missing, or ambiguous `old_text`.
 - Writes the updated file as UTF-8 while preserving the original LF vs CRLF line ending style.

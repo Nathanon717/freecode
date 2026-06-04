@@ -517,29 +517,16 @@ function buildEvalDetailScreen(
   return lines;
 }
 
-async function waitForEvalPickerReturn(rl: Interface): Promise<void> {
-  await new Promise<void>((resolve) => {
-    rl.pause();
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdout.write(chalk.dim('\nPress Enter, Space, or Esc to return to eval picker…'));
-    const onKey = (data: string): void => {
-      if (data === '\x03') { cleanup(); process.exit(0); }
-      if (data === '\r' || data === '\n' || data === ' ' || data === '\x1b') {
-        cleanup();
-        process.stdout.write('\n');
-        resolve();
-      }
-    };
-    function cleanup(): void {
-      process.stdin.removeListener('data', onKey);
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-      rl.resume();
-    }
-    process.stdin.on('data', onKey);
-  });
+function saveAndClearStdinDataListeners(): Array<(...args: unknown[]) => void> {
+  const savedListeners = process.stdin.rawListeners('data') as Array<(...args: unknown[]) => void>;
+  process.stdin.removeAllListeners('data');
+  return savedListeners;
+}
+
+function restoreStdinDataListeners(savedListeners: Array<(...args: unknown[]) => void>): void {
+  for (const listener of savedListeners) {
+    process.stdin.on('data', listener);
+  }
 }
 
 export async function runEvalMenu(rl: Interface, projectRoot: string, getSelectedModel: () => string): Promise<void> {
@@ -571,10 +558,6 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       }
       return;
     }
-
-     
-    while (true) {
-
     // ── Raw-mode list picker ──────────────────────────────────────────────
     let pickerSel = 0;
     let detailMode = false;
@@ -610,6 +593,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
     const model = getSelectedModel();
     const confirmed = await new Promise<boolean>((resolve) => {
       rl.pause();
+      const savedListeners = saveAndClearStdinDataListeners();
       process.stdin.setRawMode(true);
       process.stdin.resume();
       process.stdin.setEncoding('utf8');
@@ -628,6 +612,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
         process.stdin.removeListener('data', onKey);
         process.stdin.setRawMode(false);
         process.stdin.pause();
+        restoreStdinDataListeners(savedListeners);
         rl.resume();
       }
 
@@ -699,6 +684,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       let cancelEscListener: (() => void) | null = null;
       if (process.stdin.isTTY) {
         rl.pause();
+        const savedListeners = saveAndClearStdinDataListeners();
         process.stdin.setRawMode(true);
         process.stdin.resume();
         process.stdin.setEncoding('utf8');
@@ -711,6 +697,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
           process.stdin.removeListener('data', onKey);
           process.stdin.setRawMode(false);
           process.stdin.pause();
+          restoreStdinDataListeners(savedListeners);
           rl.resume();
           cancelEscListener = null;
         };
@@ -807,18 +794,6 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       const color = failed > 0 ? chalk.red : incomplete > 0 ? chalk.yellow : chalk.green;
       console.log(color(`Results: ${parts.join(', ')}`));
     }
-
-    // Reload history so the picker reflects the just-completed run.
-    evalHistory.length = 0;
-    evalHistory.push(...loadEvalHistory());
-    for (const s of scenarios) {
-      const dir = join(PLAYGROUND_EVAL_DIR, s.id);
-      scenarioHashes.set(s.id, { runHash: computeRunHash(dir), fullHash: computeScenarioHash(dir) });
-    }
-
-    await waitForEvalPickerReturn(rl);
-
-    } // end while (true)
   } finally {
     rl.pause();
     if (restoreBottomUI && process.stdin.isTTY) setupBottomUI();

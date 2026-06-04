@@ -17,7 +17,7 @@ writeFileTool: CoreTool
 
 ## Behavior
 
-- Resolves with `join(projectRoot, path)`.
+- Resolves through `resolveProjectPath()`, rejecting absolute paths and `..` escapes outside the project root.
 - Creates parent directories recursively with async `mkdir(dir, { recursive: true })`.
 - Normalizes double-escaped `\\n` and `\\t` sequences into real newlines/tabs.
 - Writes with exclusive create mode and fails if the target file already exists.

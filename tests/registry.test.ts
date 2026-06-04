@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PROVIDER_REGISTRY, getProvider } from '../src/providers/registry.js';
+import { PROVIDER_REGISTRY, getProvider, initDynamicProviders, resolveModel } from '../src/providers/registry.js';
 
 describe('Provider Registry', () => {
   describe('PROVIDER_REGISTRY', () => {
@@ -104,5 +104,40 @@ describe('Provider Registry', () => {
       expect(types.filter(t => t === 'anthropic')).toHaveLength(1);
     });
 
+  });
+
+  describe('fake LLM guard', () => {
+    it('hides mock models unless fake mode is active', () => {
+      const previous = process.env.FREECODE_FAKE_LLM;
+      delete process.env.FREECODE_FAKE_LLM;
+      try {
+        expect(() => resolveModel('mock:gpt-freecode-test')).toThrow('only available when FREECODE_FAKE_LLM=1');
+      } finally {
+        if (previous === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = previous;
+      }
+    });
+
+    it('blocks real provider resolution in fake mode before reading keys', () => {
+      const previous = process.env.FREECODE_FAKE_LLM;
+      process.env.FREECODE_FAKE_LLM = '1';
+      try {
+        expect(() => resolveModel('openai:gpt-5.1')).toThrow('Real provider access is blocked');
+      } finally {
+        if (previous === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = previous;
+      }
+    });
+
+    it('blocks live model discovery in fake mode', async () => {
+      const previous = process.env.FREECODE_FAKE_LLM;
+      process.env.FREECODE_FAKE_LLM = '1';
+      try {
+        await expect(initDynamicProviders()).rejects.toThrow('Live model discovery is blocked');
+      } finally {
+        if (previous === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = previous;
+      }
+    });
   });
 });

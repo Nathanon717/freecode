@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock",
+        "model": "gpt-freecode-test",
+        "messageCount": 1,
+        "mustContain": ["Create note.txt"],
+        "toolsAvailable": ["write_file"],
+        "systemPromptPresent": true,
+        "toolRationale": true,
+        "parallelTools": true,
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["I'll create the file now."],
+        "toolCalls": [
+          {
+            "name": "write_file",
+            "args": {
+              "path": "note.txt",
+              "content": "created by fake llm\n"
+            }
+          }
+        ],
+        "usage": {
+          "promptTokens": 20,
+          "outputTokens": 6,
+          "totalTokens": 26
+        }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "provider": "mock",
+        "model": "gpt-freecode-test",
+        "messageCount": 3,
+        "mustContain": ["<tool_result name=\"write_file\">"],
+        "toolsAvailable": ["write_file"],
+        "toolRationale": true,
+        "parallelTools": true,
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "Created note.txt.",
+        "usage": {
+          "promptTokens": 30,
+          "outputTokens": 4,
+          "totalTokens": 34
+        }
+      }
+    }
+  ]
+}

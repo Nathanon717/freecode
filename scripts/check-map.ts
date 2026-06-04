@@ -40,6 +40,22 @@ const mapFiles = walkFiles(MAP_ROOT, file => file.endsWith('.md'))
 const mapNav = existsSync(MAP_NAV) ? readFileSync(MAP_NAV, 'utf-8') : '';
 const failures: string[] = [];
 
+function validateMarkdownLinks(file: string): void {
+  const content = readFileSync(file, 'utf-8');
+  const linkPattern = /!?\[[^\]]*]\(([^)]+)\)/g;
+  let match: RegExpExecArray | null;
+  while ((match = linkPattern.exec(content)) !== null) {
+    const rawTarget = match[1].trim();
+    const target = rawTarget.split(/\s+/)[0].replace(/^<|>$/g, '').split('#')[0];
+    if (!target || /^[a-z][a-z0-9+.-]*:/i.test(target)) continue;
+
+    const resolved = join(dirname(file), target);
+    if (!existsSync(resolved)) {
+      failures.push(`${toPosix(relative(ROOT, file))} links to missing file ${target}.`);
+    }
+  }
+}
+
 if (!existsSync(MAP_NAV)) {
   failures.push('docs/map/README.md is missing.');
 }
@@ -67,6 +83,10 @@ for (const mapFile of mapFiles) {
   if (!existsSync(sourceFile)) {
     failures.push(`${mapRelative} points to missing source file ${sourceRelative}.`);
   }
+}
+
+for (const mapFile of [MAP_NAV, ...mapFiles]) {
+  if (existsSync(mapFile)) validateMarkdownLinks(mapFile);
 }
 
 if (failures.length > 0) {

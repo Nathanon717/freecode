@@ -8,7 +8,7 @@ import chalk from 'chalk';
 import { classifyScenario } from '../../src/scenario-classification.js';
 import { PROVIDER_REGISTRY } from '../../src/providers/registry.js';
 import { assertScenarioExpectations } from './assertions/index.js';
-import type { ScenarioExpectations, ToolTraceEvent } from './assertions/index.js';
+import type { FakeLlmTraceEvent, ScenarioExpectations, ToolTraceEvent } from './assertions/index.js';
 import type { TtyScenario } from './pty/run-tty-scenario.js';
 
 // Env vars to strip from all non-LLM test processes so provider API fetches
@@ -34,6 +34,7 @@ interface Scenario {
   filesBefore?: Array<{ path: string; content: string }>;
   flags?: string[];
   model?: string;
+  llmFixture?: string;
   turns?: Array<{ input: string }>;
   expect?: ScenarioExpectations;
   tty?: TtyScenario;
@@ -179,6 +180,8 @@ if (nonTtyScenarios.length > 0) {
     const inputFile = join(tmpHome, 'input.txt');
     writeFileSync(inputFile, inputLines, 'utf-8');
     const traceFile = join(tmpHome, 'trace.json');
+    const fakeTraceFile = join(tmpHome, 'fake-llm-trace.json');
+    const fakeFixturePath = scenario.llmFixture ? join(SCENARIOS_DIR, scenario.llmFixture) : '';
     if (scenario.config) {
       writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(scenario.config, null, 2), 'utf-8');
     }
@@ -192,6 +195,7 @@ if (nonTtyScenarios.length > 0) {
     let stderr = '';
     let exitCode: number;
     let trace: ToolTraceEvent[] = [];
+    let fakeLlmTrace: FakeLlmTraceEvent[] = [];
 
     try {
       const result = await new Promise<{ stdout: string; stderr: string; exitCode: number }>((resolve) => {
@@ -202,7 +206,9 @@ if (nonTtyScenarios.length > 0) {
             FREECODE_HOME: tmpHome,
             DEBUG_QUOTA: '0',
             FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
-            ...(scenario.requiresLlm ? {} : { FREECODE_NO_LLM: '1' }),
+            ...(scenario.llmFixture
+              ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath, FREECODE_FAKE_LLM_TRACE: fakeTraceFile }
+              : scenario.requiresLlm ? {} : { FREECODE_NO_LLM: '1' }),
             ...(scenario.expect.toolTrace ? { FREECODE_TRACE_JSON: traceFile } : {}),
           },
         });
@@ -220,6 +226,9 @@ if (nonTtyScenarios.length > 0) {
       if (existsSync(traceFile)) {
         trace = JSON.parse(readFileSync(traceFile, 'utf-8')) as ToolTraceEvent[];
       }
+      if (existsSync(fakeTraceFile)) {
+        fakeLlmTrace = JSON.parse(readFileSync(fakeTraceFile, 'utf-8')) as FakeLlmTraceEvent[];
+      }
     } catch (err) {
       stderr += `\nHarness error: ${err instanceof Error ? err.message : String(err)}`;
       exitCode = 1;
@@ -232,6 +241,7 @@ if (nonTtyScenarios.length > 0) {
       stderr,
       exitCode,
       trace,
+      fakeLlmTrace,
       workspaceRoot,
       workspace: scenario.workspace ?? 'repo',
     });
@@ -241,10 +251,10 @@ if (nonTtyScenarios.length > 0) {
       try { rmSync(tmpWorkspace, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpWorkspace:', err); }
     }
 
-    return { scenario, failures, stdout, stderr, exitCode, trace };
+    return { scenario, failures, stdout, stderr, exitCode, trace, fakeLlmTrace };
   }));
 
-  for (const { scenario, failures, stdout, stderr, exitCode, trace } of nonTtyResults) {
+  for (const { scenario, failures, stdout, stderr, exitCode, trace, fakeLlmTrace } of nonTtyResults) {
     if (showDetails) {
       const checks: string[] = [];
       if (scenario.expect.exitCode !== undefined) checks.push(`exitCode=${scenario.expect.exitCode}`);
@@ -252,6 +262,7 @@ if (nonTtyScenarios.length > 0) {
       if (scenario.expect.stdoutAbsent?.length) checks.push(`stdoutAbsent=${scenario.expect.stdoutAbsent.length}`);
       if (scenario.expect.files?.length) checks.push(`files=${scenario.expect.files.length}`);
       if (scenario.expect.toolTrace) checks.push('toolTrace');
+      if (scenario.expect.fakeLlmTrace) checks.push('fakeLlmTrace');
       console.log(`\n  ${chalk.cyan('RUN')}   ${chalk.cyan(scenario.name)}`);
       console.log(`        ${chalk.dim(scenario.description || '(no description)')}`);
       console.log(`        type: ${chalk.yellow(scenario.requiresLlm ? 'LLM eval' : 'non-LLM verification')} | workspace: ${chalk.magenta(scenario.workspace ?? 'repo')}`);
@@ -267,6 +278,9 @@ if (nonTtyScenarios.length > 0) {
         }
         if (scenario.expect.toolTrace) {
           console.log(`        tools: ${calls.join(' -> ') || '(none)'}`);
+        }
+        if (scenario.expect.fakeLlmTrace) {
+          console.log(`        fake LLM calls: ${fakeLlmTrace.length}`);
         }
         printCapturedOutput(stdout, stderr);
       }

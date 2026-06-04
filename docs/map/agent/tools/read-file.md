@@ -18,7 +18,7 @@ readFileTool: CoreTool
 
 ## Behavior
 
-- Resolves to `join(projectRoot, path)`.
+- Resolves through `resolveProjectPath()`, rejecting absolute paths and `..` escapes outside the project root.
 - Reads using UTF-8.
 - Marks the relative path as read after a successful filesystem read so `edit_file` may edit it later.
 - Output lines are prefixed with their 1-indexed line number: `N: <content>`.

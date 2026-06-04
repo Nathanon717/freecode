@@ -13,7 +13,7 @@ npm run test:pty      # PTY driver + session manager vitest unit tests (require 
 npm run eval          # build + LLM eval scenarios with detailed breakdown
 ```
 
-`npm test` is the normal post-change safety check and never calls an LLM. Use evals only when you explicitly want provider-backed tests.
+`npm test` is the normal post-change safety check and never calls a live LLM. Use evals only when you explicitly want provider-backed tests.
 
 ## PTY unit tests
 
@@ -92,6 +92,7 @@ For the generated scenario inventory, see [scenarios.md](scenarios.md).
 - `filesBefore`: Optional seed files written before the CLI runs. Use with `workspace: "temp"` for edit/preservation scenarios.
 - `flags`: Optional CLI flags inserted before `--script`.
 - `model`: Optional model preference passed as `--model <value>`.
+- `llmFixture`: Optional fake LLM script path, relative to `tests/scenarios/`. When present, set `requiresLlm: false` and use a `mock:*` model.
 - `turns`: Input lines sent to script mode. Script mode exits cleanly after the final turn.
 - `y`/`yes` and `n`/`no` turns are consumed as tool-call confirmations when the agent requests a tool. If the next turn is not an approval answer, the tool call is denied and the turn remains available as normal user input.
 - Approval turns are skipped if there is no pending tool request, so a failed provider call does not accidentally turn `y` into a user prompt.
@@ -107,6 +108,127 @@ For the generated scenario inventory, see [scenarios.md](scenarios.md).
 - `toolTrace.sequence`: Exact tool call sequence.
 - `toolTrace.present`: Tool names that must appear at least once.
 - `toolTrace.absent`: Tool names that must not appear.
+- `fakeLlmTrace.callCount`: Exact number of fake model calls.
+- `fakeLlmTrace.maxCalls`: Maximum allowed fake model calls.
+- `fakeLlmTrace.calls[]`: Per-call assertions for provider, model, execution path, input message count, last user text, available/absent tools, tool settings, emitted text, emitted tool calls, and usage.
+
+## Fake LLM Fixtures
+
+Fake LLM fixtures let a scenario enter the real agent loop without provider keys, network access, or paid usage. The harness sets `FREECODE_FAKE_LLM=1`, strips real provider API keys, passes the fixture through `FREECODE_FAKE_LLM_SCRIPT`, and does not set `FREECODE_NO_LLM=1` for that process.
+
+Use this mode for free verification of prompt construction, model routing, deterministic assistant text, and tool-call orchestration. The current fake runner supports ordered text/chunk responses, scripted `toolCalls`, usage metadata, strict unused-step checks, execution-setting matchers, and fake model traces. Prompt-tool fallback scripting and OpenAI Responses-style fake transports are still separate future work.
+
+```json
+{
+  "name": "agent-text-fake",
+  "description": "Agent loop returns deterministic text through a fake model",
+  "requiresLlm": false,
+  "workspace": "temp",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "agent-text-fake.llm.json",
+  "turns": [
+    { "input": "Say PONG" }
+  ],
+  "expect": {
+    "stdoutContains": ["PONG"],
+    "stdoutAbsent": ["Error:"],
+    "exitCode": 0,
+    "fakeLlmTrace": {
+      "callCount": 1,
+      "calls": [
+        {
+          "provider": "mock",
+          "model": "gpt-freecode-test",
+          "inputMessageCount": 1,
+          "lastUserContains": ["Say PONG"],
+          "toolsAvailable": ["read_file", "write_file"],
+          "toolRationale": true,
+          "parallelTools": true,
+          "nativeToolsSupplied": true,
+          "emittedTextContains": ["PONG"],
+          "usage": { "promptTokens": 10, "outputTokens": 1, "totalTokens": 11 }
+        }
+      ]
+    }
+  }
+}
+```
+
+Fixture files are JSON and live next to scenarios:
+
+```json
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "messageCount": 1,
+        "mustContain": ["Say PONG"],
+        "toolsAvailable": ["read_file", "write_file"],
+        "systemPromptPresent": true,
+        "toolRationale": true,
+        "parallelTools": true,
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["PONG"],
+        "usage": { "promptTokens": 10, "outputTokens": 1, "totalTokens": 11 }
+      }
+    }
+  ]
+}
+```
+
+Tool-driving fixtures use the same ordered steps. A step may emit `toolCalls`; the agent loop executes those calls through the normal `createTools()` wrappers, then injects `<tool_result>` content as the next user message for the following fake step:
+
+```json
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "messageCount": 1,
+        "mustContain": ["Create note.txt"],
+        "toolsAvailable": ["write_file"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["I'll create it."],
+        "toolCalls": [
+          { "name": "write_file", "args": { "path": "note.txt", "content": "ok\n" } }
+        ],
+        "usage": { "promptTokens": 20, "outputTokens": 5, "totalTokens": 25 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "messageCount": 3,
+        "mustContain": ["<tool_result name=\"write_file\">"]
+      },
+      "response": {
+        "text": "Created note.txt.",
+        "usage": { "promptTokens": 30, "outputTokens": 4, "totalTokens": 34 }
+      }
+    }
+  ]
+}
+```
+
+Fake mode is intentionally strict:
+
+- Scenarios with `llmFixture` must set `requiresLlm: false`.
+- Scenarios with `llmFixture` must use a `mock:*` model.
+- `mock:*` models are rejected unless `FREECODE_FAKE_LLM=1`.
+- Real providers are rejected while `FREECODE_FAKE_LLM=1`.
+- Live model discovery is rejected while `FREECODE_FAKE_LLM=1`.
+- Fixture steps are consumed in order; an unexpected prompt, model, missing tool, or exhausted fixture produces an explicit error.
+- Unless `allowUnusedSteps` is true, all fixture steps must be consumed by the time the fake model returns a final no-tool response.
+- `fakeLlmTrace` assertions read the trace written by `FREECODE_FAKE_LLM_TRACE`, so fake scenarios can verify model call count, routing, execution path, input message count, prompt-facing text, available tools, tool settings, emitted text, emitted tool calls, and usage metadata.
 
 ## TTY screen scenarios
 
@@ -175,6 +297,6 @@ Run `npx tsx tests/harness/pty/demo.ts` for a fixed startup-through-`/clear` wal
 
 ## Gotchas
 
-- LLM eval scenarios make real provider network calls. In sandboxed Codex runs, rerun them with escalated network permissions if they fail with `EACCES` / `Cannot connect to API`.
+- LLM eval scenarios make real provider network calls. Fake LLM fixture scenarios do not. In sandboxed Codex runs, rerun only provider-backed evals with escalated network permissions if they fail with `EACCES` / `Cannot connect to API`.
 - Groq tool-call failures can surface as `code: "tool_use_failed"` and may be followed by Windows exit code `3221226505` (`0xC0000409`) if the child process aborts during shutdown. Treat the provider error as the root cause; the exit code is a secondary crash symptom.
 - For tool scenarios, write prompts that name the expected tool sequence and exact tool arguments. This reduces malformed provider tool calls and keeps trace assertions meaningful.

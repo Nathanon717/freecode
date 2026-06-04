@@ -34,6 +34,7 @@ import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
 import { runPromptToolsLoop } from './prompt-tools.js';
 import { isModelNoNativeTools, markModelNoNativeTools } from '../providers/model-traits.js';
+import { FAKE_PROVIDER_ID, assertFakeFixtureComplete, runFakeModel } from '../providers/fake.js';
 
 let systemPromptLogged = false;
 
@@ -122,6 +123,89 @@ export async function agentLoop(
   }
 
   log('stream', `Calling streamText`, { supportsTools, maxSteps: supportsTools ? 10 : undefined });
+  if (providerId === FAKE_PROVIDER_ID) {
+    const tools = supportsTools ? createTools(options.confirmToolCall, modelSettings.toolRationale) : undefined;
+    const toolNames = tools ? Object.keys(tools) : [];
+    let activeMessages = messages;
+    try {
+      for (let step = 0; step < 10; step++) {
+        const generated = await runFakeModel({
+          providerId,
+          modelId,
+          systemPrompt,
+          messages: activeMessages,
+          toolNames,
+          toolRationale: modelSettings.toolRationale,
+          parallelTools: modelSettings.parallelTools,
+          nativeToolsSupplied: Boolean(tools),
+        });
+        fullText += generated.text;
+        totalTokens += generated.usage.totalTokens;
+        promptTokens = generated.usage.promptTokens;
+        outputTokens = generated.usage.outputTokens;
+
+        if (generated.toolCalls.length === 0) {
+          assertFakeFixtureComplete();
+          return {
+            text: fullText,
+            usage: { totalTokens, promptTokens, outputTokens },
+            providerId,
+            modelId,
+            quota: null,
+          };
+        }
+
+        if (!tools) {
+          throw new Error(`Fake LLM fixture emitted tool calls, but ${providerId}:${modelId} does not support tools`);
+        }
+
+        const resultParts: string[] = [];
+        for (let i = 0; i < generated.toolCalls.length; i++) {
+          const toolCall = generated.toolCalls[i];
+          writeTranscriptStepDivider();
+          const toolFn = tools[toolCall.name as keyof typeof tools];
+          if (!toolFn?.execute) {
+            resultParts.push(`Tool error: unknown tool "${toolCall.name}". Available tools: ${toolNames.join(', ')}`);
+            continue;
+          }
+          const rawResult = await (toolFn.execute as (args: Record<string, unknown>, opts: unknown) => Promise<unknown>)(
+            toolCall.args,
+            { toolCallId: `fake-${step}-${i}`, messages: activeMessages },
+          );
+          const toolResult = typeof rawResult === 'string' ? rawResult : JSON.stringify(rawResult, null, 2);
+          resultParts.push(`<tool_result name="${toolCall.name}">\n${toolResult}\n</tool_result>`);
+        }
+
+        activeMessages = [
+          ...activeMessages,
+          { role: 'assistant' as const, content: generated.text },
+          { role: 'user' as const, content: resultParts.join('\n\n') },
+        ];
+      }
+
+      throw new Error('Fake LLM fixture exceeded max tool steps (10)');
+    } catch (error) {
+      if (isUserAbortError(error)) {
+        return {
+          text: fullText,
+          usage: { totalTokens, promptTokens, outputTokens },
+          providerId,
+          modelId,
+          quota: null,
+        };
+      }
+      const errMsg = toDetailedErrorMessage(error);
+      process.stdout.write(`Error: ${errMsg}\n`);
+      return {
+        text: fullText ? `${fullText}\n\nError: ${errMsg}` : `Error: ${errMsg}`,
+        usage: { totalTokens, promptTokens, outputTokens },
+        providerId,
+        modelId,
+        quota: null,
+      };
+    }
+  }
+
   if (!modelSettings.parallelTools && providerId !== 'openai' && providerId !== 'anthropic') {
     setParallelToolsDisabled(providerId, true);
   }

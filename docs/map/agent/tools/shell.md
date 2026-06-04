@@ -27,7 +27,13 @@ del /f
 format <drive>:
 git push
 git pull
+git reset
+git clean
+move-item
 remove-item
+set-content
+new-item
+ren / rename
 ```
 
 ## Behavior

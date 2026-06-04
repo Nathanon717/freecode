@@ -22,6 +22,8 @@
 - Omits `store` from `/responses/input_tokens` requests because the count endpoint rejects that field.
 - Converts text CoreMessages to Responses input message items and function outputs to `function_call_output` items.
 - Exposes Freecode tools as Responses `function` tools with JSON schemas matching the existing tool parameters.
+- Includes the full `edit_file` schema (`path`, `old_text`, `new_text`) instead of falling back to an empty argument shape.
+- Malformed function-call argument JSON is returned to the model as a tool failure output instead of aborting the whole turn.
 - Strips transient response item IDs before replaying function-call items in stateless tool loops.
 - Emits the shared transcript step divider after each function-call step so the direct Responses path matches AI SDK `streamText` step boundaries.
 - Captures raw OpenAI usage from JSON responses for downstream display and cost estimation.

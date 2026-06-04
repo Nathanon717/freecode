@@ -73,13 +73,12 @@ src/
 `-- providers/
     |-- index.ts                  -> [Provider re-exports](providers/index.md)
     |-- types.ts                  -> [Provider/config types](providers/types.md)
+    |-- fake.ts                   -> [Fake LLM fixtures](providers/fake.md)
     |-- canonical-models.ts       -> [Canonical model groups](providers/canonical-models.md)
     |-- model-sources.ts          -> [Model data sources](providers/model-sources.md)
     |-- registry.ts               -> [Provider registry](providers/registry.md)
     |-- model-traits.ts           -> [Model traits store](providers/model-traits.md)
     |-- model-cache.ts            -> [Live model list cache](providers/model-cache.md)
-    |-- router.ts                 -> [Routing logic](providers/router.md)
-    |-- ollama.ts                 -> [Ollama detection](providers/ollama.md)
     |-- anthropic-cost.ts         -> [Anthropic cost estimates](providers/anthropic-cost.md)
     |-- openai-cost.ts            -> [OpenAI cost estimates](providers/openai-cost.md)
     |-- pricing-verifier.ts       -> [Dual-source pricing verifier](providers/pricing-verifier.md)
@@ -96,4 +95,4 @@ src/
 
 Runtime starts in [index.md](index.md), enters [cli/session-runner.md](cli/session-runner.md), dispatches slash commands through [cli/command-dispatcher.md](cli/command-dispatcher.md), and sends normal turns to [agent/loop.md](agent/loop.md).
 
-Provider selection lives in [providers/router.md](providers/router.md). Tool wrappers live under [agent/tools/](agent/tools/index.md). Scenario discovery and classification live in [cli/scenario-catalog.md](cli/scenario-catalog.md) and [scenario-classification.md](scenario-classification.md).
+Provider selection lives in [providers/registry.md](providers/registry.md). Tool wrappers live under [agent/tools/](agent/tools/index.md). Scenario discovery and classification live in [cli/scenario-catalog.md](cli/scenario-catalog.md) and [scenario-classification.md](scenario-classification.md).

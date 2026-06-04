@@ -13,12 +13,13 @@ grepTool: CoreTool
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
 | `pattern` | `string` | required | Regex pattern to search for. |
-| `path` | `string` | `.` | Directory resolved against `projectRoot` and used as the search root. |
+| `path` | `string` | `.` | Directory resolved through `resolveProjectPath()` and used as the search root. |
 | `include` | `string` | — | Optional glob filter passed to rg `--glob` (e.g. `"*.ts"`). Ignored in findstr fallback. |
 
 ## Behavior
 
 - Detects `rg` availability once at module load (cached promise, no per-call cost).
+- Rejects absolute paths and `..` escapes outside the project root.
 - **rg path:** `rg -n --no-heading --hidden --glob=!.git/* [--glob=<include>] -- <pattern> .`
   - Stats unique result files concurrently for `mtime`.
   - Sorts all matches descending by `mtime` (newest files first).

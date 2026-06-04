@@ -38,6 +38,8 @@ runPromptToolsLoop(
 4. If no calls: prints the response and returns.
 5. If calls: prints any text before the first call, then for each call calls the wrapped tool from `createTools` (which handles logging, confirmation, and result display), then injects all results as a `<tool_result>` user message and loops (up to 10 steps).
 
+The embedded tool reference must mirror the actual tool schemas; for example `grep` uses `include` for its optional glob filter.
+
 ## Key Neighbors
 
 - [loop.md](loop.md): invokes `runPromptToolsLoop` when `isToolsNotSupportedError` fires.

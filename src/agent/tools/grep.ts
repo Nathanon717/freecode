@@ -4,7 +4,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { resolve } from 'path';
 import { stat } from 'fs/promises';
-import { projectRoot } from '../context.js';
+import { resolveExistingProjectPath } from '../context.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -146,7 +146,13 @@ export const grepTool = tool({
     include: z.string().optional().describe('Glob pattern to filter files (e.g. "*.ts", "*.{ts,tsx}")'),
   }),
   execute: async ({ pattern, path = '.', include }) => {
-    const cwd = resolve(projectRoot, path);
+    let resolved;
+    try {
+      resolved = await resolveExistingProjectPath(path);
+    } catch (error) {
+      return `Error searching: ${error instanceof Error ? error.message : String(error)}`;
+    }
+    const cwd = resolved.fullPath;
     try {
       if (await rgAvailable) {
         return await grepWithRg(pattern, cwd, include);

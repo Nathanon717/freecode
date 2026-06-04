@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { readFile, readdir } from 'fs/promises';
 import { join, dirname, basename } from 'path';
-import { markFileRead, projectRoot } from '../context.js';
+import { markFileRead, resolveExistingProjectPath, resolveProjectPath } from '../context.js';
 
 const DEFAULT_LIMIT = 2000;
 
@@ -45,18 +45,24 @@ export const readFileTool = tool({
       .describe(`Maximum number of lines to return (default: ${DEFAULT_LIMIT})`),
   }),
   execute: async ({ path, offset = 1, limit = DEFAULT_LIMIT }) => {
-    const fullPath = join(projectRoot, path);
+    let resolved;
+    try {
+      resolved = resolveProjectPath(path);
+    } catch (error) {
+      return `Error reading file: ${error instanceof Error ? error.message : String(error)}`;
+    }
     let content: string;
     try {
-      content = await readFile(fullPath, 'utf-8');
+      resolved = await resolveExistingProjectPath(path);
+      content = await readFile(resolved.fullPath, 'utf-8');
     } catch (error) {
       if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return suggestSimilar(fullPath);
+        return suggestSimilar(resolved.fullPath);
       }
       return `Error reading file: ${error instanceof Error ? error.message : 'unknown error'}`;
     }
 
-    markFileRead(path);
+    markFileRead(resolved.relativePath);
 
     const allLines = content.endsWith('\n')
       ? content.slice(0, -1).split('\n')

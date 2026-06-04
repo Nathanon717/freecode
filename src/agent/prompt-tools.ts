@@ -32,7 +32,7 @@ The result will be provided before you continue. You may then call another tool 
   args: { "path": string, "old_text": string, "new_text": string }
 
 **grep** — Regex-search file contents.
-  args: { "pattern": string, "path"?: string, "file_glob"?: string }
+  args: { "pattern": string, "path"?: string, "include"?: string }
 
 **shell_exec** — Execute a shell command.
   args: { "command": string, "confirmDestructive"?: boolean }

@@ -336,5 +336,319 @@
       "output": 734
     },
     "scenarioHash": "2e3f1d8bd9807ff3c95043f12178a62b7bc89de4788e00edfc6bdc986a57cc53"
+  },
+  {
+    "timestamp": "2026-06-04T13:45:23.567Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 5793,
+      "prompt": 5444,
+      "output": 349
+    },
+    "scenarioHash": "f3c89edff8c7d59797ef1def517db1f08e817f160c5bc0769de68ba055347197"
+  },
+  {
+    "timestamp": "2026-06-04T13:46:35.557Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 17427,
+      "prompt": 16503,
+      "output": 924
+    },
+    "scenarioHash": "01d98c60f429f001c26031c82e0858a2313aeb44727bc821b673c214de1c2c9c"
+  },
+  {
+    "timestamp": "2026-06-04T20:40:44.955Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 9268,
+      "prompt": 8794,
+      "output": 474
+    },
+    "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
+    "checks": [
+      {
+        "name": "file exists: analyze_orders.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "file content: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "uses data schema",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 6,
+        "note": "list_dir → read_file → shell_exec → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 9268,
+        "note": "total: 9268, prompt: 8794, output: 474"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-04T20:42:06.872Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 7071,
+      "prompt": 6612,
+      "output": 459
+    },
+    "scenarioHash": "c473ee1da59fc7a92d6f3a714561b2c0805a079ca9a1b7d4ddfe8dfc1cd1f6bd",
+    "checks": [
+      {
+        "name": "file exists: report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: sales.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "output matches expected",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "agent ran report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "first run exits 0 with wrong output",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of report.py found that produced the buggy revenue=49.50 (expected the agent to run the script before fixing it)"
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "edited then reran",
+        "kind": "warning",
+        "pass": false,
+        "message": "initial wrong-output run not found in tool calls"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → read_file → edit_file → shell_exec → read_file"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 7071,
+        "note": "total: 7071, prompt: 6612, output: 459"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-04T20:43:46.852Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 7142,
+      "prompt": 6748,
+      "output": 394
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of analyze_numbers.py captured the initial SyntaxError"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 6,
+        "note": "list_dir → list_dir → list_dir → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 7142,
+        "note": "total: 7142, prompt: 6748, output: 394"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-04T20:45:22.311Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 7620,
+      "prompt": 6865,
+      "output": 755
+    },
+    "scenarioHash": "6aab8364aaf4eb4df5e231a5c80ef20cc4037a507d1542c7a534e59879ac329e",
+    "checks": [
+      {
+        "name": "file exists: pipeline.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: stats.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of pipeline.py captured the initial KeyError"
+      },
+      {
+        "name": "inspected stats module",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "preserved stats module",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "edited pipeline then reran",
+        "kind": "warning",
+        "pass": false,
+        "message": "initial KeyError run not found"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → read_file → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 7620,
+        "note": "total: 7620, prompt: 6865, output: 755"
+      }
+    ]
   }
 ]

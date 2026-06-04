@@ -17,6 +17,8 @@ interface ScenarioDoc {
   workspace?: string;
 }
 
+type CanonicalModelGroups = Record<string, string[]>;
+
 function readProjectFile(path: string): string {
   return readFileSync(join(ROOT, path), 'utf-8');
 }
@@ -64,7 +66,55 @@ function formatModels(models: typeof PROVIDER_REGISTRY[number]['models']): strin
     .join('<br>');
 }
 
-function providerReference(): string {
+function parseExistingProviderModelCells(content: string): Map<string, string> {
+  const cells = new Map<string, string>();
+  for (const line of content.split('\n')) {
+    if (!line.startsWith('|') || line.includes('---')) continue;
+    const columns = line.split('|').slice(1, -1).map(column => column.trim());
+    if (columns.length < 8) continue;
+    const id = columns[2].match(/^`([^`]+)`$/)?.[1];
+    if (!id) continue;
+    cells.set(id, columns[7]);
+  }
+  return cells;
+}
+
+function canonicalModelCells(): Map<string, string> {
+  const cells = new Map<string, string>();
+  const path = join(ROOT, 'canonical-models.json');
+  if (!existsSync(path)) return cells;
+
+  const groups = JSON.parse(readFileSync(path, 'utf-8')) as CanonicalModelGroups;
+  const byProvider = new Map<string, string[]>();
+  for (const entries of Object.values(groups)) {
+    for (const entry of entries) {
+      const colonIdx = entry.indexOf(':');
+      if (colonIdx === -1) continue;
+      const providerId = entry.slice(0, colonIdx);
+      const modelId = entry.slice(colonIdx + 1);
+      const models = byProvider.get(providerId) ?? [];
+      models.push(modelId);
+      byProvider.set(providerId, models);
+    }
+  }
+
+  for (const [providerId, models] of byProvider) {
+    const provider = PROVIDER_REGISTRY.find(p => p.id === providerId);
+    const exactBlocklist = new Set(provider?.modelIdExactBlocklist ?? []);
+    const blocklist = provider?.modelIdBlocklist ?? [];
+    const filtered = [...new Set(models)]
+      .filter(id => !exactBlocklist.has(id))
+      .filter(id => !blocklist.some(blocked => id.includes(blocked)))
+      .sort((a, b) => a.localeCompare(b));
+    cells.set(providerId, filtered.map(id => `\`${id}\``).join('<br>'));
+  }
+
+  return cells;
+}
+
+function providerReference(content: string): string {
+  const existingModelCells = parseExistingProviderModelCells(content);
+  const canonicalCells = canonicalModelCells();
   const rows = PROVIDER_REGISTRY.map((provider, index) => [
     String(index + 1),
     provider.name,
@@ -73,7 +123,9 @@ function providerReference(): string {
     `\`${provider.apiKeyEnvVar}\``,
     provider.supportsTools === false ? 'No' : 'Yes',
     provider.paid ? 'Yes' : 'No',
-    formatModels(provider.models),
+    provider.models.length > 0
+      ? formatModels(provider.models)
+      : existingModelCells.get(provider.id) || canonicalCells.get(provider.id) || '',
   ]);
 
   return markdownTable(
@@ -142,7 +194,7 @@ function updateFile(path: string, update: (content: string) => string): boolean 
 }
 
 const updates: Array<[string, (content: string) => string]> = [
-  ['docs/providers.md', content => replaceGeneratedSection(content, 'PROVIDERS', providerReference())],
+  ['docs/providers.md', content => replaceGeneratedSection(content, 'PROVIDERS', providerReference(content))],
   ['docs/commands.md', content => {
     const base = content || '# Commands\n\nReference docs for npm scripts and slash commands.\n';
     return replaceGeneratedSection(

@@ -15,7 +15,7 @@
 ## Behavior
 
 - Only runs for selected models shaped as `openai:<model>`.
-- Skips empty input, slash commands, missing OpenAI API keys, and non-OpenAI providers.
+- Skips empty input, slash commands, and non-OpenAI providers silently; reports missing OpenAI API keys for selected OpenAI models.
 - Builds the same Responses payload shape used by direct OpenAI generation, hashes it, and reuses cached counts for repeated payloads.
 - Aborts or ignores stale count requests when the input changes.
 

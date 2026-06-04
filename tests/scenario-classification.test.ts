@@ -32,6 +32,31 @@ describe('scenario LLM classification', () => {
     expect(result.errors[0]).toContain('requiresLlm=false');
   });
 
+  it('treats fake LLM fixtures as free verification for agent prompts', () => {
+    const result = classifyScenario({
+      name: 'fake-agent',
+      requiresLlm: false,
+      model: 'mock:gpt-freecode-test',
+      llmFixture: 'fake-agent.llm.json',
+      turns: [{ input: 'Say PONG' }],
+    });
+
+    expect(result.inferredRequiresLlm).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+
+  it('rejects fake fixtures that use real models', () => {
+    const result = classifyScenario({
+      name: 'fake-agent',
+      requiresLlm: false,
+      model: 'openai:gpt-5.1',
+      llmFixture: 'fake-agent.llm.json',
+      turns: [{ input: 'Say PONG' }],
+    });
+
+    expect(result.errors).toContain('scenarios with llmFixture must use a mock model such as mock:gpt-freecode-test');
+  });
+
   it('requires requiresLlm metadata to be explicit', () => {
     const result = classifyScenario({
       name: 'missing-metadata',

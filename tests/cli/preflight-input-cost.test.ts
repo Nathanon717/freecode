@@ -16,7 +16,7 @@ describe('OpenAI preflight input cost controller', () => {
     resetOpenAIPreflightCache();
   });
 
-  it('skips empty input and slash commands silently, but reports gated preflight for typed prompts', () => {
+  it('skips empty input, slash commands, and non-OpenAI selections silently', () => {
     vi.useFakeTimers();
     const countInputTokens = vi.fn();
     const snapshots: PreflightInputCost[] = [];
@@ -35,12 +35,14 @@ describe('OpenAI preflight input cost controller', () => {
     controller.schedule('hello');
 
     expect(countInputTokens).not.toHaveBeenCalled();
-    expect(snapshots[0]).toMatchObject({ state: 'idle', warning: 'selected groq:llama' });
+    expect(snapshots[0]).toMatchObject({ state: 'idle' });
+    expect(snapshots[0]).not.toHaveProperty('warning');
     expect(snapshots[1]).toMatchObject({ state: 'idle' });
     expect(snapshots[1]).not.toHaveProperty('warning');
     expect(snapshots[2]).toMatchObject({ state: 'idle' });
     expect(snapshots[2]).not.toHaveProperty('warning');
-    expect(snapshots[3]).toMatchObject({ state: 'idle', warning: 'selected groq:llama' });
+    expect(snapshots[3]).toMatchObject({ state: 'idle' });
+    expect(snapshots[3]).not.toHaveProperty('warning');
   });
 
   it('reports a missing OpenAI key instead of silently hiding preflight', () => {

@@ -11,9 +11,15 @@ const DESTRUCTIVE_PATTERNS = [
   /\brmdir\b/i,
   /\bdel\b/i,
   /\bformat\b\s+[a-z]:/i,
+  /\bgit\s+reset\b/i,
+  /\bgit\s+clean\b/i,
   /\bgit\s+push\b/i,
   /\bgit\s+pull\b/i,
+  /\bmove-item\b/i,
   /\bremove-item\b/i,
+  /\bset-content\b/i,
+  /\bnew-item\b/i,
+  /\bren(?:ame)?\b/i,
 ];
 
 export const isDestructiveCommand = (command: string): boolean => {

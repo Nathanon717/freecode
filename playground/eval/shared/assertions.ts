@@ -23,6 +23,10 @@ export function formatOutputDiff(actual: string, expected: string): string {
   return parts.join('\n');
 }
 
+function normalizeNewlines(value: string): string {
+  return value.replace(/\r\n/g, '\n');
+}
+
 export function assertFileExists(workDir: string, filename: string): CheckResult {
   const exists = existsSync(join(workDir, filename));
   return {
@@ -39,12 +43,12 @@ export function assertFileContent(workDir: string, filename: string, expected: s
     return { name: `file content: ${filename}`, kind: 'assertion', pass: false, message: `${filename} does not exist` };
   }
   const actual = readFileSync(filePath, 'utf-8');
-  const pass = actual === expected;
+  const pass = normalizeNewlines(actual) === normalizeNewlines(expected);
   return {
     name: `file content: ${filename}`,
     kind: 'assertion',
     pass,
-    message: pass ? undefined : `expected "${expected}", got "${actual}"`,
+    message: pass ? undefined : `expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
   };
 }
 

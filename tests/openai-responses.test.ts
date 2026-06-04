@@ -54,6 +54,28 @@ describe('OpenAI Responses adapter', () => {
     expect(payload.tools?.[0]).toMatchObject({ type: 'function', name: 'read_file' });
   });
 
+  it('builds a complete schema for edit_file', () => {
+    const payload = buildOpenAIResponsesPayload({
+      modelId: 'gpt-5',
+      systemPrompt: 'system',
+      messages: [{ role: 'user', content: 'edit' }],
+      tools: { edit_file: simpleTool() },
+    });
+
+    expect(payload.tools?.[0]).toMatchObject({
+      type: 'function',
+      name: 'edit_file',
+      parameters: {
+        required: ['path', 'old_text', 'new_text'],
+        properties: {
+          path: expect.any(Object) as object,
+          old_text: expect.any(Object) as object,
+          new_text: expect.any(Object) as object,
+        },
+      },
+    });
+  });
+
   it('hashes the full payload stably and changes for relevant inputs', () => {
     const base = buildOpenAIResponsesPayload({
       modelId: 'gpt-5',
@@ -176,5 +198,39 @@ describe('OpenAI Responses adapter', () => {
         output: 'echo:{"value":1}',
       }),
     ]));
+  });
+
+  it('returns malformed function-call arguments as tool output instead of aborting the turn', async () => {
+    process.env.OPENAI_API_KEY = 'test-key';
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: 'resp_tool',
+        model: 'gpt-5.1-codex-mini',
+        output: [{
+          type: 'function_call',
+          name: 'echo',
+          call_id: 'call_1',
+          arguments: '{bad json',
+        }],
+      }), { status: 200 }))
+      .mockResolvedValue(new Response(JSON.stringify({
+        id: 'resp_final',
+        model: 'gpt-5.1-codex-mini',
+        output_text: 'done',
+      }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const payload = buildOpenAIResponsesPayload({
+      modelId: 'gpt-5.1-codex-mini',
+      systemPrompt: 'system',
+      messages: [{ role: 'user', content: 'use tool' }],
+      tools: { echo: simpleTool() },
+    });
+
+    await expect(generateOpenAIResponses(provider, payload, { echo: simpleTool() })).resolves.toMatchObject({ text: 'done' });
+
+    const secondRequest = fetchMock.mock.calls[1]?.[1] as RequestInit;
+    const secondBody = JSON.parse(secondRequest.body as string) as { input: unknown[] };
+    expect(JSON.stringify(secondBody.input)).toContain('Tool call failed');
   });
 });

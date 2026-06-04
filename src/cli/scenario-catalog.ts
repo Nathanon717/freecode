@@ -41,6 +41,7 @@ export function getScenarioSummaries(projectRoot: string): TestScenarioSummary[]
           exitCode?: number;
           files?: unknown[];
           toolTrace?: unknown;
+          fakeLlmTrace?: unknown;
         };
       };
       try {
@@ -55,6 +56,7 @@ export function getScenarioSummaries(projectRoot: string): TestScenarioSummary[]
       if (raw.expect?.stdoutAbsent?.length) checks.push(`${raw.expect.stdoutAbsent.length} output absent`);
       if (raw.expect?.files?.length) checks.push(`${raw.expect.files.length} file check${raw.expect.files.length === 1 ? '' : 's'}`);
       if (raw.expect?.toolTrace) checks.push('tool trace');
+      if (raw.expect?.fakeLlmTrace) checks.push('fake LLM trace');
       const classification = classifyScenario(raw);
       if (classification.errors.length > 0) checks.push(`classification error: ${classification.errors.join('; ')}`);
       return [{

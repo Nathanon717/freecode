@@ -35,5 +35,62 @@
       "total": 0
     },
     "scenarioHash": "23566b192bcd0097ebc7d8b529f82d94300040922dfb7c4d7d842c680bbaf527"
+  },
+  {
+    "timestamp": "2026-06-04T20:43:21.822Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:meta-llama/llama-4-scout-17b-16e-instruct",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 9550,
+      "prompt": 9290,
+      "output": 260
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 4,
+        "note": "shell_exec → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 9550,
+        "note": "total: 9550, prompt: 9290, output: 260"
+      }
+    ]
   }
 ]

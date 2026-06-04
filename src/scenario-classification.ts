@@ -1,6 +1,8 @@
 export interface ScenarioClassificationInput {
   name?: string;
   requiresLlm?: unknown;
+  model?: unknown;
+  llmFixture?: unknown;
   turns?: Array<{ input?: unknown }>;
 }
 
@@ -49,13 +51,30 @@ export function classifyScenario(scenario: ScenarioClassificationInput): Scenari
 
   const declaredRequiresLlm = scenario.requiresLlm === true;
   const inferredRequiresLlm = agentInputs.length > 0;
+  const hasFakeFixture = typeof scenario.llmFixture === 'string' && scenario.llmFixture.trim().length > 0;
   const errors: string[] = [];
 
   if (typeof scenario.requiresLlm !== 'boolean') {
     errors.push('requiresLlm must be explicitly set to true or false');
   }
 
-  if (typeof scenario.requiresLlm === 'boolean' && declaredRequiresLlm !== inferredRequiresLlm) {
+  if (scenario.llmFixture !== undefined && !hasFakeFixture) {
+    errors.push('llmFixture must be a non-empty string when present');
+  }
+
+  if (hasFakeFixture) {
+    if (scenario.requiresLlm !== false) {
+      errors.push('scenarios with llmFixture must set requiresLlm=false because fake LLM fixtures are free verification');
+    }
+    if (typeof scenario.model !== 'string' || !scenario.model.startsWith('mock:')) {
+      errors.push('scenarios with llmFixture must use a mock model such as mock:gpt-freecode-test');
+    }
+    if (!inferredRequiresLlm) {
+      errors.push('scenarios with llmFixture must include a scripted turn that reaches the agent loop');
+    }
+  }
+
+  if (typeof scenario.requiresLlm === 'boolean' && declaredRequiresLlm !== inferredRequiresLlm && !hasFakeFixture) {
     const name = scenario.name ?? '(unnamed scenario)';
     if (declaredRequiresLlm) {
       errors.push(`${name} is marked requiresLlm=true but has no scripted turn that reaches the agent loop`);

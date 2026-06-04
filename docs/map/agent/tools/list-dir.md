@@ -16,7 +16,7 @@ listDirTool: CoreTool
 
 ## Behavior
 
-- Resolves with `join(projectRoot, path)`.
+- Resolves through `resolveProjectPath()`, rejecting absolute paths and `..` escapes outside the project root.
 - Reads one directory level with `readdir()`.
 - Calls `stat()` for each entry.
 - Directories are listed first with a trailing `/`.

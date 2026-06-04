@@ -41,3 +41,8 @@ This table is generated from `src/cli/slash-commands.ts`.
 | `/sources` | Show model data sources |
 | `/test` | Show and run non-LLM verification scenarios |
 <!-- END GENERATED SLASH COMMANDS -->
+
+## CLI Flags
+
+- `--script <file>`: Run scripted input from a file instead of the interactive TUI.
+- `--model <provider:model>`: Override `FREECODE_MODEL` and config default model for the current process.

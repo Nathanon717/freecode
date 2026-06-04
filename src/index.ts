@@ -30,6 +30,17 @@ async function main() {
 
   const config = loadConfig();
   selectedModel = process.env['FREECODE_MODEL'] ?? config.defaultModel ?? '';
+  const modelIdx = args.indexOf('--model');
+  if (modelIdx !== -1) {
+    const modelPreference = args[modelIdx + 1];
+    if (!modelPreference) {
+      console.error('Error: --model requires a provider:model argument');
+      process.exitCode = 1;
+      rl.close();
+      return;
+    }
+    selectedModel = modelPreference;
+  }
 
   const scriptIdx = args.indexOf('--script');
   if (scriptIdx !== -1) {

@@ -12,7 +12,12 @@ describe('shell tool', () => {
     expect(isDestructiveCommand('format c:')).toBe(true);
     expect(isDestructiveCommand('git push')).toBe(true);
     expect(isDestructiveCommand('git pull')).toBe(true);
+    expect(isDestructiveCommand('git reset --hard HEAD')).toBe(true);
+    expect(isDestructiveCommand('git clean -fdx')).toBe(true);
     expect(isDestructiveCommand('Remove-Item output.txt')).toBe(true);
+    expect(isDestructiveCommand('Set-Content output.txt value')).toBe(true);
+    expect(isDestructiveCommand('Move-Item a b')).toBe(true);
+    expect(isDestructiveCommand('ren old.txt new.txt')).toBe(true);
     expect(isDestructiveCommand('echo hello')).toBe(false);
     expect(isDestructiveCommand('remark --help')).toBe(false);
     expect(isDestructiveCommand('model list')).toBe(false);

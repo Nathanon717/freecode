@@ -3,6 +3,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { describe, expect, it } from 'vitest';
 import {
+  assertFakeLlmTrace,
   assertFiles,
   assertOutput,
   assertScenarioExpectations,
@@ -56,6 +57,57 @@ describe('scenario expectation assertions', () => {
     ]);
   });
 
+  it('checks fake LLM trace calls, tools, emitted text, and usage', () => {
+    expect(assertFakeLlmTrace({
+      callCount: 2,
+      maxCalls: 1,
+      calls: [{
+        provider: 'mock',
+        model: 'gpt-freecode-test',
+        executionPath: 'fake-direct',
+        inputMessageCount: 2,
+        lastUserContains: ['missing'],
+        toolsAvailable: ['write_file'],
+        toolsAbsent: ['read_file'],
+        toolRationale: true,
+        parallelTools: false,
+        nativeToolsSupplied: true,
+        emittedTextContains: ['PONG'],
+        emittedToolCalls: ['write_file'],
+        usage: { promptTokens: 10, outputTokens: 1, totalTokens: 11 },
+      }],
+    }, [{
+      callIndex: 1,
+      providerId: 'mock',
+      modelId: 'gpt-freecode-test',
+      executionPath: 'fake-other',
+      inputMessageCount: 1,
+      lastUserMessage: 'Say PING',
+      toolNames: ['read_file'],
+      toolRationale: false,
+      parallelTools: true,
+      nativeToolsSupplied: false,
+      responseStep: 1,
+      emittedChunks: ['PING'],
+      emittedToolCalls: [{ name: 'read_file', args: {} }],
+      usage: { promptTokens: 9, outputTokens: 1, totalTokens: 10 },
+    }])).toEqual([
+      'fakeLlmTrace.callCount: expected 2, got 1',
+      'fakeLlmTrace.calls[0].executionPath: expected fake-direct, got fake-other',
+      'fakeLlmTrace.calls[0].inputMessageCount: expected 2, got 1',
+      'fakeLlmTrace.calls[0].toolRationale: expected true, got false',
+      'fakeLlmTrace.calls[0].parallelTools: expected false, got true',
+      'fakeLlmTrace.calls[0].nativeToolsSupplied: expected true, got false',
+      'fakeLlmTrace.calls[0].lastUserContains missing: "missing"',
+      'fakeLlmTrace.calls[0].toolsAvailable missing: write_file (read_file)',
+      'fakeLlmTrace.calls[0].toolsAbsent unexpected: read_file (read_file)',
+      'fakeLlmTrace.calls[0].emittedTextContains missing: "PONG"',
+      'fakeLlmTrace.calls[0].emittedToolCalls missing: write_file (read_file)',
+      'fakeLlmTrace.calls[0].usage.totalTokens: expected 11, got 10',
+      'fakeLlmTrace.calls[0].usage.promptTokens: expected 10, got 9',
+    ]);
+  });
+
   it('combines all assertion types for the scenario runner', () => {
     expect(assertScenarioExpectations({
       expect: {
@@ -67,6 +119,7 @@ describe('scenario expectation assertions', () => {
       stderr: '',
       exitCode: 1,
       trace: [{ tool: 'list_dir', args: {} }],
+      fakeLlmTrace: [],
       workspaceRoot: tmpdir(),
       workspace: 'repo',
     })).toEqual([

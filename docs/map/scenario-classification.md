@@ -39,3 +39,8 @@ Any non-empty turn input outside that set is considered an agent prompt, so `inf
 - `requiresLlm` is missing or not boolean.
 - `requiresLlm: true` is declared but no turn reaches the agent loop.
 - `requiresLlm: false` is declared but one or more turns do reach the agent loop.
+- `llmFixture` is present but is empty, uses `requiresLlm: true`, omits an agent turn, or uses a non-`mock:*` model.
+
+## Fake Fixtures
+
+Scenarios with `llmFixture` are classified as free verification even though they enter the agent loop. The harness runs them with `FREECODE_FAKE_LLM=1` and a `mock:*` model, so they remain part of normal non-LLM verification rather than `/eval`.
