@@ -143,6 +143,51 @@ async function initProviderModels(providerId: string, apiKey: string | undefined
   }
 }
 
+async function initZenModels(): Promise<void> {
+  if (initializedProviders.has('zen')) return;
+  initializedProviders.add('zen');
+
+  const entry = PROVIDER_REGISTRY.find(p => p.id === 'zen');
+  if (!entry?.baseUrl) return;
+
+  const apiKey = resolveApiKey(entry);
+  if (!apiKey) return;
+
+  try {
+    const res = await fetch(`${entry.baseUrl}/models`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = (await res.json()) as { data?: Record<string, unknown>[] } | Record<string, unknown>[];
+    const data = Array.isArray(json) ? json : ((json as { data?: Record<string, unknown>[] }).data ?? []);
+    const normalized = data
+      .filter(m => typeof m.id === 'string')
+      .map(m => ({
+        id: m.id as string,
+        displayName: typeof m.name === 'string' ? m.name : m.id as string,
+        ...(typeof m.context_length === 'number' ? { contextWindow: m.context_length } : {}),
+      }));
+    const { newIds } = updateProviderCache('zen', normalized);
+    const newIdSet = new Set(newIds);
+    const ZEN_FREE_IDS = new Set(['big-pickle']);
+    const free = normalized
+      .filter(m => m.id.endsWith('-free') || ZEN_FREE_IDS.has(m.id))
+      .map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
+    entry.models = free;
+    syncLiveModels('zen', entry.models.map(m => m.id));
+  } catch (err) {
+    logError('registry', 'Failed to fetch OpenCode Zen models, using cache', err);
+    const cached = getProviderCache('zen');
+    if (cached) {
+      const ZEN_FREE_IDS = new Set(['big-pickle']);
+      entry.models = cached.models.filter(m => m.id.endsWith('-free') || ZEN_FREE_IDS.has(m.id));
+      const newIdSet = new Set(cached.newIds);
+      entry.models = entry.models.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
+      syncLiveModels('zen', entry.models.map(m => m.id));
+    }
+  }
+}
+
 const LIVE_PROVIDER_IDS = ['groq', 'siliconflow', 'cerebras', 'mistral', 'llm7', 'cohere', 'openai', 'nvidia'] as const;
 
 async function initAnthropicModels(): Promise<void> {
@@ -189,6 +234,7 @@ export async function initDynamicProviders(): Promise<void> {
 
   await Promise.all([
     initOpenRouterModels(),
+    initZenModels(),
     initAnthropicModels(),
     ...LIVE_PROVIDER_IDS.map(id => {
       const entry = PROVIDER_REGISTRY.find(p => p.id === id);
@@ -324,12 +370,8 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     baseUrl: 'https://opencode.ai/zen/v1',
     apiKeyEnvVar: 'OPENCODE_ZEN_API_KEY',
     defaultApiKey: 'public',
-    models: [
-      { id: 'big-pickle', displayName: 'Big Pickle (free)' },
-      { id: 'deepseek-v4-flash-free', displayName: 'DeepSeek V4 Flash (free)' },
-      { id: 'mimo-v2.5-free', displayName: 'MiMo V2.5 (free)' },
-      { id: 'nemotron-3-ultra-free', displayName: 'Nemotron 3 Ultra (free)' },
-    ],
+    modelsSource: 'live',
+    models: [],
   },
   {
     id: 'openai',

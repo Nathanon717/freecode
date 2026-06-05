@@ -211,6 +211,12 @@
     "nvidia:zyphra/zamba2-7b-instruct",
     "nvidia:nvidia/nemotron-3-ultra-550b-a55b",
     "openrouter:nvidia/nemotron-3-ultra-550b-a55b:free",
-    "openrouter:nvidia/nemotron-3.5-content-safety:free"
+    "openrouter:nvidia/nemotron-3.5-content-safety:free",
+    "zen:big-pickle",
+    "zen:deepseek-v4-flash-free",
+    "zen:mimo-v2.5-free",
+    "zen:qwen3.6-plus-free",
+    "zen:minimax-m3-free",
+    "zen:nemotron-3-super-free"
   ]
 }
