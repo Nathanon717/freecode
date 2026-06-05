@@ -1,0 +1,48 @@
+{
+  "name": "agent-tool-native",
+  "description": "Fake native LLM fixture drives a write_file tool call through the full multi-step streamText orchestration loop",
+  "requiresLlm": false,
+  "workspace": "temp",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "agent-tool-native.llm.json",
+  "turns": [
+    { "input": "Create hello.txt with text hello from native." },
+    { "input": "y" }
+  ],
+  "expect": {
+    "stdoutContains": ["File created successfully."],
+    "stdoutAbsent": ["FREECODE_NO_LLM=1", "No API key configured", "Real provider access is blocked"],
+    "exitCode": 0,
+    "files": [
+      { "path": "hello.txt", "contentExact": "hello from native\n" }
+    ],
+    "toolTrace": {
+      "sequence": ["write_file"],
+      "maxCalls": 1
+    },
+    "fakeLlmTrace": {
+      "callCount": 2,
+      "maxCalls": 2,
+      "calls": [
+        {
+          "provider": "mock-native",
+          "model": "gpt-freecode-test",
+          "executionPath": "native-stream",
+          "toolsAvailable": ["write_file"],
+          "nativeToolsSupplied": true,
+          "emittedTextContains": ["I'll write that file now."],
+          "emittedToolCalls": ["write_file"],
+          "usage": { "promptTokens": 20, "outputTokens": 8, "totalTokens": 28 }
+        },
+        {
+          "provider": "mock-native",
+          "model": "gpt-freecode-test",
+          "executionPath": "native-stream",
+          "nativeToolsSupplied": true,
+          "emittedTextContains": ["File created successfully."],
+          "usage": { "promptTokens": 40, "outputTokens": 4, "totalTokens": 44 }
+        }
+      ]
+    }
+  }
+}

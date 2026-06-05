@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "model": "mock-native:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "mustContain": ["Create hello.txt"],
+        "toolsAvailable": ["write_file"],
+        "systemPromptPresent": true,
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["I'll write that file now."],
+        "toolCalls": [
+          {
+            "name": "write_file",
+            "args": {
+              "rationale": "Creating the file as requested by the user",
+              "path": "hello.txt",
+              "content": "hello from native\n"
+            }
+          }
+        ],
+        "usage": {
+          "promptTokens": 20,
+          "outputTokens": 8,
+          "totalTokens": 28
+        }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "File created successfully.",
+        "usage": {
+          "promptTokens": 40,
+          "outputTokens": 4,
+          "totalTokens": 44
+        }
+      }
+    }
+  ]
+}

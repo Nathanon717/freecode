@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "Bash(node -e \"const ai = require\\('/workspaces/freecode/node_modules/ai/test'\\); console.log\\(Object.keys\\(ai\\).filter\\(k => k.toLowerCase\\(\\).includes\\('mock'\\) || k.toLowerCase\\(\\).includes\\('language'\\)\\)\\)\")",
+      "Bash(node *)"
     ]
   }
 }

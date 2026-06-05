@@ -8,6 +8,8 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | File | Name | Type | Workspace | Description |
 | --- | --- | --- | --- | --- |
 | `agent-text-fake.scenario.json` | `agent-text-fake` | Non-LLM verification | temp | Fake LLM fixture enters the agent loop and returns deterministic text without live provider access |
+| `agent-text-native.scenario.json` | `agent-text-native` | Non-LLM verification | temp | Fake LLM fixture exercises the real AI SDK streamText path (native-stream) with a deterministic text response |
+| `agent-tool-native.scenario.json` | `agent-tool-native` | Non-LLM verification | temp | Fake native LLM fixture drives a write_file tool call through the full multi-step streamText orchestration loop |
 | `agent-write-file-fake.scenario.json` | `agent-write-file-fake` | Non-LLM verification | temp | Fake LLM fixture drives an approved write_file tool call through the real agent loop |
 | `slash-clear.scenario.json` | `slash-clear` | Non-LLM verification | repo | /clear resets history, clears the screen, and redraws the banner |
 | `slash-config-script-mode.scenario.json` | `slash-config-script-mode` | Non-LLM verification | repo | /config in script mode (no TTY) prints a message that the editor is only available in interactive mode |

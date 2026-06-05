@@ -118,6 +118,30 @@ describe('Provider Registry', () => {
       }
     });
 
+    it('hides mock-native models unless fake mode is active', () => {
+      const previous = process.env.FREECODE_FAKE_LLM;
+      delete process.env.FREECODE_FAKE_LLM;
+      try {
+        expect(() => resolveModel('mock-native:gpt-freecode-test')).toThrow('only available when FREECODE_FAKE_LLM=1');
+      } finally {
+        if (previous === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = previous;
+      }
+    });
+
+    it('resolves mock-native models in fake mode with native provider id', () => {
+      const previous = process.env.FREECODE_FAKE_LLM;
+      process.env.FREECODE_FAKE_LLM = '1';
+      try {
+        const resolved = resolveModel('mock-native:gpt-freecode-test');
+        expect(resolved.providerId).toBe('mock-native');
+        expect(resolved.modelId).toBe('gpt-freecode-test');
+      } finally {
+        if (previous === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = previous;
+      }
+    });
+
     it('blocks real provider resolution in fake mode before reading keys', () => {
       const previous = process.env.FREECODE_FAKE_LLM;
       process.env.FREECODE_FAKE_LLM = '1';

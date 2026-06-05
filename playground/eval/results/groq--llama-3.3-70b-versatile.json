@@ -623,5 +623,79 @@
         "note": "total: 7434, prompt: 7115, output: 319"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-04T13:54:48.003Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
+    "checks": [
+      {
+        "name": "file exists: analyze_grades.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: grades.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\n  File \\\"/workspaces/freecode/playground/eval/007-python-two-bug-cascade/work/analyze_grades.py\\\", line 27, in <module>\\n    grades = load_grades(\\\"grades.csv\\\")\\n             ^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"/workspaces/freecode/playground/eval/007-python-two-bug-cascade/work/analyze_grades.py\\\", line 11, in load_grades\\n    score = int(row[\\\"score\\\"])\\n            ^^^^^^^^^^^^^^^^^\\nValueError: invalid literal for int() with base 10: '70.0'\\n\""
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\n  File \\\"/workspaces/freecode/playground/eval/007-python-two-bug-cascade/work/analyze_grades.py\\\", line 27, in <module>\\n    grades = load_grades(\\\"grades.csv\\\")\\n             ^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"/workspaces/freecode/playground/eval/007-python-two-bug-cascade/work/analyze_grades.py\\\", line 11, in load_grades\\n    score = int(row[\\\"score\\\"])\\n            ^^^^^^^^^^^^^^^^^\\nValueError: invalid literal for int() with base 10: '70.0'\\n\""
+      },
+      {
+        "name": "encountered first bug (ValueError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "encountered second bug (StatisticsError)",
+        "kind": "assertion",
+        "pass": false,
+        "message": "no edit to analyze_grades.py found at all"
+      },
+      {
+        "name": "two edit cycles",
+        "kind": "warning",
+        "pass": false,
+        "message": "no edit after ValueError"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 6,
+        "note": "shell_exec → list_dir → read_file → shell_exec → list_dir → read_file"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 0,
+        "note": "total: 0"
+      }
+    ]
   }
 ]

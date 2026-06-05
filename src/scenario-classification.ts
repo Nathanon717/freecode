@@ -66,8 +66,8 @@ export function classifyScenario(scenario: ScenarioClassificationInput): Scenari
     if (scenario.requiresLlm !== false) {
       errors.push('scenarios with llmFixture must set requiresLlm=false because fake LLM fixtures are free verification');
     }
-    if (typeof scenario.model !== 'string' || !scenario.model.startsWith('mock:')) {
-      errors.push('scenarios with llmFixture must use a mock model such as mock:gpt-freecode-test');
+    if (typeof scenario.model !== 'string' || (!scenario.model.startsWith('mock:') && !scenario.model.startsWith('mock-native:'))) {
+      errors.push('scenarios with llmFixture must use a mock model such as mock:gpt-freecode-test or mock-native:gpt-freecode-test');
     }
     if (!inferredRequiresLlm) {
       errors.push('scenarios with llmFixture must include a scripted turn that reaches the agent loop');

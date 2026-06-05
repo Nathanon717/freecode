@@ -1,9 +1,11 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import type { CoreMessage, LanguageModel } from 'ai';
+import type { CoreMessage, LanguageModel, LanguageModelV1CallOptions, LanguageModelV1StreamPart } from 'ai';
 
 export const FAKE_PROVIDER_ID = 'mock';
+export const FAKE_NATIVE_PROVIDER_ID = 'mock-native';
 export const FAKE_DEFAULT_MODEL_ID = 'gpt-freecode-test';
 export const FAKE_MODEL_PREFIX = `${FAKE_PROVIDER_ID}:`;
+export const FAKE_NATIVE_MODEL_PREFIX = `${FAKE_NATIVE_PROVIDER_ID}:`;
 
 export interface FakeUsage {
   totalTokens: number;
@@ -65,7 +67,7 @@ interface FakeTraceEntry {
   callIndex: number;
   providerId: string;
   modelId: string;
-  executionPath: 'fake-direct';
+  executionPath: 'fake-direct' | 'native-stream';
   inputMessageCount: number;
   lastUserMessage: string;
   toolNames: string[];
@@ -91,6 +93,10 @@ export function isFakeLlmMode(): boolean {
 
 export function isFakeModelPreference(modelPreference: string): boolean {
   return modelPreference.startsWith(FAKE_MODEL_PREFIX);
+}
+
+export function isFakeNativeModelPreference(modelPreference: string): boolean {
+  return modelPreference.startsWith(FAKE_NATIVE_MODEL_PREFIX);
 }
 
 export function createPlaceholderFakeLanguageModel(): LanguageModel {
@@ -232,6 +238,126 @@ function appendTrace(entry: FakeTraceEntry): void {
     : [];
   existing.push(entry);
   writeFileSync(tracePath, JSON.stringify(existing, null, 2), 'utf-8');
+}
+
+function lastUserMessageFromV1Prompt(prompt: LanguageModelV1CallOptions['prompt']): string {
+  for (let i = prompt.length - 1; i >= 0; i--) {
+    const msg = prompt[i];
+    if (msg.role !== 'user') continue;
+    return msg.content
+      .map(p => (p.type === 'text' ? p.text : ''))
+      .join('');
+  }
+  return '';
+}
+
+function systemPromptFromV1Prompt(prompt: LanguageModelV1CallOptions['prompt']): string {
+  for (const msg of prompt) {
+    if (msg.role === 'system') return msg.content;
+  }
+  return '';
+}
+
+export interface FakeNativeModelSettings {
+  toolRationale: boolean;
+  parallelTools: boolean;
+}
+
+export function createFakeNativeLanguageModel(modelId: string, modelSettings: FakeNativeModelSettings): LanguageModel {
+  return {
+    specificationVersion: 'v1' as const,
+    provider: FAKE_NATIVE_PROVIDER_ID,
+    modelId,
+    doGenerate: async () => {
+      throw new Error('createFakeNativeLanguageModel: doGenerate not supported — use doStream');
+    },
+    doStream: async (options: LanguageModelV1CallOptions) => {
+      const fixture = readFixture();
+      if (fixture.model && fixture.model !== `${FAKE_NATIVE_PROVIDER_ID}:${modelId}`) {
+        throw new Error(`Fake LLM fixture model ${fixture.model} does not match selected model ${FAKE_NATIVE_PROVIDER_ID}:${modelId}`);
+      }
+
+      const step = fixture.steps[consumedSteps];
+      if (!step) {
+        throw new Error(`Fake LLM fixture exhausted before model call ${consumedSteps + 1}`);
+      }
+
+      const stepNumber = consumedSteps + 1;
+      const modeTools = options.mode.type === 'regular' ? (options.mode.tools ?? []) : [];
+      const toolNames = modeTools.map(t => t.name);
+      const nativeToolsSupplied = toolNames.length > 0;
+      const systemPrompt = systemPromptFromV1Prompt(options.prompt);
+      const nonSystemMessages = options.prompt.filter(m => m.role !== 'system') as unknown as CoreMessage[];
+      const call: FakeModelCall = {
+        providerId: FAKE_NATIVE_PROVIDER_ID,
+        modelId,
+        systemPrompt,
+        messages: nonSystemMessages,
+        toolNames,
+        toolRationale: modelSettings.toolRationale,
+        parallelTools: modelSettings.parallelTools,
+        nativeToolsSupplied,
+      };
+      assertStepMatches(step, stepNumber, call);
+      consumedSteps++;
+
+      if (step.response.error) throw new Error(step.response.error);
+
+      const chunks = step.response.chunks ?? (step.response.text !== undefined ? [step.response.text] : []);
+      const usage = step.response.usage ?? { totalTokens: 0 };
+      const toolCalls = step.response.toolCalls ?? [];
+
+      const parts: LanguageModelV1StreamPart[] = [];
+      for (const chunk of chunks) {
+        parts.push({ type: 'text-delta', textDelta: chunk });
+      }
+      for (let i = 0; i < toolCalls.length; i++) {
+        const tc = toolCalls[i];
+        parts.push({
+          type: 'tool-call',
+          toolCallType: 'function',
+          toolCallId: `fake-native-${stepNumber}-${i}`,
+          toolName: tc.name,
+          args: JSON.stringify(tc.args ?? {}),
+        });
+      }
+      parts.push({
+        type: 'finish',
+        finishReason: toolCalls.length > 0 ? 'tool-calls' : 'stop',
+        usage: {
+          promptTokens: usage.promptTokens ?? 0,
+          completionTokens: usage.outputTokens ?? 0,
+        },
+      });
+
+      const lastUser = lastUserMessageFromV1Prompt(options.prompt);
+      appendTrace({
+        callIndex: stepNumber,
+        providerId: FAKE_NATIVE_PROVIDER_ID,
+        modelId,
+        executionPath: 'native-stream',
+        inputMessageCount: options.prompt.length,
+        lastUserMessage: lastUser,
+        toolNames,
+        toolRationale: modelSettings.toolRationale,
+        parallelTools: modelSettings.parallelTools,
+        nativeToolsSupplied,
+        responseStep: stepNumber,
+        emittedChunks: chunks,
+        emittedToolCalls: toolCalls,
+        usage,
+      });
+
+      const stream = new ReadableStream<LanguageModelV1StreamPart>({
+        start(controller) {
+          for (const part of parts) controller.enqueue(part);
+          controller.close();
+        },
+      });
+
+      return { stream, rawCall: { rawPrompt: options.prompt, rawSettings: {} } };
+    },
+  } as unknown as LanguageModel;
 }
 
 export async function runFakeModel(call: FakeModelCall): Promise<FakeModelResult> {

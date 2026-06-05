@@ -34,7 +34,7 @@ import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
 import { runPromptToolsLoop } from './prompt-tools.js';
 import { isModelNoNativeTools, markModelNoNativeTools } from '../providers/model-traits.js';
-import { FAKE_PROVIDER_ID, assertFakeFixtureComplete, runFakeModel } from '../providers/fake.js';
+import { FAKE_PROVIDER_ID, FAKE_NATIVE_PROVIDER_ID, assertFakeFixtureComplete, createFakeNativeLanguageModel, runFakeModel } from '../providers/fake.js';
 
 let systemPromptLogged = false;
 
@@ -95,6 +95,12 @@ export async function agentLoop(
     providerId = resolved.providerId;
     modelId = resolved.modelId;
     supportsTools = resolved.supportsTools;
+    if (providerId === FAKE_NATIVE_PROVIDER_ID) {
+      languageModel = createFakeNativeLanguageModel(modelId, {
+        toolRationale: modelSettings.toolRationale,
+        parallelTools: modelSettings.parallelTools,
+      });
+    }
   } catch (error) {
     logError('stream', 'resolveModel failed', error);
     const errMsg = toErrorMessage(error);
@@ -347,6 +353,10 @@ export async function agentLoop(
         totalTokens = ptResult.totalTokens;
         promptTokens = ptResult.promptTokens;
         outputTokens = ptResult.outputTokens;
+      }
+
+      if (providerId === FAKE_NATIVE_PROVIDER_ID && !usePromptToolsFallback) {
+        assertFakeFixtureComplete();
       }
     }
 
