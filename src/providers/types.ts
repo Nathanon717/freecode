@@ -19,6 +19,7 @@ export interface ProviderConfig {
   type: 'openai-compat' | 'anthropic';
   baseUrl?: string;
   apiKeyEnvVar: string;
+  defaultApiKey?: string;
   models: ModelConfig[];
   supportsTools?: boolean;
   paid?: boolean;
