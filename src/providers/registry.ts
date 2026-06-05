@@ -318,6 +318,20 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     ],
   },
   {
+    id: 'zen',
+    name: 'OpenCode Zen',
+    type: 'openai-compat',
+    baseUrl: 'https://opencode.ai/zen/v1',
+    apiKeyEnvVar: 'OPENCODE_ZEN_API_KEY',
+    defaultApiKey: 'public',
+    models: [
+      { id: 'big-pickle', displayName: 'Big Pickle (free)' },
+      { id: 'deepseek-v4-flash-free', displayName: 'DeepSeek V4 Flash (free)' },
+      { id: 'mimo-v2.5-free', displayName: 'MiMo V2.5 (free)' },
+      { id: 'nemotron-3-ultra-free', displayName: 'Nemotron 3 Ultra (free)' },
+    ],
+  },
+  {
     id: 'openai',
     name: 'OpenAI',
     type: 'openai-compat',

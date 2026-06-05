@@ -1,6 +1,6 @@
 {
   "name": "tty-model-picker-no-arg",
-  "description": "/model with no argument invokes the interactive picker flow; loading message appears and ESC or the no-providers fallback returns the prompt",
+  "description": "/model with no argument opens the interactive picker (zen free models available by default); ESC closes it and returns the prompt",
   "requiresLlm": false,
   "tty": {
     "cols": 80,
@@ -15,15 +15,12 @@
         ]
       },
       {
-        "name": "submit — picker loading starts",
+        "name": "submit \u2014 picker opens (Select model appears in raw stream)",
         "send": "\r",
-        "waitFor": "Loading available models",
-        "screenContains": [
-          "Loading available models"
-        ]
+        "waitFor": "Select model"
       },
       {
-        "name": "ESC closes picker (or no-op if already returned); prompt comes back",
+        "name": "ESC closes picker; prompt comes back",
         "send": "\u001b",
         "waitFor": "for commands",
         "screenContains": [
