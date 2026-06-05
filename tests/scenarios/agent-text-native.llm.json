@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "model": "mock-native:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "mustContain": ["Say PONG"],
+        "toolsAvailable": ["read_file", "write_file"],
+        "systemPromptPresent": true
+      },
+      "response": {
+        "chunks": ["PONG"],
+        "usage": {
+          "promptTokens": 12,
+          "outputTokens": 1,
+          "totalTokens": 13
+        }
+      }
+    }
+  ]
+}

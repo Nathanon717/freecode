@@ -54,7 +54,7 @@ describe('scenario LLM classification', () => {
       turns: [{ input: 'Say PONG' }],
     });
 
-    expect(result.errors).toContain('scenarios with llmFixture must use a mock model such as mock:gpt-freecode-test');
+    expect(result.errors).toContain('scenarios with llmFixture must use a mock model such as mock:gpt-freecode-test or mock-native:gpt-freecode-test');
   });
 
   it('requires requiresLlm metadata to be explicit', () => {

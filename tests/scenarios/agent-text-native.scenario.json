@@ -1,0 +1,32 @@
+{
+  "name": "agent-text-native",
+  "description": "Fake LLM fixture exercises the real AI SDK streamText path (native-stream) with a deterministic text response",
+  "requiresLlm": false,
+  "workspace": "temp",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "agent-text-native.llm.json",
+  "turns": [
+    { "input": "Say PONG through the fake model." }
+  ],
+  "expect": {
+    "stdoutContains": ["PONG"],
+    "stdoutAbsent": ["FREECODE_NO_LLM=1", "No API key configured", "Real provider access is blocked"],
+    "exitCode": 0,
+    "fakeLlmTrace": {
+      "callCount": 1,
+      "maxCalls": 1,
+      "calls": [
+        {
+          "provider": "mock-native",
+          "model": "gpt-freecode-test",
+          "executionPath": "native-stream",
+          "lastUserContains": ["Say PONG through the fake model."],
+          "toolsAvailable": ["read_file", "write_file"],
+          "nativeToolsSupplied": true,
+          "emittedTextContains": ["PONG"],
+          "usage": { "promptTokens": 12, "outputTokens": 1, "totalTokens": 13 }
+        }
+      ]
+    }
+  }
+}

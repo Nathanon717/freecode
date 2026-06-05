@@ -8,10 +8,13 @@ import { syncLiveModels } from './canonical-models.js';
 import { logError } from '../logger.js';
 import {
   FAKE_MODEL_PREFIX,
+  FAKE_NATIVE_MODEL_PREFIX,
   FAKE_PROVIDER_ID,
+  FAKE_NATIVE_PROVIDER_ID,
   createPlaceholderFakeLanguageModel,
   fakeModelSupportsTools,
   isFakeLlmMode,
+  isFakeNativeModelPreference,
 } from './fake.js';
 
 const initializedProviders = new Set<string>();
@@ -368,7 +371,7 @@ export function resolveModel(modelPreference: string): ResolvedModel {
   const providerId = modelPreference.slice(0, colonIdx);
   const modelId = modelPreference.slice(colonIdx + 1);
 
-  if (isFakeLlmMode() && providerId !== FAKE_PROVIDER_ID) {
+  if (isFakeLlmMode() && providerId !== FAKE_PROVIDER_ID && providerId !== FAKE_NATIVE_PROVIDER_ID) {
     throw new Error(`Real provider access is blocked while FREECODE_FAKE_LLM=1: "${providerId}"`);
   }
 
@@ -380,6 +383,18 @@ export function resolveModel(modelPreference: string): ResolvedModel {
       model: createPlaceholderFakeLanguageModel(),
       providerId: FAKE_PROVIDER_ID,
       modelId,
+      supportsTools: fakeModelSupportsTools(modelId),
+    };
+  }
+
+  if (isFakeNativeModelPreference(modelPreference)) {
+    if (!isFakeLlmMode()) {
+      throw new Error(`Mock-native model "${modelPreference}" is only available when FREECODE_FAKE_LLM=1`);
+    }
+    return {
+      model: createPlaceholderFakeLanguageModel(),
+      providerId: FAKE_NATIVE_PROVIDER_ID,
+      modelId: modelPreference.slice(FAKE_NATIVE_MODEL_PREFIX.length),
       supportsTools: fakeModelSupportsTools(modelId),
     };
   }
