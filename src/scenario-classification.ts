@@ -4,6 +4,7 @@ export interface ScenarioClassificationInput {
   model?: unknown;
   llmFixture?: unknown;
   turns?: Array<{ input?: unknown }>;
+  tty?: unknown;
 }
 
 export interface ScenarioClassification {
@@ -69,8 +70,8 @@ export function classifyScenario(scenario: ScenarioClassificationInput): Scenari
     if (typeof scenario.model !== 'string' || (!scenario.model.startsWith('mock:') && !scenario.model.startsWith('mock-native:'))) {
       errors.push('scenarios with llmFixture must use a mock model such as mock:gpt-freecode-test or mock-native:gpt-freecode-test');
     }
-    if (!inferredRequiresLlm) {
-      errors.push('scenarios with llmFixture must include a scripted turn that reaches the agent loop');
+    if (!inferredRequiresLlm && scenario.tty === undefined) {
+      errors.push('scenarios with llmFixture must include a scripted turn or TTY flow that reaches the agent loop');
     }
   }
 

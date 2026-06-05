@@ -27,7 +27,7 @@ export interface RawPickerOptions<T = void> {
 
 /**
  * Runs a raw-mode terminal picker.
- * Owns: raw-mode lifecycle, cursor hide/show, rl pause/resume, initial draw, drawFooter after each redraw.
+ * Owns: raw-mode lifecycle, cursor hide/show, readline listener restore, initial draw, drawFooter after each redraw.
  * Caller owns: rendering (render()), key handling (onKey()).
  * Resolves with whatever value is passed to close().
  */
@@ -58,7 +58,6 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
     function cleanup(): void {
       process.stdin.removeListener('data', onData);
       process.stdin.setRawMode(false);
-      process.stdin.pause();
       for (const listener of savedListeners) {
         process.stdin.on('data', listener);
       }
@@ -73,6 +72,7 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
       resumeFooterTimer();
       drawFooter();
       rl.resume();
+      process.stdin.resume();
     }
 
     function close(result: T): void {
@@ -90,7 +90,6 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
       opts.onKey(key, redraw, close);
     };
 
-    rl.pause();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const savedListeners = process.stdin.rawListeners('data') as ((...args: any[]) => void)[];
     process.stdin.removeAllListeners('data');
@@ -107,8 +106,7 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
       process.stdout.write(`\x1b[${r - 2};1H` + '\n'.repeat(r - 2));
     }
 
-    redraw();
-
     process.stdin.on('data', onData);
+    redraw();
   });
 }

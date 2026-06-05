@@ -29,6 +29,8 @@
 - Requires `y/yes` confirmation before running.
 - Resets each scenario's `work/` dir from `start/`, stores harness artifacts in sibling `.run/`, then spawns the compiled freecode agent via `--script` mode with `cwd = work/`.
 - Sets `FREECODE_TRANSCRIPT_STREAM=stdout` so the captured eval run replays the same transcript formatter used by normal tool logging.
+- After eval completion it resets private terminal modes before restoring the bottom UI.
+- Does not keep the parent stdin in raw mode while the eval child process runs; this avoids Windows console-mode corruption before returning to later pickers.
 - Summarizes structured model API errors after the captured transcript, including provider `code`, `type`, `param`, `failed_generation`, and a `tool_use_failed` diagnosis when the provider omits the referenced failed generation payload.
 - Dynamically imports each scenario's `eval/check.ts` to score the result and print a pass/fail report.
 - Passes the currently selected model via `FREECODE_MODEL` env var to the agent subprocess.

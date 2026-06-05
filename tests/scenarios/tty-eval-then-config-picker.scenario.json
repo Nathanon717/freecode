@@ -1,0 +1,79 @@
+{
+  "name": "tty-eval-then-config-picker",
+  "description": "After a fake eval completes, another raw picker can still receive input and Ctrl-C exits cleanly",
+  "requiresLlm": false,
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "eval-hello-world-fake.llm.json",
+  "config": {
+    "defaultModel": "mock:gpt-freecode-test",
+    "toolConfirmation": "auto"
+  },
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /eval",
+        "send": "/eval",
+        "screenContains": [
+          "> /eval"
+        ]
+      },
+      {
+        "name": "submit - eval picker opens",
+        "send": "\r",
+        "waitFor": "Eval scenarios",
+        "screenContains": [
+          "Eval scenarios",
+          "001-hello-world"
+        ]
+      },
+      {
+        "name": "select first eval",
+        "send": "\r",
+        "waitFor": "Run 1 eval",
+        "screenContains": [
+          "Run 1 eval"
+        ]
+      },
+      {
+        "name": "confirm eval run",
+        "send": "\r",
+        "waitFor": "token usage:",
+        "quietMs": 1500,
+        "screenContains": [
+          "PASS  001-hello-world"
+        ]
+      },
+      {
+        "name": "type /config after eval",
+        "send": "/config",
+        "screenContains": [
+          "> /config"
+        ]
+      },
+      {
+        "name": "submit - config picker accepts input",
+        "send": "\r",
+        "waitFor": "freecode config",
+        "quietMs": 1000,
+        "screenContains": [
+          "freecode config",
+          "Tool rationale"
+        ]
+      },
+      {
+        "name": "close config picker",
+        "send": "q",
+        "waitFor": "for commands",
+        "screenContains": [
+          "> / for commands"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

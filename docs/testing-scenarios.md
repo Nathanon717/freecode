@@ -114,7 +114,7 @@ For the generated scenario inventory, see [scenarios.md](scenarios.md).
 
 ## Fake LLM Fixtures
 
-Fake LLM fixtures let a scenario enter the real agent loop without provider keys, network access, or paid usage. The harness sets `FREECODE_FAKE_LLM=1`, strips real provider API keys, passes the fixture through `FREECODE_FAKE_LLM_SCRIPT`, and does not set `FREECODE_NO_LLM=1` for that process.
+Fake LLM fixtures let a scenario enter the real agent loop without provider keys, network access, or paid usage. The harness sets `FREECODE_FAKE_LLM=1`, strips real provider API keys, passes the fixture through `FREECODE_FAKE_LLM_SCRIPT`, and does not set `FREECODE_NO_LLM=1` for that process. TTY scenarios may also set `llmFixture`; the interactive process receives the same fake-model environment so flows such as `/eval` can run in CI without live providers.
 
 Use this mode for free verification of prompt construction, model routing, deterministic assistant text, and tool-call orchestration. The current fake runner supports ordered text/chunk responses, scripted `toolCalls`, usage metadata, strict unused-step checks, execution-setting matchers, and fake model traces. Prompt-tool fallback scripting and OpenAI Responses-style fake transports are still separate future work.
 

@@ -120,6 +120,13 @@ if (ttyScenarios.length > 0) {
     if (scenario.config) {
       writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(scenario.config, null, 2), 'utf-8');
     }
+    const fakeFixturePath = scenario.llmFixture ? join(SCENARIOS_DIR, scenario.llmFixture) : '';
+    const fakeEvalResultPath = scenario.llmFixture && scenario.model
+      ? join(ROOT, 'playground', 'eval', 'results', `${scenario.model.replace(/[:/]/g, '--')}.json`)
+      : '';
+    const previousFakeEvalResult = fakeEvalResultPath && existsSync(fakeEvalResultPath)
+      ? readFileSync(fakeEvalResultPath, 'utf-8')
+      : null;
 
     let ttyFailures: string[];
     let ttyScreen = '';
@@ -129,7 +136,14 @@ if (ttyScenarios.length > 0) {
         tty: scenario.tty!,
         entry: DIST_ENTRY,
         cwd: ROOT,
-        env: { ...safeBaseEnv, FREECODE_HOME: tmpHome, DEBUG_QUOTA: '0', FORCE_COLOR: process.env.FORCE_COLOR ?? '1' },
+        env: {
+          ...safeBaseEnv,
+          FREECODE_HOME: tmpHome,
+          DEBUG_QUOTA: '0',
+          FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
+          ...(scenario.model ? { FREECODE_MODEL: scenario.model } : {}),
+          ...(scenario.llmFixture ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath } : {}),
+        },
       });
       ttyFailures = result.failures;
       ttyScreen = result.transcript;
@@ -137,6 +151,12 @@ if (ttyScenarios.length > 0) {
       ttyFailures = [`tty harness error: ${err instanceof Error ? err.message : String(err)}`];
     }
 
+    if (fakeEvalResultPath) {
+      try {
+        if (previousFakeEvalResult === null) rmSync(fakeEvalResultPath, { force: true });
+        else writeFileSync(fakeEvalResultPath, previousFakeEvalResult, 'utf-8');
+      } catch (err) { console.error('[cleanup] failed to restore fake eval result:', err); }
+    }
     try { rmSync(tmpHome, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpHome:', err); }
     return { name: scenario.name, failures: ttyFailures, screen: ttyScreen };
   }));

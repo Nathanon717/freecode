@@ -28,6 +28,7 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-config-toggle.scenario.json` | `tty-config-toggle` | Non-LLM verification | repo | Space key toggles a boolean setting in the config editor; the changed value persists and the editor can be reopened without error |
 | `tty-escape-clears.scenario.json` | `tty-escape-clears` | Non-LLM verification | repo | Escape key clears the input buffer and hides the suggestion list, restoring the empty-prompt hint |
 | `tty-eval-menu.scenario.json` | `tty-eval-menu` | Non-LLM verification | repo | Submitting /eval opens the standalone eval picker showing available scenarios; pressing Esc closes it and restores the input prompt |
+| `tty-eval-then-config-picker.scenario.json` | `tty-eval-then-config-picker` | Non-LLM verification | repo | After a fake eval completes, another raw picker can still receive input and Ctrl-C exits cleanly |
 | `tty-fuzzy-completion.scenario.json` | `tty-fuzzy-completion` | Non-LLM verification | repo | Fuzzy query /ks matches /keys; Tab expands the buffer to /keys, Enter submits and shows the key status |
 | `tty-help-output.scenario.json` | `tty-help-output` | Non-LLM verification | repo | Submitting /help renders the command list in the scroll region while the input prompt remains pinned at the bottom |
 | `tty-inline-completion.scenario.json` | `tty-inline-completion` | Non-LLM verification | repo | A partial prefix renders the full command inline before Tab is pressed; inline completion updates as the buffer changes |

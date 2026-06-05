@@ -45,6 +45,20 @@ describe('scenario LLM classification', () => {
     expect(result.errors).toEqual([]);
   });
 
+  it('allows fake LLM fixtures for TTY flows', () => {
+    const result = classifyScenario({
+      name: 'fake-tty',
+      requiresLlm: false,
+      model: 'mock:gpt-freecode-test',
+      llmFixture: 'fake-agent.llm.json',
+      tty: { steps: [] },
+      turns: [],
+    });
+
+    expect(result.inferredRequiresLlm).toBe(false);
+    expect(result.errors).toEqual([]);
+  });
+
   it('rejects fake fixtures that use real models', () => {
     const result = classifyScenario({
       name: 'fake-agent',

@@ -40,6 +40,26 @@ const DIST_ENTRY = resolve(_dirname, '..', '..', 'dist', 'index.js');
 const TSX_CLI = resolve(_dirname, '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs');
 const RUN_CHECK_SCRIPT = resolve(_dirname, '..', '..', 'playground', 'eval', 'run-check.ts');
 
+function resetTerminalPrivateModes(): void {
+  if (!process.stdout.isTTY) return;
+  process.stdout.write(
+    '\x1b[0m' +
+    '\x1b[?25h' +
+    '\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l' +
+    '\x1b[?2004l' +
+    '\x1b[r',
+  );
+}
+
+function resetStdinConsoleMode(): void {
+  if (!process.stdin.isTTY) return;
+  process.stdin.setRawMode(false);
+  process.stdin.resume();
+  process.stdin.setRawMode(true);
+  process.stdin.setRawMode(false);
+  process.stdin.resume();
+}
+
 // Eval types (structural mirror of playground/eval/shared/types.ts)
 interface EvalToolCall { tool: string; args: Record<string, unknown>; }
 interface EvalTokenUsage { total: number; prompt?: number; output?: number; }
@@ -137,7 +157,7 @@ function startEvalScenario(scenarioDir: string, prompt: string, model?: string):
   const exitCodePromise = new Promise<number>((resolve) => {
     const proc = spawn(process.execPath, [DIST_ENTRY, '--script', scriptFile], {
       cwd: workDir,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'pipe'],
       env: {
         ...process.env,
         ...(model ? { FREECODE_MODEL: model } : {}),
@@ -150,6 +170,7 @@ function startEvalScenario(scenarioDir: string, prompt: string, model?: string):
         FORCE_COLOR: '1',
       },
     });
+    proc.stdin?.end();
 
     killProc = () => proc.kill();
 
@@ -529,6 +550,17 @@ function restoreStdinDataListeners(savedListeners: Array<(...args: unknown[]) =>
   }
 }
 
+function restoreEvalRawInput(
+  rl: Interface,
+  onKey: (data: string) => void,
+  savedListeners: Array<(...args: unknown[]) => void>,
+): void {
+  process.stdin.removeListener('data', onKey);
+  process.stdin.setRawMode(false);
+  restoreStdinDataListeners(savedListeners);
+  rl.resume();
+}
+
 export async function runEvalMenu(rl: Interface, projectRoot: string, getSelectedModel: () => string): Promise<void> {
   const restoreBottomUI = isBottomUIActive();
   teardownBottomUI();
@@ -609,11 +641,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       };
 
       function cleanup(): void {
-        process.stdin.removeListener('data', onKey);
-        process.stdin.setRawMode(false);
-        process.stdin.pause();
-        restoreStdinDataListeners(savedListeners);
-        rl.resume();
+        restoreEvalRawInput(rl, onKey, savedListeners);
       }
 
       process.stdin.on('data', onKey);
@@ -653,7 +681,6 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       resetEvalWorkDir(scenarioDir);
       setEvalRunning(scenario.id);
       let result: EvalRunResult;
-      let cancelled = false;
       const handle = startEvalScenario(scenarioDir, prompt, model || undefined);
 
       // Poll result.json and retry-status.json every 500ms so the footer reflects
@@ -680,41 +707,12 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
         } catch (err) { process.stderr.write(`[poll] result file read failed: ${String(err)}\n`); }
       }, 500);
 
-      // Listen for Esc to cancel the running eval; the already-printed output remains visible.
-      let cancelEscListener: (() => void) | null = null;
-      if (process.stdin.isTTY) {
-        rl.pause();
-        const savedListeners = saveAndClearStdinDataListeners();
-        process.stdin.setRawMode(true);
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8');
-        const onKey = (data: string): void => {
-          if (data === '\x03') { cancelEscListener?.(); process.exit(0); }
-          if (data === '\x1b') { cancelled = true; handle.cancel(); }
-        };
-        process.stdin.on('data', onKey);
-        cancelEscListener = () => {
-          process.stdin.removeListener('data', onKey);
-          process.stdin.setRawMode(false);
-          process.stdin.pause();
-          restoreStdinDataListeners(savedListeners);
-          rl.resume();
-          cancelEscListener = null;
-        };
-      }
-
       try {
         result = await handle.promise;
       } finally {
         clearInterval(liveStatusPoll);
         setEvalRunning(null);
         setRetryBanner(null);
-        cancelEscListener?.();
-      }
-
-      if (cancelled) {
-        console.log(chalk.yellow('\nCancelled.'));
-        break;
       }
 
       // Update footer with the model, token count, and quota from the eval run.
@@ -796,6 +794,10 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
     }
   } finally {
     rl.pause();
-    if (restoreBottomUI && process.stdin.isTTY) setupBottomUI();
+    if (restoreBottomUI && process.stdin.isTTY) {
+      resetStdinConsoleMode();
+      resetTerminalPrivateModes();
+      setupBottomUI();
+    }
   }
 }

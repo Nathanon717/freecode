@@ -19,10 +19,10 @@ runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 
 Owns the raw-mode lifecycle so callers don't repeat it:
 
-- Pauses readline, enters raw mode, hides cursor.
+- Temporarily removes readline's stdin data listeners, enters raw mode, hides cursor.
 - Calls `render()` on each `redraw()` and after `drawFooter()`.
 - Handles Ctrl+C (`\x03`) → cleanup + `process.exit(0)`.
-- Restores raw mode, cursor, and readline on `close()`.
+- Restores cooked mode, cursor, readline, and flowing stdin on `close()`.
 
 ## Caller responsibilities
 
