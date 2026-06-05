@@ -41,7 +41,7 @@
         "name": "confirm eval run",
         "send": "\r",
         "waitFor": "token usage:",
-        "quietMs": 1500,
+        "quietMs": 600,
         "screenContains": [
           "PASS  001-hello-world"
         ]
@@ -57,7 +57,7 @@
         "name": "submit - config picker accepts input",
         "send": "\r",
         "waitFor": "freecode config",
-        "quietMs": 1000,
+        "quietMs": 600,
         "screenContains": [
           "freecode config",
           "Tool rationale"

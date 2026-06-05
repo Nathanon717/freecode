@@ -217,6 +217,7 @@
     "zen:mimo-v2.5-free",
     "zen:qwen3.6-plus-free",
     "zen:minimax-m3-free",
-    "zen:nemotron-3-super-free"
+    "zen:nemotron-3-super-free",
+    "zen:nemotron-3-ultra-free"
   ]
 }

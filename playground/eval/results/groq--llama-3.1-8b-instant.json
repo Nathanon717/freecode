@@ -22,5 +22,63 @@
       "total": 0
     },
     "scenarioHash": "2507f4d8f5514be254056bb5759e291d94e51a01bfd8a582605526490b0ad00f"
+  },
+  {
+    "timestamp": "2026-06-05T14:04:32.843Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:llama-3.1-8b-instant",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"  File \\\"C:\\\\Users\\\\mingu\\\\Desktop\\\\nathans corner\\\\dev\\\\freecode\\\\playground\\\\eval\\\\003-python-missing-semicolon\\\\work\\\\analyze_numbers.py\\\", line 4\\r\\n    def summarize(values)\\r\\n                         ^\\r\\nSyntaxError: expected ':'\\r\\n\""
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"  File \\\"C:\\\\Users\\\\mingu\\\\Desktop\\\\nathans corner\\\\dev\\\\freecode\\\\playground\\\\eval\\\\003-python-missing-semicolon\\\\work\\\\analyze_numbers.py\\\", line 4\\r\\n    def summarize(values)\\r\\n                         ^\\r\\nSyntaxError: expected ':'\\r\\n\""
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of analyze_numbers.py captured the initial SyntaxError"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 0,
+        "note": "(none)"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 0,
+        "note": "total: 0"
+      }
+    ]
   }
 ]

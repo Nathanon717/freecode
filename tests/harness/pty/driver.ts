@@ -128,7 +128,12 @@ export function createPtyDriver(opts: PtyDriverOptions): PtyDriver {
     },
 
     async settle(quietMs = 350) {
-      await this.waitQuiet(quietMs, 6000);
+      // Cap the quiet-wait well below the worst case. The footer redraws on a
+      // ~1s heartbeat, so true silence longer than ~1s never occurs; without a
+      // tight cap a step whose quietMs approaches/exceeds that interval would
+      // burn the full timeout waiting for a gap that can't happen. waitFor
+      // already guarantees the asserted content is present before we settle.
+      await this.waitQuiet(quietMs, 2000);
       await flush();
       await sleep(60);
       await flush();

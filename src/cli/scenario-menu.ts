@@ -61,7 +61,7 @@ function resetStdinConsoleMode(): void {
 }
 
 // Eval types (structural mirror of playground/eval/shared/types.ts)
-interface EvalToolCall { tool: string; args: Record<string, unknown>; }
+interface EvalToolCall { tool: string; args: Record<string, unknown>; result?: unknown; }
 interface EvalTokenUsage { total: number; prompt?: number; output?: number; }
 interface EvalRunResult {
   exitCode: number; stdout: string; stderr: string;
@@ -680,6 +680,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
 
       resetEvalWorkDir(scenarioDir);
       setEvalRunning(scenario.id);
+      const maxToolCalls = loadEvalConfig(scenarioDir).maxToolCalls ?? 10;
       let result: EvalRunResult;
       const handle = startEvalScenario(scenarioDir, prompt, model || undefined);
 
@@ -744,6 +745,39 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
 
       if (result.exitCode !== 0) {
         console.log(chalk.yellow(`\nINCOMPLETE  ${chalk.bold(scenario.id)}  (agent did not finish — circle status unchanged)`));
+        const reason = result.exitCode === 1 && result.toolCalls.length >= maxToolCalls
+          ? `exit ${result.exitCode} — hit the ${maxToolCalls}-tool-call limit without finishing`
+          : `exit ${result.exitCode}`;
+        console.log(chalk.yellow(`  reason: ${reason}`));
+        console.log(chalk.yellow(`  tool calls: ${result.toolCalls.length}${maxToolCalls ? `/${maxToolCalls}` : ''}`));
+
+        const stripAnsiText = (s: string) => s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+        const tail = (text: string, n: number): string =>
+          stripAnsiText(text).split('\n').filter(l => l.trim()).slice(-n).join('\n');
+
+        const stderrTail = tail(result.stderr, 20);
+        if (stderrTail) {
+          console.log(chalk.red('  stderr (last 20 lines):'));
+          for (const line of stderrTail.split('\n')) console.log(chalk.red(`    ${line}`));
+        }
+
+        const lastCall = result.toolCalls[result.toolCalls.length - 1];
+        if (lastCall) {
+          const lastResult = typeof lastCall.result === 'string'
+            ? lastCall.result
+            : JSON.stringify(lastCall.result ?? '');
+          console.log(chalk.yellow(`  last tool: ${lastCall.tool}(${JSON.stringify(lastCall.args)})`));
+          if (lastResult) console.log(chalk.yellow(`    → ${lastResult.split('\n').slice(0, 3).join(' ⏎ ')}`));
+        }
+
+        if (!stderrTail) {
+          const stdoutTail = tail(result.stdout, 10);
+          if (stdoutTail) {
+            console.log(chalk.dim('  stdout (last 10 lines):'));
+            for (const line of stdoutTail.split('\n')) console.log(chalk.dim(`    ${line}`));
+          }
+        }
+
         incomplete++;
         continue;
       }

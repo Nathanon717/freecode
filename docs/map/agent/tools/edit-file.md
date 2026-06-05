@@ -1,4 +1,6 @@
-# src/agent/tools/edit-file.ts - edit_file Tool
+
+0I[HT6R9GOPT[Fepw}
+=   `]2ZW13OP# src/agent/tools/edit-file.ts - edit_file Tool
 
 **Role:** Applies one exact text replacement inside an existing UTF-8 file relative to the active project root.
 

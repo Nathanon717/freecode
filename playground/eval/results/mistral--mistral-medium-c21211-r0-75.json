@@ -50,5 +50,139 @@
       "output": 319
     },
     "scenarioHash": "b68b8f29bde1b42cf89c36cbd2fd252397f088656f1ac2a2e993b281d5a4f19f"
+  },
+  {
+    "timestamp": "2026-06-05T16:18:20.907Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "mistral:mistral-medium-c21211-r0-75",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 7233,
+      "prompt": 7074,
+      "output": 159
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 4,
+        "note": "shell_exec → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 7233,
+        "note": "total: 7233, prompt: 7074, output: 159"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-05T16:21:44.468Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "mistral:mistral-medium-c21211-r0-75",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 12492,
+      "prompt": 12010,
+      "output": 482
+    },
+    "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
+    "checks": [
+      {
+        "name": "file exists: analyze_orders.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "file content: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "uses data schema",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 6,
+        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 12492,
+        "note": "total: 12492, prompt: 12010, output: 482"
+      }
+    ]
   }
 ]

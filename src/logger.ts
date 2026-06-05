@@ -36,6 +36,7 @@ export function log(category: string, message: string, data?: unknown): void {
 }
 
 export function logError(category: string, message: string, err: unknown): void {
+  if (!enabled) return;
   let errMsg: string;
   if (err instanceof Error) {
     errMsg = err.message;
