@@ -23,6 +23,17 @@ describe('shell tool', () => {
     expect(isDestructiveCommand('model list')).toBe(false);
     expect(isDestructiveCommand('bundle install')).toBe(false);
   });
+
+  it('honors a custom timeout_ms', async () => {
+    const { shellTool } = await import('../src/agent/tools/shell.js');
+    const command = `${JSON.stringify(process.execPath)} -e "setTimeout(() => {}, 100)"`;
+
+    const completed = await shellTool.execute?.({ command, timeout_ms: 1000 }, {}) as string | undefined;
+    const result = await shellTool.execute?.({ command, timeout_ms: 10 }, {}) as string | undefined;
+
+    expect(completed).toBe('Command completed with no output');
+    expect(result).toContain('Error:');
+  });
 });
 
 describe('tool confirmation', () => {

@@ -30,14 +30,15 @@ export const shellTool = tool({
   description: 'Execute a shell command. Use this to run build scripts, git commands, npm install, etc.',
   parameters: z.object({
     command: z.string().describe('The shell command to execute'),
+    timeout_ms: z.number().int().positive().optional().describe('Maximum command runtime in milliseconds (default: 30000)'),
     confirmDestructive: z.boolean().optional().describe('Set to true only if user confirmed destructive command'),
   }),
-  execute: async ({ command, confirmDestructive }) => {
+  execute: async ({ command, timeout_ms, confirmDestructive }) => {
     if (isDestructiveCommand(command) && !confirmDestructive) {
       return 'Destructive command detected. Set confirmDestructive: true if user confirmed.';
     }
     try {
-      const { stdout, stderr } = await execAsync(command, { timeout: 30000, cwd: projectRoot });
+      const { stdout, stderr } = await execAsync(command, { timeout: timeout_ms ?? 30000, cwd: projectRoot });
       let result = '';
       if (stdout) result += stdout;
       if (stderr) result += '\n[stderr]: ' + stderr;

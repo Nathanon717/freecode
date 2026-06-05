@@ -650,5 +650,80 @@
         "note": "total: 7620, prompt: 6865, output: 755"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-05T11:40:42.692Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "groq:openai/gpt-oss-120b",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 13572,
+      "prompt": 12774,
+      "output": 798
+    },
+    "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
+    "checks": [
+      {
+        "name": "file exists: analyze_grades.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: grades.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": false,
+        "message": "output mismatch:\n  got:      Science: avg=88.0 std=0.00\n  expected: Science: avg=88.0"
+      },
+      {
+        "name": "encountered first bug (ValueError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "encountered second bug (StatisticsError)",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec after the first edit produced a StatisticsError — both bugs may have been fixed in one shot without observing the second failure"
+      },
+      {
+        "name": "two edit cycles",
+        "kind": "warning",
+        "pass": false,
+        "message": "StatisticsError not encountered after first fix"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 8,
+        "note": "list_dir → read_file → read_file → shell_exec → edit_file → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 13572,
+        "note": "total: 13572, prompt: 12774, output: 798"
+      }
+    ]
   }
 ]

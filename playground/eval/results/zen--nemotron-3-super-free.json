@@ -1,0 +1,169 @@
+[
+  {
+    "timestamp": "2026-06-05T11:52:47.259Z",
+    "scenarioId": "002-edit-config",
+    "model": "zen:nemotron-3-super-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 6574,
+      "prompt": 6252,
+      "output": 322
+    },
+    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
+    "checks": [
+      {
+        "name": "file exists: config.json",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.theme",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.language",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.maxRetries",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.debug",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 3,
+        "note": "list_dir → read_file → edit_file"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 6574,
+        "note": "total: 6574, prompt: 6252, output: 322"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-05T11:53:52.459Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "zen:nemotron-3-super-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 11142,
+      "prompt": 10643,
+      "output": 499
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → read_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 11142,
+        "note": "total: 11142, prompt: 10643, output: 499"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-05T12:36:40.613Z",
+    "scenarioId": "001-hello-world",
+    "model": "zen:nemotron-3-super-free",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 6410,
+      "prompt": 6115,
+      "output": 295
+    },
+    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
+    "checks": [
+      {
+        "name": "file exists: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file content: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": false,
+        "message": "read_file"
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 3,
+        "note": "list_dir → write_file → read_file"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 6410,
+        "note": "total: 6410, prompt: 6115, output: 295"
+      }
+    ]
+  }
+]

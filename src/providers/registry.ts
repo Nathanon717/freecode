@@ -93,6 +93,13 @@ function deduplicateByDisplayName(models: ModelConfig[]): ModelConfig[] {
   });
 }
 
+const ZEN_FREE_IDS = new Set(['big-pickle']);
+const ZEN_RETIRED_FREE_IDS = new Set(['qwen3.6-plus-free']);
+
+function isCurrentZenFreeModel(model: ModelConfig): boolean {
+  return (model.id.endsWith('-free') || ZEN_FREE_IDS.has(model.id)) && !ZEN_RETIRED_FREE_IDS.has(model.id);
+}
+
 async function initProviderModels(providerId: string, apiKey: string | undefined): Promise<void> {
   if (initializedProviders.has(providerId)) return;
   initializedProviders.add(providerId);
@@ -166,12 +173,11 @@ async function initZenModels(): Promise<void> {
         id: m.id as string,
         displayName: typeof m.name === 'string' ? m.name : m.id as string,
         ...(typeof m.context_length === 'number' ? { contextWindow: m.context_length } : {}),
-      }));
+    }));
     const { newIds } = updateProviderCache('zen', normalized);
     const newIdSet = new Set(newIds);
-    const ZEN_FREE_IDS = new Set(['big-pickle']);
     const free = normalized
-      .filter(m => m.id.endsWith('-free') || ZEN_FREE_IDS.has(m.id))
+      .filter(isCurrentZenFreeModel)
       .map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
     entry.models = free;
     syncLiveModels('zen', entry.models.map(m => m.id));
@@ -179,8 +185,7 @@ async function initZenModels(): Promise<void> {
     logError('registry', 'Failed to fetch OpenCode Zen models, using cache', err);
     const cached = getProviderCache('zen');
     if (cached) {
-      const ZEN_FREE_IDS = new Set(['big-pickle']);
-      entry.models = cached.models.filter(m => m.id.endsWith('-free') || ZEN_FREE_IDS.has(m.id));
+      entry.models = cached.models.filter(isCurrentZenFreeModel);
       const newIdSet = new Set(cached.newIds);
       entry.models = entry.models.map(m => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
       syncLiveModels('zen', entry.models.map(m => m.id));
@@ -371,7 +376,13 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     apiKeyEnvVar: 'OPENCODE_ZEN_API_KEY',
     defaultApiKey: 'public',
     modelsSource: 'live',
-    models: [],
+    models: [
+      { id: 'big-pickle', displayName: 'Big Pickle' },
+      { id: 'deepseek-v4-flash-free', displayName: 'DeepSeek V4 Flash Free' },
+      { id: 'mimo-v2.5-free', displayName: 'MiMo V2.5 Free' },
+      { id: 'minimax-m3-free', displayName: 'MiniMax M3 Free' },
+      { id: 'nemotron-3-super-free', displayName: 'Nemotron 3 Super Free' },
+    ],
   },
   {
     id: 'openai',

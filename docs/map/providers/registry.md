@@ -27,10 +27,11 @@ For the generated provider table, see [providers.md](../../providers.md).
 - Anthropic has `type: "anthropic"` and `paid: true`; routing uses the native Anthropic adapter instead of the OpenAI-compatible adapter.
 - Cloudflare Workers AI uses a `baseUrl` templated from `process.env.CLOUDFLARE_ACCOUNT_ID` at module load time; requires both `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_KEY` env vars.
 - Ollama is not in `PROVIDER_REGISTRY`; `createOllamaProvider()` lives in [adapters/openai-compat.md](adapters/openai-compat.md).
-- Providers with `modelsSource: 'live'` (openrouter, groq, siliconflow, cerebras, mistral, openai, anthropic) have their model list fetched from the provider's `/v1/models` API at runtime via `initDynamicProviders()`. There are no hardcoded fallback model lists; on fetch failure the cache from `model-cache.ts` is used instead. All live fetches are gated on `resolveApiKey(provider)`, so env vars and config-file keys both enable discovery; if no key is configured, the fetch is skipped entirely.
+- Providers with `modelsSource: 'live'` have their model list fetched from the provider's `/v1/models` API at runtime via `initDynamicProviders()`. Most live providers start empty and use the cache from `model-cache.ts` on fetch failure; Zen keeps a curated current-free seed list for offline/default picker availability. All live fetches are gated on `resolveApiKey(provider)`, so env vars, default keys, and config-file keys enable discovery; if no key is configured, the fetch is skipped entirely.
 - `mock:*` models are virtual and are not listed in `PROVIDER_REGISTRY`. `resolveModel()` only accepts them when `FREECODE_FAKE_LLM=1`, and fake mode rejects real provider resolution plus live model discovery.
 - After fetching, live-provider model lists are deduplicated by `displayName`: when multiple IDs resolve to the same name (aliases), the versioned ID (date-stamped or semver) is kept and aliases are dropped.
 - Live providers can use `modelIdBlocklist` for substring filters and `modelIdExactBlocklist` for exact ID filters before models are displayed. OpenAI uses the exact filter for `chat-latest` so versioned `*-chat-latest` models remain visible.
+- Zen filters live and cached results to current free models, including explicit exclusions for retired free-period IDs.
 - `initDynamicProviders` calls `updateProviderCache` on every successful fetch to persist results and detect new/removed models.
 
 ## Key Neighbors

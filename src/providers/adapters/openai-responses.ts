@@ -171,6 +171,7 @@ function toolSchema(name: string, toolRationale: boolean): JsonObject {
         properties: {
           ...rationale,
           command: { type: 'string', description: 'The shell command to execute' },
+          timeout_ms: { type: 'number', description: 'Maximum command runtime in milliseconds (default: 30000)' },
           confirmDestructive: { type: 'boolean', description: 'Set to true only if user confirmed destructive command' },
         },
         required: ['command'],

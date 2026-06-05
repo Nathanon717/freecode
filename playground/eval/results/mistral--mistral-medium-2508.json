@@ -218,5 +218,82 @@
         "note": "total: 8128, prompt: 7980, output: 148"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-05T12:54:14.086Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "mistral:mistral-medium-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 12705,
+      "prompt": 12198,
+      "output": 507
+    },
+    "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
+    "checks": [
+      {
+        "name": "file exists: analyze_orders.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "file content: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "uses data schema",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 6,
+        "note": "list_dir → shell_exec → read_file → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 12705,
+        "note": "total: 12705, prompt: 12198, output: 507"
+      }
+    ]
   }
 ]

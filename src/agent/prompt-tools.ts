@@ -35,7 +35,7 @@ The result will be provided before you continue. You may then call another tool 
   args: { "pattern": string, "path"?: string, "include"?: string }
 
 **shell_exec** — Execute a shell command.
-  args: { "command": string, "confirmDestructive"?: boolean }
+  args: { "command": string, "timeout_ms"?: number, "confirmDestructive"?: boolean }
 
 **list_dir** — List directory contents.
   args: { "path"?: string }`;

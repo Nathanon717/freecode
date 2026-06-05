@@ -10,8 +10,19 @@ import {
   formatOutputDiff,
 } from '../../shared/assertions.js';
 
-// grades.csv: Math [70,80,90] mean=80 std=10.00; English [85,95] mean=90 std=7.07; Science [88] no std
-const expectedOutput = 'English: avg=90.0 std=7.07\nMath: avg=80.0 std=10.00\nScience: avg=88.0\n';
+// grades.csv: Math [70,80,90] mean=80 std=10.00; English [85,95] mean=90 std=7.07.
+// Science has one score, so its std is undefined. The prompt does not specify how
+// a singleton group should render std, so any treatment is accepted (omit it,
+// std=0.00, std=N/A, std=nan, etc.) — we only require the correct average.
+const requiredLines = [
+  /^English:\s*avg=90\.0\s+std=7\.07$/m,
+  /^Math:\s*avg=80\.0\s+std=10\.00$/m,
+  // Science: avg must be 88.0; the std portion (if present) is unconstrained.
+  /^Science:\s*avg=88\.0(\s+std=.*)?$/m,
+];
+
+// A human-readable example of one accepted output, used only for the diff message.
+const exampleOutput = 'English: avg=90.0 std=7.07\nMath: avg=80.0 std=10.00\nScience: avg=88.0\n';
 
 function normalizeNewlines(value: string): string {
   return value.replace(/\r\n/g, '\n');
@@ -67,14 +78,15 @@ function assertCorrectOutput(workDir: string): CheckResult {
   if (!result.ok) {
     return { name: 'correct output', kind: 'assertion', pass: false, message: result.message };
   }
-  const pass = result.stdout === expectedOutput;
+  const pass = requiredLines.every(pattern => pattern.test(result.stdout));
   return {
     name: 'correct output',
     kind: 'assertion',
     pass,
     message: pass
       ? undefined
-      : formatOutputDiff(result.stdout, expectedOutput),
+      : formatOutputDiff(result.stdout, exampleOutput) +
+        '\n  (Science std is unconstrained; English/Math must match exactly)',
   };
 }
 

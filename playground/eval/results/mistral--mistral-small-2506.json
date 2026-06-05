@@ -76,5 +76,63 @@
       "output": 1258
     },
     "scenarioHash": "2e3f1d8bd9807ff3c95043f12178a62b7bc89de4788e00edfc6bdc986a57cc53"
+  },
+  {
+    "timestamp": "2026-06-05T12:52:05.457Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "mistral:mistral-small-2506",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 18067,
+      "prompt": 17630,
+      "output": 437
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": false,
+        "message": "output mismatch:\n  got:      average=5.33'\n  expected: average=5.33"
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 9,
+        "note": "list_dir → read_file → edit_file → read_file → edit_file → edit_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 18067,
+        "note": "total: 18067, prompt: 17630, output: 437"
+      }
+    ]
   }
 ]

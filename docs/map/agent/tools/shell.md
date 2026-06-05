@@ -14,6 +14,7 @@ isDestructiveCommand(command: string): boolean
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
 | `command` | `string` | required | Command passed to `child_process.exec`. |
+| `timeout_ms` | `number` | `30000` | Maximum command runtime in milliseconds. |
 | `confirmDestructive` | `boolean` | `false` | Must be true for commands matching destructive patterns. |
 
 ## Destructive Patterns
@@ -39,7 +40,7 @@ ren / rename
 ## Behavior
 
 - Runs with `cwd: projectRoot`.
-- Uses a 30-second timeout.
+- Uses `timeout_ms` when provided, otherwise a 30-second timeout.
 - Returns stdout plus stderr when present.
 - Returns `Command completed with no output` for empty success.
 - Returns an error string for failed/timeout execution.

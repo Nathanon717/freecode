@@ -1,0 +1,466 @@
+[
+  {
+    "timestamp": "2026-06-05T12:36:58.076Z",
+    "scenarioId": "001-hello-world",
+    "model": "zen:minimax-m3-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2949,
+      "prompt": 2854,
+      "output": 95
+    },
+    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
+    "checks": [
+      {
+        "name": "file exists: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file content: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 1,
+        "note": "write_file"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 2949,
+        "note": "total: 2949, prompt: 2854, output: 95"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-05T12:37:15.252Z",
+    "scenarioId": "002-edit-config",
+    "model": "zen:minimax-m3-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 6490,
+      "prompt": 6192,
+      "output": 298
+    },
+    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
+    "checks": [
+      {
+        "name": "file exists: config.json",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.theme",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.language",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.maxRetries",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.debug",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 3,
+        "note": "list_dir → read_file → edit_file"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 6490,
+        "note": "total: 6490, prompt: 6192, output: 298"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-05T12:38:09.783Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "zen:minimax-m3-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 11309,
+      "prompt": 10712,
+      "output": 597
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → read_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 11309,
+        "note": "total: 11309, prompt: 10712, output: 597"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-05T12:38:48.129Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "zen:minimax-m3-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 12732,
+      "prompt": 12054,
+      "output": 678
+    },
+    "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
+    "checks": [
+      {
+        "name": "file exists: analyze_orders.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "file content: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "uses data schema",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 6,
+        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 12732,
+        "note": "total: 12732, prompt: 12054, output: 678"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-05T12:39:22.959Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "zen:minimax-m3-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 12923,
+      "prompt": 12089,
+      "output": 834
+    },
+    "scenarioHash": "c473ee1da59fc7a92d6f3a714561b2c0805a079ca9a1b7d4ddfe8dfc1cd1f6bd",
+    "checks": [
+      {
+        "name": "file exists: report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: sales.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "output matches expected",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "agent ran report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "first run exits 0 with wrong output",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "edited then reran",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 6,
+        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 12923,
+        "note": "total: 12923, prompt: 12089, output: 834"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-05T12:40:26.128Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "zen:minimax-m3-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 13591,
+      "prompt": 12528,
+      "output": 1063
+    },
+    "scenarioHash": "6aab8364aaf4eb4df5e231a5c80ef20cc4037a507d1542c7a534e59879ac329e",
+    "checks": [
+      {
+        "name": "file exists: pipeline.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: stats.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "inspected stats module",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "preserved stats module",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "edited pipeline then reran",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 6,
+        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 13591,
+        "note": "total: 13591, prompt: 12528, output: 1063"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-05T12:41:13.092Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "zen:minimax-m3-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 21455,
+      "prompt": 20477,
+      "output": 978
+    },
+    "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
+    "checks": [
+      {
+        "name": "file exists: analyze_grades.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: grades.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "encountered first bug (ValueError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "encountered second bug (StatisticsError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "two edit cycles",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 8,
+        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 21455,
+        "note": "total: 21455, prompt: 20477, output: 978"
+      }
+    ]
+  }
+]
