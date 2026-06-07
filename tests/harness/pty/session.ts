@@ -13,7 +13,7 @@
  *
  *   pty send <keys> [<keys>...] [--wait-for <text>] [--quiet-ms N]
  *       Sends keystrokes to the running session, prints the resulting screen.
- *       Named key aliases: enter/ent, esc/escape, up, down, left, right, space, tab
+ *       Named key aliases: enter/ent, esc/escape, up, down, left, right, space, tab, backspace/back
  *         pty send down down enter
  *       Slash commands auto-submit (Enter appended automatically):
  *         pty send /model
@@ -228,8 +228,10 @@ const KEY_ALIASES: Record<string, string> = {
   down:   '\x1b[B',
   right:  '\x1b[C',
   left:   '\x1b[D',
-  space:  ' ',
-  tab:    '\t',
+  space:     ' ',
+  tab:       '\t',
+  backspace: '\x7f',
+  back:      '\x7f',
 };
 
 // Resolve a single send argument: named key aliases map to their escape sequences;
@@ -400,7 +402,7 @@ async function main(): Promise<void> {
         '  pty screen\n' +
         '  pty stop\n' +
         '\n' +
-        'Key aliases: enter/ent, esc/escape, up, down, left, right, space, tab\n' +
+        'Key aliases: enter/ent, esc/escape, up, down, left, right, space, tab, backspace/back\n' +
         'Slash commands auto-submit: pty send /model  ==  type /model + Enter\n' +
         '\n' +
         'Screens: ' + Object.keys(NAV).join(', '),

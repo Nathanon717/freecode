@@ -61,5 +61,63 @@
       "output": 0
     },
     "scenarioHash": "2c6feafffa8dfe4e4519b0276201609e605f75539b9ce83c377a39f2e577db3b"
+  },
+  {
+    "timestamp": "2026-06-06T17:15:52.052Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "llm7:mistral-small-3.2",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\003-python-missing-semicolon\\\\work\\\\analyze_numbers.py\\\", line 4\\r\\n    def summarize(values)\\r\\n                         ^\\r\\nSyntaxError: expected ':'\\r\\n\""
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\003-python-missing-semicolon\\\\work\\\\analyze_numbers.py\\\", line 4\\r\\n    def summarize(values)\\r\\n                         ^\\r\\nSyntaxError: expected ':'\\r\\n\""
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of analyze_numbers.py captured the initial SyntaxError"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 10,
+        "note": "list_dir → read_file → edit_file → edit_file → edit_file → shell_exec → read_file → read_file → read_file → read_file"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 0,
+        "note": "total: 0"
+      }
+    ]
   }
 ]

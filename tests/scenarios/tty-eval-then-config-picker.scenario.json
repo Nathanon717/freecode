@@ -32,15 +32,7 @@
       {
         "name": "select first eval",
         "send": "\r",
-        "waitFor": "Run 1 eval",
-        "screenContains": [
-          "Run 1 eval"
-        ]
-      },
-      {
-        "name": "confirm eval run",
-        "send": "\r",
-        "waitFor": "token usage:",
+        "waitFor": "tokens:",
         "quietMs": 600,
         "screenContains": [
           "PASS  001-hello-world"

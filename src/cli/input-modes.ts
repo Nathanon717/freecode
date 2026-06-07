@@ -5,7 +5,7 @@ import { runConfigCommand } from '../commands/config.js';
 import { runModelCommand } from '../commands/model.js';
 import { runClaudeHelpCommand } from '../commands/claude-help.js';
 import { redrawBanner } from './banner.js';
-import { formatArgs, type ToolCallConfirmation, type ToolCallPreview } from '../agent/tools/index.js';
+import { filterArgs, formatArgs, type ToolCallConfirmation, type ToolCallPreview } from '../agent/tools/index.js';
 import { loadConfig } from '../config/index.js';
 import { UserAbortError } from '../util/errors.js';
 import { getCommandCompletion, getFilteredCommands } from './slash-commands.js';
@@ -23,7 +23,6 @@ import {
   isFooterUIActive,
   parkCursorAboveBottomUI,
   parkCursorInScrollRegion,
-  printTurnDivider,
   resetSubmittedInputArea,
   setInputBuffer,
   setInlineCompletion,
@@ -280,7 +279,7 @@ async function confirmToolCallInteractive(rl: Interface, preview: ToolCallPrevie
   const restoreInputUI = isBottomUIActive();
   teardownBottomUI();
 
-  const header = `${preview.name}(${formatArgs(preview.args)})`;
+  const header = `${preview.name}(${formatArgs(filterArgs(preview.name, preview.args))})`;
 
   try {
     while (true) {
@@ -472,7 +471,7 @@ export function createInteractiveMode(
       if (!shouldContinue) return { approved: false, message: 'Stopped by user after tool call limit.' };
     }
     if (config.toolConfirmation === 'auto') {
-      console.log(chalk.dim(`Auto-approved: ${preview.name}(${formatArgs(preview.args)})`));
+      console.log(chalk.dim(`Auto-approved: ${preview.name}(${formatArgs(filterArgs(preview.name, preview.args))})`));
       return { approved: true };
     }
     return confirmToolCallInteractive(rl, preview);
@@ -488,7 +487,6 @@ export function createInteractiveMode(
       resetBottomPromptState(session);
     },
     afterAgentCall: () => {
-      printTurnDivider();
       if (process.stdin.isTTY) {
         setupBottomUI();
         resetBottomPromptState(session);
@@ -622,7 +620,9 @@ export function createScriptedMode(scriptPath: string, projectRoot: string, rl: 
       return Promise.resolve();
     },
     onInputExhausted: () => {
-      console.log(chalk.dim('Goodbye!'));
+      if (!process.env.FREECODE_AUTO_CONFIRM) {
+        console.log(chalk.dim('Goodbye!'));
+      }
     },
   };
 }

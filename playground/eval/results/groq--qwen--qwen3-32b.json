@@ -195,5 +195,79 @@
         "note": "total: 11667, prompt: 9339, output: 2328"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-07T13:01:36.841Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:qwen/qwen3-32b",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 11353,
+      "prompt": 9426,
+      "output": 1927
+    },
+    "scenarioHash": "c473ee1da59fc7a92d6f3a714561b2c0805a079ca9a1b7d4ddfe8dfc1cd1f6bd",
+    "checks": [
+      {
+        "name": "file exists: report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: sales.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "output matches expected",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "agent ran report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "first run exits 0 with wrong output",
+        "kind": "warning",
+        "pass": false,
+        "message": "report.py not run with wrong output (revenue=49.50) before fix"
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "edited then reran",
+        "kind": "warning",
+        "pass": false,
+        "message": "initial wrong-output run not found in tool calls"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "5 tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → read_file → edit_file → shell_exec → read_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 11353,
+        "note": "11353 | in: 9426 | out: 1927"
+      }
+    ]
   }
 ]

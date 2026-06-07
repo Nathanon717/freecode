@@ -86,6 +86,7 @@ Writes keystrokes to the running session and prints the screen after output sett
   | `right`              | Right arrow|
   | `space`              | Space      |
   | `tab`                | Tab        |
+  | `backspace` or `back`| Backspace  |
 
   ```bash
   pty send down down enter   # arrow down twice, then select

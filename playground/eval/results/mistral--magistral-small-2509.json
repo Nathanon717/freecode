@@ -43,5 +43,66 @@
         "note": "total: 0"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-07T00:03:10.597Z",
+    "scenarioId": "002-edit-config",
+    "model": "mistral:magistral-small-2509",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
+    "checks": [
+      {
+        "name": "file exists: config.json",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.theme",
+        "kind": "assertion",
+        "pass": false,
+        "message": "expected \"dark\", got \"light\""
+      },
+      {
+        "name": "config.json.language",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.maxRetries",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.debug",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "2 tool calls",
+        "kind": "stat",
+        "value": 2,
+        "note": "list_dir → read_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 0,
+        "note": "0"
+      }
+    ]
   }
 ]

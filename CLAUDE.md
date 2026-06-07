@@ -2,6 +2,8 @@
 
 # Freecode Agent Guide
 
+Freecode is a TypeScript CLI coding agent with provider routing, an interactive REPL, scenario verification, and session persistence.
+
 This file is intentionally short. Keep detailed reference material in `docs/` and link to it from here.
 
 NEVER EVER EVER CD INTO THE FREECODE PROJECT ROOT FOLDER YOU ARE ALREADY THERE. NEVERRRR USE BASH TOOL LIKE:
@@ -13,13 +15,12 @@ JUST DO THE COMMAND, IF YOU USE CD LIKE THIS, THAT IS A A CRITIAL ERROR AND THE 
 - Windows only. Run commands in PowerShell or cmd. **Exception:** when running in a Claude Code web container (Linux), use `npm run ...` instead of `npm.cmd run ...`. See `docs/claude_code_web.md`.
 - Run npm scripts as `npm.cmd run ...`;
 - Before broad source reads, start with `docs/map/README.md` and the relevant map page.
-- Do not run LLM evals without asking first. LLM evals run via the `/eval` slash command inside freecode.
 - Never prefix Bash commands with `cd <dir> &&` when already in that directory — it triggers a permission prompt on the `cd` even if the actual command is allowed.
 
 ## Verification
 
 - For any change touching `src/`, run `npm.cmd test` before reporting completion. Build, docs, and scenario failures are blockers. Never end your turn 
-- `npm test` runs build + `docs:generate` + all non-LLM scenarios including TTY + all unit tests except PTY (~14s).
+- `npm test` runs build + `docs:generate` + all non-LLM scenarios including TTY + all unit tests except PTY.
 - For quick visual checks of the interactive TUI (e.g. after adding a provider, open the model picker to confirm it appears), use `pty`. Start a session, send keystrokes step by step, read the rendered screen. See `docs/pty-session.md` for full reference and examples.
 - If a user-visible behavior changes, ensure it has scenario coverage in `tests/scenarios/` or docs coverage, as appropriate.
 - If generated reference sources change, update the source of truth first, then run `npm.cmd run docs:generate`. It checks generated docs first; if they are already current, it stops without rewriting them, and if they are stale, it regenerates them. Do not hand-edit generated sections.
@@ -29,8 +30,8 @@ Command details live in `docs/commands.md`. Scenario details live in `docs/scena
 
 ## Interactive Freecode Sessions
 
-To drive the live freecode TUI as an agent, use `pty`. See `docs/pty-session.md` for commands, patterns, control characters, and lifecycle details.
-
+See `docs/pty-session.md` on how to drive a live, real freecode TUI.
+ 
 ## Documentation
 
 - Use `docs/README.md` as the documentation index.
@@ -48,11 +49,3 @@ After completing a new feature or significant change, ask:
 > "Want me to write a session log for this?"
 
 Only create a log if the user confirms. Write logs to `docs/sessions/YYYY-MM-DD-slug.md`. Full instructions in `docs/sessions/README.md`.
-
-## Project Notes
-
-Freecode is a TypeScript CLI coding agent with provider routing, an interactive REPL, scenario verification, and session persistence.
-
-- CLI and slash command behavior: `docs/commands.md`
-- Source layout and ownership: `docs/map/README.md`
-- Provider routing: `docs/map/providers/router.md`

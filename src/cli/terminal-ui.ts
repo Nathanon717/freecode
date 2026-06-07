@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import type { OpenAIDailySpend } from './openai-daily-spend.js';
 import { getBannerColor } from './banner.js';
+import { getScreenBufferDisplayLinesForOverlay, startOverlayEpoch } from '../util/screen-buffer.js';
 
 const ESC = '\x1b[';
 
@@ -14,6 +15,8 @@ let lastInputBuf = '';
 let lastTokenCount = 0;
 let lastSuggestions: string[] = [];
 let lastInlineCompletion: string | null = null;
+let suggestionOverlayRows = 0;
+let suggestionOverlayRestoreLines: string[] = [];
 let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
 let lastModelStatus = '';
 let lastOpenAIDailySpend: OpenAIDailySpend = { state: 'idle', updatedAt: 0 };
@@ -67,7 +70,6 @@ function clearLineSequence(): string {
   return `${ESC}2K`;
 }
 
-
 export function isBottomUIActive(): boolean {
   return inputUIActive;
 }
@@ -107,7 +109,7 @@ export function setQuotaSnapshot(quota: RateLimitSnapshot | null): void {
 }
 
 export function setModelStatus(providerId: string, modelId: string): void {
-  lastModelStatus = providerId || modelId ? `${providerId} - ${modelId}` : '';
+  lastModelStatus = providerId && modelId ? `${providerId}:${modelId}` : (providerId || modelId);
 }
 
 export function setSuggestions(suggestions: string[]): void {
@@ -252,7 +254,7 @@ function formatOpenAIDailySpend(): string {
 // Budget=1 matches the old single-row drop behaviour (existing tests rely on this).
 function layoutFooterRightRows(width: number, rowBudget: number, now = Date.now()): string[] {
   const quotaStr = formatQuotaStatus(now);
-  const tokenStr = `${padNumberText(lastTokenCount.toString(), 5)} ctx`;
+  const tokenStr = `${lastTokenCount} ctx`;
   const statusStr = quotaStr ? `${quotaStr} | ${tokenStr}` : tokenStr;
   const preflightStr = formatPreflightInputCost();
   const dailySpendStr = formatOpenAIDailySpend();
@@ -355,8 +357,7 @@ export function composeFooterOutput(): string {
   if (neededCount !== footerRowCount) {
     footerRowCount = neededCount;
     if (inputUIActive) {
-      const n = lastSuggestions.length;
-      const reserved = footerRowCount + 3 + n;
+      const reserved = footerRowCount + 3;
       output += setScrollRegionSequence(1, r - reserved);
       lastReservedRows = reserved;
     } else {
@@ -394,6 +395,19 @@ export function drawFooter() {
   if (output) process.stdout.write(output);
 }
 
+function restoreSuggestionOverlaySequence(startRow: number, rowCount: number, width: number): string {
+  let output = '';
+  const padRows = Math.max(0, rowCount - suggestionOverlayRestoreLines.length);
+  const lines = [
+    ...Array.from({ length: padRows }, () => ''),
+    ...suggestionOverlayRestoreLines,
+  ].slice(-rowCount);
+  for (let i = 0; i < rowCount; i++) {
+    output += moveToSequence(startRow + i, 1) + clearLineSequence() + (lines[i] ?? '').slice(0, Math.max(0, width - 1));
+  }
+  return output;
+}
+
 // Draws the three input-area rows (top bar, input line, bottom bar) plus any suggestion rows.
 // Leaves the cursor on the input line.
 function drawInputArea() {
@@ -401,28 +415,42 @@ function drawInputArea() {
   const w = cols();
   const r = rows();
   const n = lastSuggestions.length;
-  const reserved = footerRowCount + 3 + n;
+  const reserved = footerRowCount + 3;
   const prevReserved = lastReservedRows;
 
+  let output = '';
   if (reserved !== prevReserved) {
-    setScrollRegion(1, r - reserved);
+    output += setScrollRegionSequence(1, r - reserved);
     lastReservedRows = reserved;
   }
 
   const topBarRow = r - footerRowCount - 2;
   const inputRow = r - footerRowCount - 1;
   const bottomBarRow = r - footerRowCount;
+  const suggestionStartRow = topBarRow - n;
+  const previousSuggestionStartRow = topBarRow - suggestionOverlayRows;
 
-  // Clear all input-area + suggestion rows (never touch footer rows).
-  const toClearRows = Math.max(reserved, prevReserved) - footerRowCount;
-  let output = '';
+  if (suggestionOverlayRows > 0 && suggestionOverlayRows !== n) {
+    output += restoreSuggestionOverlaySequence(previousSuggestionStartRow, suggestionOverlayRows, w);
+    suggestionOverlayRows = 0;
+    suggestionOverlayRestoreLines = [];
+  }
+
+  if (n > 0 && suggestionOverlayRows === 0) {
+    suggestionOverlayRows = n;
+    const scrollHeight = r - reserved;
+    suggestionOverlayRestoreLines = getScreenBufferDisplayLinesForOverlay(n, scrollHeight);
+  }
+
+  // Clear the input frame rows (never touch footer rows).
+  const toClearRows = reserved - footerRowCount;
   for (let i = 0; i < toClearRows; i++) {
     output += moveToSequence(r - footerRowCount - toClearRows + 1 + i, 1) + clearLineSequence();
   }
 
-  // Suggestions sit above the top bar.
+  // Suggestions overlay the transcript above the top bar.
   for (let i = 0; i < n; i++) {
-    output += moveToSequence(topBarRow - n + i, 1) + chalk.gray('  ' + lastSuggestions[i]);
+    output += moveToSequence(suggestionStartRow + i, 1) + clearLineSequence() + chalk.gray('  ' + lastSuggestions[i]);
   }
 
   output += moveToSequence(topBarRow, 1) + getBannerColor()('─'.repeat(w));
@@ -444,10 +472,6 @@ function drawInputArea() {
 export function drawBottomUI() {
   drawFooter();
   drawInputArea();
-}
-
-export function printTurnDivider() {
-  process.stdout.write(chalk.gray('─'.repeat(cols())) + '\n');
 }
 
 export function parkCursorInScrollRegion() {
@@ -482,13 +506,18 @@ export function setupFooterUI() {
   drawFooter();
 }
 
+let _overlayEpochStarted = false;
+
 // Sets up the input area (3 rows above footer). Call after setupFooterUI.
 export function setupInputUI() {
   if (inputUIActive) return;
   inputUIActive = true;
+  if (!_overlayEpochStarted) {
+    _overlayEpochStarted = true;
+    startOverlayEpoch(); // Exclude pre-UI output (e.g. banner) from overlay repaints.
+  }
   const r = rows();
-  const n = lastSuggestions.length;
-  const reserved = footerRowCount + 3 + n;
+  const reserved = footerRowCount + 3;
   // Scroll the current scroll region up by 3 rows so that any command output
   // near the bottom is not overwritten when the input area rows are drawn.
   process.stdout.write(`${ESC}${r - footerRowCount};1H\n\n\n`);
@@ -508,8 +537,15 @@ export function teardownBottomUI() {
   if (!inputUIActive) return;
   inputUIActive = false;
   const r = rows();
+  const w = cols();
+  const topBarRow = r - footerRowCount - 2;
   const toClearRows = lastReservedRows - footerRowCount;
   let output = '';
+  if (suggestionOverlayRows > 0) {
+    output += restoreSuggestionOverlaySequence(topBarRow - suggestionOverlayRows, suggestionOverlayRows, w);
+    suggestionOverlayRows = 0;
+    suggestionOverlayRestoreLines = [];
+  }
   for (let i = 0; i < toClearRows; i++) {
     output += moveToSequence(r - footerRowCount - toClearRows + 1 + i, 1) + clearLineSequence();
   }
@@ -543,15 +579,21 @@ export function teardownFooterUI() {
 export function resetSubmittedInputArea() {
   if (!inputUIActive) return;
   const r = rows();
-  const n = lastSuggestions.length;
-  const reserved = footerRowCount + 3 + n;
+  const w = cols();
+  const topBarRow = r - footerRowCount - 2;
+  const reserved = footerRowCount + 3;
   const prevReserved = lastReservedRows;
+  let output = '';
+  if (suggestionOverlayRows > 0) {
+    output += restoreSuggestionOverlaySequence(topBarRow - suggestionOverlayRows, suggestionOverlayRows, w);
+    suggestionOverlayRows = 0;
+    suggestionOverlayRestoreLines = [];
+  }
   if (reserved !== prevReserved) {
     setScrollRegion(1, r - reserved);
     lastReservedRows = reserved;
   }
   const toClear = Math.max(reserved, prevReserved) - footerRowCount;
-  let output = '';
   for (let i = 0; i < toClear; i++) {
     output += moveToSequence(r - footerRowCount - toClear + 1 + i, 1) + clearLineSequence();
   }

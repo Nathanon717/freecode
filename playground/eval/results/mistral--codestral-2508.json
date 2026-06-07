@@ -115,5 +115,472 @@
       "output": 220
     },
     "scenarioHash": "23566b192bcd0097ebc7d8b529f82d94300040922dfb7c4d7d842c680bbaf527"
+  },
+  {
+    "timestamp": "2026-06-06T18:09:50.223Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "mistral:codestral-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 7599,
+      "prompt": 7464,
+      "output": 135
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 4,
+        "note": "shell_exec → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 7599,
+        "note": "total: 7599, prompt: 7464, output: 135"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-06T18:10:02.790Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "mistral:codestral-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 12230,
+      "prompt": 12042,
+      "output": 188
+    },
+    "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
+    "checks": [
+      {
+        "name": "file exists: analyze_orders.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "file content: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "uses data schema",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 6,
+        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 12230,
+        "note": "total: 12230, prompt: 12042, output: 188"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-06T23:39:34.501Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "mistral:codestral-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 12463,
+      "prompt": 12325,
+      "output": 138
+    },
+    "scenarioHash": "c473ee1da59fc7a92d6f3a714561b2c0805a079ca9a1b7d4ddfe8dfc1cd1f6bd",
+    "checks": [
+      {
+        "name": "file exists: report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: sales.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "output matches expected",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "agent ran report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "first run exits 0 with wrong output",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "edited then reran",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "7 tool calls",
+        "kind": "stat",
+        "value": 7,
+        "note": "list_dir → read_file → shell_exec → shell_exec → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 12463,
+        "note": "12463 | in: 12325 | out: 138"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-06T23:39:47.047Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "mistral:codestral-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 18045,
+      "prompt": 17167,
+      "output": 878
+    },
+    "scenarioHash": "6aab8364aaf4eb4df5e231a5c80ef20cc4037a507d1542c7a534e59879ac329e",
+    "checks": [
+      {
+        "name": "file exists: pipeline.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: stats.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "inspected stats module",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "preserved stats module",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "edited pipeline then reran",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "8 tool calls",
+        "kind": "stat",
+        "value": 8,
+        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 18045,
+        "note": "18045 | in: 17167 | out: 878"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T16:46:20.935Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "mistral:codestral-2508",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 24115,
+      "prompt": 23706,
+      "output": 409
+    },
+    "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
+    "checks": [
+      {
+        "name": "file exists: analyze_grades.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: grades.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 28, in <module>\\r\\n    for line in summarize(grades):\\r\\n                ~~~~~~~~~^^^^^^^^\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 21, in summarize\\r\\n    std = statistics.stdev(scores)\\r\\n  File \\\"C:\\\\Users\\\\Nathan\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\Lib\\\\statistics.py\\\", line 1207, in stdev\\r\\n    raise StatisticsError('stdev requires at least two data points')\\r\\nstatistics.StatisticsError: stdev requires at least two data points\\r\\n\""
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 28, in <module>\\r\\n    for line in summarize(grades):\\r\\n                ~~~~~~~~~^^^^^^^^\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 21, in summarize\\r\\n    std = statistics.stdev(scores)\\r\\n  File \\\"C:\\\\Users\\\\Nathan\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\Lib\\\\statistics.py\\\", line 1207, in stdev\\r\\n    raise StatisticsError('stdev requires at least two data points')\\r\\nstatistics.StatisticsError: stdev requires at least two data points\\r\\n\""
+      },
+      {
+        "name": "encountered first bug (ValueError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "encountered second bug (StatisticsError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "two edit cycles",
+        "kind": "warning",
+        "pass": false,
+        "message": "no second edit after StatisticsError"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "10 tool calls",
+        "kind": "stat",
+        "value": 10,
+        "note": "list_dir → read_file → shell_exec → read_file → edit_file → shell_exec → edit_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 24115,
+        "note": "24115 | in: 23706 | out: 409"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T16:53:47.303Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:codestral-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2750,
+      "prompt": 2691,
+      "output": 59
+    },
+    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
+    "checks": [
+      {
+        "name": "file exists: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file content: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "1 tool call",
+        "kind": "stat",
+        "value": 1,
+        "note": "write_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 2750,
+        "note": "2750 | in: 2691 | out: 59"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T16:53:52.179Z",
+    "scenarioId": "002-edit-config",
+    "model": "mistral:codestral-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 5779,
+      "prompt": 5646,
+      "output": 133
+    },
+    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
+    "checks": [
+      {
+        "name": "file exists: config.json",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.theme",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.language",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.maxRetries",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.debug",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "3 tool calls",
+        "kind": "stat",
+        "value": 3,
+        "note": "list_dir → read_file → edit_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 5779,
+        "note": "5779 | in: 5646 | out: 133"
+      }
+    ]
   }
 ]

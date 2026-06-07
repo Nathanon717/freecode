@@ -282,6 +282,12 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
     return 'continue';
   }
 
+  if (normalized === '/renderer') {
+    const { runRendererDemo } = await import('../commands/renderer.js');
+    runRendererDemo();
+    return 'continue';
+  }
+
   if (normalized === '/resume') {
     const resumed = runtime.session.resumeLast();
     if (!resumed) {

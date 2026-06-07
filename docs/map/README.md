@@ -61,10 +61,12 @@ src/
 |   |-- session-runner.ts         -> [CLI session loop](cli/session-runner.md)
 |   |-- slash-commands.ts         -> [Slash command list/completion](cli/slash-commands.md)
 |   |-- transcript-renderer.ts    -> [Agent transcript formatting](cli/transcript-renderer.md)
+|   |-- markdown-renderer.ts      -> [Markdown renderer for LLM output](cli/markdown-renderer.md)
 |   `-- terminal-ui.ts            -> [Bottom-pinned terminal UI](cli/terminal-ui.md)
 |-- commands/
 |   |-- config.ts                 -> [Interactive /config editor](commands/config.md)
 |   |-- model.ts                  -> [Interactive /model picker](commands/model.md)
+|   |-- renderer.ts               -> [/renderer demo command](commands/renderer.md)
 |   `-- claude-help.ts            -> [/claude diagnosis command](commands/claude-help.md)
 |-- config/
 |   `-- index.ts                  -> [Config loader](config/index.md)

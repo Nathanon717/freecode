@@ -11,5 +11,115 @@
       "output": 50
     },
     "scenarioHash": "094736789373f057a4d551b51ed918c30d0a4d7c1942ed30a4498b3397da60d3"
+  },
+  {
+    "timestamp": "2026-06-07T11:25:19.609Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:mistral-tiny-2407",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2391,
+      "prompt": 2340,
+      "output": 51
+    },
+    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
+    "checks": [
+      {
+        "name": "file exists: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file content: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "1 tool call",
+        "kind": "stat",
+        "value": 1,
+        "note": "write_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 2391,
+        "note": "2391 | in: 2340 | out: 51"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T11:25:23.857Z",
+    "scenarioId": "002-edit-config",
+    "model": "mistral:mistral-tiny-2407",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 2441,
+      "prompt": 2369,
+      "output": 72
+    },
+    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
+    "checks": [
+      {
+        "name": "file exists: config.json",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.theme",
+        "kind": "assertion",
+        "pass": false,
+        "message": "expected \"dark\", got \"light\""
+      },
+      {
+        "name": "config.json.language",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.maxRetries",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.debug",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "1 tool call",
+        "kind": "stat",
+        "value": 1,
+        "note": "list_dir"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 2441,
+        "note": "2441 | in: 2369 | out: 72"
+      }
+    ]
   }
 ]

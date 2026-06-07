@@ -50,7 +50,7 @@ The effective order is:
 
 1. `withRationale` when `loadConfig().toolRationale` is true. It adds a required `rationale` string to the Zod schema and strips it before calling the real tool.
 2. `withConfirmation`. It calls the mode-supplied approval callback and returns a denial string to the model when rejected or no callback exists.
-3. `withLogging`. It formats tool calls/results through `cli/transcript-renderer.ts`, writes them to the configured transcript stream, and appends JSON trace events to `FREECODE_TRACE_JSON` when set.
+3. `withLogging`. It calls `writeTranscriptToolLeadIn()` from `cli/transcript-renderer.ts` to insert the correct blank-line separator before each tool call (blank line after response text, blank line between parallel tool calls in the same step). It then writes the call line, rationale (if any), and result preview to the transcript stream. It also appends JSON trace events to `FREECODE_TRACE_JSON` when set. The `firstCallTracker` that previously managed this spacing has been removed; all spacing is now owned by the transcript renderer state machine.
 4. `withSerializedExecution`. It chains tool calls through one promise queue.
 
 ## Trace Events

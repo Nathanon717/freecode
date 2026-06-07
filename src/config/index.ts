@@ -12,6 +12,7 @@ const DEFAULT_CONFIG: Config = {
   parallelTools: true,
   retryMaxWaitSeconds: 120,
   showEvalDots: false,
+  diffContextLines: 2,
 };
 
 function loadJsonFile<T>(path: string): T | null {

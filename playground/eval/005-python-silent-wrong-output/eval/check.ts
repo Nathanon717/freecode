@@ -91,7 +91,7 @@ function assertFirstRunSucceededWithWrongOutput(toolCalls: ToolCall[]): CheckRes
     name: 'first run exits 0 with wrong output',
     kind: 'warning',
     pass: wrongRun !== undefined,
-    message: wrongRun ? undefined : `no shell_exec of report.py found that produced the buggy revenue=49.50 (expected the agent to run the script before fixing it)`,
+    message: wrongRun ? undefined : `report.py not run with wrong output (revenue=49.50) before fix`,
   };
 }
 

@@ -7,7 +7,7 @@ import type { ProviderConfig } from '../types.js';
 import type { ConfirmToolCall } from '../../agent/tools/index.js';
 import { isRecord } from '../../util/guards.js';
 import { toErrorMessage } from '../../util/errors.js';
-import { writeTranscriptStepDivider } from '../../cli/transcript-renderer.js';
+import { endTranscriptStep } from '../../cli/transcript-renderer.js';
 
 type JsonObject = Record<string, unknown>;
 
@@ -370,7 +370,7 @@ export async function generateOpenAIResponses(
     for (const item of functionCalls) {
       input.push(await executeFunctionCall(item, tools ?? {}));
     }
-    writeTranscriptStepDivider();
+    endTranscriptStep(true);
   }
 
   return {

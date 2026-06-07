@@ -80,5 +80,61 @@
       "total": 0
     },
     "scenarioHash": "c081a9aa552faad8b4c5795d18d01e434cb624636c3bf93273cd28f06df54243"
+  },
+  {
+    "timestamp": "2026-06-07T12:04:22.890Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "cohere:command-r-08-2024",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of analyze_numbers.py captured the initial SyntaxError"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "8 tool calls",
+        "kind": "stat",
+        "value": 8,
+        "note": "list_dir → read_file → edit_file → shell_exec → list_dir → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 0,
+        "note": "0"
+      }
+    ]
   }
 ]

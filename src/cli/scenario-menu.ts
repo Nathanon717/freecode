@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, mkdirSync, rmSync, cpSync, writeFileSync } from 'fs';
-import { join, resolve, relative, dirname } from 'path';
+import { join, resolve, dirname } from 'path';
 import { spawnSync, spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import type { Interface } from 'readline';
@@ -168,6 +168,7 @@ function startEvalScenario(scenarioDir: string, prompt: string, model?: string):
         FREECODE_AUTO_CONFIRM: '1',
         FREECODE_MAX_TOOL_CALLS: String(maxToolCalls),
         FORCE_COLOR: '1',
+        COLUMNS: String(process.stdout.columns || 80),
       },
     });
     proc.stdin?.end();
@@ -275,10 +276,8 @@ function printEvalReport(report: EvalReport): void {
   if (firedWarnings.length > 0) {
     console.log(chalk.hex('#FFA500')('\n  Warnings:'));
     for (const w of firedWarnings) {
-      console.log(chalk.hex('#FFA500')(`    ! ${w.name}`));
-      if (w.message) {
-        for (const line of w.message.split('\n')) console.log(chalk.hex('#FFA500')(`      ${line}`));
-      }
+      const text = w.message ?? w.name;
+      for (const line of text.split('\n')) console.log(chalk.hex('#FFA500')(`    ! ${line}`));
     }
   }
 
@@ -519,10 +518,8 @@ function buildEvalDetailScreen(
     lines.push('');
     lines.push(chalk.hex('#FFA500')('  Warnings:'));
     for (const w of firedWarnings) {
-      lines.push(chalk.hex('#FFA500')(`    ! ${w.name}`));
-      if (w.message) {
-        for (const line of w.message.split('\n')) lines.push(chalk.hex('#FFA500')(`      ${line}`));
-      }
+      const text = w.message ?? w.name;
+      for (const line of text.split('\n')) lines.push(chalk.hex('#FFA500')(`    ! ${line}`));
     }
   }
 
@@ -536,29 +533,6 @@ function buildEvalDetailScreen(
 
   lines.push('');
   return lines;
-}
-
-function saveAndClearStdinDataListeners(): Array<(...args: unknown[]) => void> {
-  const savedListeners = process.stdin.rawListeners('data') as Array<(...args: unknown[]) => void>;
-  process.stdin.removeAllListeners('data');
-  return savedListeners;
-}
-
-function restoreStdinDataListeners(savedListeners: Array<(...args: unknown[]) => void>): void {
-  for (const listener of savedListeners) {
-    process.stdin.on('data', listener);
-  }
-}
-
-function restoreEvalRawInput(
-  rl: Interface,
-  onKey: (data: string) => void,
-  savedListeners: Array<(...args: unknown[]) => void>,
-): void {
-  process.stdin.removeListener('data', onKey);
-  process.stdin.setRawMode(false);
-  restoreStdinDataListeners(savedListeners);
-  rl.resume();
 }
 
 export async function runEvalMenu(rl: Interface, projectRoot: string, getSelectedModel: () => string): Promise<void> {
@@ -621,36 +595,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
 
     if (!chosen) return;
 
-    // ── Confirmation ──────────────────────────────────────────────────────
     const model = getSelectedModel();
-    const confirmed = await new Promise<boolean>((resolve) => {
-      rl.pause();
-      const savedListeners = saveAndClearStdinDataListeners();
-      process.stdin.setRawMode(true);
-      process.stdin.resume();
-      process.stdin.setEncoding('utf8');
-      process.stdout.write(
-        chalk.yellow(`Run ${chosen.length} eval${chosen.length === 1 ? '' : 's'} using ${model || 'default model'}? `) +
-        chalk.dim('enter to confirm, esc to cancel') + ' ',
-      );
-
-      const onKey = (data: string): void => {
-        if (data === '\x03') { cleanup(); process.exit(0); }
-        if (data === '\r' || data === '\n') { cleanup(); process.stdout.write('\n'); resolve(true); return; }
-        if (data === '\x1b') { cleanup(); process.stdout.write('\n'); resolve(false); return; }
-      };
-
-      function cleanup(): void {
-        restoreEvalRawInput(rl, onKey, savedListeners);
-      }
-
-      process.stdin.on('data', onKey);
-    });
-
-    if (!confirmed) {
-      console.log(chalk.dim('Cancelled.'));
-      return;
-    }
 
     // ── Run ───────────────────────────────────────────────────────────────
     let passed = 0;
@@ -659,8 +604,6 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
 
     for (const scenario of chosen) {
       const scenarioDir = join(PLAYGROUND_EVAL_DIR, scenario.id);
-      const workDir = join(scenarioDir, 'work');
-      const relativeWorkDir = relative(projectRoot, workDir).replace(/\\/g, '/');
       const promptPath = join(scenarioDir, 'prompt.md');
       const checkPath = join(scenarioDir, 'eval', 'check.ts');
 
@@ -671,12 +614,13 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
 
       const prompt = readFileSync(promptPath, 'utf-8').trim();
 
-      console.log(chalk.bold.cyan(`\n── ${scenario.id} ──────────────────────────────────────────`));
-      console.log(chalk.gray(relativeWorkDir));
+      const termWidth = process.stdout.columns || 80;
+      const headerPrefix = '── ';
+      const headerSuffix = ' ';
+      const dashCount = Math.max(2, termWidth - headerPrefix.length - scenario.id.length - headerSuffix.length);
+      console.log(chalk.bold.cyan(`\n${headerPrefix}${scenario.id}${headerSuffix}${'─'.repeat(dashCount)}`));
       console.log(chalk.bold('Prompt:'));
       console.log(chalk.white(prompt));
-      console.log(chalk.dim('─'.repeat(60)));
-      console.log('');
 
       resetEvalWorkDir(scenarioDir);
       setEvalRunning(scenario.id);
@@ -740,8 +684,6 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
           if (err.diagnosis) console.log(chalk.red(`    diagnosis: ${err.diagnosis}`));
         }
       }
-
-      console.log(chalk.dim('─'.repeat(60)));
 
       if (result.exitCode !== 0) {
         console.log(chalk.yellow(`\nINCOMPLETE  ${chalk.bold(scenario.id)}  (agent did not finish — circle status unchanged)`));

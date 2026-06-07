@@ -1,61 +1,14 @@
 [
   {
-    "timestamp": "2026-06-05T12:49:52.017Z",
-    "scenarioId": "001-hello-world",
-    "model": "zen:big-pickle",
-    "pass": true,
-    "warnings": false,
-    "tokens": {
-      "total": 2966,
-      "prompt": 2847,
-      "output": 119
-    },
-    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
-    "checks": [
-      {
-        "name": "file exists: hello.txt",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "file content: hello.txt",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "tool calls",
-        "kind": "stat",
-        "value": 1,
-        "note": "write_file"
-      },
-      {
-        "name": "token usage",
-        "kind": "stat",
-        "value": 2966,
-        "note": "total: 2966, prompt: 2847, output: 119"
-      }
-    ]
-  },
-  {
-    "timestamp": "2026-06-05T12:50:01.005Z",
+    "timestamp": "2026-06-06T21:54:19.435Z",
     "scenarioId": "002-edit-config",
-    "model": "zen:big-pickle",
+    "model": "zen:nemotron-3-ultra-free",
     "pass": true,
     "warnings": false,
     "tokens": {
-      "total": 6729,
-      "prompt": 6405,
-      "output": 324
+      "total": 5003,
+      "prompt": 4824,
+      "output": 179
     },
     "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
     "checks": [
@@ -97,27 +50,85 @@
       {
         "name": "tool calls",
         "kind": "stat",
-        "value": 3,
-        "note": "read_file → edit_file → read_file"
+        "value": 2,
+        "note": "read_file → edit_file"
       },
       {
         "name": "token usage",
         "kind": "stat",
-        "value": 6729,
-        "note": "total: 6729, prompt: 6405, output: 324"
+        "value": 5003,
+        "note": "total: 5003, prompt: 4824, output: 179"
       }
     ]
   },
   {
-    "timestamp": "2026-06-05T12:50:28.633Z",
+    "timestamp": "2026-06-06T22:03:22.491Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "zen:nemotron-3-ultra-free",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 9177,
+      "prompt": 8802,
+      "output": 375
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of analyze_numbers.py captured the initial SyntaxError"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 4,
+        "note": "list_dir → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 9177,
+        "note": "total: 9177, prompt: 8802, output: 375"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-06T22:06:22.420Z",
     "scenarioId": "004-python-data-shape-error",
-    "model": "zen:big-pickle",
+    "model": "zen:nemotron-3-ultra-free",
     "pass": true,
     "warnings": false,
     "tokens": {
-      "total": 13475,
-      "prompt": 12633,
-      "output": 842
+      "total": 14181,
+      "prompt": 13613,
+      "output": 568
     },
     "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
     "checks": [
@@ -174,27 +185,27 @@
       {
         "name": "tool calls",
         "kind": "stat",
-        "value": 6,
-        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec"
+        "value": 5,
+        "note": "shell_exec → read_file → read_file → edit_file → shell_exec"
       },
       {
         "name": "token usage",
         "kind": "stat",
-        "value": 13475,
-        "note": "total: 13475, prompt: 12633, output: 842"
+        "value": 14181,
+        "note": "total: 14181, prompt: 13613, output: 568"
       }
     ]
   },
   {
-    "timestamp": "2026-06-05T12:51:00.215Z",
+    "timestamp": "2026-06-06T22:09:34.029Z",
     "scenarioId": "005-python-silent-wrong-output",
-    "model": "zen:big-pickle",
+    "model": "zen:nemotron-3-ultra-free",
     "pass": true,
-    "warnings": false,
+    "warnings": true,
     "tokens": {
-      "total": 13117,
-      "prompt": 12217,
-      "output": 900
+      "total": 10409,
+      "prompt": 9640,
+      "output": 769
     },
     "scenarioHash": "c473ee1da59fc7a92d6f3a714561b2c0805a079ca9a1b7d4ddfe8dfc1cd1f6bd",
     "checks": [
@@ -221,7 +232,8 @@
       {
         "name": "first run exits 0 with wrong output",
         "kind": "warning",
-        "pass": true
+        "pass": false,
+        "message": "no shell_exec of report.py found that produced the buggy revenue=49.50 (expected the agent to run the script before fixing it)"
       },
       {
         "name": "inspected input data",
@@ -231,7 +243,8 @@
       {
         "name": "edited then reran",
         "kind": "warning",
-        "pass": true
+        "pass": false,
+        "message": "initial wrong-output run not found in tool calls"
       },
       {
         "name": "unnecessary tools:",
@@ -246,27 +259,27 @@
       {
         "name": "tool calls",
         "kind": "stat",
-        "value": 6,
-        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec"
+        "value": 5,
+        "note": "list_dir → read_file → read_file → edit_file → shell_exec"
       },
       {
         "name": "token usage",
         "kind": "stat",
-        "value": 13117,
-        "note": "total: 13117, prompt: 12217, output: 900"
+        "value": 10409,
+        "note": "total: 10409, prompt: 9640, output: 769"
       }
     ]
   },
   {
-    "timestamp": "2026-06-05T12:51:24.016Z",
+    "timestamp": "2026-06-06T22:17:45.986Z",
     "scenarioId": "006-python-interface-mismatch",
-    "model": "zen:big-pickle",
+    "model": "zen:nemotron-3-ultra-free",
     "pass": true,
     "warnings": true,
     "tokens": {
-      "total": 8520,
-      "prompt": 7916,
-      "output": 604
+      "total": 8781,
+      "prompt": 8193,
+      "output": 588
     },
     "scenarioHash": "6aab8364aaf4eb4df5e231a5c80ef20cc4037a507d1542c7a534e59879ac329e",
     "checks": [
@@ -331,21 +344,68 @@
       {
         "name": "token usage",
         "kind": "stat",
-        "value": 8520,
-        "note": "total: 8520, prompt: 7916, output: 604"
+        "value": 8781,
+        "note": "total: 8781, prompt: 8193, output: 588"
       }
     ]
   },
   {
-    "timestamp": "2026-06-05T12:51:49.061Z",
-    "scenarioId": "007-python-two-bug-cascade",
-    "model": "zen:big-pickle",
+    "timestamp": "2026-06-06T22:24:09.357Z",
+    "scenarioId": "001-hello-world",
+    "model": "zen:nemotron-3-ultra-free",
     "pass": true,
     "warnings": false,
     "tokens": {
-      "total": 24984,
-      "prompt": 23498,
-      "output": 1486
+      "total": 3177,
+      "prompt": 3069,
+      "output": 108
+    },
+    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
+    "checks": [
+      {
+        "name": "file exists: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file content: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 1,
+        "note": "write_file"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 3177,
+        "note": "total: 3177, prompt: 3069, output: 108"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-06T23:31:13.695Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "zen:nemotron-3-ultra-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 27166,
+      "prompt": 26087,
+      "output": 1079
     },
     "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
     "checks": [
@@ -395,74 +455,16 @@
         "pass": true
       },
       {
-        "name": "tool calls",
+        "name": "9 tool calls",
         "kind": "stat",
         "value": 9,
-        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec → edit_file → shell_exec → read_file"
-      },
-      {
-        "name": "token usage",
-        "kind": "stat",
-        "value": 24984,
-        "note": "total: 24984, prompt: 23498, output: 1486"
-      }
-    ]
-  },
-  {
-    "timestamp": "2026-06-06T23:55:54.223Z",
-    "scenarioId": "003-python-missing-semicolon",
-    "model": "zen:big-pickle",
-    "pass": true,
-    "warnings": true,
-    "tokens": {
-      "total": 8847,
-      "prompt": 8422,
-      "output": 425
-    },
-    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
-    "checks": [
-      {
-        "name": "file exists: analyze_numbers.py",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "script runs",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "correct output",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "ran failing script first",
-        "kind": "warning",
-        "pass": false,
-        "message": "no shell_exec of analyze_numbers.py captured the initial SyntaxError"
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "4 tool calls",
-        "kind": "stat",
-        "value": 4,
-        "note": "list_dir → read_file → edit_file → shell_exec"
+        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec → read_file → edit_file → shell_exec"
       },
       {
         "name": "tokens",
         "kind": "stat",
-        "value": 8847,
-        "note": "8847 | in: 8422 | out: 425"
+        "value": 27166,
+        "note": "27166 | in: 26087 | out: 1079"
       }
     ]
   }

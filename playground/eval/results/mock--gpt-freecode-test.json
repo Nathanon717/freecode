@@ -1,0 +1,49 @@
+[
+  {
+    "timestamp": "2026-06-07T11:29:20.791Z",
+    "scenarioId": "001-hello-world",
+    "model": "mock:gpt-freecode-test",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 60,
+      "prompt": 30,
+      "output": 4
+    },
+    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
+    "checks": [
+      {
+        "name": "file exists: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file content: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "1 tool call",
+        "kind": "stat",
+        "value": 1,
+        "note": "write_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 60,
+        "note": "60 | in: 30 | out: 4"
+      }
+    ]
+  }
+]

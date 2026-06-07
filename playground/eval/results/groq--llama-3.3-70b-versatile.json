@@ -697,5 +697,67 @@
         "note": "total: 0"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-06T21:37:47.887Z",
+    "scenarioId": "002-edit-config",
+    "model": "groq:llama-3.3-70b-versatile",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 4094,
+      "prompt": 4029,
+      "output": 65
+    },
+    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
+    "checks": [
+      {
+        "name": "file exists: config.json",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.theme",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.language",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.maxRetries",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.debug",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 2,
+        "note": "read_file → edit_file"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 4094,
+        "note": "total: 4094, prompt: 4029, output: 65"
+      }
+    ]
   }
 ]

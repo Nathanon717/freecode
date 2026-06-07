@@ -11,14 +11,18 @@ import chalk from 'chalk';
 import { z } from 'zod';
 import type { CoreTool } from 'ai';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import {
+  filterArgs,
   formatArgs,
+  formatEditFileDiff,
   formatPromptToolCallLine,
   formatToolCallLine,
   formatToolErrorLine,
   formatToolResultPreview,
   getTranscriptRuntimeOptions,
   getTranscriptStream,
+  writeTranscriptToolLeadIn,
 } from '../../cli/transcript-renderer.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,7 +49,7 @@ interface ToolTraceEvent {
   error?: string;
 }
 
-export { formatArgs } from '../../cli/transcript-renderer.js';
+export { formatArgs, filterArgs } from '../../cli/transcript-renderer.js';
 
 function toolOut(): NodeJS.WritableStream {
   return getTranscriptStream();
@@ -77,15 +81,59 @@ function withLogging(name: string, t: AnyCoreTool, promptTools = false): AnyCore
     ...t,
     execute: async (args: Record<string, unknown>, opts: unknown): Promise<unknown> => {
       const { rationale, ...displayArgs } = args;
-      if (typeof rationale === 'string') toolOut().write('\n' + chalk.cyan(rationale) + '\n');
+      writeTranscriptToolLeadIn(); // normalised blank-line separator before every call
       const callLine = promptTools
         ? formatPromptToolCallLine(name, displayArgs)
         : formatToolCallLine(name, displayArgs);
-      toolOut().write(callLine + '\n');
+      if (typeof rationale === 'string') {
+        toolOut().write(chalk.cyan(rationale) + '\n');
+        toolOut().write(callLine + '\n');
+      } else {
+        toolOut().write(callLine + '\n');
+      }
+
+      let editContextBefore: string[] = [];
+      let editContextAfter: string[] = [];
+      let editLineIndent = '';
+      if (name === 'edit_file' && typeof args.path === 'string' && typeof args.old_text === 'string') {
+        try {
+          const filePath = join(process.cwd(), args.path);
+          if (existsSync(filePath)) {
+            const content = readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n');
+            const normalizedOld = (args.old_text as string)
+              .replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\r\n/g, '\n');
+            const idx = content.indexOf(normalizedOld);
+            if (idx !== -1) {
+              const beforeParts = content.slice(0, idx).split('\n');
+              const partialLineStart = beforeParts.pop() ?? '';
+              if (/^\s+$/.test(partialLineStart)) editLineIndent = partialLineStart;
+              const maxCtx = loadConfig().diffContextLines;
+              for (let i = beforeParts.length - 1; i >= 0 && editContextBefore.length < maxCtx; i--) {
+                if (/^\s*$/.test(beforeParts[i])) break;
+                editContextBefore.unshift(beforeParts[i]);
+              }
+              const afterParts = content.slice(idx + normalizedOld.length).split('\n');
+              afterParts.shift();
+              for (let i = 0; i < afterParts.length && editContextAfter.length < maxCtx; i++) {
+                if (/^\s*$/.test(afterParts[i])) break;
+                editContextAfter.push(afterParts[i]);
+              }
+            }
+          }
+        } catch { /* gracefully degrade to no context */ }
+      }
+
       try {
         const result = await original(args, opts);
         appendToolTrace({ tool: name, args: displayArgs, result });
-        const preview = formatToolResultPreview(result, getTranscriptRuntimeOptions());
+        let preview: string;
+        if (name === 'edit_file' && typeof args.path === 'string' && typeof args.old_text === 'string' && typeof args.new_text === 'string') {
+          preview = formatEditFileDiff(args.path, args.old_text, args.new_text, editContextBefore, editContextAfter, getTranscriptRuntimeOptions(), editLineIndent);
+        } else if (name === 'write_file' && typeof args.content === 'string' && typeof result === 'string' && result.startsWith('Wrote ')) {
+          preview = formatToolResultPreview(args.content, getTranscriptRuntimeOptions());
+        } else {
+          preview = formatToolResultPreview(result, getTranscriptRuntimeOptions());
+        }
         if (preview) toolOut().write(preview + '\n');
         return result;
       } catch (err) {
@@ -114,7 +162,7 @@ function withConfirmation(name: string, t: AnyCoreTool, confirmToolCall?: Confir
       if (!approved) {
         const message = typeof confirmation === 'boolean' ? '' : confirmation.message?.trim();
         const userMessage = message ? `\nUser input after denial: ${message}` : '';
-        return `Tool call denied by user: ${name}(${formatArgs(displayArgs)})${userMessage}`;
+        return `Tool call denied by user: ${name}(${formatArgs(filterArgs(name, displayArgs))})${userMessage}`;
       }
       return original(args, opts);
     },

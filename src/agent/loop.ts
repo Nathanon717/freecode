@@ -24,7 +24,8 @@ import {
   generateOpenAIResponses,
   getLastCapturedOpenAIHeaders,
 } from '../providers/adapters/openai-responses.js';
-import { writeTranscriptStepDivider } from '../cli/transcript-renderer.js';
+import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk } from '../cli/transcript-renderer.js';
+import { renderMarkdown, createMarkdownStreamRenderer } from '../cli/markdown-renderer.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
@@ -134,6 +135,7 @@ export async function agentLoop(
     const toolNames = tools ? Object.keys(tools) : [];
     let activeMessages = messages;
     try {
+      beginTranscriptTurn();
       for (let step = 0; step < 10; step++) {
         const generated = await runFakeModel({
           providerId,
@@ -149,9 +151,12 @@ export async function agentLoop(
         totalTokens += generated.usage.totalTokens;
         promptTokens = generated.usage.promptTokens;
         outputTokens = generated.usage.outputTokens;
+        // runFakeModel already wrote the text to stdout; update renderer state.
+        if (generated.text) notifyTranscriptChunk(generated.text);
 
         if (generated.toolCalls.length === 0) {
           assertFakeFixtureComplete();
+          endTranscriptStep(false);
           return {
             text: fullText,
             usage: { totalTokens, promptTokens, outputTokens },
@@ -168,7 +173,7 @@ export async function agentLoop(
         const resultParts: string[] = [];
         for (let i = 0; i < generated.toolCalls.length; i++) {
           const toolCall = generated.toolCalls[i];
-          writeTranscriptStepDivider();
+          // writeTranscriptToolLeadIn is called inside withLogging (via toolFn.execute).
           const toolFn = tools[toolCall.name as keyof typeof tools];
           if (!toolFn?.execute) {
             resultParts.push(`Tool error: unknown tool "${toolCall.name}". Available tools: ${toolNames.join(', ')}`);
@@ -182,6 +187,7 @@ export async function agentLoop(
           resultParts.push(`<tool_result name="${toolCall.name}">\n${toolResult}\n</tool_result>`);
         }
 
+        endTranscriptStep(true); // close step, open next
         activeMessages = [
           ...activeMessages,
           { role: 'assistant' as const, content: generated.text },
@@ -192,6 +198,7 @@ export async function agentLoop(
       throw new Error('Fake LLM fixture exceeded max tool steps (10)');
     } catch (error) {
       if (isUserAbortError(error)) {
+        endTranscriptStep(false);
         return {
           text: fullText,
           usage: { totalTokens, promptTokens, outputTokens },
@@ -200,6 +207,7 @@ export async function agentLoop(
           quota: null,
         };
       }
+      endTranscriptStep(false);
       const errMsg = toDetailedErrorMessage(error);
       process.stdout.write(`Error: ${errMsg}\n`);
       return {
@@ -217,6 +225,7 @@ export async function agentLoop(
   }
   try {
     if (providerId === 'openai') {
+      beginTranscriptTurn();
       const provider = getProvider(providerId);
       if (!provider) throw new Error(`Unknown provider: "${providerId}"`);
       const tools = supportsTools ? createTools(options.confirmToolCall) : undefined;
@@ -229,9 +238,12 @@ export async function agentLoop(
         parallelTools: modelSettings.parallelTools,
       });
       const generated = await generateOpenAIResponses(provider, payload, tools, options.confirmToolCall);
-      fullText = generated.text;
-      if (fullText) process.stdout.write(fullText);
-      if (fullText && !fullText.endsWith('\n')) process.stdout.write('\n');
+      fullText = generated.text.trimEnd();
+      if (fullText) {
+        const rendered = renderMarkdown(fullText);
+        process.stdout.write(rendered.endsWith('\n') ? rendered : rendered + '\n');
+      }
+      notifyTranscriptChunk(fullText ? fullText + '\n' : '');
       totalTokens = generated.usage.totalTokens;
       promptTokens = generated.usage.promptTokens;
       outputTokens = generated.usage.outputTokens;
@@ -240,6 +252,7 @@ export async function agentLoop(
       costEstimate = estimateOpenAICostVerified(modelId, promptTokens, outputTokens, rates);
       log('stream', 'OpenAI Responses complete', { textLength: fullText.length, totalTokens, promptTokens, outputTokens });
       log('stream', 'OpenAI cost estimate', costEstimate);
+      endTranscriptStep(false);
     } else if (providerId === 'anthropic') {
       beginAnthropicUsageCapture(providerId);
     } else {
@@ -256,6 +269,7 @@ export async function agentLoop(
           break;
         }
         try {
+          beginTranscriptTurn();
           const result: unknown = await streamText({
             model: languageModel,
             system: systemPrompt,
@@ -264,7 +278,9 @@ export async function agentLoop(
               tools: createTools(options.confirmToolCall, modelSettings.toolRationale),
               maxSteps: 10,
               onStepFinish: (event) => {
-                if (event.toolCalls.length > 0) writeTranscriptStepDivider();
+                // Intermediate steps (tool-calls finish reason) get a combined
+                // close+open divider. The final step is closed after text normalisation.
+                if (event.finishReason === 'tool-calls') endTranscriptStep(true);
               },
             } : {}),
           });
@@ -275,14 +291,26 @@ export async function agentLoop(
           };
 
           let chunkCount = 0;
+          const mdStream = createMarkdownStreamRenderer();
           for await (const chunk of typedResult.textStream) {
-            process.stdout.write(chunk);
+            const rendered = mdStream.push(chunk);
+            if (rendered) {
+              process.stdout.write(rendered);
+              notifyTranscriptChunk(rendered);
+            }
             fullText += chunk;
             chunkCount++;
           }
+          const mdTail = mdStream.flush();
+          if (mdTail) {
+            process.stdout.write(mdTail);
+            notifyTranscriptChunk(mdTail);
+          }
+          fullText = fullText.trimEnd();
           if (fullText && !fullText.endsWith('\n')) {
             process.stdout.write('\n');
           }
+          endTranscriptStep(false); // close the final step after text is normalised
           const usage = await typedResult.usage;
           totalTokens = usage?.totalTokens ?? 0;
           promptTokens = usage?.promptTokens;
@@ -349,7 +377,7 @@ export async function agentLoop(
 
       if (usePromptToolsFallback) {
         const ptResult = await runPromptToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale);
-        fullText = ptResult.text;
+        fullText = ptResult.text.trimEnd();
         totalTokens = ptResult.totalTokens;
         promptTokens = ptResult.promptTokens;
         outputTokens = ptResult.outputTokens;
@@ -426,6 +454,7 @@ export async function agentLoop(
       }
     }
     if (isUserAbortError(error)) {
+      endTranscriptStep(false);
       return {
         text: fullText,
         usage: { totalTokens, promptTokens, outputTokens },
@@ -449,6 +478,7 @@ export async function agentLoop(
     } else {
       process.stdout.write(`Error: ${errMsg}\n`);
     }
+    endTranscriptStep(false);
     const displayError = isContextOverflowError(error)
       ? 'Context window exceeded — start a new session or switch to a model with a larger context window.'
       : errMsg;

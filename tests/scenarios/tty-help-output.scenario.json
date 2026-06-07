@@ -26,6 +26,25 @@
           "/test",
           "> / for commands"
         ]
+      },
+      {
+        "name": "open slash suggestions over command output",
+        "send": "/",
+        "screenContains": [
+          "/clear",
+          "/config",
+          "/test",
+          "> /"
+        ]
+      },
+      {
+        "name": "backspace closes suggestions without leaving a blank hole",
+        "send": "",
+        "screenContains": [
+          "Flags:",
+          "-log  Enable diagnostic logging to stderr",
+          "> / for commands"
+        ]
       }
     ],
     "exit": "\u0003",

@@ -117,7 +117,7 @@ function assertEncounteredFirstBug(toolCalls: ToolCall[]): CheckResult {
     name: 'encountered first bug (ValueError)',
     kind: 'warning',
     pass: run !== undefined,
-    message: run ? undefined : 'no shell_exec of analyze_grades.py produced a ValueError — agent may not have run the script before fixing it',
+    message: run ? undefined : 'analyze_grades.py not run with ValueError before fix',
   };
 }
 

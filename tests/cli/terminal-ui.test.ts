@@ -32,7 +32,7 @@ describe('bottom pinned status section', () => {
     setTokenCount(123);
 
     expect(composeBottomStatusLine(123, now.getTime())).toBe(
-      '                                                           R  974/1000 full 36m45s | T 12000/12000 full 0s     |   123 ctx'
+      '                                                             R  974/1000 full 36m45s | T 12000/12000 full 0s     | 123 ctx'
     );
   });
 
@@ -50,7 +50,7 @@ describe('bottom pinned status section', () => {
 
     const status = composeBottomRightStatus(62, now.getTime());
 
-    expect(status).toContain('groq - llama-3.3-70b-versatile');
+    expect(status).toContain('groq:llama-3.3-70b-versatile');
     expect(status).toContain('123 ctx');
     expect(status).not.toContain('R  985/1000');
     expect(status.length).toBeLessThanOrEqual(62);
@@ -78,7 +78,7 @@ describe('bottom pinned status section', () => {
     for (const label of ['/1000 full', '| T', '/12000 full', '|']) {
       expect(highValues.indexOf(label)).toBe(lowValues.indexOf(label));
     }
-    expect(highValues.indexOf('ctx')).toBe(lowValues.indexOf('ctx'));
+    // ctx position is not fixed-width since token count has no upper bound to align against
   });
 
   it('renders OpenAI preflight input tokens and input cost when available', () => {
@@ -145,7 +145,7 @@ describe('bottom pinned status section', () => {
 
     const status = composeBottomRightStatus(44);
 
-    expect(status).toContain('openai - gpt-5.4-nano-2026-03-17');
+    expect(status).toContain('openai:gpt-5.4-nano-2026-03-17');
     expect(status).not.toContain('OpenAI today $1.23');
     expect(status.length).toBeLessThanOrEqual(44);
   });
@@ -195,7 +195,7 @@ describe('bottom pinned status section', () => {
 
     const status = composeBottomRightStatus(62);
 
-    expect(status).toContain('openai - gpt-5.4-nano-2026-03-17');
+    expect(status).toContain('openai:gpt-5.4-nano-2026-03-17');
     expect(status).not.toContain('12,431 in tok | $0.0186 input');
     expect(status).toContain('123 ctx');
     expect(status.length).toBeLessThanOrEqual(62);

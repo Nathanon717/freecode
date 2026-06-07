@@ -1,172 +1,5 @@
 [
   {
-    "timestamp": "2026-06-05T12:56:18.793Z",
-    "scenarioId": "001-hello-world",
-    "model": "zen:deepseek-v4-flash-free",
-    "pass": true,
-    "warnings": false,
-    "tokens": {
-      "total": 2979,
-      "prompt": 2847,
-      "output": 132
-    },
-    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
-    "checks": [
-      {
-        "name": "file exists: hello.txt",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "file content: hello.txt",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "tool calls",
-        "kind": "stat",
-        "value": 1,
-        "note": "write_file"
-      },
-      {
-        "name": "token usage",
-        "kind": "stat",
-        "value": 2979,
-        "note": "total: 2979, prompt: 2847, output: 132"
-      }
-    ]
-  },
-  {
-    "timestamp": "2026-06-05T12:56:26.455Z",
-    "scenarioId": "002-edit-config",
-    "model": "zen:deepseek-v4-flash-free",
-    "pass": true,
-    "warnings": false,
-    "tokens": {
-      "total": 4798,
-      "prompt": 4554,
-      "output": 244
-    },
-    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
-    "checks": [
-      {
-        "name": "file exists: config.json",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "config.json.theme",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "config.json.language",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "config.json.maxRetries",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "config.json.debug",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "tool calls",
-        "kind": "stat",
-        "value": 2,
-        "note": "read_file → edit_file"
-      },
-      {
-        "name": "token usage",
-        "kind": "stat",
-        "value": 4798,
-        "note": "total: 4798, prompt: 4554, output: 244"
-      }
-    ]
-  },
-  {
-    "timestamp": "2026-06-05T12:56:40.717Z",
-    "scenarioId": "003-python-missing-semicolon",
-    "model": "zen:deepseek-v4-flash-free",
-    "pass": true,
-    "warnings": true,
-    "tokens": {
-      "total": 8795,
-      "prompt": 8406,
-      "output": 389
-    },
-    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
-    "checks": [
-      {
-        "name": "file exists: analyze_numbers.py",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "script runs",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "correct output",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "ran failing script first",
-        "kind": "warning",
-        "pass": false,
-        "message": "no shell_exec of analyze_numbers.py captured the initial SyntaxError"
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "tool calls",
-        "kind": "stat",
-        "value": 4,
-        "note": "list_dir → read_file → edit_file → shell_exec"
-      },
-      {
-        "name": "token usage",
-        "kind": "stat",
-        "value": 8795,
-        "note": "total: 8795, prompt: 8406, output: 389"
-      }
-    ]
-  },
-  {
     "timestamp": "2026-06-05T12:56:58.118Z",
     "scenarioId": "004-python-data-shape-error",
     "model": "zen:deepseek-v4-flash-free",
@@ -240,80 +73,6 @@
         "kind": "stat",
         "value": 13495,
         "note": "total: 13495, prompt: 12548, output: 947"
-      }
-    ]
-  },
-  {
-    "timestamp": "2026-06-05T12:57:13.012Z",
-    "scenarioId": "005-python-silent-wrong-output",
-    "model": "zen:deepseek-v4-flash-free",
-    "pass": true,
-    "warnings": true,
-    "tokens": {
-      "total": 10962,
-      "prompt": 10117,
-      "output": 845
-    },
-    "scenarioHash": "c473ee1da59fc7a92d6f3a714561b2c0805a079ca9a1b7d4ddfe8dfc1cd1f6bd",
-    "checks": [
-      {
-        "name": "file exists: report.py",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "file exists: sales.csv",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "output matches expected",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "agent ran report.py",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "first run exits 0 with wrong output",
-        "kind": "warning",
-        "pass": false,
-        "message": "no shell_exec of report.py found that produced the buggy revenue=49.50 (expected the agent to run the script before fixing it)"
-      },
-      {
-        "name": "inspected input data",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "edited then reran",
-        "kind": "warning",
-        "pass": false,
-        "message": "initial wrong-output run not found in tool calls"
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "tool calls",
-        "kind": "stat",
-        "value": 5,
-        "note": "read_file → list_dir → read_file → edit_file → shell_exec"
-      },
-      {
-        "name": "token usage",
-        "kind": "stat",
-        "value": 10962,
-        "note": "total: 10962, prompt: 10117, output: 845"
       }
     ]
   },
@@ -397,13 +156,15 @@
     ]
   },
   {
-    "timestamp": "2026-06-05T14:07:45.127Z",
+    "timestamp": "2026-06-06T23:35:24.570Z",
     "scenarioId": "007-python-two-bug-cascade",
     "model": "zen:deepseek-v4-flash-free",
-    "pass": false,
+    "pass": true,
     "warnings": false,
     "tokens": {
-      "total": 0
+      "total": 24971,
+      "prompt": 23017,
+      "output": 1954
     },
     "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
     "checks": [
@@ -420,32 +181,27 @@
       {
         "name": "script runs",
         "kind": "assertion",
-        "pass": false,
-        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\r\\n  File \\\"C:\\\\Users\\\\mingu\\\\Desktop\\\\nathans corner\\\\dev\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 27, in <module>\\r\\n    grades = load_grades(\\\"grades.csv\\\")\\r\\n  File \\\"C:\\\\Users\\\\mingu\\\\Desktop\\\\nathans corner\\\\dev\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 11, in load_grades\\r\\n    score = int(row[\\\"score\\\"])\\r\\nValueError: invalid literal for int() with base 10: '70.0'\\r\\n\""
+        "pass": true
       },
       {
         "name": "correct output",
         "kind": "assertion",
-        "pass": false,
-        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\r\\n  File \\\"C:\\\\Users\\\\mingu\\\\Desktop\\\\nathans corner\\\\dev\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 27, in <module>\\r\\n    grades = load_grades(\\\"grades.csv\\\")\\r\\n  File \\\"C:\\\\Users\\\\mingu\\\\Desktop\\\\nathans corner\\\\dev\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 11, in load_grades\\r\\n    score = int(row[\\\"score\\\"])\\r\\nValueError: invalid literal for int() with base 10: '70.0'\\r\\n\""
+        "pass": true
       },
       {
         "name": "encountered first bug (ValueError)",
         "kind": "warning",
-        "pass": false,
-        "message": "no shell_exec of analyze_grades.py produced a ValueError — agent may not have run the script before fixing it"
+        "pass": true
       },
       {
         "name": "encountered second bug (StatisticsError)",
-        "kind": "assertion",
-        "pass": false,
-        "message": "no edit to analyze_grades.py found at all"
+        "kind": "warning",
+        "pass": true
       },
       {
         "name": "two edit cycles",
         "kind": "warning",
-        "pass": false,
-        "message": "first ValueError run not found"
+        "pass": true
       },
       {
         "name": "unnecessary tools:",
@@ -458,16 +214,257 @@
         "pass": true
       },
       {
-        "name": "tool calls",
+        "name": "8 tool calls",
         "kind": "stat",
-        "value": 0,
-        "note": "(none)"
+        "value": 8,
+        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec → edit_file → shell_exec"
       },
       {
-        "name": "token usage",
+        "name": "tokens",
         "kind": "stat",
-        "value": 0,
-        "note": "total: 0"
+        "value": 24971,
+        "note": "24971 | in: 23017 | out: 1954"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-06T23:53:41.359Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "zen:deepseek-v4-flash-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 11654,
+      "prompt": 11105,
+      "output": 549
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "5 tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → read_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 11654,
+        "note": "11654 | in: 11105 | out: 549"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-06T23:55:20.277Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "zen:deepseek-v4-flash-free",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 9947,
+      "prompt": 9266,
+      "output": 681
+    },
+    "scenarioHash": "c473ee1da59fc7a92d6f3a714561b2c0805a079ca9a1b7d4ddfe8dfc1cd1f6bd",
+    "checks": [
+      {
+        "name": "file exists: report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: sales.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "output matches expected",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "agent ran report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "first run exits 0 with wrong output",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of report.py found that produced the buggy revenue=49.50 (expected the agent to run the script before fixing it)"
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "edited then reran",
+        "kind": "warning",
+        "pass": false,
+        "message": "initial wrong-output run not found in tool calls"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "5 tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → read_file → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 9947,
+        "note": "9947 | in: 9266 | out: 681"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T17:08:20.999Z",
+    "scenarioId": "002-edit-config",
+    "model": "zen:deepseek-v4-flash-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 7717,
+      "prompt": 7300,
+      "output": 417
+    },
+    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
+    "checks": [
+      {
+        "name": "file exists: config.json",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.theme",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.language",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.maxRetries",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.debug",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "3 tool calls",
+        "kind": "stat",
+        "value": 3,
+        "note": "read_file → edit_file → read_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 7717,
+        "note": "7717 | in: 7300 | out: 417"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T17:17:05.360Z",
+    "scenarioId": "001-hello-world",
+    "model": "zen:deepseek-v4-flash-free",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 7248,
+      "prompt": 6916,
+      "output": 332
+    },
+    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
+    "checks": [
+      {
+        "name": "file exists: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file content: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": false,
+        "message": "read_file"
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "3 tool calls",
+        "kind": "stat",
+        "value": 3,
+        "note": "list_dir → write_file → read_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 7248,
+        "note": "7248 | in: 6916 | out: 332"
       }
     ]
   }

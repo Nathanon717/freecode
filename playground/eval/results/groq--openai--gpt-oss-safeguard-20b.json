@@ -164,5 +164,143 @@
       "output": 1119
     },
     "scenarioHash": "50e55d5cd96e964d78253e8eecb7edfa0ee7de306c7442360feff839a186a814"
+  },
+  {
+    "timestamp": "2026-06-06T16:47:57.693Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "groq:openai/gpt-oss-safeguard-20b",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 5397,
+      "prompt": 4997,
+      "output": 400
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of analyze_numbers.py captured the initial SyntaxError"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 4,
+        "note": "list_dir → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 5397,
+        "note": "total: 5397, prompt: 4997, output: 400"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-06T16:48:22.785Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "groq:openai/gpt-oss-safeguard-20b",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
+    "checks": [
+      {
+        "name": "file exists: analyze_orders.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\004-python-data-shape-error\\\\work\\\\analyze_orders.py\\\", line 27, in <module>\\n    summary = summarize_orders(\\\"orders.csv\\\")\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\004-python-data-shape-error\\\\work\\\\analyze_orders.py\\\", line 14, in summarize_orders\\n    quantity = int(row[\\\"quantity\\\"])\\n                   ~~~^^^^^^^^^^^^\\nKeyError: 'quantity'\\n\""
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\004-python-data-shape-error\\\\work\\\\analyze_orders.py\\\", line 27, in <module>\\n    summary = summarize_orders(\\\"orders.csv\\\")\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\004-python-data-shape-error\\\\work\\\\analyze_orders.py\\\", line 14, in summarize_orders\\n    quantity = int(row[\\\"quantity\\\"])\\n                   ~~~^^^^^^^^^^^^\\nKeyError: 'quantity'\\n\""
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": false,
+        "message": "no successful rerun of analyze_orders.py after the edit was captured"
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "file content: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "uses data schema",
+        "kind": "warning",
+        "pass": false,
+        "message": "fixed script does not appear to read the qty column"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": false,
+        "message": "grep"
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "tool calls",
+        "kind": "stat",
+        "value": 10,
+        "note": "list_dir → shell_exec → shell_exec → list_dir → read_file → read_file → edit_file → grep → read_file → edit_file"
+      },
+      {
+        "name": "token usage",
+        "kind": "stat",
+        "value": 0,
+        "note": "total: 0"
+      }
+    ]
   }
 ]

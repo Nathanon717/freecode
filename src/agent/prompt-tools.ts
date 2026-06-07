@@ -2,7 +2,8 @@ import { streamText } from 'ai';
 import type { CoreMessage, LanguageModel } from 'ai';
 import chalk from 'chalk';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
-import { writeTranscriptStepDivider } from '../cli/transcript-renderer.js';
+import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk } from '../cli/transcript-renderer.js';
+import { renderMarkdown } from '../cli/markdown-renderer.js';
 import { log, logError } from '../logger.js';
 import { isUserAbortError } from '../util/errors.js';
 
@@ -98,7 +99,9 @@ export async function runPromptToolsLoop(
   const tools = createTools(confirmToolCall, toolRationale, true);
   let activeMessages: CoreMessage[] = [...messages];
 
+  beginTranscriptTurn(); // idempotent if already opened by the loop.ts fallback path
   process.stdout.write(chalk.blueBright('~ using prompt-based tools\n'));
+  notifyTranscriptChunk('~ using prompt-based tools\n'); // counts as content so lead-in adds blank line
   let accText = '';
   let totalTokens = 0;
   let promptTokens: number | undefined;
@@ -137,17 +140,22 @@ export async function runPromptToolsLoop(
 
     if (calls.length === 0) {
       // Final (or only) response — stream it to the user.
-      process.stdout.write(stepText);
-      if (stepText && !stepText.endsWith('\n')) process.stdout.write('\n');
+      if (stepText) {
+        const rendered = renderMarkdown(stepText);
+        process.stdout.write(rendered.endsWith('\n') ? rendered : rendered + '\n');
+      }
+      notifyTranscriptChunk(stepText || '\n');
       accText += stepText;
       log('prompt-tools', `Step ${step + 1}: no tool calls, done`);
+      endTranscriptStep(false);
       break;
     }
 
     // Print any text that appears before the first tool call.
     const textBefore = stepText.slice(0, calls[0].startIdx).trimEnd();
     if (textBefore) {
-      process.stdout.write(textBefore + '\n');
+      process.stdout.write(renderMarkdown(textBefore) + '\n');
+      notifyTranscriptChunk(textBefore + '\n');
     }
 
     log('prompt-tools', `Step ${step + 1}: ${calls.length} tool call(s): ${calls.map(c => c.name).join(', ')}`);
@@ -156,8 +164,6 @@ export async function runPromptToolsLoop(
 
     for (let i = 0; i < calls.length; i++) {
       const call = calls[i];
-      writeTranscriptStepDivider();
-
       const toolFn = tools[call.name as keyof typeof tools];
       let toolResultStr: string;
 
@@ -182,6 +188,7 @@ export async function runPromptToolsLoop(
       resultParts.push(`<tool_result name="${call.name}">\n${toolResultStr}\n</tool_result>`);
     }
 
+    endTranscriptStep(true); // close step, open next
     // Append the assistant turn and all tool results for the next iteration.
     activeMessages = [
       ...activeMessages,
@@ -191,5 +198,6 @@ export async function runPromptToolsLoop(
     accText += stepText;
   }
 
-  return { text: accText, totalTokens, promptTokens, outputTokens };
+  endTranscriptStep(false); // close if loop exhausted without hitting the break
+  return { text: accText.trimEnd(), totalTokens, promptTokens, outputTokens };
 }

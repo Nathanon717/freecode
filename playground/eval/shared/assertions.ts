@@ -43,7 +43,8 @@ export function assertFileContent(workDir: string, filename: string, expected: s
     return { name: `file content: ${filename}`, kind: 'assertion', pass: false, message: `${filename} does not exist` };
   }
   const actual = readFileSync(filePath, 'utf-8');
-  const pass = normalizeNewlines(actual) === normalizeNewlines(expected);
+  const normalize = (s: string) => normalizeNewlines(s).trimEnd();
+  const pass = normalize(actual) === normalize(expected);
   return {
     name: `file content: ${filename}`,
     kind: 'assertion',
@@ -93,17 +94,18 @@ export function assertStayedInWorkDir(toolCalls: ToolCall[], workDir: string): C
 }
 
 export function statTokens(tokens: TokenUsage): CheckResult {
-  const parts = [`total: ${tokens.total}`];
-  if (tokens.prompt !== undefined) parts.push(`prompt: ${tokens.prompt}`);
-  if (tokens.output !== undefined) parts.push(`output: ${tokens.output}`);
-  return { name: 'token usage', kind: 'stat', value: tokens.total, note: parts.join(', ') };
+  const parts = [`${tokens.total}`];
+  if (tokens.prompt !== undefined) parts.push(`in: ${tokens.prompt}`);
+  if (tokens.output !== undefined) parts.push(`out: ${tokens.output}`);
+  return { name: 'tokens', kind: 'stat', value: tokens.total, note: parts.join(' | ') };
 }
 
 export function statToolCalls(toolCalls: ToolCall[]): CheckResult {
+  const n = toolCalls.length;
   return {
-    name: 'tool calls',
+    name: `${n} tool ${n === 1 ? 'call' : 'calls'}`,
     kind: 'stat',
-    value: toolCalls.length,
+    value: n,
     note: toolCalls.map(t => t.tool).join(' → ') || '(none)',
   };
 }

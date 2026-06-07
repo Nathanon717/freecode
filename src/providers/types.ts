@@ -46,4 +46,5 @@ export interface Config {
   modelOverrides?: Record<string, OverridableSettings>;
   retryMaxWaitSeconds: number;
   showEvalDots: boolean;
+  diffContextLines: number;
 }
