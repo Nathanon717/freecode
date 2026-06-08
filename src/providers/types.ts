@@ -47,4 +47,5 @@ export interface Config {
   retryMaxWaitSeconds: number;
   showEvalDots: boolean;
   diffContextLines: number;
+  favoriteModels?: string[];
 }

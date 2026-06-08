@@ -258,5 +258,157 @@
         "note": "8038 | in: 7651 | out: 387"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-07T22:46:14.294Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "mistral:mistral-medium-c21211-r0-75",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 9763,
+      "prompt": 9201,
+      "output": 562
+    },
+    "scenarioHash": "6aab8364aaf4eb4df5e231a5c80ef20cc4037a507d1542c7a534e59879ac329e",
+    "checks": [
+      {
+        "name": "file exists: pipeline.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: stats.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of pipeline.py captured the initial KeyError"
+      },
+      {
+        "name": "inspected stats module",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "preserved stats module",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "edited pipeline then reran",
+        "kind": "warning",
+        "pass": false,
+        "message": "initial KeyError run not found"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "5 tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → read_file → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 9763,
+        "note": "9763 | in: 9201 | out: 562"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T22:49:41.776Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "mistral:mistral-medium-c21211-r0-75",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 23806,
+      "prompt": 22994,
+      "output": 812
+    },
+    "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
+    "checks": [
+      {
+        "name": "file exists: analyze_grades.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: grades.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "encountered first bug (ValueError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "encountered second bug (StatisticsError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "two edit cycles",
+        "kind": "warning",
+        "pass": false,
+        "message": "no successful run after second edit"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "10 tool calls",
+        "kind": "stat",
+        "value": 10,
+        "note": "list_dir → read_file → read_file → shell_exec → edit_file → read_file → edit_file → shell_exec → read_file → edit_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 23806,
+        "note": "23806 | in: 22994 | out: 812"
+      }
+    ]
   }
 ]

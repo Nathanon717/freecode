@@ -1,6 +1,6 @@
 # src/cli/scenario-menu.ts - Scenario Menus
 
-**Role:** Presents `/test` and `/eval` scenario menus and runs selected scenarios.
+**Role:** Orchestrates `/test` and `/eval` scenario menus. Delegates subprocess execution to `eval-runner.ts`, rendering to `eval-screen.ts`, and error parsing to `eval-errors.ts`.
 
 ## Exports
 

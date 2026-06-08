@@ -1,6 +1,6 @@
 {
   "name": "tty-all-commands-shown",
-  "description": "Typing / shows all nine slash commands in the suggestion list",
+  "description": "Typing / shows all slash commands in the suggestion list",
   "requiresLlm": false,
   "tty": {
     "cols": 80,
@@ -8,7 +8,7 @@
     "readyText": "for commands",
     "steps": [
       {
-        "name": "type / — all nine commands appear as suggestions",
+        "name": "type / — all commands appear as suggestions",
         "send": "/",
         "screenContains": [
           "/clear",
@@ -18,7 +18,6 @@
           "/keys",
           "/model",
           "/resume",
-          "/sources",
           "/test"
         ]
       }

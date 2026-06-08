@@ -315,83 +315,6 @@
     ]
   },
   {
-    "timestamp": "2026-06-05T12:40:26.128Z",
-    "scenarioId": "006-python-interface-mismatch",
-    "model": "zen:minimax-m3-free",
-    "pass": true,
-    "warnings": false,
-    "tokens": {
-      "total": 13591,
-      "prompt": 12528,
-      "output": 1063
-    },
-    "scenarioHash": "6aab8364aaf4eb4df5e231a5c80ef20cc4037a507d1542c7a534e59879ac329e",
-    "checks": [
-      {
-        "name": "file exists: pipeline.py",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "file exists: stats.py",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "script runs",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "correct output",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "ran failing script first",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "inspected stats module",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "preserved stats module",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "edited pipeline then reran",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "tool calls",
-        "kind": "stat",
-        "value": 6,
-        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec"
-      },
-      {
-        "name": "token usage",
-        "kind": "stat",
-        "value": 13591,
-        "note": "total: 13591, prompt: 12528, output: 1063"
-      }
-    ]
-  },
-  {
     "timestamp": "2026-06-05T12:41:13.092Z",
     "scenarioId": "007-python-two-bug-cascade",
     "model": "zen:minimax-m3-free",
@@ -460,6 +383,86 @@
         "kind": "stat",
         "value": 21455,
         "note": "total: 21455, prompt: 20477, output: 978"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T23:29:02.355Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "zen:minimax-m3-free",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "6aab8364aaf4eb4df5e231a5c80ef20cc4037a507d1542c7a534e59879ac329e",
+    "checks": [
+      {
+        "name": "file exists: pipeline.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: stats.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\006-python-interface-mismatch\\\\work\\\\pipeline.py\\\", line 8, in <module>\\r\\n    print(f\\\"total={result['total']}\\\")\\r\\n                   ~~~~~~^^^^^^^^^\\r\\nKeyError: 'total'\\r\\n\""
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": false,
+        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\006-python-interface-mismatch\\\\work\\\\pipeline.py\\\", line 8, in <module>\\r\\n    print(f\\\"total={result['total']}\\\")\\r\\n                   ~~~~~~^^^^^^^^^\\r\\nKeyError: 'total'\\r\\n\""
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of pipeline.py captured the initial KeyError"
+      },
+      {
+        "name": "inspected stats module",
+        "kind": "warning",
+        "pass": false,
+        "message": "no tool call shows the agent read stats.py to understand its return shape"
+      },
+      {
+        "name": "preserved stats module",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "edited pipeline then reran",
+        "kind": "warning",
+        "pass": false,
+        "message": "initial KeyError run not found"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "0 tool calls",
+        "kind": "stat",
+        "value": 0,
+        "note": "(none)"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 0,
+        "note": "0"
       }
     ]
   }

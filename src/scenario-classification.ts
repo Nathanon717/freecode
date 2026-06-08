@@ -22,8 +22,6 @@ const NON_LLM_SCRIPT_COMMANDS = new Set([
   '/resume',
   '/clear',
   '/config',
-  '/sources',
-  '/model-sources',
 ]);
 
 export function isScriptedConfirmation(input: string): boolean {

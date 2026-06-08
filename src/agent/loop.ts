@@ -41,6 +41,7 @@ let systemPromptLogged = false;
 
 interface AgentLoopOptions {
   confirmToolCall?: ConfirmToolCall;
+  onPartialResult?: (partial: { providerId: string; modelId: string; quota: RateLimitSnapshot | null }) => void;
 }
 
 export interface AgentLoopResult {
@@ -52,6 +53,8 @@ export interface AgentLoopResult {
   providerUsage?: CapturedProviderUsage[];
   costEstimate?: CostEstimate;
 }
+
+type ModelSettings = ReturnType<typeof resolveModelSettings>;
 
 function serializeError(error: unknown): unknown {
   if (!(error instanceof Error)) return error;
@@ -67,6 +70,252 @@ function serializeError(error: unknown): unknown {
   const cause = (error as Error & { cause?: unknown }).cause;
   if (cause) record.cause = serializeError(cause);
   return record;
+}
+
+async function runFakeLlm(
+  providerId: string,
+  modelId: string,
+  supportsTools: boolean,
+  systemPrompt: string,
+  messages: CoreMessage[],
+  options: AgentLoopOptions,
+  modelSettings: ModelSettings,
+): Promise<AgentLoopResult> {
+  const tools = supportsTools ? createTools(options.confirmToolCall, modelSettings.toolRationale) : undefined;
+  const toolNames = tools ? Object.keys(tools) : [];
+  let activeMessages = messages;
+  let fullText = '';
+  let totalTokens = 0;
+  let promptTokens: number | undefined;
+  let outputTokens: number | undefined;
+
+  try {
+    beginTranscriptTurn();
+    for (let step = 0; step < 10; step++) {
+      const generated = await runFakeModel({
+        providerId,
+        modelId,
+        systemPrompt,
+        messages: activeMessages,
+        toolNames,
+        toolRationale: modelSettings.toolRationale,
+        parallelTools: modelSettings.parallelTools,
+        nativeToolsSupplied: Boolean(tools),
+      });
+      fullText += generated.text;
+      totalTokens += generated.usage.totalTokens;
+      promptTokens = generated.usage.promptTokens;
+      outputTokens = generated.usage.outputTokens;
+      // runFakeModel already wrote the text to stdout; update renderer state.
+      if (generated.text) notifyTranscriptChunk(generated.text);
+
+      if (generated.toolCalls.length === 0) {
+        assertFakeFixtureComplete();
+        endTranscriptStep(false);
+        return {
+          text: fullText,
+          usage: { totalTokens, promptTokens, outputTokens },
+          providerId,
+          modelId,
+          quota: null,
+        };
+      }
+
+      if (!tools) {
+        throw new Error(`Fake LLM fixture emitted tool calls, but ${providerId}:${modelId} does not support tools`);
+      }
+
+      const resultParts: string[] = [];
+      for (let i = 0; i < generated.toolCalls.length; i++) {
+        const toolCall = generated.toolCalls[i];
+        // writeTranscriptToolLeadIn is called inside withLogging (via toolFn.execute).
+        const toolFn = tools[toolCall.name as keyof typeof tools];
+        if (!toolFn?.execute) {
+          resultParts.push(`Tool error: unknown tool "${toolCall.name}". Available tools: ${toolNames.join(', ')}`);
+          continue;
+        }
+        const rawResult = await (toolFn.execute as (args: Record<string, unknown>, opts: unknown) => Promise<unknown>)(
+          toolCall.args,
+          { toolCallId: `fake-${step}-${i}`, messages: activeMessages },
+        );
+        const toolResult = typeof rawResult === 'string' ? rawResult : JSON.stringify(rawResult, null, 2);
+        resultParts.push(`<tool_result name="${toolCall.name}">\n${toolResult}\n</tool_result>`);
+      }
+
+      endTranscriptStep(true); // close step, open next
+      activeMessages = [
+        ...activeMessages,
+        { role: 'assistant' as const, content: generated.text },
+        { role: 'user' as const, content: resultParts.join('\n\n') },
+      ];
+    }
+
+    throw new Error('Fake LLM fixture exceeded max tool steps (10)');
+  } catch (error) {
+    if (isUserAbortError(error)) {
+      endTranscriptStep(false);
+      return {
+        text: fullText,
+        usage: { totalTokens, promptTokens, outputTokens },
+        providerId,
+        modelId,
+        quota: null,
+      };
+    }
+    endTranscriptStep(false);
+    const errMsg = toDetailedErrorMessage(error);
+    process.stdout.write(`Error: ${errMsg}\n`);
+    return {
+      text: fullText ? `${fullText}\n\nError: ${errMsg}` : `Error: ${errMsg}`,
+      usage: { totalTokens, promptTokens, outputTokens },
+      providerId,
+      modelId,
+      quota: null,
+    };
+  }
+}
+
+interface StreamResult {
+  fullText: string;
+  totalTokens: number;
+  promptTokens: number | undefined;
+  outputTokens: number | undefined;
+  usePromptToolsFallback: boolean;
+}
+
+async function streamWithRetry(
+  languageModel: LanguageModel,
+  supportsTools: boolean,
+  systemPrompt: string,
+  messages: CoreMessage[],
+  providerId: string,
+  modelId: string,
+  options: AgentLoopOptions,
+  modelSettings: ModelSettings,
+): Promise<StreamResult> {
+  let activeMessages = messages;
+  let toolUseFailureRetries = 0;
+  let usePromptToolsFallback = supportsTools && isModelNoNativeTools(providerId, modelId);
+  let fullText = '';
+  let totalTokens = 0;
+  let promptTokens: number | undefined;
+  let outputTokens: number | undefined;
+
+  while (true) {
+    if (usePromptToolsFallback) {
+      log('stream', `Skipping native tools for ${providerId}:${modelId} (saved trait)`);
+      break;
+    }
+    try {
+      beginTranscriptTurn();
+      const result: unknown = await streamText({
+        model: languageModel,
+        system: systemPrompt,
+        messages: activeMessages,
+        ...(supportsTools ? {
+          tools: createTools(options.confirmToolCall, modelSettings.toolRationale),
+          maxSteps: 10,
+          onStepFinish: (event) => {
+            // Intermediate steps (tool-calls finish reason) get a combined
+            // close+open divider. The final step is closed after text normalisation.
+            if (event.finishReason === 'tool-calls') endTranscriptStep(true);
+            const stepQuota = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
+            if (stepQuota) options.onPartialResult?.({ providerId, modelId, quota: stepQuota });
+          },
+        } : {}),
+      });
+
+      const typedResult = result as {
+        textStream: AsyncIterable<string>;
+        usage: Promise<{ totalTokens: number; promptTokens?: number; completionTokens?: number; outputTokens?: number }>;
+      };
+
+      let chunkCount = 0;
+      const mdStream = createMarkdownStreamRenderer();
+      for await (const chunk of typedResult.textStream) {
+        const rendered = mdStream.push(chunk);
+        if (rendered) {
+          process.stdout.write(rendered);
+          notifyTranscriptChunk(rendered);
+        }
+        fullText += chunk;
+        chunkCount++;
+      }
+      const mdTail = mdStream.flush();
+      if (mdTail) {
+        process.stdout.write(mdTail);
+        notifyTranscriptChunk(mdTail);
+      }
+      fullText = fullText.trimEnd();
+      if (fullText && !fullText.endsWith('\n')) {
+        process.stdout.write('\n');
+      }
+      endTranscriptStep(false); // close the final step after text is normalised
+      const usage = await typedResult.usage;
+      totalTokens = usage?.totalTokens ?? 0;
+      promptTokens = usage?.promptTokens;
+      outputTokens = usage?.completionTokens ?? usage?.outputTokens;
+      log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
+      break;
+    } catch (error) {
+      if (supportsTools && fullText.length === 0 && !usePromptToolsFallback && isToolsNotSupportedError(error)) {
+        usePromptToolsFallback = true;
+        markModelNoNativeTools(providerId, modelId);
+        process.stdout.write(`Note: ${modelId} doesn't support native tool calling — saved. Using prompt-based tools now and automatically next time.\n`);
+        log('stream', 'Tool calling rejected by provider; falling back to prompt-based tool protocol', serializeError(error));
+        break;
+      }
+      if (supportsTools && toolUseFailureRetries < 1) {
+        if (fullText.length === 0 && isProviderToolUseFailed(error)) {
+          toolUseFailureRetries++;
+          log('stream', 'Retrying after provider rejected malformed tool call', serializeError(error));
+          activeMessages = [
+            ...messages,
+            {
+              role: 'user',
+              content: 'The provider rejected your previous response because it contained an invalid tool/function call. Retry the same task. When calling a tool, call exactly one valid tool at a time, use the exact tool name, and provide arguments as valid JSON matching the tool schema. String arguments containing JSON or newlines must be escaped as JSON strings.',
+            },
+          ];
+          continue;
+        }
+        if (isNoSuchToolError(error)) {
+          toolUseFailureRetries++;
+          fullText = '';
+          const available = noSuchToolAvailableList(error) ?? 'read_file, write_file, edit_file, grep, shell_exec, list_dir';
+          const badName = noSuchToolName(error);
+          const nameHint = badName
+            ? ` You called "${badName}", which does not exist. Do not use namespace prefixes (e.g. "repo_browser.") — use the plain name only.`
+            : '';
+          log('stream', 'Retrying after model called non-existent tool', serializeError(error));
+          activeMessages = [
+            ...messages,
+            {
+              role: 'user',
+              content: `You called a tool that does not exist.${nameHint} The only available tools are: ${available}. Retry your task using only these exact tool names.`,
+            },
+          ];
+          continue;
+        }
+        if (isInvalidToolArgumentsError(error)) {
+          toolUseFailureRetries++;
+          fullText = '';
+          const name = invalidToolName(error) ?? 'unknown';
+          log('stream', 'Retrying after model provided invalid tool arguments', serializeError(error));
+          activeMessages = [
+            ...messages,
+            {
+              role: 'user',
+              content: `Your call to "${name}" was rejected because the arguments did not match the tool's parameter schema. Check the required parameter names and types, then retry.`,
+            },
+          ];
+          continue;
+        }
+      }
+      throw error;
+    }
+  }
+
+  return { fullText, totalTokens, promptTokens, outputTokens, usePromptToolsFallback };
 }
 
 export async function agentLoop(
@@ -115,6 +364,8 @@ export async function agentLoop(
     };
   }
 
+  options.onPartialResult?.({ providerId, modelId, quota: null });
+
   let fullText = '';
   let totalTokens = 0;
   let promptTokens: number | undefined;
@@ -130,94 +381,9 @@ export async function agentLoop(
   }
 
   log('stream', `Calling streamText`, { supportsTools, maxSteps: supportsTools ? 10 : undefined });
+
   if (providerId === FAKE_PROVIDER_ID) {
-    const tools = supportsTools ? createTools(options.confirmToolCall, modelSettings.toolRationale) : undefined;
-    const toolNames = tools ? Object.keys(tools) : [];
-    let activeMessages = messages;
-    try {
-      beginTranscriptTurn();
-      for (let step = 0; step < 10; step++) {
-        const generated = await runFakeModel({
-          providerId,
-          modelId,
-          systemPrompt,
-          messages: activeMessages,
-          toolNames,
-          toolRationale: modelSettings.toolRationale,
-          parallelTools: modelSettings.parallelTools,
-          nativeToolsSupplied: Boolean(tools),
-        });
-        fullText += generated.text;
-        totalTokens += generated.usage.totalTokens;
-        promptTokens = generated.usage.promptTokens;
-        outputTokens = generated.usage.outputTokens;
-        // runFakeModel already wrote the text to stdout; update renderer state.
-        if (generated.text) notifyTranscriptChunk(generated.text);
-
-        if (generated.toolCalls.length === 0) {
-          assertFakeFixtureComplete();
-          endTranscriptStep(false);
-          return {
-            text: fullText,
-            usage: { totalTokens, promptTokens, outputTokens },
-            providerId,
-            modelId,
-            quota: null,
-          };
-        }
-
-        if (!tools) {
-          throw new Error(`Fake LLM fixture emitted tool calls, but ${providerId}:${modelId} does not support tools`);
-        }
-
-        const resultParts: string[] = [];
-        for (let i = 0; i < generated.toolCalls.length; i++) {
-          const toolCall = generated.toolCalls[i];
-          // writeTranscriptToolLeadIn is called inside withLogging (via toolFn.execute).
-          const toolFn = tools[toolCall.name as keyof typeof tools];
-          if (!toolFn?.execute) {
-            resultParts.push(`Tool error: unknown tool "${toolCall.name}". Available tools: ${toolNames.join(', ')}`);
-            continue;
-          }
-          const rawResult = await (toolFn.execute as (args: Record<string, unknown>, opts: unknown) => Promise<unknown>)(
-            toolCall.args,
-            { toolCallId: `fake-${step}-${i}`, messages: activeMessages },
-          );
-          const toolResult = typeof rawResult === 'string' ? rawResult : JSON.stringify(rawResult, null, 2);
-          resultParts.push(`<tool_result name="${toolCall.name}">\n${toolResult}\n</tool_result>`);
-        }
-
-        endTranscriptStep(true); // close step, open next
-        activeMessages = [
-          ...activeMessages,
-          { role: 'assistant' as const, content: generated.text },
-          { role: 'user' as const, content: resultParts.join('\n\n') },
-        ];
-      }
-
-      throw new Error('Fake LLM fixture exceeded max tool steps (10)');
-    } catch (error) {
-      if (isUserAbortError(error)) {
-        endTranscriptStep(false);
-        return {
-          text: fullText,
-          usage: { totalTokens, promptTokens, outputTokens },
-          providerId,
-          modelId,
-          quota: null,
-        };
-      }
-      endTranscriptStep(false);
-      const errMsg = toDetailedErrorMessage(error);
-      process.stdout.write(`Error: ${errMsg}\n`);
-      return {
-        text: fullText ? `${fullText}\n\nError: ${errMsg}` : `Error: ${errMsg}`,
-        usage: { totalTokens, promptTokens, outputTokens },
-        providerId,
-        modelId,
-        quota: null,
-      };
-    }
+    return runFakeLlm(providerId, modelId, supportsTools, systemPrompt, messages, options, modelSettings);
   }
 
   if (!modelSettings.parallelTools && providerId !== 'openai' && providerId !== 'anthropic') {
@@ -253,129 +419,22 @@ export async function agentLoop(
       log('stream', 'OpenAI Responses complete', { textLength: fullText.length, totalTokens, promptTokens, outputTokens });
       log('stream', 'OpenAI cost estimate', costEstimate);
       endTranscriptStep(false);
+      const oaiHeaders = getLastCapturedOpenAIHeaders(providerId);
+      if (oaiHeaders) options.onPartialResult?.({ providerId, modelId, quota: oaiHeaders });
     } else if (providerId === 'anthropic') {
       beginAnthropicUsageCapture(providerId);
     } else {
       beginProviderUsageCapture(providerId);
     }
+
     if (providerId !== 'openai') {
-      let activeMessages = messages;
-      let toolUseFailureRetries = 0;
-      let usePromptToolsFallback = supportsTools && isModelNoNativeTools(providerId, modelId);
+      const streamed = await streamWithRetry(languageModel, supportsTools, systemPrompt, messages, providerId, modelId, options, modelSettings);
+      fullText = streamed.fullText;
+      totalTokens = streamed.totalTokens;
+      promptTokens = streamed.promptTokens;
+      outputTokens = streamed.outputTokens;
 
-      while (true) {
-        if (usePromptToolsFallback) {
-          log('stream', `Skipping native tools for ${providerId}:${modelId} (saved trait)`);
-          break;
-        }
-        try {
-          beginTranscriptTurn();
-          const result: unknown = await streamText({
-            model: languageModel,
-            system: systemPrompt,
-            messages: activeMessages,
-            ...(supportsTools ? {
-              tools: createTools(options.confirmToolCall, modelSettings.toolRationale),
-              maxSteps: 10,
-              onStepFinish: (event) => {
-                // Intermediate steps (tool-calls finish reason) get a combined
-                // close+open divider. The final step is closed after text normalisation.
-                if (event.finishReason === 'tool-calls') endTranscriptStep(true);
-              },
-            } : {}),
-          });
-
-          const typedResult = result as {
-            textStream: AsyncIterable<string>;
-            usage: Promise<{ totalTokens: number; promptTokens?: number; completionTokens?: number; outputTokens?: number }>;
-          };
-
-          let chunkCount = 0;
-          const mdStream = createMarkdownStreamRenderer();
-          for await (const chunk of typedResult.textStream) {
-            const rendered = mdStream.push(chunk);
-            if (rendered) {
-              process.stdout.write(rendered);
-              notifyTranscriptChunk(rendered);
-            }
-            fullText += chunk;
-            chunkCount++;
-          }
-          const mdTail = mdStream.flush();
-          if (mdTail) {
-            process.stdout.write(mdTail);
-            notifyTranscriptChunk(mdTail);
-          }
-          fullText = fullText.trimEnd();
-          if (fullText && !fullText.endsWith('\n')) {
-            process.stdout.write('\n');
-          }
-          endTranscriptStep(false); // close the final step after text is normalised
-          const usage = await typedResult.usage;
-          totalTokens = usage?.totalTokens ?? 0;
-          promptTokens = usage?.promptTokens;
-          outputTokens = usage?.completionTokens ?? usage?.outputTokens;
-          log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
-          break;
-        } catch (error) {
-          if (supportsTools && fullText.length === 0 && !usePromptToolsFallback && isToolsNotSupportedError(error)) {
-            usePromptToolsFallback = true;
-            markModelNoNativeTools(providerId, modelId);
-            process.stdout.write(`Note: ${modelId} doesn't support native tool calling — saved. Using prompt-based tools now and automatically next time.\n`);
-            log('stream', 'Tool calling rejected by provider; falling back to prompt-based tool protocol', serializeError(error));
-            break;
-          }
-          if (supportsTools && toolUseFailureRetries < 1) {
-            if (fullText.length === 0 && isProviderToolUseFailed(error)) {
-              toolUseFailureRetries++;
-              log('stream', 'Retrying after provider rejected malformed tool call', serializeError(error));
-              activeMessages = [
-                ...messages,
-                {
-                  role: 'user',
-                  content: 'The provider rejected your previous response because it contained an invalid tool/function call. Retry the same task. When calling a tool, call exactly one valid tool at a time, use the exact tool name, and provide arguments as valid JSON matching the tool schema. String arguments containing JSON or newlines must be escaped as JSON strings.',
-                },
-              ];
-              continue;
-            }
-            if (isNoSuchToolError(error)) {
-              toolUseFailureRetries++;
-              fullText = '';
-              const available = noSuchToolAvailableList(error) ?? 'read_file, write_file, edit_file, grep, shell_exec, list_dir';
-              const badName = noSuchToolName(error);
-              const nameHint = badName
-                ? ` You called "${badName}", which does not exist. Do not use namespace prefixes (e.g. "repo_browser.") — use the plain name only.`
-                : '';
-              log('stream', 'Retrying after model called non-existent tool', serializeError(error));
-              activeMessages = [
-                ...messages,
-                {
-                  role: 'user',
-                  content: `You called a tool that does not exist.${nameHint} The only available tools are: ${available}. Retry your task using only these exact tool names.`,
-                },
-              ];
-              continue;
-            }
-            if (isInvalidToolArgumentsError(error)) {
-              toolUseFailureRetries++;
-              fullText = '';
-              const name = invalidToolName(error) ?? 'unknown';
-              log('stream', 'Retrying after model provided invalid tool arguments', serializeError(error));
-              activeMessages = [
-                ...messages,
-                {
-                  role: 'user',
-                  content: `Your call to "${name}" was rejected because the arguments did not match the tool's parameter schema. Check the required parameter names and types, then retry.`,
-                },
-              ];
-              continue;
-            }
-          }
-          throw error;
-        }
-      }
-
-      if (usePromptToolsFallback) {
+      if (streamed.usePromptToolsFallback) {
         const ptResult = await runPromptToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale);
         fullText = ptResult.text.trimEnd();
         totalTokens = ptResult.totalTokens;
@@ -383,7 +442,7 @@ export async function agentLoop(
         outputTokens = ptResult.outputTokens;
       }
 
-      if (providerId === FAKE_NATIVE_PROVIDER_ID && !usePromptToolsFallback) {
+      if (providerId === FAKE_NATIVE_PROVIDER_ID && !streamed.usePromptToolsFallback) {
         assertFakeFixtureComplete();
       }
     }

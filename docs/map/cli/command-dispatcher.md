@@ -24,8 +24,6 @@
 | `/test` | Opens/renders non-LLM scenario menu. |
 | `/eval` | Opens/renders LLM eval scenario menu. |
 | `/keys` | Prints API key status from env/config. |
-| `/sources` | Prints the static model data source catalog used for future gatherers. |
-| `/model-sources` | Alias for `/sources`. |
 | `/resume` | Loads the most recent persisted session for the current project root. |
 | `/clear` | Clears in-memory history and Anthropic session cost, redraws banner, and restores screen hooks. |
 
@@ -35,11 +33,13 @@ Non-command input is handled by `sendToAgent()`:
 
 1. Append user input to `SessionController.messages`.
 2. Run `beforeAgentCall`.
-3. Call `agentLoop(messages, projectRoot, selectedModel, { confirmToolCall })`.
-4. Run `onAgentResult`.
-5. Append assistant message and persist the exchange.
-6. When using Anthropic, print estimated turn cost, session total, and a token/rate breakdown when available.
-7. When non-OpenAI-compatible provider usage was captured, print the raw provider usage JSON.
-8. Run `afterAgentCall`.
+3. If `FREECODE_RESULT_JSON` is set, write a placeholder entry with provider/model info (tokens=0) so the footer reflects the correct model immediately.
+4. Call `agentLoop(messages, projectRoot, selectedModel, { confirmToolCall, onPartialResult })`. `onPartialResult` updates the placeholder entry with quota headers as soon as the first API response arrives.
+5. Run `onAgentResult`.
+6. Replace the placeholder entry in `FREECODE_RESULT_JSON` with the full result (tokens, quota, model).
+7. Append assistant message and persist the exchange.
+8. When using Anthropic, print estimated turn cost, session total, and a token/rate breakdown when available.
+9. When non-OpenAI-compatible provider usage was captured, print the raw provider usage JSON.
+10. Run `afterAgentCall`.
 
 Errors are logged and printed, not thrown through the session loop.

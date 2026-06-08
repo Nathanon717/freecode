@@ -3,7 +3,7 @@ import type { Interface } from 'readline';
 import { getConfigPaths, loadConfig, readRawConfig, resolveApiKey, writeConfigFile } from '../config/index.js';
 import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/registry.js';
 import type { ModelConfig, ProviderConfig } from '../providers/types.js';
-import { getProviderCache, markModelSelected } from '../providers/model-cache.js';
+import { markModelSelected } from '../providers/model-cache.js';
 import { clearModelNewFlag } from '../providers/registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import type { PricingConfidence } from '../providers/pricing-verifier.js';
@@ -20,6 +20,8 @@ export interface ModelMenuItem {
   modelsSource?: 'static' | 'live';
   isNew?: boolean;
   noNativeTools?: boolean;
+  isFavorite?: boolean;
+  _favSection?: boolean; // true = this displayItems entry is the Favorites-section row
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
   evalDots?: string;
 }
@@ -33,6 +35,17 @@ function formatPricingLabel(input: number, output: number): string {
   return `${fmt(input)}/${fmt(output)}/MTok`;
 }
 
+function buildPricingBadge(pricing?: ModelMenuItem['pricing']): string {
+  if (!pricing) return '';
+  if (pricing.confidence === 'disagree') return chalk.red(' sources disagree');
+  if (pricing.input !== null && pricing.output !== null) {
+    return pricing.confidence === 'agreed'
+      ? chalk.green(` ${formatPricingLabel(pricing.input, pricing.output)}`)
+      : chalk.yellow(` ${formatPricingLabel(pricing.input, pricing.output)}`);
+  }
+  return '';
+}
+
 function saveDefaultModel(model: string): void {
   const paths = getConfigPaths();
   const existing = readRawConfig(paths.globalPath) ?? {};
@@ -41,6 +54,42 @@ function saveDefaultModel(model: string): void {
     ...existing,
     defaultModel: model,
   });
+}
+
+function loadFavorites(): Set<string> {
+  const paths = getConfigPaths();
+  const raw = readRawConfig(paths.globalPath) as Record<string, unknown> | null;
+  const favs = raw?.['favoriteModels'];
+  return new Set(Array.isArray(favs) ? favs : []);
+}
+
+function saveFavorites(favorites: Set<string>): void {
+  const paths = getConfigPaths();
+  const existing = readRawConfig(paths.globalPath) ?? {};
+  delete (existing as Record<string, unknown>)['preferLocal'];
+  writeConfigFile(paths.globalPath, {
+    ...existing,
+    favoriteModels: [...favorites],
+  });
+}
+
+function sortItemsByFavorites(items: ModelMenuItem[]): void {
+  const byProvider = new Map<string, ModelMenuItem[]>();
+  const providerOrder: string[] = [];
+  for (const item of items) {
+    if (!byProvider.has(item.providerId)) {
+      byProvider.set(item.providerId, []);
+      providerOrder.push(item.providerId);
+    }
+    byProvider.get(item.providerId)!.push(item);
+  }
+  let idx = 0;
+  for (const pid of providerOrder) {
+    const group = byProvider.get(pid)!;
+    const favs = group.filter(x => x.isFavorite);
+    const rest = group.filter(x => !x.isFavorite);
+    for (const item of [...favs, ...rest]) items[idx++] = item;
+  }
 }
 
 type GroupMode = 'pretty' | 'provider' | 'model';
@@ -58,11 +107,8 @@ function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, mod
   }
 }
 
-// Returns items in canonical-file order for the model-grouped tab view.
-// Named groups (in file order) come first; then the "other" key; then anything not in the file.
-function buildDisplayList(items: ModelMenuItem[], groupMode: GroupMode, canonicalGroups: CanonicalModelGroups): ModelMenuItem[] {
-  if (groupMode !== 'model') return items;
-
+// Returns provider-section items in canonical-file order for model-grouped tab view.
+function buildModelGroupedOrder(items: ModelMenuItem[], canonicalGroups: CanonicalModelGroups): ModelMenuItem[] {
   const itemByEntry = new Map<string, ModelMenuItem>();
   for (const item of items) {
     itemByEntry.set(`${item.providerId}:${item.modelId}`, item);
@@ -73,21 +119,23 @@ function buildDisplayList(items: ModelMenuItem[], groupMode: GroupMode, canonica
 
   for (const [groupName, members] of Object.entries(canonicalGroups)) {
     if (groupName === 'other') continue;
-    for (const entry of members) {
-      const item = itemByEntry.get(entry);
-      if (item && !placed.has(entry)) {
-        result.push(item);
-        placed.add(entry);
-      }
+    const groupItems = members
+      .map(e => itemByEntry.get(e))
+      .filter((item): item is ModelMenuItem => !!item && !placed.has(`${item.providerId}:${item.modelId}`));
+    groupItems.sort((a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0));
+    for (const item of groupItems) {
+      result.push(item);
+      placed.add(`${item.providerId}:${item.modelId}`);
     }
   }
 
-  for (const entry of (canonicalGroups['other'] ?? [])) {
-    const item = itemByEntry.get(entry);
-    if (item && !placed.has(entry)) {
-      result.push(item);
-      placed.add(entry);
-    }
+  const otherItems = (canonicalGroups['other'] ?? [])
+    .map(e => itemByEntry.get(e))
+    .filter((item): item is ModelMenuItem => !!item && !placed.has(`${item.providerId}:${item.modelId}`));
+  otherItems.sort((a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0));
+  for (const item of otherItems) {
+    result.push(item);
+    placed.add(`${item.providerId}:${item.modelId}`);
   }
 
   for (const item of items) {
@@ -96,6 +144,17 @@ function buildDisplayList(items: ModelMenuItem[], groupMode: GroupMode, canonica
   }
 
   return result;
+}
+
+// Builds the flat displayItems list. Favorites appear twice: once as _favSection=true entries
+// at the front (Favorites section), and once as regular entries in their provider/model section.
+// This makes every visual row independently selectable via Up/Down.
+function buildDisplayList(items: ModelMenuItem[], groupMode: GroupMode, canonicalGroups: CanonicalModelGroups): ModelMenuItem[] {
+  const orderedItems = groupMode === 'model' ? buildModelGroupedOrder(items, canonicalGroups) : items;
+  const favSectionItems = orderedItems
+    .filter(x => x.isFavorite)
+    .map(x => ({ ...x, _favSection: true }));
+  return [...favSectionItems, ...orderedItems];
 }
 
 export function filterModelItems(items: ModelMenuItem[], query: string): ModelMenuItem[] {
@@ -150,7 +209,6 @@ export function buildAllItemLines(
   items: ModelMenuItem[],
   selected: number,
   currentModel: string,
-  removedByProvider: Map<string, string[]>,
   groupMode: GroupMode = 'pretty',
   canonicalGroups: CanonicalModelGroups = {},
 ): { itemLines: string[]; selectedLineIdx: number } {
@@ -159,56 +217,61 @@ export function buildAllItemLines(
   }
 
   const showId = groupMode === 'provider';
-
   const itemLines: string[] = [];
   let lastProvider = '';
   let selectedLineIdx = 0;
 
+  // Favorites section: items with _favSection=true, which come first in the array.
+  // Each renders with full provider:model ID as the label.
+  if (items.some(x => x._favSection)) {
+    itemLines.push(`  ${chalk.bold.yellow('Favorites')}`);
+    for (let i = 0; i < items.length; i++) {
+      if (!items[i]._favSection) continue;
+      const item = items[i];
+      const active = i === selected;
+      if (active) selectedLineIdx = itemLines.length;
+      const pref = modelPreference(item);
+      const current = pref === currentModel;
+      const cursor = active ? chalk.cyan('>') : ' ';
+      const renderedName = active ? chalk.inverse(pref) : chalk.yellow(pref);
+      const marker = current ? chalk.green(' current') : '';
+      const pricingBadge = buildPricingBadge(item.pricing);
+      const dotsBadge = item.evalDots ? ` ${item.evalDots}` : '';
+      itemLines.push(`  ${cursor} ${renderedName} ★${pricingBadge}${dotsBadge}${marker}`);
+    }
+    itemLines.push('');
+  }
+
+  // Provider section: all models (including favorites shown again here).
   for (let i = 0; i < items.length; i++) {
+    if (items[i]._favSection) continue;
     const item = items[i];
-    const preference = modelPreference(item);
-    const active = i === selected;
-    const current = preference === currentModel;
 
     if (item.providerId !== lastProvider) {
-      if (lastProvider) {
-        const removed = removedByProvider.get(lastProvider) ?? [];
-        for (const id of removed) {
-          itemLines.push(`    ${chalk.dim.strikethrough(id)} ${chalk.dim('(removed)')}`);
-        }
-        itemLines.push('');
-      }
-      const liveBadge = item.modelsSource === 'live' ? chalk.dim('  · live') : '';
-      itemLines.push(`  ${chalk.bold(item.providerName)}${liveBadge}`);
+      if (lastProvider) itemLines.push('');
+      const staticBadge = item.modelsSource !== 'live' ? chalk.dim('  · static') : '';
+      itemLines.push(`  ${chalk.bold(item.providerName)}${staticBadge}`);
       lastProvider = item.providerId;
     }
 
-    if (i === selected) selectedLineIdx = itemLines.length;
-
+    const active = i === selected;
+    if (active) selectedLineIdx = itemLines.length;
+    const pref = modelPreference(item);
+    const current = pref === currentModel;
     const cursor = active ? chalk.cyan('>') : ' ';
-    const id = `${item.providerId}:${item.modelId}`;
-    const renderedName = active ? chalk.inverse(item.displayName) : chalk.cyan(item.displayName);
+    const id = pref;
+    const renderedName = active
+      ? chalk.inverse(item.displayName)
+      : item.isFavorite
+        ? chalk.yellow(item.displayName)
+        : chalk.cyan(item.displayName);
     const marker = current ? chalk.green(' current') : '';
+    const favBadge = item.isFavorite ? chalk.yellow(' ★') : '';
     const newBadge = item.isNew ? chalk.yellow(' new') : '';
     const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
-    const pricingBadge = item.pricing
-      ? (item.pricing.confidence === 'disagree'
-          ? chalk.red(' sources disagree')
-          : item.pricing.input !== null && item.pricing.output !== null
-            ? (item.pricing.confidence === 'agreed'
-                ? chalk.green(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`)
-                : chalk.yellow(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`))
-            : '')
-      : '';
+    const pricingBadge = buildPricingBadge(item.pricing);
     const dotsBadge = item.evalDots ? ` ${item.evalDots}` : '';
-    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge}${showId ? ` ${chalk.dim(id)}` : ''}${dotsBadge}${marker}`);
-  }
-
-  if (lastProvider) {
-    const removed = removedByProvider.get(lastProvider) ?? [];
-    for (const id of removed) {
-      itemLines.push(`    ${chalk.dim.strikethrough(id)} ${chalk.dim('(removed)')}`);
-    }
+    itemLines.push(`  ${cursor} ${renderedName}${favBadge}${newBadge}${ptBadge}${pricingBadge}${showId ? ` ${chalk.dim(id)}` : ''}${dotsBadge}${marker}`);
   }
 
   return { itemLines, selectedLineIdx };
@@ -220,7 +283,6 @@ function buildModelGroupedItemLines(
   currentModel: string,
   canonicalGroups: CanonicalModelGroups,
 ): { itemLines: string[]; selectedLineIdx: number } {
-  // Reverse map: "provider:modelId" → group name (first match wins)
   const entryToGroup = new Map<string, string>();
   for (const [groupName, members] of Object.entries(canonicalGroups)) {
     for (const entry of members) {
@@ -228,9 +290,10 @@ function buildModelGroupedItemLines(
     }
   }
 
-  // Count distinct providers per named group to decide row display style.
+  // Skip _favSection duplicates when counting providers per group.
   const groupProviders = new Map<string, Set<string>>();
   for (const item of items) {
+    if (item._favSection) continue;
     const group = entryToGroup.get(`${item.providerId}:${item.modelId}`);
     if (!group || group === 'other') continue;
     if (!groupProviders.has(group)) groupProviders.set(group, new Set());
@@ -242,7 +305,30 @@ function buildModelGroupedItemLines(
   let lastGroup = '';
   let inOtherSection = false;
 
+  // Favorites section
+  if (items.some(x => x._favSection)) {
+    itemLines.push(`  ${chalk.bold.yellow('Favorites')}`);
+    for (let i = 0; i < items.length; i++) {
+      if (!items[i]._favSection) continue;
+      const item = items[i];
+      const active = i === selected;
+      if (active) selectedLineIdx = itemLines.length;
+      const pref = modelPreference(item);
+      const current = pref === currentModel;
+      const cursor = active ? chalk.cyan('>') : ' ';
+      const renderedName = active ? chalk.inverse(pref) : chalk.yellow(pref);
+      const marker = current ? chalk.green(' current') : '';
+      const pricingBadge = buildPricingBadge(item.pricing);
+      const dotsBadge = item.evalDots ? ` ${item.evalDots}` : '';
+      itemLines.push(`  ${cursor} ${renderedName} ★${pricingBadge}${dotsBadge}${marker}`);
+    }
+    itemLines.push('');
+    lastGroup = '';
+  }
+
+  // Model-grouped section
   for (let i = 0; i < items.length; i++) {
+    if (items[i]._favSection) continue;
     const item = items[i];
     const entry = `${item.providerId}:${item.modelId}`;
     const group = entryToGroup.get(entry) ?? 'other';
@@ -262,35 +348,34 @@ function buildModelGroupedItemLines(
       lastGroup = group;
     }
 
-    if (i === selected) selectedLineIdx = itemLines.length;
-
-    const preference = modelPreference(item);
     const active = i === selected;
-    const current = preference === currentModel;
+    if (active) selectedLineIdx = itemLines.length;
+    const pref = modelPreference(item);
+    const current = pref === currentModel;
     const cursor = active ? chalk.cyan('>') : ' ';
     const marker = current ? chalk.green(' current') : '';
-    const pricingBadge = item.pricing
-      ? (item.pricing.confidence === 'disagree'
-          ? chalk.red(' sources disagree')
-          : item.pricing.input !== null && item.pricing.output !== null
-            ? (item.pricing.confidence === 'agreed'
-                ? chalk.green(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`)
-                : chalk.yellow(` ${formatPricingLabel(item.pricing.input, item.pricing.output)}`))
-            : '')
-      : '';
-
+    const favBadge = item.isFavorite ? chalk.yellow(' ★') : '';
+    const pricingBadge = buildPricingBadge(item.pricing);
     const dotsBadge = item.evalDots ? ` ${item.evalDots}` : '';
+
     if (isNamed && (groupProviders.get(group)?.size ?? 1) >= 2) {
-      // Multiple providers offer this model — show provider name per row.
-      const renderedProvider = active ? chalk.inverse(item.providerName) : chalk.cyan(item.providerName);
+      const renderedProvider = active
+        ? chalk.inverse(item.providerName)
+        : item.isFavorite
+          ? chalk.yellow(item.providerName)
+          : chalk.cyan(item.providerName);
       const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
-      itemLines.push(`  ${cursor} ${renderedProvider}${ptBadge}${pricingBadge} ${chalk.dim(item.providerId)}${dotsBadge}${marker}`);
+      itemLines.push(`  ${cursor} ${renderedProvider}${favBadge}${ptBadge}${pricingBadge} ${chalk.dim(item.providerId)}${dotsBadge}${marker}`);
     } else {
       const newBadge = item.isNew ? chalk.yellow(' new') : '';
       const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
       const id = `${item.providerId}:${item.modelId}`;
-      const renderedName = active ? chalk.inverse(item.displayName) : chalk.cyan(item.displayName);
-      itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge} ${chalk.dim(id)}${dotsBadge}${marker}`);
+      const renderedName = active
+        ? chalk.inverse(item.displayName)
+        : item.isFavorite
+          ? chalk.yellow(item.displayName)
+          : chalk.cyan(item.displayName);
+      itemLines.push(`  ${cursor} ${renderedName}${favBadge}${newBadge}${ptBadge}${pricingBadge} ${chalk.dim(id)}${dotsBadge}${marker}`);
     }
   }
 
@@ -302,7 +387,6 @@ function buildScreen(
   selected: number,
   currentModel: string,
   viewStart: number,
-  removedByProvider: Map<string, string[]>,
   groupMode: GroupMode,
   canonicalGroups: CanonicalModelGroups,
   filterQuery: string,
@@ -312,7 +396,7 @@ function buildScreen(
   const termHeight = (process.stdout.rows ?? 24) - 2;
   const maxItemLines = Math.max(4, termHeight - HEADER - CHROME);
 
-  const { itemLines: rawItemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, removedByProvider, groupMode, canonicalGroups);
+  const { itemLines: rawItemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, groupMode, canonicalGroups);
   const itemLines = rawItemLines.length > 0
     ? rawItemLines
     : [`  ${chalk.dim('No models match the current filter')}`];
@@ -338,7 +422,7 @@ function buildScreen(
   lines.push('');
   lines.push(`  ${chalk.bold.cyan('Select model')}`);
   lines.push(`  ${filterLabel}`);
-  lines.push(`  ${tabHint}${chalk.dim('Up/Down navigate, Enter select, Space select + default, Esc close')}`);
+  lines.push(`  ${tabHint}${chalk.dim('Up/Down navigate, ←/→ toggle favorite, Enter select, Space select + default, Esc close')}`);
   lines.push('');
 
   lines.push(newViewStart > 0 ? chalk.dim('  · · ·') : '');
@@ -375,14 +459,6 @@ export async function runModelCommand(
     return false;
   }
 
-  const removedByProvider = new Map<string, string[]>();
-  for (const provider of PROVIDER_REGISTRY) {
-    if (provider.modelsSource === 'live') {
-      const cached = getProviderCache(provider.id);
-      if (cached?.removedIds.length) removedByProvider.set(provider.id, cached.removedIds);
-    }
-  }
-
   const canonicalGroups = loadCanonicalGroups();
 
   if (loadConfig().showEvalDots) {
@@ -393,11 +469,20 @@ export async function runModelCommand(
     }
   }
 
+  const favorites = loadFavorites();
+  for (const item of items) {
+    item.isFavorite = favorites.has(modelPreference(item));
+  }
+  sortItemsByFavorites(items);
+
   let groupMode: GroupMode = 'pretty';
   let filterQuery = '';
   let unfilteredDisplayItems = buildDisplayList(items, groupMode, canonicalGroups);
   let displayItems = filterModelItems(unfilteredDisplayItems, filterQuery);
-  const currentIndex = displayItems.findIndex(item => modelPreference(item) === currentModel);
+  // Find current model; prefer the provider-section copy (not _favSection) for initial position.
+  const currentPref = currentModel;
+  let currentIndex = displayItems.findIndex(item => modelPreference(item) === currentPref && !item._favSection);
+  if (currentIndex < 0) currentIndex = displayItems.findIndex(item => modelPreference(item) === currentPref);
   let selected = currentIndex >= 0 ? currentIndex : 0;
   let viewStart = 0;
 
@@ -411,12 +496,12 @@ export async function runModelCommand(
       return;
     }
 
-    const preferredModel = preferred ? modelPreference(preferred) : undefined;
-    const preferredIndex = preferredModel
-      ? displayItems.findIndex(item => modelPreference(item) === preferredModel)
-      : -1;
-    if (preferredIndex >= 0) {
-      selected = preferredIndex;
+    if (preferred) {
+      const pref = modelPreference(preferred);
+      // Prefer provider-section copy so cursor stays in stable position after favorite toggle.
+      let idx = displayItems.findIndex(item => modelPreference(item) === pref && !item._favSection);
+      if (idx < 0) idx = displayItems.findIndex(item => modelPreference(item) === pref);
+      selected = idx >= 0 ? idx : Math.min(selected, displayItems.length - 1);
     } else {
       selected = Math.min(selected, displayItems.length - 1);
     }
@@ -424,7 +509,7 @@ export async function runModelCommand(
 
   const result = await runRawPicker<ModelPickResult>(rl, {
     render(): string[] {
-      const { lines, newViewStart } = buildScreen(displayItems, selected, currentModel, viewStart, removedByProvider, groupMode, canonicalGroups, filterQuery);
+      const { lines, newViewStart } = buildScreen(displayItems, selected, currentModel, viewStart, groupMode, canonicalGroups, filterQuery);
       viewStart = newViewStart;
       return lines;
     },
@@ -439,6 +524,26 @@ export async function runModelCommand(
       if (key === '\x1b[B') {
         if (displayItems.length > 0) selected = (selected + 1) % displayItems.length;
         redraw();
+        return;
+      }
+      if (key === '\x1b[C' || key === '\x1b[D') {
+        if (displayItems.length > 0) {
+          const item = displayItems[selected];
+          const pref = modelPreference(item);
+          if (favorites.has(pref)) {
+            favorites.delete(pref);
+          } else {
+            favorites.add(pref);
+          }
+          const isFav = favorites.has(pref);
+          for (const baseItem of items) {
+            if (modelPreference(baseItem) === pref) baseItem.isFavorite = isFav;
+          }
+          saveFavorites(favorites);
+          sortItemsByFavorites(items);
+          refreshDisplayItems(item);
+          redraw();
+        }
         return;
       }
       if (key === '\r' || key === '\n') {

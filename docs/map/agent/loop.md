@@ -19,7 +19,10 @@ agentLoop(
   messages: CoreMessage[],
   projectRoot: string,
   modelPreference?: string,
-  options?: { confirmToolCall?: ConfirmToolCall }
+  options?: {
+    confirmToolCall?: ConfirmToolCall;
+    onPartialResult?: (partial: { providerId: string; modelId: string; quota: RateLimitSnapshot | null }) => void;
+  }
 ): Promise<AgentLoopResult>
 ```
 
@@ -77,6 +80,11 @@ return AgentLoopResult
 - Tool approval is delegated to the supplied `confirmToolCall`.
 - Tool wrappers serialize execution so concurrent tool calls do not mutate files in parallel.
 - If the provider rejects tool use at runtime (`isToolsNotSupportedError`), the loop automatically retries via `runPromptToolsLoop` from `prompt-tools.ts`, which uses a text-based `<tool_call>` protocol instead of native function calling.
+
+## Internal Helpers
+
+- `runFakeLlm(providerId, modelId, ...)` — handles the entire `FAKE_PROVIDER_ID` path including fake tool execution and transcript step management. Returns `AgentLoopResult` directly, so `agentLoop` returns immediately after calling it.
+- `streamWithRetry(languageModel, supportsTools, ...)` — runs the `while(true)` streaming loop for all non-OpenAI, non-fake providers. Handles the three retry cases (tool-not-supported fallback, provider-rejected malformed call, no-such-tool, invalid-args) and returns a `StreamResult` with the accumulated text and token counts. Throws on non-retriable errors, which propagate to `agentLoop`'s catch.
 
 ## Key Neighbors
 

@@ -1,6 +1,6 @@
 {
   "name": "tty-prefix-multi-match",
-  "description": "Typing /c shows /clear as the inline completion and /config + /sources as suggestions (sources contains letter c); unrelated commands are absent",
+  "description": "Typing /c shows /clear as the inline completion and /config as a suggestion; unrelated commands are absent",
   "requiresLlm": false,
   "tty": {
     "cols": 80,
@@ -8,12 +8,11 @@
     "readyText": "for commands",
     "steps": [
       {
-        "name": "type /c — /clear inline, /config and /sources in suggestion list",
+        "name": "type /c — /clear inline, /config in suggestion list",
         "send": "/c",
         "screenContains": [
           "/clear",
-          "/config",
-          "/sources"
+          "/config"
         ],
         "screenAbsent": [
           "/eval",
@@ -34,7 +33,6 @@
           "/help",
           "/keys",
           "/resume",
-          "/sources",
           "/test",
           "/clear"
         ]

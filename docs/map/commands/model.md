@@ -12,11 +12,12 @@ interface ModelMenuItem {
   displayName: string;
   modelsSource?: 'static' | 'live';
   isNew?: boolean;
+  isFavorite?: boolean;
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
 }
 
 getSelectableModels(): Promise<ModelMenuItem[]>
-buildAllItemLines(items, selected, currentModel, removedByProvider, groupMode?, canonicalGroups?)
+buildAllItemLines(items, selected, currentModel, groupMode?, canonicalGroups?)
 filterModelItems(items, query)
 
 runModelCommand(
@@ -42,6 +43,7 @@ The selected model string is always `providerId:modelId`.
 
 - Type printable characters to filter by provider, display name, model ID, or `provider:model`; Backspace removes filter characters.
 - Up/Down moves the selected row, wrapping at the ends.
+- Left/Right (←/→) toggles the selected model as a favorite. Favorites are keyed by the full `provider:model` ID and persisted to `favoriteModels` in the global config. They appear in a dedicated **Favorites** section at the top of the list (showing the full `provider:model` ID in gold with ★), and again inside their provider/canonical-group section (showing the display name in gold with ★). Both copies are independently selectable — Up/Down moves linearly through all visible rows including both copies of each favorite.
 - Enter applies the selected `provider:model`.
 - Space applies the selected `provider:model` and writes it as `defaultModel` in the global config.
 - Esc closes without changing the model.

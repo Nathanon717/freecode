@@ -39,7 +39,6 @@ This table is generated from `src/cli/slash-commands.ts`.
 | `/model` | Show or set model |
 | `/renderer` | Show a hardcoded demo transcript through the live renderer |
 | `/resume` | Resume last session |
-| `/sources` | Show model data sources |
 | `/test` | Show and run non-LLM verification scenarios |
 <!-- END GENERATED SLASH COMMANDS -->
 

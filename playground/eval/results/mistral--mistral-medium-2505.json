@@ -78,143 +78,6 @@
     "scenarioHash": "23566b192bcd0097ebc7d8b529f82d94300040922dfb7c4d7d842c680bbaf527"
   },
   {
-    "timestamp": "2026-06-03T21:39:17.077Z",
-    "scenarioId": "003-python-missing-semicolon",
-    "model": "mistral:mistral-medium-2505",
-    "pass": true,
-    "warnings": true,
-    "tokens": {
-      "total": 5268,
-      "prompt": 5138,
-      "output": 130
-    },
-    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
-    "checks": [
-      {
-        "name": "file exists: analyze_numbers.py",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "script runs",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "correct output",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "ran failing script first",
-        "kind": "warning",
-        "pass": false,
-        "message": "no shell_exec of analyze_numbers.py captured the initial SyntaxError"
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "tool calls",
-        "kind": "stat",
-        "value": 4,
-        "note": "list_dir → read_file → edit_file → shell_exec"
-      },
-      {
-        "name": "token usage",
-        "kind": "stat",
-        "value": 5268,
-        "note": "total: 5268, prompt: 5138, output: 130"
-      }
-    ]
-  },
-  {
-    "timestamp": "2026-06-03T21:39:42.435Z",
-    "scenarioId": "004-python-data-shape-error",
-    "model": "mistral:mistral-medium-2505",
-    "pass": true,
-    "warnings": true,
-    "tokens": {
-      "total": 10631,
-      "prompt": 10349,
-      "output": 282
-    },
-    "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
-    "checks": [
-      {
-        "name": "file exists: analyze_orders.py",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "file exists: orders.csv",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "script runs",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "correct output",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "ran failing script first",
-        "kind": "warning",
-        "pass": false,
-        "message": "no shell_exec of analyze_orders.py captured the initial KeyError"
-      },
-      {
-        "name": "inspected input data",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "file content: orders.csv",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "uses data schema",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": false,
-        "message": "grep"
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "tool calls",
-        "kind": "stat",
-        "value": 6,
-        "note": "grep → list_dir → read_file → read_file → edit_file → shell_exec"
-      },
-      {
-        "name": "token usage",
-        "kind": "stat",
-        "value": 10631,
-        "note": "total: 10631, prompt: 10349, output: 282"
-      }
-    ]
-  },
-  {
     "timestamp": "2026-06-03T21:40:14.977Z",
     "scenarioId": "005-python-silent-wrong-output",
     "model": "mistral:mistral-medium-2505",
@@ -364,6 +227,260 @@
         "kind": "stat",
         "value": 5878,
         "note": "total: 5878, prompt: 5657, output: 221"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T22:19:02.520Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:mistral-medium-2505",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2761,
+      "prompt": 2703,
+      "output": 58
+    },
+    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
+    "checks": [
+      {
+        "name": "file exists: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file content: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "1 tool call",
+        "kind": "stat",
+        "value": 1,
+        "note": "write_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 2761,
+        "note": "2761 | in: 2703 | out: 58"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T22:32:16.020Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "mistral:mistral-medium-2505",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 18480,
+      "prompt": 17994,
+      "output": 486
+    },
+    "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
+    "checks": [
+      {
+        "name": "file exists: analyze_grades.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: grades.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "encountered first bug (ValueError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "encountered second bug (StatisticsError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "two edit cycles",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "7 tool calls",
+        "kind": "stat",
+        "value": 7,
+        "note": "list_dir → shell_exec → read_file → edit_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 18480,
+        "note": "18480 | in: 17994 | out: 486"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T22:40:16.429Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "mistral:mistral-medium-2505",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 10581,
+      "prompt": 10330,
+      "output": 251
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "5 tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → shell_exec → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 10581,
+        "note": "10581 | in: 10330 | out: 251"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T22:41:04.949Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "mistral:mistral-medium-2505",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 8048,
+      "prompt": 7853,
+      "output": 195
+    },
+    "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
+    "checks": [
+      {
+        "name": "file exists: analyze_orders.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of analyze_orders.py captured the initial KeyError"
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "file content: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "uses data schema",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "5 tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → read_file → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 8048,
+        "note": "8048 | in: 7853 | out: 195"
       }
     ]
   }

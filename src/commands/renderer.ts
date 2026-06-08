@@ -15,7 +15,10 @@ import { renderMarkdown } from "../cli/markdown-renderer.js";
 
 // Route everything to stdout so dividers, rationale, tool lines, and response
 // text all appear in the same stream — giving a coherent visual demo.
-const DEMO_OPTS: TranscriptRuntimeOptions = { stream: "stdout", maxResultLines: 30 };
+const DEMO_OPTS: TranscriptRuntimeOptions = {
+  stream: "stdout",
+  maxResultLines: 30,
+};
 
 function transcriptOut(): NodeJS.WritableStream {
   return getTranscriptStream(DEMO_OPTS);
@@ -29,7 +32,11 @@ function writeResponse(text: string): void {
 }
 
 // Emit a tool call with its result preview.
-function writeTool(name: string, args: Record<string, unknown>, result: string): void {
+function writeTool(
+  name: string,
+  args: Record<string, unknown>,
+  result: string,
+): void {
   writeTranscriptToolLeadIn(DEMO_OPTS);
   transcriptOut().write(formatToolCallLine(name, args) + "\n");
   const preview = formatToolResultPreview(result, DEMO_OPTS);
@@ -58,34 +65,46 @@ function sectionLabel(label: string): void {
 }
 
 export function runRendererDemo(): void {
-  process.stdout.write(chalk.bold("\nRenderer Demo — output is routed through the live transcript renderer\n"));
-  process.stdout.write(chalk.dim("Changing any renderer function will automatically change what you see here.\n"));
+  process.stdout.write(
+    chalk.bold(
+      "\nRenderer Demo — output is routed through the live transcript renderer\n",
+    ),
+  );
+  process.stdout.write(
+    chalk.dim(
+      "Changing any renderer function will automatically change what you see here.\n",
+    ),
+  );
 
   // ── Turn 1: read_file ──────────────────────────────────────────────────────
   // Display name aliased to "read". Result shown as dimmed indented lines.
   sectionLabel('read_file → display name "read", dimmed result preview');
   beginTranscriptTurn(DEMO_OPTS);
-  writeTool("read_file", { path: "src/index.ts" }, [
-    "#!/usr/bin/env node",
-    "import { runSession } from './cli/session-runner.js';",
-    "import { loadConfig } from './config/index.js';",
-    "",
-    "const config = loadConfig();",
-    "await runSession(config);",
-  ].join("\n"));
+  writeTool(
+    "read_file",
+    { path: "src/index.ts" },
+    [
+      "#!/usr/bin/env node",
+      "import { runSession } from './cli/session-runner.js';",
+      "import { loadConfig } from './config/index.js';",
+      "",
+      "const config = loadConfig();",
+      "await runSession(config);",
+    ].join("\n"),
+  );
   endTranscriptStep(false, DEMO_OPTS);
 
   // ── Turn 2: list_dir ───────────────────────────────────────────────────────
   // Path "." is filtered out — args display as `list_dir()` with no arguments.
-  sectionLabel('list_dir → "." path filtered out, shows list_dir() with no args');
+  sectionLabel(
+    'list_dir → "." path filtered out, shows list_dir() with no args',
+  );
   beginTranscriptTurn(DEMO_OPTS);
-  writeTool("list_dir", { path: "." }, [
-    "src/",
-    "docs/",
-    "tests/",
-    "package.json",
-    "tsconfig.json",
-  ].join("\n"));
+  writeTool(
+    "list_dir",
+    { path: "." },
+    ["src/", "docs/", "tests/", "package.json", "tsconfig.json"].join("\n"),
+  );
   endTranscriptStep(false, DEMO_OPTS);
 
   // ── Turn 3: grep ───────────────────────────────────────────────────────────
@@ -124,10 +143,15 @@ export function runRendererDemo(): void {
   // Display name aliased to "create". Only path is shown in args (content
   // filtered out). Preview shows the written content, not the "Wrote N lines"
   // result string.
-  sectionLabel('write_file → display name "create", only path in args, content as preview');
+  sectionLabel(
+    'write_file → display name "create", only path in args, content as preview',
+  );
   beginTranscriptTurn(DEMO_OPTS);
   writeTranscriptToolLeadIn(DEMO_OPTS);
-  transcriptOut().write(formatToolCallLine("write_file", { path: "src/commands/renderer.ts" }) + "\n");
+  transcriptOut().write(
+    formatToolCallLine("write_file", { path: "src/commands/renderer.ts" }) +
+      "\n",
+  );
   const writeContent = [
     "import chalk from 'chalk';",
     "import { beginTranscriptTurn } from '../cli/transcript-renderer.js';",
@@ -145,10 +169,15 @@ export function runRendererDemo(): void {
   // Display name aliased to "edit". Only path shown in args. Result is a
   // colored diff: red for removed lines, green for added lines, magenta for
   // matching/equal lines in context, dim for surrounding context.
-  sectionLabel('edit_file → display name "edit", colored diff (red/green/magenta)');
+  sectionLabel(
+    'edit_file → display name "edit", colored diff (red/green/magenta)',
+  );
   beginTranscriptTurn(DEMO_OPTS);
   writeTranscriptToolLeadIn(DEMO_OPTS);
-  transcriptOut().write(formatToolCallLine("edit_file", { path: "src/cli/slash-commands.ts" }) + "\n");
+  transcriptOut().write(
+    formatToolCallLine("edit_file", { path: "src/cli/slash-commands.ts" }) +
+      "\n",
+  );
   const diff = formatEditFileDiff(
     "src/cli/slash-commands.ts",
     "  { command: '/keys',   description: 'Show API key status' },\n  { command: '/resume', description: 'Resume last session' },",
@@ -164,15 +193,23 @@ export function runRendererDemo(): void {
   // Blank line is inserted between response text and tool call by the state machine.
   sectionLabel("response + tool call (blank line inserted between them)");
   beginTranscriptTurn(DEMO_OPTS);
-  writeResponse(renderMarkdown("Let me check the existing slash command list before adding the new entry.\n"));
-  writeTool("read_file", { path: "src/cli/slash-commands.ts" }, [
-    "export const SLASH_COMMANDS: SlashCommandInfo[] = [",
-    "  { command: '/clear',  description: 'Clear screen and chat history' },",
-    "  { command: '/config', description: 'Open interactive config' },",
-    "  { command: '/help',   description: 'Show this help' },",
-    "  // ...",
-    "];",
-  ].join("\n"));
+  writeResponse(
+    renderMarkdown(
+      "Let me check the existing slash command list before adding the new entry.\n",
+    ),
+  );
+  writeTool(
+    "read_file",
+    { path: "src/cli/slash-commands.ts" },
+    [
+      "export const SLASH_COMMANDS: SlashCommandInfo[] = [",
+      "  { command: '/clear',  description: 'Clear screen and chat history' },",
+      "  { command: '/config', description: 'Open interactive config' },",
+      "  { command: '/help',   description: 'Show this help' },",
+      "  // ...",
+      "];",
+    ].join("\n"),
+  );
   endTranscriptStep(false, DEMO_OPTS);
 
   // ── Turn 8: multiple tool calls in one step ─────────────────────────────────
@@ -194,43 +231,36 @@ export function runRendererDemo(): void {
   // ── Turn 9: tool error ──────────────────────────────────────────────────────
   sectionLabel("tool error");
   beginTranscriptTurn(DEMO_OPTS);
-  writeResponse(renderMarkdown("Let me try to read a file that does not exist.\n"));
+  writeResponse(
+    renderMarkdown("Let me try to read a file that does not exist.\n"),
+  );
   writeTranscriptToolLeadIn(DEMO_OPTS);
   transcriptOut().write(
-    formatToolErrorLine("read_file", new Error("ENOENT: no such file or directory, open 'src/missing.ts'")) + "\n",
+    formatToolErrorLine(
+      "read_file",
+      new Error("ENOENT: no such file or directory, open 'src/missing.ts'"),
+    ) + "\n",
   );
   endTranscriptStep(false, DEMO_OPTS);
 
   // ── Turn 10: markdown showcase ───────────────────────────────────────────────
   // Shows everything an agent might try, including unsupported elements that
   // fall through as plain text.
-  sectionLabel("markdown response — all formatting types (supported and unsupported)");
+  sectionLabel(
+    "markdown response — all formatting types (supported and unsupported)",
+  );
   beginTranscriptTurn(DEMO_OPTS);
   const markdownDemo = [
     "# Heading 1  ← unsupported, rendered as-is",
     "## Heading 2  ← unsupported",
     "### Heading 3  ← unsupported",
     "",
-    "**Bold**, *italic*, and `inline code` — all supported.",
     "",
-    "***Bold italic*** — triple-asterisk.",
-    "",
-    "Unsupported inline: ~~strikethrough~~ and [a link](https://example.com).",
-    "",
-    "> Blockquote  ← unsupported, rendered as-is",
-    "",
-    "- bullet item one  ← list unsupported, rendered as-is",
-    "- bullet item two",
-    "  - nested item",
-    "",
-    "1. numbered item",
-    "2. second item",
-    "",
-    "| Column A | Column B |  ← table unsupported",
+    "| Column A | Column B |",
     "| -------- | -------- |",
     "| cell 1   | cell 2   |",
     "",
-    "---  ← horizontal rule unsupported",
+    "---",
     "",
     "```typescript",
     "function renderMarkdown(text: string): string {",
@@ -243,7 +273,7 @@ export function runRendererDemo(): void {
     "plain code block with no language label",
     "```",
     "",
-    "Final line: **bold** and *italic* and `code` mixed.",
+    "**bold** and *italic* and ***Bold italic*** and `code`",
   ].join("\n");
   writeResponse(renderMarkdown(markdownDemo) + "\n");
   endTranscriptStep(false, DEMO_OPTS);

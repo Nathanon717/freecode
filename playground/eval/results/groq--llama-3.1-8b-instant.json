@@ -80,5 +80,67 @@
         "note": "total: 0"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-07T22:37:58.802Z",
+    "scenarioId": "002-edit-config",
+    "model": "groq:llama-3.1-8b-instant",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
+    "checks": [
+      {
+        "name": "file exists: config.json",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.theme",
+        "kind": "assertion",
+        "pass": false,
+        "message": "expected \"dark\", got \"light\""
+      },
+      {
+        "name": "config.json.language",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.maxRetries",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.debug",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": false,
+        "message": "list_dir"
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "3 tool calls",
+        "kind": "stat",
+        "value": 3,
+        "note": "edit_file → read_file → list_dir"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 0,
+        "note": "0"
+      }
+    ]
   }
 ]

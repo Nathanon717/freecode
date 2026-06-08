@@ -14,7 +14,7 @@
       {
         "name": "type / shows full command list",
         "send": "/",
-        "screenContains": ["/clear", "/config", "/help", "/model", "/sources", "> /"]
+        "screenContains": ["/clear", "/config", "/help", "/model", "> /"]
       },
       {
         "name": "prefix filters suggestions",

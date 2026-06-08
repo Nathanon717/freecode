@@ -1,0 +1,60 @@
+[
+  {
+    "timestamp": "2026-06-07T22:29:05.003Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "openrouter:openai/gpt-oss-20b:free",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 5565,
+      "prompt": 5327,
+      "output": 238
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of analyze_numbers.py captured the initial SyntaxError"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "4 tool calls",
+        "kind": "stat",
+        "value": 4,
+        "note": "list_dir → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 5565,
+        "note": "5565 | in: 5327 | out: 238"
+      }
+    ]
+  }
+]

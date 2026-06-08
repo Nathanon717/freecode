@@ -12,7 +12,7 @@ JUST DO THE COMMAND, IF YOU USE CD LIKE THIS, THAT IS A A CRITIAL ERROR AND THE 
 
 ## Required Rules
 
-- Windows only. Run commands in PowerShell or cmd. **Exception:** when running in a Claude Code web container (Linux), use `npm run ...` instead of `npm.cmd run ...`. See `docs/claude_code_web.md`.
+- Windows only. Run commands in PowerShell or cmd. **Exception:** when running in a Claude Code web container (Linux), use `npm run ...` instead of `npm.cmd run ...`. See `docs/misc/claude_code_web.md`.
 - Run npm scripts as `npm.cmd run ...`;
 - Before broad source reads, start with `docs/map/README.md` and the relevant map page.
 - Never prefix Bash commands with `cd <dir> &&` when already in that directory — it triggers a permission prompt on the `cd` even if the actual command is allowed.

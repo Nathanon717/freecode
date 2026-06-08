@@ -12,7 +12,7 @@ Use this directory as the project handbook. Generated reference pages report fac
 - [Architecture decisions](architecture/adr/README.md): durable design records.
 - [Codebase map](map/README.md): agent-oriented source navigation.
 - [Session logs](sessions/README.md): optional records of substantial feature work.
-- [Claude Code on the web](claude_code_web.md): Linux container environment notes and session key setup.
+- [Claude Code on the web](misc/claude_code_web.md): Linux container environment notes and session key setup.
 
 ## Maintenance
 

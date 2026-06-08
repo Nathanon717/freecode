@@ -1,10 +1,10 @@
 # Playground Eval
 
-A ground-up eval harness for measuring agent quality on isolated coding tasks.
+An eval harness for measuring agent quality on isolated coding tasks.
 
 ## Running evals
 
-Use the `/eval` slash command inside the freecode app. It will show a list of scenarios and prompt for confirmation before running.
+Use the `/eval` slash command inside the freecode app.
 
 > **Note:** Evals call a live LLM. Do not run without asking first.
 

@@ -371,13 +371,15 @@
     ]
   },
   {
-    "timestamp": "2026-06-07T11:25:54.691Z",
+    "timestamp": "2026-06-07T22:16:27.344Z",
     "scenarioId": "006-python-interface-mismatch",
     "model": "mistral:mistral-medium-2508",
-    "pass": false,
-    "warnings": false,
+    "pass": true,
+    "warnings": true,
     "tokens": {
-      "total": 0
+      "total": 11051,
+      "prompt": 10598,
+      "output": 453
     },
     "scenarioHash": "6aab8364aaf4eb4df5e231a5c80ef20cc4037a507d1542c7a534e59879ac329e",
     "checks": [
@@ -394,14 +396,12 @@
       {
         "name": "script runs",
         "kind": "assertion",
-        "pass": false,
-        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\006-python-interface-mismatch\\\\work\\\\pipeline.py\\\", line 8, in <module>\\r\\n    print(f\\\"total={result['total']}\\\")\\r\\n                   ~~~~~~^^^^^^^^^\\r\\nKeyError: 'total'\\r\\n\""
+        "pass": true
       },
       {
         "name": "correct output",
         "kind": "assertion",
-        "pass": false,
-        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\006-python-interface-mismatch\\\\work\\\\pipeline.py\\\", line 8, in <module>\\r\\n    print(f\\\"total={result['total']}\\\")\\r\\n                   ~~~~~~^^^^^^^^^\\r\\nKeyError: 'total'\\r\\n\""
+        "pass": true
       },
       {
         "name": "ran failing script first",
@@ -436,16 +436,88 @@
         "pass": true
       },
       {
-        "name": "10 tool calls",
+        "name": "5 tool calls",
         "kind": "stat",
-        "value": 10,
-        "note": "list_dir → read_file → read_file → edit_file → edit_file → read_file → edit_file → edit_file → write_file → edit_file"
+        "value": 5,
+        "note": "list_dir → read_file → read_file → edit_file → shell_exec"
       },
       {
         "name": "tokens",
         "kind": "stat",
-        "value": 0,
-        "note": "0"
+        "value": 11051,
+        "note": "11051 | in: 10598 | out: 453"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T22:39:45.360Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "mistral:mistral-medium-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 28140,
+      "prompt": 26907,
+      "output": 1233
+    },
+    "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
+    "checks": [
+      {
+        "name": "file exists: analyze_grades.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: grades.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "encountered first bug (ValueError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "encountered second bug (StatisticsError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "two edit cycles",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "10 tool calls",
+        "kind": "stat",
+        "value": 10,
+        "note": "list_dir → shell_exec → read_file → edit_file → shell_exec → edit_file → edit_file → read_file → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 28140,
+        "note": "28140 | in: 26907 | out: 1233"
       }
     ]
   }

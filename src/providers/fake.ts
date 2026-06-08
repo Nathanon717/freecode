@@ -313,12 +313,18 @@ export function createFakeNativeLanguageModel(modelId: string, modelSettings: Fa
       }
       for (let i = 0; i < toolCalls.length; i++) {
         const tc = toolCalls[i];
+        // A real model, given the rationale-augmented tool schema, supplies a
+        // `rationale` argument. Mirror that here so the AI SDK's tool-argument
+        // validation accepts the fixture's call when toolRationale is enabled.
+        const args = modelSettings.toolRationale
+          ? { rationale: `Calling ${tc.name}`, ...(tc.args ?? {}) }
+          : (tc.args ?? {});
         parts.push({
           type: 'tool-call',
           toolCallType: 'function',
           toolCallId: `fake-native-${stepNumber}-${i}`,
           toolName: tc.name,
-          args: JSON.stringify(tc.args ?? {}),
+          args: JSON.stringify(args),
         });
       }
       parts.push({

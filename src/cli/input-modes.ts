@@ -82,15 +82,30 @@ function resetBottomPromptState(session: SessionController): void {
   setSuggestions(getFilteredCommands(''));
 }
 
+let _lastAppliedModel = '';
+
+function syncModelLabel(model: string): void {
+  const idx = model.indexOf(':');
+  if (idx !== -1) setModelStatus(model.slice(0, idx), model.slice(idx + 1));
+  else if (model) setModelStatus('', model);
+}
+
+// Call when the active model changes. Clears stale quota so the footer shows
+// nothing until the new model's API response fills it in.
+function applyModelChange(model: string): void {
+  if (model === _lastAppliedModel) return;
+  _lastAppliedModel = model;
+  syncModelLabel(model);
+  setQuotaSnapshot(null);
+}
+
 function applyModelStatus(model: string): void {
+  syncModelLabel(model);
+  _lastAppliedModel = model;
   const idx = model.indexOf(':');
   if (idx !== -1) {
-    const providerId = model.slice(0, idx);
-    setModelStatus(providerId, model.slice(idx + 1));
-    const cached = loadCachedQuota(providerId);
+    const cached = loadCachedQuota(model.slice(0, idx));
     if (cached) setQuotaSnapshot(cached.snapshot);
-  } else if (model) {
-    setModelStatus('', model);
   }
 }
 
@@ -515,6 +530,7 @@ export function createInteractiveMode(
     },
     afterDispatch: () => {
       if (process.stdin.isTTY) {
+        applyModelChange(getSelectedModel());
         setupBottomUI();
         resetBottomPromptState(session);
         refreshFooterDailySpend(getSelectedModel);
@@ -539,7 +555,7 @@ export function createInteractiveMode(
       rl.resume();
       const pickerShown = await runModelCommand(rl, getSelectedModel(), setSelectedModel);
       rl.pause();
-      applyModelStatus(getSelectedModel());
+      applyModelChange(getSelectedModel());
       if (process.stdin.isTTY) {
         if (pickerShown) redrawBanner();
         setupBottomUI();

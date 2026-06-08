@@ -73,5 +73,61 @@
         "note": "total: 4944, prompt: 4823, output: 121"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-07T21:37:26.673Z",
+    "scenarioId": "003-python-missing-semicolon",
+    "model": "mistral:mistral-large-2512",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 0
+    },
+    "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
+    "checks": [
+      {
+        "name": "file exists: analyze_numbers.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": false,
+        "message": "no successful rerun of analyze_numbers.py after the edit was captured"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "4 tool calls",
+        "kind": "stat",
+        "value": 4,
+        "note": "list_dir → shell_exec → read_file → edit_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 0,
+        "note": "0"
+      }
+    ]
   }
 ]

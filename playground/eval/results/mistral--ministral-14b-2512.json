@@ -339,5 +339,79 @@
         "note": "7634 | in: 7273 | out: 361"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-07T22:03:22.187Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "mistral:ministral-14b-2512",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 17826,
+      "prompt": 17045,
+      "output": 781
+    },
+    "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
+    "checks": [
+      {
+        "name": "file exists: analyze_grades.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: grades.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "encountered first bug (ValueError)",
+        "kind": "warning",
+        "pass": false,
+        "message": "analyze_grades.py not run with ValueError before fix"
+      },
+      {
+        "name": "encountered second bug (StatisticsError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "two edit cycles",
+        "kind": "warning",
+        "pass": false,
+        "message": "first ValueError run not found"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "7 tool calls",
+        "kind": "stat",
+        "value": 7,
+        "note": "list_dir → read_file → read_file → edit_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 17826,
+        "note": "17826 | in: 17045 | out: 781"
+      }
+    ]
   }
 ]

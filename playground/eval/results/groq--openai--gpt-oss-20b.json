@@ -310,5 +310,230 @@
         "note": "total: 7492, prompt: 7042, output: 450"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-07T22:05:33.891Z",
+    "scenarioId": "005-python-silent-wrong-output",
+    "model": "groq:openai/gpt-oss-20b",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 8066,
+      "prompt": 7548,
+      "output": 518
+    },
+    "scenarioHash": "c473ee1da59fc7a92d6f3a714561b2c0805a079ca9a1b7d4ddfe8dfc1cd1f6bd",
+    "checks": [
+      {
+        "name": "file exists: report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: sales.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "output matches expected",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "agent ran report.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "first run exits 0 with wrong output",
+        "kind": "warning",
+        "pass": false,
+        "message": "report.py not run with wrong output (revenue=49.50) before fix"
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "edited then reran",
+        "kind": "warning",
+        "pass": false,
+        "message": "initial wrong-output run not found in tool calls"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "5 tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → read_file → edit_file → shell_exec → read_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 8066,
+        "note": "8066 | in: 7548 | out: 518"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T22:05:57.416Z",
+    "scenarioId": "006-python-interface-mismatch",
+    "model": "groq:openai/gpt-oss-20b",
+    "pass": true,
+    "warnings": true,
+    "tokens": {
+      "total": 11124,
+      "prompt": 9646,
+      "output": 1478
+    },
+    "scenarioHash": "6aab8364aaf4eb4df5e231a5c80ef20cc4037a507d1542c7a534e59879ac329e",
+    "checks": [
+      {
+        "name": "file exists: pipeline.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: stats.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "ran failing script first",
+        "kind": "warning",
+        "pass": false,
+        "message": "no shell_exec of pipeline.py captured the initial KeyError"
+      },
+      {
+        "name": "inspected stats module",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "preserved stats module",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "edited pipeline then reran",
+        "kind": "warning",
+        "pass": false,
+        "message": "initial KeyError run not found"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "6 tool calls",
+        "kind": "stat",
+        "value": 6,
+        "note": "list_dir → read_file → read_file → read_file → edit_file → edit_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 11124,
+        "note": "11124 | in: 9646 | out: 1478"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-08T00:08:23.285Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "groq:openai/gpt-oss-20b",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 15924,
+      "prompt": 15217,
+      "output": 707
+    },
+    "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
+    "checks": [
+      {
+        "name": "file exists: analyze_grades.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: grades.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "encountered first bug (ValueError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "encountered second bug (StatisticsError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "two edit cycles",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "8 tool calls",
+        "kind": "stat",
+        "value": 8,
+        "note": "list_dir → read_file → shell_exec → read_file → edit_file → shell_exec → edit_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 15924,
+        "note": "15924 | in: 15217 | out: 707"
+      }
+    ]
   }
 ]

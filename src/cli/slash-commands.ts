@@ -15,7 +15,6 @@ export const SLASH_COMMANDS: SlashCommandInfo[] = [
   { command: '/model', description: 'Show or set model' },
   { command: '/renderer', description: 'Show a hardcoded demo transcript through the live renderer' },
   { command: '/resume', description: 'Resume last session' },
-  { command: '/sources', description: 'Show model data sources' },
   { command: '/test', description: 'Show and run non-LLM verification scenarios' },
 ];
 

@@ -20,7 +20,6 @@
 /keys
 /model
 /resume
-/sources
 /test
 ```
 

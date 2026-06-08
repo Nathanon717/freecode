@@ -6,7 +6,6 @@ import { loadConfig, resolveApiKey, resolveModelSettings } from '../config/index
 import { toErrorMessage } from '../util/errors.js';
 import { log, logError } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/registry.js';
-import { getAllModelDataSources, type ModelDataSourceKind } from '../providers/model-sources.js';
 import {
   addAnthropicSessionCost,
   describeCostEstimate,
@@ -78,41 +77,6 @@ function showKeyStatus(): void {
   }
 }
 
-function formatSourceKind(kind: ModelDataSourceKind): string {
-  switch (kind) {
-    case 'official': return 'Official provider sources';
-    case 'gateway': return 'Gateway sources';
-    case 'aggregator': return 'Aggregator registries';
-    case 'observability': return 'Observability references';
-    case 'reference': return 'Comparison references';
-  }
-}
-
-function showModelDataSources(): void {
-  const sources = getAllModelDataSources();
-  const order: ModelDataSourceKind[] = ['official', 'gateway', 'aggregator', 'observability', 'reference'];
-
-  console.log(chalk.bold('Model Data Sources'));
-  console.log(chalk.dim('Static source catalog for display and future gatherers. No token-cost estimates are made here.\n'));
-
-  for (const kind of order) {
-    const group = sources.filter(source => source.kind === kind);
-    if (group.length === 0) continue;
-
-    console.log(chalk.bold(formatSourceKind(kind)));
-    for (const source of group) {
-      const machine = source.machineReadable === 'yes' ? 'machine-readable' : `${source.machineReadable} machine-readable`;
-      console.log(chalk.cyan(`  ${source.name}`) + chalk.gray(` [${source.trust}, ${machine}]`));
-      console.log(chalk.gray(`    ${source.url}`));
-      console.log(chalk.gray(`    Provides: ${source.provides.join(', ')}`));
-      if (source.caveats.length > 0) {
-        console.log(chalk.gray(`    Caveat: ${source.caveats[0]}`));
-      }
-    }
-    console.log('');
-  }
-}
-
 export function formatQuotaReset(ms: number | null, raw: string | null): string {
   if (raw?.trim()) return raw;
   if (ms === null) return '?';
@@ -156,8 +120,42 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
 
   await runtime.beforeAgentCall?.();
   try {
+    const resultJsonPath = process.env['FREECODE_RESULT_JSON'];
+
+    // Write an initial placeholder entry so the footer shows the correct model
+    // immediately rather than waiting for the full agent loop to complete.
+    if (resultJsonPath) {
+      try {
+        const modelStr = runtime.getSelectedModel() ?? '';
+        const colonIdx = modelStr.indexOf(':');
+        const placeholder = {
+          providerId: colonIdx !== -1 ? modelStr.slice(0, colonIdx) : '',
+          modelId: colonIdx !== -1 ? modelStr.slice(colonIdx + 1) : modelStr,
+          totalTokens: 0,
+        };
+        const existing: unknown[] = existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) as unknown[] : [];
+        existing.push(placeholder);
+        writeFileSync(resultJsonPath, JSON.stringify(existing, null, 2), 'utf-8');
+      } catch (err) {
+        logError('eval', 'Failed to write initial result JSON placeholder', err);
+      }
+    }
+
     const result = await agentLoop(runtime.session.messages, runtime.projectRoot, runtime.getSelectedModel() ?? undefined, {
       confirmToolCall: runtime.confirmToolCall,
+      onPartialResult: resultJsonPath ? (partial) => {
+        // Update the last entry with quota as soon as the first API response arrives.
+        if (partial.quota === null) return;
+        try {
+          const entries = existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) as Record<string, unknown>[] : [];
+          if (entries.length > 0) {
+            entries[entries.length - 1] = { ...entries[entries.length - 1], ...partial, quota: partial.quota };
+            writeFileSync(resultJsonPath, JSON.stringify(entries, null, 2), 'utf-8');
+          }
+        } catch (err) {
+          logError('eval', 'Failed to update partial result JSON', err);
+        }
+      } : undefined,
     });
 
     if (!result.text.trim()) {
@@ -166,7 +164,6 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
 
     await runtime.onAgentResult?.(result);
 
-    const resultJsonPath = process.env['FREECODE_RESULT_JSON'];
     if (resultJsonPath) {
       try {
         const entry = {
@@ -177,8 +174,13 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
           modelId: result.modelId,
           quota: result.quota ?? undefined,
         };
-        const existing = (existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) as unknown[] : []);
-        existing.push(entry);
+        // Replace the placeholder entry we wrote before the loop with the full result.
+        const existing: unknown[] = existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) as unknown[] : [];
+        if (existing.length > 0) {
+          existing[existing.length - 1] = entry;
+        } else {
+          existing.push(entry);
+        }
         writeFileSync(resultJsonPath, JSON.stringify(existing, null, 2), 'utf-8');
       } catch (err) {
         logError('eval', `Failed to write result JSON to ${resultJsonPath}`, err);
@@ -274,11 +276,6 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
 
   if (normalized === '/keys') {
     showKeyStatus();
-    return 'continue';
-  }
-
-  if (normalized === '/sources' || normalized === '/model-sources') {
-    showModelDataSources();
     return 'continue';
   }
 

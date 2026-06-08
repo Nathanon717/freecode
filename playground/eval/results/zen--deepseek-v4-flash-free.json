@@ -1,82 +1,5 @@
 [
   {
-    "timestamp": "2026-06-05T12:56:58.118Z",
-    "scenarioId": "004-python-data-shape-error",
-    "model": "zen:deepseek-v4-flash-free",
-    "pass": true,
-    "warnings": false,
-    "tokens": {
-      "total": 13495,
-      "prompt": 12548,
-      "output": 947
-    },
-    "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
-    "checks": [
-      {
-        "name": "file exists: analyze_orders.py",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "file exists: orders.csv",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "script runs",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "correct output",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "reran fixed script",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "inspected input data",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "file content: orders.csv",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "uses data schema",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "tool calls",
-        "kind": "stat",
-        "value": 6,
-        "note": "list_dir → read_file → read_file → shell_exec → edit_file → shell_exec"
-      },
-      {
-        "name": "token usage",
-        "kind": "stat",
-        "value": 13495,
-        "note": "total: 13495, prompt: 12548, output: 947"
-      }
-    ]
-  },
-  {
     "timestamp": "2026-06-05T12:57:25.589Z",
     "scenarioId": "006-python-interface-mismatch",
     "model": "zen:deepseek-v4-flash-free",
@@ -465,6 +388,83 @@
         "kind": "stat",
         "value": 7248,
         "note": "7248 | in: 6916 | out: 332"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-07T22:35:06.041Z",
+    "scenarioId": "004-python-data-shape-error",
+    "model": "zen:deepseek-v4-flash-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 22713,
+      "prompt": 21445,
+      "output": 1268
+    },
+    "scenarioHash": "00b3a60b1abbc509297e358954dbffe5e1d6491ce23d1b0ce2ce8e88aef03133",
+    "checks": [
+      {
+        "name": "file exists: analyze_orders.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "reran fixed script",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "inspected input data",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "file content: orders.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "uses data schema",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "8 tool calls",
+        "kind": "stat",
+        "value": 8,
+        "note": "list_dir → read_file → read_file → shell_exec → shell_exec → edit_file → read_file → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 22713,
+        "note": "22713 | in: 21445 | out: 1268"
       }
     ]
   }
