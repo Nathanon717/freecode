@@ -2,13 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import type { Interface } from 'readline';
 import chalk from 'chalk';
-import {
-  findScenario,
-  getScenarioSummaries,
-  runScenario,
-  type TestScenarioSummary,
-} from './scenario-catalog.js';
-import { loadCanonicalGroups } from '../providers/canonical-models.js';
+import type { TestScenarioSummary } from './scenario-catalog.js';
 import {
   PLAYGROUND_EVAL_DIR,
   discoverPlaygroundScenarios,
@@ -88,54 +82,6 @@ function printScenarioMenu(title: string, scenarios: TestScenarioSummary[], show
   });
 }
 
-export function printScriptedScenarioList(projectRoot: string): void {
-  const scenarios = getScenarioSummaries(projectRoot).filter(s => !s.requiresLlm);
-  console.log(chalk.bold('Verification scenarios\n'));
-  for (const scenario of scenarios) {
-    console.log(`${scenario.name} [verify]${scenario.description ? ` - ${scenario.description}` : ''}`);
-  }
-}
-
-export async function runTestMenu(rl: Interface, projectRoot: string): Promise<void> {
-  const restoreBottomUI = isBottomUIActive();
-  teardownBottomUI();
-  rl.resume();
-
-  try {
-    const scenarios = getScenarioSummaries(projectRoot).filter(s => !s.requiresLlm);
-    if (scenarios.length === 0) {
-      console.log(chalk.yellow('No non-LLM verification scenarios found at tests/scenarios/*.scenario.json'));
-      return;
-    }
-
-    printScenarioMenu('Verification scenarios', scenarios, false);
-    console.log(chalk.gray('\nEnter a number/name to run one scenario, or blank to cancel.'));
-
-    const choice = (await askQuestion(rl, chalk.green('test> '))).trim();
-    if (!choice) return;
-
-    const selected = findScenario(scenarios, choice);
-
-    if (!selected) {
-      console.log(chalk.red(`Unknown verification scenario: ${choice}`));
-      return;
-    }
-
-    console.log(chalk.dim(`Running ${selected.name}...\n`));
-    const result = runScenario(projectRoot, selected.name);
-    if (result.status === 0) {
-      if (result.output.trim()) console.log(result.output.trimEnd());
-      console.log(chalk.green(`\n${selected.name} passed.`));
-    } else {
-      if (result.output.trim()) console.log(result.output.trimEnd());
-      console.log(chalk.red(`\n${selected.name} failed.`));
-    }
-  } finally {
-    rl.pause();
-    if (restoreBottomUI && process.stdin.isTTY) setupBottomUI();
-  }
-}
-
 export async function runEvalMenu(rl: Interface, projectRoot: string, getSelectedModel: () => string): Promise<void> {
   const restoreBottomUI = isBottomUIActive();
   teardownBottomUI();
@@ -149,7 +95,6 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
     }
 
     const evalHistory = loadEvalHistory();
-    const canonicalGroups = loadCanonicalGroups();
     const scenarioHashes = new Map(scenarios.map(s => {
       const dir = join(PLAYGROUND_EVAL_DIR, s.id);
       return [s.id, { runHash: computeRunHash(dir), fullHash: computeScenarioHash(dir) }];
@@ -160,7 +105,7 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
       const model = getSelectedModel();
       for (const s of scenarios) {
         const h = scenarioHashes.get(s.id);
-        const circle = statusCircle(getEvalStatus(s.id, h?.runHash ?? '', model, evalHistory, canonicalGroups, h?.fullHash));
+        const circle = statusCircle(getEvalStatus(s.id, h?.runHash ?? '', model, evalHistory, h?.fullHash));
         console.log(`  ${circle} ${chalk.cyan(s.id)}  ${chalk.gray(s.firstLine)}`);
       }
       return;
@@ -174,10 +119,10 @@ export async function runEvalMenu(rl: Interface, projectRoot: string, getSelecte
         if (detailMode) {
           const s = scenarios[pickerSel];
           const h = scenarioHashes.get(s.id);
-          const entry = getLatestEvalEntry(s.id, h?.runHash ?? '', getSelectedModel(), evalHistory, canonicalGroups, h?.fullHash);
+          const entry = getLatestEvalEntry(s.id, h?.runHash ?? '', getSelectedModel(), evalHistory, h?.fullHash);
           return buildEvalDetailScreen(s, entry, getSelectedModel());
         }
-        return buildEvalPickerScreen(scenarios, pickerSel, evalHistory, getSelectedModel(), scenarioHashes, canonicalGroups);
+        return buildEvalPickerScreen(scenarios, pickerSel, evalHistory, getSelectedModel(), scenarioHashes);
       },
       countLines: countWrappedLines,
       onKey(key, redraw, close) {

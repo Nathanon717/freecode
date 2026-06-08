@@ -18,8 +18,7 @@
           "/eval",
           "/help",
           "/keys",
-          "/resume",
-          "/test"
+          "/resume"
         ]
       },
       {
@@ -33,7 +32,6 @@
           "/help",
           "/keys",
           "/resume",
-          "/test",
           "/clear"
         ]
       }

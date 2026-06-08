@@ -37,9 +37,8 @@ export interface CommandRuntime {
   afterScreenClear?(): void | Promise<void>;
   runConfig?(): Promise<void>;
   runModelMenu?(): Promise<void>;
-  runClaudeHelp?(userMessage: string): Promise<void>;
-  runTestMenu(): Promise<void>;
   runEvalMenu(): Promise<void>;
+  runHumanEvalMenu?(): Promise<void>;
 }
 
 function isScriptedConfirmation(input: string): boolean {
@@ -248,29 +247,23 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
     return 'continue';
   }
 
-  if (normalized === '/claude' || normalized.startsWith('/claude ')) {
-    const userMessage = trimmed.slice('/claude'.length).trim();
-    if (runtime.runClaudeHelp) {
-      await runtime.runClaudeHelp(userMessage);
-    } else {
-      console.log(chalk.dim('/claude is only available in interactive mode.'));
-    }
-    return 'continue';
-  }
-
   if (normalized === '/help') {
     showHelp();
     showFlagsHelp();
     return 'continue';
   }
 
-  if (normalized === '/test') {
-    await runtime.runTestMenu();
+  if (normalized === '/eval') {
+    await runtime.runEvalMenu();
     return 'continue';
   }
 
-  if (normalized === '/eval') {
-    await runtime.runEvalMenu();
+  if (normalized === '/humaneval') {
+    if (runtime.runHumanEvalMenu) {
+      await runtime.runHumanEvalMenu();
+    } else {
+      console.log(chalk.dim('/humaneval is only available in interactive mode.'));
+    }
     return 'continue';
   }
 

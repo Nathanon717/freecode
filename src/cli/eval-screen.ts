@@ -7,7 +7,6 @@ import {
   type PlaygroundScenario,
   type ScenarioHashes,
 } from './eval-dots.js';
-import type { CanonicalModelGroups } from '../providers/canonical-models.js';
 import type { EvalReport } from './eval-runner.js';
 
 export function printEvalReport(report: EvalReport): void {
@@ -53,7 +52,6 @@ export function buildEvalPickerScreen(
   history: EvalHistoryEntry[],
   model: string,
   scenarioHashes: Map<string, ScenarioHashes>,
-  groups: CanonicalModelGroups,
 ): string[] {
   const lines: string[] = [];
   lines.push('');
@@ -66,7 +64,7 @@ export function buildEvalPickerScreen(
     const cursor = active ? chalk.cyan('>') : ' ';
     const label = active ? chalk.inverse(s.id) : chalk.cyan(s.id);
     const h = scenarioHashes.get(s.id);
-    const circle = statusCircle(getEvalStatus(s.id, h?.runHash ?? '', model, history, groups, h?.fullHash));
+    const circle = statusCircle(getEvalStatus(s.id, h?.runHash ?? '', model, history, h?.fullHash));
     lines.push(`  ${cursor} ${circle} ${label}  ${chalk.dim(s.firstLine)}`);
   }
   lines.push('');

@@ -7,15 +7,14 @@ export interface SlashCommandInfo {
 
 export const SLASH_COMMANDS: SlashCommandInfo[] = [
   { command: '/clear', description: 'Clear screen and chat history' },
-  { command: '/claude', description: 'Ask Claude to diagnose a problem using recent terminal output' },
-  { command: '/config', description: 'Open interactive config' },
+{ command: '/config', description: 'Open interactive config' },
   { command: '/eval', description: 'Show and run LLM eval scenarios' },
   { command: '/help', description: 'Show this help' },
+  { command: '/humaneval', description: 'Run HumanEval code-completion benchmark' },
   { command: '/keys', description: 'Show API key status' },
   { command: '/model', description: 'Show or set model' },
   { command: '/renderer', description: 'Show a hardcoded demo transcript through the live renderer' },
   { command: '/resume', description: 'Resume last session' },
-  { command: '/test', description: 'Show and run non-LLM verification scenarios' },
 ];
 
 const SLASH_COMMAND_NAMES = SLASH_COMMANDS.map(({ command }) => command);

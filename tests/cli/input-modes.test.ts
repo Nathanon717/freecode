@@ -46,6 +46,13 @@ describe('createScriptedMode', () => {
     expect(await mode.readInput(0)).toBeNull();
   });
 
+  it('decodes a JSON-encoded line as a single multiline message', async () => {
+    const multiline = 'line one\nline two\nline three';
+    const mode = createScriptedMode(writeScript([JSON.stringify(multiline)]), dir, makeRl());
+    expect(await mode.readInput(0)).toBe(multiline);
+    expect(await mode.readInput(0)).toBeNull();
+  });
+
   it('approves a tool call when the next scripted line approves', async () => {
     const mode = createScriptedMode(writeScript(['approve']), dir, makeRl());
     expect(await mode.confirmToolCall({ name: 'read_file', args: {} })).toEqual({ approved: true });
@@ -143,7 +150,6 @@ describe('createInteractiveMode', () => {
       'afterAgentCall',
       'runConfig',
       'runModelMenu',
-      'runTestMenu',
       'runEvalMenu',
       'onExit',
     ] as const) {

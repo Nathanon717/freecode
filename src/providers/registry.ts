@@ -4,7 +4,6 @@ import { getProviderCache, updateProviderCache } from "./model-cache.js";
 import { createOpenAICompatProvider } from "./adapters/openai-compat.js";
 import { createAnthropicProvider } from "./adapters/anthropic.js";
 import { resolveApiKey } from "../config/index.js";
-import { syncLiveModels } from "./canonical-models.js";
 import { logError } from "../logger.js";
 import {
   FAKE_MODEL_PREFIX,
@@ -93,10 +92,6 @@ async function runLiveProviderInit(
     entry.models = spec
       .selectModels(models)
       .map((m) => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
-    syncLiveModels(
-      providerId,
-      entry.models.map((m) => m.id),
-    );
   };
 
   try {
@@ -162,7 +157,13 @@ async function initZenModels(): Promise<void> {
             : {}),
         }));
     },
-    selectModels: (models) => models.filter(isCurrentZenFreeModel),
+    selectModels: (models) => {
+      const blocklist = entry.modelIdBlocklist ?? [];
+      const exactBlocklist = entry.modelIdExactBlocklist ?? [];
+      return applyBlocklist(models, blocklist, exactBlocklist).filter(
+        isCurrentZenFreeModel,
+      );
+    },
   });
 }
 

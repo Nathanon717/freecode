@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "allowUnusedSteps": true,
+  "steps": [
+    {
+      "response": {
+        "chunks": [
+          "Writing solution.py with the has_close_elements implementation."
+        ],
+        "toolCalls": [
+          {
+            "name": "write_file",
+            "args": {
+              "path": "solution.py",
+              "content": "from typing import List\n\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n    sorted_nums = sorted(numbers)\n    for i in range(len(sorted_nums) - 1):\n        if sorted_nums[i + 1] - sorted_nums[i] < threshold:\n            return True\n    return False\n"
+            }
+          }
+        ],
+        "usage": {
+          "promptTokens": 80,
+          "outputTokens": 20,
+          "totalTokens": 100
+        }
+      }
+    },
+    {
+      "response": {
+        "text": "Done. Created solution.py.",
+        "usage": {
+          "promptTokens": 120,
+          "outputTokens": 8,
+          "totalTokens": 128
+        }
+      }
+    },
+    {
+      "response": {
+        "text": "OK.",
+        "usage": {
+          "promptTokens": 10,
+          "outputTokens": 2,
+          "totalTokens": 12
+        }
+      }
+    },
+    {
+      "response": {
+        "text": "OK.",
+        "usage": {
+          "promptTokens": 10,
+          "outputTokens": 2,
+          "totalTokens": 12
+        }
+      }
+    },
+    {
+      "response": {
+        "text": "OK.",
+        "usage": {
+          "promptTokens": 10,
+          "outputTokens": 2,
+          "totalTokens": 12
+        }
+      }
+    },
+    {
+      "response": {
+        "text": "OK.",
+        "usage": {
+          "promptTokens": 10,
+          "outputTokens": 2,
+          "totalTokens": 12
+        }
+      }
+    },
+    {
+      "response": {
+        "text": "OK.",
+        "usage": {
+          "promptTokens": 10,
+          "outputTokens": 2,
+          "totalTokens": 12
+        }
+      }
+    },
+    {
+      "response": {
+        "text": "OK.",
+        "usage": {
+          "promptTokens": 10,
+          "outputTokens": 2,
+          "totalTokens": 12
+        }
+      }
+    },
+    {
+      "response": {
+        "text": "OK.",
+        "usage": {
+          "promptTokens": 10,
+          "outputTokens": 2,
+          "totalTokens": 12
+        }
+      }
+    },
+    {
+      "response": {
+        "text": "OK.",
+        "usage": {
+          "promptTokens": 10,
+          "outputTokens": 2,
+          "totalTokens": 12
+        }
+      }
+    },
+    {
+      "response": {
+        "text": "OK.",
+        "usage": {
+          "promptTokens": 10,
+          "outputTokens": 2,
+          "totalTokens": 12
+        }
+      }
+    }
+  ]
+}

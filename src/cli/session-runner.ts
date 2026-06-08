@@ -15,9 +15,8 @@ export interface CliSessionMode {
   afterScreenClear?(this: void): void | Promise<void>;
   runConfig?(this: void): Promise<void>;
   runModelMenu?(this: void): Promise<void>;
-  runClaudeHelp?(this: void, userMessage: string): Promise<void>;
-  runTestMenu(this: void): Promise<void>;
   runEvalMenu(this: void): Promise<void>;
+  runHumanEvalMenu?(this: void): Promise<void>;
   beforeDispatch?(this: void): void | Promise<void>;
   afterDispatch?(this: void): void | Promise<void>;
   onExit?(this: void): void | Promise<void>;
@@ -60,9 +59,8 @@ export async function runCliSession(options: CliSessionRunnerOptions): Promise<v
         afterScreenClear: mode.afterScreenClear,
         runConfig: mode.runConfig,
         runModelMenu: mode.runModelMenu,
-        runClaudeHelp: mode.runClaudeHelp,
-        runTestMenu: mode.runTestMenu,
         runEvalMenu: mode.runEvalMenu,
+        runHumanEvalMenu: mode.runHumanEvalMenu,
       });
     } finally {
       await mode.afterDispatch?.();

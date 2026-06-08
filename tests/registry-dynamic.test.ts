@@ -7,10 +7,6 @@ vi.mock('../src/providers/model-cache.js', () => ({
   updateProviderCache: vi.fn(() => ({ newIds: [], removedIds: [] })),
 }));
 
-vi.mock('../src/providers/canonical-models.js', () => ({
-  syncLiveModels: vi.fn(),
-}));
-
 vi.mock('../src/config/index.js', () => ({
   resolveApiKey: vi.fn((provider: { id: string }) => provider.id === 'groq' ? 'config-groq-key' : undefined),
 }));

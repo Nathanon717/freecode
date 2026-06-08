@@ -96,7 +96,7 @@ export function startEvalScenario(scenarioDir: string, prompt: string, model?: s
   const resultFile = join(runDir, 'result.json');
   const retryStatusFile = join(runDir, 'retry-status.json');
   const scriptFile = join(runDir, 'script.txt');
-  writeFileSync(scriptFile, prompt, 'utf-8');
+  writeFileSync(scriptFile, JSON.stringify(prompt) + '\n', 'utf-8');
 
   const evalConfig = loadEvalConfig(scenarioDir);
   const maxToolCalls = evalConfig.maxToolCalls ?? 10;

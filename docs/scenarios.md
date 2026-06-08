@@ -16,7 +16,6 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `slash-keys.scenario.json` | `slash-keys` | Non-LLM verification | repo | /keys command lists providers without crashing |
 | `slash-model-list.scenario.json` | `slash-model-list` | Non-LLM verification | repo | /models aliases /model with no arg and prints current model without crashing |
 | `slash-stray-confirmation.scenario.json` | `slash-stray-confirmation` | Non-LLM verification | repo | Sending 'y' with no pending tool call is silently skipped rather than forwarded to the agent |
-| `slash-test-menu.scenario.json` | `slash-test-menu` | Non-LLM verification | repo | /test lists scenario tests without running one in script mode |
 | `startup-help-exit.scenario.json` | `startup-help-exit` | Non-LLM verification | repo | Boot the CLI, print help, exit cleanly |
 | `tty-all-commands-shown.scenario.json` | `tty-all-commands-shown` | Non-LLM verification | repo | Typing / shows all slash commands in the suggestion list |
 | `tty-autocomplete.scenario.json` | `tty-autocomplete` | Non-LLM verification | repo | Interactive TUI: slash command suggestions, prefix filtering, tab completion, and submit reset, verified against the rendered screen |
@@ -30,6 +29,7 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-eval-then-config-picker.scenario.json` | `tty-eval-then-config-picker` | Non-LLM verification | repo | After a fake eval completes, another raw picker can still receive input and Ctrl-C exits cleanly |
 | `tty-fuzzy-completion.scenario.json` | `tty-fuzzy-completion` | Non-LLM verification | repo | Fuzzy query /ks matches /keys; Tab expands the buffer to /keys, Enter submits and shows the key status |
 | `tty-help-output.scenario.json` | `tty-help-output` | Non-LLM verification | repo | Submitting /help renders the command list in the scroll region while the input prompt remains pinned at the bottom |
+| `tty-humaneval-fake.scenario.json` | `tty-humaneval-fake` | Non-LLM verification | repo | Fake LLM completes HumanEval/0 — verifies data-load, agent, Python-check pipeline end-to-end |
 | `tty-inline-completion.scenario.json` | `tty-inline-completion` | Non-LLM verification | repo | A partial prefix renders the full command inline before Tab is pressed; inline completion updates as the buffer changes |
 | `tty-model-inline.scenario.json` | `tty-model-inline` | Non-LLM verification | repo | /model <arg> sets the model inline without opening the picker and prints the confirmation in the scroll region |
 | `tty-model-picker-no-arg.scenario.json` | `tty-model-picker-no-arg` | Non-LLM verification | repo | /model with no argument opens the interactive picker (zen free models available by default); ESC closes it and returns the prompt |

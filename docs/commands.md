@@ -31,15 +31,14 @@ This table is generated from `src/cli/slash-commands.ts`.
 | Command | Description |
 | --- | --- |
 | `/clear` | Clear screen and chat history |
-| `/claude` | Ask Claude to diagnose a problem using recent terminal output |
 | `/config` | Open interactive config |
 | `/eval` | Show and run LLM eval scenarios |
 | `/help` | Show this help |
+| `/humaneval` | Run HumanEval code-completion benchmark |
 | `/keys` | Show API key status |
 | `/model` | Show or set model |
 | `/renderer` | Show a hardcoded demo transcript through the live renderer |
 | `/resume` | Resume last session |
-| `/test` | Show and run non-LLM verification scenarios |
 <!-- END GENERATED SLASH COMMANDS -->
 
 ## CLI Flags

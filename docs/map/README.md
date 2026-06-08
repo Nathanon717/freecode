@@ -30,7 +30,7 @@ src/
 |-- util/
 |   |-- guards.ts                 -> [Shared type guards](util/guards.md)
 |   |-- errors.ts                 -> [Error message utilities](util/errors.md)
-|   `-- screen-buffer.ts          -> [Stdout ring buffer for /claude](util/screen-buffer.md)
+|   `-- screen-buffer.ts          -> [Stdout ring buffer](util/screen-buffer.md)
 |-- logger.ts                     -> [Diagnostic logging](logger.md)
 |-- scenario-classification.ts    -> [Scenario LLM/non-LLM classifier](scenario-classification.md)
 |-- agent/
@@ -68,9 +68,9 @@ src/
 |   `-- terminal-ui.ts            -> [Bottom-pinned terminal UI](cli/terminal-ui.md)
 |-- commands/
 |   |-- config.ts                 -> [Interactive /config editor](commands/config.md)
+|   |-- humaneval.ts              -> [/humaneval benchmark command](commands/humaneval.md)
 |   |-- model.ts                  -> [Interactive /model picker](commands/model.md)
 |   |-- renderer.ts               -> [/renderer demo command](commands/renderer.md)
-|   `-- claude-help.ts            -> [/claude diagnosis command](commands/claude-help.md)
 |-- config/
 |   `-- index.ts                  -> [Config loader](config/index.md)
 |-- db/
@@ -79,7 +79,6 @@ src/
     |-- index.ts                  -> [Provider re-exports](providers/index.md)
     |-- types.ts                  -> [Provider/config types](providers/types.md)
     |-- fake.ts                   -> [Fake LLM fixtures](providers/fake.md)
-    |-- canonical-models.ts       -> [Canonical model groups](providers/canonical-models.md)
     |-- registry.ts               -> [Provider registry](providers/registry.md)
     |-- model-traits.ts           -> [Model traits store](providers/model-traits.md)
     |-- model-cache.ts            -> [Live model list cache](providers/model-cache.md)

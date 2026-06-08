@@ -3,13 +3,13 @@ import type { Interface } from 'readline';
 import chalk from 'chalk';
 import { runConfigCommand } from '../commands/config.js';
 import { runModelCommand } from '../commands/model.js';
-import { runClaudeHelpCommand } from '../commands/claude-help.js';
 import { redrawBanner } from './banner.js';
 import { filterArgs, formatArgs, type ToolCallConfirmation, type ToolCallPreview } from '../agent/tools/index.js';
 import { loadConfig } from '../config/index.js';
 import { UserAbortError } from '../util/errors.js';
 import { getCommandCompletion, getFilteredCommands } from './slash-commands.js';
-import { printScriptedScenarioList, runEvalMenu, runTestMenu } from './scenario-menu.js';
+import { runEvalMenu } from './scenario-menu.js';
+import { runHumanEvalMenu } from '../commands/humaneval.js';
 import type { SessionController } from './session-controller.js';
 import type { CliSessionMode } from './session-runner.js';
 import {
@@ -564,9 +564,8 @@ export function createInteractiveMode(
         drawBottomUI();
       }
     },
-    runClaudeHelp: (userMessage) => runClaudeHelpCommand(rl, userMessage),
-    runTestMenu: () => runTestMenu(rl, projectRoot),
     runEvalMenu: () => runEvalMenu(rl, projectRoot, getSelectedModel),
+    runHumanEvalMenu: () => runHumanEvalMenu(rl, projectRoot, getSelectedModel),
     onExit: () => {
       teardownFooterUI();
     },
@@ -577,7 +576,11 @@ export function createScriptedMode(scriptPath: string, projectRoot: string, rl: 
   const lines = readFileSync(scriptPath, 'utf-8')
     .split('\n')
     .map(line => line.trimEnd())
-    .filter(line => line.length > 0);
+    .filter(line => line.length > 0)
+    .map(line => {
+      if (line.startsWith('"')) { try { return JSON.parse(line) as string; } catch {} }
+      return line;
+    });
   let lineIdx = 0;
 
   const autoConfirm = process.env['FREECODE_AUTO_CONFIRM'] === '1';
@@ -627,10 +630,6 @@ export function createScriptedMode(scriptPath: string, projectRoot: string, rl: 
     },
     modelListMode: 'current-only',
     skipStrayConfirmations: true,
-    runTestMenu: (): Promise<void> => {
-      printScriptedScenarioList(projectRoot);
-      return Promise.resolve();
-    },
     runEvalMenu: (): Promise<void> => {
       console.log(chalk.dim('/eval is not available in scripted mode.'));
       return Promise.resolve();

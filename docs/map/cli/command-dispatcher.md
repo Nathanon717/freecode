@@ -19,7 +19,6 @@
 | `/model [id]` | Without an arg, opens the interactive picker when available or shows status. With an arg, sets selected model. |
 | `/models [id]` | Alias for `/model [id]`. |
 | `/config` | Runs config editor if the current mode supplies `runConfig`; otherwise prints unavailable. |
-| `/claude [msg]` | Calls `runClaudeHelp` with optional user note; interactive-only. Diagnoses from screen buffer, optionally spawns `claude` (Claude Code) to apply the fix, then exits freecode. |
 | `/help` | Prints slash command help plus CLI flags. |
 | `/test` | Opens/renders non-LLM scenario menu. |
 | `/eval` | Opens/renders LLM eval scenario menu. |

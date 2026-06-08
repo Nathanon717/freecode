@@ -4,14 +4,7 @@ import { getEvalStatus } from '../../src/cli/scenario-menu.js';
 const currentHash = 'current-hash';
 
 describe('eval menu status circles', () => {
-  it('uses only exact history for models in the other bucket', () => {
-    const groups = {
-      other: [
-        'groq:used-model',
-        'groq:unused-model',
-      ],
-    };
-
+  it('uses only exact history for a given model', () => {
     const status = getEvalStatus(
       '001-example',
       currentHash,
@@ -24,36 +17,9 @@ describe('eval menu status circles', () => {
         tokens: { total: 1 },
         scenarioHash: currentHash,
       }],
-      groups,
     );
 
     expect(status).toBe('grey');
-  });
-
-  it('shares history across named canonical model groups', () => {
-    const groups = {
-      'GPT-OSS 120b': [
-        'groq:openai/gpt-oss-120b',
-        'cerebras:gpt-oss-120b',
-      ],
-    };
-
-    const status = getEvalStatus(
-      '001-example',
-      currentHash,
-      'cerebras:gpt-oss-120b',
-      [{
-        timestamp: '2026-05-31T23:00:00.000Z',
-        scenarioId: '001-example',
-        model: 'groq:openai/gpt-oss-120b',
-        pass: true,
-        tokens: { total: 1 },
-        scenarioHash: currentHash,
-      }],
-      groups,
-    );
-
-    expect(status).toBe('green');
   });
 
   it('ignores stale scenario hashes', () => {
@@ -69,7 +35,6 @@ describe('eval menu status circles', () => {
         tokens: { total: 1 },
         scenarioHash: 'old-hash',
       }],
-      {},
     );
 
     expect(status).toBe('grey');
@@ -88,7 +53,6 @@ describe('eval menu status circles', () => {
         tokens: { total: 1 },
         scenarioHash: currentHash,
       }],
-      {},
     );
 
     expect(status).toBe('red');
@@ -114,7 +78,6 @@ describe('eval menu status circles', () => {
         tokens: { total: 1 },
         scenarioHash: currentHash,
       }],
-      {},
     );
 
     expect(status).toBe('red');
@@ -134,7 +97,6 @@ describe('eval menu status circles', () => {
         tokens: { total: 1 },
         scenarioHash: currentHash,
       }],
-      {},
     );
 
     expect(status).toBe('orange');

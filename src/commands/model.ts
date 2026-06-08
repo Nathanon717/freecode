@@ -8,7 +8,6 @@ import { clearModelNewFlag } from '../providers/registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import type { PricingConfidence } from '../providers/pricing-verifier.js';
 import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
-import { loadCanonicalGroups, type CanonicalModelGroups } from '../providers/canonical-models.js';
 import { getNoNativeToolsModels } from '../providers/model-traits.js';
 import { loadEvalDotsData, buildEvalDots, type EvalDotsData } from '../cli/eval-dots.js';
 
@@ -92,7 +91,7 @@ function sortItemsByFavorites(items: ModelMenuItem[]): void {
   }
 }
 
-type GroupMode = 'pretty' | 'provider' | 'model';
+type GroupMode = 'pretty' | 'provider';
 
 function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, models: ModelConfig[]): void {
   for (const model of models) {
@@ -107,54 +106,14 @@ function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, mod
   }
 }
 
-// Returns provider-section items in canonical-file order for model-grouped tab view.
-function buildModelGroupedOrder(items: ModelMenuItem[], canonicalGroups: CanonicalModelGroups): ModelMenuItem[] {
-  const itemByEntry = new Map<string, ModelMenuItem>();
-  for (const item of items) {
-    itemByEntry.set(`${item.providerId}:${item.modelId}`, item);
-  }
-
-  const result: ModelMenuItem[] = [];
-  const placed = new Set<string>();
-
-  for (const [groupName, members] of Object.entries(canonicalGroups)) {
-    if (groupName === 'other') continue;
-    const groupItems = members
-      .map(e => itemByEntry.get(e))
-      .filter((item): item is ModelMenuItem => !!item && !placed.has(`${item.providerId}:${item.modelId}`));
-    groupItems.sort((a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0));
-    for (const item of groupItems) {
-      result.push(item);
-      placed.add(`${item.providerId}:${item.modelId}`);
-    }
-  }
-
-  const otherItems = (canonicalGroups['other'] ?? [])
-    .map(e => itemByEntry.get(e))
-    .filter((item): item is ModelMenuItem => !!item && !placed.has(`${item.providerId}:${item.modelId}`));
-  otherItems.sort((a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0));
-  for (const item of otherItems) {
-    result.push(item);
-    placed.add(`${item.providerId}:${item.modelId}`);
-  }
-
-  for (const item of items) {
-    const key = `${item.providerId}:${item.modelId}`;
-    if (!placed.has(key)) result.push(item);
-  }
-
-  return result;
-}
-
 // Builds the flat displayItems list. Favorites appear twice: once as _favSection=true entries
-// at the front (Favorites section), and once as regular entries in their provider/model section.
+// at the front (Favorites section), and once as regular entries in their provider section.
 // This makes every visual row independently selectable via Up/Down.
-function buildDisplayList(items: ModelMenuItem[], groupMode: GroupMode, canonicalGroups: CanonicalModelGroups): ModelMenuItem[] {
-  const orderedItems = groupMode === 'model' ? buildModelGroupedOrder(items, canonicalGroups) : items;
-  const favSectionItems = orderedItems
+function buildDisplayList(items: ModelMenuItem[]): ModelMenuItem[] {
+  const favSectionItems = items
     .filter(x => x.isFavorite)
     .map(x => ({ ...x, _favSection: true }));
-  return [...favSectionItems, ...orderedItems];
+  return [...favSectionItems, ...items];
 }
 
 export function filterModelItems(items: ModelMenuItem[], query: string): ModelMenuItem[] {
@@ -210,12 +169,7 @@ export function buildAllItemLines(
   selected: number,
   currentModel: string,
   groupMode: GroupMode = 'pretty',
-  canonicalGroups: CanonicalModelGroups = {},
 ): { itemLines: string[]; selectedLineIdx: number } {
-  if (groupMode === 'model') {
-    return buildModelGroupedItemLines(items, selected, currentModel, canonicalGroups);
-  }
-
   const showId = groupMode === 'provider';
   const itemLines: string[] = [];
   let lastProvider = '';
@@ -277,118 +231,12 @@ export function buildAllItemLines(
   return { itemLines, selectedLineIdx };
 }
 
-function buildModelGroupedItemLines(
-  items: ModelMenuItem[],
-  selected: number,
-  currentModel: string,
-  canonicalGroups: CanonicalModelGroups,
-): { itemLines: string[]; selectedLineIdx: number } {
-  const entryToGroup = new Map<string, string>();
-  for (const [groupName, members] of Object.entries(canonicalGroups)) {
-    for (const entry of members) {
-      if (!entryToGroup.has(entry)) entryToGroup.set(entry, groupName);
-    }
-  }
-
-  // Skip _favSection duplicates when counting providers per group.
-  const groupProviders = new Map<string, Set<string>>();
-  for (const item of items) {
-    if (item._favSection) continue;
-    const group = entryToGroup.get(`${item.providerId}:${item.modelId}`);
-    if (!group || group === 'other') continue;
-    if (!groupProviders.has(group)) groupProviders.set(group, new Set());
-    groupProviders.get(group)!.add(item.providerId);
-  }
-
-  const itemLines: string[] = [];
-  let selectedLineIdx = 0;
-  let lastGroup = '';
-  let inOtherSection = false;
-
-  // Favorites section
-  if (items.some(x => x._favSection)) {
-    itemLines.push(`  ${chalk.bold.yellow('Favorites')}`);
-    for (let i = 0; i < items.length; i++) {
-      if (!items[i]._favSection) continue;
-      const item = items[i];
-      const active = i === selected;
-      if (active) selectedLineIdx = itemLines.length;
-      const pref = modelPreference(item);
-      const current = pref === currentModel;
-      const cursor = active ? chalk.cyan('>') : ' ';
-      const renderedName = active ? chalk.inverse(pref) : chalk.yellow(pref);
-      const marker = current ? chalk.green(' current') : '';
-      const pricingBadge = buildPricingBadge(item.pricing);
-      const dotsBadge = item.evalDots ? ` ${item.evalDots}` : '';
-      itemLines.push(`  ${cursor} ${renderedName} ★${pricingBadge}${dotsBadge}${marker}`);
-    }
-    itemLines.push('');
-    lastGroup = '';
-  }
-
-  // Model-grouped section
-  for (let i = 0; i < items.length; i++) {
-    if (items[i]._favSection) continue;
-    const item = items[i];
-    const entry = `${item.providerId}:${item.modelId}`;
-    const group = entryToGroup.get(entry) ?? 'other';
-    const isNamed = group !== 'other';
-
-    if (!isNamed && !inOtherSection) {
-      if (lastGroup) itemLines.push('');
-      itemLines.push(`  ${chalk.bold('Other')}`);
-      inOtherSection = true;
-      lastGroup = 'other';
-    }
-
-    if (isNamed && group !== lastGroup) {
-      if (lastGroup) itemLines.push('');
-      const provCount = groupProviders.get(group)?.size ?? 1;
-      itemLines.push(`  ${chalk.bold(group)} ${chalk.dim(`· ${provCount} provider${provCount !== 1 ? 's' : ''}`)}`);
-      lastGroup = group;
-    }
-
-    const active = i === selected;
-    if (active) selectedLineIdx = itemLines.length;
-    const pref = modelPreference(item);
-    const current = pref === currentModel;
-    const cursor = active ? chalk.cyan('>') : ' ';
-    const marker = current ? chalk.green(' current') : '';
-    const favBadge = item.isFavorite ? chalk.yellow(' ★') : '';
-    const pricingBadge = buildPricingBadge(item.pricing);
-    const dotsBadge = item.evalDots ? ` ${item.evalDots}` : '';
-
-    if (isNamed && (groupProviders.get(group)?.size ?? 1) >= 2) {
-      const renderedProvider = active
-        ? chalk.inverse(item.providerName)
-        : item.isFavorite
-          ? chalk.yellow(item.providerName)
-          : chalk.cyan(item.providerName);
-      const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
-      itemLines.push(`  ${cursor} ${renderedProvider}${favBadge}${ptBadge}${pricingBadge} ${chalk.dim(item.providerId)}${dotsBadge}${marker}`);
-    } else {
-      const newBadge = item.isNew ? chalk.yellow(' new') : '';
-      const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
-      const id = `${item.providerId}:${item.modelId}`;
-      const renderedName = active
-        ? chalk.inverse(item.displayName)
-        : item.isFavorite
-          ? chalk.yellow(item.displayName)
-          : chalk.cyan(item.displayName);
-      itemLines.push(`  ${cursor} ${renderedName}${favBadge}${newBadge}${ptBadge}${pricingBadge} ${chalk.dim(id)}${dotsBadge}${marker}`);
-    }
-  }
-
-  return { itemLines, selectedLineIdx };
-}
-
 function buildScreen(
   items: ModelMenuItem[],
   selected: number,
   currentModel: string,
   viewStart: number,
   groupMode: GroupMode,
-  canonicalGroups: CanonicalModelGroups,
   filterQuery: string,
 ): { lines: string[]; newViewStart: number } {
   const HEADER = 5;
@@ -396,7 +244,7 @@ function buildScreen(
   const termHeight = (process.stdout.rows ?? 24) - 2;
   const maxItemLines = Math.max(4, termHeight - HEADER - CHROME);
 
-  const { itemLines: rawItemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, groupMode, canonicalGroups);
+  const { itemLines: rawItemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, groupMode);
   const itemLines = rawItemLines.length > 0
     ? rawItemLines
     : [`  ${chalk.dim('No models match the current filter')}`];
@@ -412,9 +260,7 @@ function buildScreen(
 
   const tabHint = groupMode === 'pretty'
     ? chalk.dim('Tab show model IDs, ')
-    : groupMode === 'provider'
-      ? chalk.dim('Tab group by model, ')
-      : chalk.dim('Tab clean view, ');
+    : chalk.dim('Tab clean view, ');
   const filterLabel = filterQuery
     ? `${chalk.dim('Filter: ')}${chalk.cyan(filterQuery)}`
     : chalk.dim('Type to filter, Backspace clears characters');
@@ -459,13 +305,11 @@ export async function runModelCommand(
     return false;
   }
 
-  const canonicalGroups = loadCanonicalGroups();
-
   if (loadConfig().showEvalDots) {
     const evalData: EvalDotsData = loadEvalDotsData();
     for (const item of items) {
       const model = `${item.providerId}:${item.modelId}`;
-      item.evalDots = buildEvalDots(model, evalData, canonicalGroups);
+      item.evalDots = buildEvalDots(model, evalData);
     }
   }
 
@@ -477,7 +321,7 @@ export async function runModelCommand(
 
   let groupMode: GroupMode = 'pretty';
   let filterQuery = '';
-  let unfilteredDisplayItems = buildDisplayList(items, groupMode, canonicalGroups);
+  let unfilteredDisplayItems = buildDisplayList(items);
   let displayItems = filterModelItems(unfilteredDisplayItems, filterQuery);
   // Find current model; prefer the provider-section copy (not _favSection) for initial position.
   const currentPref = currentModel;
@@ -487,7 +331,7 @@ export async function runModelCommand(
   let viewStart = 0;
 
   function refreshDisplayItems(preferred?: ModelMenuItem): void {
-    unfilteredDisplayItems = buildDisplayList(items, groupMode, canonicalGroups);
+    unfilteredDisplayItems = buildDisplayList(items);
     displayItems = filterModelItems(unfilteredDisplayItems, filterQuery);
     viewStart = 0;
 
@@ -509,7 +353,7 @@ export async function runModelCommand(
 
   const result = await runRawPicker<ModelPickResult>(rl, {
     render(): string[] {
-      const { lines, newViewStart } = buildScreen(displayItems, selected, currentModel, viewStart, groupMode, canonicalGroups, filterQuery);
+      const { lines, newViewStart } = buildScreen(displayItems, selected, currentModel, viewStart, groupMode, filterQuery);
       viewStart = newViewStart;
       return lines;
     },
@@ -562,7 +406,7 @@ export async function runModelCommand(
       }
       if (key === '\t') {
         const currentItem = displayItems[selected];
-        const cycle: GroupMode[] = ['pretty', 'provider', 'model'];
+        const cycle: GroupMode[] = ['pretty', 'provider'];
         groupMode = cycle[(cycle.indexOf(groupMode) + 1) % cycle.length];
         refreshDisplayItems(currentItem);
         redraw();

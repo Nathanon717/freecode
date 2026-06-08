@@ -23,7 +23,6 @@
           "/clear",
           "/keys",
           "/model",
-          "/test",
           "> / for commands"
         ]
       },
@@ -33,7 +32,6 @@
         "screenContains": [
           "/clear",
           "/config",
-          "/test",
           "> /"
         ]
       },

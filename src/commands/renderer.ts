@@ -183,7 +183,7 @@ export function runRendererDemo(): void {
     "  { command: '/keys',   description: 'Show API key status' },\n  { command: '/resume', description: 'Resume last session' },",
     "  { command: '/keys',     description: 'Show API key status' },\n  { command: '/renderer', description: 'Show renderer demo' },\n  { command: '/resume',   description: 'Resume last session' },",
     ["  { command: '/help', description: 'Show this help' },"],
-    ["  { command: '/test', description: 'Show and run scenarios' },"],
+    ["  { command: '/resume', description: 'Resume last session' },"],
     DEMO_OPTS,
   );
   if (diff) transcriptOut().write(diff + "\n");

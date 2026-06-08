@@ -15,10 +15,10 @@
           "/config",
           "/eval",
           "/help",
+          "/humaneval",
           "/keys",
           "/model",
-          "/resume",
-          "/test"
+          "/resume"
         ]
       }
     ],

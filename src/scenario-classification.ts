@@ -16,7 +16,6 @@ export interface ScenarioClassification {
 
 const NON_LLM_SCRIPT_COMMANDS = new Set([
   '/help',
-  '/test',
   '/eval',
   '/keys',
   '/resume',

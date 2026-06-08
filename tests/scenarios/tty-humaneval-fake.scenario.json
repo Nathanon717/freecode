@@ -1,0 +1,77 @@
+{
+  "name": "tty-humaneval-fake",
+  "description": "Fake LLM completes HumanEval/0 — verifies data-load, agent, Python-check pipeline end-to-end",
+  "requiresLlm": false,
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "tty-humaneval-fake.llm.json",
+  "humanEvalDataFixture": "humaneval-mini.jsonl.gz",
+  "config": {
+    "defaultModel": "mock:gpt-freecode-test",
+    "toolConfirmation": "auto"
+  },
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /humaneval",
+        "send": "/humaneval",
+        "screenContains": [
+          "> /humaneval"
+        ]
+      },
+      {
+        "name": "submit — picker opens",
+        "send": "\r",
+        "waitFor": "HumanEval problems",
+        "screenContains": [
+          "HumanEval problems",
+          "test/0",
+          "HumanEval/0"
+        ]
+      },
+      {
+        "name": "navigate down to HumanEval/0",
+        "send": "\u001b[B",
+        "screenContains": [
+          "HumanEval/0"
+        ]
+      },
+      {
+        "name": "run HumanEval/0",
+        "send": "\r",
+        "waitFor": "tokens:",
+        "quietMs": 600,
+        "screenContains": [
+          "PASS  HumanEval/0"
+        ]
+      },
+      {
+        "name": "type /humaneval again",
+        "send": "/humaneval",
+        "screenContains": [
+          "> /humaneval"
+        ]
+      },
+      {
+        "name": "submit — picker reopens with green dot",
+        "send": "\r",
+        "waitFor": "HumanEval problems",
+        "screenContains": [
+          "HumanEval problems",
+          "●",
+          "HumanEval/0"
+        ]
+      },
+      {
+        "name": "close picker",
+        "send": "\u001b",
+        "waitFor": "for commands"
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

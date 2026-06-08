@@ -3,7 +3,6 @@ import { createHash } from 'crypto';
 import { join, resolve, dirname, relative } from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
-import { getCanonicalGroupKey, type CanonicalModelGroups } from '../providers/canonical-models.js';
 import { logError } from '../logger.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
@@ -164,18 +163,6 @@ export function computeScenarioHash(scenarioDir: string): string {
   ]);
 }
 
-export function getEquivalentModels(model: string, groups: CanonicalModelGroups): Set<string> {
-  if (!model) return new Set(['default']);
-  const colonIdx = model.indexOf(':');
-  if (colonIdx !== -1) {
-    const providerId = model.slice(0, colonIdx);
-    const modelId = model.slice(colonIdx + 1);
-    const groupKey = getCanonicalGroupKey(providerId, modelId, groups);
-    if (groupKey && groupKey !== 'other') return new Set(groups[groupKey] ?? []);
-  }
-  return new Set([model]);
-}
-
 function matchesHash(entry: EvalHistoryEntry, runHash: string, legacyFullHash?: string): boolean {
   return entry.scenarioHash === runHash || (!!legacyFullHash && entry.scenarioHash === legacyFullHash);
 }
@@ -185,12 +172,11 @@ export function getEvalStatus(
   runHash: string,
   model: string,
   history: EvalHistoryEntry[],
-  groups: CanonicalModelGroups,
   legacyFullHash?: string,
 ): EvalStatus {
-  const equivalentModels = getEquivalentModels(model, groups);
+  const modelKey = model || 'default';
   const relevant = history.filter(
-    e => e.scenarioId === scenarioId && equivalentModels.has(e.model) && matchesHash(e, runHash, legacyFullHash),
+    e => e.scenarioId === scenarioId && e.model === modelKey && matchesHash(e, runHash, legacyFullHash),
   );
   if (relevant.length === 0) return 'grey';
   const latest = relevant.reduce((newest, entry) =>
@@ -205,12 +191,11 @@ export function getLatestEvalEntry(
   runHash: string,
   model: string,
   history: EvalHistoryEntry[],
-  groups: CanonicalModelGroups,
   legacyFullHash?: string,
 ): EvalHistoryEntry | null {
-  const equivalentModels = getEquivalentModels(model, groups);
+  const modelKey = model || 'default';
   const relevant = history.filter(
-    e => e.scenarioId === scenarioId && equivalentModels.has(e.model) && matchesHash(e, runHash, legacyFullHash),
+    e => e.scenarioId === scenarioId && e.model === modelKey && matchesHash(e, runHash, legacyFullHash),
   );
   if (relevant.length === 0) return null;
   return relevant.reduce((newest, entry) => entry.timestamp > newest.timestamp ? entry : newest);
@@ -247,12 +232,11 @@ export function loadEvalDotsData(): EvalDotsData {
 export function buildEvalDots(
   model: string,
   data: EvalDotsData,
-  canonicalGroups: CanonicalModelGroups,
 ): string {
   return data.scenarios.map(s => {
     const h = data.hashes.get(s.id);
     const runHash = h?.runHash ?? '';
     const fullHash = h?.fullHash;
-    return statusCircle(getEvalStatus(s.id, runHash, model, data.history, canonicalGroups, fullHash));
+    return statusCircle(getEvalStatus(s.id, runHash, model, data.history, fullHash));
   }).join('');
 }

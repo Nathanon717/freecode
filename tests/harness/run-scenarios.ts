@@ -38,6 +38,8 @@ interface Scenario {
   turns?: Array<{ input: string }>;
   expect?: ScenarioExpectations;
   tty?: TtyScenario;
+  env?: Record<string, string>;
+  humanEvalDataFixture?: string;
 }
 
 function printCapturedOutput(stdout: string, stderr: string): void {
@@ -143,6 +145,8 @@ if (ttyScenarios.length > 0) {
           FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
           ...(scenario.model ? { FREECODE_MODEL: scenario.model } : {}),
           ...(scenario.llmFixture ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath } : {}),
+          ...(scenario.humanEvalDataFixture ? { HUMANEVAL_DATA: join(SCENARIOS_DIR, scenario.humanEvalDataFixture) } : {}),
+          ...(scenario.env ?? {}),
         },
       });
       ttyFailures = result.failures;
