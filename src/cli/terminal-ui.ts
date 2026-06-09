@@ -476,7 +476,7 @@ function stripAnsiVisible(s: string): string {
 
 function restoreSuggestionOverlaySequence(startRow: number, rowCount: number, width: number): string {
   let output = '';
-  const maxWidth = Math.max(0, width - 1);
+  const maxWidth = Math.max(0, width);
   const padRows = Math.max(0, rowCount - suggestionOverlayRestoreLines.length);
   const lines = [
     ...Array.from({ length: padRows }, () => ''),

@@ -43,8 +43,9 @@ The selected model string is always `providerId:modelId`.
 
 - Type printable characters to filter by provider, display name, model ID, or `provider:model`; Backspace removes filter characters.
 - Up/Down moves the selected row, wrapping at the ends.
-- Left/Right (←/→) toggles the selected model as a favorite. Favorites are keyed by the full `provider:model` ID and persisted to `favoriteModels` in the global config. They appear in a dedicated **Favorites** section at the top of the list (showing the full `provider:model` ID in gold with ★), and again inside their provider/canonical-group section (showing the display name in gold with ★). Both copies are independently selectable — Up/Down moves linearly through all visible rows including both copies of each favorite.
-- Enter applies the selected `provider:model`.
+- `←` toggles the selected model as a favorite. Favorites are keyed by the full `provider:model` ID and persisted to `favoriteModels` in the global config. They appear in a dedicated **Favorites** section at the top of the list (showing the full `provider:model` ID in gold with ★), and again inside their provider/canonical-group section (showing the display name in gold with ★). Both copies are independently selectable — Up/Down moves linearly through all visible rows including both copies of each favorite.
+- `→` opens the model detail view showing pricing, traits, eval dots, and favorite status. `←` or Esc returns to the list.
+- Enter opens an inline action sub-menu (shared `InlineActionMenu` from `cli/action-menu.ts`) with: **Select** (apply model for this session), **View** (open detail screen), **Edit** (stub).
 - Space applies the selected `provider:model` and writes it as `defaultModel` in the global config.
 - Esc closes without changing the model.
 - Ctrl+C exits the process.

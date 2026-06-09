@@ -449,5 +449,42 @@
         "note": "21592 | in: 20776 | out: 816"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-09T15:39:57.642Z",
+    "scenarioId": "cereal-soup",
+    "model": "mistral:mistral-small-2603",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 1548,
+      "prompt": 1328,
+      "output": 220
+    },
+    "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
+    "checks": [
+      {
+        "name": "no tool calls",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "gave a response",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "0 tool calls",
+        "kind": "stat",
+        "value": 0,
+        "note": "(none)"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 1548,
+        "note": "1548 | in: 1328 | out: 220"
+      }
+    ]
   }
 ]

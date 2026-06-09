@@ -444,6 +444,9 @@ async function readLineWithAutocomplete(
 
   return new Promise<string>((resolve) => {
     rl.pause();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const savedListeners = process.stdin.rawListeners("data") as ((...args: any[]) => void)[];
+    process.stdin.removeAllListeners("data");
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdin.setEncoding("utf8");
@@ -464,6 +467,9 @@ async function readLineWithAutocomplete(
       process.stdin.removeListener("data", onData);
       process.stdin.setRawMode(false);
       process.stdin.pause();
+      for (const listener of savedListeners) {
+        process.stdin.on("data", listener);
+      }
       preflight.stop();
     }
 
@@ -743,7 +749,6 @@ export function createScriptedMode(
     readInput: (): Promise<string | null> => {
       if (lineIdx >= lines.length) return Promise.resolve(null);
       const line = lines[lineIdx++];
-      console.log(chalk.green("> ") + line);
       return Promise.resolve(line);
     },
     confirmToolCall: async (_preview) => {

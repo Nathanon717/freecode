@@ -11,7 +11,7 @@
 
 ## Interactive Mode
 
-- Uses raw stdin for prompt input.
+- Uses raw stdin for prompt input. Before entering raw mode, all existing stdin `data` listeners (including readline's) are saved, removed, and restored on cleanup — this prevents readline from echoing typed characters into `process.stdout` and contaminating the screen-buffer epoch used by the suggestion overlay restore.
 - Supports Ctrl+C exit, Enter (`\r`) submit, Tab completion, Backspace, Delete, Escape clear, printable character input, and Ctrl+letter shortcuts for footer toggles (Ctrl+A = Ask, Ctrl+R = Read-only).
 - Ctrl+J (`\n`) inserts a newline, enabling multi-line input. Arrow keys (Left/Right/Up/Down), Home, and End move the cursor within the buffer; Delete removes the character at the cursor.
 - Shows inline command completion plus filtered suggestions from `slash-commands.ts`. Inline completion is suppressed for multi-line buffers.
@@ -25,7 +25,6 @@
 ## Scripted Mode
 
 - Reads the script file once, trimming trailing whitespace and dropping empty lines.
-- Prints each scripted input with the same `> ` prompt shape.
 - Tool approval consumes the next line only if it is `y/yes/approve/a` or `n/no/deny/d`.
 - If a denial has a following line, that line is treated as the user's instruction after denial.
 - `/test` and `/eval` print scenario lists instead of opening interactive menus.

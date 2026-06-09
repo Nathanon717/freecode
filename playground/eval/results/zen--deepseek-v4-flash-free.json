@@ -282,68 +282,6 @@
     ]
   },
   {
-    "timestamp": "2026-06-07T17:08:20.999Z",
-    "scenarioId": "002-edit-config",
-    "model": "zen:deepseek-v4-flash-free",
-    "pass": true,
-    "warnings": false,
-    "tokens": {
-      "total": 7717,
-      "prompt": 7300,
-      "output": 417
-    },
-    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
-    "checks": [
-      {
-        "name": "file exists: config.json",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "config.json.theme",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "config.json.language",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "config.json.maxRetries",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "config.json.debug",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "3 tool calls",
-        "kind": "stat",
-        "value": 3,
-        "note": "read_file → edit_file → read_file"
-      },
-      {
-        "name": "tokens",
-        "kind": "stat",
-        "value": 7717,
-        "note": "7717 | in: 7300 | out: 417"
-      }
-    ]
-  },
-  {
     "timestamp": "2026-06-07T22:35:06.041Z",
     "scenarioId": "004-python-data-shape-error",
     "model": "zen:deepseek-v4-flash-free",
@@ -468,23 +406,22 @@
     ]
   },
   {
-    "timestamp": "2026-06-08T22:35:55.021Z",
+    "timestamp": "2026-06-09T15:22:52.043Z",
     "scenarioId": "cereal-soup",
     "model": "zen:deepseek-v4-flash-free",
-    "pass": false,
+    "pass": true,
     "warnings": false,
     "tokens": {
-      "total": 4064,
-      "prompt": 3417,
-      "output": 647
+      "total": 1906,
+      "prompt": 1546,
+      "output": 360
     },
     "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
     "checks": [
       {
         "name": "no tool calls",
         "kind": "assertion",
-        "pass": false,
-        "message": "expected no tool calls, got 1: list_dir"
+        "pass": true
       },
       {
         "name": "gave a response",
@@ -492,16 +429,78 @@
         "pass": true
       },
       {
-        "name": "1 tool call",
+        "name": "0 tool calls",
         "kind": "stat",
-        "value": 1,
-        "note": "list_dir"
+        "value": 0,
+        "note": "(none)"
       },
       {
         "name": "tokens",
         "kind": "stat",
-        "value": 4064,
-        "note": "4064 | in: 3417 | out: 647"
+        "value": 1906,
+        "note": "1906 | in: 1546 | out: 360"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-09T15:23:25.145Z",
+    "scenarioId": "002-edit-config",
+    "model": "zen:deepseek-v4-flash-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 9694,
+      "prompt": 9227,
+      "output": 467
+    },
+    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
+    "checks": [
+      {
+        "name": "file exists: config.json",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.theme",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.language",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.maxRetries",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.debug",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "4 tool calls",
+        "kind": "stat",
+        "value": 4,
+        "note": "list_dir → read_file → edit_file → read_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 9694,
+        "note": "9694 | in: 9227 | out: 467"
       }
     ]
   }

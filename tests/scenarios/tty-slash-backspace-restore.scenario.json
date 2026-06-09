@@ -1,0 +1,102 @@
+{
+  "name": "tty-slash-backspace-restore",
+  "description": "After /help output fills the scroll region, typing / shows the suggestion overlay; backspace restores the help output exactly. The cycle repeats correctly a second time.",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /help",
+        "send": "/help",
+        "screenContains": [
+          "> /help"
+        ]
+      },
+      {
+        "name": "submit — full help output in scroll region, prompt pinned at bottom",
+        "send": "\r",
+        "waitFor": "Available commands",
+        "screenContains": [
+          "Available commands",
+          "  /clear      Clear screen and chat history",
+          "  /config     Open interactive config",
+          "  /eval       Show and run LLM eval scenarios",
+          "  /help       Show this help",
+          "  /humaneval  Run HumanEval code-completion benchmark",
+          "  /keys       Show API key status",
+          "  /model      Show or set model",
+          "  /renderer   Show a hardcoded demo transcript through the live renderer",
+          "  /resume     Resume last session",
+          "Flags:",
+          "  -log  Enable diagnostic logging to stderr",
+          "> / for commands"
+        ]
+      },
+      {
+        "name": "type / — suggestion overlay opens",
+        "send": "/",
+        "screenContains": [
+          "/clear",
+          "/config",
+          "/help",
+          "> /"
+        ]
+      },
+      {
+        "name": "backspace — overlay closed, full help output restored exactly",
+        "send": "",
+        "quietMs": 500,
+        "screenContains": [
+          "Available commands",
+          "  /clear      Clear screen and chat history",
+          "  /config     Open interactive config",
+          "  /eval       Show and run LLM eval scenarios",
+          "  /help       Show this help",
+          "  /humaneval  Run HumanEval code-completion benchmark",
+          "  /keys       Show API key status",
+          "  /model      Show or set model",
+          "  /renderer   Show a hardcoded demo transcript through the live renderer",
+          "  /resume     Resume last session",
+          "Flags:",
+          "  -log  Enable diagnostic logging to stderr",
+          "> / for commands"
+        ]
+      },
+      {
+        "name": "type / again — overlay reopens",
+        "send": "/",
+        "screenContains": [
+          "/clear",
+          "/config",
+          "/help",
+          "> /"
+        ]
+      },
+      {
+        "name": "backspace again — overlay closed, full help output still correct",
+        "send": "",
+        "quietMs": 500,
+        "screenContains": [
+          "Available commands",
+          "  /clear      Clear screen and chat history",
+          "  /config     Open interactive config",
+          "  /eval       Show and run LLM eval scenarios",
+          "  /help       Show this help",
+          "  /humaneval  Run HumanEval code-completion benchmark",
+          "  /keys       Show API key status",
+          "  /model      Show or set model",
+          "  /renderer   Show a hardcoded demo transcript through the live renderer",
+          "  /resume     Resume last session",
+          "Flags:",
+          "  -log  Enable diagnostic logging to stderr",
+          "> / for commands"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

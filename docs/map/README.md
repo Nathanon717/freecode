@@ -51,6 +51,7 @@ src/
 |   |-- command-dispatcher.ts     -> [Slash command dispatch](cli/command-dispatcher.md)
 |   |-- input-modes.ts            -> [Interactive/scripted input modes](cli/input-modes.md)
 |   |-- raw-picker.ts             -> [Shared raw-mode picker primitive](cli/raw-picker.md)
+|   |-- action-menu.ts            -> [Inline action sub-menu](cli/action-menu.md)
 |   |-- eval-dots.ts              -> [Eval status circle utilities](cli/eval-dots.md)
 |   |-- eval-errors.ts            -> [Eval API error parser](cli/eval-errors.md)
 |   |-- eval-runner.ts            -> [Eval subprocess runner](cli/eval-runner.md)

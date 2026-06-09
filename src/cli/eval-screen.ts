@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { getBannerColor } from './banner.js';
 import {
   getEvalStatus,
   statusCircle,
@@ -8,6 +9,17 @@ import {
   type ScenarioHashes,
 } from './eval-dots.js';
 import type { EvalReport } from './eval-runner.js';
+
+export function printEvalHeader(id: string, prompt: string): void {
+  const termWidth = process.stdout.columns || 80;
+  const dashCount = Math.max(2, termWidth - 4 - id.length);
+  const bc = getBannerColor();
+  console.log(bc(`── ${id} ${'─'.repeat(dashCount)}`));
+  console.log(chalk.bold('Prompt:'));
+  console.log(chalk.white(prompt));
+  console.log(bc('─'.repeat(termWidth)));
+  console.log('');
+}
 
 export function printEvalReport(report: EvalReport): void {
   const assertions = report.checks.filter(c => c.kind === 'assertion');

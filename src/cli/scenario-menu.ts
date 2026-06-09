@@ -42,8 +42,10 @@ import { extractApiErrors } from "./eval-errors.js";
 import {
   buildEvalPickerScreen,
   buildEvalDetailScreen,
+  printEvalHeader,
   printEvalReport,
 } from "./eval-screen.js";
+import { InlineActionMenu } from "./action-menu.js";
 
 function resetTerminalPrivateModes(): void {
   if (!process.stdout.isTTY) return;
@@ -154,10 +156,7 @@ export async function runEvalMenu(
     let pickerSel = 0;
     let detailMode = false;
     let actionMode = false;
-    let actionSel = 0;
-    const ACTION_OPTIONS = ["Run", "View", "Edit"] as const;
-    const ACTION_OPTIONS_WIDTH =
-      Math.max(...ACTION_OPTIONS.map((o) => o.length)) + 4;
+    const actionMenu = new InlineActionMenu(["Run", "View", "Edit"]);
 
     const chosen = await runRawPicker<PlaygroundScenario[] | null>(rl, {
       render: () => {
@@ -181,24 +180,7 @@ export async function runEvalMenu(
           scenarioHashes,
         );
         if (actionMode) {
-          const sid = scenarios[pickerSel].id;
-          const sep = chalk.dim("\u2500".repeat(15));
-          const actionLines: string[] = [];
-          actionLines.push(
-            `      ${chalk.dim("\u2500".repeat(ACTION_OPTIONS_WIDTH))}`,
-          );
-          for (let i = 0; i < ACTION_OPTIONS.length; i++) {
-            const cursor = i === actionSel ? chalk.cyan(">") : " ";
-            const text =
-              i === actionSel
-                ? chalk.bold(ACTION_OPTIONS[i])
-                : ACTION_OPTIONS[i];
-            actionLines.push(`      ${cursor} ${text}`);
-          }
-          actionLines.push(
-            `      ${chalk.dim("\u2500".repeat(ACTION_OPTIONS_WIDTH))}`,
-          );
-          screen.splice(4 + pickerSel + 1, 0, ...actionLines);
+          screen.splice(4 + pickerSel + 1, 0, ...actionMenu.renderLines());
           screen[2] = `  ${chalk.dim("\u2191/\u2193 action, Enter select, Esc back")}`;
         }
         return screen;
@@ -214,38 +196,24 @@ export async function runEvalMenu(
           return;
         }
         if (actionMode) {
-          if (key === "\x1b") {
+          const result = actionMenu.handleKey(key);
+          if (result.type === 'close') {
             actionMode = false;
             redraw();
-            return;
-          }
-          if (key === "\x1b[A") {
-            actionSel =
-              (actionSel - 1 + ACTION_OPTIONS.length) % ACTION_OPTIONS.length;
-            redraw();
-            return;
-          }
-          if (key === "\x1b[B") {
-            actionSel = (actionSel + 1) % ACTION_OPTIONS.length;
-            redraw();
-            return;
-          }
-          if (key === "\r" || key === "\n") {
-            if (actionSel === 0) {
+          } else if (result.type === 'select') {
+            if (result.option === 'Run') {
               close([scenarios[pickerSel]]);
-              return;
-            }
-            if (actionSel === 1) {
+            } else if (result.option === 'View') {
               actionMode = false;
               detailMode = true;
               redraw();
-              return;
-            }
-            if (actionSel === 2) {
+            } else {
+              // Edit: stub \u2014 close sub-menu and redraw
               actionMode = false;
               redraw();
-              return;
             }
+          } else {
+            redraw();
           }
           return;
         }
@@ -270,7 +238,7 @@ export async function runEvalMenu(
         }
         if (key === "\r" || key === "\n") {
           actionMode = true;
-          actionSel = 0;
+          actionMenu.reset();
           redraw();
           return;
         }
@@ -307,23 +275,7 @@ export async function runEvalMenu(
 
       const prompt = readFileSync(promptPath, "utf-8").trim();
 
-      const termWidth = process.stdout.columns || 80;
-      const headerPrefix = "── ";
-      const headerSuffix = " ";
-      const dashCount = Math.max(
-        2,
-        termWidth -
-          headerPrefix.length -
-          scenario.id.length -
-          headerSuffix.length,
-      );
-      console.log(
-        chalk.bold.cyan(
-          `\n${headerPrefix}${scenario.id}${headerSuffix}${"─".repeat(dashCount)}`,
-        ),
-      );
-      console.log(chalk.bold("Prompt:"));
-      console.log(chalk.white(prompt));
+      printEvalHeader(scenario.id, prompt);
 
       resetEvalWorkDir(scenarioDir);
       setEvalRunning(scenario.id);

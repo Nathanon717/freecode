@@ -101,8 +101,6 @@ export function startEvalScenario(scenarioDir: string, prompt: string, model?: s
   const evalConfig = loadEvalConfig(scenarioDir);
   const maxToolCalls = evalConfig.maxToolCalls ?? 10;
 
-  const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
-  let headerSkipped = false;
   const stdoutChunks: string[] = [];
   const stderrChunks: string[] = [];
 
@@ -142,8 +140,6 @@ export function startEvalScenario(scenarioDir: string, prompt: string, model?: s
       const lines = combined.split('\n');
       partialLine = lines.pop() ?? '';
       for (const line of lines) {
-        if (!headerSkipped && stripAnsi(line).startsWith('> ')) continue;
-        headerSkipped = true;
         process.stdout.write(line + '\n');
       }
     };
@@ -158,9 +154,7 @@ export function startEvalScenario(scenarioDir: string, prompt: string, model?: s
     proc.on('close', (code) => {
       clearTimeout(timer);
       if (partialLine) {
-        if (headerSkipped || !stripAnsi(partialLine).startsWith('> ')) {
-          process.stdout.write(partialLine);
-        }
+        process.stdout.write(partialLine);
       }
       const exitCode = code ?? 1;
       if (exitCode !== 0 && stderrChunks.length > 0) {

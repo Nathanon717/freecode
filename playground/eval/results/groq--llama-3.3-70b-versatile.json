@@ -761,15 +761,15 @@
     ]
   },
   {
-    "timestamp": "2026-06-09T00:00:16.607Z",
+    "timestamp": "2026-06-09T16:28:04.241Z",
     "scenarioId": "cereal-soup",
     "model": "groq:llama-3.3-70b-versatile",
     "pass": false,
     "warnings": false,
     "tokens": {
-      "total": 11104,
-      "prompt": 10835,
-      "output": 269
+      "total": 9573,
+      "prompt": 9321,
+      "output": 252
     },
     "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
     "checks": [
@@ -777,7 +777,7 @@
         "name": "no tool calls",
         "kind": "assertion",
         "pass": false,
-        "message": "expected no tool calls, got 6: grep, grep, list_dir, read_file, list_dir, shell_exec"
+        "message": "expected no tool calls, got 6: grep, grep, grep, list_dir, read_file, shell_exec"
       },
       {
         "name": "gave a response",
@@ -788,13 +788,13 @@
         "name": "6 tool calls",
         "kind": "stat",
         "value": 6,
-        "note": "grep → grep → list_dir → read_file → list_dir → shell_exec"
+        "note": "grep → grep → grep → list_dir → read_file → shell_exec"
       },
       {
         "name": "tokens",
         "kind": "stat",
-        "value": 11104,
-        "note": "11104 | in: 10835 | out: 269"
+        "value": 9573,
+        "note": "9573 | in: 9321 | out: 252"
       }
     ]
   }

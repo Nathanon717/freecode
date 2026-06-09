@@ -14,6 +14,7 @@ Implements the `/humaneval` slash command.
 
 **Key neighbors:**
 - `src/cli/eval-runner.ts` — `startEvalScenario`, `resetEvalWorkDir`
+- `src/cli/eval-screen.ts` — `printEvalHeader` (shared header/prompt rendering)
 - `src/cli/raw-picker.ts` — `runRawPicker`, `countWrappedLines`
 - `src/cli/terminal-ui.ts` — bottom UI lifecycle, eval-running indicator
 - `src/cli/eval-dots.ts` — `modelSlug` (filename sanitisation) and `statusCircle` (colored dot renderer) reused for picker dots

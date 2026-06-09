@@ -203,3 +203,19 @@ export function isToolsNotSupportedError(error: unknown): boolean {
   const msg = toDetailedErrorMessage(error);
   return TOOLS_NOT_SUPPORTED_PATTERNS.some(p => p.test(msg));
 }
+
+export function serializeError(error: unknown): unknown {
+  if (!(error instanceof Error)) return error;
+  const record: Record<string, unknown> = {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+  };
+  for (const key of Object.getOwnPropertyNames(error)) {
+    if (key in record) continue;
+    record[key] = (error as unknown as Record<string, unknown>)[key];
+  }
+  const cause = (error as Error & { cause?: unknown }).cause;
+  if (cause) record.cause = serializeError(cause);
+  return record;
+}

@@ -238,6 +238,7 @@ interface _StepState {
 }
 
 const _step: _StepState = { open: false, hasText: false, toolCount: 0, textEndsWithNewline: false };
+let _pendingDivider = false;
 
 function _resetStepContent(): void {
   _step.hasText = false;
@@ -247,12 +248,17 @@ function _resetStepContent(): void {
 
 /**
  * Open a new agent turn. Idempotent — safe to call when a turn is already open.
+ * First turn emits no leading divider. Subsequent turns flush the deferred divider
+ * from the previous turn's close (so it acts as a between-turn separator).
  */
 export function beginTranscriptTurn(options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions()): void {
   if (_step.open) return;
   _step.open = true;
   _resetStepContent();
-  getTranscriptStream(options).write(formatTranscriptStepDivider(options) + "\n\n");
+  if (_pendingDivider) {
+    _pendingDivider = false;
+    getTranscriptStream(options).write(formatTranscriptStepDivider(options) + "\n\n");
+  }
 }
 
 /**
@@ -299,7 +305,9 @@ export function endTranscriptStep(hasMore: boolean, options: TranscriptRuntimeOp
     stream.write(formatTranscriptStepDivider(options) + "\n\n"); // close + open next
     _resetStepContent(); // keep _step.open = true for next step
   } else {
-    stream.write(formatTranscriptStepDivider(options) + "\n");
+    // Defer the closing divider — it becomes the separator for the next turn.
+    // If no next turn starts, the divider is never written (no trailing divider on last turn).
+    _pendingDivider = true;
     _step.open = false;
     _resetStepContent();
   }

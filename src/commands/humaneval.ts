@@ -16,6 +16,7 @@ import {
   teardownBottomUI,
 } from '../cli/terminal-ui.js';
 import { resetEvalWorkDir, startEvalScenario } from '../cli/eval-runner.js';
+import { printEvalHeader } from '../cli/eval-screen.js';
 import { modelSlug, statusCircle } from '../cli/eval-dots.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
@@ -133,12 +134,7 @@ async function runOneProblem(problem: HumanEvalProblem, model: string): Promise<
   mkdirSync(runDir, { recursive: true });
   resetEvalWorkDir(runDir);
 
-  const termWidth = process.stdout.columns || 80;
-  const headerSuffix = ' ──';
-  const dashCount = Math.max(2, termWidth - 4 - problem.task_id.length - headerSuffix.length);
-  console.log(chalk.bold.cyan(`\n── ${problem.task_id}${headerSuffix}${'─'.repeat(dashCount)}`));
-  console.log(chalk.dim(buildAgentPrompt(problem)));
-  console.log('');
+  printEvalHeader(problem.task_id, buildAgentPrompt(problem));
 
   setEvalRunning(problem.task_id);
   const handle = startEvalScenario(runDir, buildAgentPrompt(problem), model || undefined);

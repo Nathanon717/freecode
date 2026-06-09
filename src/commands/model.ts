@@ -10,6 +10,7 @@ import type { PricingConfidence } from '../providers/pricing-verifier.js';
 import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
 import { getNoNativeToolsModels } from '../providers/model-traits.js';
 import { loadEvalDotsData, buildEvalDots, type EvalDotsData } from '../cli/eval-dots.js';
+import { InlineActionMenu } from '../cli/action-menu.js';
 
 export interface ModelMenuItem {
   providerId: string;
@@ -238,7 +239,7 @@ function buildScreen(
   viewStart: number,
   groupMode: GroupMode,
   filterQuery: string,
-): { lines: string[]; newViewStart: number } {
+): { lines: string[]; newViewStart: number; selectedScreenIdx: number } {
   const HEADER = 5;
   const CHROME = 3;
   const termHeight = (process.stdout.rows ?? 24) - 2;
@@ -268,15 +269,49 @@ function buildScreen(
   lines.push('');
   lines.push(`  ${chalk.bold.cyan('Select model')}`);
   lines.push(`  ${filterLabel}`);
-  lines.push(`  ${tabHint}${chalk.dim('Up/Down navigate, ←/→ toggle favorite, Enter select, Space select + default, Esc close')}`);
+  lines.push(`  ${tabHint}${chalk.dim('Up/Down navigate, ← toggle favorite, → view details, Enter action menu, Space select + default, Esc close')}`);
   lines.push('');
 
+  // Header is 5 lines (indices 0-4), then scroll indicator at index 5, items at 6+
   lines.push(newViewStart > 0 ? chalk.dim('  · · ·') : '');
   for (const line of visibleLines) lines.push(line);
   lines.push(viewEnd < itemLines.length ? chalk.dim('  · · ·') : '');
 
   lines.push('');
-  return { lines, newViewStart };
+  const selectedScreenIdx = 6 + (selectedLineIdx - newViewStart);
+  return { lines, newViewStart, selectedScreenIdx };
+}
+
+function buildModelDetailScreen(item: ModelMenuItem): string[] {
+  const lines: string[] = [];
+  lines.push('');
+  lines.push(`  ${chalk.bold.cyan('Model details')}`);
+  lines.push(`  ${chalk.dim('← or Esc back')}`);
+  lines.push('');
+  lines.push(`  ${chalk.bold('ID')}          ${chalk.cyan(`${item.providerId}:${item.modelId}`)}`);
+  lines.push(`  ${chalk.bold('Provider')}    ${item.providerName}${item.modelsSource === 'live' ? chalk.dim(' (live)') : chalk.dim(' (static)')}`);
+  lines.push(`  ${chalk.bold('Display')}     ${item.displayName}`);
+  if (item.pricing) {
+    const { input, output, confidence } = item.pricing;
+    if (confidence === 'disagree') {
+      lines.push(`  ${chalk.bold('Pricing')}     ${chalk.red('sources disagree')}`);
+    } else if (input !== null && output !== null) {
+      const color = confidence === 'agreed' ? chalk.green : chalk.yellow;
+      lines.push(`  ${chalk.bold('Pricing')}     ${color(`$${input}/$${output}/MTok`)}`);
+    }
+  }
+  if (item.noNativeTools) {
+    lines.push(`  ${chalk.bold('Traits')}      ${chalk.dim('~tools (no native tool use)')}`);
+  }
+  if (item.evalDots) {
+    lines.push(`  ${chalk.bold('Eval dots')}   ${item.evalDots}`);
+  }
+  lines.push(`  ${chalk.bold('Favorite')}    ${item.isFavorite ? chalk.yellow('★ yes') : chalk.dim('no')}`);
+  if (item.isNew) {
+    lines.push(`  ${chalk.bold('Status')}      ${chalk.yellow('new')}`);
+  }
+  lines.push('');
+  return lines;
 }
 
 type ModelPickResult = { item: ModelMenuItem; saveDefault: boolean } | null;
@@ -329,6 +364,9 @@ export async function runModelCommand(
   if (currentIndex < 0) currentIndex = displayItems.findIndex(item => modelPreference(item) === currentPref);
   let selected = currentIndex >= 0 ? currentIndex : 0;
   let viewStart = 0;
+  let actionMode = false;
+  let detailMode = false;
+  const actionMenu = new InlineActionMenu(['Select', 'View', 'Edit']);
 
   function refreshDisplayItems(preferred?: ModelMenuItem): void {
     unfilteredDisplayItems = buildDisplayList(items);
@@ -353,12 +391,48 @@ export async function runModelCommand(
 
   const result = await runRawPicker<ModelPickResult>(rl, {
     render(): string[] {
-      const { lines, newViewStart } = buildScreen(displayItems, selected, currentModel, viewStart, groupMode, filterQuery);
+      if (detailMode && displayItems.length > 0) {
+        return buildModelDetailScreen(displayItems[selected]);
+      }
+      const { lines, newViewStart, selectedScreenIdx } = buildScreen(displayItems, selected, currentModel, viewStart, groupMode, filterQuery);
       viewStart = newViewStart;
+      if (actionMode) {
+        lines.splice(selectedScreenIdx + 1, 0, ...actionMenu.renderLines());
+        lines[3] = `  ${chalk.dim('↑/↓ action, Enter select, Esc back')}`;
+      }
       return lines;
     },
     countLines: countWrappedLines,
     onKey(key, redraw, close) {
+      if (detailMode) {
+        if (key === '\x1b' || key === '\x1b[D') {
+          detailMode = false;
+          redraw();
+        }
+        return;
+      }
+      if (actionMode) {
+        const res = actionMenu.handleKey(key);
+        if (res.type === 'close') {
+          actionMode = false;
+          redraw();
+        } else if (res.type === 'select') {
+          if (res.option === 'Select') {
+            close({ item: displayItems[selected], saveDefault: false });
+          } else if (res.option === 'View') {
+            actionMode = false;
+            detailMode = true;
+            redraw();
+          } else {
+            // Edit: stub — close sub-menu and redraw
+            actionMode = false;
+            redraw();
+          }
+        } else {
+          redraw();
+        }
+        return;
+      }
       if (key === '\x1b') { close(null); return; }
       if (key === '\x1b[A') {
         if (displayItems.length > 0) selected = (selected - 1 + displayItems.length) % displayItems.length;
@@ -370,7 +444,16 @@ export async function runModelCommand(
         redraw();
         return;
       }
-      if (key === '\x1b[C' || key === '\x1b[D') {
+      if (key === '\x1b[C') {
+        // → opens detail view (like eval picker)
+        if (displayItems.length > 0) {
+          detailMode = true;
+          redraw();
+        }
+        return;
+      }
+      if (key === '\x1b[D') {
+        // ← toggles favorite
         if (displayItems.length > 0) {
           const item = displayItems[selected];
           const pref = modelPreference(item);
@@ -391,7 +474,11 @@ export async function runModelCommand(
         return;
       }
       if (key === '\r' || key === '\n') {
-        if (displayItems.length > 0) close({ item: displayItems[selected], saveDefault: false });
+        if (displayItems.length > 0) {
+          actionMode = true;
+          actionMenu.reset();
+          redraw();
+        }
         return;
       }
       if (key === ' ') {
