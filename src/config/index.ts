@@ -46,6 +46,7 @@ function getApiKeyFromEnv(providerId: string): string | undefined {
     cloudflare: 'CLOUDFLARE_API_KEY',
     zai: 'ZAI_API_KEY',
     zen: 'OPENCODE_ZEN_API_KEY',
+    huggingface: 'HF_TOKEN',
   };
   
   const envVar = envVars[providerId];
@@ -84,7 +85,7 @@ export function loadConfig(): Config {
   delete (config as Record<string, unknown>)['preferLocal'];
   
   const configuredProviders: Config['providers'] = {};
-  const providerIds = ['groq', 'openrouter', 'siliconflow', 'nvidia', 'llm7', 'github', 'cohere', 'cerebras', 'mistral', 'openai', 'anthropic', 'cloudflare', 'zai', 'zen'] as const;
+  const providerIds = ['groq', 'openrouter', 'siliconflow', 'nvidia', 'llm7', 'github', 'cohere', 'cerebras', 'mistral', 'openai', 'anthropic', 'cloudflare', 'zai', 'zen', 'huggingface'] as const;
   
   for (const providerId of providerIds) {
     const apiKey = getApiKeyFromEnv(providerId);

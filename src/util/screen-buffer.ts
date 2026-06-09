@@ -1,6 +1,7 @@
 const MAX_LINES = 150;
 const lineBuffer: string[] = [];
 const displayLineBuffer: string[] = [];
+const displayLineBufferStyled: string[] = [];
 let installed = false;
 // Index into displayLineBuffer marking the start of the current scroll-region
 // epoch.  Lines before this index were written before the input UI's scroll
@@ -16,13 +17,16 @@ function hasCursorOrScreenControl(str: string): boolean {
   return /\x1b(?:\[[0-9;?]*[HJKrstu]|\[[su]|[DM78])/.test(str);
 }
 
-function pushDisplayLines(clean: string): void {
+function pushDisplayLines(clean: string, styled: string): void {
   const lines = clean.split('\n');
+  const styledLines = styled.split('\n');
   const count = clean.endsWith('\n') ? lines.length - 1 : lines.length;
   for (let i = 0; i < count; i++) {
     displayLineBuffer.push(lines[i]?.trimEnd() ?? '');
+    displayLineBufferStyled.push(styledLines[i]?.trimEnd() ?? '');
     if (displayLineBuffer.length > MAX_LINES) {
       displayLineBuffer.shift();
+      displayLineBufferStyled.shift();
       if (epochStart > 0) epochStart--;
     }
   }
@@ -39,7 +43,8 @@ export function installScreenBuffer(): void {
     if (typeof chunk === 'string') {
       if (!hasCursorOrScreenControl(chunk)) {
         const clean = stripAnsi(chunk).replace(/\r/g, '');
-        pushDisplayLines(clean);
+        const styled = chunk.replace(/\r/g, '');
+        pushDisplayLines(clean, styled);
         for (const line of clean.split('\n')) {
           const trimmed = line.trimEnd();
           if (trimmed && (lineBuffer.length === 0 || lineBuffer[lineBuffer.length - 1] !== trimmed)) {
@@ -75,9 +80,10 @@ export function startOverlayEpoch(): void {
 // before writing output, so each newline scrolls content upward and the
 // bottom row is always blank after printing.  The preceding count-1 rows hold
 // the last min(L, count-1) lines of scroll-region output, with blank padding
-// at the top when L < count-1.
+// at the top when L < count-1.  Lines are returned with their original ANSI
+// color codes intact so the restore does not bleach content.
 export function getScreenBufferDisplayLinesForOverlay(count: number, scrollHeight: number): string[] {
-  const epochLines = displayLineBuffer.slice(epochStart);
+  const epochLines = displayLineBufferStyled.slice(epochStart);
   const L = epochLines.length;
   const contentCount = Math.min(L, count - 1);
   const topBlanks = count - 1 - contentCount;

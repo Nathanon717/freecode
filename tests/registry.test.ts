@@ -20,10 +20,11 @@ describe('Provider Registry', () => {
       expect(providerIds).toContain('cloudflare');
       expect(providerIds).toContain('zai');
       expect(providerIds).toContain('zen');
+      expect(providerIds).toContain('huggingface');
     });
 
-    it('should have 14 providers total', () => {
-      expect(PROVIDER_REGISTRY).toHaveLength(14);
+    it('should have 15 providers total', () => {
+      expect(PROVIDER_REGISTRY).toHaveLength(15);
     });
 
     it('each provider should have required fields', () => {
@@ -101,7 +102,7 @@ describe('Provider Registry', () => {
 
     it('provider types are correct', () => {
       const types = PROVIDER_REGISTRY.map(p => p.type);
-      expect(types.filter(t => t === 'openai-compat')).toHaveLength(13);
+      expect(types.filter(t => t === 'openai-compat')).toHaveLength(14);
       expect(types.filter(t => t === 'anthropic')).toHaveLength(1);
     });
 

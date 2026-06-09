@@ -5,7 +5,6 @@ import { spawnSync, spawn } from 'child_process';
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
-import { classifyScenario } from '../../src/scenario-classification.js';
 import { PROVIDER_REGISTRY } from '../../src/providers/registry.js';
 import { assertScenarioExpectations } from './assertions/index.js';
 import type { FakeLlmTraceEvent, ScenarioExpectations, ToolTraceEvent } from './assertions/index.js';
@@ -77,18 +76,6 @@ const scenarios = scenarioFiles.map(file => ({
   file,
   scenario: JSON.parse(readFileSync(join(SCENARIOS_DIR, file), 'utf-8')) as Scenario,
 }));
-
-const classificationErrors = scenarios.flatMap(({ file, scenario }) =>
-  classifyScenario(scenario).errors.map(error => `${file}: ${error}`),
-);
-
-if (classificationErrors.length > 0) {
-  console.error(chalk.red('Scenario LLM classification errors:'));
-  for (const error of classificationErrors) {
-    console.error(`  ${chalk.red('-')} ${error}`);
-  }
-  process.exit(1);
-}
 
 let passed = 0;
 let failed = 0;

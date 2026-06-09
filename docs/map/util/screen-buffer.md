@@ -1,6 +1,6 @@
 # src/util/screen-buffer.ts - Screen Buffer
 
-**Role:** Intercepts `process.stdout.write` at startup to maintain rolling buffers of recent terminal output (stripped of ANSI escape sequences). Used by the bottom TUI to repaint rows after temporary overlays.
+**Role:** Intercepts `process.stdout.write` at startup to maintain rolling buffers of recent terminal output. Keeps a plain (ANSI-stripped) buffer for text search and a parallel styled buffer (ANSI codes preserved) for overlay repaints. Used by the bottom TUI to repaint rows after temporary overlays.
 
 ## Exports
 
@@ -10,7 +10,7 @@
 | `getScreenBuffer` | Returns the last <=150 non-empty transcript lines as a newline-joined string. |
 | `getScreenBufferDisplayLines` | Returns recent plain transcript lines, including intentional blank lines. |
 | `startOverlayEpoch` | Marks the current write position as the start of the scroll-region epoch. Call once on first `setupInputUI` to exclude pre-UI output (startup banner) from overlay repaints. |
-| `getScreenBufferDisplayLinesForOverlay` | Returns the lines needed to repaint `count` overlay rows after a suggestion list closes. Accounts for freecode's cursor-at-bottom-of-scroll-region output model: the bottom overlay row is always blank, the preceding `count-1` rows hold the last epoch lines, top-padded with blanks. |
+| `getScreenBufferDisplayLinesForOverlay` | Returns the styled lines (ANSI codes intact) needed to repaint `count` overlay rows after a suggestion list closes. Accounts for freecode's cursor-at-bottom-of-scroll-region output model: the bottom overlay row is always blank, the preceding `count-1` rows hold the last epoch lines, top-padded with blanks. |
 
 ## Key neighbors
 

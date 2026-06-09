@@ -14,12 +14,19 @@ function renderHorizontalRule(): string {
 }
 
 function renderInline(text: string): string {
-  // Split on inline code spans first so we never apply formatting inside `code`.
-  const parts = text.split(/(`[^`]*`)/g);
+  // Split on bold inline code, then plain inline code, so formatting is never
+  // applied inside backtick spans. Bold inline code (**`x`**) must be matched
+  // first so the inner backtick span isn't consumed by the plain-code branch.
+  const parts = text.split(/(\*\*`[^`]*`\*\*|`[^`]*`)/g);
   return parts
     .map((part, i) => {
       if (i % 2 === 1) {
-        // Strip surrounding backticks and render with white-on-grey, no padding.
+        if (part.startsWith("**")) {
+          // Bold inline code: **`code`** — strip ** and backtick from each side.
+          const inner = part.slice(3, -3);
+          return chalk.bold(chalk.bgHex("#333333").white(inner));
+        }
+        // Plain inline code: strip surrounding backticks.
         const inner = part.slice(1, -1);
         return chalk.bgHex("#333333").white(inner);
       }
@@ -285,6 +292,14 @@ export function renderMarkdown(text: string): string {
 
   const tail = flush();
   if (tail !== null) out.push(tail);
+
+  // When a code block is last, its final line is the blank background padding.
+  // Add an empty string so out.join("\n") produces the trailing blank line.
+  // Tables end with a border character (└) and don't need this.
+  if (out.length > 0) {
+    const last = out[out.length - 1].replace(SGR_RE, "");
+    if (last.includes("\n") && last.split("\n").pop()!.trim() === "") out.push("");
+  }
 
   return out.join("\n");
 }

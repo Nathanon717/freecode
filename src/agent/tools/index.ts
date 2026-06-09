@@ -7,7 +7,6 @@ import { listDirTool } from './list-dir.js';
 import { logError } from '../../logger.js';
 import { loadConfig } from '../../config/index.js';
 import { isUserAbortError, toErrorMessage } from '../../util/errors.js';
-import chalk from 'chalk';
 import { z } from 'zod';
 import type { CoreTool } from 'ai';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
@@ -17,6 +16,7 @@ import {
   formatArgs,
   formatEditFileDiff,
   formatPromptToolCallLine,
+  formatRationaleLine,
   formatToolCallLine,
   formatToolErrorLine,
   formatToolResultPreview,
@@ -86,7 +86,7 @@ function withLogging(name: string, t: AnyCoreTool, promptTools = false): AnyCore
         ? formatPromptToolCallLine(name, displayArgs)
         : formatToolCallLine(name, displayArgs);
       if (typeof rationale === 'string') {
-        toolOut().write(chalk.cyan(rationale) + '\n');
+        toolOut().write(formatRationaleLine(rationale) + '\n');
         toolOut().write(callLine + '\n');
       } else {
         toolOut().write(callLine + '\n');
@@ -212,16 +212,20 @@ function wrap(name: string, t: AnyCoreTool, useRationale: boolean, queueExecutio
   );
 }
 
-export function createTools(confirmToolCall?: ConfirmToolCall, toolRationale?: boolean, promptTools = false) {
+export function createTools(confirmToolCall?: ConfirmToolCall, toolRationale?: boolean, promptTools = false, readOnly = false) {
   const useRationale = toolRationale ?? loadConfig().toolRationale;
   const queueExecution = createToolExecutionQueue();
+  const readOnlyTools = {
+    read_file: wrap('read_file', readFileTool, useRationale, queueExecution, confirmToolCall, promptTools),
+    grep:      wrap('grep',      grepTool,     useRationale, queueExecution, confirmToolCall, promptTools),
+    list_dir:  wrap('list_dir',  listDirTool,  useRationale, queueExecution, confirmToolCall, promptTools),
+  };
+  if (readOnly) return readOnlyTools;
   return {
-    read_file:  wrap('read_file',  readFileTool,  useRationale, queueExecution, confirmToolCall, promptTools),
+    ...readOnlyTools,
     write_file: wrap('write_file', writeFileTool, useRationale, queueExecution, confirmToolCall, promptTools),
     edit_file:  wrap('edit_file',  editFileTool,  useRationale, queueExecution, confirmToolCall, promptTools),
-    grep:       wrap('grep',       grepTool,      useRationale, queueExecution, confirmToolCall, promptTools),
     shell_exec: wrap('shell_exec', shellTool,     useRationale, queueExecution, confirmToolCall, promptTools),
-    list_dir:   wrap('list_dir',   listDirTool,   useRationale, queueExecution, confirmToolCall, promptTools),
   };
 }
 

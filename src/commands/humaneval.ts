@@ -171,7 +171,15 @@ async function runOneProblem(problem: HumanEvalProblem, model: string): Promise<
   const checkFile = join(runDir, '.run', 'check.py');
   writeFileSync(checkFile, checkProgram, 'utf-8');
 
-  const pyResult = spawnSync('python', [checkFile], {
+  const pythonCmd = (() => {
+    const candidates = ['python3', 'python'];
+    for (const cmd of candidates) {
+      const r = spawnSync(cmd, ['--version'], { timeout: 2000, encoding: 'utf-8' });
+      if (r.status === 0) return cmd;
+    }
+    return 'python';
+  })();
+  const pyResult = spawnSync(pythonCmd, [checkFile], {
     timeout: 10_000,
     encoding: 'utf-8',
     cwd: result.workDir,

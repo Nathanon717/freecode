@@ -3,7 +3,7 @@
   "description": "After a fake eval completes, another raw picker can still receive input and Ctrl-C exits cleanly",
   "requiresLlm": false,
   "model": "mock:gpt-freecode-test",
-  "llmFixture": "eval-hello-world-fake.llm.json",
+  "llmFixture": "eval-cereal-soup-fake.llm.json",
   "config": {
     "defaultModel": "mock:gpt-freecode-test",
     "toolConfirmation": "auto"
@@ -26,16 +26,24 @@
         "waitFor": "Eval scenarios",
         "screenContains": [
           "Eval scenarios",
-          "001-hello-world"
+          "cereal-soup"
         ]
       },
       {
-        "name": "select first eval",
+        "name": "open action menu on first eval",
+        "send": "\r",
+        "waitFor": "Enter select",
+        "screenContains": [
+          "Run"
+        ]
+      },
+      {
+        "name": "run first eval",
         "send": "\r",
         "waitFor": "tokens:",
         "quietMs": 600,
         "screenContains": [
-          "PASS  001-hello-world"
+          "PASS  cereal-soup"
         ]
       },
       {

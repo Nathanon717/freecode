@@ -94,18 +94,25 @@ export function loadEvalHistory(): EvalHistoryEntry[] {
 
 export function discoverPlaygroundScenarios(): PlaygroundScenario[] {
   if (!existsSync(PLAYGROUND_EVAL_DIR)) return [];
-  return readdirSync(PLAYGROUND_EVAL_DIR, { withFileTypes: true })
-    .filter(d => d.isDirectory() && /^\d{3}-/.test(d.name))
-    .sort((a, b) => a.name.localeCompare(b.name))
+  const dirs = readdirSync(PLAYGROUND_EVAL_DIR, { withFileTypes: true })
+    .filter(d => d.isDirectory() && /^(\d{3}-|\w)/.test(d.name) && d.name !== 'shared' && d.name !== 'results')
     .filter(d => {
       const dir = join(PLAYGROUND_EVAL_DIR, d.name);
       return existsSync(join(dir, 'prompt.md')) && existsSync(join(dir, 'eval', 'check.ts'));
-    })
-    .map(d => {
-      const promptPath = join(PLAYGROUND_EVAL_DIR, d.name, 'prompt.md');
-      const firstLine = readFileSync(promptPath, 'utf-8').trim().split('\n')[0].slice(0, 80);
-      return { id: d.name, firstLine };
     });
+  // Non-numbered dirs sort before numbered ones
+  dirs.sort((a, b) => {
+    const aNum = /^\d{3}-/.test(a.name);
+    const bNum = /^\d{3}-/.test(b.name);
+    if (!aNum && bNum) return -1;
+    if (aNum && !bNum) return 1;
+    return a.name.localeCompare(b.name);
+  });
+  return dirs.map(d => {
+    const promptPath = join(PLAYGROUND_EVAL_DIR, d.name, 'prompt.md');
+    const firstLine = readFileSync(promptPath, 'utf-8').trim().split('\n')[0].slice(0, 80);
+    return { id: d.name, firstLine };
+  });
 }
 
 function collectFilesRecursive(dir: string): string[] {

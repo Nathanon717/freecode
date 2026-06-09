@@ -93,5 +93,42 @@
         "note": "total: 0"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-08T22:36:47.582Z",
+    "scenarioId": "cereal-soup",
+    "model": "mistral:ministral-8b-2512",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 1386,
+      "prompt": 1316,
+      "output": 70
+    },
+    "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
+    "checks": [
+      {
+        "name": "no tool calls",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "gave a response",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "0 tool calls",
+        "kind": "stat",
+        "value": 0,
+        "note": "(none)"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 1386,
+        "note": "1386 | in: 1316 | out: 70"
+      }
+    ]
   }
 ]

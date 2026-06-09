@@ -32,7 +32,6 @@ src/
 |   |-- errors.ts                 -> [Error message utilities](util/errors.md)
 |   `-- screen-buffer.ts          -> [Stdout ring buffer](util/screen-buffer.md)
 |-- logger.ts                     -> [Diagnostic logging](logger.md)
-|-- scenario-classification.ts    -> [Scenario LLM/non-LLM classifier](scenario-classification.md)
 |-- agent/
 |   |-- context.ts                -> [Mutable project root](agent/context.md)
 |   |-- loop.ts                   -> [Agent loop](agent/loop.md)
@@ -65,7 +64,8 @@ src/
 |   |-- slash-commands.ts         -> [Slash command list/completion](cli/slash-commands.md)
 |   |-- transcript-renderer.ts    -> [Agent transcript formatting](cli/transcript-renderer.md)
 |   |-- markdown-renderer.ts      -> [Markdown renderer for LLM output](cli/markdown-renderer.md)
-|   `-- terminal-ui.ts            -> [Bottom-pinned terminal UI](cli/terminal-ui.md)
+|   |-- terminal-ui.ts            -> [Bottom-pinned terminal UI](cli/terminal-ui.md)
+|   `-- toggles.ts                -> [Footer toggle state](cli/toggles.md)
 |-- commands/
 |   |-- config.ts                 -> [Interactive /config editor](commands/config.md)
 |   |-- humaneval.ts              -> [/humaneval benchmark command](commands/humaneval.md)
@@ -98,4 +98,4 @@ src/
 
 Runtime starts in [index.md](index.md), enters [cli/session-runner.md](cli/session-runner.md), dispatches slash commands through [cli/command-dispatcher.md](cli/command-dispatcher.md), and sends normal turns to [agent/loop.md](agent/loop.md).
 
-Provider selection lives in [providers/registry.md](providers/registry.md). Tool wrappers live under [agent/tools/](agent/tools/index.md). Scenario discovery and classification live in [cli/scenario-catalog.md](cli/scenario-catalog.md) and [scenario-classification.md](scenario-classification.md).
+Provider selection lives in [providers/registry.md](providers/registry.md). Tool wrappers live under [agent/tools/](agent/tools/index.md). Scenario discovery lives in [cli/scenario-catalog.md](cli/scenario-catalog.md).

@@ -344,54 +344,6 @@
     ]
   },
   {
-    "timestamp": "2026-06-07T17:17:05.360Z",
-    "scenarioId": "001-hello-world",
-    "model": "zen:deepseek-v4-flash-free",
-    "pass": true,
-    "warnings": true,
-    "tokens": {
-      "total": 7248,
-      "prompt": 6916,
-      "output": 332
-    },
-    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
-    "checks": [
-      {
-        "name": "file exists: hello.txt",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "file content: hello.txt",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": false,
-        "message": "read_file"
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "3 tool calls",
-        "kind": "stat",
-        "value": 3,
-        "note": "list_dir → write_file → read_file"
-      },
-      {
-        "name": "tokens",
-        "kind": "stat",
-        "value": 7248,
-        "note": "7248 | in: 6916 | out: 332"
-      }
-    ]
-  },
-  {
     "timestamp": "2026-06-07T22:35:06.041Z",
     "scenarioId": "004-python-data-shape-error",
     "model": "zen:deepseek-v4-flash-free",
@@ -465,6 +417,91 @@
         "kind": "stat",
         "value": 22713,
         "note": "22713 | in: 21445 | out: 1268"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-08T22:01:28.563Z",
+    "scenarioId": "001-hello-world",
+    "model": "zen:deepseek-v4-flash-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 3392,
+      "prompt": 3247,
+      "output": 145
+    },
+    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
+    "checks": [
+      {
+        "name": "file exists: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file content: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "1 tool call",
+        "kind": "stat",
+        "value": 1,
+        "note": "write_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 3392,
+        "note": "3392 | in: 3247 | out: 145"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-08T22:35:55.021Z",
+    "scenarioId": "cereal-soup",
+    "model": "zen:deepseek-v4-flash-free",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 4064,
+      "prompt": 3417,
+      "output": 647
+    },
+    "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
+    "checks": [
+      {
+        "name": "no tool calls",
+        "kind": "assertion",
+        "pass": false,
+        "message": "expected no tool calls, got 1: list_dir"
+      },
+      {
+        "name": "gave a response",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "1 tool call",
+        "kind": "stat",
+        "value": 1,
+        "note": "list_dir"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 4064,
+        "note": "4064 | in: 3417 | out: 647"
       }
     ]
   }

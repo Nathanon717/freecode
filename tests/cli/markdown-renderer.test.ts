@@ -63,13 +63,13 @@ describe("renderMarkdown", () => {
     const input = "```python\nx = 1\n```";
     const out = renderMarkdown(input);
     // Lang label on its own line above the block (grey bg text-only, bold), then blank+code+blank
-    expect(stripCode(out)).toBe("python\n\n  x = 1\n");
+    expect(stripCode(out)).toBe("python\n\n  x = 1\n\n");
   });
 
   it("does not apply bold/italic inside fenced code block", () => {
     const input = "```\n**not bold** and *not italic*\n```";
     const out = renderMarkdown(input);
-    expect(stripCode(out)).toBe("\n  **not bold** and *not italic*\n");
+    expect(stripCode(out)).toBe("\n  **not bold** and *not italic*\n\n");
   });
 
   it("renders a horizontal rule full-width in white", () => {
@@ -92,7 +92,7 @@ describe("renderMarkdown", () => {
   it("handles unclosed code block gracefully", () => {
     const input = "```\nincomplete";
     const out = renderMarkdown(input);
-    expect(stripCode(out)).toBe("\n  incomplete\n");
+    expect(stripCode(out)).toBe("\n  incomplete\n\n");
   });
 
   it("returns raw text unchanged when not a TTY", () => {

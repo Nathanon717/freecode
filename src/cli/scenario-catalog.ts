@@ -2,7 +2,6 @@ import { existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { spawnSync } from 'child_process';
 import { createRequire } from 'module';
-import { classifyScenario } from '../scenario-classification.js';
 import { logError } from '../logger.js';
 
 const require = createRequire(import.meta.url);
@@ -57,12 +56,10 @@ export function getScenarioSummaries(projectRoot: string): TestScenarioSummary[]
       if (raw.expect?.files?.length) checks.push(`${raw.expect.files.length} file check${raw.expect.files.length === 1 ? '' : 's'}`);
       if (raw.expect?.toolTrace) checks.push('tool trace');
       if (raw.expect?.fakeLlmTrace) checks.push('fake LLM trace');
-      const classification = classifyScenario(raw);
-      if (classification.errors.length > 0) checks.push(`classification error: ${classification.errors.join('; ')}`);
       return [{
         name: raw.name ?? file.replace(/\.scenario\.json$/, ''),
         description: raw.description ?? '',
-        requiresLlm: classification.inferredRequiresLlm,
+        requiresLlm: raw.requiresLlm === true,
         file,
         workspace: raw.workspace ?? 'repo',
         checks,

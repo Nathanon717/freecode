@@ -458,6 +458,35 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     ],
   },
   {
+    id: "huggingface",
+    name: "Hugging Face",
+    type: "openai-compat",
+    baseUrl: "https://router.huggingface.co/v1",
+    apiKeyEnvVar: "HF_TOKEN",
+    models: [
+      {
+        id: "swiss-ai/Apertus-8B-Instruct-2509:publicai",
+        displayName: "Apertus 8B Instruct",
+      },
+      {
+        id: "swiss-ai/Apertus-70B-Instruct-2509:publicai",
+        displayName: "Apertus 70B Instruct",
+      },
+      {
+        id: "allenai/Olmo-3-7B-Instruct:publicai",
+        displayName: "Olmo 3 7B Instruct",
+      },
+      {
+        id: "aisingapore/Qwen-SEA-LION-v4-32B-IT:publicai",
+        displayName: "Qwen SEA-LION 32B IT",
+      },
+      {
+        id: "utter-project/EuroLLM-22B-Instruct-2512:publicai",
+        displayName: "EuroLLM 22B Instruct",
+      },
+    ],
+  },
+  {
     id: "zen",
     name: "OpenCode Zen",
     type: "openai-compat",

@@ -60,15 +60,53 @@
     ]
   },
   {
-    "timestamp": "2026-06-07T11:25:23.857Z",
+    "timestamp": "2026-06-08T22:43:29.282Z",
+    "scenarioId": "cereal-soup",
+    "model": "mistral:mistral-tiny-2407",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 5972,
+      "prompt": 5796,
+      "output": 176
+    },
+    "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
+    "checks": [
+      {
+        "name": "no tool calls",
+        "kind": "assertion",
+        "pass": false,
+        "message": "expected no tool calls, got 3: list_dir, read_file, read_file"
+      },
+      {
+        "name": "gave a response",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "3 tool calls",
+        "kind": "stat",
+        "value": 3,
+        "note": "list_dir → read_file → read_file"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 5972,
+        "note": "5972 | in: 5796 | out: 176"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-08T22:44:25.110Z",
     "scenarioId": "002-edit-config",
     "model": "mistral:mistral-tiny-2407",
     "pass": false,
     "warnings": false,
     "tokens": {
-      "total": 2441,
-      "prompt": 2369,
-      "output": 72
+      "total": 8069,
+      "prompt": 7847,
+      "output": 222
     },
     "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
     "checks": [
@@ -109,16 +147,16 @@
         "pass": true
       },
       {
-        "name": "1 tool call",
+        "name": "4 tool calls",
         "kind": "stat",
-        "value": 1,
-        "note": "list_dir"
+        "value": 4,
+        "note": "list_dir → write_file → read_file → edit_file"
       },
       {
         "name": "tokens",
         "kind": "stat",
-        "value": 2441,
-        "note": "2441 | in: 2369 | out: 72"
+        "value": 8069,
+        "note": "8069 | in: 7847 | out: 222"
       }
     ]
   }

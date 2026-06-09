@@ -41,6 +41,7 @@ let systemPromptLogged = false;
 
 interface AgentLoopOptions {
   confirmToolCall?: ConfirmToolCall;
+  readOnly?: boolean;
   onPartialResult?: (partial: { providerId: string; modelId: string; quota: RateLimitSnapshot | null }) => void;
 }
 
@@ -81,7 +82,7 @@ async function runFakeLlm(
   options: AgentLoopOptions,
   modelSettings: ModelSettings,
 ): Promise<AgentLoopResult> {
-  const tools = supportsTools ? createTools(options.confirmToolCall, modelSettings.toolRationale) : undefined;
+  const tools = supportsTools ? createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly) : undefined;
   const toolNames = tools ? Object.keys(tools) : [];
   let activeMessages = messages;
   let fullText = '';
@@ -213,7 +214,7 @@ async function streamWithRetry(
         system: systemPrompt,
         messages: activeMessages,
         ...(supportsTools ? {
-          tools: createTools(options.confirmToolCall, modelSettings.toolRationale),
+          tools: createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly),
           maxSteps: 10,
           onStepFinish: (event) => {
             // Intermediate steps (tool-calls finish reason) get a combined
@@ -394,7 +395,7 @@ export async function agentLoop(
       beginTranscriptTurn();
       const provider = getProvider(providerId);
       if (!provider) throw new Error(`Unknown provider: "${providerId}"`);
-      const tools = supportsTools ? createTools(options.confirmToolCall) : undefined;
+      const tools = supportsTools ? createTools(options.confirmToolCall, undefined, false, options.readOnly) : undefined;
       const payload = buildOpenAIResponsesPayload({
         modelId,
         systemPrompt,
@@ -435,7 +436,7 @@ export async function agentLoop(
       outputTokens = streamed.outputTokens;
 
       if (streamed.usePromptToolsFallback) {
-        const ptResult = await runPromptToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale);
+        const ptResult = await runPromptToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale, options.readOnly);
         fullText = ptResult.text.trimEnd();
         totalTokens = ptResult.totalTokens;
         promptTokens = ptResult.promptTokens;

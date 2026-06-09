@@ -19,6 +19,7 @@ describe('Config Module', () => {
     'NVIDIA_API_KEY', 'LLM7_API_KEY', 'GITHUB_TOKEN', 'COHERE_API_KEY',
     'CEREBRAS_API_KEY', 'MISTRAL_API_KEY', 'ANTHROPIC_API_KEY',
     'OPENAI_API_KEY', 'CLOUDFLARE_API_KEY', 'ZAI_API_KEY',
+    'HF_TOKEN', 'OPENCODE_ZEN_API_KEY',
   ];
 
   beforeEach(() => {

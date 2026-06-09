@@ -24,7 +24,6 @@ JUST DO THE COMMAND, IF YOU USE CD LIKE THIS, THAT IS A A CRITIAL ERROR AND THE 
 - For quick visual checks of the interactive TUI (e.g. after adding a provider, open the model picker to confirm it appears), use `pty`. Start a session, send keystrokes step by step, read the rendered screen. See `docs/pty-session.md` for full reference and examples.
 - If a user-visible behavior changes, ensure it has scenario coverage in `tests/scenarios/` or docs coverage, as appropriate.
 - If generated reference sources change, update the source of truth first, then run `npm.cmd run docs:generate`. It checks generated docs first; if they are already current, it stops without rewriting them, and if they are stale, it regenerates them. Do not hand-edit generated sections.
-- Run `npm.cmd run docs:generate` before reporting docs-related or user-visible changes complete.
 
 Command details live in `docs/commands.md`. Scenario details live in `docs/scenarios.md` and `docs/testing-scenarios.md`.
 

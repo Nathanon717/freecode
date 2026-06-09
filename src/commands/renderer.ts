@@ -3,6 +3,7 @@ import {
   beginTranscriptTurn,
   endTranscriptStep,
   formatEditFileDiff,
+  formatRationaleLine,
   formatToolCallLine,
   formatToolErrorLine,
   formatToolResultPreview,
@@ -54,7 +55,7 @@ function writeToolWithRationale(
   result: string,
 ): void {
   writeTranscriptToolLeadIn(DEMO_OPTS);
-  transcriptOut().write(chalk.cyan(rationale) + "\n");
+  transcriptOut().write(formatRationaleLine(rationale) + "\n");
   transcriptOut().write(formatToolCallLine(name, args) + "\n");
   const preview = formatToolResultPreview(result, DEMO_OPTS);
   if (preview) transcriptOut().write(preview + "\n");

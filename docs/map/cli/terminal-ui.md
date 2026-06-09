@@ -7,7 +7,9 @@
 State setters/getters:
 
 - `isBottomUIActive()`
-- `getInputBuffer()`, `setInputBuffer()`, `appendToInputBuffer()`, `backspaceInputBuffer()`
+- `getInputBuffer()`, `setInputBuffer()`
+- `insertAtCursor(text)`, `backspaceAtCursor()`, `deleteAtCursor()` — cursor-aware buffer mutations
+- `moveCursorLeft()`, `moveCursorRight()`, `moveCursorHome()`, `moveCursorEnd()`, `moveCursorUp()`, `moveCursorDown()` — cursor navigation
 - `setTokenCount()`
 - `setQuotaSnapshot()`
 - `setModelStatus()`
@@ -33,9 +35,11 @@ Rendering/control:
 
 The module uses ANSI scroll-region controls so normal output scrolls above the reserved bottom rows.
 
-**Footer** (always active): 2 rows normally; expands to 3 rows when content overflows at narrow terminal widths (only when the input UI is not active). The bottom row carries the primary status (model + quota/ctx); the row above carries secondary content (OpenAI daily spend, preflight cost). `footerRowCount` tracks the current size and the scroll region is updated inline when it changes.
+**Footer** (always active): 2 rows normally; expands to 3 rows when content overflows at narrow terminal widths (only when the input UI is not active). The bottom row (`r`) carries the primary status (model + quota/ctx); the row above (`r-1`) carries the toggle bar on the left (from `cli/toggles.ts`) and any secondary content (OpenAI daily spend, preflight cost) on the right. `footerRowCount` tracks the current size and the scroll region is updated inline when it changes.
 
-**Input UI** (active while the user is typing): 3 rows above the footer (top bar, input line, bottom bar). Total reserved = `footerRowCount + 3`. Slash-command suggestions are drawn as an overlay above the top bar; when suggestions appear the renderer snapshots the underlying scroll-region rows via `getScreenBufferDisplayLinesForOverlay` and repaints them when the overlay closes. The overlay epoch is started on the first `setupInputUI` call so that pre-UI output (startup banner) is excluded from repaints.
+**Input UI** (active while the user is typing): top bar + N input lines + bottom bar above the footer. Total reserved = `footerRowCount + 2 + N` where N = number of lines in the current input buffer (minimum 1). When the user inserts a `\n` (Ctrl+J), N increases and `drawInputArea` scrolls content up to make room; when a line is deleted N decreases and the reclaimed rows are cleared. Slash-command suggestions are drawn as an overlay above the top bar; when suggestions appear the renderer snapshots the underlying scroll-region rows via `getScreenBufferDisplayLinesForOverlay` (styled, ANSI codes intact) and repaints them when the overlay closes. The start row is captured at draw time into `suggestionOverlayStartRow` so that footer row count changes between open and close do not corrupt the repaint target. The overlay epoch is started on the first `setupInputUI` call so that pre-UI output (startup banner) is excluded from repaints.
+
+A `cursorPos` index tracks the insertion point within the flat buffer (with embedded `\n` for multi-line). `cursorLineCol()` converts it to (lineIdx, colInLine) at draw time. The cursor position is updated by the cursor-movement exports. Inline completion is only shown when the buffer is single-line.
 
 The input row shows the prompt and inline completion. The status row right-aligns model, OpenAI daily spend, OpenAI preflight input cost, quota, and context-token count (displayed as `N ctx`).
 

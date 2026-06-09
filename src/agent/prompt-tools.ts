@@ -94,9 +94,10 @@ export async function runPromptToolsLoop(
   model: LanguageModel,
   confirmToolCall?: ConfirmToolCall,
   toolRationale?: boolean,
+  readOnly?: boolean,
 ): Promise<PromptToolsResult> {
   const augSystem = buildPromptToolsSystemPrompt(systemPrompt);
-  const tools = createTools(confirmToolCall, toolRationale, true);
+  const tools = createTools(confirmToolCall, toolRationale, true, readOnly);
   let activeMessages: CoreMessage[] = [...messages];
 
   beginTranscriptTurn(); // idempotent if already opened by the loop.ts fallback path

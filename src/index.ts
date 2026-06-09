@@ -81,6 +81,9 @@ async function main() {
   }
 
   if (process.stdin.isTTY) {
+    // Route tool-call transcript to stdout so it appears in the same stream as
+    // response text — matching /renderer and the eval subprocess (FREECODE_TRANSCRIPT_STREAM=stdout).
+    process.env["FREECODE_TRANSCRIPT_STREAM"] = "stdout";
     setupFooterUI();
     registerRetryBannerSink(setRetryBanner);
     registerQuotaUpdateSink(setQuotaSnapshot);

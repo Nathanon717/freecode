@@ -196,6 +196,7 @@ const TOOLS_NOT_SUPPORTED_PATTERNS = [
   /tool_calls? not supported/i,
   /doesn'?t support tools/i,
   /not support.*function call/i,
+  /--enable-auto-tool-choice/i,           // vLLM/HuggingFace: server not configured for tool calling
 ];
 
 export function isToolsNotSupportedError(error: unknown): boolean {

@@ -1,0 +1,50 @@
+{
+  "name": "tty-footer-toggles",
+  "description": "Footer toggle bar shows A and R toggles at startup; Ctrl+A and Ctrl+R cycle the toggles without corrupting the input area",
+  "requiresLlm": false,
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "toggle bar appears in footer at startup",
+        "screenContains": [
+          "A●",
+          "R●",
+          "> / for commands"
+        ]
+      },
+      {
+        "name": "Ctrl+A cycles Ask toggle; input area stays intact",
+        "send": "\u0001",
+        "quietMs": 200,
+        "screenContains": [
+          "A●",
+          "R●",
+          "> / for commands"
+        ]
+      },
+      {
+        "name": "Ctrl+R cycles Read toggle; input area stays intact",
+        "send": "\u0012",
+        "quietMs": 200,
+        "screenContains": [
+          "A●",
+          "R●",
+          "> / for commands"
+        ]
+      },
+      {
+        "name": "typing still works after toggle keypresses",
+        "send": "hello",
+        "screenContains": [
+          "> hello"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

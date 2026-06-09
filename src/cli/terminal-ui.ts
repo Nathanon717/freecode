@@ -3,6 +3,7 @@ import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import type { OpenAIDailySpend } from './openai-daily-spend.js';
 import { getBannerColor } from './banner.js';
 import { getScreenBufferDisplayLinesForOverlay, startOverlayEpoch } from '../util/screen-buffer.js';
+import { composeToggleBar, toggleBarWidth } from './toggles.js';
 
 const ESC = '\x1b[';
 
@@ -12,10 +13,12 @@ let footerTimerSuspended = false;
 let footerRowCount = 2;
 let lastReservedRows = 2;
 let lastInputBuf = '';
+let cursorPos = 0;
 let lastTokenCount = 0;
 let lastSuggestions: string[] = [];
 let lastInlineCompletion: string | null = null;
 let suggestionOverlayRows = 0;
+let suggestionOverlayStartRow = 0;
 let suggestionOverlayRestoreLines: string[] = [];
 let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
 let lastModelStatus = '';
@@ -90,14 +93,77 @@ export function getInputBuffer(): string {
 
 export function setInputBuffer(input: string): void {
   lastInputBuf = input;
+  cursorPos = input.length;
 }
 
-export function appendToInputBuffer(input: string): void {
-  lastInputBuf += input;
+export function insertAtCursor(text: string): void {
+  lastInputBuf = lastInputBuf.slice(0, cursorPos) + text + lastInputBuf.slice(cursorPos);
+  cursorPos += text.length;
 }
 
-export function backspaceInputBuffer(): void {
-  lastInputBuf = lastInputBuf.slice(0, -1);
+export function backspaceAtCursor(): void {
+  if (cursorPos > 0) {
+    lastInputBuf = lastInputBuf.slice(0, cursorPos - 1) + lastInputBuf.slice(cursorPos);
+    cursorPos--;
+  }
+}
+
+export function deleteAtCursor(): void {
+  if (cursorPos < lastInputBuf.length) {
+    lastInputBuf = lastInputBuf.slice(0, cursorPos) + lastInputBuf.slice(cursorPos + 1);
+  }
+}
+
+export function moveCursorLeft(): void {
+  if (cursorPos > 0) cursorPos--;
+}
+
+export function moveCursorRight(): void {
+  if (cursorPos < lastInputBuf.length) cursorPos++;
+}
+
+export function moveCursorHome(): void {
+  const before = lastInputBuf.slice(0, cursorPos);
+  const lastNl = before.lastIndexOf('\n');
+  cursorPos = lastNl + 1;
+}
+
+export function moveCursorEnd(): void {
+  const after = lastInputBuf.slice(cursorPos);
+  const nextNl = after.indexOf('\n');
+  cursorPos = nextNl === -1 ? lastInputBuf.length : cursorPos + nextNl;
+}
+
+export function moveCursorUp(): void {
+  const lines = lastInputBuf.split('\n');
+  let pos = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const lineEnd = pos + lines[i].length;
+    if (cursorPos <= lineEnd) {
+      if (i === 0) return;
+      const col = cursorPos - pos;
+      const prevLineStart = pos - lines[i - 1].length - 1;
+      cursorPos = prevLineStart + Math.min(col, lines[i - 1].length);
+      return;
+    }
+    pos = lineEnd + 1;
+  }
+}
+
+export function moveCursorDown(): void {
+  const lines = lastInputBuf.split('\n');
+  let pos = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const lineEnd = pos + lines[i].length;
+    if (cursorPos <= lineEnd) {
+      if (i === lines.length - 1) return;
+      const col = cursorPos - pos;
+      const nextLineStart = lineEnd + 1;
+      cursorPos = nextLineStart + Math.min(col, lines[i + 1].length);
+      return;
+    }
+    pos = lineEnd + 1;
+  }
 }
 
 export function setTokenCount(tokenCount: number): void {
@@ -357,7 +423,7 @@ export function composeFooterOutput(): string {
   if (neededCount !== footerRowCount) {
     footerRowCount = neededCount;
     if (inputUIActive) {
-      const reserved = footerRowCount + 3;
+      const reserved = footerRowCount + 2 + inputLineCount();
       output += setScrollRegionSequence(1, r - reserved);
       lastReservedRows = reserved;
     } else {
@@ -371,8 +437,17 @@ export function composeFooterOutput(): string {
     output += moveToSequence(r - footerRowCount + 1 + i, 1) + clearLineSequence();
   }
 
-  // Draw auxiliary rows above the primary row (index 1 = r-1, index 2 = r-2).
-  for (let i = 1; i < rightRows.length; i++) {
+  // Secondary row (r-1): toggle bar on the left, secondary right-content (if any) on the right.
+  {
+    const toggleBar = composeToggleBar();
+    const toggleVis = toggleBarWidth();
+    const secRight = rightRows.length > 1 ? rightRows[1] : '';
+    const secRightVis = stripAnsiVisible(secRight).length;
+    const spacer = Math.max(0, w - 1 - toggleVis - secRightVis);
+    output += moveToSequence(r - 1, 1) + toggleBar + ' '.repeat(spacer) + (secRight ? chalk.gray(secRight) : '');
+  }
+  // Tertiary row(s) (r-2 and above) for any additional overflow content.
+  for (let i = 2; i < rightRows.length; i++) {
     output += moveToSequence(r - i, 1) + chalk.gray(rightRows[i]);
   }
 
@@ -395,49 +470,112 @@ export function drawFooter() {
   if (output) process.stdout.write(output);
 }
 
+function stripAnsiVisible(s: string): string {
+  return s.replace(/\x1b(?:\[[0-9;?]*[A-Za-z]|[^[])/g, '');
+}
+
 function restoreSuggestionOverlaySequence(startRow: number, rowCount: number, width: number): string {
   let output = '';
+  const maxWidth = Math.max(0, width - 1);
   const padRows = Math.max(0, rowCount - suggestionOverlayRestoreLines.length);
   const lines = [
     ...Array.from({ length: padRows }, () => ''),
     ...suggestionOverlayRestoreLines,
   ].slice(-rowCount);
   for (let i = 0; i < rowCount; i++) {
-    output += moveToSequence(startRow + i, 1) + clearLineSequence() + (lines[i] ?? '').slice(0, Math.max(0, width - 1));
+    const line = lines[i] ?? '';
+    const visible = stripAnsiVisible(line);
+    // Use visible length for truncation so ANSI color bytes don't count as width.
+    const content = visible.length <= maxWidth ? line : visible.slice(0, maxWidth);
+    output += moveToSequence(startRow + i, 1) + clearLineSequence() + content + (content ? '\x1b[0m' : '');
   }
   return output;
 }
 
-// Draws the three input-area rows (top bar, input line, bottom bar) plus any suggestion rows.
-// Leaves the cursor on the input line.
+// Number of terminal rows a single logical input line occupies.
+// Uses floor+1 so that a line exactly filling the effective width opens a blank
+// overflow row and parks the cursor at its start — the visual behaviour the user sees.
+export function visualRowsForLine(content: string, w: number): number {
+  const effW = Math.max(1, w - 2); // 2-char prompt prefix ('> ' or '  ')
+  return Math.floor(content.length / effW) + 1;
+}
+
+// Maps a cursor position in the flat buffer to a (visualRow, visualCol) pair
+// where visualRow is 0-indexed from the top of the input area and visualCol is
+// 0-indexed within the content of that row (after the 2-char prefix).
+export function cursorToVisualPos(
+  buf: string,
+  cursor: number,
+  w: number,
+): { visualRow: number; visualCol: number } {
+  const effW = Math.max(1, w - 2);
+  const lines = buf.split('\n');
+  let pos = 0;
+  let visualRow = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const lineStart = pos;
+    const lineEnd = pos + lines[i].length;
+    if (cursor >= lineStart && cursor <= lineEnd) {
+      const colInLine = cursor - lineStart;
+      return {
+        visualRow: visualRow + Math.floor(colInLine / effW),
+        visualCol: colInLine % effW,
+      };
+    }
+    visualRow += Math.floor(lines[i].length / effW) + 1;
+    pos = lineEnd + 1;
+  }
+  return { visualRow: 0, visualCol: 0 };
+}
+
+function inputLineCount(): number {
+  const w = cols();
+  return (lastInputBuf || '').split('\n').reduce(
+    (sum, line) => sum + visualRowsForLine(line, w),
+    0,
+  ) || 1;
+}
+
+// Draws the input area (top bar, N input lines, bottom bar) plus any suggestion rows.
+// Leaves the cursor on the active input line.
 function drawInputArea() {
   if (!inputUIActive) return;
   const w = cols();
   const r = rows();
   const n = lastSuggestions.length;
-  const reserved = footerRowCount + 3;
+  const lineCount = inputLineCount();
+  const reserved = footerRowCount + 2 + lineCount;
   const prevReserved = lastReservedRows;
 
   let output = '';
   if (reserved !== prevReserved) {
+    if (reserved > prevReserved) {
+      // Grow: scroll content up to make room for new input lines.
+      output += moveToSequence(r - prevReserved, 1) + '\n'.repeat(reserved - prevReserved);
+    } else {
+      // Shrink: clear rows that were input area but are now back in scroll region.
+      const extraClear = prevReserved - reserved;
+      for (let i = 0; i < extraClear; i++) {
+        output += moveToSequence(r - prevReserved + 1 + i, 1) + clearLineSequence();
+      }
+    }
     output += setScrollRegionSequence(1, r - reserved);
     lastReservedRows = reserved;
   }
 
-  const topBarRow = r - footerRowCount - 2;
-  const inputRow = r - footerRowCount - 1;
+  const topBarRow = r - footerRowCount - 1 - lineCount;
   const bottomBarRow = r - footerRowCount;
   const suggestionStartRow = topBarRow - n;
-  const previousSuggestionStartRow = topBarRow - suggestionOverlayRows;
 
   if (suggestionOverlayRows > 0 && suggestionOverlayRows !== n) {
-    output += restoreSuggestionOverlaySequence(previousSuggestionStartRow, suggestionOverlayRows, w);
+    output += restoreSuggestionOverlaySequence(suggestionOverlayStartRow, suggestionOverlayRows, w);
     suggestionOverlayRows = 0;
     suggestionOverlayRestoreLines = [];
   }
 
   if (n > 0 && suggestionOverlayRows === 0) {
     suggestionOverlayRows = n;
+    suggestionOverlayStartRow = suggestionStartRow;
     const scrollHeight = r - reserved;
     suggestionOverlayRestoreLines = getScreenBufferDisplayLinesForOverlay(n, scrollHeight);
   }
@@ -455,16 +593,41 @@ function drawInputArea() {
 
   output += moveToSequence(topBarRow, 1) + getBannerColor()('─'.repeat(w));
 
-  const inlineSuffix = getInlineCompletionSuffix(lastInputBuf, lastInlineCompletion);
-  const inputText = lastInputBuf
-    ? lastInputBuf + chalk.gray(inlineSuffix)
-    : chalk.gray('/ for commands');
-  output += moveToSequence(inputRow, 1) + getBannerColor()('> ') + inputText;
+  // Draw each input line with visual wrapping.
+  const inputLines = lastInputBuf ? lastInputBuf.split('\n') : [''];
+  const logicalLineCount = inputLines.length;
+  const effW = Math.max(1, w - 2);
+  let visualRowOffset = 0;
+
+  for (let i = 0; i < inputLines.length; i++) {
+    const logicalPrefix = i === 0 ? getBannerColor()('> ') : '  ';
+    const lineContent = inputLines[i];
+    const rowsThisLine = Math.floor(lineContent.length / effW) + 1;
+    const isLastLogicalLine = i === inputLines.length - 1;
+
+    for (let vi = 0; vi < rowsThisLine; vi++) {
+      const chunk = lineContent.slice(vi * effW, (vi + 1) * effW);
+      const prefix = vi === 0 ? logicalPrefix : '  ';
+      const inputRowCurrent = topBarRow + 1 + visualRowOffset;
+
+      if (vi === 0 && i === 0 && !lastInputBuf) {
+        output += moveToSequence(inputRowCurrent, 1) + prefix + chalk.gray('/ for commands');
+      } else {
+        const inlineSuffix =
+          logicalLineCount === 1 && isLastLogicalLine && vi === rowsThisLine - 1
+            ? getInlineCompletionSuffix(lastInputBuf, lastInlineCompletion)
+            : '';
+        output += moveToSequence(inputRowCurrent, 1) + prefix + chunk + (inlineSuffix ? chalk.gray(inlineSuffix) : '');
+      }
+      visualRowOffset++;
+    }
+  }
 
   output += moveToSequence(bottomBarRow, 1) + getBannerColor()('─'.repeat(w));
 
   // Park cursor at the typing position.
-  output += moveToSequence(inputRow, 3 + lastInputBuf.length);
+  const { visualRow, visualCol } = cursorToVisualPos(lastInputBuf, cursorPos, w);
+  output += moveToSequence(topBarRow + 1 + visualRow, 3 + visualCol);
 
   process.stdout.write(output);
 }
@@ -542,7 +705,7 @@ export function teardownBottomUI() {
   const toClearRows = lastReservedRows - footerRowCount;
   let output = '';
   if (suggestionOverlayRows > 0) {
-    output += restoreSuggestionOverlaySequence(topBarRow - suggestionOverlayRows, suggestionOverlayRows, w);
+    output += restoreSuggestionOverlaySequence(suggestionOverlayStartRow, suggestionOverlayRows, w);
     suggestionOverlayRows = 0;
     suggestionOverlayRestoreLines = [];
   }
@@ -580,12 +743,11 @@ export function resetSubmittedInputArea() {
   if (!inputUIActive) return;
   const r = rows();
   const w = cols();
-  const topBarRow = r - footerRowCount - 2;
-  const reserved = footerRowCount + 3;
+  const reserved = footerRowCount + 2 + inputLineCount();
   const prevReserved = lastReservedRows;
   let output = '';
   if (suggestionOverlayRows > 0) {
-    output += restoreSuggestionOverlaySequence(topBarRow - suggestionOverlayRows, suggestionOverlayRows, w);
+    output += restoreSuggestionOverlaySequence(suggestionOverlayStartRow, suggestionOverlayRows, w);
     suggestionOverlayRows = 0;
     suggestionOverlayRestoreLines = [];
   }

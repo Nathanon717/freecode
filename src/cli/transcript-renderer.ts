@@ -1,5 +1,6 @@
 import chalk from "chalk";
 import { Writable } from "stream";
+import { getBannerColor } from "./banner.js";
 
 export type TranscriptStreamName = "stdout" | "stderr" | "null";
 
@@ -53,11 +54,15 @@ export function filterArgs(
   return TOOL_ARG_FILTERS[name]?.(args) ?? args;
 }
 
+export function formatRationaleLine(rationale: string): string {
+  return getBannerColor()(rationale);
+}
+
 export function formatToolCallLine(
   name: string,
   args: Record<string, unknown>,
 ): string {
-  return chalk.cyan(
+  return getBannerColor()(
     `${displayName(name)}(${formatArgs(filterArgs(name, args))})`,
   );
 }
@@ -66,7 +71,7 @@ export function formatPromptToolCallLine(
   name: string,
   args: Record<string, unknown>,
 ): string {
-  return chalk.blueBright(
+  return getBannerColor()(
     `~ ${displayName(name)}(${formatArgs(filterArgs(name, args))})`,
   );
 }

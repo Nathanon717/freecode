@@ -134,5 +134,42 @@
         "note": "total: 18067, prompt: 17630, output: 437"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-08T22:36:27.606Z",
+    "scenarioId": "cereal-soup",
+    "model": "mistral:mistral-small-2506",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 1371,
+      "prompt": 1316,
+      "output": 55
+    },
+    "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
+    "checks": [
+      {
+        "name": "no tool calls",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "gave a response",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "0 tool calls",
+        "kind": "stat",
+        "value": 0,
+        "note": "(none)"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 1371,
+        "note": "1371 | in: 1316 | out: 55"
+      }
+    ]
   }
 ]

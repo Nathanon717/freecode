@@ -1,6 +1,6 @@
 {
   "name": "tty-help-output",
-  "description": "Submitting /help renders the command list in the scroll region while the input prompt remains pinned at the bottom",
+  "description": "Submitting /help renders the command list in the scroll region while the input prompt remains pinned at the bottom; slash suggestion overlay opens and restores cleanly over the output",
   "requiresLlm": false,
   "tty": {
     "cols": 80,
@@ -38,6 +38,26 @@
       {
         "name": "backspace closes suggestions without leaving a blank hole",
         "send": "",
+        "quietMs": 500,
+        "screenContains": [
+          "Flags:",
+          "-log  Enable diagnostic logging to stderr",
+          "> / for commands"
+        ]
+      },
+      {
+        "name": "second open — overlay reopens cleanly",
+        "send": "/",
+        "screenContains": [
+          "/clear",
+          "/config",
+          "> /"
+        ]
+      },
+      {
+        "name": "second backspace — overlay restores again with correct content",
+        "send": "",
+        "quietMs": 500,
         "screenContains": [
           "Flags:",
           "-log  Enable diagnostic logging to stderr",

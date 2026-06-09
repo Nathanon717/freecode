@@ -28,6 +28,7 @@ export interface CommandRuntime {
   getSelectedModel(): string;
   setSelectedModel(model: string): void;
   confirmToolCall: ConfirmToolCall;
+  getReadOnly?(): boolean;
   modelListMode: ModelListMode;
   skipStrayConfirmations?: boolean;
   beforeAgentCall?(): void | Promise<void>;
@@ -142,6 +143,7 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
 
     const result = await agentLoop(runtime.session.messages, runtime.projectRoot, runtime.getSelectedModel() ?? undefined, {
       confirmToolCall: runtime.confirmToolCall,
+      readOnly: runtime.getReadOnly?.() ?? false,
       onPartialResult: resultJsonPath ? (partial) => {
         // Update the last entry with quota as soon as the first API response arrives.
         if (partial.quota === null) return;

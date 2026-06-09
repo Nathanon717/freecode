@@ -2,12 +2,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   composeBottomRightStatus,
   composeBottomStatusLine,
+  cursorToVisualPos,
   getInlineCompletionSuffix,
   setModelStatus,
   setOpenAIDailySpend,
   setPreflightInputCost,
   setQuotaSnapshot,
   setTokenCount,
+  visualRowsForLine,
 } from '../../src/cli/terminal-ui.js';
 
 describe('bottom pinned status section', () => {
@@ -207,5 +209,70 @@ describe('inline command completion', () => {
     expect(getInlineCompletionSuffix('/e', '/eval')).toBe('val');
     expect(getInlineCompletionSuffix('/eval', '/eval')).toBe('');
     expect(getInlineCompletionSuffix('hello', null)).toBe('');
+  });
+});
+
+describe('visual input wrapping', () => {
+  // w=80 → effectiveWidth = 78 chars per row
+
+  it('visualRowsForLine: empty line needs 1 row', () => {
+    expect(visualRowsForLine('', 80)).toBe(1);
+  });
+
+  it('visualRowsForLine: line shorter than effective width needs 1 row', () => {
+    expect(visualRowsForLine('hello', 80)).toBe(1);
+  });
+
+  it('visualRowsForLine: line exactly filling effective width opens a blank overflow row', () => {
+    expect(visualRowsForLine('x'.repeat(78), 80)).toBe(2);
+  });
+
+  it('visualRowsForLine: line one char beyond effective width needs 2 rows', () => {
+    expect(visualRowsForLine('x'.repeat(79), 80)).toBe(2);
+  });
+
+  it('visualRowsForLine: two full rows worth of text needs 3 rows', () => {
+    expect(visualRowsForLine('x'.repeat(156), 80)).toBe(3);
+  });
+
+  it('cursorToVisualPos: empty buffer cursor is at row 0, col 0', () => {
+    expect(cursorToVisualPos('', 0, 80)).toEqual({ visualRow: 0, visualCol: 0 });
+  });
+
+  it('cursorToVisualPos: cursor within first row stays on row 0', () => {
+    expect(cursorToVisualPos('hello', 5, 80)).toEqual({ visualRow: 0, visualCol: 5 });
+  });
+
+  it('cursorToVisualPos: cursor at exact boundary (len=effW) lands on row 1, col 0', () => {
+    const buf = 'x'.repeat(78);
+    expect(cursorToVisualPos(buf, 78, 80)).toEqual({ visualRow: 1, visualCol: 0 });
+  });
+
+  it('cursorToVisualPos: cursor one char before boundary stays on row 0', () => {
+    const buf = 'x'.repeat(77);
+    expect(cursorToVisualPos(buf, 77, 80)).toEqual({ visualRow: 0, visualCol: 77 });
+  });
+
+  it('cursorToVisualPos: cursor row is always < total visual rows (consistency invariant)', () => {
+    const w = 80;
+    for (const len of [0, 1, 77, 78, 79, 156, 157]) {
+      const buf = 'x'.repeat(len);
+      const { visualRow } = cursorToVisualPos(buf, len, w);
+      expect(visualRow).toBeLessThan(visualRowsForLine(buf, w));
+    }
+  });
+
+  it('cursorToVisualPos: multi-line buffer accounts for prior logical lines', () => {
+    // Line 0: 78 chars → 2 visual rows. Line 1: 'hello' → 1 visual row.
+    const buf = 'x'.repeat(78) + '\nhello';
+    expect(cursorToVisualPos(buf, buf.length, 80)).toEqual({ visualRow: 2, visualCol: 5 });
+  });
+
+  it('cursorToVisualPos: cursor at newline boundary is on last visual row of previous line', () => {
+    const buf = 'abc\ndef';
+    // cursor=3 is end of 'abc', before the newline
+    expect(cursorToVisualPos(buf, 3, 80)).toEqual({ visualRow: 0, visualCol: 3 });
+    // cursor=4 is start of 'def'
+    expect(cursorToVisualPos(buf, 4, 80)).toEqual({ visualRow: 1, visualCol: 0 });
   });
 });

@@ -6,6 +6,7 @@ import type { SessionController } from './session-controller.js';
 export interface CliSessionMode {
   readInput(this: void, tokenCount: number): Promise<string | null>;
   confirmToolCall: ConfirmToolCall;
+  getReadOnly?(this: void): boolean;
   modelListMode: ModelListMode;
   skipStrayConfirmations?: boolean;
   beforeAgentCall?(this: void): void | Promise<void>;
@@ -50,6 +51,7 @@ export async function runCliSession(options: CliSessionRunnerOptions): Promise<v
         getSelectedModel,
         setSelectedModel,
         confirmToolCall: mode.confirmToolCall,
+        getReadOnly: mode.getReadOnly,
         modelListMode: mode.modelListMode,
         skipStrayConfirmations: mode.skipStrayConfirmations,
         beforeAgentCall: mode.beforeAgentCall,
