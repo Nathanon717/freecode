@@ -142,5 +142,43 @@
         "note": "0"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-10T20:33:03.699Z",
+    "scenarioId": "cereal-soup",
+    "model": "groq:llama-3.1-8b-instant",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 5604,
+      "prompt": 5504,
+      "output": 100
+    },
+    "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
+    "checks": [
+      {
+        "name": "no tool calls",
+        "kind": "assertion",
+        "pass": false,
+        "message": "expected no tool calls, got 4: list_dir, list_dir, list_dir, list_dir"
+      },
+      {
+        "name": "gave a response",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "4 tool calls",
+        "kind": "stat",
+        "value": 4,
+        "note": "list_dir → list_dir → list_dir → list_dir"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 5604,
+        "note": "5604 | in: 5504 | out: 100"
+      }
+    ]
   }
 ]

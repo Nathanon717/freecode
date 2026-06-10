@@ -80,23 +80,32 @@ function clampViewport(sel: number, viewportStart: number): number {
 }
 
 function buildPickerLines(problems: HumanEvalProblem[], sel: number, viewportStart: number, results: HumanEvalResultMap): string[] {
+  const totalItems = 1 + problems.length; // index 0 = Run All, 1..N = problems
   const lines: string[] = [];
   lines.push('');
   lines.push(`  ${chalk.bold.cyan('HumanEval problems')}`);
-  lines.push(`  ${chalk.dim('Up/Down navigate, Enter run selected, a run all, Esc close')}`);
+  lines.push(`  ${chalk.dim('Up/Down navigate, Enter to select, Esc close')}`);
   lines.push('');
-  const viewportEnd = Math.min(viewportStart + VIEWPORT_SIZE, problems.length);
+  const viewportEnd = Math.min(viewportStart + VIEWPORT_SIZE, totalItems);
   for (let i = viewportStart; i < viewportEnd; i++) {
-    const p = problems[i];
     const active = i === sel;
     const cursor = active ? chalk.cyan('>') : ' ';
-    const label = active ? chalk.inverse(p.task_id) : chalk.cyan(p.task_id);
-    const r = results[p.task_id];
-    const dot = statusCircle(r === 'pass' ? 'green' : r === 'fail' ? 'red' : 'grey');
-    lines.push(`  ${cursor} ${dot} ${label}  ${chalk.dim(p.entry_point)}`);
+    if (i === 0) {
+      const passCount = Object.values(results).filter(v => v === 'pass').length;
+      const total = problems.length;
+      const summary = passCount > 0 ? chalk.dim(` ${passCount}/${total} passed`) : chalk.dim(` ${total} problems`);
+      const label = active ? chalk.inverse('Run All') : chalk.bold('Run All');
+      lines.push(`  ${cursor}   ${label}${summary}`);
+    } else {
+      const p = problems[i - 1];
+      const label = active ? chalk.inverse(p.task_id) : chalk.cyan(p.task_id);
+      const r = results[p.task_id];
+      const dot = statusCircle(r === 'pass' ? 'green' : r === 'fail' ? 'red' : 'grey');
+      lines.push(`  ${cursor} ${dot} ${label}  ${chalk.dim(p.entry_point)}`);
+    }
   }
   lines.push('');
-  lines.push(chalk.dim(`  ${sel + 1} / ${problems.length}`));
+  lines.push(chalk.dim(`  ${sel + 1} / ${totalItems}`));
   lines.push('');
   return lines;
 }
@@ -111,8 +120,17 @@ function buildAgentPrompt(problem: HumanEvalProblem): string {
 }
 
 type RunStatus = 'pass' | 'fail' | 'incomplete';
+type RunResult = { status: RunStatus; userCancelled: boolean };
 
-async function runOneProblem(problem: HumanEvalProblem, model: string): Promise<RunStatus> {
+function askContinuePrompt(rl: Interface, message: string): Promise<boolean> {
+  return new Promise(resolve => {
+    rl.question(`\n${message} [Y/n] `, (answer) => {
+      resolve(answer.trim().toLowerCase() !== 'n');
+    });
+  });
+}
+
+async function runOneProblem(problem: HumanEvalProblem, model: string, rl?: Interface): Promise<RunResult> {
   const taskSlug = problem.task_id.replace(/\//g, '-');
   const runDir = join(HUMANEVAL_RUNS_DIR, taskSlug);
   mkdirSync(runDir, { recursive: true });
@@ -121,7 +139,38 @@ async function runOneProblem(problem: HumanEvalProblem, model: string): Promise<
   printEvalHeader(problem.task_id, buildAgentPrompt(problem));
 
   const handle = startEvalScenario(runDir, buildAgentPrompt(problem), model || undefined);
+
+  let userCancelled = false;
+  let promptingUser = false;
+  let lastSeenTargetMs: number | null = null;
+
+  const pollTimer = rl ? setInterval(() => {
+    if (promptingUser) return;
+    try {
+      if (existsSync(handle.retryStatusFile)) {
+        const raw = readFileSync(handle.retryStatusFile, 'utf-8').trim();
+        if (raw) {
+          const info = JSON.parse(raw) as { name: string; label: string; targetMs: number } | null;
+          if (info !== null && info.targetMs !== lastSeenTargetMs) {
+            lastSeenTargetMs = info.targetMs;
+            promptingUser = true;
+            const waitSec = Math.ceil((info.targetMs - Date.now()) / 1000);
+            const label = waitSec > 0 ? ` (waiting ${waitSec}s)` : '';
+            askContinuePrompt(rl, `Rate limit hit${label}. Continue?`).then(cont => {
+              promptingUser = false;
+              if (!cont) {
+                userCancelled = true;
+                handle.cancel();
+              }
+            }).catch(() => { promptingUser = false; });
+          }
+        }
+      }
+    } catch { /* ignore poll errors */ }
+  }, 500) : null;
+
   const result = await handle.promise;
+  if (pollTimer !== null) clearInterval(pollTimer);
 
   const evalModel = model || '';
   const colonIdx = evalModel.indexOf(':');
@@ -131,13 +180,13 @@ async function runOneProblem(problem: HumanEvalProblem, model: string): Promise<
 
   if (result.exitCode !== 0) {
     console.log(chalk.yellow(`\nINCOMPLETE  ${chalk.bold(problem.task_id)}  (agent did not finish)`));
-    return 'incomplete';
+    return { status: 'incomplete', userCancelled };
   }
 
   const solutionPath = join(result.workDir, 'solution.py');
   if (!existsSync(solutionPath)) {
     console.log(chalk.red(`\nFAIL  ${chalk.bold(problem.task_id)}  (solution.py not found in work dir)`));
-    return 'fail';
+    return { status: 'fail', userCancelled };
   }
 
   const solution = readFileSync(solutionPath, 'utf-8');
@@ -162,7 +211,7 @@ async function runOneProblem(problem: HumanEvalProblem, model: string): Promise<
   if (pyResult.status === 0 && pyResult.error == null) {
     console.log(chalk.green(`\nPASS  ${chalk.bold(problem.task_id)}`));
     console.log(chalk.dim(`  tokens: ${result.tokens.total} | tool calls: ${result.toolCalls.length}`));
-    return 'pass';
+    return { status: 'pass', userCancelled };
   }
 
   console.log(chalk.red(`\nFAIL  ${chalk.bold(problem.task_id)}`));
@@ -175,7 +224,7 @@ async function runOneProblem(problem: HumanEvalProblem, model: string): Promise<
       console.log(chalk.red(`  ${tail}`));
     }
   }
-  return 'fail';
+  return { status: 'fail', userCancelled };
 }
 
 export async function runHumanEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string): Promise<void> {
@@ -210,19 +259,22 @@ export async function runHumanEvalMenu(rl: Interface, _projectRoot: string, getS
       render: () => buildPickerLines(problems, sel, viewportStart, results),
       countLines: countWrappedLines,
       onKey(key, redraw, close) {
+        const totalItems = 1 + problems.length;
         if (key === '\x1b') { close(null); return; }
         if (key === '\x1b[A') {
-          sel = (sel - 1 + problems.length) % problems.length;
+          sel = (sel - 1 + totalItems) % totalItems;
           viewportStart = clampViewport(sel, viewportStart);
           redraw(); return;
         }
         if (key === '\x1b[B') {
-          sel = (sel + 1) % problems.length;
+          sel = (sel + 1) % totalItems;
           viewportStart = clampViewport(sel, viewportStart);
           redraw(); return;
         }
-        if (key === '\r' || key === '\n') { close([problems[sel]]); return; }
-        if (key === 'a' || key === 'A') { close([...problems]); return; }
+        if (key === '\r' || key === '\n') {
+          close(sel === 0 ? [...problems] : [problems[sel - 1]]);
+          return;
+        }
       },
     });
 
@@ -235,11 +287,13 @@ export async function runHumanEvalMenu(rl: Interface, _projectRoot: string, getS
     let failed = 0;
     let incomplete = 0;
 
+    const autoMode = chosen.length > 1;
     for (const problem of chosen) {
-      const status = await runOneProblem(problem, model);
+      const { status, userCancelled } = await runOneProblem(problem, model, autoMode ? rl : undefined);
       if (status === 'pass') { passed++; saveHumanEvalResult(model, problem.task_id, 'pass', results); }
       else if (status === 'fail') { failed++; saveHumanEvalResult(model, problem.task_id, 'fail', results); }
       else incomplete++;
+      if (userCancelled) break;
     }
 
     if (chosen.length > 1) {

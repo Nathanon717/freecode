@@ -12,9 +12,19 @@ const steps: [string, string[]][] = [
     '--exclude', 'tests/harness/pty/session.test.ts']],
 ];
 
+// On Windows, npm/npx are .cmd batch scripts that cannot be spawned without a
+// shell; on Linux they are real executables. spawnSync swallows the spawn error
+// here, so without this the pipeline exits 0.0s having run nothing.
+const useShell = process.platform === 'win32';
+
 let exitCode = 0;
 for (const [cmd, args] of steps) {
-  const result = spawnSync(cmd, args, { stdio: 'inherit', shell: false });
+  const result = spawnSync(cmd, args, { stdio: 'inherit', shell: useShell });
+  if (result.error) {
+    console.error(`\nFailed to run ${cmd} ${args.join(' ')}: ${result.error.message}`);
+    exitCode = 1;
+    break;
+  }
   exitCode = result.status ?? 1;
   if (exitCode !== 0) break;
 }

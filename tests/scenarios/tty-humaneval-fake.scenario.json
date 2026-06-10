@@ -28,13 +28,14 @@
         "waitFor": "HumanEval problems",
         "screenContains": [
           "HumanEval problems",
+          "Run All",
           "test/0",
           "HumanEval/0"
         ]
       },
       {
         "name": "navigate down to HumanEval/0",
-        "send": "\u001b[B",
+        "send": "\u001b[B\u001b[B",
         "screenContains": [
           "HumanEval/0"
         ]
@@ -61,6 +62,7 @@
         "waitFor": "HumanEval problems",
         "screenContains": [
           "HumanEval problems",
+          "Run All",
           "●",
           "HumanEval/0"
         ]

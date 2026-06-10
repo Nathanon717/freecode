@@ -18,6 +18,7 @@ import { formatCapturedProviderUsages } from '../providers/adapters/openai-compa
 import { redrawBanner } from './banner.js';
 import { showHelp } from './slash-commands.js';
 import type { SessionController } from './session-controller.js';
+import { setTokenCount } from './terminal-ui.js';
 
 export type CommandDispatchResult = 'continue' | 'exit';
 export type ModelListMode = 'current-only' | 'full';
@@ -189,6 +190,10 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
     }
 
     runtime.session.addAssistantMessage(result.text);
+
+    if (result.usage.promptTokens !== undefined) {
+      setTokenCount(result.usage.promptTokens);
+    }
 
     if (result.providerId === 'anthropic' || result.providerId === 'openai') {
       const sessionTotal = result.providerId === 'anthropic'
