@@ -10,6 +10,6 @@
 - `isContextOverflowError(error)` - returns `true` when the error message matches any of the known context-overflow patterns across providers (Anthropic, OpenAI, Gemini, Ollama, etc.).
 - `isProviderToolUseFailed(error)` - returns `true` when the provider returned `code: tool_use_failed`.
 
-**Key neighbors:** `src/agent/loop.ts`, `src/agent/tools/index.ts`, `src/cli/command-dispatcher.ts`, `src/cli/preflight-input-cost.ts`, `src/providers/anthropic-cost.ts`, `src/providers/openai-cost.ts`
+**Key neighbors:** `src/agent/loop.ts`, `src/agent/tools/index.ts`, `src/cli/command-dispatcher.ts`, `src/providers/anthropic-cost.ts`, `src/providers/openai-cost.ts`
 
 **Update triggers:** New error-related utilities needed in two or more source files.

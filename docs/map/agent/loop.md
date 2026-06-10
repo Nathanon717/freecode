@@ -89,8 +89,7 @@ return AgentLoopResult
 - [providers/registry.md](../providers/registry.md): resolves provider/model.
 - [system-prompt.md](system-prompt.md): builds the prompt.
 - [tools/index.md](tools/index.md): creates tool wrappers.
-- [providers/adapters/openai-responses.md](../providers/adapters/openai-responses.md): direct OpenAI Responses generation and usage capture.
-- [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md) and [providers/adapters/anthropic.md](../providers/adapters/anthropic.md): capture provider metadata and usage details for other providers.
+- [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md) and [providers/adapters/anthropic.md](../providers/adapters/anthropic.md): capture provider metadata and usage details.
 - [providers/fake.md](../providers/fake.md): fake fixture runner for free agent-loop verification.
 
 ## Error Handling

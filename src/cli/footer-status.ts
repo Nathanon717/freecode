@@ -1,28 +1,10 @@
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import type { OpenAIDailySpend } from './openai-daily-spend.js';
 
-export interface PreflightInputCost {
-  state: 'idle' | 'pending' | 'ready' | 'unavailable';
-  providerId: string;
-  modelId: string;
-  inputTokens?: number;
-  inputUsd?: number | null;
-  formattedInputUsd?: string;
-  payloadHash?: string;
-  updatedAt: number;
-  warning?: string;
-}
-
 let lastTokenCount = 0;
 let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
 let lastModelStatus = '';
 let lastOpenAIDailySpend: OpenAIDailySpend = { state: 'idle', updatedAt: 0 };
-let lastPreflightInputCost: PreflightInputCost = {
-  state: 'idle',
-  providerId: '',
-  modelId: '',
-  updatedAt: 0,
-};
 let retryBannerInfo: { name: string; label: string; targetMs: number } | null = null;
 
 export function setTokenCount(tokenCount: number): void { lastTokenCount = tokenCount; }
@@ -31,9 +13,6 @@ export function setQuotaSnapshot(quota: RateLimitSnapshot | null): void {
 }
 export function setModelStatus(providerId: string, modelId: string): void {
   lastModelStatus = providerId && modelId ? `${providerId}:${modelId}` : (providerId || modelId);
-}
-export function setPreflightInputCost(snapshot: PreflightInputCost): void {
-  lastPreflightInputCost = snapshot;
 }
 export function setOpenAIDailySpend(snapshot: OpenAIDailySpend): void {
   lastOpenAIDailySpend = snapshot;
@@ -125,23 +104,6 @@ function formatQuotaStatus(now = Date.now()): string {
   return parts.join(' | ');
 }
 
-function formatPreflightInputCost(): string {
-  if (lastPreflightInputCost.state === 'pending') return 'input tok: counting';
-  if (lastPreflightInputCost.state === 'unavailable') {
-    const warning = lastPreflightInputCost.warning ? `: ${lastPreflightInputCost.warning}` : '';
-    return `input tok failed${warning}`;
-  }
-  if (lastPreflightInputCost.state === 'idle' && lastPreflightInputCost.warning) {
-    return `input tok off: ${lastPreflightInputCost.warning}`;
-  }
-  if (lastPreflightInputCost.state !== 'ready' || lastPreflightInputCost.inputTokens === undefined) return '';
-  const tokenText = `${lastPreflightInputCost.inputTokens.toLocaleString('en-US')} in tok`;
-  const costText = lastPreflightInputCost.formattedInputUsd
-    ? `${lastPreflightInputCost.formattedInputUsd} input`
-    : 'input cost unavailable';
-  return `${tokenText} | ${costText}`;
-}
-
 function formatOpenAIDailySpend(): string {
   if (lastOpenAIDailySpend.state === 'pending') return 'OpenAI today: loading';
   if (lastOpenAIDailySpend.state === 'idle' && lastOpenAIDailySpend.warning) {
@@ -162,20 +124,16 @@ export function layoutFooterRightRows(width: number, rowBudget: number, now = Da
   const quotaStr = formatQuotaStatus(now);
   const tokenStr = `${lastTokenCount} ctx`;
   const statusStr = quotaStr ? `${quotaStr} | ${tokenStr}` : tokenStr;
-  const preflightStr = formatPreflightInputCost();
   const dailySpendStr = formatOpenAIDailySpend();
   const modelStr = lastModelStatus;
 
-  const secondaryParts = [dailySpendStr, preflightStr].filter(Boolean);
+  const secondaryParts = [dailySpendStr].filter(Boolean);
   const secondaryStr = secondaryParts.join(' | ');
 
   // Single-row fallback — drops least-important content progressively.
   function singleRow(): string {
     const full = [modelStr, ...secondaryParts, statusStr].filter(Boolean).join(' | ');
     if (full.length <= width) return full;
-
-    const withoutPreflight = [modelStr, dailySpendStr, statusStr].filter(Boolean).join(' | ');
-    if (withoutPreflight.length <= width) return withoutPreflight;
 
     const withoutSecondary = [modelStr, statusStr].filter(Boolean).join(' | ');
     if (withoutSecondary.length <= width) return withoutSecondary;
@@ -193,7 +151,7 @@ export function layoutFooterRightRows(width: number, rowBudget: number, now = Da
   const full = [modelStr, ...secondaryParts, statusStr].filter(Boolean).join(' | ');
   if (full.length <= width) return [full];
 
-  // Split: primary = model + quota/ctx, secondary row = spend + preflight.
+  // Split: primary = model + quota/ctx, secondary row = spend.
   const primaryStr = [modelStr, statusStr].filter(Boolean).join(' | ');
   if (primaryStr.length <= width) {
     if (!secondaryStr || secondaryStr.length <= width) {

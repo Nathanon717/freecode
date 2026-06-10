@@ -1,27 +1,30 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   setTokenCount,
   setQuotaSnapshot,
   setModelStatus,
-  setPreflightInputCost,
   setOpenAIDailySpend,
   setRetryBanner,
   formatEvalRunStatus,
   layoutFooterRightRows,
   composeBottomStatusLine,
-  type PreflightInputCost,
+  composeBottomRightStatus,
 } from '../../src/cli/footer-status.js';
 
 function resetState() {
+  vi.useRealTimers();
   setTokenCount(0);
   setQuotaSnapshot(null);
   setModelStatus('', '');
-  setPreflightInputCost({ state: 'idle', providerId: '', modelId: '', updatedAt: 0 });
   setOpenAIDailySpend({ state: 'idle', updatedAt: 0 });
   setRetryBanner(null);
 }
 
 beforeEach(() => {
+  resetState();
+});
+
+afterEach(() => {
   resetState();
 });
 
@@ -80,25 +83,6 @@ describe('layoutFooterRightRows', () => {
     expect(rows[0]).toContain('7 ctx');
   });
 
-  it('shows pending state for preflight input cost', () => {
-    setPreflightInputCost({ state: 'pending', providerId: 'openai', modelId: 'gpt-4o', updatedAt: 0 });
-    const rows = layoutFooterRightRows(200, 1);
-    expect(rows[0]).toContain('counting');
-  });
-
-  it('shows ready preflight data with token count and cost', () => {
-    setPreflightInputCost({
-      state: 'ready',
-      providerId: 'openai',
-      modelId: 'gpt-4o',
-      inputTokens: 1500,
-      formattedInputUsd: '$0.003 USD',
-      updatedAt: 0,
-    });
-    const rows = layoutFooterRightRows(200, 1);
-    expect(rows[0]).toContain('1,500 in tok');
-    expect(rows[0]).toContain('$0.003 USD');
-  });
 });
 
 describe('composeBottomStatusLine', () => {
@@ -112,4 +96,117 @@ describe('composeBottomStatusLine', () => {
     const line = composeBottomStatusLine(1);
     expect(line.length).toBe(0);
   });
+
+  it('right-aligns quota status and current context token count', () => {
+    const now = new Date('2026-05-18T12:00:00.000Z');
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+
+    setQuotaSnapshot([
+      { label: 'R', remaining: 974, limit: 1000, resetMs: 2_205_000 },
+      { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
+    ]);
+    setTokenCount(123);
+
+    expect(composeBottomStatusLine(123, now.getTime())).toBe(
+      '                                                             R  974/1000 full 36m45s | T 12000/12000 full 0s     | 123 ctx'
+    );
+  });
+});
+
+describe('composeBottomRightStatus', () => {
+  it('keeps model and token count visible when quota status is too wide', () => {
+    const now = new Date('2026-05-18T12:00:00.000Z');
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+
+    setModelStatus('groq', 'llama-3.3-70b-versatile');
+    setQuotaSnapshot([
+      { label: 'R', remaining: 985, limit: 1000, resetMs: 1_287_000 },
+      { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
+    ]);
+    setTokenCount(123);
+
+    const status = composeBottomRightStatus(62, now.getTime());
+
+    expect(status).toContain('groq:llama-3.3-70b-versatile');
+    expect(status).toContain('123 ctx');
+    expect(status).not.toContain('R  985/1000');
+    expect(status.length).toBeLessThanOrEqual(62);
+  });
+
+  it('keeps fixed footer labels in the same columns as quota values change width', () => {
+    const now = new Date('2026-05-18T12:00:00.000Z');
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+
+    setQuotaSnapshot([
+      { label: 'R', remaining: 9, limit: 1000, resetMs: 2_000 },
+      { label: 'T', remaining: 89, limit: 12000, resetMs: 0 },
+    ]);
+    setTokenCount(7);
+    const lowValues = composeBottomRightStatus(80, now.getTime());
+
+    setQuotaSnapshot([
+      { label: 'R', remaining: 986, limit: 1000, resetMs: 1_188_000 },
+      { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
+    ]);
+    setTokenCount(289);
+    const highValues = composeBottomRightStatus(80, now.getTime());
+
+    for (const label of ['/1000 full', '| T', '/12000 full', '|']) {
+      expect(highValues.indexOf(label)).toBe(lowValues.indexOf(label));
+    }
+    // ctx position is not fixed-width since token count has no upper bound to align against
+  });
+
+  it('renders OpenAI daily spend when available', () => {
+    setTokenCount(123);
+    setOpenAIDailySpend({
+      state: 'ready',
+      amountUsd: 1.23,
+      formattedAmountUsd: '$1.23',
+      updatedAt: Date.now(),
+    });
+
+    const status = composeBottomRightStatus(80);
+
+    expect(status).toContain('OpenAI today $1.23');
+    expect(status).toContain('123 ctx');
+  });
+
+  it('renders OpenAI daily spend missing-key and failure states', () => {
+    setTokenCount(123);
+    setOpenAIDailySpend({
+      state: 'idle',
+      warning: 'OPENAI_ADMIN_KEY missing',
+      updatedAt: Date.now(),
+    });
+    expect(composeBottomRightStatus(80)).toContain('OpenAI spend off: OPENAI_ADMIN_KEY missing');
+
+    setOpenAIDailySpend({
+      state: 'unavailable',
+      warning: 'OpenAI costs HTTP 401',
+      updatedAt: Date.now(),
+    });
+    expect(composeBottomRightStatus(80)).toContain('OpenAI spend failed: OpenAI costs HTTP 401');
+  });
+
+  it('drops OpenAI daily spend before dropping model', () => {
+    setModelStatus('openai', 'gpt-5.4-nano-2026-03-17');
+    setTokenCount(123);
+    setOpenAIDailySpend({
+      state: 'ready',
+      amountUsd: 1.23,
+      formattedAmountUsd: '$1.23',
+      updatedAt: Date.now(),
+    });
+
+    const status = composeBottomRightStatus(44);
+
+    expect(status).toContain('openai:gpt-5.4-nano-2026-03-17');
+    expect(status).not.toContain('OpenAI today $1.23');
+    expect(status.length).toBeLessThanOrEqual(44);
+  });
+
 });

@@ -31,6 +31,5 @@ Changing what is shown in the footer status area, adding new status fields, or d
 ## Key neighbors
 
 - `cli/terminal-ui.ts` — imports `layoutFooterRightRows` and `formatEvalRunStatus` for `composeFooterOutput`; re-exports everything for backwards-compat callers
-- `cli/preflight-input-cost.ts` — imports `PreflightInputCost` type
 - `cli/openai-daily-spend.ts` — imports `OpenAIDailySpend` type
 - `providers/quota/headers.ts` — imports `RateLimitSnapshot` type

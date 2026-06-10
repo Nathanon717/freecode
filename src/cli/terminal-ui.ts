@@ -13,12 +13,10 @@ import {
   cursorToVisualPos,
 } from './input-buffer.js';
 
-export type { PreflightInputCost } from './footer-status.js';
 export {
   setTokenCount,
   setQuotaSnapshot,
   setModelStatus,
-  setPreflightInputCost,
   setOpenAIDailySpend,
   setRetryBanner,
   composeBottomRightStatus,

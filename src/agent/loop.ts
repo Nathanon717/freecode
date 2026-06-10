@@ -19,11 +19,6 @@ import {
   type CostEstimate,
 } from '../providers/anthropic-cost.js';
 import { estimateOpenAICostVerified } from '../providers/openai-cost.js';
-import {
-  buildOpenAIResponsesPayload,
-  generateOpenAIResponses,
-  getLastCapturedOpenAIHeaders,
-} from '../providers/adapters/openai-responses.js';
 import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk } from '../cli/transcript-renderer.js';
 import { renderMarkdown, createMarkdownStreamRenderer } from '../cli/markdown-renderer.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
@@ -289,21 +284,20 @@ async function finalizeUsageCapture(
       providerUsage = [{ providerId, model: modelId, source: 'sse', usage: anthropicUsage, capturedAt: Date.now() }];
     }
     log('stream', 'Anthropic cost estimate', costEstimate);
-  } else if (providerId === 'openai') {
-    if (promptTokens !== undefined || outputTokens !== undefined) {
+  } else {
+    providerUsage = await endProviderUsageCapture(providerId);
+    if (providerId === 'openai' && (promptTokens !== undefined || outputTokens !== undefined)) {
       const rates = await getOpenAIVerifiedRates(modelId);
       costEstimate = estimateOpenAICostVerified(modelId, promptTokens, outputTokens, rates);
       log('stream', 'OpenAI cost estimate', costEstimate);
     }
-  } else {
-    providerUsage = await endProviderUsageCapture(providerId);
     if (providerUsage.length > 0) {
       log('stream', 'Provider usage captured', providerUsage);
     }
   }
 
   if (process.env['DEBUG_QUOTA'] !== '0') {
-    quota = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId) ?? getLastCapturedOpenAIHeaders(providerId);
+    quota = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
     if (quota) log('quota', `Rate limit headers captured`, quota);
     else log('quota', `No rate limit headers captured for ${providerId}`);
   }
@@ -396,62 +390,32 @@ export async function agentLoop(
     return runFakeLlm(providerId, modelId, supportsTools, systemPrompt, messages, options, modelSettings);
   }
 
-  if (!modelSettings.parallelTools && providerId !== 'openai' && providerId !== 'anthropic') {
+  if (!modelSettings.parallelTools && providerId !== 'anthropic') {
     setParallelToolsDisabled(providerId, true);
   }
   try {
-    if (providerId === 'openai') {
-      beginTranscriptTurn();
-      const provider = getProvider(providerId);
-      if (!provider) throw new Error(`Unknown provider: "${providerId}"`);
-      const tools = supportsTools ? createTools(options.confirmToolCall, undefined, false, options.readOnly) : undefined;
-      const payload = buildOpenAIResponsesPayload({
-        modelId,
-        systemPrompt,
-        messages,
-        ...(tools ? { tools } : {}),
-        toolRationale: modelSettings.toolRationale,
-        parallelTools: modelSettings.parallelTools,
-      });
-      const generated = await generateOpenAIResponses(provider, payload, tools, options.confirmToolCall);
-      fullText = generated.text.trimEnd();
-      if (fullText) {
-        const rendered = renderMarkdown(fullText);
-        process.stdout.write(rendered.endsWith('\n') ? rendered : rendered + '\n');
-      }
-      notifyTranscriptChunk(fullText ? fullText + '\n' : '');
-      totalTokens = generated.usage.totalTokens;
-      promptTokens = generated.usage.promptTokens;
-      outputTokens = generated.usage.outputTokens;
-      providerUsage = generated.providerUsage;
-      log('stream', 'OpenAI Responses complete', { textLength: fullText.length, totalTokens, promptTokens, outputTokens });
-      endTranscriptStep(false);
-      const oaiHeaders = getLastCapturedOpenAIHeaders(providerId);
-      if (oaiHeaders) options.onPartialResult?.({ providerId, modelId, quota: oaiHeaders });
-    } else if (providerId === 'anthropic') {
+    if (providerId === 'anthropic') {
       beginAnthropicUsageCapture(providerId);
     } else {
       beginProviderUsageCapture(providerId);
     }
 
-    if (providerId !== 'openai') {
-      const streamed = await streamWithRetry(languageModel, supportsTools, systemPrompt, messages, providerId, modelId, options, modelSettings);
-      fullText = streamed.fullText;
-      totalTokens = streamed.totalTokens;
-      promptTokens = streamed.promptTokens;
-      outputTokens = streamed.outputTokens;
+    const streamed = await streamWithRetry(languageModel, supportsTools, systemPrompt, messages, providerId, modelId, options, modelSettings);
+    fullText = streamed.fullText;
+    totalTokens = streamed.totalTokens;
+    promptTokens = streamed.promptTokens;
+    outputTokens = streamed.outputTokens;
 
-      if (streamed.usePromptToolsFallback) {
-        const ptResult = await runPromptToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale, options.readOnly);
-        fullText = ptResult.text.trimEnd();
-        totalTokens = ptResult.totalTokens;
-        promptTokens = ptResult.promptTokens;
-        outputTokens = ptResult.outputTokens;
-      }
+    if (streamed.usePromptToolsFallback) {
+      const ptResult = await runPromptToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale, options.readOnly);
+      fullText = ptResult.text.trimEnd();
+      totalTokens = ptResult.totalTokens;
+      promptTokens = ptResult.promptTokens;
+      outputTokens = ptResult.outputTokens;
+    }
 
-      if (providerId === FAKE_NATIVE_PROVIDER_ID && !streamed.usePromptToolsFallback) {
-        assertFakeFixtureComplete();
-      }
+    if (providerId === FAKE_NATIVE_PROVIDER_ID && !streamed.usePromptToolsFallback) {
+      assertFakeFixtureComplete();
     }
 
     applyUsageOutcome(await finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens));

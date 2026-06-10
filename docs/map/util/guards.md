@@ -7,6 +7,6 @@
 **Exports:**
 - `isRecord(value)` — returns `true` when `value` is a non-null, non-array object.
 
-**Key neighbors:** `src/providers/adapters/openai-compat.ts`, `src/providers/adapters/openai-responses.ts`
+**Key neighbors:** `src/providers/adapters/openai-compat.ts`
 
 **Update triggers:** New type guards that are (or will be) used in two or more source files.

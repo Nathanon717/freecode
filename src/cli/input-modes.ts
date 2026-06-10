@@ -33,7 +33,6 @@ import {
   setInlineCompletion,
   setModelStatus,
   setOpenAIDailySpend,
-  setPreflightInputCost,
   setQuotaSnapshot,
   setSuggestions,
   setTokenCount,
@@ -42,7 +41,6 @@ import {
   teardownBottomUI,
   teardownFooterUI,
 } from "./terminal-ui.js";
-import { createOpenAIPreflightInputController } from "./preflight-input-cost.js";
 import { refreshOpenAIDailySpend } from "./openai-daily-spend.js";
 import { loadCachedQuota, saveQuotaToCache } from "../providers/quota/cache.js";
 import { cycleByChar, getAskMode, initAskMode, isReadOnly } from "./toggles.js";
@@ -58,12 +56,6 @@ function resetBottomPromptState(session: SessionController): void {
   setTokenCount(session.getContextTokenCount());
   setInputBuffer("");
   setInlineCompletion(null);
-  setPreflightInputCost({
-    state: "idle",
-    providerId: "",
-    modelId: "",
-    updatedAt: Date.now(),
-  });
   setSuggestions(getFilteredCommands(""));
 }
 
@@ -115,12 +107,6 @@ async function readLineWithAutocomplete(
   setTokenCount(tokenCount);
   setInputBuffer("");
   setInlineCompletion(null);
-  setPreflightInputCost({
-    state: "idle",
-    providerId: "",
-    modelId: "",
-    updatedAt: Date.now(),
-  });
   setSuggestions(getFilteredCommands(""));
   refreshFooterDailySpend(getSelectedModel);
   setupInputUI();
@@ -139,7 +125,6 @@ async function readLineWithAutocomplete(
       const input = getInputBuffer();
       setInlineCompletion(getCommandCompletion(input));
       setSuggestions(getFilteredCommands(input));
-      preflight.schedule(input);
       drawBottomUI();
     }
 
@@ -154,15 +139,7 @@ async function readLineWithAutocomplete(
       for (const listener of savedListeners) {
         process.stdin.on("data", listener);
       }
-      preflight.stop();
     }
-
-    const preflight = createOpenAIPreflightInputController({
-      getMessages: () => session.messages,
-      getSelectedModel,
-      setPreflightInputCost,
-      redraw: drawBottomUI,
-    });
 
     function onData(data: string) {
       if (data === "\x03") {

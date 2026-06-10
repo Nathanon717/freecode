@@ -21,7 +21,6 @@
 - [anthropic-cost.md](anthropic-cost.md): shared `CostEstimate` / `CostEstimateBreakdown` types and USD formatter.
 - [pricing-verifier.md](pricing-verifier.md): provides verified rates.
 - [../agent/loop.md](../agent/loop.md): estimates completed OpenAI turn cost.
-- [../cli/preflight-input-cost.md](../cli/preflight-input-cost.md): estimates live input-token cost from exact preflight counts.
 - [../cli/session-controller.md](../cli/session-controller.md): resets session totals.
 
 ## Update Triggers

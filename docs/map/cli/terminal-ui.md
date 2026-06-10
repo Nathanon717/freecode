@@ -36,11 +36,7 @@ The module uses ANSI scroll-region controls so normal output scrolls above the r
 
 A `cursorPos` index tracks the insertion point within the flat buffer (with embedded `\n` for multi-line). `cursorLineCol()` converts it to (lineIdx, colInLine) at draw time. The cursor position is updated by the cursor-movement exports. Inline completion is only shown when the buffer is single-line.
 
-The input row shows the prompt and inline completion. The status row right-aligns model, OpenAI daily spend, OpenAI preflight input cost, quota, and context-token count (displayed as `N ctx`).
-
-## Preflight Input Cost
-
-`setPreflightInputCost()` accepts a `PreflightInputCost` snapshot from `preflight-input-cost.ts`. Only `ready` snapshots are rendered, formatted as exact input tokens plus input-token cost, for example `12,431 in tok | $0.0186 input`.
+The input row shows the prompt and inline completion. The status row right-aligns model, OpenAI daily spend, quota, and context-token count (displayed as `N ctx`).
 
 ## Quota Display
 
