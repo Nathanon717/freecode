@@ -14,6 +14,29 @@ export function countWrappedLines(lines: string[]): number {
   return total;
 }
 
+// Restores cooked-mode terminal state after a raw-mode picker: re-enables the
+// cursor, disables mouse/bracketed-paste tracking, and clears the scroll region.
+export function resetTerminalPrivateModes(): void {
+  if (!process.stdout.isTTY) return;
+  process.stdout.write(
+    "\x1b[0m" +
+      "\x1b[?25h" +
+      "\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l" +
+      "\x1b[?2004l" +
+      "\x1b[r",
+  );
+}
+
+// Cycles stdin raw mode to flush any wedged console input state on Windows.
+export function resetStdinConsoleMode(): void {
+  if (!process.stdin.isTTY) return;
+  process.stdin.setRawMode(false);
+  process.stdin.resume();
+  process.stdin.setRawMode(true);
+  process.stdin.setRawMode(false);
+  process.stdin.resume();
+}
+
 export interface RawPickerOptions<T = void> {
   render: () => string[];
   onKey: (key: string, redraw: () => void, close: (result: T) => void) => void;

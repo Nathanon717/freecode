@@ -9,7 +9,7 @@ let installed = false;
 // repaint overlay rows.
 let epochStart = 0;
 
-function stripAnsi(str: string): string {
+export function stripAnsi(str: string): string {
   return str.replace(/\x1b(?:\[[0-9;?]*[A-Za-z]|[^[])/g, '');
 }
 

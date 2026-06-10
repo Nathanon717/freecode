@@ -15,6 +15,13 @@ interface PromptToolsResult {
   outputTokens?: number;
 }
 
+executeToolCalls(
+  tools: ReturnType<typeof createTools>,
+  calls: ReadonlyArray<{ name: string; args: Record<string, unknown> }>,
+  idPrefix: string,
+  messages: CoreMessage[],
+): Promise<string[]>
+
 runPromptToolsLoop(
   messages: CoreMessage[],
   systemPrompt: string,
@@ -32,11 +39,14 @@ runPromptToolsLoop(
 
 ## How It Works
 
+`executeToolCalls` iterates a list of parsed tool calls against a `createTools` map: unknown tools become error strings (fed back to the model), known tools delegate to their wrapped `execute`. This helper is used by both `runPromptToolsLoop` (text-based protocol) and `runFakeLlm` in `loop.ts` (fake fixture tool execution).
+
+`runPromptToolsLoop`:
 1. Appends a tool-calling protocol section to the system prompt.
 2. Calls `streamText` (no native tools) and buffers the full response.
 3. Parses `<tool_call>{"name":"...","args":{...}}</tool_call>` blocks.
 4. If no calls: prints the response and returns.
-5. If calls: prints any text before the first call, then for each call calls the wrapped tool from `createTools` (which handles logging, confirmation, and result display), then injects all results as a `<tool_result>` user message and loops (up to 10 steps).
+5. If calls: prints any text before the first call, calls `executeToolCalls`, injects all results as a `<tool_result>` user message, and loops (up to 10 steps).
 
 The embedded tool reference must mirror the actual tool schemas; for example `grep` uses `include` for its optional glob filter.
 

@@ -2,15 +2,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   composeBottomRightStatus,
   composeBottomStatusLine,
-  cursorToVisualPos,
-  getInlineCompletionSuffix,
   setModelStatus,
   setOpenAIDailySpend,
   setPreflightInputCost,
   setQuotaSnapshot,
   setTokenCount,
-  visualRowsForLine,
-} from '../../src/cli/terminal-ui.js';
+} from '../../src/cli/footer-status.js';
+import { cursorToVisualPos, visualRowsForLine } from '../../src/cli/input-buffer.js';
+import { getInlineCompletionSuffix } from '../../src/cli/terminal-ui.js';
 
 describe('bottom pinned status section', () => {
   afterEach(() => {

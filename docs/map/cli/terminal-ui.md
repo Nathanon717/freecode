@@ -1,35 +1,30 @@
 # src/cli/terminal-ui.ts - Bottom Terminal UI
 
-**Role:** Maintains the bottom-pinned prompt/status area used by interactive mode.
+**Role:** Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and input-area overlay logic; status state lives in `footer-status.ts` and buffer/cursor state lives in `input-buffer.ts`. Re-exports everything from those modules for backwards-compat callers.
 
 ## Exports
 
-State setters/getters:
+Direct (defined here):
 
-- `isBottomUIActive()`
-- `getInputBuffer()`, `setInputBuffer()`
-- `insertAtCursor(text)`, `backspaceAtCursor()`, `deleteAtCursor()` — cursor-aware buffer mutations
-- `moveCursorLeft()`, `moveCursorRight()`, `moveCursorHome()`, `moveCursorEnd()`, `moveCursorUp()`, `moveCursorDown()` — cursor navigation
-- `setTokenCount()`
-- `setQuotaSnapshot()`
-- `setModelStatus()`
-- `setOpenAIDailySpend()`
-- `setPreflightInputCost()`
-- `setSuggestions()`
-- `setInlineCompletion()`
-- `setRetryBanner(info | null)` — sets a rate-limit countdown shown on the footer left side; `info` has `{ name, label, targetMs }` and remaining seconds are computed from `targetMs` each footer refresh
-
-Rendering/control:
-
-- `composeBottomRightStatus()`
-- `composeBottomStatusLine()`
-- `getInlineCompletionSuffix()`
-- `drawBottomUI()`
-- `parkCursorInScrollRegion()`
-- `parkCursorAboveBottomUI()`
-- `setupBottomUI()`
-- `teardownBottomUI()`
+- `isBottomUIActive()`, `isFooterUIActive()`
+- `setSuggestions()`, `setInlineCompletion()` — input-area suggestion overlay state
+- `getInlineCompletionSuffix(input, completion)`
+- `composeFooterOutput()` — returns ANSI escape string for footer rows
+- `drawFooter()`, `drawBottomUI()`
+- `parkCursorInScrollRegion()`, `parkCursorAboveBottomUI()`
+- `setupFooterUI()`, `setupInputUI()`, `setupBottomUI()`
+- `teardownBottomUI()`, `teardownFooterUI()`
 - `resetSubmittedInputArea()`
+- `getRows()`, `getLastReservedRows()`
+- `suspendFooterTimer()`, `resumeFooterTimer()`
+
+Re-exported from `footer-status.ts`:
+
+- `PreflightInputCost` type, all `set*` status setters, `composeBottomRightStatus`, `composeBottomStatusLine`
+
+Re-exported from `input-buffer.ts`:
+
+- `getInputBuffer`, `setInputBuffer`, all cursor mutations, `visualRowsForLine`, `cursorToVisualPos`
 
 ## Layout
 

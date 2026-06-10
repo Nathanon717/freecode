@@ -46,7 +46,7 @@ if provider is OpenAI:
   estimate OpenAI turn cost from exact Responses usage
 else if provider is mock:
   run ordered fake fixture steps after building the real system prompt/tool list
-  execute scripted fake tool calls through the normal tool wrappers
+  execute scripted fake tool calls via executeToolCalls() from prompt-tools.ts
   feed tool results back as user messages until the fixture emits final text
 else if provider is Anthropic:
   begin usage capture
@@ -60,14 +60,11 @@ for await chunk of textStream:
   write chunk to stdout
   append to fullText
 await usage
-if provider is Anthropic:
-  end usage capture
-  fetch live/fallback pricing
-  estimate turn cost
-else if provider is OpenAI-compatible:
-  end raw provider usage capture
-if DEBUG_QUOTA !== "0":
-  read most recent captured OpenAI-compatible or Anthropic headers for providerId
+finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens)
+  -> ends Anthropic SSE capture or OpenAI-compat raw capture
+  -> fetches verified pricing and estimates turn cost
+  -> reads most recent rate-limit headers
+  (also runs on catch path so partial cost/quota survives stream failures)
 return AgentLoopResult
 ```
 
@@ -83,8 +80,9 @@ return AgentLoopResult
 
 ## Internal Helpers
 
-- `runFakeLlm(providerId, modelId, ...)` — handles the entire `FAKE_PROVIDER_ID` path including fake tool execution and transcript step management. Returns `AgentLoopResult` directly, so `agentLoop` returns immediately after calling it.
+- `runFakeLlm(providerId, modelId, ...)` — handles the entire `FAKE_PROVIDER_ID` path including transcript step management. Delegates tool execution to `executeToolCalls` from `prompt-tools.ts` (shared with the text-based fallback path). Returns `AgentLoopResult` directly, so `agentLoop` returns immediately after calling it.
 - `streamWithRetry(languageModel, supportsTools, ...)` — runs the `while(true)` streaming loop for all non-OpenAI, non-fake providers. Handles the three retry cases (tool-not-supported fallback, provider-rejected malformed call, no-such-tool, invalid-args) and returns a `StreamResult` with the accumulated text and token counts. Throws on non-retriable errors, which propagate to `agentLoop`'s catch.
+- `finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens)` — ends any active provider usage capture (Anthropic SSE headers, OpenAI-compat raw headers), fetches verified pricing, estimates turn cost, and reads the most recent rate-limit snapshot. Shared by both the success path and the catch path so partial cost/quota metadata survives stream failures. The OpenAI Responses cost estimate (previously inline) runs through this helper when `providerId === 'openai'`.
 
 ## Key Neighbors
 

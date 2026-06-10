@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import type { Interface } from 'readline';
-import { getConfigPaths, loadConfig, readRawConfig, resolveModelSettings, writeConfigFile } from '../config/index.js';
+import { getConfigPaths, loadConfig, readRawConfig, resolveModelSettings, updateGlobalConfig, writeConfigFile } from '../config/index.js';
 import type { Config, OverridableSettings } from '../providers/types.js';
 import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
 
@@ -185,11 +185,8 @@ function buildScreen(
 
 // ── Persistence ───────────────────────────────────────────────────────────────
 
-function saveGlobalSetting(globalPath: string, key: string, value: boolean | number): void {
-  const existing = (readRawConfig(globalPath) as Record<string, unknown>) ?? {};
-  delete existing['preferLocal'];
-  existing[key] = value;
-  writeConfigFile(globalPath, existing);
+function saveGlobalSetting(_globalPath: string, key: string, value: boolean | number): void {
+  updateGlobalConfig({ [key]: value });
 }
 
 function saveOverrideSetting(globalPath: string, tab: Tab, currentModel: string, key: string, value: TabValue): void {

@@ -128,6 +128,28 @@ export function writeConfigFile(path: string, data: Partial<Config>): void {
   cachedConfig = null;
 }
 
+export function updateGlobalConfig(patch: Record<string, unknown>): void {
+  const { globalPath } = getConfigPaths();
+  const existing = (readRawConfig(globalPath) as Record<string, unknown>) ?? {};
+  delete existing['preferLocal'];
+  writeConfigFile(globalPath, { ...existing, ...patch });
+}
+
+export function loadFavorites(): Set<string> {
+  const { globalPath } = getConfigPaths();
+  const raw = readRawConfig(globalPath) as Record<string, unknown> | null;
+  const favs = raw?.['favoriteModels'];
+  return new Set(Array.isArray(favs) ? favs : []);
+}
+
+export function saveFavorites(favorites: Set<string>): void {
+  updateGlobalConfig({ favoriteModels: [...favorites] });
+}
+
+export function saveDefaultModel(model: string): void {
+  updateGlobalConfig({ defaultModel: model });
+}
+
 export function resolveModelSettings(selectedModel: string): Required<OverridableSettings> {
   const config = loadConfig();
   const colonIdx = selectedModel.indexOf(':');

@@ -2,7 +2,6 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import type { Interface } from "readline";
 import chalk from "chalk";
-import type { TestScenarioSummary } from "./scenario-catalog.js";
 import {
   PLAYGROUND_EVAL_DIR,
   discoverPlaygroundScenarios,
@@ -19,7 +18,6 @@ export { getEvalStatus };
 
 import {
   isBottomUIActive,
-  setEvalRunning,
   setModelStatus,
   setQuotaSnapshot,
   setRetryBanner,
@@ -27,7 +25,12 @@ import {
   setupBottomUI,
   teardownBottomUI,
 } from "./terminal-ui.js";
-import { countWrappedLines, runRawPicker } from "./raw-picker.js";
+import {
+  countWrappedLines,
+  resetStdinConsoleMode,
+  resetTerminalPrivateModes,
+  runRawPicker,
+} from "./raw-picker.js";
 import { redrawBanner } from "./banner.js";
 import {
   loadEvalConfig,
@@ -46,64 +49,6 @@ import {
   printEvalReport,
 } from "./eval-screen.js";
 import { InlineActionMenu } from "./action-menu.js";
-
-function resetTerminalPrivateModes(): void {
-  if (!process.stdout.isTTY) return;
-  process.stdout.write(
-    "\x1b[0m" +
-      "\x1b[?25h" +
-      "\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l" +
-      "\x1b[?2004l" +
-      "\x1b[r",
-  );
-}
-
-function resetStdinConsoleMode(): void {
-  if (!process.stdin.isTTY) return;
-  process.stdin.setRawMode(false);
-  process.stdin.resume();
-  process.stdin.setRawMode(true);
-  process.stdin.setRawMode(false);
-  process.stdin.resume();
-}
-
-async function askQuestion(rl: Interface, prompt: string): Promise<string> {
-  return new Promise((resolve) => {
-    rl.question(prompt, (answer) => {
-      resolve(answer);
-    });
-  });
-}
-
-function printScenarioMenu(
-  title: string,
-  scenarios: TestScenarioSummary[],
-  showDetails: boolean,
-): void {
-  console.log(chalk.bold(`${title}\n`));
-  scenarios.forEach((scenario, idx) => {
-    const marker = scenario.requiresLlm
-      ? chalk.yellow("eval")
-      : chalk.green("verify");
-    const description = scenario.description
-      ? chalk.gray(` - ${scenario.description}`)
-      : "";
-    console.log(
-      `${String(idx + 1).padStart(2, " ")}. ${chalk.cyan(scenario.name)} ${marker}${description}`,
-    );
-    if (showDetails) {
-      const checks =
-        scenario.checks.length > 0
-          ? scenario.checks.join(", ")
-          : "no explicit assertions";
-      console.log(
-        chalk.gray(
-          `    file: ${scenario.file} | workspace: ${scenario.workspace} | checks: ${checks}`,
-        ),
-      );
-    }
-  });
-}
 
 export async function runEvalMenu(
   rl: Interface,
@@ -278,7 +223,6 @@ export async function runEvalMenu(
       printEvalHeader(scenario.id, prompt);
 
       resetEvalWorkDir(scenarioDir);
-      setEvalRunning(scenario.id);
       const maxToolCalls = loadEvalConfig(scenarioDir).maxToolCalls ?? 10;
       let result: EvalRunResult;
       const handle = startEvalScenario(scenarioDir, prompt, model || undefined);
@@ -335,7 +279,6 @@ export async function runEvalMenu(
         result = await handle.promise;
       } finally {
         clearInterval(liveStatusPoll);
-        setEvalRunning(null);
         setRetryBanner(null);
       }
 

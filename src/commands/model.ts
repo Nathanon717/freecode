@@ -1,8 +1,7 @@
 import chalk from 'chalk';
 import type { Interface } from 'readline';
-import { getConfigPaths, loadConfig, readRawConfig, resolveApiKey, writeConfigFile } from '../config/index.js';
+import { loadConfig, loadFavorites, resolveApiKey, saveDefaultModel, saveFavorites } from '../config/index.js';
 import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/registry.js';
-import type { ModelConfig, ProviderConfig } from '../providers/types.js';
 import { markModelSelected } from '../providers/model-cache.js';
 import { clearModelNewFlag } from '../providers/registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
@@ -46,75 +45,23 @@ function buildPricingBadge(pricing?: ModelMenuItem['pricing']): string {
   return '';
 }
 
-function saveDefaultModel(model: string): void {
-  const paths = getConfigPaths();
-  const existing = readRawConfig(paths.globalPath) ?? {};
-  delete (existing as Record<string, unknown>)['preferLocal'];
-  writeConfigFile(paths.globalPath, {
-    ...existing,
-    defaultModel: model,
-  });
-}
-
-function loadFavorites(): Set<string> {
-  const paths = getConfigPaths();
-  const raw = readRawConfig(paths.globalPath) as Record<string, unknown> | null;
-  const favs = raw?.['favoriteModels'];
-  return new Set(Array.isArray(favs) ? favs : []);
-}
-
-function saveFavorites(favorites: Set<string>): void {
-  const paths = getConfigPaths();
-  const existing = readRawConfig(paths.globalPath) ?? {};
-  delete (existing as Record<string, unknown>)['preferLocal'];
-  writeConfigFile(paths.globalPath, {
-    ...existing,
-    favoriteModels: [...favorites],
-  });
-}
-
 function sortItemsByFavorites(items: ModelMenuItem[]): void {
-  const byProvider = new Map<string, ModelMenuItem[]>();
-  const providerOrder: string[] = [];
-  for (const item of items) {
-    if (!byProvider.has(item.providerId)) {
-      byProvider.set(item.providerId, []);
-      providerOrder.push(item.providerId);
-    }
-    byProvider.get(item.providerId)!.push(item);
-  }
+  const providers = [...new Set(items.map(x => x.providerId))];
   let idx = 0;
-  for (const pid of providerOrder) {
-    const group = byProvider.get(pid)!;
-    const favs = group.filter(x => x.isFavorite);
-    const rest = group.filter(x => !x.isFavorite);
-    for (const item of [...favs, ...rest]) items[idx++] = item;
+  for (const pid of providers) {
+    const group = items.filter(x => x.providerId === pid);
+    const sorted = [...group.filter(x => x.isFavorite), ...group.filter(x => !x.isFavorite)];
+    for (const item of sorted) items[idx++] = item;
   }
 }
 
 type GroupMode = 'pretty' | 'provider';
 
-function addProviderModels(items: ModelMenuItem[], provider: ProviderConfig, models: ModelConfig[]): void {
-  for (const model of models) {
-    items.push({
-      providerId: provider.id,
-      providerName: provider.name,
-      modelId: model.id,
-      displayName: model.displayName,
-      modelsSource: provider.modelsSource,
-      isNew: model.isNew,
-    });
-  }
-}
-
 // Builds the flat displayItems list. Favorites appear twice: once as _favSection=true entries
 // at the front (Favorites section), and once as regular entries in their provider section.
 // This makes every visual row independently selectable via Up/Down.
 function buildDisplayList(items: ModelMenuItem[]): ModelMenuItem[] {
-  const favSectionItems = items
-    .filter(x => x.isFavorite)
-    .map(x => ({ ...x, _favSection: true }));
-  return [...favSectionItems, ...items];
+  return [...items.filter(x => x.isFavorite).map(x => ({ ...x, _favSection: true })), ...items];
 }
 
 export function filterModelItems(items: ModelMenuItem[], query: string): ModelMenuItem[] {
@@ -136,7 +83,16 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
 
   for (const provider of PROVIDER_REGISTRY) {
     if (!resolveApiKey(provider)) continue;
-    addProviderModels(items, provider, provider.models);
+    for (const model of provider.models) {
+      items.push({
+        providerId: provider.id,
+        providerName: provider.name,
+        modelId: model.id,
+        displayName: model.displayName,
+        modelsSource: provider.modelsSource,
+        isNew: model.isNew,
+      });
+    }
   }
 
   const noNativeTools = getNoNativeToolsModels();
@@ -315,10 +271,6 @@ function buildModelDetailScreen(item: ModelMenuItem): string[] {
 }
 
 type ModelPickResult = { item: ModelMenuItem; saveDefault: boolean } | null;
-
-function printableChars(key: string): string {
-  return [...key].filter(c => c >= ' ' && c !== '\x7f').join('');
-}
 
 // Returns true if the interactive picker was shown (screen left blank on close),
 // false for early exits that leave text output behind.
@@ -507,7 +459,7 @@ export async function runModelCommand(
         }
         return;
       }
-      const typed = printableChars(key);
+      const typed = [...key].filter(c => c >= ' ' && c !== '\x7f').join('');
       if (typed) {
         filterQuery += typed;
         refreshDisplayItems(displayItems[selected]);

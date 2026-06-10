@@ -1,9 +1,44 @@
 import chalk from 'chalk';
-import type { RateLimitSnapshot } from '../providers/quota/headers.js';
-import type { OpenAIDailySpend } from './openai-daily-spend.js';
+import { stripAnsi, getScreenBufferDisplayLinesForOverlay, startOverlayEpoch } from '../util/screen-buffer.js';
 import { getBannerColor } from './banner.js';
-import { getScreenBufferDisplayLinesForOverlay, startOverlayEpoch } from '../util/screen-buffer.js';
 import { composeToggleBar, toggleBarWidth } from './toggles.js';
+import {
+  layoutFooterRightRows,
+  formatEvalRunStatus,
+} from './footer-status.js';
+import {
+  getInputBuffer,
+  getCursorPos,
+  visualRowsForLine,
+  cursorToVisualPos,
+} from './input-buffer.js';
+
+export type { PreflightInputCost } from './footer-status.js';
+export {
+  setTokenCount,
+  setQuotaSnapshot,
+  setModelStatus,
+  setPreflightInputCost,
+  setOpenAIDailySpend,
+  setRetryBanner,
+  composeBottomRightStatus,
+  composeBottomStatusLine,
+} from './footer-status.js';
+export {
+  getInputBuffer,
+  setInputBuffer,
+  insertAtCursor,
+  backspaceAtCursor,
+  deleteAtCursor,
+  moveCursorLeft,
+  moveCursorRight,
+  moveCursorHome,
+  moveCursorEnd,
+  moveCursorUp,
+  moveCursorDown,
+  visualRowsForLine,
+  cursorToVisualPos,
+} from './input-buffer.js';
 
 const ESC = '\x1b[';
 
@@ -12,39 +47,12 @@ let inputUIActive = false;
 let footerTimerSuspended = false;
 let footerRowCount = 2;
 let lastReservedRows = 2;
-let lastInputBuf = '';
-let cursorPos = 0;
-let lastTokenCount = 0;
 let lastSuggestions: string[] = [];
 let lastInlineCompletion: string | null = null;
 let suggestionOverlayRows = 0;
 let suggestionOverlayStartRow = 0;
 let suggestionOverlayRestoreLines: string[] = [];
-let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
-let lastModelStatus = '';
-let lastOpenAIDailySpend: OpenAIDailySpend = { state: 'idle', updatedAt: 0 };
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
-let _evalRunLabel: string | null = null;
-let retryBannerInfo: { name: string; label: string; targetMs: number } | null = null;
-
-export interface PreflightInputCost {
-  state: 'idle' | 'pending' | 'ready' | 'unavailable';
-  providerId: string;
-  modelId: string;
-  inputTokens?: number;
-  inputUsd?: number | null;
-  formattedInputUsd?: string;
-  payloadHash?: string;
-  updatedAt: number;
-  warning?: string;
-}
-
-let lastPreflightInputCost: PreflightInputCost = {
-  state: 'idle',
-  providerId: '',
-  modelId: '',
-  updatedAt: 0,
-};
 
 function rows(): number { return process.stdout.rows || 24; }
 function cols(): number { return process.stdout.columns || 80; }
@@ -73,13 +81,8 @@ function clearLineSequence(): string {
   return `${ESC}2K`;
 }
 
-export function isBottomUIActive(): boolean {
-  return inputUIActive;
-}
-
-export function isFooterUIActive(): boolean {
-  return footerActive;
-}
+export function isBottomUIActive(): boolean { return inputUIActive; }
+export function isFooterUIActive(): boolean { return footerActive; }
 
 export function suspendFooterTimer(): void { footerTimerSuspended = true; }
 export function resumeFooterTimer(): void { footerTimerSuspended = false; }
@@ -87,313 +90,8 @@ export function resumeFooterTimer(): void { footerTimerSuspended = false; }
 export function getRows(): number { return rows(); }
 export function getLastReservedRows(): number { return lastReservedRows; }
 
-export function getInputBuffer(): string {
-  return lastInputBuf;
-}
-
-export function setInputBuffer(input: string): void {
-  lastInputBuf = input;
-  cursorPos = input.length;
-}
-
-export function insertAtCursor(text: string): void {
-  lastInputBuf = lastInputBuf.slice(0, cursorPos) + text + lastInputBuf.slice(cursorPos);
-  cursorPos += text.length;
-}
-
-export function backspaceAtCursor(): void {
-  if (cursorPos > 0) {
-    lastInputBuf = lastInputBuf.slice(0, cursorPos - 1) + lastInputBuf.slice(cursorPos);
-    cursorPos--;
-  }
-}
-
-export function deleteAtCursor(): void {
-  if (cursorPos < lastInputBuf.length) {
-    lastInputBuf = lastInputBuf.slice(0, cursorPos) + lastInputBuf.slice(cursorPos + 1);
-  }
-}
-
-export function moveCursorLeft(): void {
-  if (cursorPos > 0) cursorPos--;
-}
-
-export function moveCursorRight(): void {
-  if (cursorPos < lastInputBuf.length) cursorPos++;
-}
-
-export function moveCursorHome(): void {
-  const before = lastInputBuf.slice(0, cursorPos);
-  const lastNl = before.lastIndexOf('\n');
-  cursorPos = lastNl + 1;
-}
-
-export function moveCursorEnd(): void {
-  const after = lastInputBuf.slice(cursorPos);
-  const nextNl = after.indexOf('\n');
-  cursorPos = nextNl === -1 ? lastInputBuf.length : cursorPos + nextNl;
-}
-
-export function moveCursorUp(): void {
-  const lines = lastInputBuf.split('\n');
-  let pos = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const lineEnd = pos + lines[i].length;
-    if (cursorPos <= lineEnd) {
-      if (i === 0) return;
-      const col = cursorPos - pos;
-      const prevLineStart = pos - lines[i - 1].length - 1;
-      cursorPos = prevLineStart + Math.min(col, lines[i - 1].length);
-      return;
-    }
-    pos = lineEnd + 1;
-  }
-}
-
-export function moveCursorDown(): void {
-  const lines = lastInputBuf.split('\n');
-  let pos = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const lineEnd = pos + lines[i].length;
-    if (cursorPos <= lineEnd) {
-      if (i === lines.length - 1) return;
-      const col = cursorPos - pos;
-      const nextLineStart = lineEnd + 1;
-      cursorPos = nextLineStart + Math.min(col, lines[i + 1].length);
-      return;
-    }
-    pos = lineEnd + 1;
-  }
-}
-
-export function setTokenCount(tokenCount: number): void {
-  lastTokenCount = tokenCount;
-}
-
-export function setQuotaSnapshot(quota: RateLimitSnapshot | null): void {
-  lastQuota = quota ? { quota, capturedAt: Date.now() } : null;
-}
-
-export function setModelStatus(providerId: string, modelId: string): void {
-  lastModelStatus = providerId && modelId ? `${providerId}:${modelId}` : (providerId || modelId);
-}
-
-export function setSuggestions(suggestions: string[]): void {
-  lastSuggestions = suggestions;
-}
-
-export function setInlineCompletion(completion: string | null): void {
-  lastInlineCompletion = completion;
-}
-
-export function setPreflightInputCost(snapshot: PreflightInputCost): void {
-  lastPreflightInputCost = snapshot;
-}
-
-export function setOpenAIDailySpend(snapshot: OpenAIDailySpend): void {
-  lastOpenAIDailySpend = snapshot;
-}
-
-export function setEvalRunning(label: string | null): void {
-  _evalRunLabel = label;
-}
-
-export function setRetryBanner(info: { name: string; label: string; targetMs: number } | null): void {
-  retryBannerInfo = info;
-}
-
-function formatEvalRunStatus(now = Date.now()): string {
-  if (retryBannerInfo) {
-    const remaining = Math.max(0, Math.ceil((retryBannerInfo.targetMs - now) / 1000));
-    if (remaining <= 0) return `${retryBannerInfo.name} ${retryBannerInfo.label} — retrying now...`;
-    return `${retryBannerInfo.name} ${retryBannerInfo.label} — retrying in ${remaining}s...`;
-  }
-  return '';
-}
-
-function formatDuration(ms: number): string {
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds - hours * 3600) / 60);
-  const seconds = totalSeconds - hours * 3600 - minutes * 60;
-
-  const parts: string[] = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-  return parts.join('');
-}
-
-function estimateBucket(
-  remaining: number | null,
-  limit: number | null,
-  resetMs: number | null,
-  elapsedMs: number
-): { remainingText: string; limitText: string; fullInText: string } {
-  if (remaining === null || limit === null) {
-    return {
-      remainingText: '?',
-      limitText: limit?.toString() ?? '?',
-      fullInText: '?',
-    };
-  }
-
-  const missing = Math.max(0, limit - remaining);
-  const fullInMs = Math.max(0, (resetMs ?? 0) - elapsedMs);
-  const refillRate = resetMs && resetMs > 0 && missing > 0 ? missing / resetMs : 0;
-  const estimatedRemaining = Math.min(limit, Math.floor(remaining + elapsedMs * refillRate));
-
-  return {
-    remainingText: estimatedRemaining.toString(),
-    limitText: limit.toString(),
-    fullInText: formatDuration(fullInMs),
-  };
-}
-
-function padNumberText(value: string, width: number): string {
-  return value.padStart(Math.max(width, value.length), ' ');
-}
-
-function padDurationText(value: string): string {
-  return value.padEnd(Math.max(6, value.length), ' ');
-}
-
-function formatBucketStatus(prefix: string, bucket: { remainingText: string; limitText: string; fullInText: string }): string {
-  const numberWidth = bucket.limitText === '?' ? 1 : bucket.limitText.length;
-  const remainingText = padNumberText(bucket.remainingText, numberWidth);
-  const fullInText = padDurationText(bucket.fullInText);
-  return `${prefix} ${remainingText}/${bucket.limitText} full ${fullInText}`;
-}
-
-function formatQuotaStatus(now = Date.now()): string {
-  if (!lastQuota) return '';
-
-  const elapsedMs = now - lastQuota.capturedAt;
-  const parts: string[] = [];
-
-  for (const bucket of lastQuota.quota) {
-    if (bucket.resetMs !== undefined) {
-      const est = estimateBucket(bucket.remaining, bucket.limit, bucket.resetMs, elapsedMs);
-      parts.push(formatBucketStatus(bucket.label, est));
-    } else {
-      const remaining = bucket.remaining?.toString() ?? '?';
-      const limit = bucket.limit?.toString() ?? '?';
-      parts.push(`${bucket.label} ${remaining}/${limit}`);
-    }
-  }
-
-  return parts.join(' | ');
-}
-
-function formatPreflightInputCost(): string {
-  if (lastPreflightInputCost.state === 'pending') return 'input tok: counting';
-  if (lastPreflightInputCost.state === 'unavailable') {
-    const warning = lastPreflightInputCost.warning ? `: ${lastPreflightInputCost.warning}` : '';
-    return `input tok failed${warning}`;
-  }
-  if (lastPreflightInputCost.state === 'idle' && lastPreflightInputCost.warning) {
-    return `input tok off: ${lastPreflightInputCost.warning}`;
-  }
-  if (lastPreflightInputCost.state !== 'ready' || lastPreflightInputCost.inputTokens === undefined) return '';
-  const tokenText = `${lastPreflightInputCost.inputTokens.toLocaleString('en-US')} in tok`;
-  const costText = lastPreflightInputCost.formattedInputUsd
-    ? `${lastPreflightInputCost.formattedInputUsd} input`
-    : 'input cost unavailable';
-  return `${tokenText} | ${costText}`;
-}
-
-function formatOpenAIDailySpend(): string {
-  if (lastOpenAIDailySpend.state === 'pending') return 'OpenAI today: loading';
-  if (lastOpenAIDailySpend.state === 'idle' && lastOpenAIDailySpend.warning) {
-    return `OpenAI spend off: ${lastOpenAIDailySpend.warning}`;
-  }
-  if (lastOpenAIDailySpend.state === 'unavailable') {
-    const warning = lastOpenAIDailySpend.warning ? `: ${lastOpenAIDailySpend.warning}` : '';
-    return `OpenAI spend failed${warning}`;
-  }
-  if (lastOpenAIDailySpend.state !== 'ready') return '';
-  return `OpenAI today ${lastOpenAIDailySpend.formattedAmountUsd ?? 'cost unavailable'}`;
-}
-
-// Lays out the right-side footer content into 1..rowBudget rows.
-// result[0] = bottom (primary) row, result[1] = row above, result[2] = top row.
-// Budget=1 matches the old single-row drop behaviour (existing tests rely on this).
-function layoutFooterRightRows(width: number, rowBudget: number, now = Date.now()): string[] {
-  const quotaStr = formatQuotaStatus(now);
-  const tokenStr = `${lastTokenCount} ctx`;
-  const statusStr = quotaStr ? `${quotaStr} | ${tokenStr}` : tokenStr;
-  const preflightStr = formatPreflightInputCost();
-  const dailySpendStr = formatOpenAIDailySpend();
-  const modelStr = lastModelStatus;
-
-  const secondaryParts = [dailySpendStr, preflightStr].filter(Boolean);
-  const secondaryStr = secondaryParts.join(' | ');
-
-  // Single-row fallback — drops least-important content progressively.
-  function singleRow(): string {
-    const full = [modelStr, ...secondaryParts, statusStr].filter(Boolean).join(' | ');
-    if (full.length <= width) return full;
-
-    const withoutPreflight = [modelStr, dailySpendStr, statusStr].filter(Boolean).join(' | ');
-    if (withoutPreflight.length <= width) return withoutPreflight;
-
-    const withoutSecondary = [modelStr, statusStr].filter(Boolean).join(' | ');
-    if (withoutSecondary.length <= width) return withoutSecondary;
-
-    const withTokenOnly = [modelStr, tokenStr].filter(Boolean).join(' | ');
-    if (withTokenOnly.length <= width) return withTokenOnly;
-
-    if (modelStr && modelStr.length <= width) return modelStr;
-    return (modelStr || tokenStr).slice(0, width);
-  }
-
-  if (rowBudget <= 1) return [singleRow()];
-
-  // Multi-row: try fitting everything on the primary row first.
-  const full = [modelStr, ...secondaryParts, statusStr].filter(Boolean).join(' | ');
-  if (full.length <= width) return [full];
-
-  // Split: primary = model + quota/ctx, secondary row = spend + preflight.
-  const primaryStr = [modelStr, statusStr].filter(Boolean).join(' | ');
-  if (primaryStr.length <= width) {
-    if (!secondaryStr || secondaryStr.length <= width) {
-      return secondaryStr ? [primaryStr, secondaryStr] : [primaryStr];
-    }
-  }
-
-  // Primary still too wide — drop quota to bare ctx on the primary row.
-  const minPrimaryStr = [modelStr, tokenStr].filter(Boolean).join(' | ');
-  if (minPrimaryStr.length <= width) {
-    const upperCombined = [secondaryStr, quotaStr].filter(Boolean).join(' | ');
-    if (!upperCombined || upperCombined.length <= width) {
-      return upperCombined ? [minPrimaryStr, upperCombined] : [minPrimaryStr];
-    }
-    // Upper content overflows one row; use a third row if budget allows.
-    if (rowBudget >= 3 && quotaStr && quotaStr.length <= width) {
-      if (secondaryStr && secondaryStr.length <= width) {
-        return [minPrimaryStr, quotaStr, secondaryStr]; // secondary topmost
-      }
-      return [minPrimaryStr, quotaStr];
-    }
-    // Budget=2: prefer quota over secondary on the one available upper row.
-    if (quotaStr && quotaStr.length <= width) return [minPrimaryStr, quotaStr];
-    if (secondaryStr && secondaryStr.length <= width) return [minPrimaryStr, secondaryStr];
-    return [minPrimaryStr];
-  }
-
-  return [singleRow()];
-}
-
-export function composeBottomRightStatus(width: number, now = Date.now()): string {
-  return layoutFooterRightRows(width, 1, now)[0];
-}
-
-export function composeBottomStatusLine(width: number, now = Date.now()): string {
-  const availableRightWidth = Math.max(0, width - 1);
-  const rightStr = composeBottomRightStatus(availableRightWidth, now);
-  const padding = Math.max(0, width - 1 - rightStr.length);
-  return ' '.repeat(padding) + rightStr;
-}
+export function setSuggestions(suggestions: string[]): void { lastSuggestions = suggestions; }
+export function setInlineCompletion(completion: string | null): void { lastInlineCompletion = completion; }
 
 export function getInlineCompletionSuffix(input: string, completion: string | null): string {
   if (!completion || !completion.toLowerCase().startsWith(input.toLowerCase())) return '';
@@ -442,7 +140,7 @@ export function composeFooterOutput(): string {
     const toggleBar = composeToggleBar();
     const toggleVis = toggleBarWidth();
     const secRight = rightRows.length > 1 ? rightRows[1] : '';
-    const secRightVis = stripAnsiVisible(secRight).length;
+    const secRightVis = stripAnsi(secRight).length;
     const spacer = Math.max(0, w - 1 - toggleVis - secRightVis);
     output += moveToSequence(r - 1, 1) + toggleBar + ' '.repeat(spacer) + (secRight ? chalk.gray(secRight) : '');
   }
@@ -470,10 +168,6 @@ export function drawFooter() {
   if (output) process.stdout.write(output);
 }
 
-function stripAnsiVisible(s: string): string {
-  return s.replace(/\x1b(?:\[[0-9;?]*[A-Za-z]|[^[])/g, '');
-}
-
 function restoreSuggestionOverlaySequence(startRow: number, rowCount: number, width: number): string {
   let output = '';
   const maxWidth = Math.max(0, width);
@@ -484,7 +178,7 @@ function restoreSuggestionOverlaySequence(startRow: number, rowCount: number, wi
   ].slice(-rowCount);
   for (let i = 0; i < rowCount; i++) {
     const line = lines[i] ?? '';
-    const visible = stripAnsiVisible(line);
+    const visible = stripAnsi(line);
     // Use visible length for truncation so ANSI color bytes don't count as width.
     const content = visible.length <= maxWidth ? line : visible.slice(0, maxWidth);
     output += moveToSequence(startRow + i, 1) + clearLineSequence() + content + (content ? '\x1b[0m' : '');
@@ -492,45 +186,9 @@ function restoreSuggestionOverlaySequence(startRow: number, rowCount: number, wi
   return output;
 }
 
-// Number of terminal rows a single logical input line occupies.
-// Uses floor+1 so that a line exactly filling the effective width opens a blank
-// overflow row and parks the cursor at its start — the visual behaviour the user sees.
-export function visualRowsForLine(content: string, w: number): number {
-  const effW = Math.max(1, w - 2); // 2-char prompt prefix ('> ' or '  ')
-  return Math.floor(content.length / effW) + 1;
-}
-
-// Maps a cursor position in the flat buffer to a (visualRow, visualCol) pair
-// where visualRow is 0-indexed from the top of the input area and visualCol is
-// 0-indexed within the content of that row (after the 2-char prefix).
-export function cursorToVisualPos(
-  buf: string,
-  cursor: number,
-  w: number,
-): { visualRow: number; visualCol: number } {
-  const effW = Math.max(1, w - 2);
-  const lines = buf.split('\n');
-  let pos = 0;
-  let visualRow = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const lineStart = pos;
-    const lineEnd = pos + lines[i].length;
-    if (cursor >= lineStart && cursor <= lineEnd) {
-      const colInLine = cursor - lineStart;
-      return {
-        visualRow: visualRow + Math.floor(colInLine / effW),
-        visualCol: colInLine % effW,
-      };
-    }
-    visualRow += Math.floor(lines[i].length / effW) + 1;
-    pos = lineEnd + 1;
-  }
-  return { visualRow: 0, visualCol: 0 };
-}
-
 function inputLineCount(): number {
   const w = cols();
-  return (lastInputBuf || '').split('\n').reduce(
+  return (getInputBuffer() || '').split('\n').reduce(
     (sum, line) => sum + visualRowsForLine(line, w),
     0,
   ) || 1;
@@ -594,7 +252,7 @@ function drawInputArea() {
   output += moveToSequence(topBarRow, 1) + getBannerColor()('─'.repeat(w));
 
   // Draw each input line with visual wrapping.
-  const inputLines = lastInputBuf ? lastInputBuf.split('\n') : [''];
+  const inputLines = getInputBuffer() ? getInputBuffer().split('\n') : [''];
   const logicalLineCount = inputLines.length;
   const effW = Math.max(1, w - 2);
   let visualRowOffset = 0;
@@ -610,12 +268,12 @@ function drawInputArea() {
       const prefix = vi === 0 ? logicalPrefix : '  ';
       const inputRowCurrent = topBarRow + 1 + visualRowOffset;
 
-      if (vi === 0 && i === 0 && !lastInputBuf) {
+      if (vi === 0 && i === 0 && !getInputBuffer()) {
         output += moveToSequence(inputRowCurrent, 1) + prefix + chalk.gray('/ for commands');
       } else {
         const inlineSuffix =
           logicalLineCount === 1 && isLastLogicalLine && vi === rowsThisLine - 1
-            ? getInlineCompletionSuffix(lastInputBuf, lastInlineCompletion)
+            ? getInlineCompletionSuffix(getInputBuffer(), lastInlineCompletion)
             : '';
         output += moveToSequence(inputRowCurrent, 1) + prefix + chunk + (inlineSuffix ? chalk.gray(inlineSuffix) : '');
       }
@@ -626,7 +284,7 @@ function drawInputArea() {
   output += moveToSequence(bottomBarRow, 1) + getBannerColor()('─'.repeat(w));
 
   // Park cursor at the typing position.
-  const { visualRow, visualCol } = cursorToVisualPos(lastInputBuf, cursorPos, w);
+  const { visualRow, visualCol } = cursorToVisualPos(getInputBuffer(), getCursorPos(), w);
   output += moveToSequence(topBarRow + 1 + visualRow, 3 + visualCol);
 
   process.stdout.write(output);
@@ -701,7 +359,6 @@ export function teardownBottomUI() {
   inputUIActive = false;
   const r = rows();
   const w = cols();
-  const topBarRow = r - footerRowCount - 2;
   const toClearRows = lastReservedRows - footerRowCount;
   let output = '';
   if (suggestionOverlayRows > 0) {

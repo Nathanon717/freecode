@@ -30,10 +30,10 @@ import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
-import { isContextOverflowError, isInvalidToolArgumentsError, isNoSuchToolError, isProviderToolUseFailed, isToolsNotSupportedError, isUserAbortError, invalidToolName, noSuchToolAvailableList, noSuchToolName, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
+import { isContextOverflowError, isInvalidToolArgumentsError, isNoSuchToolError, isProviderToolUseFailed, isToolsNotSupportedError, isUserAbortError, invalidToolName, noSuchToolAvailableList, noSuchToolName, serializeError, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
 import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
-import { runPromptToolsLoop } from './prompt-tools.js';
+import { executeToolCalls, runPromptToolsLoop } from './prompt-tools.js';
 import { isModelNoNativeTools, markModelNoNativeTools } from '../providers/model-traits.js';
 import { FAKE_PROVIDER_ID, FAKE_NATIVE_PROVIDER_ID, assertFakeFixtureComplete, createFakeNativeLanguageModel, runFakeModel } from '../providers/fake.js';
 
@@ -57,22 +57,6 @@ export interface AgentLoopResult {
 
 type ModelSettings = ReturnType<typeof resolveModelSettings>;
 
-function serializeError(error: unknown): unknown {
-  if (!(error instanceof Error)) return error;
-  const record: Record<string, unknown> = {
-    name: error.name,
-    message: error.message,
-    stack: error.stack,
-  };
-  for (const key of Object.getOwnPropertyNames(error)) {
-    if (key in record) continue;
-    record[key] = (error as unknown as Record<string, unknown>)[key];
-  }
-  const cause = (error as Error & { cause?: unknown }).cause;
-  if (cause) record.cause = serializeError(cause);
-  return record;
-}
-
 async function runFakeLlm(
   providerId: string,
   modelId: string,
@@ -89,6 +73,13 @@ async function runFakeLlm(
   let totalTokens = 0;
   let promptTokens: number | undefined;
   let outputTokens: number | undefined;
+  const result = (text: string): AgentLoopResult => ({
+    text,
+    usage: { totalTokens, promptTokens, outputTokens },
+    providerId,
+    modelId,
+    quota: null,
+  });
 
   try {
     beginTranscriptTurn();
@@ -113,35 +104,15 @@ async function runFakeLlm(
       if (generated.toolCalls.length === 0) {
         assertFakeFixtureComplete();
         endTranscriptStep(false);
-        return {
-          text: fullText,
-          usage: { totalTokens, promptTokens, outputTokens },
-          providerId,
-          modelId,
-          quota: null,
-        };
+        return result(fullText);
       }
 
       if (!tools) {
         throw new Error(`Fake LLM fixture emitted tool calls, but ${providerId}:${modelId} does not support tools`);
       }
 
-      const resultParts: string[] = [];
-      for (let i = 0; i < generated.toolCalls.length; i++) {
-        const toolCall = generated.toolCalls[i];
-        // writeTranscriptToolLeadIn is called inside withLogging (via toolFn.execute).
-        const toolFn = tools[toolCall.name as keyof typeof tools];
-        if (!toolFn?.execute) {
-          resultParts.push(`Tool error: unknown tool "${toolCall.name}". Available tools: ${toolNames.join(', ')}`);
-          continue;
-        }
-        const rawResult = await (toolFn.execute as (args: Record<string, unknown>, opts: unknown) => Promise<unknown>)(
-          toolCall.args,
-          { toolCallId: `fake-${step}-${i}`, messages: activeMessages },
-        );
-        const toolResult = typeof rawResult === 'string' ? rawResult : JSON.stringify(rawResult, null, 2);
-        resultParts.push(`<tool_result name="${toolCall.name}">\n${toolResult}\n</tool_result>`);
-      }
+      // writeTranscriptToolLeadIn is called inside withLogging (via toolFn.execute).
+      const resultParts = await executeToolCalls(tools, generated.toolCalls, `fake-${step}`, activeMessages);
 
       endTranscriptStep(true); // close step, open next
       activeMessages = [
@@ -153,26 +124,11 @@ async function runFakeLlm(
 
     throw new Error('Fake LLM fixture exceeded max tool steps (10)');
   } catch (error) {
-    if (isUserAbortError(error)) {
-      endTranscriptStep(false);
-      return {
-        text: fullText,
-        usage: { totalTokens, promptTokens, outputTokens },
-        providerId,
-        modelId,
-        quota: null,
-      };
-    }
     endTranscriptStep(false);
+    if (isUserAbortError(error)) return result(fullText);
     const errMsg = toDetailedErrorMessage(error);
     process.stdout.write(`Error: ${errMsg}\n`);
-    return {
-      text: fullText ? `${fullText}\n\nError: ${errMsg}` : `Error: ${errMsg}`,
-      usage: { totalTokens, promptTokens, outputTokens },
-      providerId,
-      modelId,
-      quota: null,
-    };
+    return result(fullText ? `${fullText}\n\nError: ${errMsg}` : `Error: ${errMsg}`);
   }
 }
 
@@ -267,20 +223,11 @@ async function streamWithRetry(
         break;
       }
       if (supportsTools && toolUseFailureRetries < 1) {
+        let feedback: string | null = null;
         if (fullText.length === 0 && isProviderToolUseFailed(error)) {
-          toolUseFailureRetries++;
           log('stream', 'Retrying after provider rejected malformed tool call', serializeError(error));
-          activeMessages = [
-            ...messages,
-            {
-              role: 'user',
-              content: 'The provider rejected your previous response because it contained an invalid tool/function call. Retry the same task. When calling a tool, call exactly one valid tool at a time, use the exact tool name, and provide arguments as valid JSON matching the tool schema. String arguments containing JSON or newlines must be escaped as JSON strings.',
-            },
-          ];
-          continue;
-        }
-        if (isNoSuchToolError(error)) {
-          toolUseFailureRetries++;
+          feedback = 'The provider rejected your previous response because it contained an invalid tool/function call. Retry the same task. When calling a tool, call exactly one valid tool at a time, use the exact tool name, and provide arguments as valid JSON matching the tool schema. String arguments containing JSON or newlines must be escaped as JSON strings.';
+        } else if (isNoSuchToolError(error)) {
           fullText = '';
           const available = noSuchToolAvailableList(error) ?? 'read_file, write_file, edit_file, grep, shell_exec, list_dir';
           const badName = noSuchToolName(error);
@@ -288,27 +235,15 @@ async function streamWithRetry(
             ? ` You called "${badName}", which does not exist. Do not use namespace prefixes (e.g. "repo_browser.") — use the plain name only.`
             : '';
           log('stream', 'Retrying after model called non-existent tool', serializeError(error));
-          activeMessages = [
-            ...messages,
-            {
-              role: 'user',
-              content: `You called a tool that does not exist.${nameHint} The only available tools are: ${available}. Retry your task using only these exact tool names.`,
-            },
-          ];
-          continue;
-        }
-        if (isInvalidToolArgumentsError(error)) {
-          toolUseFailureRetries++;
+          feedback = `You called a tool that does not exist.${nameHint} The only available tools are: ${available}. Retry your task using only these exact tool names.`;
+        } else if (isInvalidToolArgumentsError(error)) {
           fullText = '';
-          const name = invalidToolName(error) ?? 'unknown';
           log('stream', 'Retrying after model provided invalid tool arguments', serializeError(error));
-          activeMessages = [
-            ...messages,
-            {
-              role: 'user',
-              content: `Your call to "${name}" was rejected because the arguments did not match the tool's parameter schema. Check the required parameter names and types, then retry.`,
-            },
-          ];
+          feedback = `Your call to "${invalidToolName(error) ?? 'unknown'}" was rejected because the arguments did not match the tool's parameter schema. Check the required parameter names and types, then retry.`;
+        }
+        if (feedback) {
+          toolUseFailureRetries++;
+          activeMessages = [...messages, { role: 'user' as const, content: feedback }];
           continue;
         }
       }
@@ -317,6 +252,63 @@ async function streamWithRetry(
   }
 
   return { fullText, totalTokens, promptTokens, outputTokens, usePromptToolsFallback };
+}
+
+interface UsageOutcome {
+  providerUsage?: CapturedProviderUsage[];
+  costEstimate?: CostEstimate;
+  promptTokens?: number;
+  outputTokens?: number;
+  quota: RateLimitSnapshot | null;
+}
+
+/**
+ * End any active usage capture for the provider, estimate turn cost, and read
+ * captured rate-limit headers. Shared by the success and error paths of
+ * agentLoop so partial cost/quota metadata survives stream failures.
+ */
+async function finalizeUsageCapture(
+  providerId: string,
+  modelId: string,
+  promptTokens: number | undefined,
+  outputTokens: number | undefined,
+): Promise<UsageOutcome> {
+  let providerUsage: CapturedProviderUsage[] | undefined;
+  let costEstimate: CostEstimate | undefined;
+  let quota: RateLimitSnapshot | null = null;
+
+  if (providerId === 'anthropic') {
+    const [anthropicUsage, rates] = await Promise.all([
+      endAnthropicUsageCapture(providerId),
+      getAnthropicVerifiedRates(modelId),
+    ]);
+    costEstimate = estimateAnthropicCostVerified(modelId, anthropicUsage, rates);
+    promptTokens = anthropicUsage?.inputTokens ?? promptTokens;
+    outputTokens = anthropicUsage?.outputTokens ?? outputTokens;
+    if (anthropicUsage) {
+      providerUsage = [{ providerId, model: modelId, source: 'sse', usage: anthropicUsage, capturedAt: Date.now() }];
+    }
+    log('stream', 'Anthropic cost estimate', costEstimate);
+  } else if (providerId === 'openai') {
+    if (promptTokens !== undefined || outputTokens !== undefined) {
+      const rates = await getOpenAIVerifiedRates(modelId);
+      costEstimate = estimateOpenAICostVerified(modelId, promptTokens, outputTokens, rates);
+      log('stream', 'OpenAI cost estimate', costEstimate);
+    }
+  } else {
+    providerUsage = await endProviderUsageCapture(providerId);
+    if (providerUsage.length > 0) {
+      log('stream', 'Provider usage captured', providerUsage);
+    }
+  }
+
+  if (process.env['DEBUG_QUOTA'] !== '0') {
+    quota = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId) ?? getLastCapturedOpenAIHeaders(providerId);
+    if (quota) log('quota', `Rate limit headers captured`, quota);
+    else log('quota', `No rate limit headers captured for ${providerId}`);
+  }
+
+  return { providerUsage, costEstimate, promptTokens, outputTokens, quota };
 }
 
 export async function agentLoop(
@@ -375,6 +367,23 @@ export async function agentLoop(
   let providerUsage: CapturedProviderUsage[] | undefined;
   let costEstimate: CostEstimate | undefined;
 
+  const finishResult = (text: string): AgentLoopResult => ({
+    text,
+    usage: { totalTokens, promptTokens, outputTokens },
+    providerId,
+    modelId,
+    quota,
+    providerUsage,
+    costEstimate,
+  });
+  const applyUsageOutcome = (outcome: UsageOutcome): void => {
+    providerUsage = outcome.providerUsage ?? providerUsage;
+    costEstimate = outcome.costEstimate ?? costEstimate;
+    promptTokens = outcome.promptTokens;
+    outputTokens = outcome.outputTokens;
+    quota = outcome.quota;
+  };
+
   const systemPrompt = buildSystemPrompt();
   if (!systemPromptLogged) {
     systemPromptLogged = true;
@@ -415,10 +424,7 @@ export async function agentLoop(
       promptTokens = generated.usage.promptTokens;
       outputTokens = generated.usage.outputTokens;
       providerUsage = generated.providerUsage;
-      const rates = await getOpenAIVerifiedRates(modelId);
-      costEstimate = estimateOpenAICostVerified(modelId, promptTokens, outputTokens, rates);
       log('stream', 'OpenAI Responses complete', { textLength: fullText.length, totalTokens, promptTokens, outputTokens });
-      log('stream', 'OpenAI cost estimate', costEstimate);
       endTranscriptStep(false);
       const oaiHeaders = getLastCapturedOpenAIHeaders(providerId);
       if (oaiHeaders) options.onPartialResult?.({ providerId, modelId, quota: oaiHeaders });
@@ -448,82 +454,12 @@ export async function agentLoop(
       }
     }
 
-    if (providerId === 'anthropic') {
-      const [anthropicUsage, rates] = await Promise.all([
-        endAnthropicUsageCapture(providerId),
-        getAnthropicVerifiedRates(modelId),
-      ]);
-      costEstimate = estimateAnthropicCostVerified(modelId, anthropicUsage, rates);
-      promptTokens = anthropicUsage?.inputTokens ?? promptTokens;
-      outputTokens = anthropicUsage?.outputTokens ?? outputTokens;
-      if (anthropicUsage) {
-        providerUsage = [{
-          providerId,
-          model: modelId,
-          source: 'sse',
-          usage: anthropicUsage,
-          capturedAt: Date.now(),
-        }];
-      }
-      log('stream', 'Anthropic cost estimate', costEstimate);
-    } else if (providerId !== 'openai') {
-      providerUsage = await endProviderUsageCapture(providerId);
-      if (providerUsage.length > 0) {
-        log('stream', 'Provider usage captured', providerUsage);
-      }
-    }
-
-    if (process.env['DEBUG_QUOTA'] !== '0') {
-      const headers = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId) ?? getLastCapturedOpenAIHeaders(providerId);
-      if (headers) {
-        quota = headers;
-        log('quota', `Rate limit headers captured`, headers);
-      } else {
-        log('quota', `No rate limit headers captured for ${providerId}`);
-      }
-    }
+    applyUsageOutcome(await finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens));
   } catch (error) {
-    if (providerId === 'anthropic') {
-      const anthropicUsage = await endAnthropicUsageCapture(providerId);
-      if (anthropicUsage) {
-        providerUsage = [{
-          providerId,
-          model: modelId,
-          source: 'sse',
-          usage: anthropicUsage,
-          capturedAt: Date.now(),
-        }];
-        const rates = await getAnthropicVerifiedRates(modelId);
-        costEstimate = estimateAnthropicCostVerified(modelId, anthropicUsage, rates);
-      }
-    } else if (providerId === 'openai') {
-      providerUsage = await endProviderUsageCapture(providerId);
-      if (promptTokens !== undefined || outputTokens !== undefined) {
-        const rates = await getOpenAIVerifiedRates(modelId);
-        costEstimate = estimateOpenAICostVerified(modelId, promptTokens, outputTokens, rates);
-      }
-      if (process.env['DEBUG_QUOTA'] !== '0') {
-        const headers = getLastCapturedOpenAIHeaders(providerId);
-        if (headers) quota = headers;
-      }
-    } else {
-      providerUsage = await endProviderUsageCapture(providerId);
-      if (process.env['DEBUG_QUOTA'] !== '0') {
-        const headers = getLastCapturedHeaders(providerId);
-        if (headers) quota = headers;
-      }
-    }
+    applyUsageOutcome(await finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens));
     if (isUserAbortError(error)) {
       endTranscriptStep(false);
-      return {
-        text: fullText,
-        usage: { totalTokens, promptTokens, outputTokens },
-        providerId,
-        modelId,
-        quota,
-        providerUsage,
-        costEstimate,
-      };
+      return finishResult(fullText);
     }
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);
     log('stream', 'streamText error details', serializeError(error));
@@ -542,26 +478,10 @@ export async function agentLoop(
     const displayError = isContextOverflowError(error)
       ? 'Context window exceeded — start a new session or switch to a model with a larger context window.'
       : errMsg;
-    return {
-      text: fullText + `\n\nError: ${displayError}`,
-      usage: { totalTokens, promptTokens, outputTokens },
-      providerId,
-      modelId,
-      quota,
-      providerUsage,
-      costEstimate,
-    };
+    return finishResult(fullText + `\n\nError: ${displayError}`);
   } finally {
     setParallelToolsDisabled(providerId, false);
   }
 
-  return {
-    text: fullText,
-    usage: { totalTokens, promptTokens, outputTokens },
-    providerId,
-    modelId,
-    quota,
-    providerUsage,
-    costEstimate,
-  };
+  return finishResult(fullText);
 }

@@ -41,3 +41,4 @@ if (check.status === 0) {
 
 runRequired(['--import', 'tsx', 'scripts/check-map.ts']);
 runRequired(['--import', 'tsx', 'scripts/check-line-limits.ts']);
+runRequired(['--import', 'tsx', 'scripts/check-tests.ts']);

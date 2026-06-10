@@ -10,7 +10,7 @@ import {
   getOpenAIApiKey,
   hashOpenAIResponsesPayload,
 } from '../providers/adapters/openai-responses.js';
-import type { PreflightInputCost } from './terminal-ui.js';
+import type { PreflightInputCost } from './footer-status.js';
 import { toErrorMessage } from '../util/errors.js';
 
 interface OpenAIPreflightControllerOptions {

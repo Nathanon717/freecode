@@ -5,11 +5,15 @@ import { fileURLToPath } from 'url';
 import { gunzipSync } from 'zlib';
 import type { Interface } from 'readline';
 import chalk from 'chalk';
-import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
+import {
+  countWrappedLines,
+  resetStdinConsoleMode,
+  resetTerminalPrivateModes,
+  runRawPicker,
+} from '../cli/raw-picker.js';
 import { redrawBanner } from '../cli/banner.js';
 import {
   isBottomUIActive,
-  setEvalRunning,
   setModelStatus,
   setTokenCount,
   setupBottomUI,
@@ -97,26 +101,6 @@ function buildPickerLines(problems: HumanEvalProblem[], sel: number, viewportSta
   return lines;
 }
 
-function resetTerminalPrivateModes(): void {
-  if (!process.stdout.isTTY) return;
-  process.stdout.write(
-    '\x1b[0m' +
-    '\x1b[?25h' +
-    '\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l' +
-    '\x1b[?2004l' +
-    '\x1b[r',
-  );
-}
-
-function resetStdinConsoleMode(): void {
-  if (!process.stdin.isTTY) return;
-  process.stdin.setRawMode(false);
-  process.stdin.resume();
-  process.stdin.setRawMode(true);
-  process.stdin.setRawMode(false);
-  process.stdin.resume();
-}
-
 function buildAgentPrompt(problem: HumanEvalProblem): string {
   return [
     'Write a Python implementation of the following function.',
@@ -136,14 +120,8 @@ async function runOneProblem(problem: HumanEvalProblem, model: string): Promise<
 
   printEvalHeader(problem.task_id, buildAgentPrompt(problem));
 
-  setEvalRunning(problem.task_id);
   const handle = startEvalScenario(runDir, buildAgentPrompt(problem), model || undefined);
-  let result;
-  try {
-    result = await handle.promise;
-  } finally {
-    setEvalRunning(null);
-  }
+  const result = await handle.promise;
 
   const evalModel = model || '';
   const colonIdx = evalModel.indexOf(':');

@@ -88,6 +88,47 @@ export interface PromptToolsResult {
   outputTokens?: number;
 }
 
+/**
+ * Execute a batch of text-protocol tool calls through the wrapped tools and
+ * return the `<tool_result>` blocks to feed back to the model. Shared by the
+ * prompt-tools loop and the fake-LLM loop in loop.ts. Rethrows user aborts;
+ * other tool errors become error results for the model.
+ */
+export async function executeToolCalls(
+  tools: ReturnType<typeof createTools>,
+  calls: ReadonlyArray<{ name: string; args: Record<string, unknown> }>,
+  idPrefix: string,
+  messages: CoreMessage[],
+): Promise<string[]> {
+  const resultParts: string[] = [];
+  for (let i = 0; i < calls.length; i++) {
+    const call = calls[i];
+    const toolFn = tools[call.name as keyof typeof tools];
+    let toolResultStr: string;
+
+    if (!toolFn?.execute) {
+      toolResultStr = `Unknown tool: "${call.name}". Do not use namespace prefixes (e.g. "repo_browser."). Available tools: ${Object.keys(tools).join(', ')}`;
+      process.stdout.write(`[tool error] ${toolResultStr}\n`);
+    } else {
+      try {
+        // Calls the wrapped execute — handles logging (prints call line + result
+        // preview) and user confirmation automatically.
+        const rawResult = await (toolFn.execute as (args: unknown, opts: unknown) => Promise<unknown>)(
+          call.args,
+          { toolCallId: `${idPrefix}-${i}`, messages },
+        );
+        toolResultStr = typeof rawResult === 'string' ? rawResult : JSON.stringify(rawResult, null, 2);
+      } catch (err) {
+        if (isUserAbortError(err)) throw err;
+        toolResultStr = `Error: ${err instanceof Error ? err.message : String(err)}`;
+      }
+    }
+
+    resultParts.push(`<tool_result name="${call.name}">\n${toolResultStr}\n</tool_result>`);
+  }
+  return resultParts;
+}
+
 export async function runPromptToolsLoop(
   messages: CoreMessage[],
   systemPrompt: string,
@@ -161,33 +202,7 @@ export async function runPromptToolsLoop(
 
     log('prompt-tools', `Step ${step + 1}: ${calls.length} tool call(s): ${calls.map(c => c.name).join(', ')}`);
 
-    const resultParts: string[] = [];
-
-    for (let i = 0; i < calls.length; i++) {
-      const call = calls[i];
-      const toolFn = tools[call.name as keyof typeof tools];
-      let toolResultStr: string;
-
-      if (!toolFn?.execute) {
-        toolResultStr = `Unknown tool: "${call.name}". Do not use namespace prefixes (e.g. "repo_browser."). Available tools: ${Object.keys(tools).join(', ')}`;
-        process.stdout.write(`[tool error] ${toolResultStr}\n`);
-      } else {
-        try {
-          // Calls the wrapped execute — handles logging (prints call line + result
-          // preview) and user confirmation automatically.
-          const rawResult = await (toolFn.execute as (args: unknown, opts: unknown) => Promise<unknown>)(
-            call.args,
-            { toolCallId: `pt-${step}-${i}`, messages: activeMessages },
-          );
-          toolResultStr = typeof rawResult === 'string' ? rawResult : JSON.stringify(rawResult, null, 2);
-        } catch (err) {
-          if (isUserAbortError(err)) throw err;
-          toolResultStr = `Error: ${err instanceof Error ? err.message : String(err)}`;
-        }
-      }
-
-      resultParts.push(`<tool_result name="${call.name}">\n${toolResultStr}\n</tool_result>`);
-    }
+    const resultParts = await executeToolCalls(tools, calls, `pt-${step}`, activeMessages);
 
     endTranscriptStep(true); // close step, open next
     // Append the assistant turn and all tool results for the next iteration.
