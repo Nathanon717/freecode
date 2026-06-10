@@ -59,7 +59,6 @@ async function main() {
       });
     }
 
-    session.createSession();
     let mode;
     try {
       mode = createScriptedMode(scriptPath, projectRoot, rl);
@@ -95,7 +94,6 @@ async function main() {
     console.log(chalk.yellow('No model selected. Use /model to choose one.\n'));
   }
 
-  session.createSession();
   await runCliSession({
     projectRoot,
     session,

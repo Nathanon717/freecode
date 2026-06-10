@@ -14,7 +14,6 @@ export const SLASH_COMMANDS: SlashCommandInfo[] = [
   { command: '/keys', description: 'Show API key status' },
   { command: '/model', description: 'Show or set model' },
   { command: '/renderer', description: 'Show a hardcoded demo transcript through the live renderer' },
-  { command: '/resume', description: 'Resume last session' },
 ];
 
 const SLASH_COMMAND_NAMES = SLASH_COMMANDS.map(({ command }) => command);

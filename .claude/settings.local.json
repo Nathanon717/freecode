@@ -4,7 +4,13 @@
       "Skill(update-config)",
       "Bash(node -e \"const ai = require\\('/workspaces/freecode/node_modules/ai/test'\\); console.log\\(Object.keys\\(ai\\).filter\\(k => k.toLowerCase\\(\\).includes\\('mock'\\) || k.toLowerCase\\(\\).includes\\('language'\\)\\)\\)\")",
       "Bash(node *)",
-      "Bash(npx tsx *)"
+      "Bash(npx tsx *)",
+      "Bash(npm run *)",
+      "Bash(npx vitest *)",
+      "Read(//usr/lib/aarch64-linux-gnu/**)",
+      "Bash(find / -name \"libc.so*\" -maxdepth 6)",
+      "Bash(apt list *)",
+      "Bash(apt-get install *)"
     ]
   }
 }

@@ -2,7 +2,7 @@
 
 # Freecode Agent Guide
 
-Freecode is a TypeScript CLI coding agent with provider routing, an interactive REPL, scenario verification, and session persistence.
+Freecode is a TypeScript CLI coding agent with provider routing, an interactive REPL, and scenario verification.
 
 This file is intentionally short. Keep detailed reference material in `docs/` and link to it from here.
 

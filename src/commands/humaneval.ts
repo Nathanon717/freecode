@@ -25,7 +25,7 @@ import { modelSlug, statusCircle } from '../cli/eval-dots.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const HUMANEVAL_DATA_DEFAULT = resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'HumanEval.jsonl.gz');
-const HUMANEVAL_EXAMPLE_DATA = resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'example_problem.jsonl');
+const HUMANEVAL_EXAMPLE_DATA = process.env['HUMANEVAL_EXAMPLE_DATA'] ?? resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'example_problem.jsonl');
 const HUMANEVAL_RUNS_DIR = resolve(_dirname, '..', '..', 'playground', 'humaneval', '.runs');
 const HUMANEVAL_RESULTS_DIR = join(HUMANEVAL_RUNS_DIR, '.results');
 

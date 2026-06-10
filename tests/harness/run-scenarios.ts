@@ -39,6 +39,7 @@ interface Scenario {
   tty?: TtyScenario;
   env?: Record<string, string>;
   humanEvalDataFixture?: string;
+  humanEvalExampleDataFixture?: string;
 }
 
 function printCapturedOutput(stdout: string, stderr: string): void {
@@ -133,6 +134,7 @@ if (ttyScenarios.length > 0) {
           ...(scenario.model ? { FREECODE_MODEL: scenario.model } : {}),
           ...(scenario.llmFixture ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath } : {}),
           ...(scenario.humanEvalDataFixture ? { HUMANEVAL_DATA: join(SCENARIOS_DIR, scenario.humanEvalDataFixture) } : {}),
+          ...(scenario.humanEvalExampleDataFixture ? { HUMANEVAL_EXAMPLE_DATA: join(SCENARIOS_DIR, scenario.humanEvalExampleDataFixture) } : {}),
           ...(scenario.env ?? {}),
         },
       });

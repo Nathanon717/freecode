@@ -5,6 +5,7 @@
   "model": "mock:gpt-freecode-test",
   "llmFixture": "tty-humaneval-fake.llm.json",
   "humanEvalDataFixture": "humaneval-mini.jsonl.gz",
+  "humanEvalExampleDataFixture": "humaneval-example.jsonl",
   "config": {
     "defaultModel": "mock:gpt-freecode-test",
     "toolConfirmation": "auto"

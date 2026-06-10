@@ -189,7 +189,6 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
     }
 
     runtime.session.addAssistantMessage(result.text);
-    runtime.session.saveExchange(input, result.text, result.usage.totalTokens);
 
     if (result.providerId === 'anthropic' || result.providerId === 'openai') {
       const sessionTotal = result.providerId === 'anthropic'
@@ -277,17 +276,6 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
   if (normalized === '/renderer') {
     const { runRendererDemo } = await import('../commands/renderer.js');
     runRendererDemo();
-    return 'continue';
-  }
-
-  if (normalized === '/resume') {
-    const resumed = runtime.session.resumeLast();
-    if (!resumed) {
-      console.log(chalk.dim('No previous session to resume.'));
-      return 'continue';
-    }
-    console.log(chalk.green(`Resumed session ${resumed.id.slice(0, 8)}...`));
-    console.log(chalk.dim(`${resumed.messageCount} messages loaded.\n`));
     return 'continue';
   }
 

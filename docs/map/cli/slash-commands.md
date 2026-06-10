@@ -19,7 +19,7 @@
 /help
 /keys
 /model
-/resume
+/renderer
 /test
 ```
 

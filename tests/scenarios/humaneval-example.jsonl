@@ -1,0 +1,1 @@
+{"task_id":"test/0","prompt":"def add(a, b):\n    \"\"\"Add two numbers.\"\"\"\n","entry_point":"add","canonical_solution":"    return a + b\n","test":"def check(candidate):\n    assert candidate(1, 2) == 3\n    assert candidate(0, 0) == 0\n"}

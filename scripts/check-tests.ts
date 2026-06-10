@@ -35,7 +35,8 @@ function testToSourcePath(testPath: string): string {
 const TEST_DECLARATION = /^\s*(it|test|describe)(\.[a-z]+)?\s*\(/m;
 const ORPHAN_SUPPRESS = /\/\/\s*check-tests:\s*orphan\b/;
 
-const failures: string[] = [];
+const missingTests: string[] = [];
+const emptyTests: string[] = [];
 const warnings: string[] = [];
 
 const sourceFiles = walkFiles(SRC_ROOT, file => file.endsWith('.ts')).sort();
@@ -47,13 +48,13 @@ for (const sourceFile of sourceFiles) {
   const testRelative = toPosix(relative(ROOT, expectedTest));
 
   if (!existsSync(expectedTest)) {
-    failures.push(`${sourceRelative} is missing test file ${testRelative}.`);
+    missingTests.push(sourceRelative);
     continue;
   }
 
   const content = readFileSync(expectedTest, 'utf-8');
   if (!TEST_DECLARATION.test(content)) {
-    failures.push(`${testRelative} exists but contains no tests (it/test/describe).`);
+    emptyTests.push(testRelative);
   }
 }
 
@@ -63,22 +64,26 @@ for (const testFile of testFiles) {
     const content = readFileSync(testFile, 'utf-8');
     if (!ORPHAN_SUPPRESS.test(content)) {
       const testRelative = toPosix(relative(ROOT, testFile));
-      warnings.push(`${testRelative} has no corresponding source file (add // check-tests: orphan to suppress).`);
+      warnings.push(testRelative);
     }
   }
 }
 
 if (warnings.length > 0) {
-  console.warn('Test coverage warnings:');
-  for (const warning of warnings) {
-    console.warn(`  - ${warning}`);
-  }
+  console.warn('Test coverage warnings — orphan test files (add // check-tests: orphan to suppress):');
+  for (const w of warnings) console.warn(`  - ${w}`);
 }
 
-if (failures.length > 0) {
-  console.error('Test coverage check failed:');
-  for (const failure of failures) {
-    console.error(`  - ${failure}`);
-  }
-  process.exit(1);
+const failed = missingTests.length > 0 || emptyTests.length > 0;
+
+if (missingTests.length > 0) {
+  console.error('Test coverage check failed — missing test files:');
+  for (const f of missingTests) console.error(`  - ${f}`);
 }
+
+if (emptyTests.length > 0) {
+  console.error('Test coverage check failed — test files with no tests (it/test/describe):');
+  for (const f of emptyTests) console.error(`  - ${f}`);
+}
+
+if (failed) process.exit(1);

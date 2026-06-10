@@ -28,7 +28,6 @@
           "  /keys       Show API key status",
           "  /model      Show or set model",
           "  /renderer   Show a hardcoded demo transcript through the live renderer",
-          "  /resume     Resume last session",
           "Flags:",
           "  -log  Enable diagnostic logging to stderr",
           "> / for commands"
@@ -58,7 +57,6 @@
           "  /keys       Show API key status",
           "  /model      Show or set model",
           "  /renderer   Show a hardcoded demo transcript through the live renderer",
-          "  /resume     Resume last session",
           "Flags:",
           "  -log  Enable diagnostic logging to stderr",
           "> / for commands"
@@ -88,7 +86,6 @@
           "  /keys       Show API key status",
           "  /model      Show or set model",
           "  /renderer   Show a hardcoded demo transcript through the live renderer",
-          "  /resume     Resume last session",
           "Flags:",
           "  -log  Enable diagnostic logging to stderr",
           "> / for commands"

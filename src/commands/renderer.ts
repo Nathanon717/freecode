@@ -181,10 +181,10 @@ export function runRendererDemo(): void {
   );
   const diff = formatEditFileDiff(
     "src/cli/slash-commands.ts",
-    "  { command: '/keys',   description: 'Show API key status' },\n  { command: '/resume', description: 'Resume last session' },",
-    "  { command: '/keys',     description: 'Show API key status' },\n  { command: '/renderer', description: 'Show renderer demo' },\n  { command: '/resume',   description: 'Resume last session' },",
+    "  { command: '/keys',   description: 'Show API key status' },",
+    "  { command: '/keys',     description: 'Show API key status' },\n  { command: '/renderer', description: 'Show renderer demo' },",
     ["  { command: '/help', description: 'Show this help' },"],
-    ["  { command: '/resume', description: 'Resume last session' },"],
+    ["  { command: '/renderer', description: 'Show renderer demo' },"],
     DEMO_OPTS,
   );
   if (diff) transcriptOut().write(diff + "\n");

@@ -61,7 +61,7 @@ src/
 |   |-- eval-screen.ts            -> [Eval screen renderers](cli/eval-screen.md)
 |   |-- scenario-catalog.ts       -> [Scenario discovery/runner](cli/scenario-catalog.md)
 |   |-- scenario-menu.ts          -> [Scenario menus](cli/scenario-menu.md)
-|   |-- session-controller.ts     -> [Conversation/session state](cli/session-controller.md)
+|   |-- session-controller.ts     -> [In-memory conversation state](cli/session-controller.md)
 |   |-- preflight-input-cost.ts   -> [OpenAI live input cost controller](cli/preflight-input-cost.md)
 |   |-- openai-daily-spend.ts     -> [OpenAI daily spend footer](cli/openai-daily-spend.md)
 |   |-- session-runner.ts         -> [CLI session loop](cli/session-runner.md)
@@ -77,8 +77,6 @@ src/
 |   |-- renderer.ts               -> [/renderer demo command](commands/renderer.md)
 |-- config/
 |   `-- index.ts                  -> [Config loader](config/index.md)
-|-- db/
-|   `-- client.ts                 -> [Session storage](db/client.md)
 `-- providers/
     |-- index.ts                  -> [Provider re-exports](providers/index.md)
     |-- types.ts                  -> [Provider/config types](providers/types.md)

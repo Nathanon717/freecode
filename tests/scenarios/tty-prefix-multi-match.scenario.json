@@ -17,8 +17,7 @@
         "screenAbsent": [
           "/eval",
           "/help",
-          "/keys",
-          "/resume"
+          "/keys"
         ]
       },
       {
@@ -31,7 +30,6 @@
           "/eval",
           "/help",
           "/keys",
-          "/resume",
           "/clear"
         ]
       }
