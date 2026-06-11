@@ -151,14 +151,14 @@ describe('Router Logic', () => {
   describe('OpenAI-compatible stream compatibility', () => {
     it('adds missing function type to streamed tool-call deltas', () => {
       const sse = [
-        'data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"read_file","arguments":"{}"}}]}}]}',
+        'data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"read","arguments":"{}"}}]}}]}',
         '',
         'data: [DONE]',
         '',
       ].join('\n');
 
       expect(normalizeOpenAICompatToolCallSse(sse)).toBe([
-        'data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"read_file","arguments":"{}"},"type":"function"}]}}]}',
+        'data: {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"read","arguments":"{}"},"type":"function"}]}}]}',
         '',
         'data: [DONE]',
         '',

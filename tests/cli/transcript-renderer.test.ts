@@ -17,9 +17,9 @@ const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 
 describe('transcript renderer', () => {
   it('formats tool calls with stable argument rendering', () => {
-    expect(stripAnsi(formatToolCallLine('read_file', { path: 'src/index.ts' })))
+    expect(stripAnsi(formatToolCallLine('read', { path: 'src/index.ts' })))
       .toBe('read(src/index.ts)');
-    expect(stripAnsi(formatToolCallLine('edit_file', { path: 'src/foo.ts', old_text: 'a', new_text: 'b' })))
+    expect(stripAnsi(formatToolCallLine('edit', { path: 'src/foo.ts', old_text: 'a', new_text: 'b' })))
       .toBe('edit(src/foo.ts)');
     expect(stripAnsi(formatArgs({ count: 2, enabled: true }))).toBe('2, true');
   });
@@ -75,20 +75,20 @@ describe('transcript renderer', () => {
     expect(preview).toBe('  a\n  b\n  c');
   });
 
-  it('strips end-of-file footer from read_file output when not truncated', () => {
+  it('strips end-of-file footer from read output when not truncated', () => {
     const withEof = '1: line one\n2: line two\n\n(End of file — total 2 lines.)';
     const preview = stripAnsi(formatToolResultPreview(withEof, { maxResultLines: Infinity }));
     expect(preview).toBe('  1: line one\n  2: line two');
     expect(preview).not.toContain('End of file');
   });
 
-  it('preserves truncation footer from read_file when there are more lines', () => {
+  it('preserves truncation footer from read when there are more lines', () => {
     const withMore = '1: line one\n\n(Showing lines 1-1 of 5. Use offset=2 to continue.)';
     const preview = stripAnsi(formatToolResultPreview(withMore, { maxResultLines: Infinity }));
     expect(preview).toContain('Showing lines 1-1 of 5');
   });
 
-  it('formats edit_file diff with - and + prefixed lines', () => {
+  it('formats edit diff with - and + prefixed lines', () => {
     const result = stripAnsi(formatEditFileDiff('foo.ts', 'old\n', 'new\n'));
     expect(result).toContain('  -old');
     expect(result).toContain('  +new');

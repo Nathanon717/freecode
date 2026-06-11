@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def solve(s):\n    \"\"\"You are given a string s.\n    if s[i] is a letter, reverse its case from lower to upper or vise versa, \n    otherwise keep it as it is.\n    If the string contains no letters, reverse the string.\n    The function should return the resulted string.\n    Examples\n    solve(\"1234\") = \"4321\"\n    solve(\"ab\") = \"AB\"\n    solve(\"#a@C\") = \"#A@c\"\n    \"\"\"\n    has_letter = any(c.isalpha() for c in s)\n    \n    if not has_letter:\n        return s[::-1]\n    \n    result = []\n    for char in s:\n        if char.islower():\n            result.append(char.upper())\n        elif char.isupper():\n            result.append(char.lower())\n        else:\n            result.append(char)\n    return ''.join(result)"
+    },
+    "result": "Wrote 710 bytes to solution.py"
+  }
+]

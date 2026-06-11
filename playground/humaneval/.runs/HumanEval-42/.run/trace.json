@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def incr_list(l: list):\n    \"\"\"Return list with elements incremented by 1.\n    >>> incr_list([1, 2, 3])\n    [2, 3, 4]\n    >>> incr_list([5, 3, 5, 2, 3, 3, 9, 0, 123])\n    [6, 4, 6, 3, 4, 4, 10, 1, 124]\n    \"\"\"\n    return [x + 1 for x in l]"
+    },
+    "result": "Wrote 239 bytes to solution.py"
+  }
+]

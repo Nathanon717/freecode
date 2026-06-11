@@ -466,5 +466,43 @@
         "note": "total: 17247, prompt: 16337, output: 910"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-11T20:26:07.764Z",
+    "scenarioId": "cereal-soup",
+    "model": "zen:mimo-v2.5-free",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 11524,
+      "prompt": 10968,
+      "output": 556
+    },
+    "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
+    "checks": [
+      {
+        "name": "no tool calls",
+        "kind": "assertion",
+        "pass": false,
+        "message": "expected no tool calls, got 5: list_dir, shell_exec, shell_exec, read, shell_exec"
+      },
+      {
+        "name": "gave a response",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "5 tool calls",
+        "kind": "stat",
+        "value": 5,
+        "note": "list_dir → shell_exec → shell_exec → read → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 11524,
+        "note": "11524 | in: 10968 | out: 556"
+      }
+    ]
   }
 ]

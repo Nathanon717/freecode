@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def check_dict_case(dict):\n    if not dict:\n        return False\n    \n    all_lower = all(isinstance(key, str) and key == key.lower() for key in dict)\n    all_upper = all(isinstance(key, str) and key == key.upper() for key in dict)\n    \n    return all_lower or all_upper\n"
+    },
+    "result": "Wrote 271 bytes to solution.py"
+  }
+]

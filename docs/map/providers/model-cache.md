@@ -1,6 +1,6 @@
 # src/providers/model-cache.ts - Model Cache
 
-**Role:** Persists the most recent successful model-list fetch for each live provider to `~/.config/freecode/model-cache.json`. Provides fallback data when a live fetch fails, tracks which model IDs are newly appeared (for "new" badge display), and clears that flag when a model is selected.
+**Role:** Persists the most recent successful model-list fetch for each live provider to `<packageRoot>/.freecode/model-cache.json` (or `$FREECODE_STORE/model-cache.json`). Provides fallback data when a live fetch fails, tracks which model IDs are newly appeared (for "new" badge display), and clears that flag when a model is selected.
 
 ## Exports
 
@@ -37,6 +37,7 @@ markModelSelected(providerId: string, modelId: string): void
 
 - [registry.md](registry.md): calls `updateProviderCache` on each successful fetch and `getProviderCache` as fallback.
 - [../commands/model.md](../../map/commands/model.md): calls `markModelSelected` on selection; reads `removedIds` to render removed-model rows.
+- [model-store.md](model-store.md): supplies `getStoreDir()` for the cache file path.
 
 ## Update Triggers
 

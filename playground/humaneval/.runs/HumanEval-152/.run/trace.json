@@ -1,0 +1,17 @@
+[
+  {
+    "tool": "list_dir",
+    "args": {
+      "path": "."
+    },
+    "result": ""
+  },
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def compare(game, guess):\n    \"\"\"Compare the actual game results with the guessed results.\n\n    Args:\n        game (list): List of actual game results.\n        guess (list): List of guessed results.\n\n    Returns:\n        list: A list of absolute differences between the actual results and the guesses.\n    \"\"\"\n    return [abs(g - s) for s, g in zip(game, guess)]"
+    },
+    "result": "Wrote 362 bytes to solution.py"
+  }
+]

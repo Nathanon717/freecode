@@ -4,11 +4,13 @@ import { resolveApiKey } from '../../config/index.js';
 import {
   parseAnthropicRateLimitHeaders,
   parseAnthropicExtendedHeaders,
+  extractAnthropicRateLimitBuckets,
   groqHeadersToSnapshot,
   type RateLimitSnapshot,
 } from '../quota/headers.js';
 import { log } from '../../logger.js';
 import type { AnthropicTokenUsage } from '../anthropic-cost.js';
+import { saveObservedRateLimits } from '../model-store.js';
 
 const lastCapturedHeaders = new Map<string, RateLimitSnapshot>();
 const usageCapturePromises = new Map<string, Promise<AnthropicTokenUsage | null>[]>();
@@ -146,6 +148,14 @@ export function mergeAnthropicUsages(usages: AnthropicTokenUsage[]): AnthropicTo
   });
 }
 
+function extractAnthropicModelFromBody(body: RequestInit['body']): string | null {
+  if (typeof body !== 'string') return null;
+  try {
+    const parsed = JSON.parse(body) as Record<string, unknown>;
+    return typeof parsed['model'] === 'string' ? parsed['model'] : null;
+  } catch { return null; }
+}
+
 function getInferenceGeo(init: RequestInit | undefined): string | undefined {
   if (typeof init?.body !== 'string') return undefined;
   try {
@@ -182,11 +192,17 @@ export function createAnthropicProvider(providerConfig: ProviderConfig) {
     }
     const response = await globalThis.fetch(input, fetchInit);
     captureAnthropicUsage(providerConfig.id, response, getInferenceGeo(fetchInit));
+    const base = parseAnthropicRateLimitHeaders(response.headers);
+    const extended = parseAnthropicExtendedHeaders(response.headers);
     if (debugQuota) {
-      const base = parseAnthropicRateLimitHeaders(response.headers);
       lastCapturedHeaders.set(providerConfig.id, groqHeadersToSnapshot(base));
-      const extended = parseAnthropicExtendedHeaders(response.headers);
       log('quota', `Anthropic rate-limit headers`, { base, extended });
+    }
+    // Persist limit ceilings to models.json if we received rate-limit headers.
+    const buckets = extractAnthropicRateLimitBuckets(base, extended);
+    if (Object.keys(buckets).length > 0) {
+      const modelId = extractAnthropicModelFromBody(fetchInit?.body);
+      if (modelId) saveObservedRateLimits(providerConfig.id, modelId, buckets);
     }
     return response;
   };

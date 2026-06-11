@@ -104,7 +104,7 @@ function resultText(call: ToolCall): string {
 
 function assertInspectedData(toolCalls: ToolCall[]): CheckResult {
   const inspected = toolCalls.some(call =>
-    (call.tool === 'read_file' && pathTargetsCsv(call)) ||
+    (call.tool === 'read' && pathTargetsCsv(call)) ||
     (call.tool === 'shell_exec' && resultText(call).includes('sku,qty,unit_price,status')) ||
     resultText(call).includes('sku,qty,unit_price,status')
   );
@@ -135,7 +135,7 @@ function assertRanFailedThenFixed(toolCalls: ToolCall[]): CheckResult {
 
   const editAfterFailure = toolCalls.findIndex((call, index) =>
     index > failingRun &&
-    (call.tool === 'write_file' || call.tool === 'edit_file') &&
+    (call.tool === 'create' || call.tool === 'edit') &&
     pathTargetsScript(call)
   );
 
@@ -167,7 +167,7 @@ function assertRanFailedThenFixed(toolCalls: ToolCall[]): CheckResult {
 
 function assertCsvNotEdited(toolCalls: ToolCall[], workDir: string): CheckResult {
   const csvEdit = toolCalls.find(call =>
-    (call.tool === 'write_file' || call.tool === 'edit_file') &&
+    (call.tool === 'create' || call.tool === 'edit') &&
     pathTargetsCsv(call)
   );
   if (csvEdit) {
@@ -212,7 +212,7 @@ export function check(result: EvalRunResult): EvalReport {
       assertInspectedData(result.toolCalls),
       assertCsvNotEdited(result.toolCalls, result.workDir),
       assertUsesQtyColumn(result.workDir),
-      assertNoUnnecessaryTools(result.toolCalls, ['read_file', 'write_file', 'edit_file', 'shell_exec', 'list_dir']),
+      assertNoUnnecessaryTools(result.toolCalls, ['read', 'create', 'edit', 'shell_exec', 'list_dir']),
       assertStayedInWorkDir(result.toolCalls, result.workDir),
       statToolCalls(result.toolCalls),
       statTokens(result.tokens),

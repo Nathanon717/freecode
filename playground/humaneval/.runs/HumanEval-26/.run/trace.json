@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "from typing import List\n\ndef remove_duplicates(numbers: List[int]) -> List[int]:\n    \"\"\" From a list of integers, remove all elements that occur more than once.\n    Keep order of elements left the same as in the input.\n    >>> remove_duplicates([1, 2, 3, 2, 4])\n    [1, 3, 4]\n    \"\"\"\n    # Count occurrences of each number\n    counts = {}\n    for num in numbers:\n        counts[num] = counts.get(num, 0) + 1\n    \n    # Filter numbers that occur only once, preserving order\n    return [num for num in numbers if counts[num] == 1]"
+    },
+    "result": "Wrote 528 bytes to solution.py"
+  }
+]

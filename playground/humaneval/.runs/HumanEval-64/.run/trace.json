@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def vowels_count(s):\n    \"\"\"Write a function vowels_count which takes a string representing\n    a word as input and returns the number of vowels in the string.\n    Vowels in this case are 'a', 'e', 'i', 'o', 'u'. Here, 'y' is also a\n    vowel, but only when it is at the end of the given word.\n\n    Example:\n    >>> vowels_count(\"abcde\")\n    2\n    >>> vowels_count(\"ACEDY\")\n    3\n    \"\"\"\n    vowels = {'a', 'e', 'i', 'o', 'u'}\n    count = 0\n    s_lower = s.lower()\n    \n    for i, char in enumerate(s_lower):\n        if char in vowels:\n            count += 1\n        elif char == 'y' and i == len(s) - 1:\n            count += 1\n    \n    return count\n"
+    },
+    "result": "Wrote 650 bytes to solution.py"
+  }
+]

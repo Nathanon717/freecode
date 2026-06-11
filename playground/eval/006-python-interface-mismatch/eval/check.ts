@@ -123,7 +123,7 @@ function assertRanFailingScript(toolCalls: ToolCall[]): CheckResult {
 
 function assertInspectedStatsModule(toolCalls: ToolCall[]): CheckResult {
   const inspected = toolCalls.some(call =>
-    (call.tool === 'read_file' && pathTargetsStats(call)) ||
+    (call.tool === 'read' && pathTargetsStats(call)) ||
     resultText(call).includes('"sum"') ||
     resultText(call).includes("'sum'") ||
     resultText(call).includes('"mean"') ||
@@ -170,7 +170,7 @@ function assertEditedPipelineThenReran(toolCalls: ToolCall[]): CheckResult {
 
   const editAfter = toolCalls.findIndex((call, i) =>
     i > failingRun &&
-    (call.tool === 'write_file' || call.tool === 'edit_file') &&
+    (call.tool === 'create' || call.tool === 'edit') &&
     pathTargetsPipeline(call)
   );
 
@@ -205,7 +205,7 @@ export function check(result: EvalRunResult): EvalReport {
       assertInspectedStatsModule(result.toolCalls),
       assertFixedCallerNotModule(result.workDir),
       assertEditedPipelineThenReran(result.toolCalls),
-      assertNoUnnecessaryTools(result.toolCalls, ['read_file', 'write_file', 'edit_file', 'shell_exec', 'list_dir']),
+      assertNoUnnecessaryTools(result.toolCalls, ['read', 'create', 'edit', 'shell_exec', 'list_dir']),
       assertStayedInWorkDir(result.toolCalls, result.workDir),
       statToolCalls(result.toolCalls),
       statTokens(result.tokens),

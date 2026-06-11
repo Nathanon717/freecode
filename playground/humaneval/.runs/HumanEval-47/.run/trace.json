@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def median(l: list):\n    \"\"\"Return median of elements in the list l.\n    >>> median([3, 1, 2, 4, 5])\n    3\n    >>> median([-10, 4, 6, 1000, 10, 20])\n    15.0\n    \"\"\"\n    sorted_list = sorted(l)\n    length = len(sorted_list)\n    if length % 2 == 1:\n        return sorted_list[length // 2]\n    else:\n        return (sorted_list[length // 2 - 1] + sorted_list[length // 2]) / 2\n"
+    },
+    "result": "Wrote 375 bytes to solution.py"
+  }
+]

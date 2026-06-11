@@ -1,6 +1,6 @@
 {
   "name": "agent-tool-native",
-  "description": "Fake native LLM fixture drives a write_file tool call through the full multi-step streamText orchestration loop",
+  "description": "Fake native LLM fixture drives a create tool call through the full multi-step streamText orchestration loop",
   "requiresLlm": false,
   "workspace": "temp",
   "model": "mock-native:gpt-freecode-test",
@@ -17,7 +17,7 @@
       { "path": "hello.txt", "contentExact": "hello from native\n" }
     ],
     "toolTrace": {
-      "sequence": ["write_file"],
+      "sequence": ["create"],
       "maxCalls": 1
     },
     "fakeLlmTrace": {
@@ -28,10 +28,10 @@
           "provider": "mock-native",
           "model": "gpt-freecode-test",
           "executionPath": "native-stream",
-          "toolsAvailable": ["write_file"],
+          "toolsAvailable": ["create"],
           "nativeToolsSupplied": true,
           "emittedTextContains": ["I'll write that file now."],
-          "emittedToolCalls": ["write_file"],
+          "emittedToolCalls": ["create"],
           "usage": { "promptTokens": 20, "outputTokens": 8, "totalTokens": 28 }
         },
         {

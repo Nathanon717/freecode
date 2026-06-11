@@ -124,7 +124,7 @@ function assertEncounteredFirstBug(toolCalls: ToolCall[]): CheckResult {
 function assertEncounteredSecondBug(toolCalls: ToolCall[]): CheckResult {
   // The StatisticsError must appear after the first edit (i.e., the first bug was fixed first)
   const firstEdit = toolCalls.findIndex(call =>
-    (call.tool === 'write_file' || call.tool === 'edit_file') &&
+    (call.tool === 'create' || call.tool === 'edit') &&
     pathTargetsScript(call)
   );
 
@@ -172,7 +172,7 @@ function assertTwoEditCycles(toolCalls: ToolCall[]): CheckResult {
 
   const editAfterFirst = toolCalls.findIndex((call, i) =>
     i > firstValueError &&
-    (call.tool === 'write_file' || call.tool === 'edit_file') &&
+    (call.tool === 'create' || call.tool === 'edit') &&
     pathTargetsScript(call)
   );
 
@@ -193,7 +193,7 @@ function assertTwoEditCycles(toolCalls: ToolCall[]): CheckResult {
 
   const editAfterSecond = toolCalls.findIndex((call, i) =>
     i > statisticsError &&
-    (call.tool === 'write_file' || call.tool === 'edit_file') &&
+    (call.tool === 'create' || call.tool === 'edit') &&
     pathTargetsScript(call)
   );
 
@@ -227,7 +227,7 @@ export function check(result: EvalRunResult): EvalReport {
       assertEncounteredFirstBug(result.toolCalls),
       assertEncounteredSecondBug(result.toolCalls),
       assertTwoEditCycles(result.toolCalls),
-      assertNoUnnecessaryTools(result.toolCalls, ['read_file', 'write_file', 'edit_file', 'shell_exec', 'list_dir']),
+      assertNoUnnecessaryTools(result.toolCalls, ['read', 'create', 'edit', 'shell_exec', 'list_dir']),
       assertStayedInWorkDir(result.toolCalls, result.workDir),
       statToolCalls(result.toolCalls),
       statTokens(result.tokens),

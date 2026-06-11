@@ -1,13 +1,13 @@
 import chalk from 'chalk';
 import type { Interface } from 'readline';
-import { loadConfig, loadFavorites, resolveApiKey, saveDefaultModel, saveFavorites } from '../config/index.js';
+import { loadConfig, resolveApiKey, saveDefaultModel } from '../config/index.js';
+import { getFavorites, setFavorite, getNoNativeToolsKeys, getModel } from '../providers/model-store.js';
 import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/registry.js';
 import { markModelSelected } from '../providers/model-cache.js';
 import { clearModelNewFlag } from '../providers/registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import type { PricingConfidence } from '../providers/pricing-verifier.js';
 import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
-import { getNoNativeToolsModels } from '../providers/model-traits.js';
 import { loadEvalDotsData, buildEvalDots, type EvalDotsData } from '../cli/eval-dots.js';
 import { InlineActionMenu } from '../cli/action-menu.js';
 
@@ -23,6 +23,7 @@ export interface ModelMenuItem {
   _favSection?: boolean; // true = this displayItems entry is the Favorites-section row
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
   evalDots?: string;
+  rateLimits?: { buckets: Record<string, { limit: number; intervalMs: number | null }>; observedAt: string };
 }
 
 function modelPreference(item: ModelMenuItem): string {
@@ -95,11 +96,11 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
     }
   }
 
-  const noNativeTools = getNoNativeToolsModels();
+  const noNativeTools = getNoNativeToolsKeys();
   for (const item of items) {
-    if (noNativeTools.has(`${item.providerId}:${item.modelId}`)) {
-      item.noNativeTools = true;
-    }
+    if (noNativeTools.has(`${item.providerId}:${item.modelId}`)) item.noNativeTools = true;
+    const stored = getModel(`${item.providerId}:${item.modelId}`);
+    if (stored?.rateLimits) item.rateLimits = stored.rateLimits as ModelMenuItem['rateLimits'];
   }
 
   const pricedItems = items.filter(i => i.providerId === 'anthropic' || i.providerId === 'openai');
@@ -262,6 +263,17 @@ function buildModelDetailScreen(item: ModelMenuItem): string[] {
   if (item.evalDots) {
     lines.push(`  ${chalk.bold('Eval dots')}   ${item.evalDots}`);
   }
+  if (item.rateLimits) {
+    const { buckets, observedAt } = item.rateLimits;
+    const s = (Date.now() - Date.parse(observedAt)) / 1000;
+    const ago = s < 60 ? `${Math.round(s)}s` : s < 3600 ? `${Math.round(s / 60)}m` : s < 86400 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`;
+    const fmtName = (n: string) => n.replace(/-per-(minute|hour|day)$/, (_, u) => `/${u[0]}`).replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase());
+    const fmtMs = (ms: number | null) => ms === 60_000 ? '/min' : ms === 3_600_000 ? '/hr' : ms === 86_400_000 ? '/day' : ms ? ` (${Math.round(ms / 1000)}s window)` : '';
+    lines.push(`  ${chalk.bold('Rate limits')}  ${chalk.dim(`observed ${ago} ago`)}`);
+    for (const [k, b] of Object.entries(buckets)) {
+      lines.push(`    ${chalk.dim(fmtName(k).padEnd(14))} ${b.limit.toLocaleString()}${chalk.dim(fmtMs(b.intervalMs))}`);
+    }
+  }
   lines.push(`  ${chalk.bold('Favorite')}    ${item.isFavorite ? chalk.yellow('★ yes') : chalk.dim('no')}`);
   if (item.isNew) {
     lines.push(`  ${chalk.bold('Status')}      ${chalk.yellow('new')}`);
@@ -300,7 +312,7 @@ export async function runModelCommand(
     }
   }
 
-  const favorites = loadFavorites();
+  const favorites = getFavorites();
   for (const item of items) {
     item.isFavorite = favorites.has(modelPreference(item));
   }
@@ -418,7 +430,7 @@ export async function runModelCommand(
           for (const baseItem of items) {
             if (modelPreference(baseItem) === pref) baseItem.isFavorite = isFav;
           }
-          saveFavorites(favorites);
+          setFavorite(pref, isFav);
           sortItemsByFavorites(items);
           refreshDisplayItems(item);
           redraw();

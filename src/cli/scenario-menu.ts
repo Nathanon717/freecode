@@ -49,6 +49,8 @@ import {
   printEvalReport,
 } from "./eval-screen.js";
 import { InlineActionMenu } from "./action-menu.js";
+import { appendEvalRun } from "../providers/model-store.js";
+import { buildSystemPrompt } from "../agent/system-prompt.js";
 
 export async function runEvalMenu(
   rl: Interface,
@@ -205,6 +207,7 @@ export async function runEvalMenu(
     let incomplete = 0;
 
     for (const scenario of chosen) {
+      const startMs = Date.now();
       const scenarioDir = join(PLAYGROUND_EVAL_DIR, scenario.id);
       const promptPath = join(scenarioDir, "prompt.md");
       const checkPath = join(scenarioDir, "eval", "check.ts");
@@ -392,8 +395,9 @@ export async function runEvalMenu(
 
       archiveEvalRun(scenarioDir, model, result);
 
+      const ts = new Date().toISOString();
       appendEvalHistory({
-        timestamp: new Date().toISOString(),
+        timestamp: ts,
         scenarioId: scenario.id,
         model: model || "default",
         pass: allPassed,
@@ -402,6 +406,41 @@ export async function runEvalMenu(
         scenarioHash: computeRunHash(scenarioDir),
         checks: report.checks,
       });
+
+      const failedChecks = report.checks.filter(
+        (c) => c.kind === "assertion" && !c.pass,
+      );
+      const failReason = !allPassed && failedChecks.length > 0
+        ? failedChecks
+            .map((c) => c.name + (c.message ? `: ${c.message}` : ""))
+            .join("; ")
+        : undefined;
+      const transcriptTurn = {
+        systemPrompt: buildSystemPrompt(),
+        userMessage: prompt,
+        tokenUsage: { input: result.tokens.prompt, output: result.tokens.output },
+        toolCalls: result.toolCalls,
+      };
+      appendEvalRun(
+        model || "",
+        "custom",
+        {
+          timestamp: ts,
+          taskId: scenario.id,
+          pass: allPassed,
+          turns: result.toolCalls.length,
+          tokenUsage: { input: result.tokens.prompt, output: result.tokens.output },
+          durationMs: Date.now() - startMs,
+          error: null,
+        },
+        {
+          pass: allPassed,
+          ...(failReason !== undefined ? { failReason } : {}),
+          freecodeVersion: null,
+          transcript: [transcriptTurn],
+          scoringOutcome: report.checks,
+        },
+      );
 
       if (allPassed) passed++;
       else failed++;

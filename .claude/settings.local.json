@@ -10,7 +10,8 @@
       "Read(//usr/lib/aarch64-linux-gnu/**)",
       "Bash(find / -name \"libc.so*\" -maxdepth 6)",
       "Bash(apt list *)",
-      "Bash(apt-get install *)"
+      "Bash(apt-get install *)",
+      "Bash(git mv *)"
     ]
   }
 }

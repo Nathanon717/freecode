@@ -8,7 +8,7 @@
         "provider": "mock",
         "model": "gpt-freecode-test",
         "mustContain": ["Say PONG"],
-        "toolsAvailable": ["read_file", "write_file", "list_dir"],
+        "toolsAvailable": ["read", "create", "list_dir"],
         "systemPromptPresent": true
       },
       "response": {

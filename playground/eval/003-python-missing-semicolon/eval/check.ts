@@ -111,7 +111,7 @@ function assertRanFailedThenFixed(toolCalls: ToolCall[]): CheckResult {
 
   const editAfterFailure = toolCalls.findIndex((call, index) =>
     index > failingRun &&
-    (call.tool === 'write_file' || call.tool === 'edit_file') &&
+    (call.tool === 'create' || call.tool === 'edit') &&
     pathTargetsScript(call)
   );
 
@@ -149,7 +149,7 @@ export function check(result: EvalRunResult): EvalReport {
       assertScriptRuns(result.workDir),
       assertCorrectOutput(result.workDir),
       assertRanFailedThenFixed(result.toolCalls),
-      assertNoUnnecessaryTools(result.toolCalls, ['read_file', 'write_file', 'edit_file', 'shell_exec', 'list_dir']),
+      assertNoUnnecessaryTools(result.toolCalls, ['read', 'create', 'edit', 'shell_exec', 'list_dir']),
       assertStayedInWorkDir(result.toolCalls, result.workDir),
       statToolCalls(result.toolCalls),
       statTokens(result.tokens),

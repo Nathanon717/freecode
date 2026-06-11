@@ -28,17 +28,14 @@ export function formatArgs(args: Record<string, unknown>): string {
 }
 
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
-  read_file: "read",
-  edit_file: "edit",
-  write_file: "create",
 };
 
 const TOOL_ARG_FILTERS: Record<
   string,
   (args: Record<string, unknown>) => Record<string, unknown>
 > = {
-  edit_file: ({ path }) => ({ path }),
-  write_file: ({ path }) => ({ path }),
+  edit: ({ path }) => ({ path }),
+  create: ({ path }) => ({ path }),
   list_dir: ({ path }) =>
     path === "." || path === "" || path === undefined ? {} : { path },
 };

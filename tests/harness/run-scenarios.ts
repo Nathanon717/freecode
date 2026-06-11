@@ -106,7 +106,9 @@ if (ttyScenarios.length > 0) {
     }
 
     const tmpHome = join(tmpdir(), `freecode-tty-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const tmpStore = join(tmpdir(), `freecode-tty-store-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(tmpHome, { recursive: true });
+    mkdirSync(tmpStore, { recursive: true });
     if (scenario.config) {
       writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(scenario.config, null, 2), 'utf-8');
     }
@@ -129,6 +131,7 @@ if (ttyScenarios.length > 0) {
         env: {
           ...safeBaseEnv,
           FREECODE_HOME: tmpHome,
+          FREECODE_STORE: tmpStore,
           DEBUG_QUOTA: '0',
           FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
           ...(scenario.model ? { FREECODE_MODEL: scenario.model } : {}),
@@ -151,6 +154,7 @@ if (ttyScenarios.length > 0) {
       } catch (err) { console.error('[cleanup] failed to restore fake eval result:', err); }
     }
     try { rmSync(tmpHome, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpHome:', err); }
+    try { rmSync(tmpStore, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpStore:', err); }
     return { name: scenario.name, failures: ttyFailures, screen: ttyScreen };
   }));
 

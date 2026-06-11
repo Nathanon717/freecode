@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def encode_cyclic(s: str):\n    \"\"\"\n    Returns encoded string by cycling groups of three characters.\n    \"\"\"\n    # Split string into groups. Each of length 3.\n    groups = [s[(3 * i):min((3 * i + 3), len(s))] for i in range((len(s) + 2) // 3)]\n    # Cycle elements in each group. Unless group has fewer elements than 3.\n    groups = [(group[1:] + group[0]) if len(group) == 3 else group for group in groups]\n    return \"\".join(groups)\n\ndef decode_cyclic(s: str):\n    \"\"\"\n    Takes as input string encoded with encode_cyclic function. Returns decoded string.\n    \"\"\"\n    # Split the string into groups of three characters each\n    groups = [s[(3 * i):min((3 * i + 3), len(s))] for i in range((len(s) + 2) // 3)]\n    # Reverse the cycling process for each group\n    groups = [(group[-1] + group[:-1]) if len(group) == 3 else group for group in groups]\n    return \"\".join(groups)"
+    },
+    "result": "Wrote 876 bytes to solution.py"
+  }
+]

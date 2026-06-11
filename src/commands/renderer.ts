@@ -77,12 +77,12 @@ export function runRendererDemo(): void {
     ),
   );
 
-  // ── Turn 1: read_file ──────────────────────────────────────────────────────
-  // Display name aliased to "read". Result shown as dimmed indented lines.
-  sectionLabel('read_file → display name "read", dimmed result preview');
+  // ── Turn 1: read ──────────────────────────────────────────────────────
+  // Result shown as dimmed indented lines.
+  sectionLabel('read → result preview shown as dimmed lines');
   beginTranscriptTurn(DEMO_OPTS);
   writeTool(
-    "read_file",
+    "read",
     { path: "src/index.ts" },
     [
       "#!/usr/bin/env node",
@@ -140,17 +140,16 @@ export function runRendererDemo(): void {
   );
   endTranscriptStep(false, DEMO_OPTS);
 
-  // ── Turn 5: write_file ─────────────────────────────────────────────────────
-  // Display name aliased to "create". Only path is shown in args (content
-  // filtered out). Preview shows the written content, not the "Wrote N lines"
-  // result string.
+  // ── Turn 5: create ─────────────────────────────────────────────────────
+  // Only path is shown in args (content filtered out). Preview shows the
+  // written content, not the "Wrote N lines" result string.
   sectionLabel(
-    'write_file → display name "create", only path in args, content as preview',
+    'create → only path in args, content as preview',
   );
   beginTranscriptTurn(DEMO_OPTS);
   writeTranscriptToolLeadIn(DEMO_OPTS);
   transcriptOut().write(
-    formatToolCallLine("write_file", { path: "src/commands/renderer.ts" }) +
+    formatToolCallLine("create", { path: "src/commands/renderer.ts" }) +
       "\n",
   );
   const writeContent = [
@@ -166,17 +165,17 @@ export function runRendererDemo(): void {
   if (writePreview) transcriptOut().write(writePreview + "\n");
   endTranscriptStep(false, DEMO_OPTS);
 
-  // ── Turn 6: edit_file ──────────────────────────────────────────────────────
-  // Display name aliased to "edit". Only path shown in args. Result is a
-  // colored diff: red for removed lines, green for added lines, magenta for
-  // matching/equal lines in context, dim for surrounding context.
+  // ── Turn 6: edit ──────────────────────────────────────────────────────
+  // Only path shown in args. Result is a colored diff: red for removed lines,
+  // green for added lines, magenta for matching/equal lines in context, dim
+  // for surrounding context.
   sectionLabel(
-    'edit_file → display name "edit", colored diff (red/green/magenta)',
+    'edit → colored diff (red/green/magenta)',
   );
   beginTranscriptTurn(DEMO_OPTS);
   writeTranscriptToolLeadIn(DEMO_OPTS);
   transcriptOut().write(
-    formatToolCallLine("edit_file", { path: "src/cli/slash-commands.ts" }) +
+    formatToolCallLine("edit", { path: "src/cli/slash-commands.ts" }) +
       "\n",
   );
   const diff = formatEditFileDiff(
@@ -200,7 +199,7 @@ export function runRendererDemo(): void {
     ),
   );
   writeTool(
-    "read_file",
+    "read",
     { path: "src/cli/slash-commands.ts" },
     [
       "export const SLASH_COMMANDS: SlashCommandInfo[] = [",
@@ -218,12 +217,12 @@ export function runRendererDemo(): void {
   beginTranscriptTurn(DEMO_OPTS);
   writeResponse(renderMarkdown("I'll read both renderer files in parallel.\n"));
   writeTool(
-    "read_file",
+    "read",
     { path: "src/cli/transcript-renderer.ts" },
     "export function formatToolCallLine(name, args): string {\n  return chalk.cyan(`${displayName(name)}(${formatArgs(...)})`); \n}",
   );
   writeTool(
-    "read_file",
+    "read",
     { path: "src/cli/markdown-renderer.ts" },
     "export function renderMarkdown(text: string): string {\n  if (!process.stdout.isTTY) return text;\n  // ...\n}",
   );
@@ -238,7 +237,7 @@ export function runRendererDemo(): void {
   writeTranscriptToolLeadIn(DEMO_OPTS);
   transcriptOut().write(
     formatToolErrorLine(
-      "read_file",
+      "read",
       new Error("ENOENT: no such file or directory, open 'src/missing.ts'"),
     ) + "\n",
   );

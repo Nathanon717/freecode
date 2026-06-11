@@ -1,3 +1,5 @@
+// check-tests: orphan
+
 /**
  * Integration tests for the PTY session manager CLI (session.ts).
  *

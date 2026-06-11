@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def largest_smallest_integers(lst):\n    '''\\n    Returns a tuple (a, b), where 'a' is the largest of negative integers,\\n    and 'b' is the smallest of positive integers in a list.\\n    If there is no negative or positive integers, return them as None.\\n    '''\\n    negatives = [x for x in lst if x < 0]\\n    positives = [x for x in lst if x > 0]\\n    \\n    a = max(negatives) if negatives else None\\n    b = min(positives) if positives else None\\n    \\n    return (a, b)"
+    },
+    "result": "Wrote 461 bytes to solution.py"
+  }
+]

@@ -64,16 +64,16 @@ describe('agentLoop with the mock fake-direct provider', () => {
     expect(result.usage).toEqual({ totalTokens: 5, promptTokens: 3, outputTokens: 2 });
   });
 
-  it('drives an approved write_file tool call and then ends on a text step', async () => {
+  it('drives an approved create tool call and then ends on a text step', async () => {
     writeFixture({
       version: 1,
       model: 'mock:gpt-freecode-test',
       steps: [
         {
-          match: { turn: 1, toolsAvailable: ['write_file'] },
+          match: { turn: 1, toolsAvailable: ['create'] },
           response: {
             chunks: ['Writing the file.'],
-            toolCalls: [{ name: 'write_file', args: { path: 'note.txt', content: 'persisted\n' } }],
+            toolCalls: [{ name: 'create', args: { path: 'note.txt', content: 'persisted\n' } }],
             usage: { promptTokens: 10, outputTokens: 4, totalTokens: 14 },
           },
         },
@@ -105,7 +105,7 @@ describe('agentLoop with the mock fake-direct provider', () => {
         {
           response: {
             chunks: ['Trying to write.'],
-            toolCalls: [{ name: 'write_file', args: { path: 'blocked.txt', content: 'nope' } }],
+            toolCalls: [{ name: 'create', args: { path: 'blocked.txt', content: 'nope' } }],
           },
         },
         { response: { chunks: ['Understood, stopping.'] } },
@@ -155,7 +155,7 @@ describe('agentLoop with the mock fake-direct provider', () => {
       steps: [{
         response: {
           chunks: ['I will use a tool.'],
-          toolCalls: [{ name: 'write_file', args: { path: 'x.txt', content: 'y' } }],
+          toolCalls: [{ name: 'create', args: { path: 'x.txt', content: 'y' } }],
         },
       }],
     });
@@ -195,7 +195,7 @@ describe('agentLoop with the mock fake-direct provider', () => {
         {
           response: {
             chunks: ['Thinking. '],
-            toolCalls: [{ name: 'write_file', args: { path: 'a.txt', content: 'b' } }],
+            toolCalls: [{ name: 'create', args: { path: 'a.txt', content: 'b' } }],
           },
         },
         { response: { chunks: ['unreached'] } },
@@ -281,7 +281,7 @@ describe('agentLoop with the mock-native (AI SDK streamText) provider', () => {
     expect(result.modelId).toBe('gpt-freecode-test');
   });
 
-  it('drives a multi-step write_file tool call through streamText orchestration', async () => {
+  it('drives a multi-step create tool call through streamText orchestration', async () => {
     writeFixture({
       version: 1,
       model: 'mock-native:gpt-freecode-test',
@@ -290,7 +290,7 @@ describe('agentLoop with the mock-native (AI SDK streamText) provider', () => {
           match: { turn: 1, nativeToolsSupplied: true },
           response: {
             chunks: ['Writing now.'],
-            toolCalls: [{ name: 'write_file', args: { path: 'native.txt', content: 'ok\n' } }],
+            toolCalls: [{ name: 'create', args: { path: 'native.txt', content: 'ok\n' } }],
             usage: { promptTokens: 10, outputTokens: 4, totalTokens: 14 },
           },
         },

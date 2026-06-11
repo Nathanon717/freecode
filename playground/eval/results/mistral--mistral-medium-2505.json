@@ -520,5 +520,67 @@
         "note": "1356 | in: 1316 | out: 40"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-11T23:14:44.356Z",
+    "scenarioId": "002-edit-config",
+    "model": "mistral:mistral-medium-2505",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 4971,
+      "prompt": 4892,
+      "output": 79
+    },
+    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
+    "checks": [
+      {
+        "name": "file exists: config.json",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.theme",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.language",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.maxRetries",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.debug",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "3 tool calls",
+        "kind": "stat",
+        "value": 3,
+        "note": "list_dir → read → edit"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 4971,
+        "note": "4971 | in: 4892 | out: 79"
+      }
+    ]
   }
 ]

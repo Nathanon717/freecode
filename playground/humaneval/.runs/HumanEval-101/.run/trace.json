@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "import re\n\ndef words_string(s):\n    \"\"\"\n    Split a string of words separated by commas or spaces into an array of words.\n\n    Args:\n    s (str): Input string containing words separated by commas or spaces.\n\n    Returns:\n    list: An array of words.\n\n    Examples:\n    >>> words_string(\"Hi, my name is John\")\n    ['Hi', 'my', 'name', 'is', 'John']\n    >>> words_string(\"One, two, three, four, five, six\")\n    ['One', 'two', 'three', 'four', 'five', 'six']\n    \"\"\"\n    return re.split(r'[,\\s]+', s.strip())"
+    },
+    "result": "Wrote 505 bytes to solution.py"
+  }
+]

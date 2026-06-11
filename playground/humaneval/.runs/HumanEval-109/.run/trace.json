@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def move_one_ball(arr):\n    if not arr:\n        return True\n\n    sorted_arr = sorted(arr)\n    n = len(arr)\n\n    for i in range(n):\n        if arr[i] == sorted_arr[0]:\n            if arr[i:] + arr[:i] == sorted_arr:\n                return True\n\n    return False"
+    },
+    "result": "Wrote 260 bytes to solution.py"
+  }
+]

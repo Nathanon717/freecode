@@ -6,14 +6,15 @@ import {
   cycleByChar,
   composeToggleBar,
   toggleBarWidth,
+  setCtrlHint,
 } from '../../src/cli/toggles.js';
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 
-// Reset ask toggle to 'ask' before each test.
-// Read toggle has no direct setter — tests verify relative behavior.
+// Reset to known state before each test.
 beforeEach(() => {
   initAskMode('ask');
+  setCtrlHint(false);
 });
 
 describe('initAskMode / getAskMode', () => {
@@ -74,15 +75,45 @@ describe('toggleBarWidth', () => {
 });
 
 describe('composeToggleBar', () => {
-  it('returns a non-empty string', () => {
-    expect(composeToggleBar().length).toBeGreaterThan(0);
+  it('compact mode: shows only toggle chars, no label rest', () => {
+    setCtrlHint(false);
+    const text = stripAnsi(composeToggleBar());
+    expect(text).toContain('A');
+    expect(text).toContain('R');
+    // label rests ('sk', 'ead') must not appear in compact mode
+    expect(text).not.toContain('sk');
+    expect(text).not.toContain('ead');
   });
 
-  it('contains the ask toggle character', () => {
-    expect(stripAnsi(composeToggleBar())).toContain('A');
+  it('hint mode: shows full label words (char + rest)', () => {
+    setCtrlHint(true);
+    const text = stripAnsi(composeToggleBar());
+    expect(text).toContain('Ask');
+    expect(text).toContain('Read');
   });
 
-  it('contains the read toggle character', () => {
-    expect(stripAnsi(composeToggleBar())).toContain('R');
+  it('hint mode: width matches stripped length', () => {
+    setCtrlHint(true);
+    const bar = stripAnsi(composeToggleBar());
+    expect(bar.length).toBe(toggleBarWidth());
+  });
+
+  it('hint mode on: rest of word has no background (bg escape only around char)', () => {
+    // Ask toggle starts at index 0 (on), Read at index 1 (off).
+    setCtrlHint(true);
+    const raw = composeToggleBar();
+    // Find 'sk' in the raw ANSI string — it must not be preceded by a bg-color escape
+    const bgEscapePattern = /\x1b\[48;2;[\d;]+m/g;
+    const bgMatches = [...raw.matchAll(bgEscapePattern)].map(m => m.index ?? 0);
+    // After each bg escape, extract the immediately following visible chars
+    for (const idx of bgMatches) {
+      // Strip ANSI after the bg escape to find the first visible chars
+      const afterBg = raw.slice(idx).replace(/\x1b\[[0-9;]*m/g, '');
+      // Only the single toggle char (1 char) should follow before grey rest
+      expect(afterBg[0]).toMatch(/[A-Z]/);
+      // 'sk' and 'ead' should NOT start immediately at position 0 of afterBg
+      expect(afterBg).not.toMatch(/^sk/);
+      expect(afterBg).not.toMatch(/^ead/);
+    }
   });
 });

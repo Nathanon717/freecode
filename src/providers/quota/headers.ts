@@ -1,3 +1,5 @@
+import type { ObservedRateLimitBucket } from '../model-store.js';
+
 /**
  * Pure parser for Groq rate-limit response headers.
  *
@@ -308,4 +310,60 @@ export function parseCerebrasRateLimitSnapshot(
     if (rt !== null || lt !== null) buckets.push({ label: `T${suffix[gran]}`, remaining: rt, limit: lt });
   }
   return buckets;
+}
+
+/** Extract rate-limit ceiling values from Groq/OpenAI-compat headers (dynamic reset window). */
+export function extractGroqRateLimitBuckets(h: GroqRateLimitHeaders): Record<string, ObservedRateLimitBucket> {
+  const result: Record<string, ObservedRateLimitBucket> = {};
+  if (h.limitRequests !== null) result['requests'] = { limit: h.limitRequests, intervalMs: h.resetRequestsMs };
+  if (h.limitTokens !== null) result['tokens'] = { limit: h.limitTokens, intervalMs: h.resetTokensMs };
+  return result;
+}
+
+/** Extract rate-limit ceiling values from Mistral per-minute headers. */
+export function extractMistralRateLimitBuckets(headers: Headers | Record<string, string>): Record<string, ObservedRateLimitBucket> {
+  const result: Record<string, ObservedRateLimitBucket> = {};
+  const lr = headerNum(headers, 'x-ratelimit-limit-req-minute');
+  const lt = headerNum(headers, 'x-ratelimit-limit-tokens-minute');
+  if (lr !== null) result['requests-per-minute'] = { limit: lr, intervalMs: 60_000 };
+  if (lt !== null) result['tokens-per-minute'] = { limit: lt, intervalMs: 60_000 };
+  return result;
+}
+
+/** Extract rate-limit ceiling values from Cerebras per-minute/hour/day headers. */
+export function extractCerebrasRateLimitBuckets(headers: Headers | Record<string, string>): Record<string, ObservedRateLimitBucket> {
+  const result: Record<string, ObservedRateLimitBucket> = {};
+  for (const [name, ms] of [['minute', 60_000], ['hour', 3_600_000], ['day', 86_400_000]] as const) {
+    const lr = headerNum(headers, `x-ratelimit-limit-requests-${name}`);
+    const lt = headerNum(headers, `x-ratelimit-limit-tokens-${name}`);
+    if (lr !== null) result[`requests-per-${name}`] = { limit: lr, intervalMs: ms };
+    if (lt !== null) result[`tokens-per-${name}`] = { limit: lt, intervalMs: ms };
+  }
+  return result;
+}
+
+/**
+ * Dispatch rate-limit bucket extraction by provider.
+ * Covers groq, mistral, cerebras, and OpenAI-compat providers sharing the Groq header shape.
+ */
+export function extractOpenAICompatRateLimitBuckets(
+  providerId: string,
+  headers: Headers,
+): Record<string, ObservedRateLimitBucket> {
+  if (providerId === 'mistral') return extractMistralRateLimitBuckets(headers);
+  if (providerId === 'cerebras') return extractCerebrasRateLimitBuckets(headers);
+  return extractGroqRateLimitBuckets(parseGroqRateLimitHeaders(headers));
+}
+
+/** Extract rate-limit ceiling values from Anthropic headers (per-minute rolling windows). */
+export function extractAnthropicRateLimitBuckets(
+  base: GroqRateLimitHeaders,
+  extended: AnthropicExtendedHeaders,
+): Record<string, ObservedRateLimitBucket> {
+  const result: Record<string, ObservedRateLimitBucket> = {};
+  if (base.limitRequests !== null) result['requests'] = { limit: base.limitRequests, intervalMs: 60_000 };
+  if (base.limitTokens !== null) result['tokens'] = { limit: base.limitTokens, intervalMs: 60_000 };
+  if (extended.inputTokensLimit !== null) result['input-tokens'] = { limit: extended.inputTokensLimit, intervalMs: 60_000 };
+  if (extended.outputTokensLimit !== null) result['output-tokens'] = { limit: extended.outputTokensLimit, intervalMs: 60_000 };
+  return result;
 }

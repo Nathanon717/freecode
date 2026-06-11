@@ -54,7 +54,7 @@ For the generated scenario inventory, see [scenarios.md](scenarios.md).
   "workspace": "temp",
   "turns": [
     {
-      "input": "Use list_dir with path \".\" first. Then use write_file to create src/math.js with content exactly \"export function sum(values) {\\n  return values.reduce((total, value) => total + value, 0);\\n}\\n\". Then use write_file to create config/app.json with content exactly \"{\\n  \\\"name\\\": \\\"eval-medium\\\",\\n  \\\"enabled\\\": true,\\n  \\\"limits\\\": {\\n    \\\"items\\\": 3\\n  }\\n}\\n\". Do not use any other tools."
+      "input": "Use list_dir with path \".\" first. Then use create to create src/math.js with content exactly \"export function sum(values) {\\n  return values.reduce((total, value) => total + value, 0);\\n}\\n\". Then use create to create config/app.json with content exactly \"{\\n  \\\"name\\\": \\\"eval-medium\\\",\\n  \\\"enabled\\\": true,\\n  \\\"limits\\\": {\\n    \\\"items\\\": 3\\n  }\\n}\\n\". Do not use any other tools."
     },
     { "input": "y" },
     { "input": "y" },
@@ -75,7 +75,7 @@ For the generated scenario inventory, see [scenarios.md](scenarios.md).
     ],
     "toolTrace": {
       "maxCalls": 3,
-      "sequence": ["list_dir", "write_file", "write_file"],
+      "sequence": ["list_dir", "create", "create"],
       "absent": ["read_file", "grep", "shell_exec"]
     }
   }
@@ -141,7 +141,7 @@ Use this mode for free verification of prompt construction, model routing, deter
           "model": "gpt-freecode-test",
           "inputMessageCount": 1,
           "lastUserContains": ["Say PONG"],
-          "toolsAvailable": ["read_file", "write_file"],
+          "toolsAvailable": ["read_file", "create"],
           "toolRationale": true,
           "parallelTools": true,
           "nativeToolsSupplied": true,
@@ -166,7 +166,7 @@ Fixture files are JSON and live next to scenarios:
         "turn": 1,
         "messageCount": 1,
         "mustContain": ["Say PONG"],
-        "toolsAvailable": ["read_file", "write_file"],
+        "toolsAvailable": ["read_file", "create"],
         "systemPromptPresent": true,
         "toolRationale": true,
         "parallelTools": true,
@@ -193,13 +193,13 @@ Tool-driving fixtures use the same ordered steps. A step may emit `toolCalls`; t
         "turn": 1,
         "messageCount": 1,
         "mustContain": ["Create note.txt"],
-        "toolsAvailable": ["write_file"],
+        "toolsAvailable": ["create"],
         "nativeToolsSupplied": true
       },
       "response": {
         "chunks": ["I'll create it."],
         "toolCalls": [
-          { "name": "write_file", "args": { "path": "note.txt", "content": "ok\n" } }
+          { "name": "create", "args": { "path": "note.txt", "content": "ok\n" } }
         ],
         "usage": { "promptTokens": 20, "outputTokens": 5, "totalTokens": 25 }
       }
@@ -208,7 +208,7 @@ Tool-driving fixtures use the same ordered steps. A step may emit `toolCalls`; t
       "match": {
         "turn": 2,
         "messageCount": 3,
-        "mustContain": ["<tool_result name=\"write_file\">"]
+        "mustContain": ["<tool_result name=\"create\">"]
       },
       "response": {
         "text": "Created note.txt.",

@@ -55,12 +55,12 @@ describe('createScriptedMode', () => {
 
   it('approves a tool call when the next scripted line approves', async () => {
     const mode = createScriptedMode(writeScript(['approve']), dir, makeRl());
-    expect(await mode.confirmToolCall({ name: 'read_file', args: {} })).toEqual({ approved: true });
+    expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
   });
 
   it('denies and forwards the feedback message when the script denies', async () => {
     const mode = createScriptedMode(writeScript(['deny', 'do it differently']), dir, makeRl());
-    expect(await mode.confirmToolCall({ name: 'write_file', args: {} })).toEqual({
+    expect(await mode.confirmToolCall({ name: 'create', args: {} })).toEqual({
       approved: false,
       message: 'do it differently',
     });
@@ -87,8 +87,8 @@ describe('createScriptedMode', () => {
   it('auto-approves every call when FREECODE_AUTO_CONFIRM=1', async () => {
     process.env['FREECODE_AUTO_CONFIRM'] = '1';
     const mode = createScriptedMode(writeScript([]), dir, makeRl());
-    expect(await mode.confirmToolCall({ name: 'read_file', args: {} })).toEqual({ approved: true });
-    expect(await mode.confirmToolCall({ name: 'read_file', args: {} })).toEqual({ approved: true });
+    expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
+    expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
   });
 
   it('stops auto-approving when the user declines at the tool-call limit', async () => {
@@ -97,8 +97,8 @@ describe('createScriptedMode', () => {
     const rl = makeRl('n'); // decline the "continue?" prompt
     const mode = createScriptedMode(writeScript([]), dir, rl);
 
-    expect(await mode.confirmToolCall({ name: 'read_file', args: {} })).toEqual({ approved: true });
-    const second = await mode.confirmToolCall({ name: 'read_file', args: {} });
+    expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
+    const second = await mode.confirmToolCall({ name: 'read', args: {} });
     expect(second.approved).toBe(false);
     expect(second.message).toContain('limit of 2');
     expect(rl.question).toHaveBeenCalled();
@@ -109,8 +109,8 @@ describe('createScriptedMode', () => {
     process.env['FREECODE_MAX_TOOL_CALLS'] = '2';
     const mode = createScriptedMode(writeScript([]), dir, makeRl('')); // empty answer = continue
 
-    await mode.confirmToolCall({ name: 'read_file', args: {} });
-    expect(await mode.confirmToolCall({ name: 'read_file', args: {} })).toEqual({ approved: true });
+    await mode.confirmToolCall({ name: 'read', args: {} });
+    expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
   });
 
   it('exposes current-only model listing and skips stray confirmations', () => {

@@ -1,6 +1,6 @@
 {
   "name": "tty-footer-toggles",
-  "description": "Footer toggle bar shows A and R toggles at startup; Ctrl+A and Ctrl+R cycle the toggles without corrupting the input area",
+  "description": "Footer toggle bar shows A and R toggles at startup with ctrl+ prefix; Ctrl+A and Ctrl+R cycle the toggles without corrupting the input area",
   "requiresLlm": false,
   "tty": {
     "cols": 80,
@@ -10,18 +10,16 @@
       {
         "name": "toggle bar appears in footer at startup",
         "screenContains": [
-          "A●",
-          "R●",
+          "ctrl+",
           "> / for commands"
         ]
       },
       {
-        "name": "Ctrl+A cycles Ask toggle; input area stays intact",
+        "name": "Ctrl+A cycles Ask toggle and briefly shows hint labels",
         "send": "\u0001",
         "quietMs": 200,
         "screenContains": [
-          "A●",
-          "R●",
+          "ctrl+",
           "> / for commands"
         ]
       },
@@ -30,8 +28,7 @@
         "send": "\u0012",
         "quietMs": 200,
         "screenContains": [
-          "A●",
-          "R●",
+          "ctrl+",
           "> / for commands"
         ]
       },

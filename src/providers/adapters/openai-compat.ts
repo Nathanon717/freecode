@@ -7,8 +7,10 @@ import {
   groqHeadersToSnapshot,
   parseMistralRateLimitSnapshot,
   parseCerebrasRateLimitSnapshot,
+  extractOpenAICompatRateLimitBuckets,
   type RateLimitSnapshot,
 } from '../quota/headers.js';
+import { saveObservedRateLimits } from '../model-store.js';
 
 type RetryBannerSetter = (info: { name: string; label: string; targetMs: number } | null) => void;
 let retryBannerSink: RetryBannerSetter | null = null;
@@ -195,7 +197,6 @@ function normalizeOpenAICompatToolCallDelta(value: unknown): unknown {
     if (!isRecord(delta)) return choice;
     const toolCalls = delta['tool_calls'];
     if (!Array.isArray(toolCalls)) return choice;
-
     const nextToolCalls = toolCalls.map((toolCall: unknown) => {
       if (!isRecord(toolCall)) return toolCall;
       if (toolCall['type'] === 'function') return toolCall;
@@ -203,14 +204,7 @@ function normalizeOpenAICompatToolCallDelta(value: unknown): unknown {
       changed = true;
       return { ...toolCall, type: 'function' };
     });
-
-    return {
-      ...choice,
-      delta: {
-        ...delta,
-        tool_calls: nextToolCalls,
-      },
-    };
+    return { ...choice, delta: { ...delta, tool_calls: nextToolCalls } };
   });
 
   return changed ? { ...value, choices: nextChoices } : value;
@@ -355,6 +349,13 @@ export function openAIModelDisallowsTemperature(modelId: string): boolean {
   return /^(o1|o3|gpt-5)([-.]|$)/i.test(modelId);
 }
 
+function saveLimitsFromHeaders(providerId: string, headers: Headers, body: RequestInit['body']): void {
+  let modelId: string | undefined;
+  try { modelId = typeof body === 'string' ? (JSON.parse(body) as Record<string, unknown>)['model'] as string : undefined; } catch { /* ignore */ }
+  if (!modelId) return;
+  saveObservedRateLimits(providerId, modelId, extractOpenAICompatRateLimitBuckets(providerId, headers));
+}
+
 export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
   const apiKey = resolveApiKey(providerConfig) ?? 'placeholder';
 
@@ -458,7 +459,10 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         }
         if (shouldCapture) {
           const snapshot = parseSnapshot(response.headers);
-          if (snapshot.length > 0) lastCapturedHeaders.set(providerConfig.id, snapshot);
+          if (snapshot.length > 0) {
+            lastCapturedHeaders.set(providerConfig.id, snapshot);
+            saveLimitsFromHeaders(providerConfig.id, response.headers, patchedInit?.body ?? init?.body);
+          }
         }
         const httpError = await formatOpenAICompatHttpError(providerConfig.name, response);
         if (httpError) {

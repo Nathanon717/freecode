@@ -1,3 +1,5 @@
+// check-tests: orphan
+
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -40,20 +42,20 @@ describe('scenario expectation assertions', () => {
 
   it('checks tool trace limits, sequence, presence, and absence', () => {
     const trace = [
-      { tool: 'read_file', args: {} },
+      { tool: 'read', args: {} },
       { tool: 'shell_exec', args: {} },
     ];
 
     expect(assertToolTrace({
       maxCalls: 1,
-      sequence: ['read_file'],
-      present: ['write_file'],
+      sequence: ['read'],
+      present: ['create'],
       absent: ['shell_exec'],
     }, trace)).toEqual([
-      'toolTrace.maxCalls: expected <= 1, got 2 (read_file -> shell_exec)',
-      'toolTrace.sequence: expected read_file, got read_file -> shell_exec',
-      'toolTrace missing: write_file (read_file -> shell_exec)',
-      'toolTrace unexpected: shell_exec (read_file -> shell_exec)',
+      'toolTrace.maxCalls: expected <= 1, got 2 (read -> shell_exec)',
+      'toolTrace.sequence: expected read, got read -> shell_exec',
+      'toolTrace missing: create (read -> shell_exec)',
+      'toolTrace unexpected: shell_exec (read -> shell_exec)',
     ]);
   });
 
@@ -67,13 +69,13 @@ describe('scenario expectation assertions', () => {
         executionPath: 'fake-direct',
         inputMessageCount: 2,
         lastUserContains: ['missing'],
-        toolsAvailable: ['write_file'],
-        toolsAbsent: ['read_file'],
+        toolsAvailable: ['create'],
+        toolsAbsent: ['read'],
         toolRationale: true,
         parallelTools: false,
         nativeToolsSupplied: true,
         emittedTextContains: ['PONG'],
-        emittedToolCalls: ['write_file'],
+        emittedToolCalls: ['create'],
         usage: { promptTokens: 10, outputTokens: 1, totalTokens: 11 },
       }],
     }, [{
@@ -83,13 +85,13 @@ describe('scenario expectation assertions', () => {
       executionPath: 'fake-other',
       inputMessageCount: 1,
       lastUserMessage: 'Say PING',
-      toolNames: ['read_file'],
+      toolNames: ['read'],
       toolRationale: false,
       parallelTools: true,
       nativeToolsSupplied: false,
       responseStep: 1,
       emittedChunks: ['PING'],
-      emittedToolCalls: [{ name: 'read_file', args: {} }],
+      emittedToolCalls: [{ name: 'read', args: {} }],
       usage: { promptTokens: 9, outputTokens: 1, totalTokens: 10 },
     }])).toEqual([
       'fakeLlmTrace.callCount: expected 2, got 1',
@@ -99,10 +101,10 @@ describe('scenario expectation assertions', () => {
       'fakeLlmTrace.calls[0].parallelTools: expected false, got true',
       'fakeLlmTrace.calls[0].nativeToolsSupplied: expected true, got false',
       'fakeLlmTrace.calls[0].lastUserContains missing: "missing"',
-      'fakeLlmTrace.calls[0].toolsAvailable missing: write_file (read_file)',
-      'fakeLlmTrace.calls[0].toolsAbsent unexpected: read_file (read_file)',
+      'fakeLlmTrace.calls[0].toolsAvailable missing: create (read)',
+      'fakeLlmTrace.calls[0].toolsAbsent unexpected: read (read)',
       'fakeLlmTrace.calls[0].emittedTextContains missing: "PONG"',
-      'fakeLlmTrace.calls[0].emittedToolCalls missing: write_file (read_file)',
+      'fakeLlmTrace.calls[0].emittedToolCalls missing: create (read)',
       'fakeLlmTrace.calls[0].usage.totalTokens: expected 11, got 10',
       'fakeLlmTrace.calls[0].usage.promptTokens: expected 10, got 9',
     ]);

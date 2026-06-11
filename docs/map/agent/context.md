@@ -18,7 +18,7 @@
 
 - `agent/loop.ts` calls `setProjectRoot(projectRoot)` at the start of each turn.
 - Agent filesystem tools call the project path resolvers before reading, writing, listing, or searching paths.
-- `read_file` marks files as read after successful reads; `edit_file` checks that state before editing.
+- `read` marks files as read after successful reads; `edit` checks that state before editing.
 
 ## Important Behavior
 

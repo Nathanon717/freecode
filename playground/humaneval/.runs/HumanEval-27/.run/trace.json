@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def flip_case(string: str) -> str:\n    \"\"\" For a given string, flip lowercase characters to uppercase and uppercase to lowercase.\n    >>> flip_case('Hello')\n    'hELLO'\n    \"\"\"\n    result = []\n    for char in string:\n        if char.islower():\n            result.append(char.upper())\n        else:\n            result.append(char.lower())\n    return ''.join(result)"
+    },
+    "result": "Wrote 364 bytes to solution.py"
+  }
+]

@@ -1,0 +1,637 @@
+{
+  "groq:openai/gpt-oss-120b": {
+    "provider": "groq",
+    "modelId": "openai/gpt-oss-120b",
+    "isFavorite": true,
+    "evals": {
+      "humaneval": [
+        {
+          "timestamp": "2026-06-11T20:35:44.525Z",
+          "taskId": "HumanEval/0",
+          "turns": 5,
+          "tokenUsage": {
+            "input": 7034,
+            "output": 750
+          },
+          "durationMs": 4316,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/groq-openai/gpt-oss-120b/2026-06-11T203544525Z.json"
+        }
+      ]
+    },
+    "rateLimits": {
+      "buckets": {
+        "requests": {
+          "limit": 1000,
+          "intervalMs": 86400
+        },
+        "tokens": {
+          "limit": 8000,
+          "intervalMs": 5782
+        }
+      },
+      "observedAt": "2026-06-11T23:09:39.663Z"
+    }
+  },
+  "groq:groq/compound-mini": {
+    "provider": "groq",
+    "modelId": "groq/compound-mini",
+    "nativeTools": false
+  },
+  "cohere:c4ai-aya-expanse-32b": {
+    "provider": "cohere",
+    "modelId": "c4ai-aya-expanse-32b",
+    "nativeTools": false
+  },
+  "groq:allam-2-7b": {
+    "provider": "groq",
+    "modelId": "allam-2-7b",
+    "nativeTools": false
+  },
+  "groq:llama-3.1-8b-instant": {
+    "provider": "groq",
+    "modelId": "llama-3.1-8b-instant",
+    "settings": {},
+    "rateLimits": {
+      "buckets": {
+        "requests": {
+          "limit": 14400,
+          "intervalMs": 6000
+        },
+        "tokens": {
+          "limit": 6000,
+          "intervalMs": 410
+        }
+      },
+      "observedAt": "2026-06-11T22:49:29.860Z"
+    }
+  },
+  "groq:llama-3.3-70b-versatile": {
+    "provider": "groq",
+    "modelId": "llama-3.3-70b-versatile",
+    "isFavorite": true
+  },
+  "mistral:mistral-medium-2505": {
+    "provider": "mistral",
+    "modelId": "mistral-medium-2505",
+    "isFavorite": true,
+    "rateLimits": {
+      "buckets": {
+        "requests-per-minute": {
+          "limit": 25,
+          "intervalMs": 60000
+        },
+        "tokens-per-minute": {
+          "limit": 375000,
+          "intervalMs": 60000
+        }
+      },
+      "observedAt": "2026-06-11T23:14:41.738Z"
+    },
+    "evals": {
+      "custom": [
+        {
+          "timestamp": "2026-06-11T23:14:44.356Z",
+          "taskId": "002-edit-config",
+          "pass": true,
+          "turns": 3,
+          "tokenUsage": {
+            "input": 4892,
+            "output": 79
+          },
+          "durationMs": 5862,
+          "error": null,
+          "transcriptRef": "evals/custom/mistral-mistral-medium-2505/2026-06-11T231444356Z.json"
+        }
+      ]
+    }
+  },
+  "mistral:mistral-medium-2508": {
+    "provider": "mistral",
+    "modelId": "mistral-medium-2508",
+    "isFavorite": false,
+    "rateLimits": {
+      "buckets": {
+        "requests-per-minute": {
+          "limit": 23,
+          "intervalMs": 60000
+        },
+        "tokens-per-minute": {
+          "limit": 356250,
+          "intervalMs": 60000
+        }
+      },
+      "observedAt": "2026-06-11T22:59:32.957Z"
+    },
+    "evals": {
+      "custom": [
+        {
+          "timestamp": "2026-06-11T23:14:55.581Z",
+          "taskId": "001-hello-world",
+          "pass": true,
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2303,
+            "output": 40
+          },
+          "durationMs": 1865,
+          "error": null,
+          "transcriptRef": "evals/custom/mistral-mistral-medium-2508/2026-06-11T231455581Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:15:05.236Z",
+          "taskId": "002-edit-config",
+          "pass": true,
+          "turns": 3,
+          "tokenUsage": {
+            "input": 4808,
+            "output": 80
+          },
+          "durationMs": 3200,
+          "error": null,
+          "transcriptRef": "evals/custom/mistral-mistral-medium-2508/2026-06-11T231505236Z.json"
+        }
+      ],
+      "humaneval": [
+        {
+          "timestamp": "2026-06-11T23:15:32.963Z",
+          "taskId": "HumanEval/0",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2784,
+            "output": 273
+          },
+          "durationMs": 5204,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231532963Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:15:39.209Z",
+          "taskId": "HumanEval/1",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2811,
+            "output": 339
+          },
+          "durationMs": 5963,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231539209Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:15:41.893Z",
+          "taskId": "HumanEval/2",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2595,
+            "output": 193
+          },
+          "durationMs": 2381,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231541893Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:15:46.785Z",
+          "taskId": "HumanEval/3",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2715,
+            "output": 345
+          },
+          "durationMs": 4590,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231546785Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:15:50.473Z",
+          "taskId": "HumanEval/4",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2772,
+            "output": 314
+          },
+          "durationMs": 3403,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231550473Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:15:53.971Z",
+          "taskId": "HumanEval/5",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2694,
+            "output": 364
+          },
+          "durationMs": 3254,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231553971Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:15:58.249Z",
+          "taskId": "HumanEval/6",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2775,
+            "output": 465
+          },
+          "durationMs": 3957,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231558249Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:16:01.315Z",
+          "taskId": "HumanEval/7",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2635,
+            "output": 271
+          },
+          "durationMs": 2797,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231601315Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:16:05.020Z",
+          "taskId": "HumanEval/8",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2707,
+            "output": 348
+          },
+          "durationMs": 3365,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231605020Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:16:10.236Z",
+          "taskId": "HumanEval/9",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2697,
+            "output": 361
+          },
+          "durationMs": 4938,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231610236Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:16:15.251Z",
+          "taskId": "HumanEval/10",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2875,
+            "output": 511
+          },
+          "durationMs": 4714,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231615251Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:16:18.425Z",
+          "taskId": "HumanEval/11",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2636,
+            "output": 318
+          },
+          "durationMs": 2893,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231618425Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:16:22.215Z",
+          "taskId": "HumanEval/12",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2700,
+            "output": 366
+          },
+          "durationMs": 3545,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231622215Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:16:28.975Z",
+          "taskId": "HumanEval/13",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2570,
+            "output": 164
+          },
+          "durationMs": 6502,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231628975Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:16:34.811Z",
+          "taskId": "HumanEval/14",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2525,
+            "output": 153
+          },
+          "durationMs": 5589,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231634811Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:16:35.642Z",
+          "taskId": "HumanEval/15",
+          "turns": 0,
+          "tokenUsage": {},
+          "durationMs": 559,
+          "pass": false,
+          "error": "agent did not finish",
+          "transcriptRef": "evals/humaneval/mistral-mistral-medium-2508/2026-06-11T231635642Z.json"
+        }
+      ]
+    }
+  },
+  "mistral:ministral-14b-2512": {
+    "provider": "mistral",
+    "modelId": "ministral-14b-2512",
+    "isFavorite": true,
+    "rateLimits": {
+      "buckets": {
+        "requests-per-minute": {
+          "limit": 30,
+          "intervalMs": 60000
+        },
+        "tokens-per-minute": {
+          "limit": 937500,
+          "intervalMs": 60000
+        }
+      },
+      "observedAt": "2026-06-11T23:14:14.306Z"
+    },
+    "evals": {
+      "custom": [
+        {
+          "timestamp": "2026-06-11T23:14:15.182Z",
+          "taskId": "001-hello-world",
+          "pass": true,
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2303,
+            "output": 41
+          },
+          "durationMs": 1819,
+          "error": null,
+          "transcriptRef": "evals/custom/mistral-ministral-14b-2512/2026-06-11T231415182Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T23:14:30.199Z",
+          "taskId": "002-edit-config",
+          "pass": true,
+          "turns": 3,
+          "tokenUsage": {
+            "input": 4820,
+            "output": 84
+          },
+          "durationMs": 9840,
+          "error": null,
+          "transcriptRef": "evals/custom/mistral-ministral-14b-2512/2026-06-11T231430199Z.json"
+        }
+      ]
+    }
+  },
+  "zen:big-pickle": {
+    "provider": "zen",
+    "modelId": "big-pickle",
+    "isFavorite": true
+  },
+  "zen:deepseek-v4-flash-free": {
+    "provider": "zen",
+    "modelId": "deepseek-v4-flash-free",
+    "isFavorite": true,
+    "evals": {
+      "humaneval": [
+        {
+          "timestamp": "2026-06-11T20:56:34.205Z",
+          "taskId": "HumanEval/7",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 3184,
+            "output": 273
+          },
+          "durationMs": 4663,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/zen-deepseek-v4-flash-free/2026-06-11T205634205Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T20:56:51.971Z",
+          "taskId": "HumanEval/57",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 3220,
+            "output": 596
+          },
+          "durationMs": 7590,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/zen-deepseek-v4-flash-free/2026-06-11T205651971Z.json"
+        }
+      ]
+    }
+  },
+  "zen:mimo-v2.5-free": {
+    "provider": "zen",
+    "modelId": "mimo-v2.5-free",
+    "isFavorite": true
+  },
+  "zen:nemotron-3-ultra-free": {
+    "provider": "zen",
+    "modelId": "nemotron-3-ultra-free",
+    "isFavorite": true
+  },
+  "zen:north-mini-code-free": {
+    "provider": "zen",
+    "modelId": "north-mini-code-free",
+    "isFavorite": true
+  },
+  "mistral:codestral-2508": {
+    "provider": "mistral",
+    "modelId": "codestral-2508",
+    "isFavorite": true
+  },
+  "groq:openai/gpt-oss-20b": {
+    "provider": "groq",
+    "modelId": "openai/gpt-oss-20b",
+    "evals": {
+      "humaneval": [
+        {
+          "timestamp": "2026-06-11T20:55:16.995Z",
+          "taskId": "HumanEval/0",
+          "turns": 1,
+          "tokenUsage": {
+            "input": 2172,
+            "output": 513
+          },
+          "durationMs": 1545,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/groq-openai/gpt-oss-20b/2026-06-11T205516995Z.json"
+        },
+        {
+          "timestamp": "2026-06-11T21:44:31.351Z",
+          "taskId": "HumanEval/1",
+          "turns": 2,
+          "tokenUsage": {
+            "input": 3126,
+            "output": 2685
+          },
+          "durationMs": 4082,
+          "pass": true,
+          "error": null,
+          "transcriptRef": "evals/humaneval/groq-openai/gpt-oss-20b/2026-06-11T214431351Z.json"
+        }
+      ],
+      "custom": [
+        {
+          "timestamp": "2026-06-11T21:59:28.263Z",
+          "taskId": "001-hello-world",
+          "pass": true,
+          "turns": 2,
+          "tokenUsage": {
+            "input": 2441,
+            "output": 151
+          },
+          "durationMs": 1802,
+          "error": null,
+          "transcriptRef": "evals/custom/groq-openai/gpt-oss-20b/2026-06-11T215928263Z.json"
+        }
+      ]
+    },
+    "rateLimits": {
+      "buckets": {
+        "requests": {
+          "limit": 1000,
+          "intervalMs": 86400
+        },
+        "tokens": {
+          "limit": 8000,
+          "intervalMs": 5782
+        }
+      },
+      "observedAt": "2026-06-11T22:56:59.936Z"
+    }
+  },
+  "cerebras:gpt-oss-120b": {
+    "provider": "cerebras",
+    "modelId": "gpt-oss-120b",
+    "rateLimits": {
+      "buckets": {
+        "requests-per-minute": {
+          "limit": 5,
+          "intervalMs": 60000
+        },
+        "tokens-per-minute": {
+          "limit": 30000,
+          "intervalMs": 60000
+        },
+        "requests-per-hour": {
+          "limit": 150,
+          "intervalMs": 3600000
+        },
+        "tokens-per-hour": {
+          "limit": 1000000,
+          "intervalMs": 3600000
+        },
+        "requests-per-day": {
+          "limit": 2400,
+          "intervalMs": 86400000
+        },
+        "tokens-per-day": {
+          "limit": 1000000,
+          "intervalMs": 86400000
+        }
+      },
+      "observedAt": "2026-06-11T23:02:32.868Z"
+    },
+    "isFavorite": true
+  },
+  "groq:qwen/qwen3-32b": {
+    "provider": "groq",
+    "modelId": "qwen/qwen3-32b",
+    "rateLimits": {
+      "buckets": {
+        "requests": {
+          "limit": 1000,
+          "intervalMs": 86400
+        },
+        "tokens": {
+          "limit": 6000,
+          "intervalMs": 12010
+        }
+      },
+      "observedAt": "2026-06-11T23:09:10.492Z"
+    },
+    "evals": {
+      "custom": [
+        {
+          "timestamp": "2026-06-11T23:09:12.593Z",
+          "taskId": "001-hello-world",
+          "pass": true,
+          "turns": 2,
+          "tokenUsage": {
+            "input": 3714,
+            "output": 1549
+          },
+          "durationMs": 4711,
+          "error": null,
+          "transcriptRef": "evals/custom/groq-qwen/qwen3-32b/2026-06-11T230912593Z.json"
+        }
+      ]
+    }
+  },
+  "cerebras:zai-glm-4.7": {
+    "provider": "cerebras",
+    "modelId": "zai-glm-4.7",
+    "rateLimits": {
+      "buckets": {
+        "requests-per-minute": {
+          "limit": 5,
+          "intervalMs": 60000
+        },
+        "tokens-per-minute": {
+          "limit": 30000,
+          "intervalMs": 60000
+        },
+        "requests-per-hour": {
+          "limit": 150,
+          "intervalMs": 3600000
+        },
+        "tokens-per-hour": {
+          "limit": 1000000,
+          "intervalMs": 3600000
+        },
+        "requests-per-day": {
+          "limit": 2400,
+          "intervalMs": 86400000
+        },
+        "tokens-per-day": {
+          "limit": 1000000,
+          "intervalMs": 86400000
+        }
+      },
+      "observedAt": "2026-06-11T23:10:45.815Z"
+    },
+    "isFavorite": true
+  }
+}

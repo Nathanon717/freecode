@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "import re\n\ndef file_name_check(file_name):\n    \"\"\"Check if a file name is valid based on specific conditions.\n\n    Args:\n        file_name (str): The name of the file to check.\n\n    Returns:\n        str: 'Yes' if the file name is valid, otherwise 'No'.\n    \"\"\"\n    # Check for more than three digits in the file name\n    if len(re.findall(r'\\d', file_name)) > 3:\n        return 'No'\n    \n    # Check for exactly one dot in the file name\n    if file_name.count('.') != 1:\n        return 'No'\n    \n    # Split the file name into name and extension\n    name_part, extension_part = file_name.split('.')\n    \n    # Check if the name part is not empty and starts with a latin alphabet letter\n    if not name_part or not re.match(r'^[a-zA-Z]', name_part):\n        return 'No'\n    \n    # Check if the extension is one of the allowed values\n    if extension_part not in ['txt', 'exe', 'dll']:\n        return 'No'\n    \n    return 'Yes'"
+    },
+    "result": "Wrote 925 bytes to solution.py"
+  }
+]

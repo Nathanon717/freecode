@@ -1,0 +1,26 @@
+{
+  "exitCode": 0,
+  "stdout": "Note: allam-2-7b doesn't support native tool calling — saved. Using prompt-based tools now and automatically next time.\n\u001b[94m~ using prompt-based tools\u001b[39m\n\u001b[94m\u001b[39mTo understand the user's query, I will first read the provided text and then provide a response. Please provide the text you would like me to analyze:\n\n<read_file>\n</read_file> \n\n\n",
+  "stderr": "",
+  "toolCalls": [],
+  "tokens": {
+    "total": 627,
+    "prompt": 580,
+    "output": 47
+  },
+  "workDir": "C:\\Users\\mingu\\Desktop\\nathans corner\\dev\\freecode\\playground\\eval\\cereal-soup\\.artifacts\\groq--allam-2-7b\\work",
+  "quota": [
+    {
+      "label": "R",
+      "remaining": 6999,
+      "limit": 7000,
+      "resetMs": 12342
+    },
+    {
+      "label": "T",
+      "remaining": 5419,
+      "limit": 6000,
+      "resetMs": 5810
+    }
+  ]
+}

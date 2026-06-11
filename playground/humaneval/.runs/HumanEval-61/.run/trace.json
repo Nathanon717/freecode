@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def correct_bracketing(brackets: str):\n    \"\"\" brackets is a string of \"(\" and \")\".\n    return True if every opening bracket has a corresponding closing bracket.\n\n    >>> correct_bracketing(\"(\")\n    False\n    >>> correct_bracketing(\"()\")\n    True\n    >>> correct_bracketing(\"(()())\")\n    True\n    >>> correct_bracketing(\")(()\")\n    False\n    \"\"\"\n    count = 0\n    for bracket in brackets:\n        if bracket == \"(\":\n            count += 1\n        else:\n            count -= 1\n        if count < 0:\n            return False\n    return count == 0\n"
+    },
+    "result": "Wrote 545 bytes to solution.py"
+  }
+]

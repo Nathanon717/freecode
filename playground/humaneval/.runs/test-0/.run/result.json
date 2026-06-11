@@ -1,0 +1,9 @@
+[
+  {
+    "totalTokens": 228,
+    "promptTokens": 120,
+    "outputTokens": 8,
+    "providerId": "mock",
+    "modelId": "gpt-freecode-test"
+  }
+]

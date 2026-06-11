@@ -1,0 +1,1 @@
+"Write a Python implementation of the following function.\nSave the complete function definition (including the signature and any needed imports) to a file named `solution.py`.\n\n\n\ndef largest_divisor(n: int) -> int:\n    \"\"\" For a given number n, find the largest number that divides n evenly, smaller than n\n    >>> largest_divisor(15)\n    5\n    \"\"\"\n"

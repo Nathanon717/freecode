@@ -1,6 +1,6 @@
-import { readFileTool } from './read-file.js';
-import { writeFileTool } from './write-file.js';
-import { editFileTool } from './edit-file.js';
+import { readFileTool } from './read.js';
+import { createTool } from './create.js';
+import { editTool } from './edit.js';
 import { grepTool } from './grep.js';
 import { shellTool } from './shell.js';
 import { listDirTool } from './list-dir.js';
@@ -95,7 +95,7 @@ function withLogging(name: string, t: AnyCoreTool, promptTools = false): AnyCore
       let editContextBefore: string[] = [];
       let editContextAfter: string[] = [];
       let editLineIndent = '';
-      if (name === 'edit_file' && typeof args.path === 'string' && typeof args.old_text === 'string') {
+      if (name === 'edit' && typeof args.path === 'string' && typeof args.old_text === 'string') {
         try {
           const filePath = join(process.cwd(), args.path);
           if (existsSync(filePath)) {
@@ -127,9 +127,9 @@ function withLogging(name: string, t: AnyCoreTool, promptTools = false): AnyCore
         const result = await original(args, opts);
         appendToolTrace({ tool: name, args: displayArgs, result });
         let preview: string;
-        if (name === 'edit_file' && typeof args.path === 'string' && typeof args.old_text === 'string' && typeof args.new_text === 'string') {
+        if (name === 'edit' && typeof args.path === 'string' && typeof args.old_text === 'string' && typeof args.new_text === 'string') {
           preview = formatEditFileDiff(args.path, args.old_text, args.new_text, editContextBefore, editContextAfter, getTranscriptRuntimeOptions(), editLineIndent);
-        } else if (name === 'write_file' && typeof args.content === 'string' && typeof result === 'string' && result.startsWith('Wrote ')) {
+        } else if (name === 'create' && typeof args.content === 'string' && typeof result === 'string' && result.startsWith('Wrote ')) {
           preview = formatToolResultPreview(args.content, getTranscriptRuntimeOptions());
         } else {
           preview = formatToolResultPreview(result, getTranscriptRuntimeOptions());
@@ -216,19 +216,19 @@ export function createTools(confirmToolCall?: ConfirmToolCall, toolRationale?: b
   const useRationale = toolRationale ?? loadConfig().toolRationale;
   const queueExecution = createToolExecutionQueue();
   const readOnlyTools = {
-    read_file: wrap('read_file', readFileTool, useRationale, queueExecution, confirmToolCall, promptTools),
+    read:     wrap('read',     readFileTool, useRationale, queueExecution, confirmToolCall, promptTools),
     grep:      wrap('grep',      grepTool,     useRationale, queueExecution, confirmToolCall, promptTools),
     list_dir:  wrap('list_dir',  listDirTool,  useRationale, queueExecution, confirmToolCall, promptTools),
   };
   if (readOnly) return readOnlyTools;
   return {
     ...readOnlyTools,
-    write_file: wrap('write_file', writeFileTool, useRationale, queueExecution, confirmToolCall, promptTools),
-    edit_file:  wrap('edit_file',  editFileTool,  useRationale, queueExecution, confirmToolCall, promptTools),
+    create:     wrap('create',     createTool,    useRationale, queueExecution, confirmToolCall, promptTools),
+    edit:       wrap('edit',       editTool,      useRationale, queueExecution, confirmToolCall, promptTools),
     shell_exec: wrap('shell_exec', shellTool,     useRationale, queueExecution, confirmToolCall, promptTools),
   };
 }
 
 export const allTools = createTools();
 
-export { readFileTool, writeFileTool, editFileTool, grepTool, shellTool, listDirTool };
+export { readFileTool, createTool, editTool, grepTool, shellTool, listDirTool };

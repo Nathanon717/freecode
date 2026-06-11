@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "import math\n\ndef sum_squares(lst):\n    \"\"\"\n    Given a list of numbers, return the sum of squared numbers in the list.\n    Each element in the list is first rounded to the upper integer (ceiling).\n\n    Examples:\n    >>> sum_squares([1, 2, 3])\n    14\n    >>> sum_squares([1, 4, 9])\n    98\n    >>> sum_squares([1, 3, 5, 7])\n    84\n    >>> sum_squares([1.4, 4.2, 0])\n    29\n    >>> sum_squares([-2.4, 1, 1])\n    6\n    \"\"\"\n    return sum(math.ceil(x) ** 2 for x in lst)"
+    },
+    "result": "Wrote 465 bytes to solution.py"
+  }
+]

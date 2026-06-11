@@ -21,7 +21,7 @@
           "model": "gpt-freecode-test",
           "executionPath": "native-stream",
           "lastUserContains": ["Say PONG through the fake model."],
-          "toolsAvailable": ["read_file", "write_file"],
+          "toolsAvailable": ["read", "create"],
           "nativeToolsSupplied": true,
           "emittedTextContains": ["PONG"],
           "usage": { "promptTokens": 12, "outputTokens": 1, "totalTokens": 13 }

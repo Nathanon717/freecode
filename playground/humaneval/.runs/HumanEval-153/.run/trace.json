@@ -1,0 +1,15 @@
+[
+  {
+    "tool": "list_dir",
+    "args": {},
+    "result": ""
+  },
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def Strongest_Extension(class_name, extensions):\n    def calculate_strength(extension):\n        cap = sum(1 for char in extension if char.isupper())\n        sm = sum(1 for char in extension if char.islower())\n        return cap - sm\n\n    if not extensions:\n        return f\"{class_name}.\"\n\n    strongest_ext = max(extensions, key=lambda x: calculate_strength(x))\n    return f\"{class_name}.{strongest_ext}\""
+    },
+    "result": "Wrote 405 bytes to solution.py"
+  }
+]

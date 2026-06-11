@@ -1,0 +1,4 @@
+sku,qty,unit_price,status
+A100,2,12.50,shipped
+B200,1,8.00,cancelled
+C300,3,4.25,shipped

@@ -13,16 +13,16 @@ buildSystemPrompt(): string
 The prompt identifies the model as a coding agent and lists available tools:
 
 ```text
-read_file, write_file, grep, shell_exec, list_dir
+read, create, edit, grep, shell_exec, list_dir
 ```
 
 It instructs the model to:
 
 - Use `list_dir` before assuming files/folders exist.
-- Use `write_file` with complete file contents and real newline characters.
+- Use `create` with complete file contents and real newline characters.
 - Treat every tool call as user-approved/denied by the host.
 - Acknowledge denied tool calls instead of pretending they succeeded.
-- Prefer `grep` before `read_file` when looking for specific content.
+- Prefer `grep` before `read` when looking for specific content.
 
 ## Behavior
 

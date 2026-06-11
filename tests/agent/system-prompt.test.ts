@@ -4,9 +4,9 @@ import { buildSystemPrompt } from '../../src/agent/system-prompt.js';
 describe('buildSystemPrompt', () => {
   it('lists all available tools', () => {
     const prompt = buildSystemPrompt();
-    expect(prompt).toContain('read_file');
-    expect(prompt).toContain('write_file');
-    expect(prompt).toContain('edit_file');
+    expect(prompt).toContain('read');
+    expect(prompt).toContain('create');
+    expect(prompt).toContain('edit');
     expect(prompt).toContain('grep');
     expect(prompt).toContain('shell_exec');
     expect(prompt).toContain('list_dir');

@@ -72,7 +72,7 @@ Each check in an `EvalReport` has a `kind`:
 
 ## Writing a new scenario
 
-1. Create `NNN-scenario-name/` (e.g. `002-edit-file/`)
+1. Create `NNN-scenario-name/` (e.g. `002-edit-config/`)
 2. Add `prompt.md` with the agent's task
 3. Populate `start/` with any required starting files (leave empty for a blank workspace)
 4. Create `eval/check.ts` exporting `check(result: EvalRunResult): EvalReport`

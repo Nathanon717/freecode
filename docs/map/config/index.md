@@ -60,3 +60,7 @@ That means a provider API key in config overrides the same provider's environmen
 ## Caching
 
 The first `loadConfig()` call caches the merged object. `writeConfigFile()` resets the cache so the next call re-reads disk/env.
+
+## Favorites and Model Settings Moved Out
+
+Favorites and per-model setting overrides are no longer stored here. The old `loadFavorites`/`saveFavorites` helpers and `Config.modelOverrides` field were removed; both now live in the git-tracked model store ([providers/model-store.md](../providers/model-store.md)). `getConfigPaths`/`readRawConfig` are still used by the store to read legacy values once during migration. `resolveModelSettings` reads model-level settings from the store (`getModelSettings`) and falls back to `providerOverrides` then global config.

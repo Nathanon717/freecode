@@ -54,6 +54,10 @@ export function getBannerColor(): ChalkInstance {
   return chalk.rgb(r, g, b);
 }
 
+export function getBannerColorRGB(): [number, number, number] {
+  return PASTEL_COLORS[currentBannerColorIdx];
+}
+
 const FULL_BANNER = [
   '',
   ' //////////////////////////////////////////////////////////////////////////////',

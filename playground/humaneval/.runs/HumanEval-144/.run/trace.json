@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "from math import gcd\n\ndef simplify(x: str, n: str) -> bool:\n    def parse_fraction(fraction: str):\n        numerator, denominator = map(int, fraction.split('/'))\n        return numerator, denominator\n    \n    x_num, x_den = parse_fraction(x)\n    n_num, n_den = parse_fraction(n)\n    \n    # Multiply the fractions\n    result_num = x_num * n_num\n    result_den = x_den * n_den\n    \n    # Simplify the result\n    common_divisor = gcd(result_num, result_den)\n    simplified_num = result_num // common_divisor\n    simplified_den = result_den // common_divisor\n    \n    # Check if the simplified denominator is 1 (i.e., a whole number)\n    return simplified_den == 1"
+    },
+    "result": "Wrote 660 bytes to solution.py"
+  }
+]

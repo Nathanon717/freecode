@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "from typing import List, Tuple\n\ndef find_closest_elements(numbers: List[float]) -> Tuple[float, float]:\n    \"\"\" From a supplied list of numbers (of length at least two) select and return two that are the closest to each\n    other and return them in order (smaller number, larger number).\n    >>> find_closest_elements([1.0, 2.0, 3.0, 4.0, 5.0, 2.2])\n    (2.0, 2.2)\n    >>> find_closest_elements([1.0, 2.0, 3.0, 4.0, 5.0, 2.0])\n    (2.0, 2.0)\n    \"\"\"\n    numbers_sorted = sorted(numbers)\n    min_distance = float('inf')\n    result = (None, None)\n\n    for i in range(len(numbers_sorted) - 1):\n        current_distance = numbers_sorted[i + 1] - numbers_sorted[i]\n        if current_distance < min_distance:\n            min_distance = current_distance\n            result = (numbers_sorted[i], numbers_sorted[i + 1])\n\n    return result\n"
+    },
+    "result": "Wrote 831 bytes to solution.py"
+  }
+]

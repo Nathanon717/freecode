@@ -1,16 +1,30 @@
 # src/providers/quota/headers.ts - Provider Rate-Limit Header Parsing
 
-**Role:** Pure parser for Groq and Anthropic rate-limit response headers plus helper to attach static model limit metadata.
+**Role:** Pure parsers for Groq, Anthropic, Mistral, and Cerebras rate-limit response headers; plus extractors that derive per-model limit ceilings for persistence in `models.json`.
 
 ## Exports
 
 ```typescript
+// Snapshot parsers (live remaining/limit for UI display)
 parseGroqDuration(s: string): number | null
-parseGroqRateLimitHeaders(headers: Headers | Record<string, string>): GroqRateLimitHeaders
-parseAnthropicRateLimitHeaders(headers: Headers | Record<string, string>): GroqRateLimitHeaders
-parseAnthropicExtendedHeaders(headers: Headers | Record<string, string>): AnthropicExtendedHeaders
+parseGroqRateLimitHeaders(headers): GroqRateLimitHeaders
+parseAnthropicRateLimitHeaders(headers): GroqRateLimitHeaders
+parseAnthropicExtendedHeaders(headers): AnthropicExtendedHeaders
+parseMistralRateLimitSnapshot(headers): RateLimitSnapshot
+parseCerebrasRateLimitSnapshot(headers): RateLimitSnapshot
 supplementWithModelLimits(headers, modelLimits?): GroqRateLimitInfo
+groqHeadersToSnapshot(h): RateLimitSnapshot
+
+// Limit-ceiling extractors (for saving to models.json)
+extractGroqRateLimitBuckets(h: GroqRateLimitHeaders): Record<string, ObservedRateLimitBucket>
+extractMistralRateLimitBuckets(headers): Record<string, ObservedRateLimitBucket>
+extractCerebrasRateLimitBuckets(headers): Record<string, ObservedRateLimitBucket>
+extractAnthropicRateLimitBuckets(base, extended): Record<string, ObservedRateLimitBucket>
+extractOpenAICompatRateLimitBuckets(providerId, headers): Record<string, ObservedRateLimitBucket>
+  // dispatcher: routes to mistral/cerebras/groq extractors by providerId
 ```
+
+`ObservedRateLimitBucket` = `{ limit: number; intervalMs: number | null }`. `intervalMs` is fixed for Mistral/Cerebras (60k/3.6M/86.4M ms), 60000 for Anthropic, and the dynamic reset-window for Groq/OpenAI.
 
 ## Read When
 

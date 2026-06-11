@@ -1,0 +1,1 @@
+"Write a Python implementation of the following function.\nSave the complete function definition (including the signature and any needed imports) to a file named `solution.py`.\n\n\n\ndef strlen(string: str) -> int:\n    \"\"\" Return length of given string\n    >>> strlen('')\n    0\n    >>> strlen('abc')\n    3\n    \"\"\"\n"

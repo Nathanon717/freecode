@@ -54,7 +54,7 @@ describe('fake LLM fixture runner', () => {
           provider: 'mock',
           model: 'gpt-freecode-test',
           mustContain: ['create a file'],
-          toolsAvailable: ['write_file'],
+          toolsAvailable: ['create'],
           systemPromptPresent: true,
           messageCount: 1,
           toolRationale: true,
@@ -63,7 +63,7 @@ describe('fake LLM fixture runner', () => {
         },
         response: {
           chunks: ['writing'],
-          toolCalls: [{ name: 'write_file', args: { path: 'note.txt', content: 'ok' } }],
+          toolCalls: [{ name: 'create', args: { path: 'note.txt', content: 'ok' } }],
           usage: { promptTokens: 4, outputTokens: 2, totalTokens: 6 },
         },
       }],
@@ -74,14 +74,14 @@ describe('fake LLM fixture runner', () => {
       modelId: 'gpt-freecode-test',
       systemPrompt: 'system',
       messages: [{ role: 'user', content: 'please create a file' }],
-      toolNames: ['write_file'],
+      toolNames: ['create'],
       toolRationale: true,
       parallelTools: false,
       nativeToolsSupplied: true,
     });
 
     expect(result.text).toBe('writing');
-    expect(result.toolCalls).toEqual([{ name: 'write_file', args: { path: 'note.txt', content: 'ok' } }]);
+    expect(result.toolCalls).toEqual([{ name: 'create', args: { path: 'note.txt', content: 'ok' } }]);
     expect(result.usage).toEqual({ promptTokens: 4, outputTokens: 2, totalTokens: 6 });
     expect(JSON.parse(readFileSync(tracePath, 'utf-8'))).toMatchObject([{
       callIndex: 1,
@@ -91,7 +91,7 @@ describe('fake LLM fixture runner', () => {
       parallelTools: false,
       nativeToolsSupplied: true,
       emittedChunks: ['writing'],
-      emittedToolCalls: [{ name: 'write_file' }],
+      emittedToolCalls: [{ name: 'create' }],
     }]);
   });
 
@@ -133,7 +133,7 @@ describe('fake LLM fixture runner', () => {
       modelId: 'gpt-freecode-test',
       systemPrompt: 'system',
       messages: [{ role: 'user', content: 'hello' }],
-      toolNames: ['write_file'],
+      toolNames: ['create'],
       toolRationale: true,
       parallelTools: true,
       nativeToolsSupplied: true,
@@ -225,7 +225,7 @@ describe('createFakeNativeLanguageModel', () => {
           match: { turn: 1, provider: 'mock-native', model: 'gpt-freecode-test', nativeToolsSupplied: true },
           response: {
             chunks: ['Using tool now.'],
-            toolCalls: [{ name: 'write_file', args: { path: 'test.txt', content: 'hello\n' } }],
+            toolCalls: [{ name: 'create', args: { path: 'test.txt', content: 'hello\n' } }],
             usage: { promptTokens: 10, outputTokens: 4, totalTokens: 14 },
           },
         },
@@ -254,7 +254,7 @@ describe('createFakeNativeLanguageModel', () => {
       model,
       system: 'you are a test assistant',
       messages: [{ role: 'user', content: 'write a file' }],
-      tools: { write_file: writeTool },
+      tools: { create: writeTool },
       maxSteps: 5,
     });
     for await (const chunk of result.textStream) {
@@ -274,7 +274,7 @@ describe('createFakeNativeLanguageModel', () => {
       executionPath: 'native-stream',
       nativeToolsSupplied: true,
       emittedChunks: ['Using tool now.'],
-      emittedToolCalls: [{ name: 'write_file' }],
+      emittedToolCalls: [{ name: 'create' }],
       usage: { promptTokens: 10, outputTokens: 4, totalTokens: 14 },
     });
     expect(trace[1]).toMatchObject({

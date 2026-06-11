@@ -15,6 +15,11 @@ Use this directory as the project handbook. Generated reference pages report fac
 - [Session logs](sessions/README.md): optional records of substantial feature work.
 - [Claude Code on the web](misc/claude_code_web.md): Linux container environment notes and session key setup.
 
+## Tests
+
+The exact file and folder structure of `src/` is mirrored in `tests/`. Every `.ts` file in `src/` must have a corresponding `.test.ts` file in `tests/`. 
+So you always know the exact path to a `.ts` files corresponidng unit tests. This mirroring is enforced via the `npm test` pipeline.
+
 ## Maintenance
 
 Run `docs:generate` before reporting docs work complete. It checks generated docs first; if they are current, it does not rewrite them, and if they are stale, it regenerates them.

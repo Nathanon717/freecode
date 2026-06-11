@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def circular_shift(x: int, shift: int) -> str:\n    \"\"\"Circular shift the digits of the integer x, shift the digits right by shift and return the result as a string.\n    If shift > number of digits, return digits reversed.\n\n    Args:\n        x: The integer to shift.\n        shift: The number of digits to shift.\n\n    Returns:\n        The shifted number as a string.\n    \"\"\"\n    digits = list(str(x))\n    if shift > len(digits):\n        return str(x)[::-1]\n    shifted_digits = digits[-shift:] + digits[:-shift]\n    return ''.join(shifted_digits)"
+    },
+    "result": "Wrote 545 bytes to solution.py"
+  }
+]

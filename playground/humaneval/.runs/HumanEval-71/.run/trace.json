@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "import math\n\ndef triangle_area(a, b, c):\n    '''\n    Given the lengths of the three sides of a triangle. Return the area of\n    the triangle rounded to 2 decimal points if the three sides form a valid triangle.\n    Otherwise return -1\n    Three sides make a valid triangle when the sum of any two sides is greater \n    than the third side.\n    Example:\n    triangle_area(3, 4, 5) == 6.00\n    triangle_area(1, 2, 10) == -1\n    '''\n    if a + b > c and a + c > b and b + c > a:\n        # Calculate the semi-perimeter\n        s = (a + b + c) / 2\n        # Calculate the area using Heron's formula\n        area = math.sqrt(s * (s - a) * (s - b) * (s - c))\n        # Round the area to 2 decimal points\n        return round(area, 2)\n    else:\n        return -1\n"
+    },
+    "result": "Wrote 755 bytes to solution.py"
+  }
+]

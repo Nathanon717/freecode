@@ -13,7 +13,6 @@ import {
   formatUsdCeil,
   resetAnthropicSessionCost,
 } from '../providers/anthropic-cost.js';
-import { addOpenAISessionCost } from '../providers/openai-cost.js';
 import { formatCapturedProviderUsages } from '../providers/adapters/openai-compat.js';
 import { redrawBanner } from './banner.js';
 import { showHelp } from './slash-commands.js';
@@ -195,10 +194,8 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
       setTokenCount(result.usage.promptTokens);
     }
 
-    if (result.providerId === 'anthropic' || result.providerId === 'openai') {
-      const sessionTotal = result.providerId === 'anthropic'
-        ? addAnthropicSessionCost(result.costEstimate)
-        : addOpenAISessionCost(result.costEstimate);
+    if (result.providerId === 'anthropic') {
+      const sessionTotal = addAnthropicSessionCost(result.costEstimate);
       const costStr = describeCostEstimate(result.costEstimate, { colored: true });
       console.log(chalk.gray('Estimated API cost: ') + costStr + chalk.gray(` this turn | ${formatUsdCeil(sessionTotal)} session`));
       const breakdown = describeCostEstimateBreakdown(result.costEstimate);

@@ -1,0 +1,1 @@
+"Run pipeline.py. It fails with a KeyError. Read both pipeline.py and stats.py to understand the interface, then fix the correct file so it prints the expected statistics summary. The stats module is the source of truth; fix the caller to match its return shape."

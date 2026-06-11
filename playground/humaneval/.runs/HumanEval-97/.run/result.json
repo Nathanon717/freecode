@@ -1,0 +1,21 @@
+[
+  {
+    "totalTokens": 2917,
+    "promptTokens": 2726,
+    "outputTokens": 191,
+    "providerId": "mistral",
+    "modelId": "mistral-medium-2505",
+    "quota": [
+      {
+        "label": "Rm",
+        "remaining": 8,
+        "limit": 25
+      },
+      {
+        "label": "Tm",
+        "remaining": 366397,
+        "limit": 375000
+      }
+    ]
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def get_max_triples(n):\n    # Generate the array a\n    a = [i * i - i + 1 for i in range(1, n + 1)]\n\n    # Initialize counters for numbers with remainders 0, 1, 2 when divided by 3\n    count_0 = count_1 = count_2 = 0\n\n    # Count the numbers based on their remainders when divided by 3\n    for num in a:\n        remainder = num % 3\n        if remainder == 0:\n            count_0 += 1\n        elif remainder == 1:\n            count_1 += 1\n        else:\n            count_2 += 1\n\n    # Calculate the number of valid triples\n    # Triples can be formed in the following ways:\n    # 1. All three numbers have remainder 0: count_0 choose 3\n    # 2. All three numbers have remainder 1: count_1 choose 3\n    # 3. All three numbers have remainder 2: count_2 choose 3\n    # 4. One number from each remainder group: count_0 * count_1 * count_2\n    # 5. Two numbers with remainder 0 and one with remainder 1: count_0 choose 2 * count_1\n    # 6. Two numbers with remainder 0 and one with remainder 2: count_0 choose 2 * count_2\n    # 7. One number with remainder 0 and two with remainder 1: count_0 * (count_1 choose 2)\n    # 8. One number with remainder 0 and two with remainder 2: count_0 * (count_2 choose 2)\n    # 9. Two numbers with remainder 1 and one with remainder 2: count_1 choose 2 * count_2\n    # 10. One number with remainder 1 and two with remainder 2: count_1 * (count_2 choose 2)\n\n    def choose_2(x):\n        return x * (x - 1) // 2\n\n    def choose_3(x):\n        return x * (x - 1) * (x - 2) // 6\n    triples = 0\n    triples += choose_3(count_0)\n    triples += choose_3(count_1)\n    triples += choose_3(count_2)\n    triples += count_0 * count_1 * count_2\n    triples += choose_2(count_0) * count_1\n    triples += choose_2(count_0) * count_2\n    triples += count_0 * choose_2(count_1)\n    triples += count_0 * choose_2(count_2)\n    triples += choose_2(count_1) * count_2\n    triples += count_1 * choose_2(count_2)\n\n    return triples"
+    },
+    "result": "Wrote 1937 bytes to solution.py"
+  }
+]

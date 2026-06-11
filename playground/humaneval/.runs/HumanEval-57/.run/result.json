@@ -1,0 +1,9 @@
+[
+  {
+    "totalTokens": 3816,
+    "promptTokens": 3220,
+    "outputTokens": 596,
+    "providerId": "zen",
+    "modelId": "deepseek-v4-flash-free"
+  }
+]

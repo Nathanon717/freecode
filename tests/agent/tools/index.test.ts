@@ -8,7 +8,7 @@ describe('tool confirmation', () => {
     const { createTools } = await import('../../../src/agent/tools/index.js');
     const tools = createTools(() => Promise.resolve(true));
 
-    const result = await tools.read_file.execute?.({ path: 'package.json' }, {}) as string | undefined;
+    const result = await tools.read.execute?.({ path: 'package.json' }, {}) as string | undefined;
 
     expect(result).toContain('"name": "freecode"');
   });
@@ -17,10 +17,10 @@ describe('tool confirmation', () => {
     const { createTools } = await import('../../../src/agent/tools/index.js');
     const tools = createTools(() => Promise.resolve(false));
 
-    const result = await tools.read_file.execute?.({ path: 'package.json' }, {}) as string | undefined;
+    const result = await tools.read.execute?.({ path: 'package.json' }, {}) as string | undefined;
 
     expect(result).toContain('Tool call denied by user');
-    expect(result).toContain('read_file');
+    expect(result).toContain('read');
   });
 
   it('includes user feedback when a denied tool call provides it', async () => {
@@ -30,7 +30,7 @@ describe('tool confirmation', () => {
       message: 'Do not read that file; summarize the current directory instead.',
     }));
 
-    const result = await tools.read_file.execute?.({ path: 'package.json' }, {}) as string | undefined;
+    const result = await tools.read.execute?.({ path: 'package.json' }, {}) as string | undefined;
 
     expect(result).toContain('Tool call denied by user');
     expect(result).toContain('User input after denial');
@@ -45,15 +45,15 @@ describe('tool confirmation', () => {
 
     try {
       const tools = createTools(async (preview) => {
-        if (preview.name === 'write_file') {
+        if (preview.name === 'create') {
           await new Promise(resolve => setTimeout(resolve, 25));
         }
         return true;
       });
 
       const [, readResult] = (await Promise.all([
-        tools.write_file.execute?.({ path: 'output.txt', content: 'queued content' }, {}),
-        tools.read_file.execute?.({ path: 'output.txt' }, {}),
+        tools.create.execute?.({ path: 'output.txt', content: 'queued content' }, {}),
+        tools.read.execute?.({ path: 'output.txt' }, {}),
       ])) as [unknown, unknown];
 
       expect(readResult).toContain('queued content');

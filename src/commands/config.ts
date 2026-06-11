@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import type { Interface } from 'readline';
 import { getConfigPaths, loadConfig, readRawConfig, resolveModelSettings, updateGlobalConfig, writeConfigFile } from '../config/index.js';
 import type { Config, OverridableSettings } from '../providers/types.js';
+import { getModelSettings, setModelSetting } from '../providers/model-store.js';
 import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
 
 // ── Setting definitions ───────────────────────────────────────────────────────
@@ -66,15 +67,22 @@ function loadGlobalValues(): Record<string, boolean | number> {
 }
 
 function loadOverrideValues(tab: Tab, currentModel: string, globalPath: string): Record<string, TabValue> {
-  const raw = (readRawConfig(globalPath) as Record<string, unknown>) ?? {};
-  const providerId = getProviderId(currentModel);
   const vals: Record<string, TabValue> = {};
 
+  if (tab === 'model' && currentModel) {
+    const modelSettings = getModelSettings(currentModel);
+    for (const s of SETTINGS) {
+      const v = modelSettings[s.key as keyof OverridableSettings];
+      vals[s.key] = typeof v === 'boolean' ? v : undefined;
+    }
+    return vals;
+  }
+
+  const raw = (readRawConfig(globalPath) as Record<string, unknown>) ?? {};
+  const providerId = getProviderId(currentModel);
   let overrides: Record<string, unknown> = {};
   if (tab === 'provider' && providerId) {
     overrides = ((raw.providerOverrides as Record<string, unknown>)?.[providerId] as Record<string, unknown>) ?? {};
-  } else if (tab === 'model' && currentModel) {
-    overrides = ((raw.modelOverrides as Record<string, unknown>)?.[currentModel] as Record<string, unknown>) ?? {};
   }
 
   for (const s of SETTINGS) {
@@ -190,6 +198,11 @@ function saveGlobalSetting(_globalPath: string, key: string, value: boolean | nu
 }
 
 function saveOverrideSetting(globalPath: string, tab: Tab, currentModel: string, key: string, value: TabValue): void {
+  if (tab === 'model' && currentModel) {
+    setModelSetting(currentModel, key as keyof OverridableSettings, value);
+    return;
+  }
+
   const existing = (readRawConfig(globalPath) as Record<string, unknown>) ?? {};
   delete existing['preferLocal'];
   const providerId = getProviderId(currentModel);
@@ -205,20 +218,8 @@ function saveOverrideSetting(globalPath: string, tab: Tab, currentModel: string,
     }
     if (Object.keys(overrides).length === 0) delete existing.providerOverrides;
     else existing.providerOverrides = overrides;
-  } else if (tab === 'model' && currentModel) {
-    const overrides = (existing.modelOverrides as Record<string, Record<string, boolean>>) ?? {};
-    if (!overrides[currentModel]) overrides[currentModel] = {};
-    if (value === undefined) {
-      delete overrides[currentModel][key];
-      if (Object.keys(overrides[currentModel]).length === 0) delete overrides[currentModel];
-    } else {
-      overrides[currentModel][key] = value;
-    }
-    if (Object.keys(overrides).length === 0) delete existing.modelOverrides;
-    else existing.modelOverrides = overrides;
+    writeConfigFile(globalPath, existing);
   }
-
-  writeConfigFile(globalPath, existing);
 }
 
 // ── Value cycling ─────────────────────────────────────────────────────────────

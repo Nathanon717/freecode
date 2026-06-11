@@ -1,0 +1,21 @@
+[
+  {
+    "totalTokens": 15124,
+    "promptTokens": 14858,
+    "outputTokens": 266,
+    "providerId": "mistral",
+    "modelId": "codestral-2508",
+    "quota": [
+      {
+        "label": "Rm",
+        "remaining": 110,
+        "limit": 125
+      },
+      {
+        "label": "Tm",
+        "remaining": 619043,
+        "limit": 625000
+      }
+    ]
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "import re\n\ndef fruit_distribution(s: str, n: int) -> int:\n    \"\"\"\n    Calculate the number of mango fruits in the basket.\n\n    Args:\n        s: A string representing the number of apples and oranges.\n        n: An integer representing the total number of fruits in the basket.\n\n    Returns:\n        The number of mango fruits in the basket.\n    \"\"\"\n    # Use regular expression to find all numbers in the string\n    numbers = list(map(int, re.findall(r\\d+, s)))\n    \n    # Sum the numbers of apples and oranges\n    total_apples_oranges = sum(numbers)\n    \n    # Calculate the number of mango fruits\n    mango_fruits = n - total_apples_oranges\n    \n    return mango_fruits\n"
+    },
+    "result": "Wrote 672 bytes to solution.py"
+  }
+]

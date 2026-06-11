@@ -2,7 +2,7 @@
 
 Freecode keeps documentation current by splitting docs into two kinds:
 
-- Human-written docs for intent, workflows, tradeoffs, and troubleshooting.
+- LLM-Agent-written docs for intent, workflows, tradeoffs, and troubleshooting.
 - Generated reference docs for facts already defined in code or scenario files.
 
 Do not hand-edit content between `BEGIN GENERATED` and `END GENERATED` markers. Change the source of truth, then run the docs generator.

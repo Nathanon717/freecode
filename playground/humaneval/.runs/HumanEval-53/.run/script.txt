@@ -1,0 +1,1 @@
+"Write a Python implementation of the following function.\nSave the complete function definition (including the signature and any needed imports) to a file named `solution.py`.\n\n\n\ndef add(x: int, y: int):\n    \"\"\"Add two numbers x and y\n    >>> add(2, 3)\n    5\n    >>> add(5, 7)\n    12\n    \"\"\"\n"

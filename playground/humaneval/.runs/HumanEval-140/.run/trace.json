@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "import re\n\ndef fix_spaces(text):\n    # Replace more than 2 consecutive spaces with -\n    text = re.sub(r' {2,}', '-', text)\n    # Replace single spaces with underscores\n    text = re.sub(r' -| -| ', '_', text)\n    return text"
+    },
+    "result": "Wrote 225 bytes to solution.py"
+  }
+]

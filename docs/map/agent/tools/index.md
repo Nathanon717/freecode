@@ -26,8 +26,8 @@ Individual tools are re-exported for tests:
 
 ```text
 readFileTool
-writeFileTool
-editFileTool
+createTool
+editTool
 grepTool
 shellTool
 listDirTool
@@ -37,9 +37,9 @@ listDirTool
 
 | Key | Tool | Source |
 |-----|------|--------|
-| `read_file` | `readFileTool` | `./read-file` |
-| `write_file` | `writeFileTool` | `./write-file` |
-| `edit_file` | `editFileTool` | `./edit-file` |
+| `read` | `readFileTool` | `./read` |
+| `create` | `createTool` | `./create` |
+| `edit` | `editTool` | `./edit` |
 | `grep` | `grepTool` | `./grep` |
 | `shell_exec` | `shellTool` | `./shell` |
 | `list_dir` | `listDirTool` | `./list-dir` |

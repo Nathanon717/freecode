@@ -18,10 +18,9 @@ import {
   estimateAnthropicCostVerified,
   type CostEstimate,
 } from '../providers/anthropic-cost.js';
-import { estimateOpenAICostVerified } from '../providers/openai-cost.js';
 import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk } from '../cli/transcript-renderer.js';
 import { renderMarkdown, createMarkdownStreamRenderer } from '../cli/markdown-renderer.js';
-import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
+import { getAnthropicVerifiedRates } from '../providers/pricing-verifier.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
@@ -29,7 +28,7 @@ import { isContextOverflowError, isInvalidToolArgumentsError, isNoSuchToolError,
 import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
 import { executeToolCalls, runPromptToolsLoop } from './prompt-tools.js';
-import { isModelNoNativeTools, markModelNoNativeTools } from '../providers/model-traits.js';
+import { isNativeToolsDisabled, setNativeTools } from '../providers/model-store.js';
 import { FAKE_PROVIDER_ID, FAKE_NATIVE_PROVIDER_ID, assertFakeFixtureComplete, createFakeNativeLanguageModel, runFakeModel } from '../providers/fake.js';
 
 let systemPromptLogged = false;
@@ -147,7 +146,7 @@ async function streamWithRetry(
 ): Promise<StreamResult> {
   let activeMessages = messages;
   let toolUseFailureRetries = 0;
-  let usePromptToolsFallback = supportsTools && isModelNoNativeTools(providerId, modelId);
+  let usePromptToolsFallback = supportsTools && isNativeToolsDisabled(providerId, modelId);
   let fullText = '';
   let totalTokens = 0;
   let promptTokens: number | undefined;
@@ -212,7 +211,7 @@ async function streamWithRetry(
     } catch (error) {
       if (supportsTools && fullText.length === 0 && !usePromptToolsFallback && isToolsNotSupportedError(error)) {
         usePromptToolsFallback = true;
-        markModelNoNativeTools(providerId, modelId);
+        setNativeTools(providerId, modelId, false);
         process.stdout.write(`Note: ${modelId} doesn't support native tool calling — saved. Using prompt-based tools now and automatically next time.\n`);
         log('stream', 'Tool calling rejected by provider; falling back to prompt-based tool protocol', serializeError(error));
         break;
@@ -224,7 +223,7 @@ async function streamWithRetry(
           feedback = 'The provider rejected your previous response because it contained an invalid tool/function call. Retry the same task. When calling a tool, call exactly one valid tool at a time, use the exact tool name, and provide arguments as valid JSON matching the tool schema. String arguments containing JSON or newlines must be escaped as JSON strings.';
         } else if (isNoSuchToolError(error)) {
           fullText = '';
-          const available = noSuchToolAvailableList(error) ?? 'read_file, write_file, edit_file, grep, shell_exec, list_dir';
+          const available = noSuchToolAvailableList(error) ?? 'read, create, edit, grep, shell_exec, list_dir';
           const badName = noSuchToolName(error);
           const nameHint = badName
             ? ` You called "${badName}", which does not exist. Do not use namespace prefixes (e.g. "repo_browser.") — use the plain name only.`
@@ -286,11 +285,6 @@ async function finalizeUsageCapture(
     log('stream', 'Anthropic cost estimate', costEstimate);
   } else {
     providerUsage = await endProviderUsageCapture(providerId);
-    if (providerId === 'openai' && (promptTokens !== undefined || outputTokens !== undefined)) {
-      const rates = await getOpenAIVerifiedRates(modelId);
-      costEstimate = estimateOpenAICostVerified(modelId, promptTokens, outputTokens, rates);
-      log('stream', 'OpenAI cost estimate', costEstimate);
-    }
     if (providerUsage.length > 0) {
       log('stream', 'Provider usage captured', providerUsage);
     }

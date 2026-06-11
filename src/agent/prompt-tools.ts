@@ -23,13 +23,13 @@ The result will be provided before you continue. You may then call another tool 
 
 ### Tool Reference
 
-**read_file** — Read file contents.
+**read** — Read file contents.
   args: { "path": string, "offset"?: number, "limit"?: number }
 
-**write_file** — Create a new file (fails if file already exists).
+**create** — Create a new file (fails if file already exists).
   args: { "path": string, "content": string }
 
-**edit_file** — Replace text in an existing file (read it first).
+**edit** — Replace text in an existing file (read it first).
   args: { "path": string, "old_text": string, "new_text": string }
 
 **grep** — Regex-search file contents.

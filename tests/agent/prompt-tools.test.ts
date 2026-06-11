@@ -21,10 +21,10 @@ describe('parseToolCalls', () => {
   });
 
   it('parses a single tool call with args', () => {
-    const text = '<tool_call>\n{"name": "read_file", "args": {"path": "a.txt"}}\n</tool_call>';
+    const text = '<tool_call>\n{"name": "read", "args": {"path": "a.txt"}}\n</tool_call>';
     const calls = parseToolCalls(text);
     expect(calls).toHaveLength(1);
-    expect(calls[0].name).toBe('read_file');
+    expect(calls[0].name).toBe('read');
     expect(calls[0].args).toEqual({ path: 'a.txt' });
     expect(calls[0].startIdx).toBe(0);
   });
@@ -88,7 +88,7 @@ describe('runPromptToolsLoop', () => {
       steps: [
         {
           response: {
-            chunks: ['<tool_call>\n{"name": "write_file", "args": {"path": "pt.txt", "content": "hi\\n"}}\n</tool_call>'],
+            chunks: ['<tool_call>\n{"name": "create", "args": {"path": "pt.txt", "content": "hi\\n"}}\n</tool_call>'],
             usage: { promptTokens: 8, outputTokens: 4, totalTokens: 12 },
           },
         },

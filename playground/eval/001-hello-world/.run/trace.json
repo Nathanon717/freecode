@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "create",
+    "args": {
+      "path": "hello.txt",
+      "content": "Hello, World!"
+    },
+    "result": "Wrote 13 bytes to hello.txt"
+  }
+]

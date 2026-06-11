@@ -43,9 +43,7 @@ export interface Config {
   toolConfirmation: 'ask' | 'auto';
   parallelTools: boolean;
   providerOverrides?: Record<string, OverridableSettings>;
-  modelOverrides?: Record<string, OverridableSettings>;
   retryMaxWaitSeconds: number;
   showEvalDots: boolean;
   diffContextLines: number;
-  favoriteModels?: string[];
 }

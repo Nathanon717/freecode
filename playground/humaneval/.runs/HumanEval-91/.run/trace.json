@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "import re\n\ndef is_bored(S):\n    \"\"\"\n    Count the number of boredoms in a string of words.\n    A boredom is a sentence that starts with the word \"I\".\n    Sentences are delimited by '.', '?' or '!'.\n\n    Args:\n    S (str): The input string to analyze.\n\n    Returns:\n    int: The number of boredoms in the input string.\n\n    Examples:\n    >>> is_bored(\"Hello world\")\n    0\n    >>> is_bored(\"The sky is blue. The sun is shining. I love this weather\")\n    1\n    \"\"\"\n    sentences = re.split(r'[.!?]', S)\n    boredom_count = 0\n    for sentence in sentences:\n        sentence = sentence.strip()\n        if sentence.startswith('I '):\n            boredom_count += 1\n    return boredom_count\n"
+    },
+    "result": "Wrote 683 bytes to solution.py"
+  }
+]

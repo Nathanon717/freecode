@@ -9,7 +9,7 @@
         "model": "gpt-freecode-test",
         "messageCount": 1,
         "mustContain": ["is cereal soup"],
-        "toolsAvailable": ["write_file"],
+        "toolsAvailable": ["create"],
         "systemPromptPresent": true,
         "toolRationale": true,
         "parallelTools": true,

@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def hex_key(num):\n    \"\"\"Count the number of prime digits in a hexadecimal number.\n\n    Args:\n        num (str): A hexadecimal number as a string.\n\n    Returns:\n        int: The count of prime digits in the hexadecimal number.\n    \"\"\"\n    prime_digits = {'2', '3', '5', '7', 'B', 'D'}\n    count = 0\n    for digit in num:\n        if digit in prime_digits:\n            count += 1\n    return count"
+    },
+    "result": "Wrote 394 bytes to solution.py"
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def find_max(words):\n    \"\"\"Write a function that accepts a list of strings.\n    The list contains different words. Return the word with maximum number\n    of unique characters. If multiple strings have maximum number of unique characters, return the one which comes first in lexicographical order.\n\n    find_max([\"name\", \"of\", \"string\"]) == \"string\"\n    find_max([\"name\", \"enam\", \"game\"]) == \"enam\"\n    find_max([\"aaaaaaa\", \"bb\" ,\"cc\"]) == \"aaaaaaa\"\n    \"\"\"\n    max_word = \"\"\n    max_unique = 0\n\n    for word in words:\n        unique_chars = len(set(word))\n        if unique_chars > max_unique:\n            max_unique = unique_chars\n            max_word = word\n        elif unique_chars == max_unique:\n            if word < max_word:\n                max_word = word\n\n    return max_word\n"
+    },
+    "result": "Wrote 788 bytes to solution.py"
+  }
+]

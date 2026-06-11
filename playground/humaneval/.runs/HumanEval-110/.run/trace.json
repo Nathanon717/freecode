@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def exchange(lst1, lst2):\n    \"\"\"Check if it's possible to exchange elements between lst1 and lst2 to make all elements of lst1 even.\"\"\"\n    # Count the number of odd numbers in lst1\n    odd_in_lst1 = sum(1 for num in lst1 if num % 2 != 0)\n    \n    # Count the number of even numbers in lst2\n    even_in_lst2 = sum(1 for num in lst2 if num % 2 == 0)\n    \n    # Check if there are enough even numbers in lst2 to replace all odd numbers in lst1\n    if even_in_lst2 >= odd_in_lst1:\n        return \"YES\"\n    else:\n        return \"NO\"\n"
+    },
+    "result": "Wrote 530 bytes to solution.py"
+  }
+]

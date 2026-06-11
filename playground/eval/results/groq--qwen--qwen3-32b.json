@@ -306,5 +306,52 @@
         "note": "1690 | in: 1198 | out: 492"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-11T23:09:12.593Z",
+    "scenarioId": "001-hello-world",
+    "model": "groq:qwen/qwen3-32b",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 5263,
+      "prompt": 3714,
+      "output": 1549
+    },
+    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
+    "checks": [
+      {
+        "name": "file exists: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file content: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "2 tool calls",
+        "kind": "stat",
+        "value": 2,
+        "note": "list_dir → create"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 5263,
+        "note": "5263 | in: 3714 | out: 1549"
+      }
+    ]
   }
 ]

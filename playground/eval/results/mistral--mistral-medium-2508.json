@@ -557,5 +557,114 @@
         "note": "1599 | in: 1316 | out: 283"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-11T23:14:55.581Z",
+    "scenarioId": "001-hello-world",
+    "model": "mistral:mistral-medium-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 2343,
+      "prompt": 2303,
+      "output": 40
+    },
+    "scenarioHash": "243fad34e6f5e1c9a34d1c4b9243a7fce4ff98a95b1911faff1cabd5b5d3b536",
+    "checks": [
+      {
+        "name": "file exists: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file content: hello.txt",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "1 tool call",
+        "kind": "stat",
+        "value": 1,
+        "note": "create"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 2343,
+        "note": "2343 | in: 2303 | out: 40"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-11T23:15:05.236Z",
+    "scenarioId": "002-edit-config",
+    "model": "mistral:mistral-medium-2508",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 4888,
+      "prompt": 4808,
+      "output": 80
+    },
+    "scenarioHash": "d90a112428626026a13f55e78230b0c0e8f18f4f019c4e18a93142f1f86db22d",
+    "checks": [
+      {
+        "name": "file exists: config.json",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.theme",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.language",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.maxRetries",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "config.json.debug",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "3 tool calls",
+        "kind": "stat",
+        "value": 3,
+        "note": "list_dir → read → edit"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 4888,
+        "note": "4888 | in: 4808 | out: 80"
+      }
+    ]
   }
 ]

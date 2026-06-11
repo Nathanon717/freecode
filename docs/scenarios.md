@@ -7,10 +7,10 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 <!-- BEGIN GENERATED SCENARIOS -->
 | File | Name | Type | Workspace | Description |
 | --- | --- | --- | --- | --- |
+| `agent-create-fake.scenario.json` | `agent-create-fake` | Non-LLM verification | temp | Fake LLM fixture drives an approved create tool call through the real agent loop |
 | `agent-text-fake.scenario.json` | `agent-text-fake` | Non-LLM verification | temp | Fake LLM fixture enters the agent loop and returns deterministic text without live provider access |
 | `agent-text-native.scenario.json` | `agent-text-native` | Non-LLM verification | temp | Fake LLM fixture exercises the real AI SDK streamText path (native-stream) with a deterministic text response |
-| `agent-tool-native.scenario.json` | `agent-tool-native` | Non-LLM verification | temp | Fake native LLM fixture drives a write_file tool call through the full multi-step streamText orchestration loop |
-| `agent-write-file-fake.scenario.json` | `agent-write-file-fake` | Non-LLM verification | temp | Fake LLM fixture drives an approved write_file tool call through the real agent loop |
+| `agent-tool-native.scenario.json` | `agent-tool-native` | Non-LLM verification | temp | Fake native LLM fixture drives a create tool call through the full multi-step streamText orchestration loop |
 | `slash-clear.scenario.json` | `slash-clear` | Non-LLM verification | repo | /clear resets history, clears the screen, and redraws the banner |
 | `slash-config-script-mode.scenario.json` | `slash-config-script-mode` | Non-LLM verification | repo | /config in script mode (no TTY) prints a message that the editor is only available in interactive mode |
 | `slash-keys.scenario.json` | `slash-keys` | Non-LLM verification | repo | /keys command lists providers without crashing |
@@ -27,7 +27,7 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-escape-clears.scenario.json` | `tty-escape-clears` | Non-LLM verification | repo | Escape key clears the input buffer and hides the suggestion list, restoring the empty-prompt hint |
 | `tty-eval-menu.scenario.json` | `tty-eval-menu` | Non-LLM verification | repo | Submitting /eval opens the standalone eval picker showing available scenarios; pressing Esc closes it and restores the input prompt |
 | `tty-eval-then-config-picker.scenario.json` | `tty-eval-then-config-picker` | Non-LLM verification | repo | After a fake eval completes, another raw picker can still receive input and Ctrl-C exits cleanly |
-| `tty-footer-toggles.scenario.json` | `tty-footer-toggles` | Non-LLM verification | repo | Footer toggle bar shows A and R toggles at startup; Ctrl+A and Ctrl+R cycle the toggles without corrupting the input area |
+| `tty-footer-toggles.scenario.json` | `tty-footer-toggles` | Non-LLM verification | repo | Footer toggle bar shows A and R toggles at startup with ctrl+ prefix; Ctrl+A and Ctrl+R cycle the toggles without corrupting the input area |
 | `tty-fuzzy-completion.scenario.json` | `tty-fuzzy-completion` | Non-LLM verification | repo | Fuzzy query /ks matches /keys; Tab expands the buffer to /keys, Enter submits and shows the key status |
 | `tty-help-output.scenario.json` | `tty-help-output` | Non-LLM verification | repo | Submitting /help renders the command list in the scroll region while the input prompt remains pinned at the bottom; slash suggestion overlay opens and restores cleanly over the output |
 | `tty-humaneval-fake.scenario.json` | `tty-humaneval-fake` | Non-LLM verification | repo | Fake LLM completes HumanEval/0 — verifies data-load, agent, Python-check pipeline end-to-end |

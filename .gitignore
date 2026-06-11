@@ -3,7 +3,6 @@ dist/
 coverage/
 
 # secrets
-*.txt
 .env
 .env.*
 !.env.example
@@ -11,15 +10,8 @@ coverage/
 # planning / private notes
 dont look/
 
-# local playground output
-playground/*
-!playground/challenges/
-!playground/challenges/**
-!playground/eval/
-!playground/eval/**
-playground/eval/*/work/
-playground/eval/*/.run/
-playground/eval/*/.artifacts/
+# humaneval dataset (large binary — see playground/humaneval/README.md)
+playground/humaneval/data/
 __pycache__/
 *.pyc
 

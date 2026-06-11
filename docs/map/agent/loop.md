@@ -76,7 +76,7 @@ return AgentLoopResult
 - Every turn calls `beginTranscriptTurn()` / `endTranscriptStep()` from `transcript-renderer.ts` to emit the normalised divider framing. Intermediate steps use `endTranscriptStep(true)` (combined close+open); the final step uses `endTranscriptStep(false)` after text normalisation. The renderer state machine ensures consistent blank-line spacing regardless of the model or provider.
 - Tool approval is delegated to the supplied `confirmToolCall`.
 - Tool wrappers serialize execution so concurrent tool calls do not mutate files in parallel.
-- If the provider rejects tool use at runtime (`isToolsNotSupportedError`), the loop automatically retries via `runPromptToolsLoop` from `prompt-tools.ts`, which uses a text-based `<tool_call>` protocol instead of native function calling.
+- If the provider rejects tool use at runtime (`isToolsNotSupportedError`), the loop automatically retries via `runPromptToolsLoop` from `prompt-tools.ts`, which uses a text-based `<tool_call>` protocol instead of native function calling. The rejection is persisted via `setNativeTools(provider, modelId, false)` (model-store) so the fallback is used automatically next time; the startup read uses `isNativeToolsDisabled`.
 
 ## Internal Helpers
 
@@ -91,6 +91,7 @@ return AgentLoopResult
 - [tools/index.md](tools/index.md): creates tool wrappers.
 - [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md) and [providers/adapters/anthropic.md](../providers/adapters/anthropic.md): capture provider metadata and usage details.
 - [providers/fake.md](../providers/fake.md): fake fixture runner for free agent-loop verification.
+- [providers/model-store.md](../providers/model-store.md): `isNativeToolsDisabled`/`setNativeTools` for the native-tools fallback trait.
 
 ## Error Handling
 

@@ -9,7 +9,7 @@
         "model": "gpt-freecode-test",
         "messageCount": 1,
         "mustContain": ["Create a file named hello.txt"],
-        "toolsAvailable": ["write_file"],
+        "toolsAvailable": ["create"],
         "systemPromptPresent": true,
         "toolRationale": true,
         "parallelTools": true,
@@ -19,7 +19,7 @@
         "chunks": ["I'll create hello.txt."],
         "toolCalls": [
           {
-            "name": "write_file",
+            "name": "create",
             "args": {
               "path": "hello.txt",
               "content": "Hello, World!"
@@ -39,8 +39,8 @@
         "provider": "mock",
         "model": "gpt-freecode-test",
         "messageCount": 3,
-        "mustContain": ["<tool_result name=\"write_file\">"],
-        "toolsAvailable": ["write_file"],
+        "mustContain": ["<tool_result name=\"create\">"],
+        "toolsAvailable": ["create"],
         "toolRationale": true,
         "parallelTools": true,
         "nativeToolsSupplied": true

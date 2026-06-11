@@ -58,7 +58,7 @@ Blank `start/`, prompt asks the agent to create `hello.txt` with exact contents 
 Assertions:
 1. `hello.txt` exists
 2. Content is exactly `Hello, World!`
-3. No unnecessary tools called (only `write_file` and `list_dir` are allowed)
+3. No unnecessary tools called (only `create` and `list_dir` are allowed)
 4. All tool path args stayed inside `work/`
 
 Stats (informational):

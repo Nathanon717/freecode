@@ -400,81 +400,6 @@
     ]
   },
   {
-    "timestamp": "2026-06-07T16:46:20.935Z",
-    "scenarioId": "007-python-two-bug-cascade",
-    "model": "mistral:codestral-2508",
-    "pass": false,
-    "warnings": false,
-    "tokens": {
-      "total": 24115,
-      "prompt": 23706,
-      "output": 409
-    },
-    "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
-    "checks": [
-      {
-        "name": "file exists: analyze_grades.py",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "file exists: grades.csv",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "script runs",
-        "kind": "assertion",
-        "pass": false,
-        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 28, in <module>\\r\\n    for line in summarize(grades):\\r\\n                ~~~~~~~~~^^^^^^^^\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 21, in summarize\\r\\n    std = statistics.stdev(scores)\\r\\n  File \\\"C:\\\\Users\\\\Nathan\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\Lib\\\\statistics.py\\\", line 1207, in stdev\\r\\n    raise StatisticsError('stdev requires at least two data points')\\r\\nstatistics.StatisticsError: stdev requires at least two data points\\r\\n\""
-      },
-      {
-        "name": "correct output",
-        "kind": "assertion",
-        "pass": false,
-        "message": "python exited 1; stderr=\"Traceback (most recent call last):\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 28, in <module>\\r\\n    for line in summarize(grades):\\r\\n                ~~~~~~~~~^^^^^^^^\\r\\n  File \\\"C:\\\\stuff\\\\Software Dev\\\\opencode\\\\freecode\\\\playground\\\\eval\\\\007-python-two-bug-cascade\\\\work\\\\analyze_grades.py\\\", line 21, in summarize\\r\\n    std = statistics.stdev(scores)\\r\\n  File \\\"C:\\\\Users\\\\Nathan\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\Lib\\\\statistics.py\\\", line 1207, in stdev\\r\\n    raise StatisticsError('stdev requires at least two data points')\\r\\nstatistics.StatisticsError: stdev requires at least two data points\\r\\n\""
-      },
-      {
-        "name": "encountered first bug (ValueError)",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "encountered second bug (StatisticsError)",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "two edit cycles",
-        "kind": "warning",
-        "pass": false,
-        "message": "no second edit after StatisticsError"
-      },
-      {
-        "name": "unnecessary tools:",
-        "kind": "warning",
-        "pass": true
-      },
-      {
-        "name": "stayed in work dir",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "10 tool calls",
-        "kind": "stat",
-        "value": 10,
-        "note": "list_dir → read_file → shell_exec → read_file → edit_file → shell_exec → edit_file → shell_exec → edit_file → shell_exec"
-      },
-      {
-        "name": "tokens",
-        "kind": "stat",
-        "value": 24115,
-        "note": "24115 | in: 23706 | out: 409"
-      }
-    ]
-  },
-  {
     "timestamp": "2026-06-07T16:53:47.303Z",
     "scenarioId": "001-hello-world",
     "model": "mistral:codestral-2508",
@@ -617,6 +542,80 @@
         "kind": "stat",
         "value": 1360,
         "note": "1360 | in: 1316 | out: 44"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-11T20:25:09.907Z",
+    "scenarioId": "007-python-two-bug-cascade",
+    "model": "mistral:codestral-2508",
+    "pass": false,
+    "warnings": false,
+    "tokens": {
+      "total": 15124,
+      "prompt": 14858,
+      "output": 266
+    },
+    "scenarioHash": "5e8d5dbc87c3e846b03fe854fa03d664dabf02dce1b584d3c8812e902841c54f",
+    "checks": [
+      {
+        "name": "file exists: analyze_grades.py",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "file exists: grades.csv",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "script runs",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "correct output",
+        "kind": "assertion",
+        "pass": false,
+        "message": "output mismatch:\n  got:      Science: avg=89.0 std=1.41\n  expected: Science: avg=88.0\n  (Science std is unconstrained; English/Math must match exactly)"
+      },
+      {
+        "name": "encountered first bug (ValueError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "encountered second bug (StatisticsError)",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "two edit cycles",
+        "kind": "warning",
+        "pass": false,
+        "message": "no second edit after StatisticsError"
+      },
+      {
+        "name": "unnecessary tools:",
+        "kind": "warning",
+        "pass": true
+      },
+      {
+        "name": "stayed in work dir",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "7 tool calls",
+        "kind": "stat",
+        "value": 7,
+        "note": "shell_exec → read → edit → shell_exec → read → edit → shell_exec"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 15124,
+        "note": "15124 | in: 14858 | out: 266"
       }
     ]
   }

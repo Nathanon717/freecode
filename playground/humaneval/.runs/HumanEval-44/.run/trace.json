@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def change_base(x: int, base: int) -> str:\n    \"\"\"Change numerical base of input number x to base.\n    return string representation after the conversion.\n    base numbers are less than 10.\n    \n    >>> change_base(8, 3)\n    '22'\n    >>> change_base(8, 2)\n    '1000'\n    >>> change_base(7, 2)\n    '111'\n    \"\"\"\n    if x == 0:\n        return \"0\"\n    \n    digits = []\n    while x > 0:\n        digits.append(str(x % base))\n        x = x // base\n    \n    return ''.join(reversed(digits))"
+    },
+    "result": "Wrote 482 bytes to solution.py"
+  }
+]

@@ -8,7 +8,7 @@
         "provider": "mock-native",
         "model": "gpt-freecode-test",
         "mustContain": ["Create hello.txt"],
-        "toolsAvailable": ["write_file"],
+        "toolsAvailable": ["create"],
         "systemPromptPresent": true,
         "nativeToolsSupplied": true
       },
@@ -16,7 +16,7 @@
         "chunks": ["I'll write that file now."],
         "toolCalls": [
           {
-            "name": "write_file",
+            "name": "create",
             "args": {
               "rationale": "Creating the file as requested by the user",
               "path": "hello.txt",

@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def decimal_to_binary(decimal):\n    \"\"\"Convert a decimal number to a binary string with 'db' prefix and suffix.\n\n    Args:\n        decimal (int): The decimal number to convert.\n\n    Returns:\n        str: Binary string representation with 'db' prefix and suffix.\n    \"\"\"\n    binary = bin(decimal)[2:]\n    return f\"db{binary}db\"\n"
+    },
+    "result": "Wrote 327 bytes to solution.py"
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def encrypt(s: str) -> str:\n    \"\"\"Encrypts a string by rotating each character in the alphabet by 4 places.\n\n    Args:\n        s: The input string to be encrypted.\n\n    Returns:\n        The encrypted string.\n    \"\"\"\n    result = []\n    for char in s:\n        if char.isalpha():\n            # Determine the base ASCII value for 'a' or 'A'\n            base = ord('a') if char.islower() else ord('A')\n            # Calculate the new character position with rotation by 4\n            new_char = chr((ord(char) - base + 4) % 26 + base)\n            result.append(new_char)\n        else:\n            # Leave non-alphabetic characters unchanged\n            result.append(char)\n    return ''.join(result)"
+    },
+    "result": "Wrote 696 bytes to solution.py"
+  }
+]

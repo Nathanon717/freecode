@@ -467,5 +467,42 @@
         "note": "27166 | in: 26087 | out: 1079"
       }
     ]
+  },
+  {
+    "timestamp": "2026-06-11T20:26:50.294Z",
+    "scenarioId": "cereal-soup",
+    "model": "zen:nemotron-3-ultra-free",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 1721,
+      "prompt": 1490,
+      "output": 231
+    },
+    "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
+    "checks": [
+      {
+        "name": "no tool calls",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "gave a response",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "0 tool calls",
+        "kind": "stat",
+        "value": 0,
+        "note": "(none)"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 1721,
+        "note": "1721 | in: 1490 | out: 231"
+      }
+    ]
   }
 ]

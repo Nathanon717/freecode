@@ -29,16 +29,27 @@ describe('runHumanEvalMenu', () => {
     vi.restoreAllMocks();
   });
 
-  it('logs an error and returns when the data file does not exist', async () => {
+  it('shows downloading message and reports failure when dataset is missing and download fails', async () => {
     Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true });
-    process.env['HUMANEVAL_DATA'] = '/nonexistent/path/HumanEval.jsonl.gz';
 
-    const logged: string[] = [];
-    vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => { logged.push(args.map(String).join(' ')); });
+    const tmpDir = mkdtempSync(join(tmpdir(), 'humaneval-dl-test-'));
+    try {
+      process.env['HUMANEVAL_DATA'] = join(tmpDir, 'HumanEval.jsonl.gz');
 
-    await mod.runHumanEvalMenu(fakeRl, '/tmp', () => 'openai:gpt-4o');
+      const written: string[] = [];
+      vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => { written.push(String(chunk)); return true; });
+      const logged: string[] = [];
+      vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => { logged.push(args.map(String).join(' ')); });
+      const failingDownload = vi.fn().mockRejectedValue(new Error('network error'));
 
-    expect(logged.some(l => l.includes('Failed to load HumanEval dataset'))).toBe(true);
+      await mod.runHumanEvalMenu(fakeRl, '/tmp', () => 'openai:gpt-4o', failingDownload);
+
+      expect(failingDownload).toHaveBeenCalled();
+      expect(written.some(w => w.includes('Downloading HumanEval dataset'))).toBe(true);
+      expect(logged.some(l => l.includes('Could not download dataset'))).toBe(true);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it('lists problems to stdout in non-TTY mode', async () => {

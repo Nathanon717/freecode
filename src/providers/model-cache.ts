@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { getConfigDir } from '../config/index.js';
+import { getStoreDir } from './model-store.js';
 import { logError } from '../logger.js';
 
 export interface RawCachedModel {
@@ -18,13 +18,15 @@ interface ModelCacheEntry {
 
 type ModelCache = Record<string, ModelCacheEntry>;
 
-const CONFIG_DIR = getConfigDir();
-const CACHE_PATH = join(CONFIG_DIR, 'model-cache.json');
+function getCachePath(): string {
+  return join(getStoreDir(), 'model-cache.json');
+}
 
 function load(): ModelCache {
   try {
-    if (!existsSync(CACHE_PATH)) return {};
-    return JSON.parse(readFileSync(CACHE_PATH, 'utf-8')) as ModelCache;
+    const cachePath = getCachePath();
+    if (!existsSync(cachePath)) return {};
+    return JSON.parse(readFileSync(cachePath, 'utf-8')) as ModelCache;
   } catch (err) {
     logError('model-cache', 'Failed to load', err);
     return {};
@@ -33,8 +35,9 @@ function load(): ModelCache {
 
 function save(cache: ModelCache): void {
   try {
-    mkdirSync(CONFIG_DIR, { recursive: true });
-    writeFileSync(CACHE_PATH, JSON.stringify(cache, null, 2), 'utf-8');
+    const storeDir = getStoreDir();
+    mkdirSync(storeDir, { recursive: true });
+    writeFileSync(getCachePath(), JSON.stringify(cache, null, 2), 'utf-8');
   } catch (err) {
     logError('model-cache', 'Failed to save', err);
   }

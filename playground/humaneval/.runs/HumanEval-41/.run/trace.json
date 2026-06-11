@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def car_race_collision(n: int) -> int:\n    \"\"\"\n    Calculate the number of collisions when n cars are moving left to right and n cars are moving right to left.\n\n    Args:\n        n (int): The number of cars moving in each direction.\n\n    Returns:\n        int: The total number of collisions.\n    \"\"\"\n    return n * n"
+    },
+    "result": "Wrote 316 bytes to solution.py"
+  }
+]

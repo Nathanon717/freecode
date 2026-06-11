@@ -13,12 +13,12 @@ State accessors:
 
 Rendering:
 
-- `composeToggleBar()` — ANSI string `A● R●` (chalk-colored per state)
+- `composeToggleBar()` — ANSI string prefixed with grey `ctrl+ `, then each toggle rendered as: char in banner art color (fg when off; bg+black when on) followed by the grey remainder of the first state's label (e.g. `Ask`, `Read`)
 - `toggleBarWidth()` — visible character count of the toggle bar
 
 ## Adding a new toggle
 
-Add an entry to `ALL_TOGGLES` with a unique `char`, a `states` array (`{ label, color }[]`), and an initial `index`. No other changes are needed; `composeToggleBar` and `cycleByChar` pick it up automatically. Wire the Ctrl+letter shortcut in `cli/input-modes.ts`.
+Add an entry to `ALL_TOGGLES` with a unique `char` and a `states` array (`{ label }[]`), and an initial `index`. The hint label is derived automatically from `states[0].label.slice(1)`. No other changes needed; `composeToggleBar` and `cycleByChar` pick it up automatically. Wire the Ctrl+letter shortcut in `cli/input-modes.ts`.
 
 ## Key neighbors
 

@@ -20,7 +20,7 @@
           "provider": "mock",
           "model": "gpt-freecode-test",
           "lastUserContains": ["Say PONG through the fake model."],
-          "toolsAvailable": ["read_file", "write_file"],
+          "toolsAvailable": ["read", "create"],
           "emittedTextContains": ["PONG"],
           "usage": { "promptTokens": 12, "outputTokens": 1, "totalTokens": 13 }
         }

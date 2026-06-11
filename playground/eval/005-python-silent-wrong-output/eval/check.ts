@@ -97,7 +97,7 @@ function assertFirstRunSucceededWithWrongOutput(toolCalls: ToolCall[]): CheckRes
 
 function assertInspectedData(toolCalls: ToolCall[]): CheckResult {
   const inspected = toolCalls.some(call =>
-    (call.tool === 'read_file' && pathTargetsCsv(call)) ||
+    (call.tool === 'read' && pathTargetsCsv(call)) ||
     resultText(call).includes('unit_price')
   );
 
@@ -139,7 +139,7 @@ function assertEditedThenReran(toolCalls: ToolCall[]): CheckResult {
 
   const editAfter = toolCalls.findIndex((call, i) =>
     i > wrongRun &&
-    (call.tool === 'write_file' || call.tool === 'edit_file') &&
+    (call.tool === 'create' || call.tool === 'edit') &&
     pathTargetsScript(call)
   );
 
@@ -178,7 +178,7 @@ export function check(result: EvalRunResult): EvalReport {
       assertFirstRunSucceededWithWrongOutput(result.toolCalls),
       assertInspectedData(result.toolCalls),
       assertEditedThenReran(result.toolCalls),
-      assertNoUnnecessaryTools(result.toolCalls, ['read_file', 'write_file', 'edit_file', 'shell_exec', 'list_dir']),
+      assertNoUnnecessaryTools(result.toolCalls, ['read', 'create', 'edit', 'shell_exec', 'list_dir']),
       assertStayedInWorkDir(result.toolCalls, result.workDir),
       statToolCalls(result.toolCalls),
       statTokens(result.tokens),

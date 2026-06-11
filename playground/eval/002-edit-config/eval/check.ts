@@ -39,7 +39,7 @@ export function check(result: EvalRunResult): EvalReport {
       assertJsonField(result.workDir, 'config.json', 'language', 'en'),
       assertJsonField(result.workDir, 'config.json', 'maxRetries', 3),
       assertJsonField(result.workDir, 'config.json', 'debug', false),
-      assertNoUnnecessaryTools(result.toolCalls, ['read_file', 'write_file', 'edit_file']),
+      assertNoUnnecessaryTools(result.toolCalls, ['read', 'create', 'edit']),
       assertStayedInWorkDir(result.toolCalls, result.workDir),
       statToolCalls(result.toolCalls),
       statTokens(result.tokens),

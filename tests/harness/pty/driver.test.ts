@@ -1,3 +1,5 @@
+// check-tests: orphan
+
 import { describe, it, expect, afterEach } from 'vitest';
 import { createPtyDriver } from './driver.js';
 import type { PtyDriver } from './driver.js';

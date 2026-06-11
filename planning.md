@@ -44,13 +44,13 @@ Maintenance instructions:
 - Fake fixture `toolCalls` drive the real agent-loop tool wrappers, including scripted approval, transcript rendering, and `FREECODE_TRACE_JSON` assertions.
 - Fixture matching and fake traces now validate conversation history length, tool-rationale setting, parallel-tool setting, and whether native tools were supplied in the existing fake-direct path.
 - `tests/scenarios/agent-text-fake.scenario.json` covers the real agent loop with a deterministic fake text response and fake model trace assertions during normal scenario verification.
-- `tests/scenarios/agent-write-file-fake.scenario.json` covers a deterministic fake model tool call through the real `write_file` wrapper, approval flow, tool trace, file assertion, and two-call fake model trace.
+- `tests/scenarios/agent-create-fake.scenario.json` covers a deterministic fake model tool call through the real `create` wrapper, approval flow, tool trace, file assertion, and two-call fake model trace.
 - Unit tests cover fake fixture classification, fake runner validation, trace writing, unused-step detection, mock-model gating, real-provider blocking in fake mode, and live-discovery blocking in fake mode.
 - `docs/testing-scenarios.md`, generated scenario docs, and relevant map pages document fake fixture authoring, fake trace assertions, and the current strict safety rules.
 - `npm.cmd test` includes fake-LLM scenarios in normal free verification and passes with the implemented fake coverage.
 - `mock-native:*` model prefix routes through the real AI SDK `streamText()` path using a spec-compliant `LanguageModelV1`-compatible `doStream` implementation (`createFakeNativeLanguageModel()`). The `executionPath` is `'native-stream'` in traces; the fake-direct path is unchanged for existing `mock:*` scenarios. The registry blocks `mock-native:*` outside `FREECODE_FAKE_LLM=1` mode. `agent-text-native.scenario.json` verifies a deterministic text response through the real `streamText()` loop.
 - Scenario classification extended to allow `mock-native:*` as a valid fake model prefix in `llmFixture` scenarios.
-- `agent-tool-native.scenario.json` covers a multi-step native-stream tool call: `doStream` emits a `write_file` tool-call part with `finishReason: 'tool-calls'`, the real AI SDK `streamText()` executes the tool (requires `rationale` in args when `toolRationale: true`), calls `doStream` again, and emits final text. Two-call fake trace with `executionPath: 'native-stream'` on both. Unit test drives the same path directly via a plain zod tool without the confirmation wrapper.
+- `agent-tool-native.scenario.json` covers a multi-step native-stream tool call: `doStream` emits a `create` tool-call part with `finishReason: 'tool-calls'`, the real AI SDK `streamText()` executes the tool (requires `rationale` in args when `toolRationale: true`), calls `doStream` again, and emits final text. Two-call fake trace with `executionPath: 'native-stream'` on both. Unit test drives the same path directly via a plain zod tool without the confirmation wrapper.
 
 ## Still To Do
 

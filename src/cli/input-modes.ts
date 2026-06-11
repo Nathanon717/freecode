@@ -43,7 +43,7 @@ import {
 } from "./terminal-ui.js";
 import { refreshOpenAIDailySpend } from "./openai-daily-spend.js";
 import { loadCachedQuota, saveQuotaToCache } from "../providers/quota/cache.js";
-import { cycleByChar, getAskMode, initAskMode, isReadOnly } from "./toggles.js";
+import { cycleByChar, setCtrlHint, getAskMode, initAskMode, isReadOnly } from "./toggles.js";
 import {
   askContinueAfterLimit,
   askQuestion,
@@ -60,6 +60,7 @@ function resetBottomPromptState(session: SessionController): void {
 }
 
 let _lastAppliedModel = "";
+let _ctrlHintTimer: ReturnType<typeof setTimeout> | null = null;
 
 function syncModelLabel(model: string): void {
   const idx = model.indexOf(":");
@@ -156,9 +157,24 @@ async function readLineWithAutocomplete(
       ) {
         const letter = String.fromCharCode(data.charCodeAt(0) + 64);
         if (cycleByChar(letter)) {
+          setCtrlHint(true);
           drawBottomUI();
+          // Fallback: clear after 5s in case no other key clears it.
+          if (_ctrlHintTimer) clearTimeout(_ctrlHintTimer);
+          _ctrlHintTimer = setTimeout(() => {
+            _ctrlHintTimer = null;
+            setCtrlHint(false);
+            drawBottomUI();
+          }, 5000);
           return;
         }
+      }
+
+      // Any non-toggle keypress clears the ctrl hint immediately.
+      if (_ctrlHintTimer !== null) {
+        clearTimeout(_ctrlHintTimer);
+        _ctrlHintTimer = null;
+        setCtrlHint(false);
       }
 
       if (data === "\r") {
@@ -247,7 +263,7 @@ export function createInteractiveMode(
   initAskMode(config.toolConfirmation);
   let toolCallsThisTurn = 0;
 
-  const READ_ONLY_TOOLS = new Set(["write_file", "edit_file", "shell_exec"]);
+  const READ_ONLY_TOOLS = new Set(["create", "edit", "shell_exec"]);
 
   async function confirmToolCall(
     preview: ToolCallPreview,

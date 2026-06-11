@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def order_by_points(nums):\n    \"\"\"\n    Sorts a list of integers based on the sum of their digits.\n\n    Args:\n    nums: List of integers to be sorted.\n\n    Returns:\n    List of integers sorted by the sum of their digits, with ties broken by original order.\n    \"\"\"\n    def digit_sum(n):\n        \"\"\"Helper function to calculate the sum of digits of an integer.\"\"\"\n        return sum(int(d) for d in str(abs(n)))\n\n    # Create a list of tuples containing the digit sum and the original index\n    decorated = [(digit_sum(num), i, num) for i, num in enumerate(nums)]\n    # Sort the list based on the digit sum and then the original index\n    decorated.sort()\n    # Extract the sorted numbers in the new order\n    return [num for (sum_digits, i, num) in decorated]"
+    },
+    "result": "Wrote 758 bytes to solution.py"
+  }
+]

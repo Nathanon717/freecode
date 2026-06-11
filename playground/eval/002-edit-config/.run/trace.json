@@ -1,0 +1,23 @@
+[
+  {
+    "tool": "list_dir",
+    "args": {},
+    "result": "config.json"
+  },
+  {
+    "tool": "read",
+    "args": {
+      "path": "config.json"
+    },
+    "result": "1: {\r\n2:   \"theme\": \"light\",\r\n3:   \"language\": \"en\",\r\n4:   \"maxRetries\": 3,\r\n5:   \"debug\": false\r\n6: }\r\n\n(End of file — total 6 lines.)"
+  },
+  {
+    "tool": "edit",
+    "args": {
+      "path": "config.json",
+      "old_text": "  \"theme\": \"light\",",
+      "new_text": "  \"theme\": \"dark\","
+    },
+    "result": "Edited config.json: replaced 19 bytes with 18 bytes"
+  }
+]

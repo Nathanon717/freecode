@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { createWriteStream, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { gunzipSync } from 'zlib';
+import https from 'https';
 import type { Interface } from 'readline';
 import chalk from 'chalk';
 import {
@@ -21,30 +22,39 @@ import {
 } from '../cli/terminal-ui.js';
 import { resetEvalWorkDir, startEvalScenario } from '../cli/eval-runner.js';
 import { printEvalHeader } from '../cli/eval-screen.js';
-import { modelSlug, statusCircle } from '../cli/eval-dots.js';
+import { statusCircle } from '../cli/eval-dots.js';
+import { appendEvalRun, getHumanEvalResults } from '../providers/model-store.js';
+import { buildSystemPrompt } from '../agent/system-prompt.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const HUMANEVAL_DATA_DEFAULT = resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'HumanEval.jsonl.gz');
 const HUMANEVAL_EXAMPLE_DATA = process.env['HUMANEVAL_EXAMPLE_DATA'] ?? resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'example_problem.jsonl');
 const HUMANEVAL_RUNS_DIR = resolve(_dirname, '..', '..', 'playground', 'humaneval', '.runs');
-const HUMANEVAL_RESULTS_DIR = join(HUMANEVAL_RUNS_DIR, '.results');
 
+const HUMANEVAL_DOWNLOAD_URL = 'https://github.com/openai/human-eval/raw/master/data/HumanEval.jsonl.gz';
 const VIEWPORT_SIZE = 20;
 
+export function downloadFile(url: string, dest: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    mkdirSync(dirname(dest), { recursive: true });
+    const file = createWriteStream(dest);
+    const follow = (u: string) => {
+      https.get(u, res => {
+        if (res.statusCode === 301 || res.statusCode === 302) {
+          follow(res.headers.location!);
+          return;
+        }
+        if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); return; }
+        res.pipe(file);
+        file.on('finish', () => file.close(() => resolve()));
+        file.on('error', reject);
+      }).on('error', reject);
+    };
+    follow(url);
+  });
+}
+
 type HumanEvalResultMap = Record<string, 'pass' | 'fail'>;
-
-function loadHumanEvalResults(model: string): HumanEvalResultMap {
-  const file = join(HUMANEVAL_RESULTS_DIR, `${modelSlug(model)}.json`);
-  if (!existsSync(file)) return {};
-  try { return JSON.parse(readFileSync(file, 'utf-8')) as HumanEvalResultMap; } catch { return {}; }
-}
-
-function saveHumanEvalResult(model: string, taskId: string, status: 'pass' | 'fail', results: HumanEvalResultMap): void {
-  mkdirSync(HUMANEVAL_RESULTS_DIR, { recursive: true });
-  results[taskId] = status;
-  const file = join(HUMANEVAL_RESULTS_DIR, `${modelSlug(model)}.json`);
-  writeFileSync(file, JSON.stringify(results, null, 2) + '\n', 'utf-8');
-}
 
 interface HumanEvalProblem {
   task_id: string;
@@ -122,6 +132,13 @@ function buildAgentPrompt(problem: HumanEvalProblem): string {
 type RunStatus = 'pass' | 'fail' | 'incomplete';
 type RunResult = { status: RunStatus; userCancelled: boolean };
 
+interface TranscriptTurn {
+  systemPrompt: string;
+  userMessage: string;
+  tokenUsage: { input?: number; output?: number };
+  toolCalls: unknown[];
+}
+
 function askContinuePrompt(rl: Interface, message: string): Promise<boolean> {
   return new Promise(resolve => {
     rl.question(`\n${message} [Y/n] `, (answer) => {
@@ -131,6 +148,7 @@ function askContinuePrompt(rl: Interface, message: string): Promise<boolean> {
 }
 
 async function runOneProblem(problem: HumanEvalProblem, model: string, rl?: Interface): Promise<RunResult> {
+  const startMs = Date.now();
   const taskSlug = problem.task_id.replace(/\//g, '-');
   const runDir = join(HUMANEVAL_RUNS_DIR, taskSlug);
   mkdirSync(runDir, { recursive: true });
@@ -178,14 +196,39 @@ async function runOneProblem(problem: HumanEvalProblem, model: string, rl?: Inte
   else if (evalModel) setModelStatus('', evalModel);
   setTokenCount(result.tokens.total);
 
+  const baseSummary = {
+    timestamp: new Date().toISOString(),
+    taskId: problem.task_id,
+    turns: result.toolCalls.length,
+    tokenUsage: { input: result.tokens.prompt, output: result.tokens.output },
+    durationMs: Date.now() - startMs,
+  };
+
+  const transcriptTurn: TranscriptTurn = {
+    systemPrompt: buildSystemPrompt(),
+    userMessage: buildAgentPrompt(problem),
+    tokenUsage: { input: result.tokens.prompt, output: result.tokens.output },
+    toolCalls: result.toolCalls,
+  };
+
   if (result.exitCode !== 0) {
     console.log(chalk.yellow(`\nINCOMPLETE  ${chalk.bold(problem.task_id)}  (agent did not finish)`));
+    appendEvalRun(evalModel, 'humaneval',
+      { ...baseSummary, pass: false, error: 'agent did not finish' },
+      { pass: false, freecodeVersion: null, transcript: [transcriptTurn],
+        scoringOutcome: { exitCode: result.exitCode } },
+    );
     return { status: 'incomplete', userCancelled };
   }
 
   const solutionPath = join(result.workDir, 'solution.py');
   if (!existsSync(solutionPath)) {
     console.log(chalk.red(`\nFAIL  ${chalk.bold(problem.task_id)}  (solution.py not found in work dir)`));
+    appendEvalRun(evalModel, 'humaneval',
+      { ...baseSummary, pass: false, error: 'solution.py not found' },
+      { pass: false, freecodeVersion: null, transcript: [transcriptTurn],
+        scoringOutcome: { exitCode: result.exitCode } },
+    );
     return { status: 'fail', userCancelled };
   }
 
@@ -211,28 +254,62 @@ async function runOneProblem(problem: HumanEvalProblem, model: string, rl?: Inte
   if (pyResult.status === 0 && pyResult.error == null) {
     console.log(chalk.green(`\nPASS  ${chalk.bold(problem.task_id)}`));
     console.log(chalk.dim(`  tokens: ${result.tokens.total} | tool calls: ${result.toolCalls.length}`));
+    appendEvalRun(evalModel, 'humaneval',
+      { ...baseSummary, pass: true, error: null },
+      { pass: true, freecodeVersion: null, transcript: [transcriptTurn],
+        scoringOutcome: { pass: true } },
+    );
     return { status: 'pass', userCancelled };
   }
 
   console.log(chalk.red(`\nFAIL  ${chalk.bold(problem.task_id)}`));
   if (pyResult.error) {
     console.log(chalk.red(`  (could not run python: ${pyResult.error.message})`));
+    appendEvalRun(evalModel, 'humaneval',
+      { ...baseSummary, pass: false, error: `could not run python: ${pyResult.error.message}` },
+      { pass: false, freecodeVersion: null, transcript: [transcriptTurn],
+        scoringOutcome: { pythonError: pyResult.error.message } },
+    );
   } else {
     const errText = ((pyResult.stderr || '') + (pyResult.stdout || '')).trim();
     if (errText) {
       const tail = errText.split('\n').slice(-5).join('\n  ');
       console.log(chalk.red(`  ${tail}`));
     }
+    const failReason = errText ? errText.split('\n').slice(-5).join('\n') : 'python check failed';
+    appendEvalRun(evalModel, 'humaneval',
+      { ...baseSummary, pass: false, error: null },
+      { pass: false, failReason, freecodeVersion: null, transcript: [transcriptTurn],
+        scoringOutcome: { exitCode: pyResult.status, stderr: pyResult.stderr, stdout: pyResult.stdout } },
+    );
   }
   return { status: 'fail', userCancelled };
 }
 
-export async function runHumanEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string): Promise<void> {
+export async function runHumanEvalMenu(
+  rl: Interface,
+  _projectRoot: string,
+  getSelectedModel: () => string,
+  _downloadFn: (url: string, dest: string) => Promise<void> = downloadFile,
+): Promise<void> {
   const restoreBottomUI = isBottomUIActive();
   teardownBottomUI();
   rl.resume();
 
   try {
+    const dataPath = process.env['HUMANEVAL_DATA'] ?? HUMANEVAL_DATA_DEFAULT;
+    if (!existsSync(dataPath)) {
+      process.stdout.write(chalk.cyan('Downloading HumanEval dataset...'));
+      try {
+        await _downloadFn(HUMANEVAL_DOWNLOAD_URL, dataPath);
+        process.stdout.write(chalk.green(' done\n'));
+      } catch (err) {
+        process.stdout.write(chalk.red(` failed\n`));
+        console.log(chalk.red(`Could not download dataset: ${err instanceof Error ? err.message : String(err)}`));
+        return;
+      }
+    }
+
     let problems: HumanEvalProblem[];
     try {
       problems = readProblems();
@@ -242,7 +319,7 @@ export async function runHumanEvalMenu(rl: Interface, _projectRoot: string, getS
     }
 
     const model = getSelectedModel();
-    const results = loadHumanEvalResults(model);
+    const results: HumanEvalResultMap = getHumanEvalResults(model);
 
     if (!process.stdin.isTTY) {
       console.log(chalk.bold('HumanEval problems\n'));
@@ -290,8 +367,8 @@ export async function runHumanEvalMenu(rl: Interface, _projectRoot: string, getS
     const autoMode = chosen.length > 1;
     for (const problem of chosen) {
       const { status, userCancelled } = await runOneProblem(problem, model, autoMode ? rl : undefined);
-      if (status === 'pass') { passed++; saveHumanEvalResult(model, problem.task_id, 'pass', results); }
-      else if (status === 'fail') { failed++; saveHumanEvalResult(model, problem.task_id, 'fail', results); }
+      if (status === 'pass') passed++;
+      else if (status === 'fail') failed++;
       else incomplete++;
       if (userCancelled) break;
     }

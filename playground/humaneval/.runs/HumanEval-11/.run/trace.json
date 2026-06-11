@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "create",
+    "args": {
+      "path": "solution.py",
+      "content": "from typing import List\n\n\ndef string_xor(a: str, b: str) -> str:\n    \"\"\" Input are two strings a and b consisting only of 1s and 0s.\n    Perform binary XOR on these inputs and return result also as a string.\n    >>> string_xor('010', '110')\n    '100'\n    \"\"\"\n    result = []\n    for char_a, char_b in zip(a, b):\n        xor_bit = '1' if char_a != char_b else '0'\n        result.append(xor_bit)\n    return ''.join(result)"
+    },
+    "result": "Wrote 420 bytes to solution.py"
+  }
+]

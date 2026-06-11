@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { homedir } from 'os';
 import type { Config, OverridableSettings, ProviderConfig } from '../providers/types.js';
 import { log, logError } from '../logger.js';
+import { getModelSettings } from '../providers/model-store.js';
 
 const DEFAULT_CONFIG: Config = {
   providers: {},
@@ -135,17 +136,6 @@ export function updateGlobalConfig(patch: Record<string, unknown>): void {
   writeConfigFile(globalPath, { ...existing, ...patch });
 }
 
-export function loadFavorites(): Set<string> {
-  const { globalPath } = getConfigPaths();
-  const raw = readRawConfig(globalPath) as Record<string, unknown> | null;
-  const favs = raw?.['favoriteModels'];
-  return new Set(Array.isArray(favs) ? favs : []);
-}
-
-export function saveFavorites(favorites: Set<string>): void {
-  updateGlobalConfig({ favoriteModels: [...favorites] });
-}
-
 export function saveDefaultModel(model: string): void {
   updateGlobalConfig({ defaultModel: model });
 }
@@ -162,11 +152,11 @@ export function resolveModelSettings(selectedModel: string): Required<Overridabl
   };
 
   const providerOver = providerId ? config.providerOverrides?.[providerId] : undefined;
-  const modelOver = config.modelOverrides?.[selectedModel];
+  const modelSettings = getModelSettings(selectedModel);
 
   return {
-    toolRationale: modelOver?.toolRationale ?? providerOver?.toolRationale ?? global.toolRationale,
-    showProviderUsage: modelOver?.showProviderUsage ?? providerOver?.showProviderUsage ?? global.showProviderUsage,
-    parallelTools: modelOver?.parallelTools ?? providerOver?.parallelTools ?? global.parallelTools,
+    toolRationale: modelSettings.toolRationale ?? providerOver?.toolRationale ?? global.toolRationale,
+    showProviderUsage: modelSettings.showProviderUsage ?? providerOver?.showProviderUsage ?? global.showProviderUsage,
+    parallelTools: modelSettings.parallelTools ?? providerOver?.parallelTools ?? global.parallelTools,
   };
 }

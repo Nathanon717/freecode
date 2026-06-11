@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "def prod_signs(arr):\n    \"\"\"\n    You are given an array arr of integers and you need to return\n    sum of magnitudes of integers multiplied by product of all signs\n    of each number in the array, represented by 1, -1 or 0.\n    Note: return None for empty arr.\n\n    Example:\n    >>> prod_signs([1, 2, 2, -4]) == -9\n    >>> prod_signs([0, 1]) == 0\n    >>> prod_signs([]) == None\n    \"\"\"\n    if not arr:\n        return None\n    \n    product_of_signs = 1\n    sum_of_abs = 0\n    \n    for num in arr:\n        if num == 0:\n            product_of_signs = 0\n        if num < 0:\n            product_of_signs *= -1\n        sum_of_abs += abs(num)\n    \n    return sum_of_abs * product_of_signs"
+    },
+    "result": "Wrote 681 bytes to solution.py"
+  }
+]

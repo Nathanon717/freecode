@@ -1,0 +1,1 @@
+"Write a Python implementation of the following function.\nSave the complete function definition (including the signature and any needed imports) to a file named `solution.py`.\n\n\n\ndef triangle_area(a, h):\n    \"\"\"Given length of a side and high return area for a triangle.\n    >>> triangle_area(5, 3)\n    7.5\n    \"\"\"\n"

@@ -1,0 +1,42 @@
+{
+  "exitCode": 0,
+  "stdout": "\u001b[38;2;220;182;255mlist_dir()\u001b[39m\n\n\u001b[2m───────────────────────────────────────────────────────────────────────────────────────────\u001b[22m\n\n\u001b[38;2;220;182;255mcreate(hello.txt)\u001b[39m\n\u001b[2m  Hello, World!\u001b[22m\n\n\u001b[2m───────────────────────────────────────────────────────────────────────────────────────────\u001b[22m\n\nThe file \u001b[48;2;51;51;51m\u001b[37mhello.txt\u001b[39m\u001b[49m has been created successfully with the content:\n\n\u001b[48;2;51;51;51m                 \u001b[49m\n\u001b[48;2;51;51;51m\u001b[37m  Hello, World!  \u001b[39m\u001b[49m\n\u001b[48;2;51;51;51m                 \u001b[49m\n\nThis confirms the task is completed as requested.\n\n\u001b[90mProvider usage:\u001b[39m\n\u001b[90m[\u001b[39m\n\u001b[90m  {\u001b[39m\n\u001b[90m    \"providerId\": \"groq\",\u001b[39m\n\u001b[90m    \"model\": \"qwen/qwen3-32b\",\u001b[39m\n\u001b[90m    \"responseId\": \"chatcmpl-2a1b16ac-0c82-4d6a-afa8-b02ab3c62ab0\",\u001b[39m\n\u001b[90m    \"source\": \"sse\",\u001b[39m\n\u001b[90m    \"usage\": {\u001b[39m\n\u001b[90m      \"queue_time\": 0.088572697,\u001b[39m\n\u001b[90m      \"prompt_tokens\": 1200,\u001b[39m\n\u001b[90m      \"prompt_time\": 0.076209828,\u001b[39m\n\u001b[90m      \"completion_tokens\": 950,\u001b[39m\n\u001b[90m      \"completion_time\": 1.990995069,\u001b[39m\n\u001b[90m      \"total_tokens\": 2150,\u001b[39m\n\u001b[90m      \"total_time\": 2.067204897,\u001b[39m\n\u001b[90m      \"completion_tokens_details\": {\u001b[39m\n\u001b[90m        \"reasoning_tokens\": 927\u001b[39m\n\u001b[90m      }\u001b[39m\n\u001b[90m    }\u001b[39m\n\u001b[90m  },\u001b[39m\n\u001b[90m  {\u001b[39m\n\u001b[90m    \"providerId\": \"groq\",\u001b[39m\n\u001b[90m    \"model\": \"qwen/qwen3-32b\",\u001b[39m\n\u001b[90m    \"responseId\": \"chatcmpl-35b7f530-9b8a-43f6-9e6f-66de5a7e88e6\",\u001b[39m\n\u001b[90m    \"source\": \"sse\",\u001b[39m\n\u001b[90m    \"usage\": {\u001b[39m\n\u001b[90m      \"queue_time\": 0.082763077,\u001b[39m\n\u001b[90m      \"prompt_tokens\": 1232,\u001b[39m\n\u001b[90m      \"prompt_time\": 0.042909573,\u001b[39m\n\u001b[90m      \"completion_tokens\": 348,\u001b[39m\n\u001b[90m      \"completion_time\": 0.682683488,\u001b[39m\n\u001b[90m      \"total_tokens\": 1580,\u001b[39m\n\u001b[90m      \"total_time\": 0.725593061,\u001b[39m\n\u001b[90m      \"prompt_tokens_details\": {\u001b[39m\n\u001b[90m        \"cached_tokens\": 1024\u001b[39m\n\u001b[90m      },\u001b[39m\n\u001b[90m      \"completion_tokens_details\": {\u001b[39m\n\u001b[90m        \"reasoning_tokens\": 315\u001b[39m\n\u001b[90m      }\u001b[39m\n\u001b[90m    }\u001b[39m\n\u001b[90m  },\u001b[39m\n\u001b[90m  {\u001b[39m\n\u001b[90m    \"providerId\": \"groq\",\u001b[39m\n\u001b[90m    \"model\": \"qwen/qwen3-32b\",\u001b[39m\n\u001b[90m    \"responseId\": \"chatcmpl-811e162b-a661-475b-b70e-e8b2c9ab8202\",\u001b[39m\n\u001b[90m    \"source\": \"sse\",\u001b[39m\n\u001b[90m    \"usage\": {\u001b[39m\n\u001b[90m      \"queue_time\": 0.08519347,\u001b[39m\n\u001b[90m      \"prompt_tokens\": 1282,\u001b[39m\n\u001b[90m      \"prompt_time\": 0.045621696,\u001b[39m\n\u001b[90m      \"completion_tokens\": 251,\u001b[39m\n\u001b[90m      \"completion_time\": 0.52713988,\u001b[39m\n\u001b[90m      \"total_tokens\": 1533,\u001b[39m\n\u001b[90m      \"total_time\": 0.572761576,\u001b[39m\n\u001b[90m      \"prompt_tokens_details\": {\u001b[39m\n\u001b[90m        \"cached_tokens\": 1024\u001b[39m\n\u001b[90m      },\u001b[39m\n\u001b[90m      \"completion_tokens_details\": {\u001b[39m\n\u001b[90m        \"reasoning_tokens\": 215\u001b[39m\n\u001b[90m      }\u001b[39m\n\u001b[90m    }\u001b[39m\n\u001b[90m  }\u001b[39m\n\u001b[90m]\u001b[39m\n\n",
+  "stderr": "\u001b[2mAuto-approved.\u001b[22m\n\u001b[2m\u001b[22m\u001b[2mAuto-approved.\u001b[22m\n\u001b[2m\u001b[22m",
+  "toolCalls": [
+    {
+      "tool": "list_dir",
+      "args": {
+        "path": "."
+      },
+      "result": ""
+    },
+    {
+      "tool": "create",
+      "args": {
+        "path": "hello.txt",
+        "content": "Hello, World!"
+      },
+      "result": "Wrote 13 bytes to hello.txt"
+    }
+  ],
+  "tokens": {
+    "total": 5263,
+    "prompt": 3714,
+    "output": 1549
+  },
+  "workDir": "C:\\Users\\mingu\\Desktop\\nathans corner\\dev\\freecode\\playground\\eval\\001-hello-world\\.artifacts\\groq--qwen--qwen3-32b\\work",
+  "quota": [
+    {
+      "label": "R",
+      "remaining": 997,
+      "limit": 1000,
+      "resetMs": 259200
+    },
+    {
+      "label": "T",
+      "remaining": 2342,
+      "limit": 6000,
+      "resetMs": 36580
+    }
+  ]
+}

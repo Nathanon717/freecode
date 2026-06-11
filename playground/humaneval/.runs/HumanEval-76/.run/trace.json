@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "write_file",
+    "args": {
+      "path": "solution.py",
+      "content": "import math\n\ndef is_simple_power(x, n):\n    \"\"\"Check if x is a simple power of n.\n\n    A number x is a simple power of n if there exists an integer k such that n**k == x.\n\n    Args:\n        x (int): The number to check.\n        n (int): The base number.\n\n    Returns:\n        bool: True if x is a simple power of n, False otherwise.\n    \"\"\"\n    if n == 1:\n        return False  # 1 to any power is 1, but simple power requires n > 1\n\n    # Handle the case where x is 1\n    if x == 1:\n        return True\n\n    # Calculate the logarithm of x with base n\n    try:\n        k = math.log(x, n)\n    except ValueError:\n        return False\n\n    # Check if k is an integer\n    return k.is_integer()"
+    },
+    "result": "Wrote 689 bytes to solution.py"
+  }
+]

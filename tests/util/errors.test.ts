@@ -14,7 +14,7 @@ describe('error formatting', () => {
           message: 'Failed to call a function. See failed_generation.',
           type: 'invalid_request_error',
           code: 'tool_use_failed',
-          failed_generation: '{"tool_calls":[{"name":"write_file","arguments":"not-json"}]}',
+          failed_generation: '{"tool_calls":[{"name":"create","arguments":"not-json"}]}',
         },
       }),
     });
@@ -25,7 +25,7 @@ describe('error formatting', () => {
       '  provider message: Failed to call a function. See failed_generation.',
       '  code: tool_use_failed',
       '  type: invalid_request_error',
-      '  failed_generation: {"tool_calls":[{"name":"write_file","arguments":"not-json"}]}',
+      '  failed_generation: {"tool_calls":[{"name":"create","arguments":"not-json"}]}',
     ].join('\n'));
   });
 
