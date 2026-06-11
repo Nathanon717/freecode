@@ -1,0 +1,6 @@
+freecode plan mode
+
+in plan mode ur plan agent is read only, and gets planning sys prompt. its told to go in a back and forth with the user, unit the user gives the word and it generates the final standalone plan for the implementation agent to use. it has only read only tools and cannot edit, (so lets start listing the tools programmatically In the sys prompt. so:
+
+base sys prompt:
+

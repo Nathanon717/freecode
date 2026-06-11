@@ -1,0 +1,9 @@
+we need to be saving (and git tracking) every single llm call. every call needs the following: 
+- providor:model id string
+- timestamp
+- optional - tokens in, out, total, gotten only from actual api headers, no guessing or estimating. either use the values that the providor is telling us, or leave blank.
+- optional - full error message is applicable.
+
+this needs to happen for EVERY llm call so it needs to be wired up in such a way that it is impossible for an llm call to be made without triggering this on response. 
+
+lets integrate this with the new models.json structure,w

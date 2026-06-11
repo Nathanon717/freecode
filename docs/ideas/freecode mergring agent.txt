@@ -1,0 +1,3 @@
+freecode mergring agent
+
+using free models do the conflict by conflict resolution thing where it proposes a fix, if its super obvios then just one, if its more options then have move but give a probability split on how likely they are to be the right one
