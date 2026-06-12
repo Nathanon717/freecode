@@ -413,7 +413,24 @@
   "zen:big-pickle": {
     "provider": "zen",
     "modelId": "big-pickle",
-    "isFavorite": true
+    "isFavorite": true,
+    "evals": {
+      "custom": [
+        {
+          "timestamp": "2026-06-12T00:46:54.300Z",
+          "taskId": "003-python-missing-semicolon",
+          "pass": true,
+          "turns": 4,
+          "tokenUsage": {
+            "input": 9416,
+            "output": 438
+          },
+          "durationMs": 12657,
+          "error": null,
+          "transcriptRef": "evals/custom/zen-big-pickle/2026-06-12T004654300Z.json"
+        }
+      ]
+    }
   },
   "zen:deepseek-v4-flash-free": {
     "provider": "zen",

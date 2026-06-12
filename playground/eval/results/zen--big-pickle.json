@@ -409,15 +409,52 @@
     ]
   },
   {
-    "timestamp": "2026-06-06T23:55:54.223Z",
+    "timestamp": "2026-06-08T22:36:19.042Z",
+    "scenarioId": "cereal-soup",
+    "model": "zen:big-pickle",
+    "pass": true,
+    "warnings": false,
+    "tokens": {
+      "total": 1810,
+      "prompt": 1546,
+      "output": 264
+    },
+    "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
+    "checks": [
+      {
+        "name": "no tool calls",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "gave a response",
+        "kind": "assertion",
+        "pass": true
+      },
+      {
+        "name": "0 tool calls",
+        "kind": "stat",
+        "value": 0,
+        "note": "(none)"
+      },
+      {
+        "name": "tokens",
+        "kind": "stat",
+        "value": 1810,
+        "note": "1810 | in: 1546 | out: 264"
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-06-12T00:46:54.300Z",
     "scenarioId": "003-python-missing-semicolon",
     "model": "zen:big-pickle",
     "pass": true,
     "warnings": true,
     "tokens": {
-      "total": 8847,
-      "prompt": 8422,
-      "output": 425
+      "total": 9854,
+      "prompt": 9416,
+      "output": 438
     },
     "scenarioHash": "89b74e95f4e8599f5dd898bf960030bc334dbd78f72217a9f58b0fa4e4008187",
     "checks": [
@@ -456,50 +493,13 @@
         "name": "4 tool calls",
         "kind": "stat",
         "value": 4,
-        "note": "list_dir → read_file → edit_file → shell_exec"
+        "note": "list_dir → read → edit → shell_exec"
       },
       {
         "name": "tokens",
         "kind": "stat",
-        "value": 8847,
-        "note": "8847 | in: 8422 | out: 425"
-      }
-    ]
-  },
-  {
-    "timestamp": "2026-06-08T22:36:19.042Z",
-    "scenarioId": "cereal-soup",
-    "model": "zen:big-pickle",
-    "pass": true,
-    "warnings": false,
-    "tokens": {
-      "total": 1810,
-      "prompt": 1546,
-      "output": 264
-    },
-    "scenarioHash": "17117313bf99e3b3f1ded5fac01e834a22b3cbfa8629bb973fac67eee83fde98",
-    "checks": [
-      {
-        "name": "no tool calls",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "gave a response",
-        "kind": "assertion",
-        "pass": true
-      },
-      {
-        "name": "0 tool calls",
-        "kind": "stat",
-        "value": 0,
-        "note": "(none)"
-      },
-      {
-        "name": "tokens",
-        "kind": "stat",
-        "value": 1810,
-        "note": "1810 | in: 1546 | out: 264"
+        "value": 9854,
+        "note": "9854 | in: 9416 | out: 438"
       }
     ]
   }

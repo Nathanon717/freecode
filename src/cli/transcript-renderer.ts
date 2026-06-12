@@ -204,7 +204,7 @@ export function formatTranscriptStepDivider(options?: TranscriptRuntimeOptions):
   const tty = stream as NodeJS.WriteStream;
   const envCols = parseInt(process.env["COLUMNS"] ?? "0", 10);
   const width = tty.columns || process.stdout.columns || envCols || TRANSCRIPT_DIVIDER_WIDTH;
-  return chalk.dim("─".repeat(width));
+  return getBannerColor()("─".repeat(width));
 }
 
 // ---------------------------------------------------------------------------
