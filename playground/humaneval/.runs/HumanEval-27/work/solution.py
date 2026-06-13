@@ -3,10 +3,4 @@ def flip_case(string: str) -> str:
     >>> flip_case('Hello')
     'hELLO'
     """
-    result = []
-    for char in string:
-        if char.islower():
-            result.append(char.upper())
-        else:
-            result.append(char.lower())
-    return ''.join(result)
+    return string.swapcase()

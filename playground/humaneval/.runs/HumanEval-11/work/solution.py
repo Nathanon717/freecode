@@ -7,8 +7,4 @@ def string_xor(a: str, b: str) -> str:
     >>> string_xor('010', '110')
     '100'
     """
-    result = []
-    for char_a, char_b in zip(a, b):
-        xor_bit = '1' if char_a != char_b else '0'
-        result.append(xor_bit)
-    return ''.join(result)
+    return ''.join('1' if x != y else '0' for x, y in zip(a, b))

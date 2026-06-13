@@ -1,5 +1,6 @@
 from typing import List
 
+
 def sort_numbers(numbers: str) -> str:
     """ Input is a space-delimited string of numberals from 'zero' to 'nine'.
     Valid choices are 'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight' and 'nine'.
@@ -7,7 +8,8 @@ def sort_numbers(numbers: str) -> str:
     >>> sort_numbers('three one five')
     'one three five'
     """
-    num_map = {
+    # Mapping of number words to their numeric value
+    word_to_num = {
         'zero': 0,
         'one': 1,
         'two': 2,
@@ -17,14 +19,18 @@ def sort_numbers(numbers: str) -> str:
         'six': 6,
         'seven': 7,
         'eight': 8,
-        'nine': 9
+        'nine': 9,
     }
-    
-    num_list = numbers.split()
-    
-    num_list.sort(key=lambda x: num_map[x])
-    
-    return ' '.join(num_list)
+
+    # Split the input string into words
+    words = numbers.split()
+
+    # Sort words by their numeric value
+    sorted_words = sorted(words, key=lambda w: word_to_num[w])
+
+    # Join back into a space-delimited string
+    return ' '.join(sorted_words)
+
 
 
 METADATA = {

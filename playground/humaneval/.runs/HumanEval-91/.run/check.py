@@ -2,29 +2,31 @@ import re
 
 def is_bored(S):
     """
-    Count the number of boredoms in a string of words.
-    A boredom is a sentence that starts with the word "I".
+    You'll be given a string of words, and your task is to count the number
+    of boredoms. A boredom is a sentence that starts with the word "I".
     Sentences are delimited by '.', '?' or '!'.
-
-    Args:
-    S (str): The input string to analyze.
-
-    Returns:
-    int: The number of boredoms in the input string.
-
-    Examples:
+   
+    For example:
     >>> is_bored("Hello world")
     0
     >>> is_bored("The sky is blue. The sun is shining. I love this weather")
     1
     """
-    sentences = re.split(r'[.!?]', S)
-    boredom_count = 0
+    # Split the string by '.', '?', or '!'
+    sentences = re.split(r'[.?!]', S)
+
+    count = 0
     for sentence in sentences:
-        sentence = sentence.strip()
-        if sentence.startswith('I '):
-            boredom_count += 1
-    return boredom_count
+        # Strip leading whitespace
+        stripped = sentence.lstrip()
+        if not stripped:
+            continue
+        # Check if the first word is exactly "I"
+        words = stripped.split()
+        if words and words[0] == 'I':
+            count += 1
+
+    return count
 
 def check(candidate):
 

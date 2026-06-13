@@ -12,10 +12,10 @@ def correct_bracketing(brackets: str):
     False
     """
     count = 0
-    for bracket in brackets:
-        if bracket == "(":
+    for b in brackets:
+        if b == '(':
             count += 1
-        else:
+        elif b == ')':
             count -= 1
         if count < 0:
             return False

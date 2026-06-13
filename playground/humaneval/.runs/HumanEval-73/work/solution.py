@@ -9,14 +9,9 @@ def smallest_change(arr):
     smallest_change([1, 2, 3, 4, 3, 2, 2]) == 1
     smallest_change([1, 2, 3, 2, 1]) == 0
     """
+    n = len(arr)
     changes = 0
-    left = 0
-    right = len(arr) - 1
-
-    while left < right:
-        if arr[left] != arr[right]:
+    for i in range(n // 2):
+        if arr[i] != arr[n - 1 - i]:
             changes += 1
-        left += 1
-        right -= 1
-
     return changes

@@ -199,6 +199,15 @@ export function formatEditFileDiff(
     : formatted;
 }
 
+export function writeTranscriptSystemPrompt(
+  systemPrompt: string,
+  options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions(),
+): void {
+  const stream = getTranscriptStream(options);
+  const lines = systemPrompt.split("\n").map((l) => chalk.dim("  " + l)).join("\n");
+  stream.write(chalk.dim("system prompt:\n") + lines + "\n\n");
+}
+
 export function formatTranscriptStepDivider(options?: TranscriptRuntimeOptions): string {
   const stream = options ? getTranscriptStream(options) : process.stdout;
   const tty = stream as NodeJS.WriteStream;

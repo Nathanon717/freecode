@@ -1,5 +1,6 @@
 from typing import List
 
+
 def separate_paren_groups(paren_string: str) -> List[str]:
     """ Input to this function is a string containing multiple groups of nested parentheses. Your goal is to
     separate those group into separate strings and return the list of those.
@@ -8,21 +9,22 @@ def separate_paren_groups(paren_string: str) -> List[str]:
     >>> separate_paren_groups('( ) (( )) (( )( ))')
     ['()', '(())', '(()())']
     """
+    # Remove all spaces from the input string
+    cleaned = paren_string.replace(' ', '')
+    
     result = []
-    current_group = []
     balance = 0
-
-    for char in paren_string:
-        if char == ' ':
-            continue
-        if char == '(':
+    start = 0
+    
+    for i, ch in enumerate(cleaned):
+        if ch == '(':
             balance += 1
-            current_group.append(char)
-        elif char == ')':
+        elif ch == ')':
             balance -= 1
-            current_group.append(char)
-            if balance == 0:
-                result.append(''.join(current_group))
-                current_group = []
-
+        
+        # When balance returns to zero, we've completed a group
+        if balance == 0:
+            result.append(cleaned[start:i+1])
+            start = i + 1
+    
     return result

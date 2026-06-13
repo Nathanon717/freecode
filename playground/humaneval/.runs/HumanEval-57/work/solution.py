@@ -1,6 +1,4 @@
-from typing import List
-
-def monotonic(l: List[int]) -> bool:
+def monotonic(l: list):
     """Return True is list elements are monotonically increasing or decreasing.
     >>> monotonic([1, 2, 4, 20])
     True
@@ -9,6 +7,6 @@ def monotonic(l: List[int]) -> bool:
     >>> monotonic([4, 1, 0, -10])
     True
     """
-    increasing = all(l[i] <= l[i+1] for i in range(len(l) - 1))
-    decreasing = all(l[i] >= l[i+1] for i in range(len(l) - 1))
+    increasing = all(l[i] >= l[i - 1] for i in range(1, len(l)))
+    decreasing = all(l[i] <= l[i - 1] for i in range(1, len(l)))
     return increasing or decreasing

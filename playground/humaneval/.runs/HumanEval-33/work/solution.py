@@ -7,17 +7,11 @@ def sort_third(l: list):
     >>> sort_third([5, 6, 3, 4, 8, 9, 2])
     [2, 6, 3, 4, 8, 9, 5]
     """
-    # Separate the elements at indices divisible by three
-    divisible_by_three = [l[i] for i in range(len(l)) if i % 3 == 0]
-    
-    # Sort these elements
-    divisible_by_three_sorted = sorted(divisible_by_three)
-    
-    # Rebuild the list with the sorted elements
-    result = l.copy()
-    sorted_index = 0
-    for i in range(len(result)):
-        if i % 3 == 0:
-            result[i] = divisible_by_three_sorted[sorted_index]
-            sorted_index += 1
+    result = l[:]
+    # Collect values at indices divisible by 3
+    values = [l[i] for i in range(len(l)) if i % 3 == 0]
+    values.sort()
+    # Place sorted values back at those indices
+    for i, val in zip([i for i in range(len(l)) if i % 3 == 0], values):
+        result[i] = val
     return result

@@ -16,11 +16,26 @@ def triples_sum_to_zero(l: list):
     False
     """
     n = len(l)
-    for i in range(n):
-        for j in range(i + 1, n):
-            for k in range(j + 1, n):
-                if l[i] + l[j] + l[k] == 0:
-                    return True
+    if n < 3:
+        return False
+
+    # Sort the list to enable the two-pointer technique
+    sorted_l = sorted(l)
+
+    for i in range(n - 2):
+        left = i + 1
+        right = n - 1
+
+        while left < right:
+            total = sorted_l[i] + sorted_l[left] + sorted_l[right]
+
+            if total == 0:
+                return True
+            elif total < 0:
+                left += 1
+            else:
+                right -= 1
+
     return False
 
 

@@ -18,7 +18,7 @@ import {
   estimateAnthropicCostVerified,
   type CostEstimate,
 } from '../providers/anthropic-cost.js';
-import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk } from '../cli/transcript-renderer.js';
+import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk, writeTranscriptSystemPrompt } from '../cli/transcript-renderer.js';
 import { renderMarkdown, createMarkdownStreamRenderer } from '../cli/markdown-renderer.js';
 import { getAnthropicVerifiedRates } from '../providers/pricing-verifier.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
@@ -376,6 +376,7 @@ export async function agentLoop(
   if (!systemPromptLogged) {
     systemPromptLogged = true;
     log('stream', `System prompt:\n${systemPrompt}`);
+    writeTranscriptSystemPrompt(systemPrompt);
   }
 
   log('stream', `Calling streamText`, { supportsTools, maxSteps: supportsTools ? 10 : undefined });

@@ -1,6 +1,7 @@
 def digitSum(s):
     """Task
-    Write a function that takes a string as input and returns the sum of the upper characters only' ASCII codes.
+    Write a function that takes a string as input and returns the sum of the upper characters only'
+    ASCII codes.
 
     Examples:
         digitSum("") => 0
@@ -10,7 +11,7 @@ def digitSum(s):
         digitSum("woArBld") => 131
         digitSum("aAaaaXa") => 153
     """
-    return sum(ord(char) for char in s if char.isupper())
+    return sum(ord(c) for c in s if c.isupper())
 
 def check(candidate):
 

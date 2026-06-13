@@ -16,15 +16,20 @@ def make_palindrome(string: str) -> str:
     'catac'
     """
     if not string:
-        return string
-    
-    n = len(string)
-    for i in range(n):
-        substring = string[i:]
-        if is_palindrome(substring):
-            return string + string[:i][::-1]
-    
-    return string + string[:-1][::-1]
+        return ''
+
+    # Find the longest suffix that is a palindrome
+    longest_palindromic_suffix_end = len(string)
+    for i in range(len(string)):
+        if is_palindrome(string[i:]):
+            longest_palindromic_suffix_end = i
+            break
+
+    # Prefix before the palindromic suffix
+    prefix = string[:longest_palindromic_suffix_end]
+    # Append reverse of that prefix
+    return string + prefix[::-1]
+
 
 
 METADATA = {

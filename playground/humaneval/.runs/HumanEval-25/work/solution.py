@@ -1,5 +1,6 @@
 from typing import List
 
+
 def factorize(n: int) -> List[int]:
     """ Return list of prime factors of given integer in the order from smallest to largest.
     Each of the factors should be listed number of times corresponding to how many times it appeares in factorization.
@@ -12,10 +13,12 @@ def factorize(n: int) -> List[int]:
     [2, 5, 7]
     """
     factors = []
-    divisor = 2
-    while n > 1:
-        while n % divisor == 0:
-            factors.append(divisor)
-            n = n // divisor
-        divisor += 1
+    d = 2
+    while d * d <= n:
+        while n % d == 0:
+            factors.append(d)
+            n //= d
+        d += 1 if d == 2 else 2  # after 2, check only odd numbers
+    if n > 1:
+        factors.append(n)
     return factors

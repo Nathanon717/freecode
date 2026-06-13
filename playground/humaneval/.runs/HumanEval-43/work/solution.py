@@ -14,8 +14,9 @@ def pairs_sum_to_zero(l):
     >>> pairs_sum_to_zero([1])
     False
     """
-    for i in range(len(l)):
-        for j in range(i + 1, len(l)):
-            if l[i] + l[j] == 0:
-                return True
+    seen = set()
+    for num in l:
+        if -num in seen:
+            return True
+        seen.add(num)
     return False

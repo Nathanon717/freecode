@@ -1,6 +1,6 @@
 {
   "exitCode": 0,
-  "stdout": "Debatable. Cereal meets the loose definition of soup — liquid base with solid ingredients — but culturally it's not considered soup.\n\n\n",
+  "stdout": "\u001b[2msystem prompt:\u001b[22m\n\u001b[2m\u001b[22m\u001b[2m  You are a coding agent who always follows the rules. You help the user with coding tasks by reading, writing, and navigating their codebase.\u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  Your OS: Linux\u001b[22m\n\u001b[2m  Available tools: read, create, edit, grep, shell_exec, list_dir\u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  RULES - MUST ALWAYS FOLLOW:\u001b[22m\n\u001b[2m  - Use list_dir BEFORE making any assumptions about what files/folders exist.\u001b[22m\n\u001b[2m  - Before editing a file, read it with read first. Use edit with exact old_text and new_text for existing files. Use create only to create new files; it fails if the file already exists. Use real newlines in file content, never the literal two-character sequence backslash-n.\u001b[22m\n\u001b[2m  - If a tool call is denied by the user, update your plan based on their feedback. Do NOT try to make the same tool call again.\u001b[22m\n\u001b[2m  - No emojis.\u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m  HANDY TIPS:\u001b[22m\n\u001b[2m  - Running broken code often gives you a helpful error message.\u001b[22m\n\nDebatable. Cereal meets the loose definition of soup — liquid base with solid ingredients — but culturally it's not considered soup.\n\n\n",
   "stderr": "",
   "toolCalls": [],
   "tokens": {

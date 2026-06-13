@@ -1,4 +1,4 @@
-def correct_bracketing(brackets: str):
+def correct_bracketing(brackets: str) -> bool:
     """ brackets is a string of "<" and ">".
     return True if every opening bracket has a corresponding closing bracket.
 
@@ -12,11 +12,11 @@ def correct_bracketing(brackets: str):
     False
     """
     balance = 0
-    for bracket in brackets:
-        if bracket == '<':
+    for ch in brackets:
+        if ch == "<":
             balance += 1
-        else:
+        elif ch == ">":
             balance -= 1
-        if balance < 0:
-            return False
+            if balance < 0:
+                return False
     return balance == 0

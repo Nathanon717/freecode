@@ -1,19 +1,25 @@
 def will_it_fly(q, w):
-    """
-    Check if the object q will fly based on balance and weight.
+    '''
+    Write a function that returns True if the object q will fly, and False otherwise.
+    The object q will fly if it's balanced (it is a palindromic list) and the sum of its elements is less than or equal the maximum possible weight w.
 
-    Args:
-    q (list): The object to check.
-    w (int): The maximum possible weight.
+    Example:
+    will_it_fly([1, 2], 5) ➞ False 
+    # 1+2 is less than the maximum possible weight, but it's unbalanced.
 
-    Returns:
-    bool: True if the object will fly, False otherwise.
-    """
-    # Check if the object is balanced (palindromic list)
-    is_balanced = q == q[::-1]
-    
-    # Check if the sum of elements is less than or equal to the maximum weight
-    sum_elements = sum(q)
-    
-    # Return True if both conditions are met, False otherwise
-    return is_balanced and sum_elements <= w
+    will_it_fly([3, 2, 3], 1) ➞ False
+    # it's balanced, but 3+2+3 is more than the maximum possible weight.
+
+    will_it_fly([3, 2, 3], 9) ➞ True
+    # 3+2+3 is less than the maximum possible weight, and it's balanced.
+
+    will_it_fly([3], 5) ➞ True
+    # 3 is less than the maximum possible weight, and it's balanced.
+    '''
+    # Check if q is a palindrome (balanced)
+    if q != q[::-1]:
+        return False
+    # Check if sum of elements does not exceed maximum weight
+    if sum(q) > w:
+        return False
+    return True

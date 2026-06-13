@@ -7,24 +7,17 @@ def sort_even(l: list):
     >>> sort_even([5, 6, 3, 4])
     [3, 6, 5, 4]
     """
-    # Separate even and odd index elements
-    even_indices = l[::2]
-    odd_indices = l[1::2]
-    
-    # Sort the even index elements
-    sorted_evens = sorted(even_indices)
-    
-    # Reconstruct the list
+    even_values = sorted([l[i] for i in range(0, len(l), 2)])
     result = []
+    even_idx = 0
     for i in range(len(l)):
         if i % 2 == 0:
-            # Even index: take from sorted_evens
-            result.append(sorted_evens[i // 2])
+            result.append(even_values[even_idx])
+            even_idx += 1
         else:
-            # Odd index: take from original odd_indices
-            result.append(odd_indices[i // 2])
-    
+            result.append(l[i])
     return result
+
 
 
 METADATA = {}

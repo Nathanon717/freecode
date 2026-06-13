@@ -7,16 +7,19 @@ def how_many_times(string: str, substring: str) -> int:
     >>> how_many_times('aaaa', 'aa')
     3
     """
+    if not substring:
+        return 0
     count = 0
+    step = 1
     start = 0
-    while start < len(string):
+    while True:
         pos = string.find(substring, start)
-        if pos != -1:
-            count += 1
-            start = pos + 1
-        else:
+        if pos == -1:
             break
+        count += 1
+        start = pos + step
     return count
+
 
 
 METADATA = {

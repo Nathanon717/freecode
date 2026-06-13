@@ -1,5 +1,6 @@
 from typing import List, Any
 
+
 def filter_integers(values: List[Any]) -> List[int]:
     """ Filter given list of any python values only for integers
     >>> filter_integers(['a', 3.14, 5])
@@ -7,4 +8,4 @@ def filter_integers(values: List[Any]) -> List[int]:
     >>> filter_integers([1, 2, 3, 'abc', {}, []])
     [1, 2, 3]
     """
-    return [x for x in values if type(x) == int]
+    return [v for v in values if isinstance(v, int) and not isinstance(v, bool)]

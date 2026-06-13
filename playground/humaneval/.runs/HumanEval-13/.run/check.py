@@ -10,6 +10,7 @@ def greatest_common_divisor(a: int, b: int) -> int:
     return abs(a)
 
 
+
 METADATA = {
     'author': 'jt',
     'dataset': 'test'

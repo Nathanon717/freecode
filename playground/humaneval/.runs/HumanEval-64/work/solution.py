@@ -10,14 +10,11 @@ def vowels_count(s):
     >>> vowels_count("ACEDY")
     3
     """
-    vowels = {'a', 'e', 'i', 'o', 'u'}
     count = 0
-    s_lower = s.lower()
-    
-    for i, char in enumerate(s_lower):
-        if char in vowels:
+    for i, ch in enumerate(s):
+        lower_ch = ch.lower()
+        if lower_ch in 'aeiou':
             count += 1
-        elif char == 'y' and i == len(s) - 1:
+        elif lower_ch == 'y' and i == len(s) - 1:
             count += 1
-    
     return count

@@ -13,17 +13,20 @@ def sort_array(array):
     * sort_array([2, 4, 3, 0, 1, 5]) => [0, 1, 2, 3, 4, 5]
     * sort_array([2, 4, 3, 0, 1, 5, 6]) => [6, 5, 4, 3, 2, 1, 0]
     """
-    if len(array) <= 1:
-        return array.copy()
-    
-    first_element = array[0]
-    last_element = array[-1]
-    sum_first_last = first_element + last_element
+    if not array:
+        return []
+    if len(array) == 1:
+        return [array[0]]
 
-    if sum_first_last % 2 == 1:
-        return sorted(array)
-    else:
+    first = array[0]
+    last = array[-1]
+    total = first + last
+
+    if total % 2 == 0:  # even -> descending
         return sorted(array, reverse=True)
+    else:               # odd -> ascending
+        return sorted(array)
+
 def check(candidate):
 
     # Check some simple cases

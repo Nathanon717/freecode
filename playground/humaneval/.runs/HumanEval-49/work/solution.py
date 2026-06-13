@@ -1,6 +1,5 @@
 def modp(n: int, p: int):
     """Return 2^n modulo p (be aware of numerics).
-
     >>> modp(3, 5)
     3
     >>> modp(1101, 101)
@@ -12,9 +11,12 @@ def modp(n: int, p: int):
     >>> modp(100, 101)
     1
     """
-    if n == 0:
-        return 1
     result = 1
-    for _ in range(n):
-        result = (result * 2) % p
+    base = 2 % p
+    exp = n
+    while exp > 0:
+        if exp & 1:
+            result = (result * base) % p
+        base = (base * base) % p
+        exp >>= 1
     return result

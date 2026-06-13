@@ -5,9 +5,11 @@ def median(l: list):
     >>> median([-10, 4, 6, 1000, 10, 20])
     15.0
     """
-    sorted_list = sorted(l)
-    length = len(sorted_list)
-    if length % 2 == 1:
-        return sorted_list[length // 2]
+    sorted_l = sorted(l)
+    n = len(sorted_l)
+    if n % 2 == 1:
+        return sorted_l[n // 2]
     else:
-        return (sorted_list[length // 2 - 1] + sorted_list[length // 2]) / 2
+        mid1 = n // 2 - 1
+        mid2 = n // 2
+        return (sorted_l[mid1] + sorted_l[mid2]) / 2.0

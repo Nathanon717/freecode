@@ -8,13 +8,9 @@ def intersperse(numbers: List[int], delimeter: int) -> List[int]:
     >>> intersperse([1, 2, 3], 4)
     [1, 4, 2, 4, 3]
     """
-    if not numbers:
-        return []
-    
     result = []
     for i, num in enumerate(numbers):
         result.append(num)
-        if i != len(numbers) - 1:
+        if i < len(numbers) - 1:
             result.append(delimeter)
-    
     return result

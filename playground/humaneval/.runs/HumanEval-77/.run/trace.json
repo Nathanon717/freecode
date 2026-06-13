@@ -1,10 +1,31 @@
 [
   {
-    "tool": "write_file",
+    "tool": "create",
     "args": {
       "path": "solution.py",
-      "content": "def iscube(a):\n    '''\n    Check if an integer is a cube of some integer number.\n\n    Args:\n    a (int): The integer to check.\n\n    Returns:\n    bool: True if 'a' is a cube of some integer, False otherwise.\n    '''\n    if a == 0:\n        return True\n    # Handle negative numbers\n    abs_a = abs(a)\n    # Calculate the cube root of the absolute value and round it to the nearest integer\n    cube_root = round(abs_a ** (1/3))\n    # Check if cubing the cube root gives back the original number\n    return cube_root ** 3 == abs_a"
+      "content": "def iscube(a):\n    '''\n    Write a function that takes an integer a and returns True \n    if this ingeger is a cube of some integer number.\n    Note: you may assume the input is always valid.\n    Examples:\n    iscube(1) ==> True\n    iscube(2) ==> False\n    iscube(-1) ==> True\n    iscube(64) ==> True\n    iscube(0) ==> True\n    iscube(180) ==> False\n    '''\n    # Handle 0 explicitly\n    if a == 0:\n        return True\n\n    # Work with absolute value for the cube root search\n    n = abs(a)\n\n    # Binary search for an integer x such that x**3 == n\n    low = 0\n    high = n\n\n    while low <= high:\n        mid = (low + high) // 2\n        cube = mid * mid * mid\n        if cube == n:\n            # Found an integer cube root; the sign of a is handled by abs.\n            # If a > 0, mid >= 0; if a < 0, the cube root is -mid, which is an integer.\n            return True\n        elif cube < n:\n            low = mid + 1\n        else:\n            high = mid - 1\n\n    return False\n"
     },
-    "result": "Wrote 526 bytes to solution.py"
+    "result": "Wrote 978 bytes to solution.py"
+  },
+  {
+    "tool": "shell_exec",
+    "args": {
+      "command": "cd /root/workspace && python3 -c \"\nfrom solution import iscube\n\n# Test cases from the docstring\nassert iscube(1) == True\nassert iscube(2) == False\nassert iscube(-1) == True\nassert iscube(64) == True\nassert iscube(0) == True\nassert iscube(180) == False\n\n# Additional tests\nassert iscube(-8) == True   # (-2)^3\nassert iscube(8) == True    # 2^3\nassert iscube(27) == True   # 3^3\nassert iscube(-27) == True  # (-3)^3\nassert iscube(100) == False\nassert iscube(-100) == False\nassert iscube(125) == True  # 5^3\nassert iscube(216) == True  # 6^3\nassert iscube(-216) == True\nassert iscube(1000) == True # 10^3\nassert iscube(-1000) == True\nassert iscube(1001) == False\n\n# Large numbers\nassert iscube(10**9) == True  # 1000^3\nassert iscube(-10**9) == True\nassert iscube(10**9 + 1) == False\n\nprint('All tests passed!')\n\"\n"
+    },
+    "result": "Error: Command failed: cd /root/workspace && python3 -c \"\nfrom solution import iscube\n\n# Test cases from the docstring\nassert iscube(1) == True\nassert iscube(2) == False\nassert iscube(-1) == True\nassert iscube(64) == True\nassert iscube(0) == True\nassert iscube(180) == False\n\n# Additional tests\nassert iscube(-8) == True   # (-2)^3\nassert iscube(8) == True    # 2^3\nassert iscube(27) == True   # 3^3\nassert iscube(-27) == True  # (-3)^3\nassert iscube(100) == False\nassert iscube(-100) == False\nassert iscube(125) == True  # 5^3\nassert iscube(216) == True  # 6^3\nassert iscube(-216) == True\nassert iscube(1000) == True # 10^3\nassert iscube(-1000) == True\nassert iscube(1001) == False\n\n# Large numbers\nassert iscube(10**9) == True  # 1000^3\nassert iscube(-10**9) == True\nassert iscube(10**9 + 1) == False\n\nprint('All tests passed!')\n\"\n\n/bin/sh: 1: cd: can't cd to /root/workspace\n"
+  },
+  {
+    "tool": "shell_exec",
+    "args": {
+      "command": "pwd && ls -la solution.py"
+    },
+    "result": "/root/freecode/freecode/playground/humaneval/.runs/HumanEval-77/work\n-rw-r--r--+ 1 root root 978 Jun 13 01:09 solution.py\n"
+  },
+  {
+    "tool": "shell_exec",
+    "args": {
+      "command": "cd /root/freecode/freecode/playground/humaneval/.runs/HumanEval-77/work && python3 -c \"\nfrom solution import iscube\n\n# Test cases from the docstring\nassert iscube(1) == True\nassert iscube(2) == False\nassert iscube(-1) == True\nassert iscube(64) == True\nassert iscube(0) == True\nassert iscube(180) == False\n\n# Additional tests\nassert iscube(-8) == True   # (-2)^3\nassert iscube(8) == True    # 2^3\nassert iscube(27) == True   # 3^3\nassert iscube(-27) == True  # (-3)^3\nassert iscube(100) == False\nassert iscube(-100) == False\nassert iscube(125) == True  # 5^3\nassert iscube(216) == True  # 6^3\nassert iscube(-216) == True\nassert iscube(1000) == True # 10^3\nassert iscube(-1000) == True\nassert iscube(1001) == False\n\n# Large numbers\nassert iscube(10**9) == True  # 1000^3\nassert iscube(-10**9) == True\nassert iscube(10**9 + 1) == False\n\nprint('All tests passed!')\n\"\n"
+    },
+    "result": "All tests passed!\n"
   }
 ]

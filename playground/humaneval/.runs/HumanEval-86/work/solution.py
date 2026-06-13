@@ -1,6 +1,6 @@
 def anti_shuffle(s):
     """
-    Takes a string and returns an ordered version of it.
+    Write a function that takes a string and returns an ordered version of it.
     Ordered version of string, is a string where all words (separated by space)
     are replaced by a new word where all the characters arranged in
     ascending order based on ascii value.
@@ -11,11 +11,6 @@ def anti_shuffle(s):
     anti_shuffle('hello') returns 'ehllo'
     anti_shuffle('Hello World!!!') returns 'Hello !!!Wdlor'
     """
-    # Split the string into words
     words = s.split(' ')
-    
-    # Process each word by sorting its characters based on ASCII value
-    processed_words = [''.join(sorted(word)) for word in words]
-    
-    # Join the processed words back into a single string
-    return ' '.join(processed_words)
+    sorted_words = [''.join(sorted(word)) for word in words]
+    return ' '.join(sorted_words)

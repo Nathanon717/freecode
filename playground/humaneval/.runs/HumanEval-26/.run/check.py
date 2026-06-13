@@ -1,4 +1,6 @@
 from typing import List
+from collections import Counter
+
 
 def remove_duplicates(numbers: List[int]) -> List[int]:
     """ From a list of integers, remove all elements that occur more than once.
@@ -6,13 +8,9 @@ def remove_duplicates(numbers: List[int]) -> List[int]:
     >>> remove_duplicates([1, 2, 3, 2, 4])
     [1, 3, 4]
     """
-    # Count occurrences of each number
-    counts = {}
-    for num in numbers:
-        counts[num] = counts.get(num, 0) + 1
-    
-    # Filter numbers that occur only once, preserving order
+    counts = Counter(numbers)
     return [num for num in numbers if counts[num] == 1]
+
 
 
 METADATA = {

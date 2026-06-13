@@ -12,8 +12,9 @@ def solve(N):
     Output:
          a string of binary number
     """
-    digit_sum = sum(int(digit) for digit in str(N))
+    digit_sum = sum(int(d) for d in str(N))
     return bin(digit_sum)[2:]
+
 def check(candidate):
 
     # Check some simple cases

@@ -1,28 +1,33 @@
 def is_multiply_prime(a):
-    """Check if a number is the product of exactly three prime numbers."""
-    if a < 2:
-        return False
-
-    def is_prime(n):
-        """Helper function to check if a number is prime."""
-        if n < 2:
-            return False
-        for i in range(2, int(n**0.5) + 1):
-            if n % i == 0:
-                return False
-        return True
-
-    prime_factors = []
-    temp = a
-
-    # Factorize the number
-    for i in range(2, temp + 1):
-        while temp % i == 0 and is_prime(i):
-            prime_factors.append(i)
-            temp = temp // i
-
-    # Check if the product of exactly three primes
-    if len(prime_factors) == 3 and a == (prime_factors[0] * prime_factors[1] * prime_factors[2]):
-        return True
-    else:
-        return False
+    """Write a function that returns true if the given number is the multiplication of 3 prime numbers
+    and false otherwise.
+    Knowing that (a) is less then 100. 
+    Example:
+    is_multiply_prime(30) == True
+    30 = 2 * 3 * 5
+    """
+    # Generate all primes less than 100
+    primes = []
+    for num in range(2, 100):
+        is_prime = True
+        for i in range(2, int(num ** 0.5) + 1):
+            if num % i == 0:
+                is_prime = False
+                break
+        if is_prime:
+            primes.append(num)
+    
+    # Check all combinations of 3 primes (with repetition allowed)
+    for p1 in primes:
+        if p1 * p1 * p1 > a:
+            break
+        for p2 in primes:
+            if p1 * p2 * p2 > a:
+                break
+            for p3 in primes:
+                if p1 * p2 * p3 > a:
+                    break
+                if p1 * p2 * p3 == a:
+                    return True
+    
+    return False

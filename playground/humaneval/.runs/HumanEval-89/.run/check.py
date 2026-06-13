@@ -1,24 +1,27 @@
-def encrypt(s: str) -> str:
-    """Encrypts a string by rotating each character in the alphabet by 4 places.
-
-    Args:
-        s: The input string to be encrypted.
-
-    Returns:
-        The encrypted string.
+def encrypt(s):
+    """Create a function encrypt that takes a string as an argument and
+    returns a string encrypted with the alphabet being rotated. 
+    The alphabet should be rotated in a manner such that the letters 
+    shift down by two multiplied to two places.
+    For example:
+    encrypt('hi') returns 'lm'
+    encrypt('asdfghjkl') returns 'ewhjklnop'
+    encrypt('gf') returns 'kj'
+    encrypt('et') returns 'ix'
     """
     result = []
-    for char in s:
-        if char.isalpha():
-            # Determine the base ASCII value for 'a' or 'A'
-            base = ord('a') if char.islower() else ord('A')
-            # Calculate the new character position with rotation by 4
-            new_char = chr((ord(char) - base + 4) % 26 + base)
-            result.append(new_char)
+    for ch in s:
+        if 'a' <= ch <= 'z':
+            # Shift by 4 positions (2 * 2) and wrap around
+            shifted = chr((ord(ch) - ord('a') + 4) % 26 + ord('a'))
+            result.append(shifted)
+        elif 'A' <= ch <= 'Z':
+            shifted = chr((ord(ch) - ord('A') + 4) % 26 + ord('A'))
+            result.append(shifted)
         else:
-            # Leave non-alphabetic characters unchanged
-            result.append(char)
+            result.append(ch)
     return ''.join(result)
+
 def check(candidate):
 
     # Check some simple cases

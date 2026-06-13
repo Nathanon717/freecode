@@ -1,21 +1,9 @@
 [
   {
-    "totalTokens": 2909,
-    "promptTokens": 2675,
-    "outputTokens": 234,
-    "providerId": "mistral",
-    "modelId": "mistral-medium-2505",
-    "quota": [
-      {
-        "label": "Rm",
-        "remaining": 12,
-        "limit": 25
-      },
-      {
-        "label": "Tm",
-        "remaining": 368238,
-        "limit": 375000
-      }
-    ]
+    "totalTokens": 8109,
+    "promptTokens": 7620,
+    "outputTokens": 489,
+    "providerId": "zen",
+    "modelId": "big-pickle"
   }
 ]

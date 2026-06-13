@@ -1,18 +1,37 @@
 def iscube(a):
     '''
-    Check if an integer is a cube of some integer number.
-
-    Args:
-    a (int): The integer to check.
-
-    Returns:
-    bool: True if 'a' is a cube of some integer, False otherwise.
+    Write a function that takes an integer a and returns True 
+    if this ingeger is a cube of some integer number.
+    Note: you may assume the input is always valid.
+    Examples:
+    iscube(1) ==> True
+    iscube(2) ==> False
+    iscube(-1) ==> True
+    iscube(64) ==> True
+    iscube(0) ==> True
+    iscube(180) ==> False
     '''
+    # Handle 0 explicitly
     if a == 0:
         return True
-    # Handle negative numbers
-    abs_a = abs(a)
-    # Calculate the cube root of the absolute value and round it to the nearest integer
-    cube_root = round(abs_a ** (1/3))
-    # Check if cubing the cube root gives back the original number
-    return cube_root ** 3 == abs_a
+
+    # Work with absolute value for the cube root search
+    n = abs(a)
+
+    # Binary search for an integer x such that x**3 == n
+    low = 0
+    high = n
+
+    while low <= high:
+        mid = (low + high) // 2
+        cube = mid * mid * mid
+        if cube == n:
+            # Found an integer cube root; the sign of a is handled by abs.
+            # If a > 0, mid >= 0; if a < 0, the cube root is -mid, which is an integer.
+            return True
+        elif cube < n:
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    return False

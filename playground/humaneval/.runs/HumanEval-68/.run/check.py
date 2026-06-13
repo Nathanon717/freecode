@@ -1,11 +1,12 @@
 def pluck(arr):
     """
-    Given an array representing a branch of a tree that has non-negative integer nodes,
-    this function plucks the node with the smallest even value.
+    Given an array representing a branch of a tree that has non-negative integer nodes
+    your task is to pluck one of the nodes and return it.
+    The plucked node should be the node with the smallest even value.
+    If multiple nodes with the same smallest even value are found return the node that has smallest index.
 
-    The plucked node is the one with the smallest even value. If multiple nodes have the same smallest even value,
-    the node with the smallest index is chosen. The function returns the plucked node as a list [smallest_value, its_index].
-    If there are no even values or the given array is empty, the function returns an empty list.
+    The plucked node should be returned in a list, [ smalest_value, its index ],
+    If there are no even values or the given array is empty, return [].
 
     Example 1:
         Input: [4,2,3]
@@ -15,30 +16,35 @@ def pluck(arr):
     Example 2:
         Input: [1,2,3]
         Output: [2, 1]
-        Explanation: 2 has the smallest even value, and 2 has the smallest index.
+        Explanation: 2 has the smallest even value, and 2 has the smallest index. 
 
     Example 3:
         Input: []
         Output: []
-
+    
     Example 4:
         Input: [5, 0, 3, 0, 4, 2]
         Output: [0, 1]
-        Explanation: 0 is the smallest value, but there are two zeros,
+        Explanation: 0 is the smallest value, but  there are two zeros,
                      so we will choose the first zero, which has the smallest index.
+
+    Constraints:
+        * 1 <= nodes.length <= 10000
+        * 0 <= node.value
     """
-    if not arr:
+    smallest_value = None
+    smallest_index = None
+
+    for i, val in enumerate(arr):
+        if val % 2 == 0:  # even
+            if smallest_value is None or val < smallest_value:
+                smallest_value = val
+                smallest_index = i
+
+    if smallest_value is None:
         return []
-    
-    smallest_even = None
-    for i, num in enumerate(arr):
-        if num % 2 == 0:
-            if smallest_even is None or num < smallest_even[0]:
-                smallest_even = [num, i]
-            elif num == smallest_even[0] and i < smallest_even[1]:
-                smallest_even = [num, i]
-    
-    return smallest_even if smallest_even is not None else []
+    else:
+        return [smallest_value, smallest_index]
 
 def check(candidate):
 

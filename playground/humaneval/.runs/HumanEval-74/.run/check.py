@@ -12,13 +12,10 @@ def total_match(lst1, lst2):
     total_match(['hi', 'admin'], ['hI', 'hi', 'hi']) ➞ ['hI', 'hi', 'hi']
     total_match(['4'], ['1', '2', '3', '4', '5']) ➞ ['4']
     '''
-    count1 = sum(len(s) for s in lst1)
-    count2 = sum(len(s) for s in lst2)
-    
-    if count1 <= count2:
-        return lst1
-    else:
-        return lst2
+    total1 = sum(len(s) for s in lst1)
+    total2 = sum(len(s) for s in lst2)
+    return lst1 if total1 <= total2 else lst2
+
 def check(candidate):
 
     # Check some simple cases

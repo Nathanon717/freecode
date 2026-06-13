@@ -1,8 +1,7 @@
-def change_base(x: int, base: int) -> str:
+def change_base(x: int, base: int):
     """Change numerical base of input number x to base.
     return string representation after the conversion.
     base numbers are less than 10.
-    
     >>> change_base(8, 3)
     '22'
     >>> change_base(8, 2)
@@ -11,11 +10,10 @@ def change_base(x: int, base: int) -> str:
     '111'
     """
     if x == 0:
-        return "0"
-    
+        return '0'
     digits = []
-    while x > 0:
-        digits.append(str(x % base))
-        x = x // base
-    
+    num = x
+    while num > 0:
+        digits.append(str(num % base))
+        num //= base
     return ''.join(reversed(digits))

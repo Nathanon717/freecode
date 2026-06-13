@@ -7,7 +7,8 @@ def derivative(xs: list):
     >>> derivative([1, 2, 3])
     [2, 6]
     """
-    return [xs[i] * i for i in range(1, len(xs))]
+    return [(i + 1) * xs[i + 1] for i in range(len(xs) - 1)]
+
 
 
 METADATA = {}
