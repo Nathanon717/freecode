@@ -11,7 +11,8 @@
       "Bash(find / -name \"libc.so*\" -maxdepth 6)",
       "Bash(apt list *)",
       "Bash(apt-get install *)",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(npm prefix *)"
     ]
   }
 }

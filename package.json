@@ -9,7 +9,7 @@
     "pty": "./pty"
   },
   "scripts": {
-    "postinstall": "node scripts/ensure-pty.cjs",
+    "postinstall": "node scripts/ensure-pty.cjs && npm link",
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
