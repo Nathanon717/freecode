@@ -1,0 +1,2 @@
+USE THIS as an eval scenario:
+make it so that pressing enter on an eval, instead of running the eval, opens a picker menu to its right, where the default highlighted option is run, but there is also view and edit. stub these for now

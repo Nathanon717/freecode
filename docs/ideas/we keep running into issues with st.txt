@@ -1,0 +1,8 @@
+we keep running into issues with stuff like "\u007f" we need an app-wide shared normalisation/standardisation layer. not just for src, cos we have tests and evals and stuff aswell so this needs to be accesable from anywhere.
+
+i keep seeing u call tools like: 
+● PowerShell($bytes = [System.IO.File]::ReadAllBytes("tests\scenarios\tty-slash-backspace-restore.scenario.json");
+            ($bytes | ForEach-Object { $_.ToString("X2") }) -join ' ')
+  ⎿  EF BB BF 7B 0A 20 20 22 6E 61.....
+
+so this needs to be put to and end once and for all so were not fixing the same issues every session

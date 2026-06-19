@@ -1,12 +1,12 @@
 {
-  "name": "slash-keys",
-  "description": "/keys command lists providers without crashing",
+  "name": "slash-status",
+  "description": "/status command shows API keys, DB, and Doppler info without crashing",
   "requiresLlm": false,
   "turns": [
-    { "input": "/keys" }
+    { "input": "/status" }
   ],
   "expect": {
-    "stdoutContains": ["API Keys Status"],
+    "stdoutContains": ["API Keys", "Database", "Environment"],
     "stdoutAbsent": ["Error:"],
     "exitCode": 0
   }

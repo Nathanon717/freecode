@@ -4,13 +4,8 @@ import { spawn, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import {
-  PLAYGROUND_EVAL_DIR,
-  EVAL_RESULTS_DIR,
   modelSlug,
-  modelResultFile,
-  loadModelResults,
   type EvalCheckResult,
-  type EvalHistoryEntry,
 } from './eval-dots.js';
 import { logError } from '../logger.js';
 
@@ -39,18 +34,6 @@ export function loadEvalConfig(scenarioDir: string): EvalConfig {
     logError('eval', `Failed to parse eval.config.json in ${scenarioDir}`, err);
     return {};
   }
-}
-
-export function appendEvalHistory(entry: EvalHistoryEntry): void {
-  mkdirSync(EVAL_RESULTS_DIR, { recursive: true });
-  const existing = loadModelResults(entry.model);
-  const latest = existing.filter(e =>
-    e.scenarioId !== entry.scenarioId ||
-    e.model !== entry.model ||
-    e.scenarioHash !== entry.scenarioHash,
-  );
-  latest.push(entry);
-  writeFileSync(modelResultFile(entry.model), JSON.stringify(latest, null, 2) + '\n', 'utf-8');
 }
 
 export function archiveEvalRun(scenarioDir: string, model: string, result: EvalRunResult): void {

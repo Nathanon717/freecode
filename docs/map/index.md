@@ -17,7 +17,8 @@ None. This is the `#!/usr/bin/env node` executable entry point.
 1. Creates a process-wide readline interface.
 2. Sets `projectRoot` to `process.cwd()`.
 3. Enables diagnostic logging when `-log` is present.
-4. Loads config and seeds the selected model from `FREECODE_MODEL`, `config.defaultModel`, or `--model <provider:model>`.
+4. Calls `initStore()` to initialize the libSQL DB client and in-memory model cache.
+5. Loads config and seeds the selected model from `FREECODE_MODEL`, `config.defaultModel`, or `--model <provider:model>`.
 5. Routes to script mode or interactive mode. Ollama is probed lazily within each path (via `route()`) rather than unconditionally on startup — this avoids a network round-trip in scripted/scenario mode.
 
 ## Modes
@@ -41,6 +42,7 @@ None. This is the `#!/usr/bin/env node` executable entry point.
 - [cli/input-modes.md](cli/input-modes.md): creates interactive and scripted input modes.
 - [cli/command-dispatcher.md](cli/command-dispatcher.md): handles slash commands.
 - [providers/registry.md](providers/registry.md): used for startup probe and provider tests.
+- [providers/db.md](providers/db.md): `initStore()` called here at startup.
 
 ## Update Triggers
 

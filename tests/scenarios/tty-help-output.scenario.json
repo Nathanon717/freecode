@@ -21,7 +21,7 @@
         "screenContains": [
           "Available commands",
           "/clear",
-          "/keys",
+          "/status",
           "/model",
           "> / for commands"
         ]

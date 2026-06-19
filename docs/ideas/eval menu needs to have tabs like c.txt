@@ -1,0 +1,1 @@
+eval menu needs to have tabs like config menu has. sections for: "evals", "humaneval" and "misc", so that means remove the "/humaneval" slash command. and put the cereal-soup scenario under misc. and in the colored dots view, misc evals should go to the very right, with a space between them and normal evals

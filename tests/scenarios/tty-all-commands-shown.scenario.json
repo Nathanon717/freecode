@@ -16,7 +16,7 @@
           "/eval",
           "/help",
           "/humaneval",
-          "/keys",
+          "/status",
           "/model"
         ]
       }

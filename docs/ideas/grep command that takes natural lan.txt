@@ -1,0 +1,1 @@
+/grep command that takes natural language and has an llm turn it into a grep pattern, which is executed and returned to the use, press enter to  paste it into ur input box where ur cursor is, or esc to dismiss.

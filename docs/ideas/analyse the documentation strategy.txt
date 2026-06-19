@@ -1,0 +1,149 @@
+analyse the documentation strategy. consider any improvements that might be made, considering this is primarily for
+    coding agent navigation, and its main purpose is token reduction. i want agents to use the docs and especially the
+    map to zero in on what code they need, to stop it from reading large files just to learn taht it didnt need to, or
+    wastes tokens on broad/winding searches.
+
+---
+
+Verdict
+
+  The strategy is fundamentally sound and better than most: a cheap routing layer (docs/map/README.md, ~100 lines with
+  one-line purposes), per-file pages with "read when" guidance, structural enforcement via check-map.ts, and generated
+  reference docs that can't rot. The funnel CLAUDE.md → map README → area page → targeted source read is exactly the
+  right shape for token reduction. The weaknesses are in coverage gaps, drift risk on hand-written detail, and a few
+  missing signals that would let agents avoid reads they currently still have to make.
+
+  What's working
+
+  - The map README as a router. One read (~2.5k tokens) gives purpose-per-file for all of src/. That alone kills most
+  "open file to find out what it is" reads.
+  - Generated docs for volatile facts (providers, commands, scenarios) with BEGIN/END GENERATED markers and a checker.
+  Zero drift on the highest-churn facts.
+  - check-map.ts enforcement — every src file has a page, every page points to a real file, every page is linked.
+  Structure can't silently rot.
+  - High-value pages on big files. agent/loop.md (106 lines) summarizing a 567-line file, including the execution flow
+  and gotchas like the prompt-tools fallback, is a genuinely good token trade — if it stays accurate.
+
+  Improvements, in priority order
+
+  1. Tests are invisible to the map — this is the biggest gap. A very common agent task is "change X, update its tests,"
+  and right now the agent must ls/glob tests/ to discover the mirroring convention, the tests/harness/ machinery, and
+  which scenarios touch a file. Cheapest fix: a short "Tests" section in docs/map/README.md stating the convention (unit
+  tests mirror src names under tests/, exceptions: harness/, scenarios/, temp/). Better: a one-line "Tested by:" entry
+  on each map page. Scenario coverage per source file is the hardest thing to discover today (e.g., which of the 31 tty
+  scenarios exercise terminal-ui.ts).
+
+  2. Generate the facts inside map pages; hand-write only the judgment. Export lists with full signatures (as in
+  loop.md, terminal-ui.md, input-modes.md) are reference facts by your own ownership rules — and they're the part most
+  likely to drift, since check-map.ts only validates structure. A generated Exports block (symbol + line number, between
+  markers) per page would: eliminate the main drift category, cut agent maintenance burden after every edit, and give
+  agents line anchors so they can Read with an offset instead of swallowing a 777-line file. Same applies to "Key
+  neighbors" — derivable from the import graph. Hand-written content then shrinks to what code can't show: purpose,
+  read-when, invariants/gotchas (e.g. the maxWidth = width ANSI-artifact note in terminal-ui.md — that's the gold; keep
+  that).
+
+  3. Add size signals to the map README tree. Agents can't currently tell that input-modes.ts is 808 lines and
+  raw-picker.ts is 112 before deciding how to read. A generated line count per entry (or just a marker on files >400
+  lines: "read by section, not whole") changes read strategy for exactly the files where it matters. Trivially
+  generatable, zero drift.
+
+  4. Add a "by task" routing table to the map README. "Main Flow" is good but thin. The task-shaped routing that exists
+  is scattered: docs.md has "Adding a provider → registry.ts" examples, page-level "Read When" sections require already
+  knowing which page to open. A 10-row table in the map README (add provider / add slash command / change footer / add
+  tool / add scenario → 2–3 files each) would route the most common tasks in a single read.
+
+  5. Trim narrated pseudocode; keep invariants. loop.md's 35-line execution-flow pseudocode restates code structure.
+  It's useful today, but it's the kind of detail that silently goes stale and then actively misleads — worse than no
+  info, because agents trust the map enough to skip verification. The charter in the map README ("short and
+  operational") is right; loop.md and terminal-ui.md exceed it. Rule of thumb worth writing down: prose may describe
+  contracts and gotchas (stable), not control flow (volatile).
+
+  6. Small hygiene items.
+  - docs/pty-session.md and docs/pty-usage.md overlap in topic, and neither is linked from docs/README.md — pty-usage.md
+  appears fully orphaned. Merge or index them.
+  - docs/ideas/ is also unlinked from the index.
+  - scripts/*.ts (4 files, including the enforcement tooling itself) have no map presence; one line each in the README
+  tree would do.
+  - Page format is inconsistent (## Exports headers vs **Exports:** bold lines, "Role" vs "Purpose"). A
+  docs/map/template.md would make pages scannable by pattern and cheaper for agents to write correctly.
+
+  7. One structural idea worth considering: a generated symbol index. A single generated file mapping every exported
+  symbol → file:line (~1 line per export, probably 200–300 lines total) would replace the other big token sink:
+  multi-round grep sessions to find where a function lives. One read, one jump. This composes with #2 (same generator).
+
+  The common thread: the strategy already distinguishes generated facts from human judgment — the next step is applying
+  that split inside the map itself. Move every mechanically-derivable fact (exports, line counts, neighbors, test
+  mapping) into generated sections, and reserve hand-written text for read-when guidance and invariants. That
+  simultaneously cuts drift risk, maintenance cost per edit, and the residual reads agents still make today.
+
+
+---
+
+Here's the complexity breakdown, finding by finding.
+
+  ┌─────┬──────────────────────────────────────────┬───────────────┬────────────────────────────────────────────────┐
+  │  #  │                 Finding                  │  Complexity   │                      Why                       │
+  ├─────┼──────────────────────────────────────────┼───────────────┼────────────────────────────────────────────────┤
+  │ 1a  │ Tests convention section in map README   │ Trivial       │ ~10 lines of prose, no tooling                 │
+  ├─────┼──────────────────────────────────────────┼───────────────┼────────────────────────────────────────────────┤
+  │ 1b  │ "Tested by:" per map page                │ Moderate–High │ Easy for unit tests, hard for scenarios        │
+  ├─────┼──────────────────────────────────────────┼───────────────┼────────────────────────────────────────────────┤
+  │ 2   │ Generated exports/neighbors in map pages │ High          │ New generator capability + 69-page migration   │
+  ├─────┼──────────────────────────────────────────┼───────────────┼────────────────────────────────────────────────┤
+  │ 3   │ Line counts in map README tree           │ Low           │ Small generator addition, one file touched     │
+  ├─────┼──────────────────────────────────────────┼───────────────┼────────────────────────────────────────────────┤
+  │ 4   │ "By task" routing table                  │ Trivial       │ ~15 lines of hand-written prose                │
+  ├─────┼──────────────────────────────────────────┼───────────────┼────────────────────────────────────────────────┤
+  │ 5   │ Trim pseudocode, document the rule       │ Low           │ Editing prose, no tooling; needs judgment      │
+  ├─────┼──────────────────────────────────────────┼───────────────┼────────────────────────────────────────────────┤
+  │ 6   │ Hygiene (orphaned docs, scripts,         │ Trivial–Low   │ Mostly link fixes; pty merge needs a content   │
+  │     │ template)                                │               │ pass                                           │
+  ├─────┼──────────────────────────────────────────┼───────────────┼────────────────────────────────────────────────┤
+  │ 7   │ Generated symbol index                   │ Moderate      │ One new generated file, shares machinery with  │
+  │     │                                          │               │ #2                                             │
+  └─────┴──────────────────────────────────────────┴───────────────┴────────────────────────────────────────────────┘
+
+  1a — Trivial. A paragraph in docs/map/README.md stating the mirroring convention and the exceptions (harness/,
+  scenarios/, temp/). Ten minutes including the docs:generate run.
+
+  1b — splits into two very different problems. The unit-test half is low: tests mirror source names, so a generator can
+  match terminal-ui.ts → tests/cli/terminal-ui.test.ts mechanically. The scenario half is high: nothing links a
+  .scenario.json to the source files it exercises — you'd either hand-annotate 39 scenario files with a covers field
+  (tedious, drifts) or infer coverage (unreliable). I'd ship the unit-test mapping and skip per-file scenario mapping;
+  the scenarios table in docs/scenarios.md plus naming conventions (tty-*, slash-*) already routes reasonably.
+
+  2 — the big one. Three parts: (a) extracting exports with line numbers from TS files — moderate; a regex over export
+  statements gets you 90%, or use the TypeScript compiler API which tsx already implies is available; (b) injecting
+  BEGIN/END GENERATED blocks into 69 existing map pages without clobbering hand-written content — this is the fiddly
+  part, since generate-docs.ts currently rewrites whole known files, not sections inside agent-maintained ones; (c) a
+  one-time migration pass deleting the now-redundant hand-written export lists from every page. Plus check-mode support
+  so npm test catches stale blocks. It's a day-ish of work, not an afternoon. "Key neighbors" from the import graph adds
+  more on top — I'd defer that part; imports are cheap to regex but dependents require building the reverse graph, and
+  the hand-written neighbor lists are short and low-drift anyway.
+
+  3 — Low. The map README tree is currently hand-maintained, so either the generator regenerates the whole tree (cleaner
+  long-term, moderate) or just annotates/validates line counts (low). Cheapest credible version: check-map.ts already
+  walks both trees, so it can emit the counts; adding a generated tree block to the README is maybe 50 lines of script.
+  Sidestep: skip per-file counts and just hand-mark the five files >400 lines — trivial, but it drifts.
+
+  4 — Trivial. Hand-written table, ~15 lines. The only real work is choosing the right 8–10 tasks, and the docs.md
+  Examples section already names half of them. No drift mechanism needed — task→area mappings are stable.
+
+  5 — Low effort, but judgment-heavy. Deleting the execution-flow block from loop.md and tightening terminal-ui.md is
+  minutes of editing. The lasting part is one sentence added to the map README charter ("describe contracts and gotchas,
+  not control flow") so future agents don't regrow it. The care needed is in what to keep — the gotchas embedded in
+  those sections (prompt-tools fallback, overlay restore semantics) must survive the trim.
+
+  6 — Trivial to Low. Adding the missing index links (pty docs, ideas/) and a scripts/ note in the map README: trivial.
+  A map page template: trivial to write, low to also normalize the headers across existing pages (mechanical but touches
+  69 files — fine to do lazily as pages get edited). Merging pty-session.md and pty-usage.md is the one item needing
+  actual reading: low, maybe half an hour, and CLAUDE.md's link must be checked after.
+
+  7 — Moderate, and mostly shared with #2. The export-extraction machinery is identical; the output is one new generated
+  file rather than edits inside 69 existing ones, which makes it easier than #2's injection problem. If you do #7
+  first, #2 becomes incremental on top of it. Standalone: a few hours including check-mode and wiring into
+  docs:generate.
+
+  Suggested sequencing if you want maximum return per unit effort: 1a + 4 + 6-links first (one short session, pure
+  prose), then 3 and 7 (small generator work, with 7 building the extraction core), then 2 reusing that core, with
+  1b-unit-tests and 5 folded into the same page-migration pass so the 69 files are only touched once.

@@ -4,6 +4,9 @@ import { fileURLToPath } from 'url';
 import { getConfigDir, getConfigPaths, readRawConfig } from '../config/index.js';
 import { logError } from '../logger.js';
 import type { OverridableSettings } from './types.js';
+import { getCache, setCache, saveTranscriptAsync } from './db.js';
+
+interface EvalCheck { name: string; kind: string; pass?: boolean; message?: string; value?: string | number; note?: string; }
 
 export interface EvalRunSummary {
   timestamp: string;
@@ -11,9 +14,13 @@ export interface EvalRunSummary {
   pass: boolean;
   turns: number;
   tokenUsage: { input?: number; output?: number };
+  totalTokens?: number;
   durationMs: number;
   transcriptRef: string;
   error: string | null;
+  warnings?: boolean;
+  scenarioHash?: string;
+  checks?: EvalCheck[];
 }
 
 /**
@@ -76,7 +83,7 @@ function getModelsPath(): string {
   return join(getStoreDir(), 'models.json');
 }
 
-function load(): ModelStoreFile {
+function loadFromJson(): ModelStoreFile {
   const path = getModelsPath();
   try {
     if (!existsSync(path)) return {};
@@ -87,13 +94,20 @@ function load(): ModelStoreFile {
   }
 }
 
+function load(): ModelStoreFile {
+  return getCache() ?? loadFromJson();
+}
+
 function save(store: ModelStoreFile): void {
+  // Always write JSON — source of truth through Phase 2, fallback for pre-init reads.
   try {
     mkdirSync(getStoreDir(), { recursive: true });
     writeFileSync(getModelsPath(), JSON.stringify(store, null, 2), 'utf-8');
   } catch (err) {
-    logError('model-store', 'Failed to save', err);
+    logError('model-store', 'Failed to save JSON', err);
   }
+  // Update in-memory cache and fire async DB persist (no-op until initStore() called).
+  setCache(store);
 }
 
 function splitKey(key: string): { provider: string; modelId: string } {
@@ -305,6 +319,7 @@ export function appendEvalRun(
   }
 
   const fullSummary: EvalRunSummary = { ...summary, transcriptRef: relPath };
+  saveTranscriptAsync(key, evalType, fullSummary, doc.failReason, doc.transcript, doc.scoringOutcome);
   const store = load();
   const entry = store[key] ?? { provider, modelId };
   const evals = entry.evals ?? {};

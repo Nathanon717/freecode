@@ -74,6 +74,7 @@ src/
 |   |-- humaneval.ts              -> [/humaneval benchmark command](commands/humaneval.md)
 |   |-- model.ts                  -> [Interactive /model picker](commands/model.md)
 |   |-- renderer.ts               -> [/renderer demo command](commands/renderer.md)
+|   `-- status.ts                 -> [/status system status](commands/status.md)
 |-- config/
 |   `-- index.ts                  -> [Config loader](config/index.md)
 `-- providers/
@@ -82,6 +83,8 @@ src/
     |-- fake.ts                   -> [Fake LLM fixtures](providers/fake.md)
     |-- registry.ts               -> [Provider registry](providers/registry.md)
     |-- registry-data.ts          -> [Provider registry data](providers/registry-data.md)
+    |-- db.ts                     -> [SQLite store / libSQL client](providers/db.md)
+    |-- store-import.ts           -> [Legacy JSON → DB importer](providers/store-import.md)
     |-- model-store.ts            -> [Unified model store](providers/model-store.md)
     |-- model-cache.ts            -> [Live model list cache](providers/model-cache.md)
     |-- anthropic-cost.ts         -> [Anthropic cost estimates](providers/anthropic-cost.md)

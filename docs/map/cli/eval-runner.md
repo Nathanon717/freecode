@@ -14,7 +14,6 @@
 | `startEvalScenario(scenarioDir, prompt, model?)` | Spawns the compiled freecode agent via `--script` mode; returns a `CancellableEval` with a promise, cancel fn, and paths to the live status files. |
 | `resetEvalWorkDir(scenarioDir)` | Wipes and re-seeds `work/` and `.run/` from `start/`. |
 | `archiveEvalRun(scenarioDir, model, result)` | Copies `work/` and result JSON to `.artifacts/{modelSlug}/`. |
-| `appendEvalHistory(entry)` | Upserts an `EvalHistoryEntry` into the per-model results JSON. |
 | `runCheckScript(scenarioId, scenarioDir, result)` | Writes result JSON to `.run/result-input.json` then runs `playground/eval/run-check.ts` via `tsx`; throws on failure, returns `EvalReport`. |
 
 ## Key Facts

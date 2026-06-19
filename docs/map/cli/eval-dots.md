@@ -17,7 +17,7 @@
 | `modelSlug(model)` | Converts `provider:model` to `provider--model` for use as a filename. |
 | `modelResultFile(model)` | Returns the absolute path to the per-model results JSON file. |
 | `loadModelResults(model)` | Reads and parses a per-model results file; returns `[]` on missing/error. |
-| `loadEvalHistory()` | Reads all per-model results files; migrates legacy flat `eval-history.json` on first call. |
+| `loadEvalHistory()` | Returns `EvalHistoryEntry[]`. After Phase 3: reads from the in-memory DB cache (via `getCache()` from `db.ts`) when `initStore()` has been called; falls back to `playground/eval/results/*.json` files otherwise. |
 | `discoverPlaygroundScenarios()` | Lists numbered scenario folders in `playground/eval/` that have `prompt.md` and `eval/check.ts`, sorted by name. |
 | `computeRunHash(scenarioDir)` | Hashes only prompt, config, and start files — excludes eval/ so scoring changes don't invalidate stored results. Used as `scenarioHash` for new entries. |
 | `computeScenarioHash(scenarioDir)` | Full hash including eval/ files. Retained for grandfathering entries written before the run-hash split. |

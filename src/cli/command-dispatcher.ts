@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import chalk from 'chalk';
 import { agentLoop, type AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';
-import { loadConfig, resolveApiKey, resolveModelSettings } from '../config/index.js';
+import { resolveApiKey, resolveModelSettings } from '../config/index.js';
 import { toErrorMessage } from '../util/errors.js';
 import { log, logError } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/registry.js';
@@ -61,21 +61,6 @@ function showFlagsHelp(): void {
   console.log(chalk.gray('  -log  Enable diagnostic logging to stderr (config, routing, stream, tools, db)'));
 }
 
-function showKeyStatus(): void {
-  const config = loadConfig();
-  console.log(chalk.bold('API Keys Status:\n'));
-  for (const provider of PROVIDER_REGISTRY) {
-    const envKey = process.env[provider.apiKeyEnvVar];
-    const configKey = config.providers[provider.id]?.apiKey;
-    if (envKey) {
-      console.log(chalk.green(`${provider.name}:`) + chalk.gray(` env (${envKey.slice(0, 8)}...)`));
-    } else if (configKey) {
-      console.log(chalk.green(`${provider.name}:`) + chalk.gray(` config (${configKey.slice(0, 8)}...)`));
-    } else {
-      console.log(chalk.dim(`${provider.name}:`) + chalk.gray(' not set'));
-    }
-  }
-}
 
 export function formatQuotaReset(ms: number | null, raw: string | null): string {
   if (raw?.trim()) return raw;
@@ -270,8 +255,9 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
     return 'continue';
   }
 
-  if (normalized === '/keys') {
-    showKeyStatus();
+  if (normalized === '/status') {
+    const { runStatusCommand } = await import('../commands/status.js');
+    runStatusCommand();
     return 'continue';
   }
 

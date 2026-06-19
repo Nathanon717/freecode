@@ -1,0 +1,8 @@
+The following file exceed the maximum line limit of 500:
+  src/cli/terminal-ui.ts
+
+  get it below, and ideally in a way that reduces the total linecount of the whole project. as in, prefer extractions
+  that let u delete lots of code in the codebase not just in src/cli/terminal-ui.ts
+
+other files are above the limit too but dint worry about them for now.
+call the advisor before making ur changes

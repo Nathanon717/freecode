@@ -37,7 +37,6 @@ import {
   startEvalScenario,
   resetEvalWorkDir,
   archiveEvalRun,
-  appendEvalHistory,
   runCheckScript,
   type EvalRunResult,
 } from "./eval-runner.js";
@@ -396,16 +395,6 @@ export async function runEvalMenu(
       archiveEvalRun(scenarioDir, model, result);
 
       const ts = new Date().toISOString();
-      appendEvalHistory({
-        timestamp: ts,
-        scenarioId: scenario.id,
-        model: model || "default",
-        pass: allPassed,
-        warnings: allPassed && hasWarnings,
-        tokens: result.tokens,
-        scenarioHash: computeRunHash(scenarioDir),
-        checks: report.checks,
-      });
 
       const failedChecks = report.checks.filter(
         (c) => c.kind === "assertion" && !c.pass,
@@ -430,8 +419,12 @@ export async function runEvalMenu(
           pass: allPassed,
           turns: result.toolCalls.length,
           tokenUsage: { input: result.tokens.prompt, output: result.tokens.output },
+          totalTokens: result.tokens.total,
           durationMs: Date.now() - startMs,
           error: null,
+          warnings: allPassed && hasWarnings,
+          scenarioHash: computeRunHash(scenarioDir),
+          checks: report.checks,
         },
         {
           pass: allPassed,

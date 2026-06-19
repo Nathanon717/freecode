@@ -19,3 +19,19 @@ __pycache__/
 *.js.map
 *.d.ts.map
 poe-cookies.json
+
+# local DB (synced via Turso — not committed to git)
+.freecode/freecode.db
+.freecode/freecode.db-shm
+.freecode/freecode.db-wal
+
+# local store files — data now lives in freecode.db (synced via Turso)
+.freecode/models.json
+.freecode/evals/
+.freecode/model-cache.json
+
+# eval run artifacts — data now lives in freecode.db
+playground/eval/results/
+playground/eval/**/.artifacts/
+playground/eval/**/.run/
+playground/eval/**/work/

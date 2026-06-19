@@ -1,8 +1,28 @@
 #!/usr/bin/env node
 
+import { spawnSync } from 'child_process';
 import { writeFileSync } from 'fs';
 import { createInterface } from 'readline';
 import chalk from 'chalk';
+
+function tryInjectDoppler(): void {
+  if (process.env['DOPPLER_PROJECT']) return;
+  const result = spawnSync('doppler', ['secrets', 'download', '--format=json', '--no-file'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (result.error || result.status !== 0) return;
+  try {
+    const secrets = JSON.parse(result.stdout) as Record<string, string>;
+    for (const [key, value] of Object.entries(secrets)) {
+      process.env[key] = value;
+    }
+  } catch {
+    // ignore parse errors
+  }
+}
+
+tryInjectDoppler();
 import { installScreenBuffer } from './util/screen-buffer.js';
 import { showBanner } from './cli/banner.js';
 import { createInteractiveMode, createScriptedMode } from './cli/input-modes.js';
@@ -12,6 +32,7 @@ import { setupFooterUI, setRetryBanner, setQuotaSnapshot } from './cli/terminal-
 import { registerRetryBannerSink, registerQuotaUpdateSink } from './providers/adapters/openai-compat.js';
 import { loadConfig } from './config/index.js';
 import { enableLog } from './logger.js';
+import { initStore } from './providers/db.js';
 
 installScreenBuffer();
 
@@ -27,6 +48,8 @@ async function main() {
   if (args.includes('-log')) {
     enableLog();
   }
+
+  await initStore();
 
   const config = loadConfig();
   selectedModel = process.env['FREECODE_MODEL'] ?? config.defaultModel ?? '';

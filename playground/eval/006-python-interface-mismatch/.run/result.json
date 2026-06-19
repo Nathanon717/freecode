@@ -1,9 +1,0 @@
-[
-  {
-    "totalTokens": 10430,
-    "promptTokens": 9837,
-    "outputTokens": 593,
-    "providerId": "zen",
-    "modelId": "north-mini-code-free"
-  }
-]

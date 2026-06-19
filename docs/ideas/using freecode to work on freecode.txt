@@ -1,0 +1,3 @@
+using freecode to work on freecode has some issues. if i make a breaking change, then build and run, and its broken, now i have to use some other agent cli to fix it. i cant use freecode cos its broken. heres my solution, give me ur feedback, is it overkill? (search if anthropic has talked about this problem)
+
+there should be 2 copies of the codebase that are symmetrical but they bounce back and forth from being the (main) codebase

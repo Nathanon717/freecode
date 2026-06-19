@@ -7,11 +7,11 @@ export interface SlashCommandInfo {
 
 export const SLASH_COMMANDS: SlashCommandInfo[] = [
   { command: '/clear', description: 'Clear screen and chat history' },
-{ command: '/config', description: 'Open interactive config' },
-  { command: '/eval', description: 'Show and run LLM eval scenarios' },
+  { command: '/config', description: 'Open interactive config' },
+{ command: '/eval', description: 'Show and run LLM eval scenarios' },
   { command: '/help', description: 'Show this help' },
   { command: '/humaneval', description: 'Run HumanEval code-completion benchmark' },
-  { command: '/keys', description: 'Show API key status' },
+  { command: '/status', description: 'Show API key status, DB sync, and Doppler' },
   { command: '/model', description: 'Show or set model' },
   { command: '/renderer', description: 'Show a hardcoded demo transcript through the live renderer' },
 ];

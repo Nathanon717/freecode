@@ -1,8 +1,8 @@
 # src/providers/model-store.ts - Unified Model Store
 
-**Role:** Sole owner of the git-tracked store under `<packageRoot>/.freecode/` (or `$FREECODE_STORE`). Reads/writes `models.json`, keyed by `"provider:modelId"`. All writes are plain file writes — **no git calls anywhere** (the user commits manually).
+**Role:** Public API layer for all per-model data: favorites, native-tools state, per-model settings, eval run records, and observed rate limits. Keyed by `"provider:modelId"`. All public function signatures are synchronous; persistence is handled internally via an in-memory cache (backed by `db.ts`) with JSON fallback.
 
-This is the foundation module of the model-store redesign (`docs/model-store-plan.md`). All phases (1–6) are complete. Phase 4 added eval-run recording for `/humaneval`; Phase 5 wired playground `/eval` scenarios as `evalType: "custom"` runs; Phase 6 moved `model-cache.json` here and confirmed all legacy modules are gone.
+All four phases of the eval/model store DB migration are complete (see `docs/eval-db-migration-plan.md`). Internal `load()`/`save()` use the `db.ts` in-memory cache. `EvalRunSummary` carries `warnings`, `scenarioHash`, `totalTokens`, and `checks`. `playground/eval/results/` JSON is no longer written; dots read from the cache via `eval-dots.ts`. `models.json`, `evals/`, and `model-cache.json` are gitignored — the DB (synced via Turso) is the cross-device source of truth. Local JSON files remain as a write-through fallback.
 
 ## Exports
 
@@ -36,7 +36,7 @@ saveObservedRateLimits(provider, modelId, buckets): void
 
 ## Two Roots
 
-The store (`getStoreDir()`) is **separate** from config (`getConfigDir()`). Config holds secrets and stays untracked; the store is git-tracked. `getStoreDir()` anchors to the package root via `import.meta.url`, so it is stable regardless of `cwd`.
+The store (`getStoreDir()`) is **separate** from config (`getConfigDir()`). Config holds secrets and stays untracked; the store is gitignored (data lives in `freecode.db` synced via Turso). `getStoreDir()` anchors to the package root via `import.meta.url`, so it is stable regardless of `cwd`.
 
 ## Legacy Seed (favorites)
 
@@ -52,13 +52,14 @@ On the first `getModelSettings()`/`setModelSetting()` call, if `config.modelOver
 
 ## Eval Run Records (Phase 4 + 5)
 
-`appendEvalRun` writes two things atomically:
-1. A summary record appended to `models.json` under `entry.evals[evalType][]`, including `taskId`, `pass`, `turns`, `tokenUsage`, `durationMs`, `error`, and `transcriptRef`.
-2. A full transcript file at `evals/{evalType}/{provider}-{modelId}/{timestampSlug}.json` containing `transcript` (a single-turn object with `systemPrompt`, `userMessage`, `tokenUsage`, `toolCalls`), `scoringOutcome`, and `failReason` (present only when `pass=false` and `error=null`).
+`appendEvalRun` writes three things:
+1. A summary record appended to `models.json` (local fallback) under `entry.evals[evalType][]`.
+2. A full transcript file at `.freecode/evals/{evalType}/{provider}-{modelId}/{timestampSlug}.json` (local fallback).
+3. Both `eval_runs` and `eval_transcripts` rows to the DB via `saveTranscriptAsync` (fire-and-forget; syncs cross-device via Turso).
 
 `transcriptRef` is relative to `getStoreDir()`. `getHumanEvalResults` derives the latest non-error `pass`/`fail` per `taskId` for the picker dots; error runs (crashes, python-not-found) are excluded to preserve prior dots.
 
-Phase 5 wired playground `/eval` scenario completions (`src/cli/scenario-menu.ts`) to call `appendEvalRun` with `evalType: "custom"` and `taskId = scenario.id`. The existing `appendEvalHistory` call (which drives eval-picker dots via the `playground/eval/results/` flat files) is kept alongside; the store record is additive.
+Phase 3 collapsed the dual-write: `scenario-menu.ts` calls `appendEvalRun` with `evalType: "custom"`, `taskId = scenario.id`, and the new fields `warnings`, `scenarioHash`, `totalTokens`, `checks`. The legacy `appendEvalHistory` call (which wrote to `playground/eval/results/`) has been removed. Eval-picker dots now source from the in-memory cache via `loadEvalHistory()` in `eval-dots.ts`.
 
 ## Read When
 
@@ -70,6 +71,7 @@ Phase 5 wired playground `/eval` scenario completions (`src/cli/scenario-menu.ts
 - [commands/model.md](../commands/model.md): picker reads `getFavorites`/`getNoNativeToolsKeys` and toggles `setFavorite`.
 - [commands/config.md](../commands/config.md): model tab reads `getModelSettings` and writes `setModelSetting`.
 - [agent/loop.md](../agent/loop.md): reads `isNativeToolsDisabled` at startup and calls `setNativeTools(.., false)` when a provider rejects native tool calling.
+- [providers/db.md](db.md): owns the libSQL client and in-memory cache; `load()` reads `getCache()` from here; `save()` calls `setCache()` here.
 - [config/index.md](../config/index.md): supplies `getConfigDir`/`getConfigPaths`/`readRawConfig` for the legacy seeds; `resolveModelSettings` calls `getModelSettings` to apply model-level override with highest precedence.
 
 ## Update Triggers

@@ -9,7 +9,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 // committed `.freecode/`. Mirrors tests/providers/model-traits.test.ts.
 // getStoreDir()/getConfigPaths() read their env vars lazily on each call, so a
 // single import is enough; each test just repoints the temp dirs in beforeEach.
+// db.ts is initialized via initStore() against a temp file: DB each test, then torn
+// down via resetStore() so the next test gets a fresh cache+client.
 let store: typeof import('../../src/providers/model-store.js');
+let db: typeof import('../../src/providers/db.js');
 let tempStore = '';
 let tempHome = '';
 const previousStore = process.env.FREECODE_STORE;
@@ -42,15 +45,19 @@ beforeEach(async () => {
   process.env.FREECODE_STORE = tempStore;
   process.env.FREECODE_HOME = tempHome;
   store = await import('../../src/providers/model-store.js');
+  db = await import('../../src/providers/db.js');
+  await db.initStore();
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await db.resetStore();
   if (previousStore === undefined) delete process.env.FREECODE_STORE;
   else process.env.FREECODE_STORE = previousStore;
   if (previousHome === undefined) delete process.env.FREECODE_HOME;
   else process.env.FREECODE_HOME = previousHome;
-  rmSync(tempStore, { recursive: true, force: true });
-  rmSync(tempHome, { recursive: true, force: true });
+  // Best-effort cleanup — Windows may hold SQLite WAL file handles briefly after close().
+  try { rmSync(tempStore, { recursive: true, force: true }); } catch { /* OS will clean up */ }
+  try { rmSync(tempHome, { recursive: true, force: true }); } catch { /* OS will clean up */ }
 });
 
 describe('model-store: upsert/get', () => {

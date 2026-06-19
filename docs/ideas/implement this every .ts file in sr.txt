@@ -1,0 +1,1 @@
+implement this: every .ts file in src must have a corresponding .test.ts file with atleast one test. it should be checked along with the docs check. and make sure theres no duplicaed text in the output when there are  multiple violations

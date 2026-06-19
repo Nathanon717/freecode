@@ -4,6 +4,7 @@ import { join, resolve, dirname, relative } from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { logError } from '../logger.js';
+import { getCache } from '../providers/db.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 export const PLAYGROUND_EVAL_DIR = resolve(_dirname, '..', '..', 'playground', 'eval');
@@ -54,7 +55,7 @@ export function loadModelResults(model: string): EvalHistoryEntry[] {
   }
 }
 
-export function loadEvalHistory(): EvalHistoryEntry[] {
+function loadEvalHistoryFromFiles(): EvalHistoryEntry[] {
   if (existsSync(EVAL_HISTORY_FILE)) {
     try {
       const legacy = JSON.parse(readFileSync(EVAL_HISTORY_FILE, 'utf-8')) as EvalHistoryEntry[];
@@ -90,6 +91,33 @@ export function loadEvalHistory(): EvalHistoryEntry[] {
     }
   }
   return all;
+}
+
+export function loadEvalHistory(): EvalHistoryEntry[] {
+  const cache = getCache();
+  if (cache) {
+    const all: EvalHistoryEntry[] = [];
+    for (const [modelKey, entry] of Object.entries(cache)) {
+      for (const summary of entry.evals?.['custom'] ?? []) {
+        all.push({
+          timestamp: summary.timestamp,
+          scenarioId: summary.taskId,
+          model: modelKey || 'default',
+          pass: summary.pass,
+          warnings: summary.warnings,
+          tokens: {
+            total: summary.totalTokens ?? ((summary.tokenUsage.input ?? 0) + (summary.tokenUsage.output ?? 0)),
+            prompt: summary.tokenUsage.input,
+            output: summary.tokenUsage.output,
+          },
+          scenarioHash: summary.scenarioHash,
+          checks: summary.checks as EvalCheckResult[] | undefined,
+        });
+      }
+    }
+    return all;
+  }
+  return loadEvalHistoryFromFiles();
 }
 
 export function discoverPlaygroundScenarios(): PlaygroundScenario[] {

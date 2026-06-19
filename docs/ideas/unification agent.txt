@@ -1,0 +1,2 @@
+unification agent:
+audit the codebase for unification issues. A unification issue is when the same job is being done in two different places in the codebase. sometimes when developing, a recurring problem
