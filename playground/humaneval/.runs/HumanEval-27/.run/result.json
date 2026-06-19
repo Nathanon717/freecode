@@ -1,9 +1,0 @@
-[
-  {
-    "totalTokens": 20177,
-    "promptTokens": 19233,
-    "outputTokens": 944,
-    "providerId": "zen",
-    "modelId": "big-pickle"
-  }
-]

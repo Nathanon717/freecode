@@ -39,3 +39,7 @@ playground/eval/results/
 playground/eval/**/.artifacts/
 playground/eval/**/.run/
 playground/eval/**/work/
+playground/humaneval/.runs/
+
+# opencode source checkout
+opencode source code/
