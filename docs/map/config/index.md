@@ -61,6 +61,10 @@ That means a provider API key in config overrides the same provider's environmen
 
 The first `loadConfig()` call caches the merged object. `writeConfigFile()` resets the cache so the next call re-reads disk/env.
 
+## DB Sync for Global and Provider Settings
+
+Global config settings (all syncable scalars in `Config`) and `providerOverrides` are now synced cross-device via the `config` DB table. On `loadConfig()`, the DB cache ([providers/db-config-cache.md](../providers/db-config-cache.md)) is merged after `config.json` but before `.freecoderc`, so DB wins over the global file and `.freecoderc` wins over everything. On every `writeConfigFile()` call to the global path, syncable fields are extracted (whitelisted — no API keys), the in-memory cache is updated synchronously, and a fire-and-forget DB write is dispatched via `persistDbConfig`. Model-level settings are unaffected (still owned by model-store).
+
 ## Favorites and Model Settings Moved Out
 
 Favorites and per-model setting overrides are no longer stored here. The old `loadFavorites`/`saveFavorites` helpers and `Config.modelOverrides` field were removed; both now live in the git-tracked model store ([providers/model-store.md](../providers/model-store.md)). `getConfigPaths`/`readRawConfig` are still used by the store to read legacy values once during migration. `resolveModelSettings` reads model-level settings from the store (`getModelSettings`) and falls back to `providerOverrides` then global config.

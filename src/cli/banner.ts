@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { homedir } from 'os';
-import chalk, { type ChalkInstance } from 'chalk';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { join } from "path";
+import { homedir } from "os";
+import chalk, { type ChalkInstance } from "chalk";
 
 const PASTEL_COLORS: [number, number, number][] = [
   [255, 182, 193],
@@ -15,27 +15,33 @@ const PASTEL_COLORS: [number, number, number][] = [
 ];
 
 const COLOR_STATE_PATH = join(
-  process.env.FREECODE_HOME ?? join(homedir(), '.config', 'freecode'),
-  'banner-color.json',
+  process.env.FREECODE_HOME ?? join(homedir(), ".config", "freecode"),
+  "banner-color.json",
 );
 
 export function clearEntireTerminal() {
-  process.stdout.write('\x1b[0m\x1b[r\x1b[H\x1b[2J\x1b[3J\x1b[H');
+  process.stdout.write("\x1b[0m\x1b[r\x1b[H\x1b[2J\x1b[3J\x1b[H");
 }
 
 function nextBannerColor(): ChalkInstance {
   let idx = 0;
   try {
     if (existsSync(COLOR_STATE_PATH)) {
-      const saved = JSON.parse(readFileSync(COLOR_STATE_PATH, 'utf-8')) as { idx: number };
+      const saved = JSON.parse(readFileSync(COLOR_STATE_PATH, "utf-8")) as {
+        idx: number;
+      };
       idx = (saved.idx + 1) % PASTEL_COLORS.length;
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   try {
-    const dir = join(COLOR_STATE_PATH, '..');
+    const dir = join(COLOR_STATE_PATH, "..");
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    writeFileSync(COLOR_STATE_PATH, JSON.stringify({ idx }), 'utf-8');
-  } catch { /* ignore */ }
+    writeFileSync(COLOR_STATE_PATH, JSON.stringify({ idx }), "utf-8");
+  } catch {
+    /* ignore */
+  }
   currentBannerColorIdx = idx;
   const [r, g, b] = PASTEL_COLORS[idx];
   return chalk.rgb(r, g, b);
@@ -44,10 +50,14 @@ function nextBannerColor(): ChalkInstance {
 let currentBannerColorIdx = 0;
 try {
   if (existsSync(COLOR_STATE_PATH)) {
-    const saved = JSON.parse(readFileSync(COLOR_STATE_PATH, 'utf-8')) as { idx: number };
+    const saved = JSON.parse(readFileSync(COLOR_STATE_PATH, "utf-8")) as {
+      idx: number;
+    };
     currentBannerColorIdx = saved.idx % PASTEL_COLORS.length;
   }
-} catch { /* ignore */ }
+} catch {
+  /* ignore */
+}
 
 export function getBannerColor(): ChalkInstance {
   const [r, g, b] = PASTEL_COLORS[currentBannerColorIdx];
@@ -59,31 +69,31 @@ export function getBannerColorRGB(): [number, number, number] {
 }
 
 const FULL_BANNER = [
-  '',
-  ' //////////////////////////////////////////////////////////////////////////////',
-  ' //                                                                          //',
-  ' //     .d888                                                888             //',
+  "",
+  " //////////////////////////////////////////////////////////////////////////////",
+  " //                                                                          //",
+  " //     .d888                                                888             //",
   ' //    d88P"                                                 888             //',
-  ' //    888                                                   888             //',
-  ' //    888888 888d888 .d88b.   .d88b.   .d8888b .d88b.   .d88888  .d88b.     //',
+  " //    888                                                   888             //",
+  " //    888888 888d888 .d88b.   .d88b.   .d8888b .d88b.   .d88888  .d88b.     //",
   ' //    888    888P"  d8P  Y8b d8P  Y8b d88P"   d88""88b d88" 888 d8P  Y8b    //',
-  ' //    888    888    88888888 88888888 888     888  888 888  888 88888888    //',
-  ' //    888    888    Y8b.     Y8b.     Y88b.   Y88..88P Y88b 888 Y8b.        //',
+  " //    888    888    88888888 88888888 888     888  888 888  888 88888888    //",
+  " //    888    888    Y8b.     Y8b.     Y88b.   Y88..88P Y88b 888 Y8b.        //",
   ' //    888    888     "Y8888   "Y8888   "Y8888P "Y88P"   "Y88888  "Y8888     //',
-  ' //                                                                          //',
-  ' //////////////////////////////////////////////////////////////////////////////',
-  '',
-].join('\n');
+  " //                                                                          //",
+  " //////////////////////////////////////////////////////////////////////////////",
+  "",
+].join("\n");
 
 const COMPACT_BANNER = [
-  '',
-  ' /////////////////////',
-  ' //                 //',
-  ' //    freecode     //',
-  ' //                 //',
-  ' /////////////////////',
-  '',
-].join('\n');
+  "",
+  " ////////////////////",
+  " //                //",
+  " //    freecode    //",
+  " //                //",
+  " ////////////////////",
+  "",
+].join("\n");
 
 export function showBanner() {
   clearEntireTerminal();

@@ -66,7 +66,7 @@ function loadGlobalValues(): Record<string, boolean | number> {
   return vals;
 }
 
-function loadOverrideValues(tab: Tab, currentModel: string, globalPath: string): Record<string, TabValue> {
+function loadOverrideValues(tab: Tab, currentModel: string): Record<string, TabValue> {
   const vals: Record<string, TabValue> = {};
 
   if (tab === 'model' && currentModel) {
@@ -78,11 +78,11 @@ function loadOverrideValues(tab: Tab, currentModel: string, globalPath: string):
     return vals;
   }
 
-  const raw = (readRawConfig(globalPath) as Record<string, unknown>) ?? {};
   const providerId = getProviderId(currentModel);
   let overrides: Record<string, unknown> = {};
   if (tab === 'provider' && providerId) {
-    overrides = ((raw.providerOverrides as Record<string, unknown>)?.[providerId] as Record<string, unknown>) ?? {};
+    const cfg = loadConfig();
+    overrides = ((cfg.providerOverrides as Record<string, unknown>)?.[providerId] as Record<string, unknown>) ?? {};
   }
 
   for (const s of SETTINGS) {
@@ -258,7 +258,7 @@ export async function runConfigCommand(rl: Interface, currentModel = ''): Promis
 
   function currentValues(): Record<string, TabValue | number> {
     if (activeTab === 'global') return loadGlobalValues();
-    return loadOverrideValues(activeTab, currentModel, paths.globalPath);
+    return loadOverrideValues(activeTab, currentModel);
   }
 
   function effectiveValues(): Record<string, boolean> {

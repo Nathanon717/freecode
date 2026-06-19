@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { logError } from '../logger.js';
 import type { ModelEntry, EvalRunSummary } from './model-store.js';
 import { importLegacyData } from './store-import.js';
+import { setDbConfigCache, clearDbConfigCache, registerConfigPersist, type DbConfigData } from './db-config-cache.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(_dirname, '..', '..');
@@ -55,6 +56,12 @@ async function createSchema(c: Client): Promise<void> {
     CREATE TABLE IF NOT EXISTS meta (
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
+    )
+  `);
+  await c.execute(`
+    CREATE TABLE IF NOT EXISTS config (
+      scope TEXT PRIMARY KEY,
+      data  TEXT NOT NULL
     )
   `);
   await c.execute(`
@@ -165,6 +172,20 @@ async function loadFromDb(c: Client): Promise<ModelStore> {
   return store;
 }
 
+async function loadConfigFromDb(c: Client): Promise<DbConfigData> {
+  const res = await c.execute('SELECT scope, data FROM config');
+  const result: DbConfigData = { global: null, providerOverrides: null };
+  for (const row of res.rows) {
+    const scope = row['scope'] as string;
+    try {
+      const parsed = JSON.parse(row['data'] as string) as unknown;
+      if (scope === 'global') result.global = parsed as DbConfigData['global'];
+      else if (scope === 'providerOverrides') result.providerOverrides = parsed as DbConfigData['providerOverrides'];
+    } catch { /* skip corrupt row */ }
+  }
+  return result;
+}
+
 // Track in-flight writes so resetStore() can drain them before closing.
 const pendingWrites = new Set<Promise<void>>();
 
@@ -202,6 +223,30 @@ export function persistModelRowAsync(key: string, entry: ModelEntry): void {
       await c.sync().catch(() => {});
     } catch (err) {
       logError('db', 'Failed to persist model row', err);
+    } finally {
+      pendingWrites.delete(p);
+      resolveFn();
+    }
+  })();
+}
+
+function persistDbConfigRowAsync(scope: string, data: unknown): void {
+  const c = client;
+  if (!c) return;
+
+  let resolveFn!: () => void;
+  const p: Promise<void> = new Promise(r => { resolveFn = r; });
+  pendingWrites.add(p);
+
+  void (async () => {
+    try {
+      await c.execute({
+        sql: `INSERT OR REPLACE INTO config (scope, data) VALUES (?, ?)`,
+        args: [scope, JSON.stringify(data)] as InValue[],
+      });
+      await c.sync().catch(() => {});
+    } catch (err) {
+      logError('db', 'Failed to persist config row', err);
     } finally {
       pendingWrites.delete(p);
       resolveFn();
@@ -304,6 +349,9 @@ export async function initStore(): Promise<void> {
   await createSchema(client);
   await importLegacyData(client);
   cache = await loadFromDb(client);
+  const dbConfigData = await loadConfigFromDb(client);
+  setDbConfigCache(dbConfigData);
+  registerConfigPersist(persistDbConfigRowAsync);
 }
 
 /** Reset state — for tests only. Drains in-flight writes before closing. */
@@ -313,6 +361,7 @@ export async function resetStore(): Promise<void> {
   client?.close();
   client = null;
   cache = null;
+  clearDbConfigCache();
   // Windows SQLite WAL files need a moment to be released by the OS after close().
   await new Promise(r => setTimeout(r, 100));
 }

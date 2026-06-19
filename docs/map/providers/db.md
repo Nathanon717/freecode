@@ -43,12 +43,13 @@ getDbSyncConfig(): { syncUrl?: string; authToken?: string }
 
 ## Schema
 
-Four tables are created idempotently at `initStore()`:
+Five tables are created idempotently at `initStore()`:
 
 - **`meta`** — key/value store for DB metadata; holds `import_done` marker after the one-time legacy import runs.
 - **`models`** — one row per `"provider:modelId"` key; structured columns for all `ModelEntry` scalar fields.
 - **`eval_runs`** — one row per eval run; UNIQUE on `(model_key, eval_type, task_id, timestamp)` so `INSERT OR IGNORE` / COALESCE upsert is safe. `transcriptRef` is not stored — derived at load time.
 - **`eval_transcripts`** — one row per eval run; populated by the Phase 2 legacy importer and by `saveTranscriptAsync` for new runs. Content (full transcript + scoring) syncs cross-device via Turso.
+- **`config`** — one row per scope (`'global'`, `'providerOverrides'`); `data` column holds a JSON blob. Stores syncable global settings and provider overrides. Written on every `writeConfigFile()` call for the global config path; loaded at startup into `db-config-cache.ts`.
 
 ## DB Location & Config
 

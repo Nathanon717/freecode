@@ -4,6 +4,20 @@ import { homedir } from 'os';
 import type { Config, OverridableSettings, ProviderConfig } from '../providers/types.js';
 import { log, logError } from '../logger.js';
 import { getModelSettings } from '../providers/model-store.js';
+import {
+  getDbConfigCache,
+  setDbConfigCache,
+  persistDbConfig,
+  registerCacheInvalidator,
+  type SyncableGlobalConfig,
+} from '../providers/db-config-cache.js';
+
+const SYNCABLE_GLOBAL_KEYS: ReadonlyArray<keyof SyncableGlobalConfig> = [
+  'toolRationale', 'showProviderUsage', 'parallelTools', 'toolConfirmation',
+  'retryMaxWaitSeconds', 'showEvalDots', 'diffContextLines', 'defaultModel',
+];
+
+registerCacheInvalidator(() => { cachedConfig = null; });
 
 const DEFAULT_CONFIG: Config = {
   providers: {},
@@ -77,7 +91,24 @@ export function loadConfig(): Config {
   if (globalConfig) {
     config = { ...config, ...globalConfig };
   }
-  
+
+  // DB cache wins over config.json for syncable settings (cross-device source of truth).
+  // Local .freecoderc (applied below) still wins over DB.
+  const dbCache = getDbConfigCache();
+  if (dbCache) {
+    if (dbCache.global !== null) {
+      for (const key of SYNCABLE_GLOBAL_KEYS) {
+        const val = dbCache.global[key];
+        if (val !== undefined) (config as Record<string, unknown>)[key] = val;
+      }
+    }
+    if (dbCache.providerOverrides !== null) {
+      config.providerOverrides = Object.keys(dbCache.providerOverrides).length > 0
+        ? dbCache.providerOverrides
+        : undefined;
+    }
+  }
+
   const localConfigPath = join(process.cwd(), '.freecoderc');
   const localConfig = loadJsonFile<Partial<Config>>(localConfigPath);
   if (localConfig) {
@@ -127,6 +158,23 @@ export function writeConfigFile(path: string, data: Partial<Config>): void {
   }
   writeFileSync(path, JSON.stringify(data, null, 2), 'utf-8');
   cachedConfig = null;
+
+  // Sync syncable fields to the DB when writing the global config file.
+  const { globalPath } = getConfigPaths();
+  if (path === globalPath) {
+    const raw = data as Record<string, unknown>;
+    const syncableGlobal: SyncableGlobalConfig = {};
+    for (const key of SYNCABLE_GLOBAL_KEYS) {
+      const val = raw[key];
+      if (val !== undefined) (syncableGlobal as Record<string, unknown>)[key] = val;
+    }
+    const newProviderOverrides = (data.providerOverrides as Record<string, OverridableSettings>) ?? {};
+    const existingCache = getDbConfigCache() ?? { global: null, providerOverrides: null };
+    const newGlobal: SyncableGlobalConfig = { ...(existingCache.global ?? {}), ...syncableGlobal };
+    setDbConfigCache({ global: newGlobal, providerOverrides: newProviderOverrides });
+    persistDbConfig('global', newGlobal);
+    persistDbConfig('providerOverrides', newProviderOverrides);
+  }
 }
 
 export function updateGlobalConfig(patch: Record<string, unknown>): void {

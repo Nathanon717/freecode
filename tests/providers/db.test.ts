@@ -123,3 +123,75 @@ describe('db: DB persistence round-trip', () => {
     expect(run?.transcriptRef).toMatch(/^evals\/humaneval\/groq-llama\//);
   });
 });
+
+describe('db: config persistence round-trip', () => {
+  let dbConfigCache: typeof import('../../src/providers/db-config-cache.js');
+
+  beforeEach(async () => {
+    dbConfigCache = await import('../../src/providers/db-config-cache.js');
+  });
+
+  it('getDbConfigCache() returns null before initStore()', () => {
+    expect(dbConfigCache.getDbConfigCache()).toBeNull();
+  });
+
+  it('initStore() sets an empty DbConfigData when no config rows exist', async () => {
+    await db.initStore();
+    const cache = dbConfigCache.getDbConfigCache();
+    expect(cache).not.toBeNull();
+    expect(cache?.global).toBeNull();
+    expect(cache?.providerOverrides).toBeNull();
+  });
+
+  it('resetStore() clears the DB config cache back to null', async () => {
+    await db.initStore();
+    await db.resetStore();
+    expect(dbConfigCache.getDbConfigCache()).toBeNull();
+    await db.initStore(); // re-init so afterEach cleanup works
+  });
+
+  it('persistDbConfig round-trips global config through DB', async () => {
+    await db.initStore();
+    const global = { toolRationale: false, showProviderUsage: true, parallelTools: false };
+    dbConfigCache.setDbConfigCache({ global, providerOverrides: null });
+    dbConfigCache.persistDbConfig('global', global);
+
+    await db.resetStore();
+    await db.initStore();
+
+    const cache = dbConfigCache.getDbConfigCache();
+    expect(cache?.global).toMatchObject({ toolRationale: false, showProviderUsage: true, parallelTools: false });
+  });
+
+  it('persistDbConfig round-trips providerOverrides through DB', async () => {
+    await db.initStore();
+    const overrides = { groq: { toolRationale: false }, anthropic: { parallelTools: true } };
+    dbConfigCache.setDbConfigCache({ global: null, providerOverrides: overrides });
+    dbConfigCache.persistDbConfig('providerOverrides', overrides);
+
+    await db.resetStore();
+    await db.initStore();
+
+    const cache = dbConfigCache.getDbConfigCache();
+    expect(cache?.providerOverrides).toMatchObject({
+      groq: { toolRationale: false },
+      anthropic: { parallelTools: true },
+    });
+  });
+
+  it('persistDbConfig for both scopes survives full reset/reinit cycle', async () => {
+    await db.initStore();
+    const global = { defaultModel: 'anthropic:claude-opus-4-8', toolRationale: true };
+    const overrides = { openai: { showProviderUsage: true } };
+    dbConfigCache.setDbConfigCache({ global, providerOverrides: overrides });
+    dbConfigCache.persistDbConfig('global', global);
+    dbConfigCache.persistDbConfig('providerOverrides', overrides);
+
+    await db.resetStore();
+    await db.initStore();
+
+    const cache = dbConfigCache.getDbConfigCache();
+    expect(cache?.global?.defaultModel).toBe('anthropic:claude-opus-4-8');
+    expect(cache?.providerOverrides?.['openai']?.showProviderUsage).toBe(true);
+  });
+});

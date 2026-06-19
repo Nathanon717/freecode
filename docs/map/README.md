@@ -84,6 +84,7 @@ src/
     |-- registry.ts               -> [Provider registry](providers/registry.md)
     |-- registry-data.ts          -> [Provider registry data](providers/registry-data.md)
     |-- db.ts                     -> [SQLite store / libSQL client](providers/db.md)
+    |-- db-config-cache.ts        -> [DB config in-memory cache](providers/db-config-cache.md)
     |-- store-import.ts           -> [Legacy JSON → DB importer](providers/store-import.md)
     |-- model-store.ts            -> [Unified model store](providers/model-store.md)
     |-- model-cache.ts            -> [Live model list cache](providers/model-cache.md)
