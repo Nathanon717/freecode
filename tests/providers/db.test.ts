@@ -76,15 +76,13 @@ describe('db: cache operations', () => {
 });
 
 describe('db: DB persistence round-trip', () => {
-  it('data written via setCache() is visible after reinitialising from the same DB', async () => {
+  it('persistModelRowAsync() makes a model row visible after reinitialising from the same DB', async () => {
     await db.initStore();
-    db.setCache({
-      'groq:llama': { provider: 'groq', modelId: 'llama', isFavorite: true },
-    });
+    const entry = { provider: 'groq', modelId: 'llama', isFavorite: true };
+    db.setCache({ 'groq:llama': entry });
+    db.persistModelRowAsync('groq:llama', entry);
 
-    // Give the fire-and-forget persistAsync a moment to complete.
-    await new Promise(r => setTimeout(r, 200));
-
+    // resetStore() drains all pending fire-and-forget writes before closing.
     await db.resetStore();
     await db.initStore();
 
@@ -96,31 +94,25 @@ describe('db: DB persistence round-trip', () => {
     });
   });
 
-  it('eval runs are persisted and re-loaded with derived transcriptRef', async () => {
+  it('eval runs are persisted via saveTranscriptAsync and re-loaded with derived transcriptRef', async () => {
     await db.initStore();
-    db.setCache({
-      'groq:llama': {
-        provider: 'groq',
-        modelId: 'llama',
-        evals: {
-          humaneval: [
-            {
-              timestamp: '2026-06-19T10:00:00.000Z',
-              taskId: 'HumanEval/0',
-              pass: true,
-              turns: 2,
-              tokenUsage: { input: 100, output: 50 },
-              durationMs: 1234,
-              transcriptRef: 'evals/humaneval/groq-llama/20260619T100000000Z.json',
-              error: null,
-            },
-          ],
-        },
-      },
-    });
+    const modelEntry = { provider: 'groq', modelId: 'llama' };
+    db.setCache({ 'groq:llama': modelEntry });
+    db.persistModelRowAsync('groq:llama', modelEntry);
 
-    await new Promise(r => setTimeout(r, 200));
+    const summary = {
+      timestamp: '2026-06-19T10:00:00.000Z',
+      taskId: 'HumanEval/0',
+      pass: true,
+      turns: 2,
+      tokenUsage: { input: 100, output: 50 },
+      durationMs: 1234,
+      transcriptRef: 'evals/humaneval/groq-llama/20260619T100000000Z.json',
+      error: null,
+    };
+    db.saveTranscriptAsync('groq:llama', 'humaneval', summary, undefined, [], undefined);
 
+    // resetStore() drains all pending fire-and-forget writes before closing.
     await db.resetStore();
     await db.initStore();
 

@@ -22,8 +22,14 @@ getCache(): Record<string, ModelEntry> | null
   // model-store.ts calls this on every load(); null → fallback to models.json.
 
 setCache(store: Record<string, ModelEntry>): void
-  // Replaces the in-memory cache with the new store snapshot and fires an
-  // async (fire-and-forget) persist to the DB. Called by model-store.ts save().
+  // Replaces the in-memory cache synchronously. Does NOT write to the DB.
+  // Called by model-store.ts save(); DB persistence is driven by persistModelRowAsync.
+
+persistModelRowAsync(key: string, entry: ModelEntry): void
+  // Persists a single model row via one c.execute() INSERT OR REPLACE.
+  // Fire-and-forget; tracked in pendingWrites so resetStore() can drain it.
+  // Avoids large c.batch() calls that deadlock on synced embedded replicas.
+  // Called by model-store.ts save() for each changed key.
 
 saveTranscriptAsync(modelKey, evalType, summary, failReason, transcript, scoringOutcome): void
   // Writes the eval_run row (INSERT OR IGNORE) and the eval_transcripts row for one
@@ -53,7 +59,7 @@ Four tables are created idempotently at `initStore()`:
 ## Read/Write Architecture
 
 - **Reads:** `load()` in model-store returns `getCache()` when initialized, else falls back to `models.json`.
-- **Writes:** `save()` in model-store writes to `models.json` (local fallback) AND calls `setCache()`, which updates the in-memory cache synchronously and fires `persistAsync()` for DB writes. `appendEvalRun` additionally calls `saveTranscriptAsync()` to write transcript content.
+- **Writes:** `save(store, changedKeys?)` in model-store writes to `models.json`, calls `setCache()` to update the in-memory cache synchronously, then calls `persistModelRowAsync(key, entry)` for each changed key — one `c.execute()` per row. `appendEvalRun` additionally calls `saveTranscriptAsync()` to write transcript content; the model row itself is not re-written on eval appends.
 - **Durability:** DB writes are fire-and-forget; JSON is the local durable fallback. The DB (synced via Turso) is the cross-device source of truth.
 
 ## Read When

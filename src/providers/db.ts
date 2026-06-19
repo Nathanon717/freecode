@@ -1,4 +1,4 @@
-import { createClient, type Client, type InStatement, type InValue } from '@libsql/client';
+import { createClient, type Client, type InValue } from '@libsql/client';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { join, dirname, resolve } from 'path';
 import { homedir } from 'os';
@@ -168,14 +168,21 @@ async function loadFromDb(c: Client): Promise<ModelStore> {
 // Track in-flight writes so resetStore() can drain them before closing.
 const pendingWrites = new Set<Promise<void>>();
 
-function persistAsync(c: Client, store: ModelStore): void {
-  let resolve!: () => void;
-  const p: Promise<void> = new Promise(r => { resolve = r; });
+/**
+ * Persist a single model row via one c.execute() INSERT OR REPLACE.
+ * Fire-and-forget; never batches — avoids deadlocks on synced embedded replicas.
+ */
+export function persistModelRowAsync(key: string, entry: ModelEntry): void {
+  const c = client;
+  if (!c) return;
+
+  let resolveFn!: () => void;
+  const p: Promise<void> = new Promise(r => { resolveFn = r; });
   pendingWrites.add(p);
 
   void (async () => {
     try {
-      const modelStmts: InStatement[] = Object.entries(store).map(([key, entry]) => ({
+      await c.execute({
         sql: `INSERT OR REPLACE INTO models
               (key, provider, model_id, display_name, native_tools, context_window,
                is_favorite, settings, rate_limits)
@@ -191,49 +198,13 @@ function persistAsync(c: Client, store: ModelStore): void {
           entry.settings ? JSON.stringify(entry.settings) : null,
           entry.rateLimits ? JSON.stringify(entry.rateLimits) : null,
         ] as InValue[],
-      }));
-
-      const evalStmts: InStatement[] = [];
-      for (const [key, entry] of Object.entries(store)) {
-        for (const [evalType, runs] of Object.entries(entry.evals ?? {})) {
-          for (const run of runs) {
-            evalStmts.push({
-              sql: `INSERT OR IGNORE INTO eval_runs
-                    (model_key, eval_type, task_id, timestamp, pass, turns,
-                     input_tokens, output_tokens, total_tokens, duration_ms,
-                     warnings, scenario_hash, checks, error)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-              args: [
-                key,
-                evalType,
-                run.taskId,
-                run.timestamp,
-                run.pass ? 1 : 0,
-                run.turns ?? null,
-                run.tokenUsage.input ?? null,
-                run.tokenUsage.output ?? null,
-                run.totalTokens ?? null,
-                run.durationMs ?? null,
-                run.warnings !== undefined ? (run.warnings ? 1 : 0) : null,
-                run.scenarioHash ?? null,
-                run.checks !== undefined ? JSON.stringify(run.checks) : null,
-                run.error,
-              ] as InValue[],
-            });
-          }
-        }
-      }
-
-      const all = [...modelStmts, ...evalStmts];
-      if (all.length > 0) {
-        await c.batch(all, 'write');
-      }
+      });
       await c.sync().catch(() => {});
     } catch (err) {
-      logError('db', 'Failed to persist to DB', err);
+      logError('db', 'Failed to persist model row', err);
     } finally {
       pendingWrites.delete(p);
-      resolve();
+      resolveFn();
     }
   })();
 }
@@ -352,5 +323,4 @@ export function getCache(): ModelStore | null {
 
 export function setCache(store: ModelStore): void {
   cache = store;
-  if (client) persistAsync(client, store);
 }

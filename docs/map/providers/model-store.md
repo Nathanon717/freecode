@@ -71,7 +71,7 @@ Phase 3 collapsed the dual-write: `scenario-menu.ts` calls `appendEvalRun` with 
 - [commands/model.md](../commands/model.md): picker reads `getFavorites`/`getNoNativeToolsKeys` and toggles `setFavorite`.
 - [commands/config.md](../commands/config.md): model tab reads `getModelSettings` and writes `setModelSetting`.
 - [agent/loop.md](../agent/loop.md): reads `isNativeToolsDisabled` at startup and calls `setNativeTools(.., false)` when a provider rejects native tool calling.
-- [providers/db.md](db.md): owns the libSQL client and in-memory cache; `load()` reads `getCache()` from here; `save()` calls `setCache()` here.
+- [providers/db.md](db.md): owns the libSQL client and in-memory cache; `load()` reads `getCache()` from here; `save()` calls `setCache()` to update the cache and `persistModelRowAsync()` for each changed model row.
 - [config/index.md](../config/index.md): supplies `getConfigDir`/`getConfigPaths`/`readRawConfig` for the legacy seeds; `resolveModelSettings` calls `getModelSettings` to apply model-level override with highest precedence.
 
 ## Update Triggers

@@ -43,3 +43,6 @@ playground/humaneval/.runs/
 
 # opencode source checkout
 opencode source code/
+
+# opencode playground
+playground/opencode/

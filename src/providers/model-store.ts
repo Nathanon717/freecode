@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { getConfigDir, getConfigPaths, readRawConfig } from '../config/index.js';
 import { logError } from '../logger.js';
 import type { OverridableSettings } from './types.js';
-import { getCache, setCache, saveTranscriptAsync } from './db.js';
+import { getCache, setCache, saveTranscriptAsync, persistModelRowAsync } from './db.js';
 
 interface EvalCheck { name: string; kind: string; pass?: boolean; message?: string; value?: string | number; note?: string; }
 
@@ -98,7 +98,7 @@ function load(): ModelStoreFile {
   return getCache() ?? loadFromJson();
 }
 
-function save(store: ModelStoreFile): void {
+function save(store: ModelStoreFile, changedKeys?: string[]): void {
   // Always write JSON — source of truth through Phase 2, fallback for pre-init reads.
   try {
     mkdirSync(getStoreDir(), { recursive: true });
@@ -106,8 +106,15 @@ function save(store: ModelStoreFile): void {
   } catch (err) {
     logError('model-store', 'Failed to save JSON', err);
   }
-  // Update in-memory cache and fire async DB persist (no-op until initStore() called).
+  // Update in-memory cache synchronously so reads stay correct.
   setCache(store);
+  // Persist only the changed rows — single c.execute() per row, never a full-store batch.
+  if (changedKeys) {
+    for (const key of changedKeys) {
+      const entry = store[key];
+      if (entry) persistModelRowAsync(key, entry);
+    }
+  }
 }
 
 function splitKey(key: string): { provider: string; modelId: string } {
@@ -126,7 +133,7 @@ export function upsertModel(entry: ModelEntry): void {
   const store = load();
   const key = `${entry.provider}:${entry.modelId}`;
   store[key] = { ...store[key], ...entry };
-  save(store);
+  save(store, [key]);
 }
 
 /**
@@ -147,7 +154,7 @@ function seedFavoritesIfNeeded(): void {
     const { provider, modelId } = splitKey(key);
     store[key] = { provider, modelId, isFavorite: true };
   }
-  save(store);
+  save(store, Object.keys(store));
 }
 
 export function getFavorites(): Set<string> {
@@ -165,7 +172,7 @@ export function setFavorite(key: string, isFavorite: boolean): void {
   const store = load();
   const { provider, modelId } = splitKey(key);
   store[key] = { ...store[key], provider, modelId, isFavorite };
-  save(store);
+  save(store, [key]);
 }
 
 /**
@@ -195,22 +202,22 @@ function seedNativeToolsIfNeeded(): void {
   const legacy = loadLegacyNoNativeTools();
   if (legacy.length === 0) return;
   const store = load();
-  let changed = false;
+  const changedKeys: string[] = [];
   for (const key of legacy) {
     if (store[key]?.nativeTools === undefined) {
       const { provider, modelId } = splitKey(key);
       store[key] = { ...store[key], provider, modelId, nativeTools: false };
-      changed = true;
+      changedKeys.push(key);
     }
   }
-  if (changed) save(store);
+  if (changedKeys.length > 0) save(store, changedKeys);
 }
 
 export function setNativeTools(provider: string, modelId: string, value: boolean): void {
   const store = load();
   const key = `${provider}:${modelId}`;
   store[key] = { ...store[key], provider, modelId, nativeTools: value };
-  save(store);
+  save(store, [key]);
 }
 
 export function isNativeToolsDisabled(provider: string, modelId: string): boolean {
@@ -242,12 +249,14 @@ function seedAllModelSettingsIfNeeded(): void {
   if (!modelOverrides || Object.keys(modelOverrides).length === 0) return;
 
   const store = load();
+  const changedKeys: string[] = [];
   for (const [key, legacySettings] of Object.entries(modelOverrides)) {
     if (store[key]?.settings !== undefined) continue;
     const { provider, modelId } = splitKey(key);
     store[key] = { ...store[key], provider, modelId, settings: { ...legacySettings } };
+    changedKeys.push(key);
   }
-  save(store);
+  save(store, changedKeys);
 
   // Strip modelOverrides from config.json now that the store holds the values.
   const cleaned: Record<string, unknown> = { ...raw };
@@ -277,7 +286,7 @@ export function setModelSetting(key: string, field: keyof OverridableSettings, v
   }
   // Keep settings as {} (not undefined) so the seed guard remains inactive after all fields are cleared.
   store[key] = { ...store[key], provider, modelId, settings: existing };
-  save(store);
+  save(store, [key]);
 }
 
 interface EvalTranscriptDoc {
@@ -370,5 +379,5 @@ export function saveObservedRateLimits(
   }
   const entry = store[key] ?? { provider, modelId };
   store[key] = { ...entry, rateLimits: { buckets, observedAt: new Date().toISOString() } };
-  save(store);
+  save(store, [key]);
 }
