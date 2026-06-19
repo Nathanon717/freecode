@@ -24,6 +24,10 @@ poe-cookies.json
 .freecode/freecode.db
 .freecode/freecode.db-shm
 .freecode/freecode.db-wal
+.freecode/freecode.db-info
+
+# V8 profiler artifacts
+isolate-*.log
 
 # local store files — data now lives in freecode.db (synced via Turso)
 .freecode/models.json

@@ -15,7 +15,7 @@ This table is generated from `package.json`.
 | `npm run docs:generate` | `tsx scripts/sync-docs.ts` |
 | `npm run lint` | `eslint src tests scripts` |
 | `npm run lint:fix` | `eslint src tests scripts --fix` |
-| `npm run postinstall` | `node scripts/ensure-pty.cjs && npm link` |
+| `npm run postinstall` | `node scripts/ensure-pty.cjs && node scripts/ensure-link.cjs` |
 | `npm run pty:session` | `cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts` |
 | `npm run start` | `node dist/index.js` |
 | `npm run test` | `tsx scripts/test.ts` |

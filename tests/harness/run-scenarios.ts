@@ -134,6 +134,11 @@ if (ttyScenarios.length > 0) {
           FREECODE_STORE: tmpStore,
           DEBUG_QUOTA: '0',
           FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
+          // Prevent Doppler injection and Turso sync in child processes — keeps tests
+          // hermetic and avoids 5-10s network delays that cause readyText timeouts.
+          DOPPLER_PROJECT: '1',
+          FREECODE_DB_SYNC_URL: '',
+          FREECODE_DB_AUTH_TOKEN: '',
           ...(scenario.model ? { FREECODE_MODEL: scenario.model } : {}),
           ...(scenario.llmFixture ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath } : {}),
           ...(scenario.humanEvalDataFixture ? { HUMANEVAL_DATA: join(SCENARIOS_DIR, scenario.humanEvalDataFixture) } : {}),
@@ -223,6 +228,9 @@ if (nonTtyScenarios.length > 0) {
             FREECODE_HOME: tmpHome,
             DEBUG_QUOTA: '0',
             FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
+            DOPPLER_PROJECT: '1',
+            FREECODE_DB_SYNC_URL: '',
+            FREECODE_DB_AUTH_TOKEN: '',
             ...(scenario.llmFixture
               ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath, FREECODE_FAKE_LLM_TRACE: fakeTraceFile }
               : scenario.requiresLlm ? {} : { FREECODE_NO_LLM: '1' }),

@@ -63,7 +63,7 @@ export async function runTtyScenario(opts: {
   });
 
   try {
-    const ready = await driver.waitForText(tty.readyText ?? 'for commands', 15000);
+    const ready = await driver.waitForText(tty.readyText ?? 'for commands', 30000);
     if (!ready) {
       failures.push(`prompt never became ready (waited for ${JSON.stringify(tty.readyText ?? 'for commands')})`);
     }

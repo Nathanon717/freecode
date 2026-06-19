@@ -8,7 +8,13 @@ function run(args: string[], env?: NodeJS.ProcessEnv) {
   return spawnSync(process.execPath, [ENTRY, ...args], {
     timeout: 5000,
     encoding: 'utf8',
-    env: { ...process.env, ...env },
+    env: {
+      ...process.env,
+      DOPPLER_PROJECT: '1',
+      FREECODE_DB_SYNC_URL: '',
+      FREECODE_DB_AUTH_TOKEN: '',
+      ...env,
+    },
   });
 }
 
