@@ -9,8 +9,7 @@ All four phases of the eval/model store migration are complete. See `docs/eval-d
 ```typescript
 initStore(): Promise<void>
   // Creates the libSQL client (local file: or embedded Turso replica if syncUrl+authToken
-  // are configured), bootstraps the schema (CREATE TABLE IF NOT EXISTS), runs the one-time
-  // legacy data import (store-import.ts — idempotent, no-op after first run or in test envs),
+  // are configured), bootstraps the schema (CREATE TABLE IF NOT EXISTS),
   // syncs from remote if available, then loads all rows into the in-memory cache.
   // Called once at process startup (src/index.ts).
 
@@ -19,7 +18,7 @@ resetStore(): void
 
 getCache(): Record<string, ModelEntry> | null
   // Returns the in-memory cache, or null if initStore() has not been called.
-  // model-store.ts calls this on every load(); null → fallback to models.json.
+  // model-store.ts calls this on every load(); null → returns empty store.
 
 setCache(store: Record<string, ModelEntry>): void
   // Replaces the in-memory cache synchronously. Does NOT write to the DB.
@@ -32,8 +31,11 @@ persistModelRowAsync(key: string, entry: ModelEntry): void
   // Called by model-store.ts save() for each changed key.
 
 saveTranscriptAsync(modelKey, evalType, summary, failReason, transcript, scoringOutcome): void
-  // Writes the eval_run row (INSERT OR IGNORE) and the eval_transcripts row for one
-  // eval run. Fire-and-forget; tracked in pendingWrites so resetStore() can drain it.
+  // First ensures a minimal models row exists (INSERT OR IGNORE on key/provider/model_id):
+  // eval_runs.model_key has an ENFORCED FOREIGN KEY to models(key), so without the parent
+  // row the eval insert fails and the run is silently dropped. Then writes the eval_run row
+  // (INSERT OR IGNORE) and the eval_transcripts row for one eval run.
+  // Fire-and-forget; tracked in pendingWrites so resetStore() can drain it.
   // Called from model-store.ts appendEvalRun() for every new run.
 
 getDbSyncConfig(): { syncUrl?: string; authToken?: string }
@@ -45,7 +47,7 @@ getDbSyncConfig(): { syncUrl?: string; authToken?: string }
 
 Five tables are created idempotently at `initStore()`:
 
-- **`meta`** — key/value store for DB metadata; holds `import_done` marker after the one-time legacy import runs.
+- **`meta`** — key/value store for DB metadata (legacy; holds `import_done` marker from the one-time migration that has already run).
 - **`models`** — one row per `"provider:modelId"` key; structured columns for all `ModelEntry` scalar fields.
 - **`eval_runs`** — one row per eval run; UNIQUE on `(model_key, eval_type, task_id, timestamp)` so `INSERT OR IGNORE` / COALESCE upsert is safe. `transcriptRef` is not stored — derived at load time.
 - **`eval_transcripts`** — one row per eval run; populated by the Phase 2 legacy importer and by `saveTranscriptAsync` for new runs. Content (full transcript + scoring) syncs cross-device via Turso.
@@ -55,13 +57,13 @@ Five tables are created idempotently at `initStore()`:
 
 - DB file: `getStoreDir()/freecode.db` (`$FREECODE_STORE` override, else `<packageRoot>/.freecode/`).
 - Turso sync: `syncUrl` + `authToken` read from env vars (`FREECODE_DB_SYNC_URL`, `FREECODE_DB_AUTH_TOKEN`) or `~/.config/freecode/config.json` under `{ "db": { "syncUrl": "...", "authToken": "..." } }`. Absent → plain local file: client, no sync.
-- `.freecode/freecode.db`, `models.json`, `evals/`, and `model-cache.json` are all gitignored. The DB is the source of truth; local JSON files remain as a write-through fallback on the same machine.
+- `.freecode/freecode.db`, `models.json`, `evals/`, and `model-cache.json` are all gitignored. The DB (synced via Turso) is the cross-device source of truth; no JSON files are written by the running app.
 
 ## Read/Write Architecture
 
-- **Reads:** `load()` in model-store returns `getCache()` when initialized, else falls back to `models.json`.
-- **Writes:** `save(store, changedKeys?)` in model-store writes to `models.json`, calls `setCache()` to update the in-memory cache synchronously, then calls `persistModelRowAsync(key, entry)` for each changed key — one `c.execute()` per row. `appendEvalRun` additionally calls `saveTranscriptAsync()` to write transcript content; the model row itself is not re-written on eval appends.
-- **Durability:** DB writes are fire-and-forget; JSON is the local durable fallback. The DB (synced via Turso) is the cross-device source of truth.
+- **Reads:** `load()` in model-store returns `getCache()` when initialized, else returns `{}`.
+- **Writes:** `save(store, changedKeys?)` in model-store calls `setCache()` to update the in-memory cache synchronously, then calls `persistModelRowAsync(key, entry)` for each changed key — one `c.execute()` per row. `appendEvalRun` additionally calls `saveTranscriptAsync()` to persist transcript content to `eval_runs`/`eval_transcripts`, and persists the model row (via `save(store, [key])`) so the FK parent exists; `saveTranscriptAsync` also self-insures the parent row (INSERT OR IGNORE on `models`) to stay order-independent of the model-row write.
+- **Durability:** DB writes are fire-and-forget. The DB (synced via Turso) is the cross-device source of truth.
 
 ## Read When
 
@@ -72,7 +74,6 @@ Five tables are created idempotently at `initStore()`:
 ## Key Neighbors
 
 - [providers/model-store.md](model-store.md): sole caller of `getCache`/`setCache`.
-- [providers/store-import.md](store-import.md): called by `initStore()` for the one-time legacy data import.
 - [index.md](../index.md): calls `initStore()` once at startup.
 - `docs/eval-db-migration-plan.md`: full migration plan and phase breakdown.
 

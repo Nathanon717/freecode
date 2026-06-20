@@ -1,0 +1,6 @@
+functions
+
+new syntax similar to slash commands
+
+grep(hello) 
+llmgrep(find all dates)

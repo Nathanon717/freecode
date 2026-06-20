@@ -9,6 +9,7 @@ export type SyncableGlobalConfig = {
   showEvalDots?: boolean;
   diffContextLines?: number;
   defaultModel?: string;
+  loadAgentsMd?: boolean;
 };
 
 export interface DbConfigData {

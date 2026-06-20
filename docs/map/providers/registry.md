@@ -10,6 +10,8 @@ getProvider(id: string): ProviderConfig | undefined
 getAllProviders(): ProviderConfig[]
 initDynamicProviders(): Promise<void>   // fetches live model lists for all live-source providers
 resolveModel(modelPreference: string): ResolvedModel
+invalidateDeadModel(providerId: string, modelId: string): void
+  // Persists modelId to deadIds in model-cache and removes it from entry.models in-memory.
 ```
 
 ## Read When

@@ -32,7 +32,7 @@ import { setupFooterUI, setRetryBanner, setQuotaSnapshot } from './cli/terminal-
 import { registerRetryBannerSink, registerQuotaUpdateSink } from './providers/adapters/openai-compat.js';
 import { loadConfig } from './config/index.js';
 import { enableLog } from './logger.js';
-import { initStore } from './providers/db.js';
+import { initStore, drainPendingWrites } from './providers/db.js';
 
 installScreenBuffer();
 
@@ -98,6 +98,7 @@ async function main() {
       setSelectedModel: (model) => { selectedModel = model; },
       mode,
     });
+    await drainPendingWrites();
     rl.close();
     return;
   }
@@ -130,6 +131,7 @@ async function main() {
       (model) => { selectedModel = model; },
     ),
   });
+  await drainPendingWrites();
   rl.close();
 }
 

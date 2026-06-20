@@ -2,6 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import type { ProviderConfig } from '../types.js';
 import { loadConfig, resolveApiKey } from '../../config/index.js';
 import { isRecord } from '../../util/guards.js';
+import { openAIModelDisallowsTemperature, mistralCodestralRequiresSystemInjection, injectSystemIntoFirstUserMessage } from '../model-quirks.js';
 import {
   parseGroqRateLimitHeaders,
   groqHeadersToSnapshot,
@@ -227,7 +228,6 @@ export function normalizeOpenAICompatToolCallSse(body: string): string {
 
 /**
  * Convert a non-streaming OpenAI-compatible JSON response into SSE format.
- *
  * Mistral only returns x-ratelimit-* headers on non-streaming responses. We
  * strip stream:true from the request so we get those headers, then synthesize
  * SSE here so the rest of the pipeline (AI SDK, normalizer, usage capture) is
@@ -345,10 +345,6 @@ export function getOpenAICompatProviderHeaders(providerId: string): Record<strin
   };
 }
 
-export function openAIModelDisallowsTemperature(modelId: string): boolean {
-  return /^(o1|o3|gpt-5)([-.]|$)/i.test(modelId);
-}
-
 function saveLimitsFromHeaders(providerId: string, headers: Headers, body: RequestInit['body']): void {
   let modelId: string | undefined;
   try { modelId = typeof body === 'string' ? (JSON.parse(body) as Record<string, unknown>)['model'] as string : undefined; } catch { /* ignore */ }
@@ -383,12 +379,16 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         let mistralForcedNonStream = false;
         if (providerConfig.id === 'mistral' && patchedInit?.body) {
           try {
-            const body = JSON.parse(patchedInit.body as string) as Record<string, unknown>;
+            let body = JSON.parse(patchedInit.body as string) as Record<string, unknown>;
             if (body['stream']) {
               const { stream: _s, stream_options: _so, ...rest } = body;
-              patchedInit = { ...patchedInit, body: JSON.stringify(rest) };
+              body = rest;
               mistralForcedNonStream = true;
             }
+            if (mistralCodestralRequiresSystemInjection(String(body['model'] ?? '')) && Array.isArray(body['messages'])) {
+              body = { ...body, messages: injectSystemIntoFirstUserMessage(body['messages'] as Array<Record<string, unknown>>) };
+            }
+            patchedInit = { ...patchedInit, body: JSON.stringify(body) };
           } catch { /* leave body untouched */ }
         }
         if (shouldStripTemperature && init?.body) {
@@ -466,7 +466,7 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
         }
         const httpError = await formatOpenAICompatHttpError(providerConfig.name, response);
         if (httpError) {
-          throw new Error(httpError);
+          throw Object.assign(new Error(httpError), { statusCode: response.status });
         }
         if (mistralForcedNonStream && response.ok) {
           const jsonBody = await response.json().catch(() => null);

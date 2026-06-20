@@ -1,6 +1,10 @@
-export function buildSystemPrompt(): string {
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
+import { projectRoot } from './context.js';
+
+export function buildSystemPrompt(loadAgentsMd = false): string {
   const env = process.platform === "win32" ? "Windows" : "Linux";
-  return `You are a coding agent who always follows the rules. You help the user with coding tasks by reading, writing, and navigating their codebase.
+  let prompt = `You are a coding agent who always follows the rules. You help the user with coding tasks by reading, writing, and navigating their codebase.
 
 Your OS: ${env}
 Available tools: read, create, edit, grep, shell_exec, list_dir
@@ -13,4 +17,13 @@ RULES - MUST ALWAYS FOLLOW:
 
 HANDY TIPS:
 - Running broken code often gives you a helpful error message.`;
+
+  if (loadAgentsMd) {
+    const agentsMdPath = join(projectRoot, 'AGENTS.md');
+    if (existsSync(agentsMdPath)) {
+      prompt += `\n\n# Project Instructions (AGENTS.md)\n\n${readFileSync(agentsMdPath, 'utf-8')}`;
+    }
+  }
+
+  return prompt;
 }

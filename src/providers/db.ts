@@ -5,7 +5,6 @@ import { homedir } from 'os';
 import { fileURLToPath } from 'url';
 import { logError } from '../logger.js';
 import type { ModelEntry, EvalRunSummary } from './model-store.js';
-import { importLegacyData } from './store-import.js';
 import { setDbConfigCache, clearDbConfigCache, registerConfigPersist, type DbConfigData } from './db-config-cache.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
@@ -42,14 +41,6 @@ type ModelStore = Record<string, ModelEntry>;
 
 let client: Client | null = null;
 let cache: ModelStore | null = null;
-
-function splitKey(key: string): { provider: string; modelId: string } {
-  const idx = key.indexOf(':');
-  return {
-    provider: idx !== -1 ? key.slice(0, idx) : '',
-    modelId: idx !== -1 ? key.slice(idx + 1) : key,
-  };
-}
 
 async function createSchema(c: Client): Promise<void> {
   await c.execute(`
@@ -143,10 +134,7 @@ async function loadFromDb(c: Client): Promise<ModelStore> {
     const evalType = row['eval_type'] as string;
     const entry = store[key];
     if (!entry) continue;
-    const { provider, modelId } = splitKey(key);
     const ts = row['timestamp'] as string;
-    const tsSlug = ts.replace(/[:.]/g, '');
-    const transcriptRef = `evals/${evalType}/${provider}-${modelId}/${tsSlug}.json`;
     const summary: EvalRunSummary = {
       timestamp: ts,
       taskId: row['task_id'] as string,
@@ -158,7 +146,6 @@ async function loadFromDb(c: Client): Promise<ModelStore> {
       },
       totalTokens: row['total_tokens'] !== null ? (row['total_tokens'] as number) : undefined,
       durationMs: row['duration_ms'] as number,
-      transcriptRef,
       error: row['error'] as string | null,
       warnings: row['warnings'] !== null ? (row['warnings'] as number) !== 0 : undefined,
       scenarioHash: row['scenario_hash'] !== null ? (row['scenario_hash'] as string) : undefined,
@@ -271,6 +258,19 @@ export function saveTranscriptAsync(
 
   void (async () => {
     try {
+      // eval_runs.model_key has a FOREIGN KEY to models(key), which IS enforced here.
+      // Ensure a minimal parent row exists before inserting the run, so an eval for a
+      // model that has not been upserted yet (or whose row write is still in flight)
+      // does not fail the FK constraint and get silently dropped. persistModelRowAsync's
+      // later INSERT OR REPLACE fills in the remaining columns.
+      const colonIdx = modelKey.indexOf(':');
+      const provider = colonIdx !== -1 ? modelKey.slice(0, colonIdx) : '';
+      const modelId = colonIdx !== -1 ? modelKey.slice(colonIdx + 1) : modelKey;
+      await c.execute({
+        sql: `INSERT OR IGNORE INTO models (key, provider, model_id) VALUES (?, ?, ?)`,
+        args: [modelKey, provider, modelId] as InValue[],
+      });
+
       await c.execute({
         sql: `INSERT OR IGNORE INTO eval_runs
               (model_key, eval_type, task_id, timestamp, pass, turns,
@@ -347,11 +347,15 @@ export async function initStore(): Promise<void> {
   }
 
   await createSchema(client);
-  await importLegacyData(client);
   cache = await loadFromDb(client);
   const dbConfigData = await loadConfigFromDb(client);
   setDbConfigCache(dbConfigData);
   registerConfigPersist(persistDbConfigRowAsync);
+}
+
+/** Drain all pending fire-and-forget writes. Call at graceful shutdown before process exit. */
+export async function drainPendingWrites(): Promise<void> {
+  await Promise.allSettled([...pendingWrites]);
 }
 
 /** Reset state — for tests only. Drains in-flight writes before closing. */

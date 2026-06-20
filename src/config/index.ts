@@ -14,7 +14,7 @@ import {
 
 const SYNCABLE_GLOBAL_KEYS: ReadonlyArray<keyof SyncableGlobalConfig> = [
   'toolRationale', 'showProviderUsage', 'parallelTools', 'toolConfirmation',
-  'retryMaxWaitSeconds', 'showEvalDots', 'diffContextLines', 'defaultModel',
+  'retryMaxWaitSeconds', 'showEvalDots', 'diffContextLines', 'defaultModel', 'loadAgentsMd',
 ];
 
 registerCacheInvalidator(() => { cachedConfig = null; });
@@ -28,6 +28,7 @@ const DEFAULT_CONFIG: Config = {
   retryMaxWaitSeconds: 120,
   showEvalDots: false,
   diffContextLines: 2,
+  loadAgentsMd: false,
 };
 
 function loadJsonFile<T>(path: string): T | null {
@@ -197,6 +198,7 @@ export function resolveModelSettings(selectedModel: string): Required<Overridabl
     toolRationale: config.toolRationale,
     showProviderUsage: config.showProviderUsage,
     parallelTools: config.parallelTools,
+    loadAgentsMd: config.loadAgentsMd,
   };
 
   const providerOver = providerId ? config.providerOverrides?.[providerId] : undefined;
@@ -206,5 +208,6 @@ export function resolveModelSettings(selectedModel: string): Required<Overridabl
     toolRationale: modelSettings.toolRationale ?? providerOver?.toolRationale ?? global.toolRationale,
     showProviderUsage: modelSettings.showProviderUsage ?? providerOver?.showProviderUsage ?? global.showProviderUsage,
     parallelTools: modelSettings.parallelTools ?? providerOver?.parallelTools ?? global.parallelTools,
+    loadAgentsMd: modelSettings.loadAgentsMd ?? providerOver?.loadAgentsMd ?? global.loadAgentsMd,
   };
 }

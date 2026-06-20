@@ -23,6 +23,7 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-clear-redraws.scenario.json` | `tty-clear-redraws` | Non-LLM verification | repo | Submitting /clear clears the whole terminal, redraws the banner, and the cleared message appears in the raw stream |
 | `tty-config-editor.scenario.json` | `tty-config-editor` | Non-LLM verification | repo | Submitting /config opens the interactive settings editor showing all settings; pressing q closes it and restores the input prompt |
 | `tty-config-esc.scenario.json` | `tty-config-esc` | Non-LLM verification | repo | Submitting /config opens the standalone config editor; pressing Esc closes it, erases its screen, and restores the input prompt |
+| `tty-config-load-agents-md.scenario.json` | `tty-config-load-agents-md` | Non-LLM verification | repo | Load AGENTS.md setting appears in Provider and Model tabs but not in the Global tab |
 | `tty-config-toggle.scenario.json` | `tty-config-toggle` | Non-LLM verification | repo | Space key toggles a boolean setting in the config editor; the changed value persists and the editor can be reopened without error |
 | `tty-escape-clears.scenario.json` | `tty-escape-clears` | Non-LLM verification | repo | Escape key clears the input buffer and hides the suggestion list, restoring the empty-prompt hint |
 | `tty-eval-menu.scenario.json` | `tty-eval-menu` | Non-LLM verification | repo | Submitting /eval opens the standalone eval picker showing available scenarios; pressing Esc closes it and restores the input prompt |

@@ -14,6 +14,7 @@ interface ModelCacheEntry {
   models: RawCachedModel[];
   newIds: string[];
   removedIds: string[];
+  deadIds?: string[];
 }
 
 type ModelCache = Record<string, ModelCacheEntry>;
@@ -73,6 +74,7 @@ export function updateProviderCache(providerId: string, models: RawCachedModel[]
     models,
     newIds: mergedNewIds,
     removedIds,
+    deadIds: prev?.deadIds ?? [],
   };
 
   save(cache);
@@ -84,5 +86,19 @@ export function markModelSelected(providerId: string, modelId: string): void {
   const entry = cache[providerId];
   if (!entry || !entry.newIds.includes(modelId)) return;
   entry.newIds = entry.newIds.filter(id => id !== modelId);
+  save(cache);
+}
+
+export function getDeadIds(providerId: string): string[] {
+  return load()[providerId]?.deadIds ?? [];
+}
+
+export function markModelDead(providerId: string, modelId: string): void {
+  const cache = load();
+  const entry = cache[providerId];
+  if (!entry) return;
+  const dead = entry.deadIds ?? [];
+  if (dead.includes(modelId)) return;
+  cache[providerId] = { ...entry, deadIds: [...dead, modelId] };
   save(cache);
 }

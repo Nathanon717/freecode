@@ -5,8 +5,10 @@
 ## Exports
 
 ```typescript
-buildSystemPrompt(): string
+buildSystemPrompt(loadAgentsMd?: boolean): string
 ```
+
+`loadAgentsMd` defaults to `false`. When `true`, the function reads `AGENTS.md` from `projectRoot` (the working directory set by `src/agent/context.ts`) and appends it under a `# Project Instructions (AGENTS.md)` header. If the file does not exist, the section is silently omitted.
 
 ## Current Prompt Content
 
@@ -22,8 +24,7 @@ It instructs the model to:
 - Use `create` with complete file contents and real newline characters.
 - Treat every tool call as user-approved/denied by the host.
 - Acknowledge denied tool calls instead of pretending they succeeded.
-- Prefer `grep` before `read` when looking for specific content.
 
 ## Behavior
 
-The prompt is static. It does not read config, project files, user input, or session state.
+The prompt is mostly static. Conditional behavior: when `loadAgentsMd` is `true`, it reads `AGENTS.md` from `projectRoot` at call time and appends the file's contents to the prompt.

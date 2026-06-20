@@ -1,7 +1,7 @@
 import type { LanguageModel } from "ai";
 import type { ModelConfig, ProviderConfig } from "./types.js";
 import { PROVIDER_REGISTRY } from "./registry-data.js";
-import { getProviderCache, updateProviderCache } from "./model-cache.js";
+import { getDeadIds, getProviderCache, markModelDead, updateProviderCache } from "./model-cache.js";
 import { createOpenAICompatProvider } from "./adapters/openai-compat.js";
 import { createAnthropicProvider } from "./adapters/anthropic.js";
 import { resolveApiKey } from "../config/index.js";
@@ -91,9 +91,11 @@ async function runLiveProviderInit(
   const entry = PROVIDER_REGISTRY.find((p) => p.id === providerId);
   if (!entry) return;
 
+  const deadIdSet = new Set(getDeadIds(providerId));
   const finish = (models: ModelConfig[], newIdSet: Set<string>): void => {
     entry.models = spec
       .selectModels(models)
+      .filter((m) => !deadIdSet.has(m.id))
       .map((m) => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
   };
 
@@ -289,6 +291,12 @@ export function clearModelNewFlag(providerId: string, modelId: string): void {
   if (!provider) return;
   const model = provider.models.find((m) => m.id === modelId);
   if (model) delete model.isNew;
+}
+
+export function invalidateDeadModel(providerId: string, modelId: string): void {
+  markModelDead(providerId, modelId);
+  const entry = PROVIDER_REGISTRY.find((p) => p.id === providerId);
+  if (entry) entry.models = entry.models.filter((m) => m.id !== modelId);
 }
 
 export interface ResolvedModel {

@@ -34,6 +34,7 @@
 - Summarizes structured model API errors after the captured transcript, including provider `code`, `type`, `param`, `failed_generation`, and a `tool_use_failed` diagnosis when the provider omits the referenced failed generation payload.
 - Dynamically imports each scenario's `eval/check.ts` to score the result and print a pass/fail report.
 - Passes the currently selected model via `FREECODE_MODEL` env var to the agent subprocess.
+- After each eval subprocess exits, re-reads `model-cache.json` to detect dead models written by the subprocess (e.g. nvidia 404). If the model is now dead, calls `invalidateDeadModel` to sync the main-process registry and skips saving the result to the DB.
 
 ## Terminal Integration
 

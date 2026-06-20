@@ -1,0 +1,67 @@
+{
+    "name":  "tty-config-load-agents-md",
+    "description":  "Load AGENTS.md setting appears in Provider and Model tabs but not in the Global tab",
+    "requiresLlm":  false,
+    "config":  {
+                   "defaultModel":  "mock:gpt-freecode-test"
+               },
+    "tty":  {
+                "cols":  80,
+                "rows":  24,
+                "readyText":  "for commands",
+                "steps":  [
+                              {
+                                  "name":  "type /config",
+                                  "send":  "/config",
+                                  "screenContains":  [
+                                                         "\u003e /config"
+                                                     ]
+                              },
+                              {
+                                  "name":  "submit - editor opens on Global tab, Load AGENTS.md absent",
+                                  "send":  "\r",
+                                  "waitFor":  "freecode config",
+                                  "screenContains":  [
+                                                         "freecode config",
+                                                         "Tool rationale"
+                                                     ],
+                                  "screenAbsent":  [
+                                                       "Load AGENTS.md"
+                                                   ]
+                              },
+                              {
+                                  "name":  "Up - move focus to tab row",
+                                  "send":  "\u001b[A",
+                                  "screenContains":  [
+                                                         "Tool rationale"
+                                                     ]
+                              },
+                              {
+                                  "name":  "Right - switch to Provider tab, Load AGENTS.md appears",
+                                  "send":  "\u001b[C",
+                                  "screenContains":  [
+                                                         "Tool rationale",
+                                                         "Load AGENTS.md"
+                                                     ]
+                              },
+                              {
+                                  "name":  "Right - switch to Model tab, Load AGENTS.md still visible",
+                                  "send":  "\u001b[C",
+                                  "screenContains":  [
+                                                         "Tool rationale",
+                                                         "Load AGENTS.md"
+                                                     ]
+                              },
+                              {
+                                  "name":  "q - close editor",
+                                  "send":  "q",
+                                  "screenContains":  [
+                                                         "\u003e / for commands"
+                                                     ]
+                              }
+                          ],
+                "exit":  "\u0003",
+                "expectExit":  true,
+                "exitCode":  0
+            }
+}

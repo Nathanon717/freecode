@@ -42,6 +42,10 @@ The input row shows the prompt and inline completion. The status row right-align
 
 `setQuotaSnapshot()` accepts Groq rate-limit headers. The UI estimates refill over time using the reset durations and refreshes once per second while active.
 
+## Resize
+
+On `process.stdout` `resize`, the handler debounces at 32 ms (smooth during drag), then: invalidates the suggestion overlay (stale absolute row positions), resets `footerRowCount` and `lastReservedRows` to their defaults so `drawFooter`/`drawInputArea` recompute from the new dimensions, clears the visible screen without erasing scrollback (`\x1b[2J`), redraws the banner at the new width via `clearAndRedrawBanner()` (imported from `banner.ts`), re-establishes the scroll region, and calls `drawBottomUI()`. In-progress input buffer and conversation memory are preserved across resize.
+
 ## Cleanup
 
-Resize and process-exit handlers restore the scroll region or redraw the bottom UI as needed.
+Process-exit handler restores the scroll region and parks the cursor.

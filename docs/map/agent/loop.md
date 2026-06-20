@@ -38,7 +38,7 @@ agentLoop(
 setProjectRoot(projectRoot)
 route(modelPreference)
   -> on failure, return synthetic error result
-buildSystemPrompt()
+buildSystemPrompt(modelSettings.loadAgentsMd)
 if provider is OpenAI:
   build Responses payload
   call direct Responses adapter

@@ -9,7 +9,7 @@ export function runStatusCommand(): void {
   // API Keys
   const config = loadConfig();
   console.log(chalk.bold('API Keys'));
-  for (const provider of PROVIDER_REGISTRY) {
+  for (const provider of PROVIDER_REGISTRY.filter(p => !p.defaultApiKey)) {
     const envKey = process.env[provider.apiKeyEnvVar];
     const configKey = config.providers[provider.id]?.apiKey;
     if (envKey) {

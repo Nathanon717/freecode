@@ -62,3 +62,13 @@ doppler secrets set MY_NEW_KEY=value
 ```
 
 All devices pick it up automatically on next `freecode` launch.
+
+## For AI agents
+
+All secrets (API keys, DB credentials) live in Doppler, not in config files or environment variables baked into the shell. When you need a secret value during a task, fetch it with:
+
+```powershell
+doppler secrets get SECRET_NAME --plain
+```
+
+Do not assume a key is available in `$env:VAR` — it won't be unless the process was launched via `doppler run --`.

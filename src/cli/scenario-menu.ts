@@ -49,6 +49,8 @@ import {
 } from "./eval-screen.js";
 import { InlineActionMenu } from "./action-menu.js";
 import { appendEvalRun } from "../providers/model-store.js";
+import { getDeadIds } from "../providers/model-cache.js";
+import { invalidateDeadModel } from "../providers/registry.js";
 import { buildSystemPrompt } from "../agent/system-prompt.js";
 
 export async function runEvalMenu(
@@ -282,6 +284,22 @@ export async function runEvalMenu(
       } finally {
         clearInterval(liveStatusPoll);
         setRetryBanner(null);
+      }
+
+      // Sync dead-model state written by the subprocess back to this process.
+      // If the subprocess wrote the model to deadIds (e.g. a 404), remove it
+      // from the picker here and skip persisting the result to the DB.
+      {
+        const deadColonIdx = (model || "").indexOf(":");
+        if (deadColonIdx !== -1) {
+          const deadProviderId = (model || "").slice(0, deadColonIdx);
+          const deadModelId = (model || "").slice(deadColonIdx + 1);
+          if (getDeadIds(deadProviderId).includes(deadModelId)) {
+            invalidateDeadModel(deadProviderId, deadModelId);
+            incomplete++;
+            continue;
+          }
+        }
       }
 
       const evalModel = model || "";

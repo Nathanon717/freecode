@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { stripAnsi, getScreenBufferDisplayLinesForOverlay, startOverlayEpoch } from '../util/screen-buffer.js';
-import { getBannerColor } from './banner.js';
+import { getBannerColor, clearAndRedrawBanner } from './banner.js';
 import { composeToggleBar, toggleBarWidth } from './toggles.js';
 import {
   layoutFooterRightRows,
@@ -418,10 +418,33 @@ export function resetSubmittedInputArea() {
   drawInputArea();
 }
 
+let _resizeDebounce: ReturnType<typeof setTimeout> | null = null;
+
 process.stdout.on('resize', () => {
   if (!footerActive) return;
-  setScrollRegion(1, rows() - lastReservedRows);
-  drawBottomUI();
+  if (_resizeDebounce) clearTimeout(_resizeDebounce);
+  _resizeDebounce = setTimeout(() => {
+    _resizeDebounce = null;
+
+    // Invalidate stale overlay state — all absolute row positions changed.
+    suggestionOverlayRows = 0;
+    suggestionOverlayRestoreLines = [];
+
+    // Reset geometry so drawFooter/drawInputArea recompute from new dimensions.
+    footerRowCount = 2;
+    const reserved = inputUIActive ? footerRowCount + 2 + inputLineCount() : footerRowCount;
+    lastReservedRows = reserved;
+
+    // Clear visible screen (scrollback preserved) and redraw banner at new width.
+    clearAndRedrawBanner();
+
+    // Re-establish scroll region before drawing (drawFooter only writes a new
+    // scroll-region sequence when footerRowCount changes, so we must set it here
+    // after clearAndRedrawBanner reset it to full-screen with \x1b[r).
+    setScrollRegion(1, rows() - reserved);
+
+    drawBottomUI();
+  }, 32);
 });
 
 process.on('exit', () => {

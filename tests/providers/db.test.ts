@@ -94,7 +94,7 @@ describe('db: DB persistence round-trip', () => {
     });
   });
 
-  it('eval runs are persisted via saveTranscriptAsync and re-loaded with derived transcriptRef', async () => {
+  it('eval runs are persisted via saveTranscriptAsync and re-loaded on reinit', async () => {
     await db.initStore();
     const modelEntry = { provider: 'groq', modelId: 'llama' };
     db.setCache({ 'groq:llama': modelEntry });
@@ -107,7 +107,6 @@ describe('db: DB persistence round-trip', () => {
       turns: 2,
       tokenUsage: { input: 100, output: 50 },
       durationMs: 1234,
-      transcriptRef: 'evals/humaneval/groq-llama/20260619T100000000Z.json',
       error: null,
     };
     db.saveTranscriptAsync('groq:llama', 'humaneval', summary, undefined, [], undefined);
@@ -120,7 +119,7 @@ describe('db: DB persistence round-trip', () => {
     expect(run).toBeDefined();
     expect(run?.taskId).toBe('HumanEval/0');
     expect(run?.pass).toBe(true);
-    expect(run?.transcriptRef).toMatch(/^evals\/humaneval\/groq-llama\//);
+    expect(run?.turns).toBe(2);
   });
 });
 

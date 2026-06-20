@@ -33,6 +33,7 @@ export interface OverridableSettings {
   toolRationale?: boolean;
   showProviderUsage?: boolean;
   parallelTools?: boolean;
+  loadAgentsMd?: boolean;
 }
 
 export interface Config {
@@ -46,4 +47,5 @@ export interface Config {
   retryMaxWaitSeconds: number;
   showEvalDots: boolean;
   diffContextLines: number;
+  loadAgentsMd: boolean;
 }

@@ -22,11 +22,17 @@ Provider and Model tabs are only available when `currentModel` contains a colon.
 
 ## Settings
 
-| Key | Label | Behavior |
-|-----|-------|----------|
-| `toolRationale` | Tool rationale | Ask model to explain each tool call before executing. |
-| `showProviderUsage` | Provider usage | Print token/rate-limit usage after each turn. |
-| `parallelTools` | Parallel tools | Allow model to call multiple tools in the same response. |
+| Key | Label | Tabs | Behavior |
+|-----|-------|------|----------|
+| `toolRationale` | Tool rationale | Global, Provider, Model | Ask model to explain each tool call before executing. |
+| `showProviderUsage` | Provider usage | Global, Provider, Model | Print token/rate-limit usage after each turn. |
+| `parallelTools` | Parallel tools | Global, Provider, Model | Allow model to call multiple tools in the same response. |
+| `retryMaxWaitSeconds` | Max retry wait | Global only | Max seconds to wait before retrying a rate-limited request. |
+| `diffContextLines` | Diff context | Global only | Lines of surrounding context shown above/below each edit diff. |
+| `showEvalDots` | Eval dots | Global only | Show per-scenario eval result circles in the model picker. |
+| `loadAgentsMd` | Load AGENTS.md | Provider, Model | Inject AGENTS.md from the working directory into the system prompt. Hidden from Global tab to preserve layout. |
+
+`globalOnly` settings are hidden in Provider and Model tabs. `modelOnly` settings are hidden in the Global tab (they still participate in the three-level cascade via `resolveModelSettings`; the global default is `false`).
 
 ## Override values
 

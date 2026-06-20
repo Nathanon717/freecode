@@ -23,6 +23,14 @@ export function clearEntireTerminal() {
   process.stdout.write("\x1b[0m\x1b[r\x1b[H\x1b[2J\x1b[3J\x1b[H");
 }
 
+// Like redrawBanner() but without erasing scrollback — safe to call on resize.
+export function clearAndRedrawBanner() {
+  process.stdout.write("\x1b[0m\x1b[r\x1b[H\x1b[2J\x1b[H");
+  const cols = process.stdout.columns ?? 80;
+  const banner = cols < 82 ? COMPACT_BANNER : FULL_BANNER;
+  console.log(getBannerColor()(banner));
+}
+
 function nextBannerColor(): ChalkInstance {
   let idx = 0;
   try {

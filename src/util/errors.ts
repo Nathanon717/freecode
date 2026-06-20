@@ -204,6 +204,20 @@ export function isToolsNotSupportedError(error: unknown): boolean {
   return TOOLS_NOT_SUPPORTED_PATTERNS.some(p => p.test(msg));
 }
 
+function extractStatusCode(error: unknown): number | undefined {
+  if (!isRecord(error)) return undefined;
+  const sc = error['statusCode'] ?? error['status'];
+  if (typeof sc === 'number') return sc;
+  // RetryError stores original error in .lastError and .errors[], not .cause
+  const nested = error['cause'] ?? error['lastError'] ?? (error['errors'] as unknown[])?.[0];
+  if (nested !== undefined) return extractStatusCode(nested);
+  return undefined;
+}
+
+export function isModelNotFoundError(error: unknown): boolean {
+  return extractStatusCode(error) === 404;
+}
+
 export function serializeError(error: unknown): unknown {
   if (!(error instanceof Error)) return error;
   const record: Record<string, unknown> = {

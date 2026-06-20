@@ -15,6 +15,7 @@ interface BoolSetting {
   label: string;
   description: string;
   globalOnly?: true;
+  modelOnly?: true;
 }
 
 interface NumericSetting {
@@ -38,6 +39,7 @@ const SETTINGS: Setting[] = [
   { type: 'number',  key: 'retryMaxWaitSeconds', label: 'Max retry wait', description: 'Max seconds to wait before retrying a rate-limited request', min: 5, max: 300, step: 5, unit: 's', globalOnly: true },
   { type: 'number',  key: 'diffContextLines',   label: 'Diff context',    description: 'Lines of surrounding context shown above/below each edit diff (stops at blank line)', min: 0, max: 10, step: 1, unit: '', globalOnly: true },
   { type: 'boolean', key: 'showEvalDots',      label: 'Eval dots',        description: 'Show per-scenario eval result circles in the model picker', globalOnly: true },
+  { type: 'boolean', key: 'loadAgentsMd',     label: 'Load AGENTS.md',   description: 'Inject AGENTS.md from the working directory into the system prompt', modelOnly: true },
 ];
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -167,6 +169,7 @@ function buildScreen(
   for (let i = 0; i < SETTINGS.length; i++) {
     const s = SETTINGS[i];
     if (tab !== 'global' && 'globalOnly' in s && s.globalOnly) continue;
+    if (tab === 'global' && 'modelOnly' in s && s.modelOnly) continue;
     const active = i === sel;
     const cursor = active ? chalk.cyan('▶') : ' ';
     const label  = active ? chalk.bold(s.label.padEnd(LABEL_W)) : chalk.reset(s.label.padEnd(LABEL_W));

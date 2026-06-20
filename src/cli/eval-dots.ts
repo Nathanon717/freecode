@@ -1,15 +1,12 @@
-import { existsSync, readdirSync, readFileSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, readdirSync, readFileSync } from 'fs';
 import { createHash } from 'crypto';
 import { join, resolve, dirname, relative } from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
-import { logError } from '../logger.js';
 import { getCache } from '../providers/db.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 export const PLAYGROUND_EVAL_DIR = resolve(_dirname, '..', '..', 'playground', 'eval');
-export const EVAL_RESULTS_DIR = resolve(_dirname, '..', '..', 'playground', 'eval', 'results');
-const EVAL_HISTORY_FILE = resolve(_dirname, '..', '..', 'playground', 'eval', 'eval-history.json');
 
 export type EvalStatus = 'grey' | 'green' | 'red' | 'orange';
 
@@ -42,82 +39,29 @@ export function modelSlug(model: string): string {
   return model.replace(/[:/]/g, '--');
 }
 
-export function modelResultFile(model: string): string {
-  return join(EVAL_RESULTS_DIR, `${modelSlug(model)}.json`);
-}
-
-export function loadModelResults(model: string): EvalHistoryEntry[] {
-  const file = modelResultFile(model);
-  if (!existsSync(file)) return [];
-  try { return JSON.parse(readFileSync(file, 'utf-8')) as EvalHistoryEntry[]; } catch (err) {
-    logError('eval', `Failed to parse results file ${file}`, err);
-    return [];
-  }
-}
-
-function loadEvalHistoryFromFiles(): EvalHistoryEntry[] {
-  if (existsSync(EVAL_HISTORY_FILE)) {
-    try {
-      const legacy = JSON.parse(readFileSync(EVAL_HISTORY_FILE, 'utf-8')) as EvalHistoryEntry[];
-      if (legacy.length > 0) {
-        mkdirSync(EVAL_RESULTS_DIR, { recursive: true });
-        const byModel = new Map<string, EvalHistoryEntry[]>();
-        for (const e of legacy) {
-          const group = byModel.get(e.model) ?? [];
-          group.push(e);
-          byModel.set(e.model, group);
-        }
-        for (const [model, entries] of byModel) {
-          const file = modelResultFile(model);
-          const existing = loadModelResults(model);
-          const merged = [...existing];
-          for (const e of entries) {
-            if (!merged.some(x => x.scenarioId === e.scenarioId && x.model === e.model && x.scenarioHash === e.scenarioHash))
-              merged.push(e);
-          }
-          writeFileSync(file, JSON.stringify(merged, null, 2) + '\n', 'utf-8');
-        }
-        rmSync(EVAL_HISTORY_FILE);
-      }
-    } catch (err) { logError('eval', 'History file migration failed', err); }
-  }
-
-  if (!existsSync(EVAL_RESULTS_DIR)) return [];
+export function loadEvalHistory(): EvalHistoryEntry[] {
+  const cache = getCache();
+  if (!cache) return [];
   const all: EvalHistoryEntry[] = [];
-  for (const f of readdirSync(EVAL_RESULTS_DIR)) {
-    if (!f.endsWith('.json')) continue;
-    try { all.push(...(JSON.parse(readFileSync(join(EVAL_RESULTS_DIR, f), 'utf-8')) as EvalHistoryEntry[])); } catch (err) {
-      logError('eval', `Failed to parse eval result file ${f}`, err);
+  for (const [modelKey, entry] of Object.entries(cache)) {
+    for (const summary of entry.evals?.['custom'] ?? []) {
+      all.push({
+        timestamp: summary.timestamp,
+        scenarioId: summary.taskId,
+        model: modelKey || 'default',
+        pass: summary.pass,
+        warnings: summary.warnings,
+        tokens: {
+          total: summary.totalTokens ?? ((summary.tokenUsage.input ?? 0) + (summary.tokenUsage.output ?? 0)),
+          prompt: summary.tokenUsage.input,
+          output: summary.tokenUsage.output,
+        },
+        scenarioHash: summary.scenarioHash,
+        checks: summary.checks as EvalCheckResult[] | undefined,
+      });
     }
   }
   return all;
-}
-
-export function loadEvalHistory(): EvalHistoryEntry[] {
-  const cache = getCache();
-  if (cache) {
-    const all: EvalHistoryEntry[] = [];
-    for (const [modelKey, entry] of Object.entries(cache)) {
-      for (const summary of entry.evals?.['custom'] ?? []) {
-        all.push({
-          timestamp: summary.timestamp,
-          scenarioId: summary.taskId,
-          model: modelKey || 'default',
-          pass: summary.pass,
-          warnings: summary.warnings,
-          tokens: {
-            total: summary.totalTokens ?? ((summary.tokenUsage.input ?? 0) + (summary.tokenUsage.output ?? 0)),
-            prompt: summary.tokenUsage.input,
-            output: summary.tokenUsage.output,
-          },
-          scenarioHash: summary.scenarioHash,
-          checks: summary.checks as EvalCheckResult[] | undefined,
-        });
-      }
-    }
-    return all;
-  }
-  return loadEvalHistoryFromFiles();
 }
 
 export function discoverPlaygroundScenarios(): PlaygroundScenario[] {

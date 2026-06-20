@@ -35,7 +35,8 @@ export const listDirTool = tool({
       );
       const dirs = stats.filter((s) => s.isDirectory).map((s) => s.name + '/').sort();
       const files = stats.filter((s) => !s.isDirectory).map((s) => s.name).sort();
-      return [...dirs, ...files].join('\n');
+      const sorted = [...dirs, ...files];
+      return sorted.length === 0 ? '(empty directory)' : sorted.join('\n');
     } catch (error) {
       return `Error listing directory: ${error instanceof Error ? error.message : String(error)}`;
     }

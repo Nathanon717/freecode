@@ -13,6 +13,9 @@ updateProviderCache(providerId: string, models: RawCachedModel[]): CacheUpdateRe
   // No-op (no write) if the set of IDs is unchanged.
 markModelSelected(providerId: string, modelId: string): void
   // Removes modelId from newIds so the "new" badge is cleared.
+getDeadIds(providerId: string): string[]
+markModelDead(providerId: string, modelId: string): void
+  // Adds modelId to deadIds; no-op if already dead.
 ```
 
 ## Cache File Shape
@@ -23,7 +26,8 @@ markModelSelected(providerId: string, modelId: string): void
     "fetchedAt": "2026-05-20T...",
     "models": [{ "id": "...", "displayName": "...", "contextWindow": 128000 }],
     "newIds": ["recently-appeared-id"],
-    "removedIds": ["recently-removed-id"]
+    "removedIds": ["recently-removed-id"],
+    "deadIds": ["model-that-returned-404"]
   }
 }
 ```

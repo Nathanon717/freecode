@@ -1,6 +1,6 @@
 import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
-import { getProvider, resolveModel } from '../providers/registry.js';
+import { getProvider, invalidateDeadModel, resolveModel } from '../providers/registry.js';
 import { buildSystemPrompt } from './system-prompt.js';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
 import {
@@ -24,7 +24,7 @@ import { getAnthropicVerifiedRates } from '../providers/pricing-verifier.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './context.js';
-import { isContextOverflowError, isInvalidToolArgumentsError, isNoSuchToolError, isProviderToolUseFailed, isToolsNotSupportedError, isUserAbortError, invalidToolName, noSuchToolAvailableList, noSuchToolName, serializeError, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
+import { isContextOverflowError, isInvalidToolArgumentsError, isModelNotFoundError, isNoSuchToolError, isProviderToolUseFailed, isToolsNotSupportedError, isUserAbortError, invalidToolName, noSuchToolAvailableList, noSuchToolName, serializeError, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
 import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
 import { executeToolCalls, runPromptToolsLoop } from './prompt-tools.js';
@@ -372,7 +372,7 @@ export async function agentLoop(
     quota = outcome.quota;
   };
 
-  const systemPrompt = buildSystemPrompt();
+  const systemPrompt = buildSystemPrompt(modelSettings.loadAgentsMd);
   if (!systemPromptLogged) {
     systemPromptLogged = true;
     log('stream', `System prompt:\n${systemPrompt}`);
@@ -420,6 +420,8 @@ export async function agentLoop(
       endTranscriptStep(false);
       return finishResult(fullText);
     }
+    const isDeadModel = isModelNotFoundError(error) && providerId === 'nvidia';
+    if (isDeadModel) invalidateDeadModel(providerId, modelId);
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);
     log('stream', 'streamText error details', serializeError(error));
     const errMsg = toDetailedErrorMessage(error);
@@ -430,13 +432,17 @@ export async function agentLoop(
         `  • Start a new session to clear history, or\n` +
         `  • Switch to a model with a larger context window (e.g. /model).\n`,
       );
+    } else if (isDeadModel) {
+      process.stdout.write(`Error: Model "${modelId}" returned 404 and has been removed from the picker.\n`);
     } else {
       process.stdout.write(`Error: ${errMsg}\n`);
     }
     endTranscriptStep(false);
     const displayError = isContextOverflowError(error)
       ? 'Context window exceeded — start a new session or switch to a model with a larger context window.'
-      : errMsg;
+      : isDeadModel
+        ? `Model "${modelId}" returned 404 and has been removed from the picker.`
+        : errMsg;
     return finishResult(fullText + `\n\nError: ${displayError}`);
   } finally {
     setParallelToolsDisabled(providerId, false);

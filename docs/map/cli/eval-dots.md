@@ -7,17 +7,14 @@
 | Symbol | Description |
 |--------|-------------|
 | `PLAYGROUND_EVAL_DIR` | Absolute path to `playground/eval/`. |
-| `EVAL_RESULTS_DIR` | Absolute path to `playground/eval/results/`. |
 | `EvalStatus` | `'grey' \| 'green' \| 'red' \| 'orange'` — status values for a single scenario run. |
 | `EvalCheckResult` | Shape of one check in a stored grading breakdown (assertion/stat/warning). |
-| `EvalHistoryEntry` | Shape of one entry in a per-model results JSON file. Now includes optional `checks` (grading breakdown) and uses `computeRunHash` as `scenarioHash` for new entries. |
+| `EvalHistoryEntry` | Shape of one history entry (timestamp, scenarioId, model, pass, tokens, etc.). Includes optional `checks` and `scenarioHash`. |
 | `ScenarioHashes` | `{ runHash, fullHash }` pair stored in `EvalDotsData.hashes`. |
 | `PlaygroundScenario` | `{ id, firstLine }` for a discovered playground scenario. |
 | `EvalDotsData` | Precomputed bundle returned by `loadEvalDotsData()`. |
-| `modelSlug(model)` | Converts `provider:model` to `provider--model` for use as a filename. |
-| `modelResultFile(model)` | Returns the absolute path to the per-model results JSON file. |
-| `loadModelResults(model)` | Reads and parses a per-model results file; returns `[]` on missing/error. |
-| `loadEvalHistory()` | Returns `EvalHistoryEntry[]`. After Phase 3: reads from the in-memory DB cache (via `getCache()` from `db.ts`) when `initStore()` has been called; falls back to `playground/eval/results/*.json` files otherwise. |
+| `modelSlug(model)` | Converts `provider:model` to `provider--model` for use as a filename/dir name. |
+| `loadEvalHistory()` | Returns `EvalHistoryEntry[]` from the in-memory DB cache (`getCache()` from `db.ts`). Returns `[]` if the DB is not yet initialized. |
 | `discoverPlaygroundScenarios()` | Lists numbered scenario folders in `playground/eval/` that have `prompt.md` and `eval/check.ts`, sorted by name. |
 | `computeRunHash(scenarioDir)` | Hashes only prompt, config, and start files — excludes eval/ so scoring changes don't invalidate stored results. Used as `scenarioHash` for new entries. |
 | `computeScenarioHash(scenarioDir)` | Full hash including eval/ files. Retained for grandfathering entries written before the run-hash split. |

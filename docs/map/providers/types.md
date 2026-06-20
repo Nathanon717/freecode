@@ -37,6 +37,7 @@ interface OverridableSettings {
   toolRationale?: boolean;
   showProviderUsage?: boolean;
   parallelTools?: boolean;
+  loadAgentsMd?: boolean;
 }
 
 interface Config {
@@ -46,6 +47,7 @@ interface Config {
   showProviderUsage: boolean;
   toolConfirmation: 'ask' | 'auto';
   parallelTools: boolean;
+  loadAgentsMd: boolean;
   providerOverrides?: Record<string, OverridableSettings>;
 }
 ```

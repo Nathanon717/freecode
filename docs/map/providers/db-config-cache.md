@@ -9,6 +9,7 @@ type SyncableGlobalConfig = {
   toolRationale?: boolean; showProviderUsage?: boolean; parallelTools?: boolean;
   toolConfirmation?: 'ask' | 'auto'; retryMaxWaitSeconds?: number;
   showEvalDots?: boolean; diffContextLines?: number; defaultModel?: string;
+  loadAgentsMd?: boolean;
 };
 
 interface DbConfigData {
