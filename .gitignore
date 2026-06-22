@@ -29,10 +29,15 @@ poe-cookies.json
 # V8 profiler artifacts
 isolate-*.log
 
+# eslint incremental cache
+.eslintcache
+
 # local store files — data now lives in freecode.db (synced via Turso)
 .freecode/models.json
 .freecode/evals/
 .freecode/model-cache.json
+# boot fast-path mirror of the DB config cache — local, rebuilt from the DB
+.freecode/config-cache.json
 
 # eval run artifacts — data now lives in freecode.db
 playground/eval/results/

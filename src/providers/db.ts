@@ -1,5 +1,5 @@
 import { createClient, type Client, type InValue } from '@libsql/client';
-import { existsSync, readFileSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { join, dirname, resolve } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
@@ -43,6 +43,7 @@ let client: Client | null = null;
 let cache: ModelStore | null = null;
 
 async function createSchema(c: Client): Promise<void> {
+  await c.execute('PRAGMA foreign_keys = ON');
   await c.execute(`
     CREATE TABLE IF NOT EXISTS meta (
       key   TEXT PRIMARY KEY,
@@ -84,8 +85,7 @@ async function createSchema(c: Client): Promise<void> {
       duration_ms    INTEGER,
       scenario_hash  TEXT,
       error          TEXT,
-      checks         TEXT,
-      UNIQUE(model_key, eval_type, task_id, timestamp)
+      checks         TEXT
     )
   `);
   await c.execute(`
@@ -104,7 +104,7 @@ async function loadFromDb(c: Client): Promise<ModelStore> {
       'SELECT key, provider, model_id, display_name, native_tools, context_window, is_favorite, settings, rate_limits FROM models'
     ),
     c.execute(
-      'SELECT model_key, task_id, eval_type, timestamp, pass, turns, input_tokens, output_tokens, total_tokens, duration_ms, warnings, scenario_hash, checks, error FROM eval_runs ORDER BY timestamp ASC'
+      'SELECT model_key, task_id, eval_type, timestamp, pass, turns, input_tokens, output_tokens, total_tokens, duration_ms, warnings, scenario_hash, checks, error FROM eval_runs ORDER BY timestamp ASC, id ASC'
     ),
   ]);
 
@@ -121,10 +121,10 @@ async function loadFromDb(c: Client): Promise<ModelStore> {
     if (row['context_window'] !== null) entry.contextWindow = row['context_window'] as number;
     entry.isFavorite = (row['is_favorite'] as number) !== 0;
     if (row['settings'] !== null) {
-      try { entry.settings = JSON.parse(row['settings'] as string); } catch { /* skip corrupt */ }
+      try { entry.settings = JSON.parse(row['settings'] as string) as ModelEntry['settings']; } catch { /* skip corrupt */ }
     }
     if (row['rate_limits'] !== null) {
-      try { entry.rateLimits = JSON.parse(row['rate_limits'] as string); } catch { /* skip corrupt */ }
+      try { entry.rateLimits = JSON.parse(row['rate_limits'] as string) as ModelEntry['rateLimits']; } catch { /* skip corrupt */ }
     }
     store[key] = entry;
   }
@@ -153,7 +153,7 @@ async function loadFromDb(c: Client): Promise<ModelStore> {
     };
     if (!entry.evals) entry.evals = {};
     if (!entry.evals[evalType]) entry.evals[evalType] = [];
-    entry.evals[evalType]!.push(summary);
+    entry.evals[evalType].push(summary);
   }
 
   return store;
@@ -173,28 +173,80 @@ async function loadConfigFromDb(c: Client): Promise<DbConfigData> {
   return result;
 }
 
-// Track in-flight writes so resetStore() can drain them before closing.
+// Tracks in-flight writes so resetStore() can drain them before closing.
 const pendingWrites = new Set<Promise<void>>();
 
+// Single promise chain — all writes are appended here so they execute one-at-a-time
+// in submission order. This prevents multi-step chains (e.g. saveTranscriptAsync)
+// from being interleaved with concurrent single-step writes, which caused the
+// reentrancy/deadlock class seen on embedded-replica libSQL clients.
+let writeChain: Promise<void> = Promise.resolve();
+
+function enqueueWrite(task: () => Promise<void>): void {
+  // .then(task, task) ensures task runs even if a prior write somehow left the
+  // chain in a rejected state (tasks catch internally, so this is defensive only).
+  const p: Promise<void> = writeChain.then(task, task);
+  pendingWrites.add(p);
+  writeChain = p;
+  void p.finally(() => pendingWrites.delete(p));
+}
+
+/** Path to the config file mirror. */
+function getConfigMirrorPath(): string {
+  return join(getStoreDir(), 'config-cache.json');
+}
+
 /**
- * Persist a single model row via one c.execute() INSERT OR REPLACE.
- * Fire-and-forget; never batches — avoids deadlocks on synced embedded replicas.
+ * Synchronously write the DbConfigData to the file mirror.
+ * Never throws — missing dir is created; all errors are swallowed.
+ */
+export function writeConfigMirror(data: DbConfigData): void {
+  try {
+    const dir = getStoreDir();
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(getConfigMirrorPath(), JSON.stringify(data), 'utf-8');
+  } catch { /* never throws */ }
+}
+
+/**
+ * Synchronously prime the in-memory DbConfigCache from the file mirror.
+ * No libSQL touched. Missing or corrupt file → silent no-op (cache untouched).
+ * Call this at boot before the first loadConfig() to populate the cache from the
+ * last-written mirror without blocking on libSQL initialisation.
+ */
+export function primeConfigCacheFromFile(): void {
+  try {
+    const path = getConfigMirrorPath();
+    if (!existsSync(path)) return;
+    const raw = readFileSync(path, 'utf-8');
+    const parsed = JSON.parse(raw) as DbConfigData;
+    setDbConfigCache(parsed);
+  } catch { /* silent no-op */ }
+}
+
+/**
+ * Persist a single model row. Fire-and-forget; serialized through writeChain.
  */
 export function persistModelRowAsync(key: string, entry: ModelEntry): void {
-  const c = client;
-  if (!c) return;
-
-  let resolveFn!: () => void;
-  const p: Promise<void> = new Promise(r => { resolveFn = r; });
-  pendingWrites.add(p);
-
-  void (async () => {
+  enqueueWrite(async () => {
     try {
+      await ensureStoreReady();
+      const c = client;
+      if (!c) return;
       await c.execute({
-        sql: `INSERT OR REPLACE INTO models
+        sql: `INSERT INTO models
               (key, provider, model_id, display_name, native_tools, context_window,
                is_favorite, settings, rate_limits)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT(key) DO UPDATE SET
+                provider       = excluded.provider,
+                model_id       = excluded.model_id,
+                display_name   = excluded.display_name,
+                native_tools   = excluded.native_tools,
+                context_window = excluded.context_window,
+                is_favorite    = excluded.is_favorite,
+                settings       = excluded.settings,
+                rate_limits    = excluded.rate_limits`,
         args: [
           key,
           entry.provider,
@@ -207,38 +259,29 @@ export function persistModelRowAsync(key: string, entry: ModelEntry): void {
           entry.rateLimits ? JSON.stringify(entry.rateLimits) : null,
         ] as InValue[],
       });
-      await c.sync().catch(() => {});
+      await c.sync().catch((err) => logError('db', 'sync after model upsert failed', err));
     } catch (err) {
       logError('db', 'Failed to persist model row', err);
-    } finally {
-      pendingWrites.delete(p);
-      resolveFn();
     }
-  })();
+  });
 }
 
 function persistDbConfigRowAsync(scope: string, data: unknown): void {
-  const c = client;
-  if (!c) return;
-
-  let resolveFn!: () => void;
-  const p: Promise<void> = new Promise(r => { resolveFn = r; });
-  pendingWrites.add(p);
-
-  void (async () => {
+  enqueueWrite(async () => {
     try {
+      await ensureStoreReady();
+      const c = client;
+      if (!c) return;
       await c.execute({
-        sql: `INSERT OR REPLACE INTO config (scope, data) VALUES (?, ?)`,
+        sql: `INSERT INTO config (scope, data) VALUES (?, ?)
+              ON CONFLICT(scope) DO UPDATE SET data = excluded.data`,
         args: [scope, JSON.stringify(data)] as InValue[],
       });
-      await c.sync().catch(() => {});
+      await c.sync().catch((err) => logError('db', 'sync after config upsert failed', err));
     } catch (err) {
       logError('db', 'Failed to persist config row', err);
-    } finally {
-      pendingWrites.delete(p);
-      resolveFn();
     }
-  })();
+  });
 }
 
 export function saveTranscriptAsync(
@@ -249,20 +292,15 @@ export function saveTranscriptAsync(
   transcript: unknown,
   scoringOutcome: unknown,
 ): void {
-  const c = client;
-  if (!c) return;
-
-  let resolveFn!: () => void;
-  const p: Promise<void> = new Promise(r => { resolveFn = r; });
-  pendingWrites.add(p);
-
-  void (async () => {
+  enqueueWrite(async () => {
     try {
-      // eval_runs.model_key has a FOREIGN KEY to models(key), which IS enforced here.
-      // Ensure a minimal parent row exists before inserting the run, so an eval for a
-      // model that has not been upserted yet (or whose row write is still in flight)
-      // does not fail the FK constraint and get silently dropped. persistModelRowAsync's
-      // later INSERT OR REPLACE fills in the remaining columns.
+      await ensureStoreReady();
+      const c = client;
+      if (!c) return;
+      // eval_runs.model_key references models(key) (FK enforced). Insert a minimal parent
+      // row via INSERT OR IGNORE so loadFromDb — which skips eval rows with no matching
+      // models entry — doesn't silently drop this eval. persistModelRowAsync's later
+      // upsert fills the remaining columns.
       const colonIdx = modelKey.indexOf(':');
       const provider = colonIdx !== -1 ? modelKey.slice(0, colonIdx) : '';
       const modelId = colonIdx !== -1 ? modelKey.slice(colonIdx + 1) : modelKey;
@@ -271,8 +309,8 @@ export function saveTranscriptAsync(
         args: [modelKey, provider, modelId] as InValue[],
       });
 
-      await c.execute({
-        sql: `INSERT OR IGNORE INTO eval_runs
+      const runRes = await c.execute({
+        sql: `INSERT INTO eval_runs
               (model_key, eval_type, task_id, timestamp, pass, turns,
                input_tokens, output_tokens, total_tokens, duration_ms,
                warnings, scenario_hash, checks, error)
@@ -291,16 +329,10 @@ export function saveTranscriptAsync(
           summary.error,
         ] as InValue[],
       });
-
-      const res = await c.execute({
-        sql: `SELECT id FROM eval_runs WHERE model_key=? AND eval_type=? AND task_id=? AND timestamp=?`,
-        args: [modelKey, evalType, summary.taskId, summary.timestamp] as InValue[],
-      });
-      const runId = res.rows[0]?.['id'] as number | undefined;
-      if (runId === undefined) return;
+      const runId = Number(runRes.lastInsertRowid);
 
       await c.execute({
-        sql: `INSERT OR IGNORE INTO eval_transcripts (run_id, fail_reason, transcript, scoring) VALUES (?, ?, ?, ?)`,
+        sql: `INSERT INTO eval_transcripts (run_id, fail_reason, transcript, scoring) VALUES (?, ?, ?, ?)`,
         args: [
           runId,
           failReason ?? null,
@@ -308,21 +340,20 @@ export function saveTranscriptAsync(
           scoringOutcome !== undefined ? JSON.stringify(scoringOutcome) : null,
         ] as InValue[],
       });
-      await c.sync().catch(() => {});
+      await c.sync().catch((err) => logError('db', 'sync after transcript insert failed', err));
     } catch (err) {
       logError('db', 'Failed to persist transcript', err);
-    } finally {
-      pendingWrites.delete(p);
-      resolveFn();
     }
-  })();
+  });
 }
 
 export function getDbSyncConfig(): { syncUrl?: string; authToken?: string } {
   return readDbConfig();
 }
 
-export async function initStore(): Promise<void> {
+let initPromise: Promise<void> | null = null;
+
+async function doInit(): Promise<void> {
   const { syncUrl, authToken } = readDbConfig();
   const url = getDbUrl();
 
@@ -350,24 +381,34 @@ export async function initStore(): Promise<void> {
   cache = await loadFromDb(client);
   const dbConfigData = await loadConfigFromDb(client);
   setDbConfigCache(dbConfigData);
+  writeConfigMirror(dbConfigData);
   registerConfigPersist(persistDbConfigRowAsync);
 }
 
+/** Idempotent — multiple callers share a single init promise. */
+export function initStore(): Promise<void> {
+  return (initPromise ??= doInit());
+}
+
+/** Semantic alias for lazy call sites. Memoized — free after first init. */
+export const ensureStoreReady = initStore;
+
 /** Drain all pending fire-and-forget writes. Call at graceful shutdown before process exit. */
 export async function drainPendingWrites(): Promise<void> {
-  await Promise.allSettled([...pendingWrites]);
+  while (pendingWrites.size) await Promise.all([...pendingWrites]);
 }
 
 /** Reset state — for tests only. Drains in-flight writes before closing. */
 export async function resetStore(): Promise<void> {
-  await Promise.allSettled([...pendingWrites]);
+  while (pendingWrites.size) await Promise.all([...pendingWrites]);
   pendingWrites.clear();
   client?.close();
   client = null;
   cache = null;
+  initPromise = null;
   clearDbConfigCache();
   // Windows SQLite WAL files need a moment to be released by the OS after close().
-  await new Promise(r => setTimeout(r, 100));
+  if (process.platform === 'win32') await new Promise(r => setTimeout(r, 100));
 }
 
 export function getCache(): ModelStore | null {
@@ -376,4 +417,10 @@ export function getCache(): ModelStore | null {
 
 export function setCache(store: ModelStore): void {
   cache = store;
+}
+
+/** For testing only: execute raw SQL directly against the live client. */
+export async function executeRawForTesting(sql: string, args: InValue[]): Promise<void> {
+  if (!client) throw new Error('DB not initialized');
+  await client.execute({ sql, args });
 }

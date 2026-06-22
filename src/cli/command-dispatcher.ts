@@ -1,8 +1,9 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import chalk from 'chalk';
-import { agentLoop, type AgentLoopResult } from '../agent/loop.js';
+import type { AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';
 import { resolveApiKey, resolveModelSettings } from '../config/index.js';
+import { ensureStoreReady } from '../providers/db.js';
 import { toErrorMessage } from '../util/errors.js';
 import { log, logError } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/registry.js';
@@ -101,6 +102,7 @@ function showModelStatus(runtime: CommandRuntime): void {
 }
 
 async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void> {
+  await ensureStoreReady();
   runtime.session.addUserMessage(input);
 
   await runtime.beforeAgentCall?.();
@@ -126,6 +128,9 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
       }
     }
 
+    // Imported lazily so the interactive boot path doesn't pull in the `ai`
+    // SDK (~1.2s) until a turn actually runs.
+    const { agentLoop } = await import('../agent/loop.js');
     const result = await agentLoop(runtime.session.messages, runtime.projectRoot, runtime.getSelectedModel() ?? undefined, {
       confirmToolCall: runtime.confirmToolCall,
       readOnly: runtime.getReadOnly?.() ?? false,

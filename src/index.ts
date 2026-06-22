@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'child_process';
-import { writeFileSync } from 'fs';
-import { createInterface } from 'readline';
+import { writeFileSync, readFileSync } from 'fs';
 import chalk from 'chalk';
 
 function tryInjectDoppler(): void {
@@ -23,46 +22,22 @@ function tryInjectDoppler(): void {
 }
 
 tryInjectDoppler();
-import { installScreenBuffer } from './util/screen-buffer.js';
-import { showBanner } from './cli/banner.js';
-import { createInteractiveMode, createScriptedMode } from './cli/input-modes.js';
-import { SessionController } from './cli/session-controller.js';
-import { runCliSession } from './cli/session-runner.js';
-import { setupFooterUI, setRetryBanner, setQuotaSnapshot } from './cli/terminal-ui.js';
-import { registerRetryBannerSink, registerQuotaUpdateSink } from './providers/adapters/openai-compat.js';
-import { loadConfig } from './config/index.js';
-import { enableLog } from './logger.js';
-import { initStore, drainPendingWrites } from './providers/db.js';
-
-installScreenBuffer();
-
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-const projectRoot = process.cwd();
-
-const session = new SessionController(projectRoot);
-let selectedModel = '';
 
 async function main() {
   const args = process.argv.slice(2);
 
-  if (args.includes('-log')) {
-    enableLog();
-  }
-
-  await initStore();
-
-  const config = loadConfig();
-  selectedModel = process.env['FREECODE_MODEL'] ?? config.defaultModel ?? '';
+  // Validate args before loading the heavy module graph (ai SDK).
+  // libSQL is deferred to the first store-consuming action — it never loads on early-exit paths.
+  // Early exits here keep --model/--script error paths under ~200ms.
+  // Do NOT reference `rl` here — it is created after the imports below.
   const modelIdx = args.indexOf('--model');
   if (modelIdx !== -1) {
     const modelPreference = args[modelIdx + 1];
     if (!modelPreference) {
       console.error('Error: --model requires a provider:model argument');
       process.exitCode = 1;
-      rl.close();
       return;
     }
-    selectedModel = modelPreference;
   }
 
   const scriptIdx = args.indexOf('--script');
@@ -71,9 +46,55 @@ async function main() {
     if (!scriptPath) {
       console.error('Error: --script requires a file path argument');
       process.exitCode = 1;
-      rl.close();
       return;
     }
+    try {
+      readFileSync(scriptPath);
+    } catch {
+      console.error(`Error reading script file: ${scriptPath}`);
+      process.exitCode = 1;
+      return;
+    }
+  }
+
+  // Load heavy modules only after validation passes.
+  const { createInterface } = await import('readline');
+  const { installScreenBuffer } = await import('./util/screen-buffer.js');
+  const { showBanner } = await import('./cli/banner.js');
+  const { createInteractiveMode, createScriptedMode } = await import('./cli/input-modes.js');
+  const { SessionController } = await import('./cli/session-controller.js');
+  const { runCliSession } = await import('./cli/session-runner.js');
+  const { setupFooterUI, setRetryBanner, setQuotaSnapshot } = await import('./cli/terminal-ui.js');
+  const { registerRetryBannerSink, registerQuotaUpdateSink } = await import('./providers/adapters/openai-compat.js');
+  const { loadConfig } = await import('./config/index.js');
+  const { enableLog } = await import('./logger.js');
+  const { primeConfigCacheFromFile, drainPendingWrites } = await import('./providers/db.js');
+
+  installScreenBuffer();
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const projectRoot = process.cwd();
+  const session = new SessionController(projectRoot);
+  let selectedModel = '';
+
+  if (args.includes('-log')) {
+    enableLog();
+  }
+
+  // libSQL is now deferred like `ai` — boot primes the config cache from the
+  // file mirror (sync, no native-addon load); real DB loads lazily on the first
+  // store-consuming action (model picker, /config, agent loop, etc.) via ensureStoreReady().
+  primeConfigCacheFromFile();
+
+  const config = loadConfig();
+  selectedModel = process.env['FREECODE_MODEL'] ?? config.defaultModel ?? '';
+
+  if (modelIdx !== -1) {
+    selectedModel = args[modelIdx + 1];
+  }
+
+  if (scriptIdx !== -1) {
+    const scriptPath = args[scriptIdx + 1];
 
     const retryStatusFile = process.env['FREECODE_RETRY_STATUS_FILE'];
     if (retryStatusFile) {
