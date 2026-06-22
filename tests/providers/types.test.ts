@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type * as types from '../src/providers/types.js';
+import type * as types from '../../src/providers/types.js';
 
 describe('Provider Types', () => {
   describe('ModelConfig', () => {

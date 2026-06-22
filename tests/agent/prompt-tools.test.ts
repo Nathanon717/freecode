@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { buildPromptToolsSystemPrompt, parseToolCalls, runPromptToolsLoop } from '../../src/agent/prompt-tools.js';
 import { createFakeNativeLanguageModel, resetFakeModelState } from '../../src/providers/fake.js';
 import { setProjectRoot } from '../../src/agent/context.js';
@@ -56,7 +56,7 @@ describe('parseToolCalls', () => {
 describe('runPromptToolsLoop', () => {
   const previousScript = process.env.FREECODE_FAKE_LLM_SCRIPT;
   let tempRoot = '';
-  let stdoutSpy: ReturnType<typeof vi.spyOn>;
+  let stdoutSpy: MockInstance;
 
   beforeEach(() => {
     tempRoot = mkdtempSync(join(tmpdir(), 'freecode-prompt-tools-'));

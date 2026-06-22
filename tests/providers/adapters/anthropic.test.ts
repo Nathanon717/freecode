@@ -7,7 +7,7 @@ import {
 
 describe('anthropic usage capture lifecycle', () => {
   afterEach(() => {
-    endAnthropicUsageCapture('test-provider');
+    void endAnthropicUsageCapture('test-provider');
   });
 
   it('returns null before any capture begins', async () => {

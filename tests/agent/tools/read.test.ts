@@ -3,7 +3,6 @@ import { writeFile, rm, mkdtemp } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { readFileTool } from '../../../src/agent/tools/read.js';
-import { createTool } from '../../../src/agent/tools/create.js';
 import { setProjectRoot } from '../../../src/agent/context.js';
 
 const TEST_DIR = join(process.cwd(), 'tests', 'temp');

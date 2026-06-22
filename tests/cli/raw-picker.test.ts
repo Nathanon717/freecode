@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'events';
 import chalk from 'chalk';
+import type { Interface } from 'readline';
 import { countWrappedLines, runRawPicker } from '../../src/cli/raw-picker.js';
 
 // A fake stdin that behaves like an EventEmitter (so on/removeListener/rawListeners
@@ -102,8 +103,7 @@ describe('runRawPicker', () => {
   });
 
   // Minimal readline.Interface stub: runRawPicker only calls rl.resume() on cleanup.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rl = { resume: () => {} } as any;
+  const rl = { resume: () => {} } as unknown as Interface;
 
   it('renders the initial frame and resolves with the value passed to close()', async () => {
     const promise = runRawPicker<string>(rl, {
@@ -182,9 +182,9 @@ describe('runRawPicker', () => {
   it('cleans up and exits the process on Ctrl-C', () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
       throw new Error('exit-called');
-    }) as never);
+    }));
 
-    runRawPicker<void>(rl, {
+    void runRawPicker<void>(rl, {
       skipScrollClear: true,
       render: () => ['x'],
       onKey: () => {},

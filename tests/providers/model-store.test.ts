@@ -7,7 +7,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 // and the module is dynamically imported after the env vars are set, so tests never touch
 // the committed `.freecode/`. DB is initialized via initStore() against a temp file each
 // test, then torn down via resetStore() so the next test gets a fresh cache+client.
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 let store: typeof import('../../src/providers/model-store.js');
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 let db: typeof import('../../src/providers/db.js');
 let tempStore = '';
 const previousStore = process.env.FREECODE_STORE;
@@ -118,11 +120,11 @@ describe('model-store: appendEvalRun', () => {
     turns: 3,
     tokenUsage: { input: 100, output: 50 },
     durationMs: 1234,
-    error: null as null,
+    error: null,
   };
   const fakeDoc = {
     pass: true,
-    freecodeVersion: null as null,
+    freecodeVersion: null,
     transcript: [{ role: 'user', content: 'hi' }],
     scoringOutcome: { pass: true },
   };
@@ -147,7 +149,7 @@ describe('model-store: appendEvalRun', () => {
     expect(entry?.evals?.['humaneval']).toHaveLength(1);
   });
 
-  it('persists the eval for a never-upserted model across reinit', async () => {
+  it('persists eval for never-upserted model across reinit', async () => {
     // Regression: appendEvalRun must persist the models row, not just the cache.
     // Otherwise loadFromDb skips eval_runs whose model_key has no models row.
     store.appendEvalRun('groq:eval-only-model', 'humaneval', { ...fakeSummary, taskId: 'HumanEval/2' }, fakeDoc);
@@ -180,12 +182,12 @@ describe('model-store: appendEvalRun with custom evalType', () => {
     turns: 2,
     tokenUsage: { input: 80, output: 30 },
     durationMs: 500,
-    error: null as null,
+    error: null,
   };
   const customDoc = {
     pass: false,
     failReason: 'write-file: expected hello.txt to exist',
-    freecodeVersion: null as null,
+    freecodeVersion: null,
     transcript: [{ systemPrompt: 'sys', userMessage: 'user', toolCalls: [] }],
     scoringOutcome: [{ name: 'write-file', kind: 'assertion', pass: false }],
   };

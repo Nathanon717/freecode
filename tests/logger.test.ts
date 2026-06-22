@@ -1,7 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
+
+type LoggerModule = {
+  log: (category: string, message: string, data?: unknown) => void;
+  enableLog: () => void;
+  logError: (category: string, message: string, err: unknown) => void;
+};
 
 let stderrOutput: string[] = [];
-let stderrSpy: ReturnType<typeof vi.spyOn>;
+let stderrSpy: MockInstance;
 
 beforeEach(() => {
   stderrOutput = [];
@@ -16,8 +22,8 @@ afterEach(() => {
   vi.resetModules();
 });
 
-async function freshLogger() {
-  return import('../src/logger.js?t=' + Date.now());
+async function freshLogger(): Promise<LoggerModule> {
+  return import('../src/logger.js?t=' + Date.now()) as Promise<LoggerModule>;
 }
 
 describe('log', () => {

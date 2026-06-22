@@ -2,10 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { mkdtemp, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
+// Imported statically (not via per-test `await import`) so the one-time cold TS-transform
+// of this heavy module graph runs during collection, not against the per-test timeout.
+import { createTools } from '../../../src/agent/tools/index.js';
+import { setProjectRoot } from '../../../src/agent/context.js';
 
 describe('tool confirmation', () => {
   it('executes an approved tool call', async () => {
-    const { createTools } = await import('../../../src/agent/tools/index.js');
     const tools = createTools(() => Promise.resolve(true));
 
     const result = await tools.read.execute?.({ path: 'package.json' }, {}) as string | undefined;
@@ -14,7 +17,6 @@ describe('tool confirmation', () => {
   });
 
   it('denies a rejected tool call before execution', async () => {
-    const { createTools } = await import('../../../src/agent/tools/index.js');
     const tools = createTools(() => Promise.resolve(false));
 
     const result = await tools.read.execute?.({ path: 'package.json' }, {}) as string | undefined;
@@ -24,7 +26,6 @@ describe('tool confirmation', () => {
   });
 
   it('includes user feedback when a denied tool call provides it', async () => {
-    const { createTools } = await import('../../../src/agent/tools/index.js');
     const tools = createTools(() => Promise.resolve({
       approved: false,
       message: 'Do not read that file; summarize the current directory instead.',
@@ -38,8 +39,6 @@ describe('tool confirmation', () => {
   });
 
   it('runs concurrent tool calls in request order', async () => {
-    const { createTools } = await import('../../../src/agent/tools/index.js');
-    const { setProjectRoot } = await import('../../../src/agent/context.js');
     const tempRoot = await mkdtemp(join(tmpdir(), 'freecode-tool-order-'));
     setProjectRoot(tempRoot);
 
@@ -51,10 +50,8 @@ describe('tool confirmation', () => {
         return true;
       });
 
-      const [, readResult] = (await Promise.all([
-        tools.create.execute?.({ path: 'output.txt', content: 'queued content' }, {}),
-        tools.read.execute?.({ path: 'output.txt' }, {}),
-      ])) as [unknown, unknown];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      const [, readResult] = (await Promise.all([tools.create.execute?.({ path: 'output.txt', content: 'queued content' }, {}), tools.read.execute?.({ path: 'output.txt' }, {})])) as [unknown, unknown];
 
       expect(readResult).toContain('queued content');
     } finally {

@@ -17,8 +17,8 @@ describe('model-cache', () => {
     vi.clearAllMocks();
   });
 
-  describe('updateProviderCache — first fetch (no prior cache)', () => {
-    it('returns empty newIds even though all models are new to the cache', async () => {
+  describe('updateProviderCache — first fetch', () => {
+    it('returns empty newIds', async () => {
       const { existsSync } = await import('fs');
       vi.mocked(existsSync).mockReturnValue(false);
 

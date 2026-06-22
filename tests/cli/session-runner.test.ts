@@ -15,10 +15,10 @@ function makeSession() {
 
 function makeMode(overrides: Partial<CliSessionMode> = {}): CliSessionMode {
   return {
-    readInput: vi.fn(async () => null),
-    confirmToolCall: vi.fn(async () => ({ approved: true })),
+    readInput: vi.fn(() => Promise.resolve(null)),
+    confirmToolCall: vi.fn(() => Promise.resolve({ approved: true })),
     modelListMode: 'full',
-    runEvalMenu: vi.fn(async () => {}),
+    runEvalMenu: vi.fn(() => Promise.resolve()),
     ...overrides,
   };
 }
@@ -29,14 +29,14 @@ beforeEach(() => {
 
 describe('runCliSession', () => {
   it('returns immediately when readInput returns null', async () => {
-    const mode = makeMode({ readInput: vi.fn(async () => null) });
+    const mode = makeMode({ readInput: vi.fn(() => Promise.resolve(null)) });
     await runCliSession({ projectRoot: '/', session: makeSession(), getSelectedModel: () => 'x', setSelectedModel: vi.fn(), mode });
     expect(mockDispatch).not.toHaveBeenCalled();
   });
 
   it('calls onInputExhausted when readInput returns null', async () => {
-    const onInputExhausted = vi.fn(async () => {});
-    const mode = makeMode({ readInput: vi.fn(async () => null), onInputExhausted });
+    const onInputExhausted = vi.fn(() => Promise.resolve());
+    const mode = makeMode({ readInput: vi.fn(() => Promise.resolve(null)), onInputExhausted });
     await runCliSession({ projectRoot: '/', session: makeSession(), getSelectedModel: () => 'x', setSelectedModel: vi.fn(), mode });
     expect(onInputExhausted).toHaveBeenCalled();
   });
@@ -53,7 +53,7 @@ describe('runCliSession', () => {
 
   it('exits and calls onExit when dispatchCommand returns "exit"', async () => {
     mockDispatch.mockResolvedValueOnce('exit');
-    const onExit = vi.fn(async () => {});
+    const onExit = vi.fn(() => Promise.resolve());
     const readInput = vi.fn().mockResolvedValueOnce('quit');
     const mode = makeMode({ readInput, onExit });
     await runCliSession({ projectRoot: '/', session: makeSession(), getSelectedModel: () => 'x', setSelectedModel: vi.fn(), mode });
@@ -69,8 +69,8 @@ describe('runCliSession', () => {
       .mockResolvedValueOnce(null);
     const mode = makeMode({
       readInput,
-      beforeDispatch: vi.fn(async () => { calls.push('before'); }),
-      afterDispatch: vi.fn(async () => { calls.push('after'); }),
+      beforeDispatch: vi.fn(() => { calls.push('before'); return Promise.resolve(); }),
+      afterDispatch: vi.fn(() => { calls.push('after'); return Promise.resolve(); }),
     });
     await runCliSession({ projectRoot: '/', session: makeSession(), getSelectedModel: () => 'x', setSelectedModel: vi.fn(), mode });
     expect(calls).toEqual(['before', 'after']);
@@ -78,7 +78,7 @@ describe('runCliSession', () => {
 
   it('calls afterDispatch even when dispatchCommand throws', async () => {
     mockDispatch.mockRejectedValueOnce(new Error('boom'));
-    const afterDispatch = vi.fn(async () => {});
+    const afterDispatch = vi.fn(() => Promise.resolve());
     const readInput = vi.fn().mockResolvedValueOnce('cmd');
     const mode = makeMode({ readInput, afterDispatch });
     await expect(

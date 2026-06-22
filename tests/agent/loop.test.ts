@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { agentLoop } from '../../src/agent/loop.js';
 import { resetFakeModelState } from '../../src/providers/fake.js';
 import { UserAbortError } from '../../src/util/errors.js';
@@ -11,7 +11,7 @@ const previousScript = process.env.FREECODE_FAKE_LLM_SCRIPT;
 const previousNoLlm = process.env.FREECODE_NO_LLM;
 
 let tempRoot = '';
-let stdoutSpy: ReturnType<typeof vi.spyOn>;
+let stdoutSpy: MockInstance;
 
 function writeFixture(value: unknown): void {
   const fixturePath = join(tempRoot, 'fixture.llm.json');

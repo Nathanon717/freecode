@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import {
   assertFakeFixtureComplete,
   createFakeNativeLanguageModel,
@@ -15,7 +15,7 @@ const previousScript = process.env.FREECODE_FAKE_LLM_SCRIPT;
 const previousTrace = process.env.FREECODE_FAKE_LLM_TRACE;
 
 let tempRoot = '';
-let stdoutSpy: ReturnType<typeof vi.spyOn>;
+let stdoutSpy: MockInstance;
 
 function writeFixture(value: unknown): string {
   const fixturePath = join(tempRoot, 'fixture.llm.json');
@@ -201,7 +201,7 @@ describe('createFakeNativeLanguageModel', () => {
 
     expect(fullText).toBe('PONG');
     assertFakeFixtureComplete();
-    const trace = JSON.parse(readFileSync(tracePath, 'utf-8'));
+    const trace = JSON.parse(readFileSync(tracePath, 'utf-8')) as unknown[];
     expect(trace).toMatchObject([{
       callIndex: 1,
       providerId: 'mock-native',
@@ -242,9 +242,9 @@ describe('createFakeNativeLanguageModel', () => {
     const writeTool = tool({
       description: 'write a file',
       parameters: z.object({ path: z.string(), content: z.string() }),
-      execute: async ({ path, content }) => {
+      execute: ({ path, content }) => {
         toolCallCount++;
-        return `wrote ${path}: ${content.length} bytes`;
+        return Promise.resolve(`wrote ${path}: ${content.length} bytes`);
       },
     });
 
@@ -265,7 +265,7 @@ describe('createFakeNativeLanguageModel', () => {
     expect(toolCallCount).toBe(1);
     assertFakeFixtureComplete();
 
-    const trace = JSON.parse(readFileSync(tracePath, 'utf-8'));
+    const trace = JSON.parse(readFileSync(tracePath, 'utf-8')) as unknown[];
     expect(trace).toHaveLength(2);
     expect(trace[0]).toMatchObject({
       callIndex: 1,

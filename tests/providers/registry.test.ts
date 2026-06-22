@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PROVIDER_REGISTRY, getProvider, initDynamicProviders, resolveModel } from '../../src/providers/registry.js';
+import { PROVIDER_REGISTRY, getProvider, initDynamicProviders, resolveModel, clearModelNewFlag, invalidateDeadModel } from '../../src/providers/registry.js';
 
 describe('Provider Registry', () => {
   describe('PROVIDER_REGISTRY', () => {
@@ -163,6 +163,120 @@ describe('Provider Registry', () => {
       } finally {
         if (previous === undefined) delete process.env.FREECODE_FAKE_LLM;
         else process.env.FREECODE_FAKE_LLM = previous;
+      }
+    });
+  });
+
+  describe('clearModelNewFlag', () => {
+    it('removes isNew flag from a model', () => {
+      const provider = PROVIDER_REGISTRY.find(p => p.modelsSource !== 'live' && p.models.length > 0)!;
+      const model = provider.models[0];
+      (model as Record<string, unknown>).isNew = true;
+      try {
+        clearModelNewFlag(provider.id, model.id);
+        expect(model.isNew).toBeUndefined();
+      } finally {
+        delete (model as Record<string, unknown>).isNew;
+      }
+    });
+
+    it('is a no-op for an unknown provider', () => {
+      expect(() => clearModelNewFlag('no-such-provider', 'any-model')).not.toThrow();
+    });
+
+    it('is a no-op when model has no isNew flag', () => {
+      const provider = PROVIDER_REGISTRY.find(p => p.modelsSource !== 'live' && p.models.length > 0)!;
+      const model = provider.models[0];
+      delete (model as Record<string, unknown>).isNew;
+      expect(() => clearModelNewFlag(provider.id, model.id)).not.toThrow();
+      expect(model.isNew).toBeUndefined();
+    });
+  });
+
+  describe('invalidateDeadModel', () => {
+    it('removes a model from the provider model list', () => {
+      const provider = PROVIDER_REGISTRY.find(p => p.modelsSource !== 'live' && p.models.length > 0)!;
+      const savedModels = [...provider.models];
+      const targetId = provider.models[0].id;
+      try {
+        invalidateDeadModel(provider.id, targetId);
+        expect(provider.models.find(m => m.id === targetId)).toBeUndefined();
+      } finally {
+        provider.models = savedModels;
+      }
+    });
+
+    it('is a no-op for an unknown provider', () => {
+      expect(() => invalidateDeadModel('no-such-provider', 'any-model')).not.toThrow();
+    });
+  });
+
+  describe('resolveModel', () => {
+    it('throws when model preference is empty', () => {
+      expect(() => resolveModel('')).toThrow('No model selected');
+    });
+
+    it('throws for an unknown provider in real mode', () => {
+      const prev = process.env.FREECODE_FAKE_LLM;
+      delete process.env.FREECODE_FAKE_LLM;
+      try {
+        expect(() => resolveModel('no-such-provider:some-model')).toThrow('Unknown provider');
+      } finally {
+        if (prev === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = prev;
+      }
+    });
+
+    it('throws when no API key is configured for the provider', () => {
+      const prevFake = process.env.FREECODE_FAKE_LLM;
+      const prevKey = process.env.GROQ_API_KEY;
+      delete process.env.FREECODE_FAKE_LLM;
+      delete process.env.GROQ_API_KEY;
+      try {
+        expect(() => resolveModel('groq:llama-3.3-70b-versatile')).toThrow('No API key configured');
+      } finally {
+        if (prevFake === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = prevFake;
+        if (prevKey === undefined) delete process.env.GROQ_API_KEY;
+        else process.env.GROQ_API_KEY = prevKey;
+      }
+    });
+
+    it('resolves an openai-compat model when API key is present', () => {
+      const prevFake = process.env.FREECODE_FAKE_LLM;
+      const prevKey = process.env.GROQ_API_KEY;
+      delete process.env.FREECODE_FAKE_LLM;
+      process.env.GROQ_API_KEY = 'test-key';
+      try {
+        const result = resolveModel('groq:llama-3.3-70b-versatile');
+        expect(result.providerId).toBe('groq');
+        expect(result.modelId).toBe('llama-3.3-70b-versatile');
+        expect(result.supportsTools).toBe(true);
+        expect(result.model).toBeDefined();
+      } finally {
+        if (prevFake === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = prevFake;
+        if (prevKey === undefined) delete process.env.GROQ_API_KEY;
+        else process.env.GROQ_API_KEY = prevKey;
+      }
+    });
+
+    it('resolves an anthropic model when API key is present', () => {
+      const prevFake = process.env.FREECODE_FAKE_LLM;
+      const prevKey = process.env.ANTHROPIC_API_KEY;
+      delete process.env.FREECODE_FAKE_LLM;
+      process.env.ANTHROPIC_API_KEY = 'test-key';
+      try {
+        const result = resolveModel('anthropic:claude-sonnet-4-6');
+        expect(result.providerId).toBe('anthropic');
+        expect(result.modelId).toBe('claude-sonnet-4-6');
+        expect(result.supportsTools).toBe(true);
+        expect(result.model).toBeDefined();
+      } finally {
+        if (prevFake === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = prevFake;
+        if (prevKey === undefined) delete process.env.ANTHROPIC_API_KEY;
+        else process.env.ANTHROPIC_API_KEY = prevKey;
       }
     });
   });

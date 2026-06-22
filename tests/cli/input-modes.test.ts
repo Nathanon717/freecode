@@ -1,24 +1,23 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import type { Interface } from 'readline';
 import { createInteractiveMode, createScriptedMode } from '../../src/cli/input-modes.js';
 
 // readline.Interface stub. Scripted mode only touches rl through askContinueAfterLimit
 // (rl.resume / rl.pause / rl.question), exercised by the auto-confirm limit path.
-function makeRl(answer = '') {
+function makeRl(answer = ''): Interface {
   return {
     resume: vi.fn(),
     pause: vi.fn(),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     question: vi.fn((_prompt: string, cb: (a: string) => void) => cb(answer)),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any;
+  } as unknown as Interface;
 }
 
 describe('createScriptedMode', () => {
   let dir: string;
-  let logSpy: ReturnType<typeof vi.spyOn>;
+  let logSpy: MockInstance;
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'freecode-scripted-'));
@@ -101,6 +100,7 @@ describe('createScriptedMode', () => {
     const second = await mode.confirmToolCall({ name: 'read', args: {} });
     expect(second.approved).toBe(false);
     expect(second.message).toContain('limit of 2');
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(rl.question).toHaveBeenCalled();
   });
 
@@ -119,9 +119,9 @@ describe('createScriptedMode', () => {
     expect(mode.skipStrayConfirmations).toBe(true);
   });
 
-  it('announces goodbye when input is exhausted', () => {
+  it('announces goodbye when input is exhausted', async () => {
     const mode = createScriptedMode(writeScript([]), dir, makeRl());
-    mode.onInputExhausted?.();
+    await mode.onInputExhausted?.();
     expect(logSpy.mock.calls.flat().join(' ')).toContain('Goodbye');
   });
 });
@@ -136,7 +136,7 @@ describe('createInteractiveMode', () => {
     const mode = createInteractiveMode(
       makeRl(),
       process.cwd(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
       session as any,
       () => 'groq:test-model',
       () => {},

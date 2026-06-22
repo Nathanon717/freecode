@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { installScreenBuffer, getScreenBuffer, getScreenBufferDisplayLines, getScreenBufferDisplayLinesForOverlay, startOverlayEpoch } from '../../src/util/screen-buffer.js';
 
 // The buffer hooks process.stdout.write once per module instance. vitest isolates
@@ -8,7 +8,7 @@ import { installScreenBuffer, getScreenBuffer, getScreenBufferDisplayLines, getS
 describe('screen buffer', () => {
   // Stub the underlying write before the buffer installs over it, so the test
   // tokens we emit are still recorded by the buffer but never reach the terminal.
-  let writeSpy: ReturnType<typeof vi.spyOn>;
+  let writeSpy: MockInstance;
   beforeAll(() => {
     writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
   });
