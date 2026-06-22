@@ -14,14 +14,15 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "tsx scripts/test.ts",
+    "time": "tsx scripts/time.ts",
     "test:pty": "vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts",
     "unit:watch": "vitest",
     "coverage": "vitest run --coverage",
     "docs:generate": "tsx scripts/sync-docs.ts",
     "verify:scenarios": "tsx tests/harness/run-scenarios.ts --no-build --skip-llm",
     "pty:session": "cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts",
-    "lint": "eslint src tests scripts",
-    "lint:fix": "eslint src tests scripts --fix"
+    "lint": "eslint src tests scripts --cache",
+    "lint:fix": "eslint src tests scripts --cache --fix"
   },
   "keywords": [
     "cli",

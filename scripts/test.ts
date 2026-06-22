@@ -1,24 +1,10 @@
 import { spawnSync } from 'child_process';
+import { SECTIONS, useShell } from './pipeline.js';
 
 const start = Date.now();
-const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-
-const steps: [string, string[]][] = [
-  [npm, ['run', 'build']],
-  [npm, ['run', 'docs:generate']],
-  [npm, ['run', 'verify:scenarios']],
-  ['npx', ['vitest', 'run', '--reporter=dot',
-    '--exclude', 'tests/harness/pty/driver.test.ts',
-    '--exclude', 'tests/harness/pty/session.test.ts']],
-];
-
-// On Windows, npm/npx are .cmd batch scripts that cannot be spawned without a
-// shell; on Linux they are real executables. spawnSync swallows the spawn error
-// here, so without this the pipeline exits 0.0s having run nothing.
-const useShell = process.platform === 'win32';
 
 let exitCode = 0;
-for (const [cmd, args] of steps) {
+for (const { cmd, args } of SECTIONS) {
   const result = spawnSync(cmd, args, { stdio: 'inherit', shell: useShell });
   if (result.error) {
     console.error(`\nFailed to run ${cmd} ${args.join(' ')}: ${result.error.message}`);
