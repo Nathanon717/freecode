@@ -390,7 +390,7 @@ export function createScriptedMode(
       if (line.startsWith('"')) {
         try {
           return JSON.parse(line) as string;
-        } catch {}
+        } catch { /* ignore */ }
       }
       return line;
     });

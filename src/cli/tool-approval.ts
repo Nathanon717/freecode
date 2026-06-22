@@ -1,11 +1,10 @@
 import type { Interface } from "readline";
 import chalk from "chalk";
 import { getBannerColor } from "./banner.js";
-import {
-  filterArgs,
-  formatArgs,
-  type ToolCallConfirmation,
-  type ToolCallPreview,
+import { filterArgs, formatArgs } from "./transcript-renderer.js";
+import type {
+  ToolCallConfirmation,
+  ToolCallPreview,
 } from "../agent/tools/index.js";
 import { UserAbortError } from "../util/errors.js";
 import {
@@ -107,9 +106,9 @@ async function readToolApprovalMenu(
     rl.pause();
 
     // Remove readline's stdin listeners to prevent history-recall side-effects while in raw mode.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const savedListeners = process.stdin.rawListeners("data") as ((
-      ...args: any[]
+      ...args: unknown[]
     ) => void)[];
     process.stdin.removeAllListeners("data");
 
@@ -207,9 +206,9 @@ function askQuestionOrEscape(
     process.stdout.write(prompt);
     let buffer = "";
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const savedListeners = process.stdin.rawListeners("data") as ((
-      ...args: any[]
+      ...args: unknown[]
     ) => void)[];
     process.stdin.removeAllListeners("data");
     process.stdin.setRawMode(true);

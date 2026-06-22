@@ -2,6 +2,7 @@ import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import type { OverridableSettings } from './types.js';
 import { getCache, setCache, saveTranscriptAsync, persistModelRowAsync } from './db.js';
+import { registerModelSettings } from './model-settings-registry.js';
 
 interface EvalCheck { name: string; kind: string; pass?: boolean; message?: string; value?: string | number; note?: string; }
 
@@ -126,6 +127,8 @@ export function getModelSettings(key: string): OverridableSettings {
   return load()[key]?.settings ?? {};
 }
 
+registerModelSettings(getModelSettings);
+
 export function setModelSetting(key: string, field: keyof OverridableSettings, value: boolean | undefined): void {
   const store = load();
   const { provider, modelId } = splitKey(key);
@@ -183,7 +186,7 @@ export function getHumanEvalResults(key: string): Record<string, 'pass' | 'fail'
   for (const run of runs) {
     if (run.error !== null) continue;
     const existing = latestByTask.get(run.taskId);
-    if (!existing || run.timestamp > existing.timestamp) latestByTask.set(run.taskId, run);
+    if (!existing || run.timestamp >= existing.timestamp) latestByTask.set(run.taskId, run);
   }
   const results: Record<string, 'pass' | 'fail'> = {};
   for (const [taskId, run] of latestByTask) {

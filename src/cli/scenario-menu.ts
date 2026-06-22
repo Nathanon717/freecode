@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import type { Interface } from "readline";
 import chalk from "chalk";
@@ -12,7 +12,6 @@ import {
   statusCircle,
   loadEvalHistory,
   type PlaygroundScenario,
-  type ScenarioHashes,
 } from "./eval-dots.js";
 export { getEvalStatus };
 
@@ -49,6 +48,7 @@ import {
 } from "./eval-screen.js";
 import { InlineActionMenu } from "./action-menu.js";
 import { appendEvalRun } from "../providers/model-store.js";
+import { ensureStoreReady } from "../providers/db.js";
 import { getDeadIds } from "../providers/model-cache.js";
 import { invalidateDeadModel } from "../providers/registry.js";
 import { buildSystemPrompt } from "../agent/system-prompt.js";
@@ -58,6 +58,7 @@ export async function runEvalMenu(
   projectRoot: string,
   getSelectedModel: () => string,
 ): Promise<void> {
+  await ensureStoreReady();
   const restoreBottomUI = isBottomUIActive();
   teardownBottomUI();
   rl.resume();

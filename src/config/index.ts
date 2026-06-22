@@ -3,7 +3,7 @@ import { join, dirname } from 'path';
 import { homedir } from 'os';
 import type { Config, OverridableSettings, ProviderConfig } from '../providers/types.js';
 import { log, logError } from '../logger.js';
-import { getModelSettings } from '../providers/model-store.js';
+import { getModelSettings } from '../providers/model-settings-registry.js';
 import {
   getDbConfigCache,
   setDbConfigCache,
@@ -11,6 +11,7 @@ import {
   registerCacheInvalidator,
   type SyncableGlobalConfig,
 } from '../providers/db-config-cache.js';
+import { writeConfigMirror } from '../providers/db.js';
 
 const SYNCABLE_GLOBAL_KEYS: ReadonlyArray<keyof SyncableGlobalConfig> = [
   'toolRationale', 'showProviderUsage', 'parallelTools', 'toolConfirmation',
@@ -172,7 +173,9 @@ export function writeConfigFile(path: string, data: Partial<Config>): void {
     const newProviderOverrides = (data.providerOverrides as Record<string, OverridableSettings>) ?? {};
     const existingCache = getDbConfigCache() ?? { global: null, providerOverrides: null };
     const newGlobal: SyncableGlobalConfig = { ...(existingCache.global ?? {}), ...syncableGlobal };
-    setDbConfigCache({ global: newGlobal, providerOverrides: newProviderOverrides });
+    const newData = { global: newGlobal, providerOverrides: newProviderOverrides };
+    setDbConfigCache(newData);
+    writeConfigMirror(newData);
     persistDbConfig('global', newGlobal);
     persistDbConfig('providerOverrides', newProviderOverrides);
   }

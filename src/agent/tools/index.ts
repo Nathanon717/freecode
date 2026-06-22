@@ -92,15 +92,15 @@ function withLogging(name: string, t: AnyCoreTool, promptTools = false): AnyCore
         toolOut().write(callLine + '\n');
       }
 
-      let editContextBefore: string[] = [];
-      let editContextAfter: string[] = [];
+      const editContextBefore: string[] = [];
+      const editContextAfter: string[] = [];
       let editLineIndent = '';
       if (name === 'edit' && typeof args.path === 'string' && typeof args.old_text === 'string') {
         try {
           const filePath = join(process.cwd(), args.path);
           if (existsSync(filePath)) {
             const content = readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n');
-            const normalizedOld = (args.old_text as string)
+            const normalizedOld = (args.old_text)
               .replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\r\n/g, '\n');
             const idx = content.indexOf(normalizedOld);
             if (idx !== -1) {

@@ -82,7 +82,7 @@ export function startOverlayEpoch(): void {
 // the last min(L, count-1) lines of scroll-region output, with blank padding
 // at the top when L < count-1.  Lines are returned with their original ANSI
 // color codes intact so the restore does not bleach content.
-export function getScreenBufferDisplayLinesForOverlay(count: number, scrollHeight: number): string[] {
+export function getScreenBufferDisplayLinesForOverlay(count: number, _scrollHeight: number): string[] {
   const epochLines = displayLineBufferStyled.slice(epochStart);
   const L = epochLines.length;
   const contentCount = Math.min(L, count - 1);

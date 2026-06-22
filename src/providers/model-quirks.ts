@@ -25,12 +25,12 @@ export function injectSystemIntoFirstUserMessage(
   const msgs = [...messages];
   const sysIdx = msgs.findIndex(m => m['role'] === 'system');
   if (sysIdx === -1) return msgs;
-  const sysContent = typeof msgs[sysIdx]['content'] === 'string' ? (msgs[sysIdx]['content'] as string) : '';
+  const sysContent = typeof msgs[sysIdx]['content'] === 'string' ? (msgs[sysIdx]['content']) : '';
   msgs.splice(sysIdx, 1);
   if (!sysContent) return msgs;
   const firstUserIdx = msgs.findIndex(m => m['role'] === 'user');
   if (firstUserIdx !== -1) {
-    const userContent = typeof msgs[firstUserIdx]['content'] === 'string' ? (msgs[firstUserIdx]['content'] as string) : '';
+    const userContent = typeof msgs[firstUserIdx]['content'] === 'string' ? (msgs[firstUserIdx]['content']) : '';
     msgs[firstUserIdx] = { ...msgs[firstUserIdx], content: `${sysContent}\n\n${userContent}` };
   }
   return msgs;

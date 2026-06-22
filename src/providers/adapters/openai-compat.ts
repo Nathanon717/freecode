@@ -385,7 +385,7 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
               body = rest;
               mistralForcedNonStream = true;
             }
-            if (mistralCodestralRequiresSystemInjection(String(body['model'] ?? '')) && Array.isArray(body['messages'])) {
+            if (mistralCodestralRequiresSystemInjection(typeof body['model'] === 'string' ? body['model'] : '') && Array.isArray(body['messages'])) {
               body = { ...body, messages: injectSystemIntoFirstUserMessage(body['messages'] as Array<Record<string, unknown>>) };
             }
             patchedInit = { ...patchedInit, body: JSON.stringify(body) };

@@ -151,7 +151,7 @@ async function initZenModels(): Promise<void> {
         | Record<string, unknown>[];
       const data = Array.isArray(json)
         ? json
-        : ((json as { data?: Record<string, unknown>[] }).data ?? []);
+        : ((json).data ?? []);
       return data
         .filter((m) => typeof m.id === "string")
         .map((m) => ({
@@ -217,7 +217,7 @@ async function initProviderModels(
         | Record<string, unknown>[];
       const data = Array.isArray(json)
         ? json
-        : ((json as { data?: Record<string, unknown>[] }).data ?? []);
+        : ((json).data ?? []);
       return data
         .filter((m) => typeof m.id === "string")
         .filter(

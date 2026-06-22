@@ -1,6 +1,6 @@
 import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
-import { getProvider, invalidateDeadModel, resolveModel } from '../providers/registry.js';
+import { invalidateDeadModel, resolveModel } from '../providers/registry.js';
 import { buildSystemPrompt } from './system-prompt.js';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
 import {
@@ -19,7 +19,7 @@ import {
   type CostEstimate,
 } from '../providers/anthropic-cost.js';
 import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk, writeTranscriptSystemPrompt } from '../cli/transcript-renderer.js';
-import { renderMarkdown, createMarkdownStreamRenderer } from '../cli/markdown-renderer.js';
+import { createMarkdownStreamRenderer } from '../cli/markdown-renderer.js';
 import { getAnthropicVerifiedRates } from '../providers/pricing-verifier.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
@@ -29,6 +29,7 @@ import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
 import { executeToolCalls, runPromptToolsLoop } from './prompt-tools.js';
 import { isNativeToolsDisabled, setNativeTools } from '../providers/model-store.js';
+import { ensureStoreReady } from '../providers/db.js';
 import { FAKE_PROVIDER_ID, FAKE_NATIVE_PROVIDER_ID, assertFakeFixtureComplete, createFakeNativeLanguageModel, runFakeModel } from '../providers/fake.js';
 
 let systemPromptLogged = false;
@@ -305,6 +306,7 @@ export async function agentLoop(
   modelPreference?: string,
   options: AgentLoopOptions = {}
 ): Promise<AgentLoopResult> {
+  await ensureStoreReady();
   if (process.env.FREECODE_NO_LLM === '1') {
     const msg = 'LLM calls blocked (FREECODE_NO_LLM=1)';
     process.stdout.write(`Error: ${msg}\n`);

@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import type { Interface } from 'readline';
 import { loadConfig, resolveApiKey, saveDefaultModel } from '../config/index.js';
 import { getFavorites, setFavorite, getNoNativeToolsKeys, getModel } from '../providers/model-store.js';
+import { ensureStoreReady } from '../providers/db.js';
 import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/registry.js';
 import { markModelSelected } from '../providers/model-cache.js';
 import { clearModelNewFlag } from '../providers/registry.js';
@@ -79,6 +80,7 @@ export function filterModelItems(items: ModelMenuItem[], query: string): ModelMe
 }
 
 export async function getSelectableModels(): Promise<ModelMenuItem[]> {
+  await ensureStoreReady();
   await initDynamicProviders();
   const items: ModelMenuItem[] = [];
 
@@ -100,7 +102,7 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
   for (const item of items) {
     if (noNativeTools.has(`${item.providerId}:${item.modelId}`)) item.noNativeTools = true;
     const stored = getModel(`${item.providerId}:${item.modelId}`);
-    if (stored?.rateLimits) item.rateLimits = stored.rateLimits as ModelMenuItem['rateLimits'];
+    if (stored?.rateLimits) item.rateLimits = stored.rateLimits;
   }
 
   const pricedItems = items.filter(i => i.providerId === 'anthropic' || i.providerId === 'openai');
@@ -267,7 +269,7 @@ function buildModelDetailScreen(item: ModelMenuItem): string[] {
     const { buckets, observedAt } = item.rateLimits;
     const s = (Date.now() - Date.parse(observedAt)) / 1000;
     const ago = s < 60 ? `${Math.round(s)}s` : s < 3600 ? `${Math.round(s / 60)}m` : s < 86400 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`;
-    const fmtName = (n: string) => n.replace(/-per-(minute|hour|day)$/, (_, u) => `/${u[0]}`).replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase());
+    const fmtName = (n: string) => n.replace(/-per-(minute|hour|day)$/, (_, u: string) => `/${u[0]}`).replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase());
     const fmtMs = (ms: number | null) => ms === 60_000 ? '/min' : ms === 3_600_000 ? '/hr' : ms === 86_400_000 ? '/day' : ms ? ` (${Math.round(ms / 1000)}s window)` : '';
     lines.push(`  ${chalk.bold('Rate limits')}  ${chalk.dim(`observed ${ago} ago`)}`);
     for (const [k, b] of Object.entries(buckets)) {

@@ -4,6 +4,7 @@ import { getConfigPaths, loadConfig, readRawConfig, resolveModelSettings, update
 import type { Config, OverridableSettings } from '../providers/types.js';
 import { getModelSettings, setModelSetting } from '../providers/model-store.js';
 import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
+import { ensureStoreReady } from '../providers/db.js';
 
 // ── Setting definitions ───────────────────────────────────────────────────────
 
@@ -249,6 +250,7 @@ function cycleOverride(current: TabValue, direction: 1 | -1): TabValue {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export async function runConfigCommand(rl: Interface, currentModel = ''): Promise<void> {
+  await ensureStoreReady();
   if (!process.stdin.isTTY) {
     console.log(chalk.red('Config editor requires an interactive terminal.'));
     return;

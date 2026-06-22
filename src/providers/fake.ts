@@ -268,10 +268,8 @@ export function createFakeNativeLanguageModel(modelId: string, modelSettings: Fa
     specificationVersion: 'v1' as const,
     provider: FAKE_NATIVE_PROVIDER_ID,
     modelId,
-    doGenerate: async () => {
-      throw new Error('createFakeNativeLanguageModel: doGenerate not supported — use doStream');
-    },
-    doStream: async (options: LanguageModelV1CallOptions) => {
+    doGenerate: () => Promise.reject(new Error('createFakeNativeLanguageModel: doGenerate not supported — use doStream')),
+    doStream: (options: LanguageModelV1CallOptions) => {
       const fixture = readFixture();
       if (fixture.model && fixture.model !== `${FAKE_NATIVE_PROVIDER_ID}:${modelId}`) {
         throw new Error(`Fake LLM fixture model ${fixture.model} does not match selected model ${FAKE_NATIVE_PROVIDER_ID}:${modelId}`);
@@ -361,54 +359,63 @@ export function createFakeNativeLanguageModel(modelId: string, modelSettings: Fa
         },
       });
 
-      return { stream, rawCall: { rawPrompt: options.prompt, rawSettings: {} } };
+      return Promise.resolve({ stream, rawCall: { rawPrompt: options.prompt, rawSettings: {} } });
     },
   } as unknown as LanguageModel;
 }
 
-export async function runFakeModel(call: FakeModelCall): Promise<FakeModelResult> {
-  const fixture = readFixture();
-  if (fixture.model && fixture.model !== `${call.providerId}:${call.modelId}`) {
-    throw new Error(`Fake LLM fixture model ${fixture.model} does not match selected model ${call.providerId}:${call.modelId}`);
+// Not `async` (the body has nothing to await, which require-await forbids), but
+// readFixture/assertStepMatches throw synchronously on a malformed fixture and
+// callers — including `await expect(runFakeModel(...)).rejects` — rely on those
+// surfacing as a rejected promise, not a synchronous throw. The try/catch keeps
+// the contract: this always returns a promise.
+export function runFakeModel(call: FakeModelCall): Promise<FakeModelResult> {
+  try {
+    const fixture = readFixture();
+    if (fixture.model && fixture.model !== `${call.providerId}:${call.modelId}`) {
+      throw new Error(`Fake LLM fixture model ${fixture.model} does not match selected model ${call.providerId}:${call.modelId}`);
+    }
+
+    const step = fixture.steps[consumedSteps];
+    if (!step) {
+      throw new Error(`Fake LLM fixture exhausted before model call ${consumedSteps + 1}`);
+    }
+
+    const stepNumber = consumedSteps + 1;
+    assertStepMatches(step, stepNumber, call);
+    consumedSteps++;
+
+    if (step.response.error) throw new Error(step.response.error);
+
+    const chunks = step.response.chunks ?? (step.response.text !== undefined ? [step.response.text] : []);
+    const usage = step.response.usage ?? { totalTokens: 0 };
+    const toolCalls = step.response.toolCalls ?? [];
+    for (const chunk of chunks) process.stdout.write(chunk);
+    if (chunks.length > 0 && toolCalls.length === 0 && !chunks[chunks.length - 1].endsWith('\n')) process.stdout.write('\n');
+
+    appendTrace({
+      callIndex: stepNumber,
+      providerId: call.providerId,
+      modelId: call.modelId,
+      executionPath: 'fake-direct',
+      inputMessageCount: call.messages.length,
+      lastUserMessage: lastUserMessage(call.messages),
+      toolNames: call.toolNames,
+      toolRationale: call.toolRationale,
+      parallelTools: call.parallelTools,
+      nativeToolsSupplied: call.nativeToolsSupplied,
+      responseStep: stepNumber,
+      emittedChunks: chunks,
+      emittedToolCalls: toolCalls,
+      usage,
+    });
+
+    return Promise.resolve({
+      text: chunks.join(''),
+      usage,
+      toolCalls,
+    });
+  } catch (err) {
+    return Promise.reject(err instanceof Error ? err : new Error(String(err)));
   }
-
-  const step = fixture.steps[consumedSteps];
-  if (!step) {
-    throw new Error(`Fake LLM fixture exhausted before model call ${consumedSteps + 1}`);
-  }
-
-  const stepNumber = consumedSteps + 1;
-  assertStepMatches(step, stepNumber, call);
-  consumedSteps++;
-
-  if (step.response.error) throw new Error(step.response.error);
-
-  const chunks = step.response.chunks ?? (step.response.text !== undefined ? [step.response.text] : []);
-  const usage = step.response.usage ?? { totalTokens: 0 };
-  const toolCalls = step.response.toolCalls ?? [];
-  for (const chunk of chunks) process.stdout.write(chunk);
-  if (chunks.length > 0 && toolCalls.length === 0 && !chunks[chunks.length - 1].endsWith('\n')) process.stdout.write('\n');
-
-  appendTrace({
-    callIndex: stepNumber,
-    providerId: call.providerId,
-    modelId: call.modelId,
-    executionPath: 'fake-direct',
-    inputMessageCount: call.messages.length,
-    lastUserMessage: lastUserMessage(call.messages),
-    toolNames: call.toolNames,
-    toolRationale: call.toolRationale,
-    parallelTools: call.parallelTools,
-    nativeToolsSupplied: call.nativeToolsSupplied,
-    responseStep: stepNumber,
-    emittedChunks: chunks,
-    emittedToolCalls: toolCalls,
-    usage,
-  });
-
-  return {
-    text: chunks.join(''),
-    usage,
-    toolCalls,
-  };
 }

@@ -24,6 +24,7 @@ import { resetEvalWorkDir, startEvalScenario } from '../cli/eval-runner.js';
 import { printEvalHeader } from '../cli/eval-screen.js';
 import { statusCircle } from '../cli/eval-dots.js';
 import { appendEvalRun, getHumanEvalResults } from '../providers/model-store.js';
+import { ensureStoreReady } from '../providers/db.js';
 import { buildSystemPrompt } from '../agent/system-prompt.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
@@ -292,6 +293,7 @@ export async function runHumanEvalMenu(
   getSelectedModel: () => string,
   _downloadFn: (url: string, dest: string) => Promise<void> = downloadFile,
 ): Promise<void> {
+  await ensureStoreReady();
   const restoreBottomUI = isBottomUIActive();
   teardownBottomUI();
   rl.resume();
