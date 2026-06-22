@@ -2,7 +2,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { spawnSync, spawn } from 'child_process';
-import { tmpdir } from 'os';
+import { tmpdir, availableParallelism } from 'os';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { PROVIDER_REGISTRY } from '../../src/providers/registry.js';
@@ -42,6 +42,39 @@ interface Scenario {
   humanEvalExampleDataFixture?: string;
 }
 
+// Each scenario spawns its own freecode CLI process (and some spawn Python for
+// grading). Running all of them at once with Promise.all oversubscribes the CPU
+// — on a constrained box that starves process startup and the agent loop, so
+// even the 30s readyText budget and the per-step waitFor budgets blow, failing
+// scenarios that are perfectly correct. Cap concurrency so each process gets a
+// fair share. Override with SCENARIO_CONCURRENCY.
+const SCENARIO_CONCURRENCY = (() => {
+  const fromEnv = Number(process.env.SCENARIO_CONCURRENCY);
+  if (Number.isFinite(fromEnv) && fromEnv >= 1) return Math.floor(fromEnv);
+  return Math.max(2, Math.floor(availableParallelism() / 2));
+})();
+
+// Run `fn` over `items` with at most `limit` in flight at once, preserving the
+// input order of results.
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    let i = next++;
+    while (i < items.length) {
+      results[i] = await fn(items[i]);
+      i = next++;
+    }
+  };
+  const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+  await Promise.all(workers);
+  return results;
+}
+
 function printCapturedOutput(stdout: string, stderr: string): void {
   console.log(chalk.dim('--- stdout ---'));
   console.log(stdout.slice(0, 8000).trimEnd() || chalk.dim('(empty)'));
@@ -58,6 +91,13 @@ const noBuild = args.includes('--no-build');
 const showDetails = args.includes('--details');
 const onlyArg = args.find(arg => arg.startsWith('--only='));
 const onlyScenario = onlyArg?.slice('--only='.length);
+
+// When set, per-scenario wall-clock timings are written to this path as JSON
+// after the run. This only emits measurement data — it does not change which
+// scenarios run, their order, or concurrency. Used by `npm run time`.
+const timingJsonPath = process.env.SCENARIO_TIMING_JSON;
+type PhaseTiming = { label: string; ms: number; ok: boolean };
+const scenarioTimings: Array<{ name: string; type: 'tty' | 'verify'; ms: number; ok: boolean; phases?: PhaseTiming[] }> = [];
 
 if (!noBuild) {
   console.log(chalk.dim('Building...'));
@@ -98,7 +138,8 @@ const ttyScenarios = runnableScenarios.filter(({ file, scenario }) => {
 if (ttyScenarios.length > 0) {
   const { runTtyScenario } = await import('./pty/run-tty-scenario.js');
 
-  const ttyResults = await Promise.all(ttyScenarios.map(async ({ scenario }) => {
+  const ttyResults = await mapWithConcurrency(ttyScenarios, SCENARIO_CONCURRENCY, async ({ scenario }) => {
+    const t0 = Date.now();
     if (showDetails) {
       console.log(`\n  ${chalk.cyan('RUN')}   ${chalk.cyan(scenario.name)}`);
       console.log(`        ${chalk.dim(scenario.description || '(no description)')}`);
@@ -122,6 +163,7 @@ if (ttyScenarios.length > 0) {
 
     let ttyFailures: string[];
     let ttyScreen = '';
+    let ttyPhases: PhaseTiming[] = [];
     try {
       const result = await runTtyScenario({
         scenarioName: scenario.name,
@@ -148,6 +190,7 @@ if (ttyScenarios.length > 0) {
       });
       ttyFailures = result.failures;
       ttyScreen = result.transcript;
+      ttyPhases = result.phases;
     } catch (err) {
       ttyFailures = [`tty harness error: ${err instanceof Error ? err.message : String(err)}`];
     }
@@ -160,10 +203,11 @@ if (ttyScenarios.length > 0) {
     }
     try { rmSync(tmpHome, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpHome:', err); }
     try { rmSync(tmpStore, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpStore:', err); }
-    return { name: scenario.name, failures: ttyFailures, screen: ttyScreen };
-  }));
+    return { name: scenario.name, failures: ttyFailures, screen: ttyScreen, ms: Date.now() - t0, phases: ttyPhases };
+  });
 
-  for (const { name, failures, screen } of ttyResults) {
+  for (const { name, failures, screen, ms, phases } of ttyResults) {
+    scenarioTimings.push({ name, type: 'tty', ms, ok: failures.length === 0, phases: phases.length ? phases : undefined });
     if (failures.length === 0) {
       passed++;
     } else {
@@ -185,10 +229,13 @@ const nonTtyScenarios = runnableScenarios.filter(({ file, scenario }) => {
 });
 
 if (nonTtyScenarios.length > 0) {
-  const nonTtyResults = await Promise.all(nonTtyScenarios.map(async ({ scenario }) => {
+  const nonTtyResults = await mapWithConcurrency(nonTtyScenarios, SCENARIO_CONCURRENCY, async ({ scenario }) => {
+    const t0 = Date.now();
     const tmpHome = join(tmpdir(), `freecode-verify-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const tmpStore = join(tmpdir(), `freecode-store-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     const tmpWorkspace = join(tmpdir(), `freecode-workspace-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(tmpHome, { recursive: true });
+    mkdirSync(tmpStore, { recursive: true });
     if (scenario.workspace === 'temp') mkdirSync(tmpWorkspace, { recursive: true });
     if (scenario.filesBefore?.length) {
       for (const f of scenario.filesBefore) {
@@ -226,6 +273,7 @@ if (nonTtyScenarios.length > 0) {
           env: {
             ...safeBaseEnv,
             FREECODE_HOME: tmpHome,
+            FREECODE_STORE: tmpStore,
             DEBUG_QUOTA: '0',
             FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
             DOPPLER_PROJECT: '1',
@@ -272,14 +320,16 @@ if (nonTtyScenarios.length > 0) {
     });
 
     try { rmSync(tmpHome, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpHome:', err); }
+    try { rmSync(tmpStore, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpStore:', err); }
     if (scenario.workspace === 'temp') {
       try { rmSync(tmpWorkspace, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpWorkspace:', err); }
     }
 
-    return { scenario, failures, stdout, stderr, exitCode, trace, fakeLlmTrace };
-  }));
+    return { scenario, failures, stdout, stderr, exitCode, trace, fakeLlmTrace, ms: Date.now() - t0 };
+  });
 
-  for (const { scenario, failures, stdout, stderr, exitCode, trace, fakeLlmTrace } of nonTtyResults) {
+  for (const { scenario, failures, stdout, stderr, exitCode, trace, fakeLlmTrace, ms } of nonTtyResults) {
+    scenarioTimings.push({ name: scenario.name, type: 'verify', ms, ok: failures.length === 0 });
     if (showDetails) {
       const checks: string[] = [];
       if (scenario.expect.exitCode !== undefined) checks.push(`exitCode=${scenario.expect.exitCode}`);
@@ -318,6 +368,15 @@ if (nonTtyScenarios.length > 0) {
       }
       failed++;
     }
+  }
+}
+
+if (timingJsonPath) {
+  try {
+    scenarioTimings.sort((a, b) => b.ms - a.ms);
+    writeFileSync(timingJsonPath, JSON.stringify({ scenarios: scenarioTimings }, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('[timing] failed to write scenario timings:', err);
   }
 }
 

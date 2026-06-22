@@ -44,6 +44,7 @@
         "name": "run HumanEval/0",
         "send": "\r",
         "waitFor": "tokens:",
+        "waitForMs": 25000,
         "quietMs": 600,
         "screenContains": [
           "PASS  HumanEval/0"
