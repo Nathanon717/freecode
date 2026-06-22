@@ -13,13 +13,14 @@ This table is generated from `package.json`.
 | `npm run coverage` | `vitest run --coverage` |
 | `npm run dev` | `tsx src/index.ts` |
 | `npm run docs:generate` | `tsx scripts/sync-docs.ts` |
-| `npm run lint` | `eslint src tests scripts` |
-| `npm run lint:fix` | `eslint src tests scripts --fix` |
+| `npm run lint` | `eslint src tests scripts --cache` |
+| `npm run lint:fix` | `eslint src tests scripts --cache --fix` |
 | `npm run postinstall` | `node scripts/ensure-pty.cjs && node scripts/ensure-link.cjs` |
 | `npm run pty:session` | `cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts` |
 | `npm run start` | `node dist/index.js` |
 | `npm run test` | `tsx scripts/test.ts` |
 | `npm run test:pty` | `vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts` |
+| `npm run time` | `tsx scripts/time.ts` |
 | `npm run unit:watch` | `vitest` |
 | `npm run verify:scenarios` | `tsx tests/harness/run-scenarios.ts --no-build --skip-llm` |
 <!-- END GENERATED NPM SCRIPTS -->

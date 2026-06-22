@@ -9,6 +9,7 @@ Use this directory as the project handbook. Generated reference pages report fac
 - [Providers](providers.md): generated provider registry plus provider setup notes.
 - [Scenarios](scenarios.md): generated inventory of verification and eval scenarios.
 - [Scenario authoring](testing-scenarios.md): how to write and maintain scenario tests.
+- [Test pipeline timing](time.md): per-section timing tool to identify pipeline bottlenecks.
 - [Architecture decisions](architecture/adr/README.md): durable design records.
 - [Guidelines](guidelines/file-length.md): file length limits and extraction guidance.
 - [Codebase map](map/README.md): agent-oriented source navigation.

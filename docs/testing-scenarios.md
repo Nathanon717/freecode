@@ -266,6 +266,7 @@ Set `requiresLlm: false` and omit `turns`/`expect`; the `tty` block fully descri
   - `name`: Label used in failure messages.
   - `send`: Keystrokes to send. Control chars use JSON escapes: `"\t"` (Tab), `"\r"` (Enter), `"\u0003"` (Ctrl-C). The interactive input handler only acts on control keys when they arrive as a standalone chunk — always send typed text and a control key as **separate steps** (e.g. `{"send": "/model"}` then `{"send": "\r"}`). Bundling them (e.g. `"/model\r"`) silently drops the control character.
   - `waitFor`: Optional substring to await in the raw stream before asserting.
+  - `waitForMs`: Override the `waitFor` budget (default `8000`). Raise it for heavy steps (e.g. running a real subprocess) that can stall under the CPU contention of many TTY scenarios running in parallel.
   - `screenContains` / `screenAbsent`: Substrings that must / must not appear on the rendered viewport.
   - `quietMs`: Override the per-step settle window (default `350`).
 - `exit`: Keystrokes sent after the last step to end the process. Default `"\u0003"` (Ctrl-C); the CLI has no `/exit` command.
@@ -285,6 +286,44 @@ npm run pty:session -- stop "$ID"
 See `docs/pty-session.md` for the full reference, control character table, and common patterns.
 
 Run `npx tsx tests/harness/pty/demo.ts` for a fixed startup-through-`/clear` walkthrough. The harness driver lives in `tests/harness/pty/driver.ts` and the scenario runner in `tests/harness/pty/run-tty-scenario.ts`.
+
+### Per-step timing
+
+Per-phase timing for a single TTY scenario is part of the unified timing tool — drill in with:
+
+```
+npm run time -- scenario tty-autocomplete
+```
+
+That sets `TTY_TIMING=1` internally and narrows the run to the one scenario, so the harness records one timing per phase (startup → each step → exit) and `time.ts` nests them as children of the scenario in the timing report — no separate raw output. See [time.md](time.md) for the full timing model (depth follows scope). `TTY_TIMING` itself is an internal mechanism, not a knob you type.
+
+The phases appear as a chronological timeline under the scenario, and the leftover wall clock (Node spawn, harness boot, teardown) is reconciled into a sibling `harness startup + teardown` line so the children sum to the section total:
+
+```
+✓ scenarios                                              21.01s
+  ✓ tty-humaneval-fake                                   15.13s
+    ✓ startup                                            4.05s
+    ✓ run HumanEval/0                                    8.76s
+    ✓ exit                                               0.05s
+    …
+  ✓ harness startup + teardown                           5.88s
+```
+
+What the phases cover:
+- `startup` — spawn → `readyText` appears in the raw stream, plus the mandatory 400 ms post-ready silence-settle (~2–3 s per scenario, dominated by Node.js startup and DB init).
+- each step (labeled by the step's `name`) — the `send` plus its wait/settle. Steps without an explicit `waitFor` probe their first `screenContains` needle for 150 ms; a hit cuts the settle to 100 ms, a miss falls through to the full `quietMs` settle. Text rendered via cursor-positioning escapes (not raw text) always misses.
+- `exit` — the exit keystroke through process teardown.
+
+A phase is marked failed (`✗`) if any assertion in that phase failed.
+
+**Where time typically goes in slow scenarios:**
+
+| Cost | Cause |
+|---|---|
+| ~2–3 s fixed per scenario | Node.js spawn + app boot + 400 ms post-ready settle |
+| ~500–700 ms per fastCheck-miss step | 150 ms probe timeout + settle overrun |
+| settle overrun (e.g. cfg=500 ms → actual=1 073 ms) | UI keeps emitting after `send`; silence timer resets |
+| 7–10 s for humaneval / eval steps | Python subprocess or fake-LLM agent turn; use `waitFor` + `waitForMs` |
 
 ## Guidelines
 

@@ -9,7 +9,7 @@ on:
 
 jobs:
   verify:
-    name: Build, docs, and scenarios
+    name: Test
     runs-on: windows-latest
 
     steps:
@@ -25,11 +25,5 @@ jobs:
       - name: Install dependencies
         run: npm.cmd ci
 
-      - name: Build
-        run: npm.cmd run build
-
-      - name: Check generated docs
-        run: npm.cmd run docs:check
-
-      - name: Run non-LLM scenarios
-        run: npm.cmd run verify:scenarios
+      - name: Test
+        run: npm.cmd test

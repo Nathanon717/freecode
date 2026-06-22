@@ -12,7 +12,12 @@
       "Bash(apt list *)",
       "Bash(apt-get install *)",
       "Bash(git mv *)",
-      "Bash(npm prefix *)"
+      "Bash(npm prefix *)",
+      "Bash(npx eslint *)",
+      "Bash(xargs -n1 basename)",
+      "Bash(npx tsc *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

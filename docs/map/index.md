@@ -14,12 +14,12 @@ None. This is the `#!/usr/bin/env node` executable entry point.
 
 ## Startup
 
-1. Creates a process-wide readline interface.
-2. Sets `projectRoot` to `process.cwd()`.
-3. Enables diagnostic logging when `-log` is present.
+1. Enables diagnostic logging when `-log` is present.
+2. Validates arguments (`--model`/`--script` presence, `--script` file readability) **before** importing the runtime graph or opening the DB, so bad invocations exit in milliseconds. The runtime graph pulls the `ai` SDK (~4s cold) and libSQL (~1s); only `child_process`/`fs`/`chalk`/`logger` are statically imported, everything else is loaded via dynamic `import()` after validation passes.
+3. Dynamically imports the runtime graph (screen buffer, banner, input modes, session controller/runner, config, db), then creates a process-wide readline interface, sets `projectRoot` to `process.cwd()`, and constructs the `SessionController`.
 4. Calls `initStore()` to initialize the libSQL DB client and in-memory model cache.
 5. Loads config and seeds the selected model from `FREECODE_MODEL`, `config.defaultModel`, or `--model <provider:model>`.
-5. Routes to script mode or interactive mode. Ollama is probed lazily within each path (via `route()`) rather than unconditionally on startup — this avoids a network round-trip in scripted/scenario mode.
+6. Routes to script mode or interactive mode. Ollama is probed lazily within each path (via `route()`) rather than unconditionally on startup — this avoids a network round-trip in scripted/scenario mode.
 
 ## Modes
 
