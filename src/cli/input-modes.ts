@@ -51,6 +51,7 @@ import {
   formatScriptedToolMenu,
   parseScriptedToolChoice,
 } from "./tool-approval.js";
+import { runRawKeySession } from "./raw-picker.js";
 
 function resetBottomPromptState(session: SessionController): void {
   setTokenCount(session.getContextTokenCount());
@@ -113,42 +114,21 @@ async function readLineWithAutocomplete(
   setupInputUI();
   drawBottomUI();
 
-  return new Promise<string>((resolve) => {
-    rl.pause();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const savedListeners = process.stdin.rawListeners("data") as ((...args: any[]) => void)[];
-    process.stdin.removeAllListeners("data");
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding("utf8");
+  rl.pause();
 
-    function refresh() {
-      const input = getInputBuffer();
-      setInlineCompletion(getCommandCompletion(input));
-      setSuggestions(getFilteredCommands(input));
-      drawBottomUI();
-    }
+  function refresh() {
+    const input = getInputBuffer();
+    setInlineCompletion(getCommandCompletion(input));
+    setSuggestions(getFilteredCommands(input));
+    drawBottomUI();
+  }
 
-    function completedInput(): string {
-      return getCommandCompletion(getInputBuffer()) ?? getInputBuffer();
-    }
+  function completedInput(): string {
+    return getCommandCompletion(getInputBuffer()) ?? getInputBuffer();
+  }
 
-    function cleanup() {
-      process.stdin.removeListener("data", onData);
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-      for (const listener of savedListeners) {
-        process.stdin.on("data", listener);
-      }
-    }
-
-    function onData(data: string) {
-      if (data === "\x03") {
-        cleanup();
-        teardownFooterUI();
-        process.exit(0);
-      }
-
+  const rawSession = runRawKeySession<string>({
+    onKey(data: string) {
       // Ctrl+letter (codes \x01-\x1a): check against toggle chars.
       if (
         data.length === 1 &&
@@ -189,8 +169,7 @@ async function readLineWithAutocomplete(
           .map((l, i) => (i === 0 ? chalk.green('> ') : '  ') + l)
           .join('\r\n');
         process.stdout.write(displayText + "\r\n");
-        cleanup();
-        resolve(submitted);
+        rawSession.close(submitted);
         return;
       }
 
@@ -243,10 +222,18 @@ async function readLineWithAutocomplete(
         insertAtCursor(printable);
         refresh();
       }
-    }
-
-    process.stdin.on("data", onData);
+    },
+    onCtrlC() {
+      process.stdin.pause();
+      teardownFooterUI();
+      process.exit(0);
+    },
+    onClose() {
+      process.stdin.pause();
+    },
   });
+
+  return rawSession.promise;
 }
 
 const TOOL_CALL_LIMIT = 10;
