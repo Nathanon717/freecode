@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PROVIDER_REGISTRY, getProvider, initDynamicProviders, resolveModel, clearModelNewFlag, invalidateDeadModel } from '../../src/providers/registry.js';
 
 describe('Provider Registry', () => {
@@ -184,6 +184,11 @@ describe('Provider Registry', () => {
       expect(() => clearModelNewFlag('no-such-provider', 'any-model')).not.toThrow();
     });
 
+    it('is a no-op when model id does not exist within a known provider', () => {
+      const provider = PROVIDER_REGISTRY.find(p => p.modelsSource !== 'live' && p.models.length > 0)!;
+      expect(() => clearModelNewFlag(provider.id, 'absolutely-nonexistent-model-xyz')).not.toThrow();
+    });
+
     it('is a no-op when model has no isNew flag', () => {
       const provider = PROVIDER_REGISTRY.find(p => p.modelsSource !== 'live' && p.models.length > 0)!;
       const model = provider.models[0];
@@ -211,9 +216,67 @@ describe('Provider Registry', () => {
     });
   });
 
+  describe('resolveModel supportsTools flag', () => {
+    it('is false for providers with supportsTools: false', () => {
+      const prevFake = process.env.FREECODE_FAKE_LLM;
+      const prevKey = process.env.GROQ_API_KEY;
+      delete process.env.FREECODE_FAKE_LLM;
+      // Find a provider that explicitly disables tools if any, otherwise test the default
+      // Most providers default to supportsTools !== false, so supportsTools === true
+      process.env.GROQ_API_KEY = 'test-key';
+      try {
+        const result = resolveModel('groq:llama-3.3-70b-versatile');
+        expect(result.supportsTools).toBe(true);
+      } finally {
+        if (prevFake === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = prevFake;
+        if (prevKey === undefined) delete process.env.GROQ_API_KEY;
+        else process.env.GROQ_API_KEY = prevKey;
+      }
+    });
+  });
+
   describe('resolveModel', () => {
     it('throws when model preference is empty', () => {
       expect(() => resolveModel('')).toThrow('No model selected');
+    });
+
+    it('throws when model preference has no colon separator', () => {
+      const prev = process.env.FREECODE_FAKE_LLM;
+      delete process.env.FREECODE_FAKE_LLM;
+      try {
+        expect(() => resolveModel('no-colon-string')).toThrow('Invalid model format');
+      } finally {
+        if (prev === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = prev;
+      }
+    });
+
+    it('resolves mock: prefix in fake mode', () => {
+      const prev = process.env.FREECODE_FAKE_LLM;
+      process.env.FREECODE_FAKE_LLM = '1';
+      try {
+        const result = resolveModel('mock:test-model-id');
+        expect(result.providerId).toBe('mock');
+        expect(result.modelId).toBe('test-model-id');
+        expect(result.supportsTools).toBe(true);
+        expect(result.model).toBeDefined();
+      } finally {
+        if (prev === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = prev;
+      }
+    });
+
+    it('supportsTools is false when modelId contains no-tools in fake mode', () => {
+      const prev = process.env.FREECODE_FAKE_LLM;
+      process.env.FREECODE_FAKE_LLM = '1';
+      try {
+        const result = resolveModel('mock:my-no-tools-model');
+        expect(result.supportsTools).toBe(false);
+      } finally {
+        if (prev === undefined) delete process.env.FREECODE_FAKE_LLM;
+        else process.env.FREECODE_FAKE_LLM = prev;
+      }
     });
 
     it('throws for an unknown provider in real mode', () => {
@@ -279,5 +342,470 @@ describe('Provider Registry', () => {
         else process.env.ANTHROPIC_API_KEY = prevKey;
       }
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Live provider init tests – each test gets a fresh module instance so the
+// module-level `initializedProviders` Set starts empty every time.
+// ---------------------------------------------------------------------------
+
+describe('initDynamicProviders live fetching', () => {
+  let getDeadIdsMock: ReturnType<typeof vi.fn>;
+  let getProviderCacheMock: ReturnType<typeof vi.fn>;
+  let updateProviderCacheMock: ReturnType<typeof vi.fn>;
+  let markModelDeadMock: ReturnType<typeof vi.fn>;
+
+  function makeFetch(patterns: Record<string, unknown>) {
+    return vi.fn((url: string) => {
+      for (const [pat, data] of Object.entries(patterns)) {
+        if (url.includes(pat)) return Promise.resolve({ ok: true, json: () => Promise.resolve(data) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+    });
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+    getDeadIdsMock = vi.fn().mockReturnValue([]);
+    getProviderCacheMock = vi.fn().mockReturnValue(null);
+    updateProviderCacheMock = vi.fn().mockReturnValue({ newIds: [], removedIds: [] });
+    markModelDeadMock = vi.fn();
+    vi.doMock('../../src/providers/model-cache.js', () => ({
+      getDeadIds: getDeadIdsMock,
+      getProviderCache: getProviderCacheMock,
+      updateProviderCache: updateProviderCacheMock,
+      markModelDead: markModelDeadMock,
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.doUnmock('../../src/providers/model-cache.js');
+    for (const k of [
+      'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY',
+      'SILICONFLOW_API_KEY', 'NVIDIA_API_KEY', 'LLM7_API_KEY', 'COHERE_API_KEY',
+      'CEREBRAS_API_KEY', 'MISTRAL_API_KEY', 'OPENCODE_ZEN_API_KEY',
+    ]) delete process.env[k];
+  });
+
+  it('zen always initializes via defaultApiKey and filters to free models', async () => {
+    vi.stubGlobal('fetch', makeFetch({
+      'opencode.ai': {
+        data: [
+          { id: 'gemini-flash-free', name: 'Gemini Flash Free' },
+          { id: 'minimax-m3-free', name: 'Minimax M3 Free' },   // blocked by modelIdBlocklist
+          { id: 'paid-model', name: 'Paid Model' },              // no -free suffix
+          { id: 'big-pickle', name: 'Big Pickle' },              // ZEN_FREE_IDS
+          { id: 'qwen3.6-plus-free', name: 'Retired Free' },     // ZEN_RETIRED_FREE_IDS
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
+    const ids = zen.models.map((m) => m.id);
+    expect(ids).toContain('gemini-flash-free');
+    expect(ids).toContain('big-pickle');
+    expect(ids).not.toContain('minimax-m3-free');
+    expect(ids).not.toContain('paid-model');
+    expect(ids).not.toContain('qwen3.6-plus-free');
+  });
+
+  it('zen handles array-format (non-wrapped) response', async () => {
+    vi.stubGlobal('fetch', makeFetch({
+      'opencode.ai': [{ id: 'array-model-free', name: 'Array Model' }],
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
+    expect(zen.models.map((m) => m.id)).toContain('array-model-free');
+  });
+
+  it('zen maps context_length to contextWindow', async () => {
+    vi.stubGlobal('fetch', makeFetch({
+      'opencode.ai': { data: [{ id: 'ctx-model-free', name: 'Ctx', context_length: 8192 }] },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
+    expect(zen.models.find((m) => m.id === 'ctx-model-free')?.contextWindow).toBe(8192);
+  });
+
+  it('openrouter fetches and filters :free models when API key is set', async () => {
+    process.env.OPENROUTER_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'openrouter.ai': {
+        data: [
+          { id: 'vendor/model-a:free', name: 'Free Model', context_length: 4096 },
+          { id: 'vendor/paid-model', name: 'Paid Model' },
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const or = PROVIDER_REGISTRY.find((p) => p.id === 'openrouter')!;
+    expect(or.models).toContainEqual(expect.objectContaining({ id: 'vendor/model-a:free', contextWindow: 4096 }));
+    expect(or.models.find((m) => m.id === 'vendor/paid-model')).toBeUndefined();
+  });
+
+  it('openrouter is skipped when no API key is set', async () => {
+    const fetchMock = makeFetch({});
+    vi.stubGlobal('fetch', fetchMock);
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const or = PROVIDER_REGISTRY.find((p) => p.id === 'openrouter')!;
+    expect(or.models).toEqual([]);
+    const calledUrls = (fetchMock.mock.calls as [string][]).map((a) => a[0]);
+    expect(calledUrls.every((u) => !u.includes('openrouter.ai'))).toBe(true);
+  });
+
+  it('anthropic fetches models using display_name field and falls back to id', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'api.anthropic.com': {
+        data: [
+          { id: 'claude-opus-4', display_name: 'Claude Opus 4' },
+          { id: 'claude-no-display' },
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const anth = PROVIDER_REGISTRY.find((p) => p.id === 'anthropic')!;
+    expect(anth.models).toContainEqual(expect.objectContaining({ id: 'claude-opus-4', displayName: 'Claude Opus 4' }));
+    expect(anth.models.find((m) => m.id === 'claude-no-display')?.displayName).toBe('claude-no-display');
+  });
+
+  it('generic provider applies modelIdBlocklist', async () => {
+    process.env.GROQ_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'api.groq.com': {
+        data: [
+          { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B' },
+          { id: 'llama-prompt-guard-8b', name: 'Prompt Guard' },
+          { id: 'whisper-large-v3', name: 'Whisper' },
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
+    const ids = groq.models.map((m) => m.id);
+    expect(ids).toContain('llama-3.3-70b-versatile');
+    expect(ids).not.toContain('llama-prompt-guard-8b');
+    expect(ids).not.toContain('whisper-large-v3');
+  });
+
+  it('generic provider applies preferAliasOverDated', async () => {
+    process.env.GROQ_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'api.groq.com': {
+        data: [
+          { id: 'llama-3-70b', name: 'Llama 3 70B' },
+          { id: 'llama-3-70b-2024-05-01', name: 'Llama 3 70B Dated' },
+          { id: 'llama-3-8b-2024-05-01', name: 'Llama 3 8B Dated' },
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
+    const ids = groq.models.map((m) => m.id);
+    expect(ids).toContain('llama-3-70b');
+    expect(ids).not.toContain('llama-3-70b-2024-05-01');
+    expect(ids).toContain('llama-3-8b-2024-05-01');
+  });
+
+  it('generic provider deduplicates by displayName keeping highest versionScore (later wins)', async () => {
+    process.env.GROQ_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'api.groq.com': {
+        data: [
+          { id: 'llama-4-scout', name: 'Llama 4 Scout' },       // first, score 0
+          { id: 'llama-4-scout-2025', name: 'Llama 4 Scout' },   // second, score 2 → wins
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
+    expect(groq.models).toHaveLength(1);
+    expect(groq.models[0].id).toBe('llama-4-scout-2025');
+  });
+
+  it('generic provider deduplicates by displayName keeping highest versionScore (first wins)', async () => {
+    process.env.GROQ_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'api.groq.com': {
+        data: [
+          { id: 'llama-2026', name: 'Llama Versioned' },   // first, score 2 → stays as best
+          { id: 'llama-base', name: 'Llama Versioned' },    // second, score 0 → best doesn't change
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
+    expect(groq.models).toHaveLength(1);
+    expect(groq.models[0].id).toBe('llama-2026');
+  });
+
+  it('modelIdExactBlocklist filters exact IDs (not substring matches)', async () => {
+    process.env.OPENAI_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'api.openai.com': {
+        data: [
+          { id: 'gpt-4o', name: 'GPT-4o' },
+          { id: 'chat-latest', name: 'Chat Latest' },
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const openai = PROVIDER_REGISTRY.find((p) => p.id === 'openai')!;
+    const ids = openai.models.map((m) => m.id);
+    expect(ids).toContain('gpt-4o');
+    expect(ids).not.toContain('chat-latest');
+  });
+
+  it('modelTierBlocklist excludes models by tier field', async () => {
+    process.env.LLM7_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'api.llm7.io': {
+        data: [
+          { id: 'free-model', name: 'Free Model', tier: 'free' },
+          { id: 'pro-model', name: 'Pro Model', tier: 'pro' },
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const llm7 = PROVIDER_REGISTRY.find((p) => p.id === 'llm7')!;
+    const ids = llm7.models.map((m) => m.id);
+    expect(ids).toContain('free-model');
+    expect(ids).not.toContain('pro-model');
+  });
+
+  it('context_window object with tokens/chars fields is mapped and displayName falls back to id', async () => {
+    process.env.GROQ_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'api.groq.com': {
+        data: [
+          { id: 'model-a', name: 'A', context_window: { tokens: 8192 } },
+          { id: 'model-b', name: 'B', context_window: { chars: 4096 } },
+          { id: 'model-c', name: 'C', context_window: 2048 },
+          { id: 'model-d', name: 'D', context_window: null },
+          { id: 'model-e', name: 'E' },
+          { id: 'model-no-name', context_window: 512 }, // no name field → displayName falls back to id
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
+    expect(groq.models.find((m) => m.id === 'model-a')?.contextWindow).toBe(8192);
+    expect(groq.models.find((m) => m.id === 'model-b')?.contextWindow).toBe(4096);
+    expect(groq.models.find((m) => m.id === 'model-c')?.contextWindow).toBe(2048);
+    expect(groq.models.find((m) => m.id === 'model-d')?.contextWindow).toBeUndefined();
+    expect(groq.models.find((m) => m.id === 'model-e')?.contextWindow).toBeUndefined();
+    expect(groq.models.find((m) => m.id === 'model-no-name')?.displayName).toBe('model-no-name');
+  });
+
+  it('generic provider deduplicates by displayName keeping semver-scored id', async () => {
+    process.env.GROQ_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'api.groq.com': {
+        data: [
+          { id: 'llama-chat', name: 'Llama Chat' },
+          { id: 'llama-chat-v1.5', name: 'Llama Chat' }, // semver → versionScore 1 wins
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
+    expect(groq.models).toHaveLength(1);
+    expect(groq.models[0].id).toBe('llama-chat-v1.5');
+  });
+
+  it('zen with object response missing data field yields empty models', async () => {
+    vi.stubGlobal('fetch', makeFetch({
+      'opencode.ai': {}, // object without data → data ?? [] → []
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
+    expect(zen.models).toEqual([]);
+  });
+
+  it('generic provider handles array-format response', async () => {
+    process.env.GROQ_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'api.groq.com': [{ id: 'direct-array-model', name: 'Array Model' }],
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
+    expect(groq.models.map((m) => m.id)).toContain('direct-array-model');
+  });
+
+  it('generic provider with object response missing data field yields empty models', async () => {
+    process.env.GROQ_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'api.groq.com': {}, // object without data → data ?? [] → []
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
+    expect(groq.models).toEqual([]);
+  });
+
+  it('falls back to cached models when fetch fails', async () => {
+    getProviderCacheMock.mockImplementation((id: string) =>
+      id === 'zen'
+        ? { models: [{ id: 'cached-zen-free', displayName: 'Cached Zen' }], newIds: [] }
+        : null,
+    );
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network failure')));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
+    expect(zen.models).toContainEqual(expect.objectContaining({ id: 'cached-zen-free' }));
+  });
+
+  it('HTTP error from fetch triggers cache fallback', async () => {
+    getProviderCacheMock.mockImplementation((id: string) =>
+      id === 'zen'
+        ? { models: [{ id: 'fallback-model-free', displayName: 'Fallback' }], newIds: [] }
+        : null,
+    );
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
+    expect(zen.models).toContainEqual(expect.objectContaining({ id: 'fallback-model-free' }));
+  });
+
+  it('dead models are excluded from live fetch results', async () => {
+    getDeadIdsMock.mockImplementation((id: string) =>
+      id === 'zen' ? ['dead-model-free'] : [],
+    );
+    vi.stubGlobal('fetch', makeFetch({
+      'opencode.ai': {
+        data: [
+          { id: 'dead-model-free', name: 'Dead' },
+          { id: 'live-model-free', name: 'Live' },
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
+    const ids = zen.models.map((m) => m.id);
+    expect(ids).not.toContain('dead-model-free');
+    expect(ids).toContain('live-model-free');
+  });
+
+  it('new model IDs from updateProviderCache are flagged with isNew', async () => {
+    updateProviderCacheMock.mockReturnValue({ newIds: ['new-model-free'], removedIds: [] });
+    vi.stubGlobal('fetch', makeFetch({
+      'opencode.ai': {
+        data: [
+          { id: 'new-model-free', name: 'New' },
+          { id: 'old-model-free', name: 'Old' },
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
+    expect(zen.models.find((m) => m.id === 'new-model-free')?.isNew).toBe(true);
+    expect(zen.models.find((m) => m.id === 'old-model-free')?.isNew).toBeUndefined();
+  });
+
+  it('provider is not re-initialized when already in initializedProviders', async () => {
+    const calledUrls: string[] = [];
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      calledUrls.push(url);
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [{ id: 'model-free', name: 'M' }] }) });
+    }));
+    const { initDynamicProviders } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+    const zenCallsAfterFirst = calledUrls.filter((u) => u.includes('opencode.ai')).length;
+    await initDynamicProviders();
+    const zenCallsAfterSecond = calledUrls.filter((u) => u.includes('opencode.ai')).length;
+    expect(zenCallsAfterFirst).toBe(1);
+    expect(zenCallsAfterSecond).toBe(1);
+  });
+
+  it('anthropic falls back to cache on HTTP error', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    getProviderCacheMock.mockImplementation((id: string) =>
+      id === 'anthropic'
+        ? { models: [{ id: 'claude-cached', displayName: 'Claude Cached' }], newIds: [] }
+        : null,
+    );
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      if (url.includes('api.anthropic.com')) return Promise.resolve({ ok: false, status: 503 });
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const anth = PROVIDER_REGISTRY.find((p) => p.id === 'anthropic')!;
+    expect(anth.models).toContainEqual(expect.objectContaining({ id: 'claude-cached' }));
+  });
+
+  it('generic provider falls back to cache on HTTP error', async () => {
+    process.env.GROQ_API_KEY = 'test-key';
+    getProviderCacheMock.mockImplementation((id: string) =>
+      id === 'groq'
+        ? { models: [{ id: 'cached-groq', displayName: 'Cached Groq' }], newIds: [] }
+        : null,
+    );
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      if (url.includes('api.groq.com')) return Promise.resolve({ ok: false, status: 403 });
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
+    expect(groq.models).toContainEqual(expect.objectContaining({ id: 'cached-groq' }));
+  });
+
+  it('generic provider with no API key is skipped entirely', async () => {
+    // All provider env vars unset; only zen (defaultApiKey) will attempt init
+    const fetchMock = makeFetch({});
+    vi.stubGlobal('fetch', fetchMock);
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    await initDynamicProviders();
+
+    const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
+    expect(groq.models).toEqual([]);
+    const calledUrls = (fetchMock.mock.calls as [string][]).map((a) => a[0]);
+    expect(calledUrls.every((u) => !u.includes('api.groq.com'))).toBe(true);
   });
 });
