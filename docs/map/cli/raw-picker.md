@@ -1,40 +1,58 @@
 # src/cli/raw-picker.ts - Shared Raw-Mode Picker
 
-**Role:** Provides the shared raw-mode terminal picker primitive used by `/model`, `/config`, and `/eval`.
+**Role:** Provides the shared raw-mode terminal picker primitive used by `/model`, `/config`, and `/eval`. Also exports `runRawKeySession`, the low-level stdin raw-mode lifecycle primitive that `runRawPicker` is built on.
 
 ## Exports
 
 ```typescript
+// Low-level lifecycle primitive (Phase 1 extraction).
+interface RawKeySessionCallbacks {
+  onKey: (key: string) => void;
+  onCtrlC: () => void;           // required; called after core cleanup on Ctrl-C
+  onClose?: () => void;          // called after core cleanup, before promise resolves
+}
+interface RawKeySession<T> {
+  close: (value: T) => void;
+  promise: Promise<T>;
+}
+runRawKeySession<T = void>(callbacks: RawKeySessionCallbacks): RawKeySession<T>
+
+// High-level picker built on runRawKeySession.
 interface RawPickerOptions<T = void> {
   render: () => string[];
   onKey: (key: string, redraw: () => void, close: (result: T) => void) => void;
   countLines?: (lines: string[]) => number;
   onExitClear?: (rowCount: number) => void;
+  skipScrollClear?: boolean;
 }
-
 runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 ```
 
 ## Responsibilities
 
-Owns the raw-mode lifecycle so callers don't repeat it:
+`runRawKeySession` owns the bare stdin lifecycle:
+- Snapshot and remove pre-existing 'data' listeners; `setRawMode(true)` / `resume()` / `setEncoding('utf8')`.
+- Dispatch non-Ctrl-C keys to `onKey`; on Ctrl-C, do core cleanup then call `onCtrlC`.
+- On `close(value)`: core cleanup (raw off, listeners restored), then `onClose?.()`, then resolve.
 
-- Temporarily removes readline's stdin data listeners, enters raw mode, hides cursor.
-- Calls `render()` on each `redraw()` and after `drawFooter()`.
-- Handles Ctrl+C (`\x03`) → cleanup + `process.exit(0)`.
-- Restores cooked mode, cursor, readline, and flowing stdin on `close()`.
+`runRawPicker` owns the higher-level picker concerns:
+- Cursor hide/show, footer suspend/resume/redraw, viewport scroll-clear, row erase on exit.
+- Handles Ctrl+C (`\x03`) → caller's `onCtrlC` which calls `extraCleanup` + `process.exit(0)`.
+- Restores cooked mode, cursor, readline, and flowing stdin via `onClose`.
 
-## Caller responsibilities
+## Caller responsibilities (runRawPicker)
 
 - `render()`: returns an array of lines to display.
-- `onKey()`: handles all keys except Ctrl+C. Calls `redraw()` to update the screen or `close(result)` to exit.
+- `onKey()`: handles all keys. Calls `redraw()` to update the screen or `close(result)` to exit.
 - `countLines` (optional): wrapping-aware line count for terminals narrower than the content (used by `/config`).
-- `onExitClear` (optional): replaces the default `\x1b[${rowCount}A\r\x1b[J` erase on exit. Used by `/config` to reset/restore the scroll region around the clear (Windows ConPTY workaround).
+- `onExitClear` (optional): replaces the default `\x1b[${rowCount}A\r\x1b[J` erase on exit. Used by `/config` to reset/restore the scroll region (Windows ConPTY workaround).
+- `skipScrollClear` (optional): skip the viewport scroll-clear before first draw.
 
 ## Read when
 
 - Changing the raw-mode lifecycle shared by the three pickers.
 - Adding a new interactive picker command.
+- Implementing Phase 2 (tool-approval.ts) or Phase 3 (input-modes.ts) to reuse `runRawKeySession`.
 
 ## Key neighbors
 
@@ -42,3 +60,5 @@ Owns the raw-mode lifecycle so callers don't repeat it:
 - `commands/config.ts` — `/config` editor
 - `cli/scenario-menu.ts` — `/eval` picker
 - `cli/terminal-ui.ts` — `drawFooter` called after each redraw
+- `cli/tool-approval.ts` — Phase 2 target (hand-rolls same lifecycle, not yet using runRawKeySession)
+- `cli/input-modes.ts` — Phase 3 target
