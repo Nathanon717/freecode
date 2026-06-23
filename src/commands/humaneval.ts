@@ -29,7 +29,7 @@ import { buildSystemPrompt } from '../agent/system-prompt.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const HUMANEVAL_DATA_DEFAULT = resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'HumanEval.jsonl.gz');
-const HUMANEVAL_EXAMPLE_DATA = process.env['HUMANEVAL_EXAMPLE_DATA'] ?? resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'example_problem.jsonl');
+const HUMANEVAL_EXAMPLE_DATA_DEFAULT = resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'example_problem.jsonl');
 const HUMANEVAL_RUNS_DIR = resolve(_dirname, '..', '..', 'playground', 'humaneval', '.runs');
 
 const HUMANEVAL_DOWNLOAD_URL = 'https://github.com/openai/human-eval/raw/master/data/HumanEval.jsonl.gz';
@@ -67,6 +67,7 @@ interface HumanEvalProblem {
 
 function readProblems(): HumanEvalProblem[] {
   const dataPath = process.env['HUMANEVAL_DATA'] ?? HUMANEVAL_DATA_DEFAULT;
+  const exampleDataPath = process.env['HUMANEVAL_EXAMPLE_DATA'] ?? HUMANEVAL_EXAMPLE_DATA_DEFAULT;
   const compressed = readFileSync(dataPath);
   const text = gunzipSync(compressed).toString('utf-8');
   const main = text.split('\n')
@@ -74,8 +75,8 @@ function readProblems(): HumanEvalProblem[] {
     .map(line => JSON.parse(line) as HumanEvalProblem);
 
   let example: HumanEvalProblem[] = [];
-  if (existsSync(HUMANEVAL_EXAMPLE_DATA)) {
-    example = readFileSync(HUMANEVAL_EXAMPLE_DATA, 'utf-8')
+  if (existsSync(exampleDataPath)) {
+    example = readFileSync(exampleDataPath, 'utf-8')
       .split('\n')
       .filter(line => line.trim())
       .map(line => JSON.parse(line) as HumanEvalProblem);

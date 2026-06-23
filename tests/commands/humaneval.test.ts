@@ -105,12 +105,16 @@ describe('downloadFile', () => {
 describe('runHumanEvalMenu', () => {
   let originalIsTTY: boolean | undefined;
   let originalData: string | undefined;
+  let originalExampleData: string | undefined;
   let tmpDir: string;
 
   beforeEach(() => {
     originalIsTTY = process.stdin.isTTY;
     originalData = process.env['HUMANEVAL_DATA'];
+    originalExampleData = process.env['HUMANEVAL_EXAMPLE_DATA'];
     tmpDir = mkdtempSync(join(tmpdir(), 'humaneval-menu-'));
+    // Point example data at a non-existent path so tests control the full problem list
+    process.env['HUMANEVAL_EXAMPLE_DATA'] = join(tmpDir, 'no-example.jsonl');
     pickerStore.capturedOpts = null;
     vi.clearAllMocks();
   });
@@ -119,6 +123,8 @@ describe('runHumanEvalMenu', () => {
     Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, configurable: true });
     if (originalData === undefined) delete process.env['HUMANEVAL_DATA'];
     else process.env['HUMANEVAL_DATA'] = originalData;
+    if (originalExampleData === undefined) delete process.env['HUMANEVAL_EXAMPLE_DATA'];
+    else process.env['HUMANEVAL_EXAMPLE_DATA'] = originalExampleData;
     rmSync(tmpDir, { recursive: true, force: true });
     vi.restoreAllMocks();
   });
