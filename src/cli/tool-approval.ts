@@ -16,6 +16,7 @@ import {
   setupInputUI,
   teardownBottomUI,
 } from "./terminal-ui.js";
+import { runRawKeySession } from "./raw-picker.js";
 
 export type ToolApprovalChoice = "approve" | "deny";
 
@@ -102,64 +103,33 @@ async function readToolApprovalMenu(
     drawToolApprovalMenu(selected);
   }
 
-  return new Promise<ToolApprovalChoice | null>((resolve) => {
-    rl.pause();
+  rl.pause();
 
-    // Remove readline's stdin listeners to prevent history-recall side-effects while in raw mode.
-     
-    const savedListeners = process.stdin.rawListeners("data") as ((
-      ...args: unknown[]
-    ) => void)[];
-    process.stdin.removeAllListeners("data");
-
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding("utf8");
-
-    function redraw() {
-      if (useAbsolute) {
-        drawToolApprovalMenuAbsolute(
-          selected,
-          getRows(),
-          getLastReservedRows(),
-          header,
-        );
-      } else {
-        process.stdout.write("\r\x1b[1A");
-        drawToolApprovalMenu(selected);
-      }
+  function redraw() {
+    if (useAbsolute) {
+      drawToolApprovalMenuAbsolute(
+        selected,
+        getRows(),
+        getLastReservedRows(),
+        header,
+      );
+    } else {
+      process.stdout.write("\r\x1b[1A");
+      drawToolApprovalMenu(selected);
     }
+  }
 
-    function cleanup() {
-      process.stdin.removeListener("data", onData);
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-      // Restore readline's listeners.
-      for (const listener of savedListeners) {
-        process.stdin.on("data", listener);
-      }
-    }
-
-    function finish(choice: ToolApprovalChoice | null) {
-      cleanup();
-      resolve(choice);
-    }
-
-    function onData(data: string) {
-      if (data === "\x03") {
-        cleanup();
-        process.exit(0);
-      }
-
+  const session = runRawKeySession<ToolApprovalChoice | null>({
+    onKey(data) {
       if (data === "\r" || data === "\n") {
         process.stdout.write("\n");
-        finish(selected);
+        session.close(selected);
         return;
       }
 
       if (data === "\x1b") {
         process.stdout.write("\n");
-        finish(null);
+        session.close(null);
         return;
       }
 
@@ -185,10 +155,17 @@ async function readToolApprovalMenu(
         selected = "deny";
         redraw();
       }
-    }
-
-    process.stdin.on("data", onData);
+    },
+    onCtrlC() {
+      process.stdin.pause();
+      process.exit(0);
+    },
+    onClose() {
+      process.stdin.pause();
+    },
   });
+
+  return session.promise;
 }
 
 function askQuestionOrEscape(
@@ -202,45 +179,20 @@ function askQuestionOrEscape(
     });
   }
 
-  return new Promise<string | null>((resolve) => {
-    process.stdout.write(prompt);
-    let buffer = "";
+  process.stdout.write(prompt);
+  let buffer = "";
 
-     
-    const savedListeners = process.stdin.rawListeners("data") as ((
-      ...args: unknown[]
-    ) => void)[];
-    process.stdin.removeAllListeners("data");
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding("utf8");
-
-    function cleanup() {
-      process.stdin.removeListener("data", onData);
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-      for (const listener of savedListeners) {
-        process.stdin.on("data", listener);
-      }
-    }
-
-    function onData(data: string) {
-      if (data === "\x03") {
-        cleanup();
-        process.exit(0);
-      }
-
+  const session = runRawKeySession<string | null>({
+    onKey(data) {
       if (data === "\r" || data === "\n") {
         process.stdout.write("\n");
-        cleanup();
-        resolve(buffer);
+        session.close(buffer);
         return;
       }
 
       if (data === "\x1b") {
         process.stdout.write("\n");
-        cleanup();
-        resolve(null);
+        session.close(null);
         return;
       }
 
@@ -259,10 +211,17 @@ function askQuestionOrEscape(
         buffer += printable;
         process.stdout.write(printable);
       }
-    }
-
-    process.stdin.on("data", onData);
+    },
+    onCtrlC() {
+      process.stdin.pause();
+      process.exit(0);
+    },
+    onClose() {
+      process.stdin.pause();
+    },
   });
+
+  return session.promise;
 }
 
 export async function confirmToolCallInteractive(

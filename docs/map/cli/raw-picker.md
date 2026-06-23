@@ -50,9 +50,9 @@ runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 
 ## Read when
 
-- Changing the raw-mode lifecycle shared by the three pickers.
+- Changing the raw-mode lifecycle shared by the pickers.
 - Adding a new interactive picker command.
-- Implementing Phase 2 (tool-approval.ts) or Phase 3 (input-modes.ts) to reuse `runRawKeySession`.
+- Implementing Phase 3 (input-modes.ts) to reuse `runRawKeySession`.
 
 ## Key neighbors
 
@@ -60,5 +60,5 @@ runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 - `commands/config.ts` — `/config` editor
 - `cli/scenario-menu.ts` — `/eval` picker
 - `cli/terminal-ui.ts` — `drawFooter` called after each redraw
-- `cli/tool-approval.ts` — Phase 2 target (hand-rolls same lifecycle, not yet using runRawKeySession)
+- `cli/tool-approval.ts` — uses `runRawKeySession` for the Approve/Deny menu and line-editor (Phase 2 done)
 - `cli/input-modes.ts` — Phase 3 target
