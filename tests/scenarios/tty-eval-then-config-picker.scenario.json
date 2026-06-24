@@ -56,10 +56,10 @@
       {
         "name": "submit - config picker accepts input",
         "send": "\r",
-        "waitFor": "freecode config",
+        "waitFor": "Tool rationale",
         "quietMs": 600,
         "screenContains": [
-          "freecode config",
+          "Tool rationale",
           "Tool rationale"
         ]
       },

@@ -99,8 +99,8 @@ describe('runConfigCommand', () => {
       expect(store.capturedOpts).not.toBeNull();
       const lines = store.capturedOpts!.render();
       const joined = lines.join('\n');
-      expect(joined).toContain('freecode config');
-      expect(joined).toContain('/tmp/freecode-test-config.json');
+      expect(joined).not.toContain('freecode config');
+      expect(joined).not.toContain('/tmp/freecode-test-config.json');
       expect(joined).toContain('Tool rationale');
       expect(joined).toContain('Provider usage');
     });

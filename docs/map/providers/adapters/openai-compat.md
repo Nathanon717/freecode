@@ -1,18 +1,18 @@
 # src/providers/adapters/openai-compat.ts - OpenAI-Compatible Adapter
 
-**Role:** Creates `@ai-sdk/openai` provider factories for registry providers and Ollama, captures rate-limit headers, auto-retries short 429 waits, and captures raw usage metadata from OpenAI-compatible responses.
+**Role:** Creates `@ai-sdk/openai` provider factories for registry providers and Ollama, applies per-provider request quirks, captures rate-limit headers, auto-retries short 429 waits, and captures raw usage metadata from OpenAI-compatible responses. Pure body transforms live in [openai-compat-sse](openai-compat-sse.md), the retry loop in [adapter-http-retry](adapter-http-retry.md), and the capture stores in [adapter-usage-capture](adapter-usage-capture.md).
 
 ## Exports
 
 ```typescript
-getLastCapturedHeaders(providerId: string): GroqRateLimitHeaders | null
+registerQuotaUpdateSink(fn): void
+getLastCapturedHeaders(providerId: string): RateLimitSnapshot | null
 beginProviderUsageCapture(providerId: string): void
 endProviderUsageCapture(providerId: string): Promise<CapturedProviderUsage[]>
 formatCapturedProviderUsages(usages): string | null
 formatOpenAICompatHttpError(providerName, response): Promise<string | null>
 getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined
-normalizeOpenAICompatToolCallSse(body: string): string
-openAIModelDisallowsTemperature(modelId: string): boolean
+setParallelToolsDisabled(providerId: string, disabled: boolean): void
 createOpenAICompatProvider(providerConfig: ProviderConfig)
 createOllamaProvider()
 ```
@@ -26,25 +26,21 @@ Calls `createOpenAI()` with:
 - `headers` from `getOpenAICompatProviderHeaders()`, currently OpenRouter `HTTP-Referer` and `X-Title`
 - optional custom `fetch` for quota capture, OpenAI temperature stripping, raw usage capture, or provider HTTP error formatting
 
-For direct OpenAI requests, the custom fetch removes `temperature` from models matched by `openAIModelDisallowsTemperature()` because those models only accept OpenAI's default temperature.
+The custom fetch applies per-provider request-body quirks before sending: stripping `temperature` for OpenAI models that disallow it, forcing Mistral non-streaming (and Codestral system injection), and setting `parallel_tool_calls:false` for providers flagged via `setParallelToolsDisabled()`. The body transforms it relies on (`mistralJsonToSse`, tool-call SSE normalization) live in [openai-compat-sse](openai-compat-sse.md).
 
 Non-OK HTTP responses are parsed for OpenAI-compatible `{ error: { message, code } }` bodies before throwing so callers see provider-specific API key, credit, model, or rate-limit details instead of a generic SDK error.
 
-For streaming responses, the custom fetch normalizes tool-call SSE chunks by adding a missing `type: "function"` on `delta.tool_calls[]` entries so the OpenAI SDK stream parser accepts otherwise-compatible function-call deltas from providers such as Mistral and LLM7.
+## 429/503 Auto-Retry
 
-## 429 Auto-Retry
-
-When any provider returns HTTP 429 with a `retry-after` header, and the delay is ≤ `config.retryMaxWaitSeconds` (default 10), the custom fetch retries automatically (up to 5 attempts). If the delay exceeds the threshold, the error is thrown immediately. Set `retryMaxWaitSeconds: 0` in config to disable retries.
-
-During the wait, if a retry banner sink has been registered via `registerRetryBannerSink()`, the countdown appears in the TUI footer (driven by `terminal-ui`'s 1s refresh — no separate timer needed). Otherwise (non-TTY / scripted mode), a `\r`-based live countdown is written to stdout. `registerRetryBannerSink` is called from `src/index.ts` when `process.stdin.isTTY` is true.
+The custom fetch delegates retries to [`fetchWithRetry`](adapter-http-retry.md), which retries 429/503 up to 5 times with bounded backoff capped at `config.retryMaxWaitSeconds` (default 10). On each retryable response the adapter's `onRetryableResponse` callback parses the rate-limit snapshot and pushes it to the quota sink registered via `registerQuotaUpdateSink()`. Retry-countdown rendering is owned by the CLI (see [adapter-http-retry](adapter-http-retry.md)).
 
 ## Rate-Limit Header Capture
 
-When `DEBUG_QUOTA !== "0"`, a wrapped fetch parses `x-ratelimit-*` headers for Groq, Mistral, and Cerebras and stores them in a module-level `Map` keyed by provider ID. `agent/loop.ts` reads that map after a streamed turn.
+When `DEBUG_QUOTA !== "0"`, the wrapped fetch parses `x-ratelimit-*` headers for Groq, Mistral, and Cerebras and stores them in a `HeaderSnapshotStore` from [adapter-usage-capture](adapter-usage-capture.md), keyed by provider ID. `agent/loop.ts` reads that snapshot after a streamed turn.
 
 ## Usage Capture
 
-For OpenAI-compatible providers, the wrapped fetch clones responses while an agent turn is inside `beginProviderUsageCapture()` / `endProviderUsageCapture()`.
+For OpenAI-compatible providers, the wrapped fetch clones responses while an agent turn is inside `beginProviderUsageCapture()` / `endProviderUsageCapture()`, backed by a `UsageCaptureStore` from [adapter-usage-capture](adapter-usage-capture.md).
 
 The parser reads:
 

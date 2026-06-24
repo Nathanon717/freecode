@@ -7,7 +7,7 @@
   ],
   "expect": {
     "stdoutContains": ["only available in interactive mode", "Goodbye"],
-    "stdoutAbsent": ["Error:", "freecode config"],
+    "stdoutAbsent": ["Error:"],
     "exitCode": 0
   }
 }

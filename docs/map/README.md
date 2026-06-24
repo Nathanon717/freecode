@@ -68,6 +68,7 @@ src/
 |   |-- transcript-renderer.ts    -> [Agent transcript formatting](cli/transcript-renderer.md)
 |   |-- markdown-renderer.ts      -> [Markdown renderer for LLM output](cli/markdown-renderer.md)
 |   |-- terminal-ui.ts            -> [Bottom-pinned terminal UI](cli/terminal-ui.md)
+|   |-- stdout-retry-sink.ts      -> [Non-TTY retry countdown sink](cli/stdout-retry-sink.md)
 |   `-- toggles.ts                -> [Footer toggle state](cli/toggles.md)
 |-- commands/
 |   |-- config.ts                 -> [Interactive /config editor](commands/config.md)
@@ -93,6 +94,9 @@ src/
     |-- pricing-verifier.ts       -> [Dual-source pricing verifier](providers/pricing-verifier.md)
     |-- adapters/
     |   |-- openai-compat.ts      -> [OpenAI-compatible adapter](providers/adapters/openai-compat.md)
+    |   |-- openai-compat-sse.ts  -> [OpenAI-compatible SSE transforms](providers/adapters/openai-compat-sse.md)
+    |   |-- adapter-usage-capture.ts -> [Shared usage/header capture](providers/adapters/adapter-usage-capture.md)
+    |   |-- adapter-http-retry.ts -> [Adapter HTTP retry/backoff](providers/adapters/adapter-http-retry.md)
     |   `-- anthropic.ts          -> [Anthropic adapter](providers/adapters/anthropic.md)
     `-- quota/
         |-- headers.ts            -> [Provider rate-limit parsing](providers/quota/headers.md)

@@ -11,12 +11,13 @@ import {
 import { log } from '../../logger.js';
 import type { AnthropicTokenUsage } from '../anthropic-cost.js';
 import { saveObservedRateLimits } from '../model-store.js';
+import { HeaderSnapshotStore, UsageCaptureStore } from './adapter-usage-capture.js';
 
-const lastCapturedHeaders = new Map<string, RateLimitSnapshot>();
-const usageCapturePromises = new Map<string, Promise<AnthropicTokenUsage | null>[]>();
+const headerStore = new HeaderSnapshotStore();
+const usageStore = new UsageCaptureStore<AnthropicTokenUsage>();
 
 export function getLastCapturedAnthropicHeaders(providerId: string): RateLimitSnapshot | null {
-  return lastCapturedHeaders.get(providerId) ?? null;
+  return headerStore.get(providerId);
 }
 
 type AnthropicSseEvent = {
@@ -110,16 +111,11 @@ export function parseAnthropicUsageFromSse(body: string, inferenceGeo?: string):
 }
 
 export function beginAnthropicUsageCapture(providerId: string): void {
-  usageCapturePromises.set(providerId, []);
+  usageStore.begin(providerId);
 }
 
 export async function endAnthropicUsageCapture(providerId: string): Promise<AnthropicTokenUsage | null> {
-  const promises = usageCapturePromises.get(providerId) ?? [];
-  usageCapturePromises.delete(providerId);
-  const usages = (await Promise.all(promises)).filter((usage): usage is AnthropicTokenUsage => usage !== null);
-  if (usages.length === 0) return null;
-
-  return mergeAnthropicUsages(usages);
+  return mergeAnthropicUsages(await usageStore.end(providerId));
 }
 
 export function mergeAnthropicUsages(usages: AnthropicTokenUsage[]): AnthropicTokenUsage | null {
@@ -167,11 +163,8 @@ function getInferenceGeo(init: RequestInit | undefined): string | undefined {
 }
 
 function captureAnthropicUsage(providerId: string, response: Response, inferenceGeo?: string): void {
-  const captures = usageCapturePromises.get(providerId);
-  if (!captures) return;
-  captures.push(response.clone().text()
-    .then((body) => parseAnthropicUsageFromSse(body, inferenceGeo))
-    .catch(() => null));
+  usageStore.push(providerId, response.clone().text()
+    .then((body) => parseAnthropicUsageFromSse(body, inferenceGeo)));
 }
 
 export function createAnthropicProvider(providerConfig: ProviderConfig) {
@@ -195,7 +188,7 @@ export function createAnthropicProvider(providerConfig: ProviderConfig) {
     const base = parseAnthropicRateLimitHeaders(response.headers);
     const extended = parseAnthropicExtendedHeaders(response.headers);
     if (debugQuota) {
-      lastCapturedHeaders.set(providerConfig.id, groqHeadersToSnapshot(base));
+      headerStore.set(providerConfig.id, groqHeadersToSnapshot(base));
       log('quota', `Anthropic rate-limit headers`, { base, extended });
     }
     // Persist limit ceilings to models.json if we received rate-limit headers.

@@ -1,40 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { EventEmitter } from 'events';
 import chalk from 'chalk';
 import type { Interface } from 'readline';
 import { countWrappedLines, runRawPicker } from '../../src/cli/raw-picker.js';
+import {
+  type FakeStdin,
+  type FakeStdout,
+  installProcessStreams,
+  type ProcessStreamFixture,
+} from './raw-session-harness.js';
 
-// A fake stdin that behaves like an EventEmitter (so on/removeListener/rawListeners
-// work) plus the TTY-control methods runRawPicker calls.
-class FakeStdin extends EventEmitter {
-  rawMode: boolean[] = [];
-  setRawMode(value: boolean): this {
-    this.rawMode.push(value);
-    return this;
-  }
-  resume(): this { return this; }
-  pause(): this { return this; }
-  setEncoding(): this { return this; }
-}
-
-interface FakeStdout {
-  out: string;
-  columns: number;
-  rows: number;
-  write(s: string): boolean;
-}
-
-function makeFakeStdout(columns = 80, rows = 24): FakeStdout {
-  return {
-    out: '',
-    columns,
-    rows,
-    write(s: string) {
-      this.out += s;
-      return true;
-    },
-  };
-}
+// Raw-session tests fail by timing out; cap them low so a wedged session fails
+// fast instead of after the 15s global default.
+vi.setConfig({ testTimeout: 2000 });
 
 describe('countWrappedLines', () => {
   let originalColumns: number | undefined;
@@ -85,21 +62,16 @@ describe('countWrappedLines', () => {
 describe('runRawPicker', () => {
   let stdin: FakeStdin;
   let stdout: FakeStdout;
-  let stdinDesc: PropertyDescriptor | undefined;
-  let stdoutDesc: PropertyDescriptor | undefined;
+  let streams: ProcessStreamFixture;
 
   beforeEach(() => {
-    stdin = new FakeStdin();
-    stdout = makeFakeStdout();
-    stdinDesc = Object.getOwnPropertyDescriptor(process, 'stdin');
-    stdoutDesc = Object.getOwnPropertyDescriptor(process, 'stdout');
-    Object.defineProperty(process, 'stdin', { value: stdin, configurable: true });
-    Object.defineProperty(process, 'stdout', { value: stdout, configurable: true });
+    streams = installProcessStreams({ stdout: true });
+    stdin = streams.stdin;
+    stdout = streams.stdout!;
   });
 
   afterEach(() => {
-    if (stdinDesc) Object.defineProperty(process, 'stdin', stdinDesc);
-    if (stdoutDesc) Object.defineProperty(process, 'stdout', stdoutDesc);
+    streams.restore();
   });
 
   // Minimal readline.Interface stub: runRawPicker only calls rl.resume() on cleanup.

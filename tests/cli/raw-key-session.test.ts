@@ -1,32 +1,23 @@
 // check-tests: orphan — tests runRawKeySession, a new export from src/cli/raw-picker.ts
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { EventEmitter } from 'events';
 import { runRawKeySession } from '../../src/cli/raw-picker.js';
+import { type FakeStdin, installProcessStreams, type ProcessStreamFixture } from './raw-session-harness.js';
 
-// Minimal fake stdin matching the interface runRawKeySession calls.
-class FakeStdin extends EventEmitter {
-  rawMode: boolean[] = [];
-  setRawMode(value: boolean): this {
-    this.rawMode.push(value);
-    return this;
-  }
-  resume(): this { return this; }
-  pause(): this { return this; }
-  setEncoding(): this { return this; }
-}
+// Raw-session tests fail by timing out; cap them low so a wedged session fails
+// fast instead of after the 15s global default.
+vi.setConfig({ testTimeout: 2000 });
 
 describe('runRawKeySession', () => {
   let stdin: FakeStdin;
-  let stdinDesc: PropertyDescriptor | undefined;
+  let streams: ProcessStreamFixture;
 
   beforeEach(() => {
-    stdin = new FakeStdin();
-    stdinDesc = Object.getOwnPropertyDescriptor(process, 'stdin');
-    Object.defineProperty(process, 'stdin', { value: stdin, configurable: true });
+    streams = installProcessStreams();
+    stdin = streams.stdin;
   });
 
   afterEach(() => {
-    if (stdinDesc) Object.defineProperty(process, 'stdin', stdinDesc);
+    streams.restore();
   });
 
   it('enters raw mode immediately on creation', () => {

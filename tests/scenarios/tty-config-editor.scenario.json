@@ -17,9 +17,9 @@
       {
         "name": "submit — config editor opens with both settings visible",
         "send": "\r",
-        "waitFor": "freecode config",
+        "waitFor": "Tool rationale",
         "screenContains": [
-          "freecode config",
+          "Tool rationale",
           "Tool rationale"
         ]
       },

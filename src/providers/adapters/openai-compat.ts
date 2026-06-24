@@ -12,12 +12,9 @@ import {
   type RateLimitSnapshot,
 } from '../quota/headers.js';
 import { saveObservedRateLimits } from '../model-store.js';
-
-type RetryBannerSetter = (info: { name: string; label: string; targetMs: number } | null) => void;
-let retryBannerSink: RetryBannerSetter | null = null;
-export function registerRetryBannerSink(fn: RetryBannerSetter | null): void {
-  retryBannerSink = fn;
-}
+import { mistralJsonToSse, normalizeOpenAICompatToolCallResponse } from './openai-compat-sse.js';
+import { HeaderSnapshotStore, UsageCaptureStore } from './adapter-usage-capture.js';
+import { fetchWithRetry } from './adapter-http-retry.js';
 
 type QuotaUpdateSink = (snapshot: RateLimitSnapshot) => void;
 let quotaUpdateSink: QuotaUpdateSink | null = null;
@@ -34,10 +31,10 @@ export interface CapturedProviderUsage {
   capturedAt: number;
 }
 
-// Module-level store: most-recently captured rate-limit headers per provider ID.
-// Written by the custom fetch wrapper; read by the agent loop for logging.
-const lastCapturedHeaders = new Map<string, RateLimitSnapshot>();
-const usageCapturePromises = new Map<string, Promise<CapturedProviderUsage | null>[]>();
+// Most-recently captured rate-limit headers per provider ID. Written by the
+// custom fetch wrapper; read by the agent loop for logging.
+const headerStore = new HeaderSnapshotStore();
+const usageStore = new UsageCaptureStore<CapturedProviderUsage>();
 
 // Set before a streamText call to inject parallel_tool_calls:false for that provider.
 const parallelToolsDisabled = new Set<string>();
@@ -89,18 +86,15 @@ export async function formatOpenAICompatHttpError(providerName: string, response
  * provider, or null if none have been captured yet.
  */
 export function getLastCapturedHeaders(providerId: string): RateLimitSnapshot | null {
-  return lastCapturedHeaders.get(providerId) ?? null;
+  return headerStore.get(providerId);
 }
 
 export function beginProviderUsageCapture(providerId: string): void {
-  usageCapturePromises.set(providerId, []);
+  usageStore.begin(providerId);
 }
 
 export async function endProviderUsageCapture(providerId: string): Promise<CapturedProviderUsage[]> {
-  const promises = usageCapturePromises.get(providerId) ?? [];
-  usageCapturePromises.delete(providerId);
-  const results = await Promise.all(promises);
-  return results.filter((usage): usage is CapturedProviderUsage => usage !== null);
+  return usageStore.end(providerId);
 }
 
 export function formatCapturedProviderUsages(usages: CapturedProviderUsage[] | null | undefined): string | null {
@@ -113,15 +107,6 @@ export function formatCapturedProviderUsages(usages: CapturedProviderUsage[] | n
     usage,
   }));
   return JSON.stringify(usages.length === 1 ? payload[0] : payload, null, 2);
-}
-
-function parseRetryAfterMs(value: string | null): number {
-  if (!value) return 1000;
-  const seconds = Number(value);
-  if (Number.isFinite(seconds) && seconds >= 0) return Math.ceil(seconds) * 1000;
-  const date = Date.parse(value);
-  if (!Number.isNaN(date)) return Math.max(1000, date - Date.now());
-  return 1000;
 }
 
 function formatRetryAfter(value: string | null): string | null {
@@ -186,137 +171,6 @@ function parseProviderUsageFromSse(providerId: string, body: string): CapturedPr
   return lastUsage;
 }
 
-function normalizeOpenAICompatToolCallDelta(value: unknown): unknown {
-  if (!isRecord(value)) return value;
-  const choices = value['choices'];
-  if (!Array.isArray(choices)) return value;
-
-  let changed = false;
-  const nextChoices = choices.map((choice: unknown) => {
-    if (!isRecord(choice)) return choice;
-    const delta = choice['delta'];
-    if (!isRecord(delta)) return choice;
-    const toolCalls = delta['tool_calls'];
-    if (!Array.isArray(toolCalls)) return choice;
-    const nextToolCalls = toolCalls.map((toolCall: unknown) => {
-      if (!isRecord(toolCall)) return toolCall;
-      if (toolCall['type'] === 'function') return toolCall;
-      if (!isRecord(toolCall['function'])) return toolCall;
-      changed = true;
-      return { ...toolCall, type: 'function' };
-    });
-    return { ...choice, delta: { ...delta, tool_calls: nextToolCalls } };
-  });
-
-  return changed ? { ...value, choices: nextChoices } : value;
-}
-
-export function normalizeOpenAICompatToolCallSse(body: string): string {
-  return body.split(/(\r?\n)/).map(part => {
-    if (!part.startsWith('data:')) return part;
-    const data = part.slice('data:'.length).trim();
-    if (!data || data === '[DONE]') return part;
-
-    try {
-      const normalized = normalizeOpenAICompatToolCallDelta(JSON.parse(data) as unknown);
-      return `data: ${JSON.stringify(normalized)}`;
-    } catch {
-      return part;
-    }
-  }).join('');
-}
-
-/**
- * Convert a non-streaming OpenAI-compatible JSON response into SSE format.
- * Mistral only returns x-ratelimit-* headers on non-streaming responses. We
- * strip stream:true from the request so we get those headers, then synthesize
- * SSE here so the rest of the pipeline (AI SDK, normalizer, usage capture) is
- * unchanged.
- */
-export function mistralJsonToSse(json: unknown): string {
-  if (!isRecord(json)) return 'data: [DONE]\n\n';
-
-  const id = typeof json.id === 'string' ? json.id : '';
-  const model = typeof json.model === 'string' ? json.model : '';
-  const created = typeof json.created === 'number' ? json.created : 0;
-  const usage = isRecord(json.usage) ? json.usage : null;
-  const choices = Array.isArray(json.choices) ? json.choices : [];
-
-  const parts: string[] = [];
-  const emit = (obj: Record<string, unknown>) => {
-    parts.push(`data: ${JSON.stringify(obj)}\n\n`);
-  };
-  const chunk = (chunkChoices: unknown[], extra?: Record<string, unknown>) => {
-    emit({ id, object: 'chat.completion.chunk', created, model, choices: chunkChoices, ...extra });
-  };
-
-  for (const choice of choices) {
-    if (!isRecord(choice)) continue;
-    const message = isRecord(choice.message) ? choice.message : {};
-    const finishReason = typeof choice.finish_reason === 'string' ? choice.finish_reason : null;
-    const idx = typeof choice.index === 'number' ? choice.index : 0;
-    const content = typeof message.content === 'string' ? message.content : null;
-    const rawToolCalls = Array.isArray(message.tool_calls) ? message.tool_calls : null;
-
-    if (rawToolCalls && rawToolCalls.length > 0) {
-      const deltaToolCalls = rawToolCalls.map((tc: unknown, i: number) => {
-        if (!isRecord(tc)) return tc;
-        const fn = isRecord(tc.function) ? tc.function : {};
-        return {
-          index: typeof tc.index === 'number' ? tc.index : i,
-          id: typeof tc.id === 'string' ? tc.id : '',
-          type: 'function',
-          function: {
-            name: typeof fn.name === 'string' ? fn.name : '',
-            arguments: typeof fn.arguments === 'string' ? fn.arguments : '',
-          },
-        };
-      });
-      chunk([{ index: idx, delta: { role: 'assistant', content: content ?? null, tool_calls: deltaToolCalls }, finish_reason: null }]);
-      chunk([{ index: idx, delta: {}, finish_reason: finishReason ?? 'tool_calls' }]);
-    } else {
-      chunk([{ index: idx, delta: { role: 'assistant', content: content ?? '' }, finish_reason: null }]);
-      chunk([{ index: idx, delta: {}, finish_reason: finishReason ?? 'stop' }]);
-    }
-  }
-
-  if (usage) chunk([], { usage });
-  parts.push('data: [DONE]\n\n');
-  return parts.join('');
-}
-
-function normalizeOpenAICompatToolCallResponse(response: Response): Response {
-  const contentType = response.headers.get('content-type') ?? '';
-  if (!response.ok || !contentType.includes('text/event-stream') || !response.body) return response;
-
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-  let remainder = '';
-
-  const transformStream = new TransformStream<Uint8Array, Uint8Array>({
-    transform(chunk, controller) {
-      const text = remainder + decoder.decode(chunk, { stream: true });
-      const lastNewline = text.lastIndexOf('\n');
-      if (lastNewline === -1) {
-        remainder = text;
-        return;
-      }
-      const complete = text.slice(0, lastNewline + 1);
-      remainder = text.slice(lastNewline + 1);
-      controller.enqueue(encoder.encode(normalizeOpenAICompatToolCallSse(complete)));
-    },
-    flush(controller) {
-      if (remainder) controller.enqueue(encoder.encode(normalizeOpenAICompatToolCallSse(remainder)));
-    },
-  });
-
-  return new Response(response.body.pipeThrough(transformStream), {
-    status: response.status,
-    statusText: response.statusText,
-    headers: response.headers,
-  });
-}
-
 async function parseProviderUsage(providerId: string, response: Response): Promise<CapturedProviderUsage | null> {
   const body = await response.clone().text();
   const contentType = response.headers.get('content-type') ?? '';
@@ -332,9 +186,7 @@ async function parseProviderUsage(providerId: string, response: Response): Promi
 }
 
 function captureProviderUsage(providerId: string, response: Response): void {
-  const captures = usageCapturePromises.get(providerId);
-  if (!captures) return;
-  captures.push(parseProviderUsage(providerId, response).catch(() => null));
+  usageStore.push(providerId, parseProviderUsage(providerId, response));
 }
 
 export function getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined {
@@ -417,50 +269,24 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
           return groqHeadersToSnapshot(parseGroqRateLimitHeaders(headers));
         };
 
-        let response = await globalThis.fetch(input, patchedInit);
-        const maxWaitMs = loadConfig().retryMaxWaitSeconds * 1000;
-        for (let attempt = 0; (response.status === 429 || response.status === 503) && attempt < 5; attempt++) {
-          const retryHeader = response.headers.get('retry-after');
-          const is503 = response.status === 503;
-          const rawDelayMs = retryHeader
-            ? parseRetryAfterMs(retryHeader)
-            : Math.min(2 ** attempt * 1000, maxWaitMs);
-          const waitMs = Math.min(rawDelayMs, maxWaitMs);
-          const label = is503 && !retryHeader ? 'unavailable' : 'rate-limited';
-          const name = providerConfig.name;
-          if (shouldCapture && quotaUpdateSink) {
-            const snap = parseSnapshot(response.headers);
-            if (snap.length > 0) {
-              lastCapturedHeaders.set(providerConfig.id, snap);
-              quotaUpdateSink(snap);
-            }
-          }
-          if (retryBannerSink) {
-            retryBannerSink({ name, label, targetMs: Date.now() + waitMs });
-            await new Promise<void>(resolve => setTimeout(resolve, waitMs));
-            retryBannerSink(null);
-          } else {
-            await new Promise<void>(resolve => {
-              let remaining = Math.ceil(waitMs / 1000);
-              process.stdout.write(`\n${name} ${label} — retrying in ${remaining}s...`);
-              const tick = setInterval(() => {
-                remaining -= 1;
-                if (remaining <= 0) {
-                  clearInterval(tick);
-                  process.stdout.write(`\r\x1b[2K${name} ${label} — retrying now...\n`);
-                  resolve();
-                } else {
-                  process.stdout.write(`\r${name} ${label} — retrying in ${remaining}s...`);
+        let response = await fetchWithRetry(input, patchedInit, {
+          providerName: providerConfig.name,
+          maxWaitMs: loadConfig().retryMaxWaitSeconds * 1000,
+          onRetryableResponse: shouldCapture
+            ? (headers) => {
+                if (!quotaUpdateSink) return;
+                const snap = parseSnapshot(headers);
+                if (snap.length > 0) {
+                  headerStore.set(providerConfig.id, snap);
+                  quotaUpdateSink(snap);
                 }
-              }, 1000);
-            });
-          }
-          response = await globalThis.fetch(input, patchedInit);
-        }
+              }
+            : undefined,
+        });
         if (shouldCapture) {
           const snapshot = parseSnapshot(response.headers);
           if (snapshot.length > 0) {
-            lastCapturedHeaders.set(providerConfig.id, snapshot);
+            headerStore.set(providerConfig.id, snapshot);
             saveLimitsFromHeaders(providerConfig.id, response.headers, patchedInit?.body ?? init?.body);
           }
         }

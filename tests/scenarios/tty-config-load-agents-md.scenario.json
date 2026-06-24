@@ -20,9 +20,8 @@
                               {
                                   "name":  "submit - editor opens on Global tab, Load AGENTS.md absent",
                                   "send":  "\r",
-                                  "waitFor":  "freecode config",
+                                  "waitFor":  "Tool rationale",
                                   "screenContains":  [
-                                                         "freecode config",
                                                          "Tool rationale"
                                                      ],
                                   "screenAbsent":  [

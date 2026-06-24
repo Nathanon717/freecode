@@ -20,9 +20,9 @@
       {
         "name": "submit — editor opens with Tool rationale selected",
         "send": "\r",
-        "waitFor": "freecode config",
+        "waitFor": "Tool rationale",
         "screenContains": [
-          "freecode config",
+          "Tool rationale",
           "Tool rationale"
         ]
       },
@@ -50,9 +50,9 @@
       {
         "name": "submit — editor reopens with Tool rationale",
         "send": "\r",
-        "waitFor": "freecode config",
+        "waitFor": "Tool rationale",
         "screenContains": [
-          "freecode config",
+          "Tool rationale",
           "Tool rationale"
         ]
       },

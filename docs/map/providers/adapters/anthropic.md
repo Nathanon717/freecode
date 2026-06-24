@@ -1,6 +1,6 @@
 # src/providers/adapters/anthropic.ts - Anthropic Adapter
 
-**Role:** Creates native Anthropic AI SDK provider factories, captures Anthropic rate-limit headers, and extracts streamed usage metadata for cost estimates and raw usage display.
+**Role:** Creates native Anthropic AI SDK provider factories, captures Anthropic rate-limit headers, and extracts streamed usage metadata for cost estimates and raw usage display. The per-provider header snapshot and usage-capture stores come from [adapter-usage-capture](adapter-usage-capture.md), shared with the OpenAI-compatible adapter.
 
 ## Exports
 

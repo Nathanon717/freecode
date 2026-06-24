@@ -154,13 +154,9 @@ function buildScreen(
   values: Record<string, TabValue | number>,
   effectiveValues: Record<string, boolean>,
   sel: number,
-  globalPath: string,
   currentModel: string,
 ): string[] {
   const lines: string[] = [];
-  lines.push('');
-  lines.push(`  ${chalk.bold.cyan('freecode config')}`);
-  lines.push(`  ${chalk.dim(globalPath)}`);
   lines.push('');
 
   // Tab row (sel === -1 means tab row is focused)
@@ -280,7 +276,7 @@ export async function runConfigCommand(rl: Interface, currentModel = ''): Promis
   let effective = effectiveValues();
 
   await runRawPicker<void>(rl, {
-    render: () => buildScreen(activeTab, tabs, values, effective, sel, paths.globalPath, currentModel),
+    render: () => buildScreen(activeTab, tabs, values, effective, sel, currentModel),
     countLines: countWrappedLines,
     onExitClear(rowCount) {
       const r = process.stdout.rows || 24;

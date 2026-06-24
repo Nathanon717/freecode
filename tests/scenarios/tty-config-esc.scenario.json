@@ -17,9 +17,8 @@
       {
         "name": "submit — config editor opens",
         "send": "\r",
-        "waitFor": "freecode config",
+        "waitFor": "Tool rationale",
         "screenContains": [
-          "freecode config",
           "Tool rationale"
         ]
       },
@@ -31,7 +30,6 @@
           "> / for commands"
         ],
         "screenAbsent": [
-          "freecode config",
           "Tool rationale"
         ]
       }
