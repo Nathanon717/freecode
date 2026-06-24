@@ -68,11 +68,12 @@ function makeGzData(problems: object[]): Buffer {
 
 // ── downloadFile ──────────────────────────────────────────────────────────────
 
+// runHumanEvalMenu now lives in the unified eval menu (it opens the HumanEval tab).
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-let mod: typeof import('../../src/commands/humaneval.js');
+let mod: typeof import('../../src/cli/eval-menu.js');
 
 beforeEach(async () => {
-  mod = await import('../../src/commands/humaneval.js');
+  mod = await import('../../src/cli/eval-menu.js');
 });
 
 describe('downloadFile', () => {
@@ -97,6 +98,31 @@ describe('downloadFile', () => {
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
+  });
+});
+
+// ── buildHumanEvalTab ─────────────────────────────────────────────────────────
+
+describe('buildHumanEvalTab', () => {
+  it('renders without crashing when the tab row is focused (selected = -1)', async () => {
+    const { buildHumanEvalTab } = await import('../../src/commands/humaneval.js');
+    // Empty problem list is the regression case: a negative viewport index used
+    // to read past the array. The tab row focus (-1) must render no highlight.
+    const tab = buildHumanEvalTab([], {}, (p) => p);
+    expect(() => tab.renderBody(-1)).not.toThrow();
+    const body = tab.renderBody(-1);
+    expect(body.lines.some(l => l.includes('Run All'))).toBe(true);
+  });
+
+  it('closes with the chosen problems via the choose mapper', async () => {
+    const { buildHumanEvalTab } = await import('../../src/commands/humaneval.js');
+    const problems = [makeProblem({ task_id: 'p/1' }), makeProblem({ task_id: 'p/2' })];
+    const tab = buildHumanEvalTab(problems, {}, (p) => ({ kind: 'humaneval' as const, problems: p }));
+    const closed: unknown[] = [];
+    const ctx = { getSelected: () => 0, close: (v: unknown) => closed.push(v) };
+    // selected 0 = Run All → all problems
+    tab.onEnter!(ctx as never);
+    expect(closed[0]).toEqual({ kind: 'humaneval', problems });
   });
 });
 

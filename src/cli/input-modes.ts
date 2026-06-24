@@ -10,8 +10,7 @@ import type {
 } from "../agent/tools/index.js";
 import { loadConfig } from "../config/index.js";
 import { getCommandCompletion, getFilteredCommands } from "./slash-commands.js";
-import { runEvalMenu } from "./scenario-menu.js";
-import { runHumanEvalMenu } from "../commands/humaneval.js";
+import { runEvalMenu, runHumanEvalMenu } from "./eval-menu.js";
 import type { SessionController } from "./session-controller.js";
 import type { CliSessionMode } from "./session-runner.js";
 import {

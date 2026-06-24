@@ -6,25 +6,15 @@ import { gunzipSync } from 'zlib';
 import https from 'https';
 import type { Interface } from 'readline';
 import chalk from 'chalk';
+import type { MenuTab } from '../cli/list-menu.js';
 import {
-  countWrappedLines,
-  resetStdinConsoleMode,
-  resetTerminalPrivateModes,
-  runRawPicker,
-} from '../cli/raw-picker.js';
-import { redrawBanner } from '../cli/banner.js';
-import {
-  isBottomUIActive,
   setModelStatus,
   setTokenCount,
-  setupBottomUI,
-  teardownBottomUI,
 } from '../cli/terminal-ui.js';
 import { resetEvalWorkDir, startEvalScenario } from '../cli/eval-runner.js';
 import { printEvalHeader } from '../cli/eval-screen.js';
 import { statusCircle } from '../cli/eval-dots.js';
-import { appendEvalRun, getHumanEvalResults } from '../providers/model-store.js';
-import { ensureStoreReady } from '../providers/db.js';
+import { appendEvalRun } from '../providers/model-store.js';
 import { buildSystemPrompt } from '../agent/system-prompt.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
@@ -55,9 +45,9 @@ export function downloadFile(url: string, dest: string): Promise<void> {
   });
 }
 
-type HumanEvalResultMap = Record<string, 'pass' | 'fail'>;
+export type HumanEvalResultMap = Record<string, 'pass' | 'fail'>;
 
-interface HumanEvalProblem {
+export interface HumanEvalProblem {
   task_id: string;
   prompt: string;
   canonical_solution: string;
@@ -120,6 +110,38 @@ function buildPickerLines(problems: HumanEvalProblem[], sel: number, viewportSta
   lines.push(chalk.dim(`  ${sel + 1} / ${totalItems}`));
   lines.push('');
   return lines;
+}
+
+// Builds the HumanEval list-menu tab. Item 0 is "Run All"; items 1..N are the
+// individual problems. Viewport scroll state is kept in the closure and derived
+// from the selected index on each render. On Enter it closes the menu with the
+// chosen problem(s).
+export function buildHumanEvalTab<R>(
+  problems: HumanEvalProblem[],
+  results: HumanEvalResultMap,
+  choose: (problems: HumanEvalProblem[]) => R,
+): MenuTab<R> {
+  let viewportStart = 0;
+  return {
+    id: 'humaneval',
+    label: 'HumanEval',
+    count: () => 1 + problems.length,
+    renderBody: (selected) => {
+      // `selected` is -1 when the tab row is focused; clamp the viewport math to
+      // a real item while still passing the raw value through so no row highlights.
+      const sel = Math.max(0, selected);
+      viewportStart = clampViewport(sel, viewportStart);
+      return {
+        lines: buildPickerLines(problems, selected, viewportStart, results),
+        selectedLineIdx: 4 + (sel - viewportStart),
+        hintLineIdx: 2,
+      };
+    },
+    onEnter: (ctx) => {
+      const sel = ctx.getSelected();
+      ctx.close(choose(sel === 0 ? [...problems] : [problems[sel - 1]]));
+    },
+  };
 }
 
 function buildAgentPrompt(problem: HumanEvalProblem): string {
@@ -288,110 +310,76 @@ async function runOneProblem(problem: HumanEvalProblem, model: string, rl?: Inte
   return { status: 'fail', userCancelled };
 }
 
-export async function runHumanEvalMenu(
-  rl: Interface,
-  _projectRoot: string,
-  getSelectedModel: () => string,
-  _downloadFn: (url: string, dest: string) => Promise<void> = downloadFile,
-): Promise<void> {
-  await ensureStoreReady();
-  const restoreBottomUI = isBottomUIActive();
-  teardownBottomUI();
-  rl.resume();
+// Resolved path of the HumanEval dataset (env override or bundled default).
+export function humanEvalDatasetPath(): string {
+  return process.env['HUMANEVAL_DATA'] ?? HUMANEVAL_DATA_DEFAULT;
+}
 
+// Downloads the HumanEval dataset if it is missing, printing progress. Returns
+// false (after printing an error) if the download was needed and failed.
+export async function ensureHumanEvalDataset(
+  downloadFn: (url: string, dest: string) => Promise<void> = downloadFile,
+): Promise<boolean> {
+  const dataPath = humanEvalDatasetPath();
+  if (existsSync(dataPath)) return true;
+  process.stdout.write(chalk.cyan('Downloading HumanEval dataset...'));
   try {
-    const dataPath = process.env['HUMANEVAL_DATA'] ?? HUMANEVAL_DATA_DEFAULT;
-    if (!existsSync(dataPath)) {
-      process.stdout.write(chalk.cyan('Downloading HumanEval dataset...'));
-      try {
-        await _downloadFn(HUMANEVAL_DOWNLOAD_URL, dataPath);
-        process.stdout.write(chalk.green(' done\n'));
-      } catch (err) {
-        process.stdout.write(chalk.red(` failed\n`));
-        console.log(chalk.red(`Could not download dataset: ${err instanceof Error ? err.message : String(err)}`));
-        return;
-      }
-    }
+    await downloadFn(HUMANEVAL_DOWNLOAD_URL, dataPath);
+    process.stdout.write(chalk.green(' done\n'));
+    return true;
+  } catch (err) {
+    process.stdout.write(chalk.red(` failed\n`));
+    console.log(chalk.red(`Could not download dataset: ${err instanceof Error ? err.message : String(err)}`));
+    return false;
+  }
+}
 
-    let problems: HumanEvalProblem[];
-    try {
-      problems = readProblems();
-    } catch (err) {
-      console.log(chalk.red(`Failed to load HumanEval dataset: ${err instanceof Error ? err.message : String(err)}`));
-      return;
-    }
+// Loads and parses the HumanEval problems. Returns null (after printing an
+// error) if the dataset cannot be read/parsed.
+export function loadHumanEvalProblems(): HumanEvalProblem[] | null {
+  try {
+    return readProblems();
+  } catch (err) {
+    console.log(chalk.red(`Failed to load HumanEval dataset: ${err instanceof Error ? err.message : String(err)}`));
+    return null;
+  }
+}
 
-    const model = getSelectedModel();
-    const results: HumanEvalResultMap = getHumanEvalResults(model);
+// Non-TTY listing of the HumanEval problems.
+export function printHumanEvalList(problems: HumanEvalProblem[]): void {
+  console.log(chalk.bold('HumanEval problems\n'));
+  for (const p of problems) {
+    console.log(`  ${chalk.cyan(p.task_id)}  ${chalk.dim(p.entry_point)}`);
+  }
+}
 
-    if (!process.stdin.isTTY) {
-      console.log(chalk.bold('HumanEval problems\n'));
-      for (const p of problems) {
-        console.log(`  ${chalk.cyan(p.task_id)}  ${chalk.dim(p.entry_point)}`);
-      }
-      return;
-    }
+// Runs the chosen HumanEval problems and prints a summary when more than one ran.
+export async function runHumanEvalProblems(
+  chosen: HumanEvalProblem[],
+  model: string,
+  rl: Interface,
+): Promise<void> {
+  let passed = 0;
+  let failed = 0;
+  let incomplete = 0;
 
-    let sel = 0;
-    let viewportStart = 0;
+  const autoMode = chosen.length > 1;
+  for (const problem of chosen) {
+    const { status, userCancelled } = await runOneProblem(problem, model, autoMode ? rl : undefined);
+    if (status === 'pass') passed++;
+    else if (status === 'fail') failed++;
+    else incomplete++;
+    if (userCancelled) break;
+  }
 
-    const chosen = await runRawPicker<HumanEvalProblem[] | null>(rl, {
-      render: () => buildPickerLines(problems, sel, viewportStart, results),
-      countLines: countWrappedLines,
-      onKey(key, redraw, close) {
-        const totalItems = 1 + problems.length;
-        if (key === '\x1b') { close(null); return; }
-        if (key === '\x1b[A') {
-          sel = (sel - 1 + totalItems) % totalItems;
-          viewportStart = clampViewport(sel, viewportStart);
-          redraw(); return;
-        }
-        if (key === '\x1b[B') {
-          sel = (sel + 1) % totalItems;
-          viewportStart = clampViewport(sel, viewportStart);
-          redraw(); return;
-        }
-        if (key === '\r' || key === '\n') {
-          close(sel === 0 ? [...problems] : [problems[sel - 1]]);
-          return;
-        }
-      },
-    });
-
-    if (!chosen) {
-      if (process.stdin.isTTY) redrawBanner();
-      return;
-    }
-
-    let passed = 0;
-    let failed = 0;
-    let incomplete = 0;
-
-    const autoMode = chosen.length > 1;
-    for (const problem of chosen) {
-      const { status, userCancelled } = await runOneProblem(problem, model, autoMode ? rl : undefined);
-      if (status === 'pass') passed++;
-      else if (status === 'fail') failed++;
-      else incomplete++;
-      if (userCancelled) break;
-    }
-
-    if (chosen.length > 1) {
-      console.log('');
-      const parts = [
-        passed > 0 ? chalk.green(`${passed} passed`) : null,
-        failed > 0 ? chalk.red(`${failed} failed`) : null,
-        incomplete > 0 ? chalk.yellow(`${incomplete} incomplete`) : null,
-      ].filter(Boolean);
-      const color = failed > 0 ? chalk.red : incomplete > 0 ? chalk.yellow : chalk.green;
-      console.log(color(`Results: ${parts.join(', ')}`));
-    }
-  } finally {
-    rl.pause();
-    if (restoreBottomUI && process.stdin.isTTY) {
-      resetStdinConsoleMode();
-      resetTerminalPrivateModes();
-      setupBottomUI();
-    }
+  if (chosen.length > 1) {
+    console.log('');
+    const parts = [
+      passed > 0 ? chalk.green(`${passed} passed`) : null,
+      failed > 0 ? chalk.red(`${failed} failed`) : null,
+      incomplete > 0 ? chalk.yellow(`${incomplete} incomplete`) : null,
+    ].filter(Boolean);
+    const color = failed > 0 ? chalk.red : incomplete > 0 ? chalk.yellow : chalk.green;
+    console.log(color(`Results: ${parts.join(', ')}`));
   }
 }

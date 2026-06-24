@@ -1,36 +1,23 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import type { Interface } from "readline";
 import chalk from "chalk";
 import {
   PLAYGROUND_EVAL_DIR,
-  discoverPlaygroundScenarios,
   computeRunHash,
-  computeScenarioHash,
   getEvalStatus,
   getLatestEvalEntry,
-  statusCircle,
-  loadEvalHistory,
   type PlaygroundScenario,
+  type EvalHistoryEntry,
 } from "./eval-dots.js";
 export { getEvalStatus };
 
 import {
-  isBottomUIActive,
   setModelStatus,
   setQuotaSnapshot,
   setRetryBanner,
   setTokenCount,
-  setupBottomUI,
-  teardownBottomUI,
 } from "./terminal-ui.js";
-import {
-  countWrappedLines,
-  resetStdinConsoleMode,
-  resetTerminalPrivateModes,
-  runRawPicker,
-} from "./raw-picker.js";
-import { redrawBanner } from "./banner.js";
+import type { MenuTab } from "./list-menu.js";
 import {
   loadEvalConfig,
   startEvalScenario,
@@ -48,433 +35,339 @@ import {
 } from "./eval-screen.js";
 import { InlineActionMenu } from "./action-menu.js";
 import { appendEvalRun } from "../providers/model-store.js";
-import { ensureStoreReady } from "../providers/db.js";
 import { getDeadIds } from "../providers/model-cache.js";
 import { invalidateDeadModel } from "../providers/registry.js";
 import { buildSystemPrompt } from "../agent/system-prompt.js";
 
-export async function runEvalMenu(
-  rl: Interface,
-  projectRoot: string,
+export interface ScenarioHashes {
+  runHash: string;
+  fullHash: string;
+}
+
+// Builds the "Custom" eval tab: the playground/eval scenario list with status
+// circles, a detail view (\u2192), and a Run/View/Edit action menu (Enter). 'a' runs
+// every scenario. Selecting Run closes the menu via `choose(scenarios)`.
+export function buildCustomEvalTab<R>(
+  scenarios: PlaygroundScenario[],
+  evalHistory: EvalHistoryEntry[],
+  scenarioHashes: Map<string, ScenarioHashes>,
   getSelectedModel: () => string,
+  choose: (scenarios: PlaygroundScenario[]) => R,
+): MenuTab<R> {
+  const actionMenu = new InlineActionMenu(["Run", "View", "Edit"]);
+  return {
+    id: "custom",
+    label: "Custom",
+    count: () => scenarios.length,
+    renderBody: (selected) => ({
+      lines: buildEvalPickerScreen(
+        scenarios,
+        selected,
+        evalHistory,
+        getSelectedModel(),
+        scenarioHashes,
+      ),
+      selectedLineIdx: 4 + selected,
+      hintLineIdx: 2,
+    }),
+    renderDetail: (selected) => {
+      const s = scenarios[selected];
+      const h = scenarioHashes.get(s.id);
+      const entry = getLatestEvalEntry(
+        s.id,
+        h?.runHash ?? "",
+        getSelectedModel(),
+        evalHistory,
+        h?.fullHash,
+      );
+      return buildEvalDetailScreen(s, entry, getSelectedModel());
+    },
+    actionMenu: {
+      menu: actionMenu,
+      actionHint: `  ${chalk.dim("\u2191/\u2193 action, Enter select, Esc back")}`,
+      onSelect: (option, ctx) => {
+        if (option === "Run") ctx.close(choose([scenarios[ctx.getSelected()]]));
+        else if (option === "View") ctx.enterDetail();
+        // Edit: stub \u2014 the base exits the action menu and redraws.
+      },
+    },
+    onKey: (key, ctx) => {
+      if (key === "a" || key === "A") { ctx.close(choose([...scenarios])); return true; }
+      return false;
+    },
+  };
+}
+
+// Runs the chosen eval scenarios: resets each work dir, spawns the agent
+// subprocess, scores via the scenario's check.ts, persists results, and prints a
+// summary when more than one scenario ran.
+export async function runEvalScenarios(
+  chosen: PlaygroundScenario[],
+  model: string,
 ): Promise<void> {
-  await ensureStoreReady();
-  const restoreBottomUI = isBottomUIActive();
-  teardownBottomUI();
-  rl.resume();
+  let passed = 0;
+  let failed = 0;
+  let incomplete = 0;
 
-  try {
-    const scenarios = discoverPlaygroundScenarios();
-    if (scenarios.length === 0) {
-      console.log(chalk.yellow("No eval scenarios found in playground/eval/."));
-      return;
+  for (const scenario of chosen) {
+    const startMs = Date.now();
+    const scenarioDir = join(PLAYGROUND_EVAL_DIR, scenario.id);
+    const promptPath = join(scenarioDir, "prompt.md");
+    const checkPath = join(scenarioDir, "eval", "check.ts");
+
+    if (!existsSync(promptPath) || !existsSync(checkPath)) {
+      console.log(
+        chalk.yellow(
+          `SKIP  ${scenario.id}  (missing prompt.md or eval/check.ts)`,
+        ),
+      );
+      continue;
     }
 
-    const evalHistory = loadEvalHistory();
-    const scenarioHashes = new Map(
-      scenarios.map((s) => {
-        const dir = join(PLAYGROUND_EVAL_DIR, s.id);
-        return [
-          s.id,
-          { runHash: computeRunHash(dir), fullHash: computeScenarioHash(dir) },
-        ];
-      }),
-    );
+    const prompt = readFileSync(promptPath, "utf-8").trim();
 
-    if (!process.stdin.isTTY) {
-      console.log(chalk.bold("Eval scenarios\n"));
-      const model = getSelectedModel();
-      for (const s of scenarios) {
-        const h = scenarioHashes.get(s.id);
-        const circle = statusCircle(
-          getEvalStatus(
-            s.id,
-            h?.runHash ?? "",
-            model,
-            evalHistory,
-            h?.fullHash,
-          ),
-        );
-        console.log(
-          `  ${circle} ${chalk.cyan(s.id)}  ${chalk.gray(s.firstLine)}`,
-        );
-      }
-      return;
-    }
+    printEvalHeader(scenario.id, prompt);
 
-    let pickerSel = 0;
-    let detailMode = false;
-    let actionMode = false;
-    const actionMenu = new InlineActionMenu(["Run", "View", "Edit"]);
+    resetEvalWorkDir(scenarioDir);
+    const maxToolCalls = loadEvalConfig(scenarioDir).maxToolCalls ?? 10;
+    let result: EvalRunResult;
+    const handle = startEvalScenario(scenarioDir, prompt, model || undefined);
 
-    const chosen = await runRawPicker<PlaygroundScenario[] | null>(rl, {
-      render: () => {
-        if (detailMode) {
-          const s = scenarios[pickerSel];
-          const h = scenarioHashes.get(s.id);
-          const entry = getLatestEvalEntry(
-            s.id,
-            h?.runHash ?? "",
-            getSelectedModel(),
-            evalHistory,
-            h?.fullHash,
-          );
-          return buildEvalDetailScreen(s, entry, getSelectedModel());
-        }
-        const screen = buildEvalPickerScreen(
-          scenarios,
-          pickerSel,
-          evalHistory,
-          getSelectedModel(),
-          scenarioHashes,
-        );
-        if (actionMode) {
-          screen.splice(4 + pickerSel + 1, 0, ...actionMenu.renderLines());
-          screen[2] = `  ${chalk.dim("\u2191/\u2193 action, Enter select, Esc back")}`;
-        }
-        return screen;
-      },
-      countLines: countWrappedLines,
-      onKey(key, redraw, close) {
-        if (detailMode) {
-          if (key === "\x1b" || key === "\x1b[D") {
-            detailMode = false;
-            redraw();
-            return;
-          }
-          return;
-        }
-        if (actionMode) {
-          const result = actionMenu.handleKey(key);
-          if (result.type === 'close') {
-            actionMode = false;
-            redraw();
-          } else if (result.type === 'select') {
-            if (result.option === 'Run') {
-              close([scenarios[pickerSel]]);
-            } else if (result.option === 'View') {
-              actionMode = false;
-              detailMode = true;
-              redraw();
-            } else {
-              // Edit: stub \u2014 close sub-menu and redraw
-              actionMode = false;
-              redraw();
-            }
-          } else {
-            redraw();
-          }
-          return;
-        }
-        if (key === "\x1b") {
-          close(null);
-          return;
-        }
-        if (key === "\x1b[A") {
-          pickerSel = (pickerSel - 1 + scenarios.length) % scenarios.length;
-          redraw();
-          return;
-        }
-        if (key === "\x1b[B") {
-          pickerSel = (pickerSel + 1) % scenarios.length;
-          redraw();
-          return;
-        }
-        if (key === "\x1b[C") {
-          detailMode = true;
-          redraw();
-          return;
-        }
-        if (key === "\r" || key === "\n") {
-          actionMode = true;
-          actionMenu.reset();
-          redraw();
-          return;
-        }
-        if (key === "a" || key === "A") {
-          close([...scenarios]);
-          return;
-        }
-      },
-    });
-
-    if (!chosen) {
-      if (process.stdin.isTTY) redrawBanner();
-      return;
-    }
-
-    const model = getSelectedModel();
-    let passed = 0;
-    let failed = 0;
-    let incomplete = 0;
-
-    for (const scenario of chosen) {
-      const startMs = Date.now();
-      const scenarioDir = join(PLAYGROUND_EVAL_DIR, scenario.id);
-      const promptPath = join(scenarioDir, "prompt.md");
-      const checkPath = join(scenarioDir, "eval", "check.ts");
-
-      if (!existsSync(promptPath) || !existsSync(checkPath)) {
-        console.log(
-          chalk.yellow(
-            `SKIP  ${scenario.id}  (missing prompt.md or eval/check.ts)`,
-          ),
-        );
-        continue;
-      }
-
-      const prompt = readFileSync(promptPath, "utf-8").trim();
-
-      printEvalHeader(scenario.id, prompt);
-
-      resetEvalWorkDir(scenarioDir);
-      const maxToolCalls = loadEvalConfig(scenarioDir).maxToolCalls ?? 10;
-      let result: EvalRunResult;
-      const handle = startEvalScenario(scenarioDir, prompt, model || undefined);
-
-      // Poll result.json and retry-status.json every 500ms so the footer reflects
-      // live quota/token counts and the rate-limit cooldown banner during the run.
-      const liveStatusPoll = setInterval(() => {
-        try {
-          if (existsSync(handle.retryStatusFile)) {
-            const raw = readFileSync(handle.retryStatusFile, "utf-8").trim();
-            if (raw)
-              setRetryBanner(
-                JSON.parse(raw) as {
-                  name: string;
-                  label: string;
-                  targetMs: number;
-                } | null,
-              );
-          }
-        } catch (err) {
-          process.stderr.write(
-            `[poll] retry status read failed: ${String(err)}\n`,
-          );
-        }
-        try {
-          if (existsSync(handle.resultFile)) {
-            interface AgentEntry {
-              totalTokens?: number;
-              providerId?: string;
-              modelId?: string;
-              quota?: unknown;
-            }
-            const entries = JSON.parse(
-              readFileSync(handle.resultFile, "utf-8"),
-            ) as AgentEntry[];
-            const last = entries[entries.length - 1];
-            if (last) {
-              if (last.totalTokens !== undefined)
-                setTokenCount(last.totalTokens);
-              if (last.providerId && last.modelId)
-                setModelStatus(last.providerId, last.modelId);
-              else if (last.modelId) setModelStatus("", last.modelId);
-              if (Array.isArray(last.quota)) setQuotaSnapshot(last.quota);
-            }
-          }
-        } catch (err) {
-          process.stderr.write(
-            `[poll] result file read failed: ${String(err)}\n`,
-          );
-        }
-      }, 500);
-
+    // Poll result.json and retry-status.json every 500ms so the footer reflects
+    // live quota/token counts and the rate-limit cooldown banner during the run.
+    const liveStatusPoll = setInterval(() => {
       try {
-        result = await handle.promise;
-      } finally {
-        clearInterval(liveStatusPoll);
-        setRetryBanner(null);
+        if (existsSync(handle.retryStatusFile)) {
+          const raw = readFileSync(handle.retryStatusFile, "utf-8").trim();
+          if (raw)
+            setRetryBanner(
+              JSON.parse(raw) as {
+                name: string;
+                label: string;
+                targetMs: number;
+              } | null,
+            );
+        }
+      } catch (err) {
+        process.stderr.write(
+          `[poll] retry status read failed: ${String(err)}\n`,
+        );
       }
-
-      // Sync dead-model state written by the subprocess back to this process.
-      // If the subprocess wrote the model to deadIds (e.g. a 404), remove it
-      // from the picker here and skip persisting the result to the DB.
-      {
-        const deadColonIdx = (model || "").indexOf(":");
-        if (deadColonIdx !== -1) {
-          const deadProviderId = (model || "").slice(0, deadColonIdx);
-          const deadModelId = (model || "").slice(deadColonIdx + 1);
-          if (getDeadIds(deadProviderId).includes(deadModelId)) {
-            invalidateDeadModel(deadProviderId, deadModelId);
-            incomplete++;
-            continue;
+      try {
+        if (existsSync(handle.resultFile)) {
+          interface AgentEntry {
+            totalTokens?: number;
+            providerId?: string;
+            modelId?: string;
+            quota?: unknown;
+          }
+          const entries = JSON.parse(
+            readFileSync(handle.resultFile, "utf-8"),
+          ) as AgentEntry[];
+          const last = entries[entries.length - 1];
+          if (last) {
+            if (last.totalTokens !== undefined)
+              setTokenCount(last.totalTokens);
+            if (last.providerId && last.modelId)
+              setModelStatus(last.providerId, last.modelId);
+            else if (last.modelId) setModelStatus("", last.modelId);
+            if (Array.isArray(last.quota)) setQuotaSnapshot(last.quota);
           }
         }
-      }
-
-      const evalModel = model || "";
-      const colonIdx = evalModel.indexOf(":");
-      if (colonIdx !== -1)
-        setModelStatus(
-          evalModel.slice(0, colonIdx),
-          evalModel.slice(colonIdx + 1),
+      } catch (err) {
+        process.stderr.write(
+          `[poll] result file read failed: ${String(err)}\n`,
         );
-      else if (evalModel) setModelStatus("", evalModel);
-      setTokenCount(result.tokens.total);
-      setQuotaSnapshot(Array.isArray(result.quota) ? result.quota : null);
-
-      if (!result.stdout.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").trim()) {
-        console.log(chalk.dim("(no output)"));
       }
+    }, 500);
 
-      const apiErrors = extractApiErrors(result.stdout);
-      if (apiErrors.length > 0) {
-        console.log(chalk.red.bold("\nModel API error:"));
-        for (const err of apiErrors) {
-          const label = err.code ?? err.type ?? "error";
-          console.log(chalk.red(`  [${label}] ${err.message}`));
-          if (err.type) console.log(chalk.red(`    type: ${err.type}`));
-          if (err.param) console.log(chalk.red(`    param: ${err.param}`));
-          if (err.failedGeneration)
-            console.log(
-              chalk.red(`    failed_generation: ${err.failedGeneration}`),
-            );
-          if (err.diagnosis)
-            console.log(chalk.red(`    diagnosis: ${err.diagnosis}`));
+    try {
+      result = await handle.promise;
+    } finally {
+      clearInterval(liveStatusPoll);
+      setRetryBanner(null);
+    }
+
+    // Sync dead-model state written by the subprocess back to this process.
+    // If the subprocess wrote the model to deadIds (e.g. a 404), remove it
+    // from the picker here and skip persisting the result to the DB.
+    {
+      const deadColonIdx = (model || "").indexOf(":");
+      if (deadColonIdx !== -1) {
+        const deadProviderId = (model || "").slice(0, deadColonIdx);
+        const deadModelId = (model || "").slice(deadColonIdx + 1);
+        if (getDeadIds(deadProviderId).includes(deadModelId)) {
+          invalidateDeadModel(deadProviderId, deadModelId);
+          incomplete++;
+          continue;
         }
       }
+    }
 
-      if (result.exitCode !== 0) {
+    const evalModel = model || "";
+    const colonIdx = evalModel.indexOf(":");
+    if (colonIdx !== -1)
+      setModelStatus(
+        evalModel.slice(0, colonIdx),
+        evalModel.slice(colonIdx + 1),
+      );
+    else if (evalModel) setModelStatus("", evalModel);
+    setTokenCount(result.tokens.total);
+    setQuotaSnapshot(Array.isArray(result.quota) ? result.quota : null);
+
+    if (!result.stdout.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").trim()) {
+      console.log(chalk.dim("(no output)"));
+    }
+
+    const apiErrors = extractApiErrors(result.stdout);
+    if (apiErrors.length > 0) {
+      console.log(chalk.red.bold("\nModel API error:"));
+      for (const err of apiErrors) {
+        const label = err.code ?? err.type ?? "error";
+        console.log(chalk.red(`  [${label}] ${err.message}`));
+        if (err.type) console.log(chalk.red(`    type: ${err.type}`));
+        if (err.param) console.log(chalk.red(`    param: ${err.param}`));
+        if (err.failedGeneration)
+          console.log(
+            chalk.red(`    failed_generation: ${err.failedGeneration}`),
+          );
+        if (err.diagnosis)
+          console.log(chalk.red(`    diagnosis: ${err.diagnosis}`));
+      }
+    }
+
+    if (result.exitCode !== 0) {
+      console.log(
+        chalk.yellow(
+          `\nINCOMPLETE  ${chalk.bold(scenario.id)}  (agent did not finish — circle status unchanged)`,
+        ),
+      );
+      const reason =
+        result.exitCode === 1 && result.toolCalls.length >= maxToolCalls
+          ? `exit ${result.exitCode} — hit the ${maxToolCalls}-tool-call limit without finishing`
+          : `exit ${result.exitCode}`;
+      console.log(chalk.yellow(`  reason: ${reason}`));
+      console.log(
+        chalk.yellow(
+          `  tool calls: ${result.toolCalls.length}${maxToolCalls ? `/${maxToolCalls}` : ""}`,
+        ),
+      );
+
+      const stripAnsiText = (s: string) =>
+        s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
+      const tail = (text: string, n: number): string =>
+        stripAnsiText(text)
+          .split("\n")
+          .filter((l) => l.trim())
+          .slice(-n)
+          .join("\n");
+
+      const stderrTail = tail(result.stderr, 20);
+      if (stderrTail) {
+        console.log(chalk.red("  stderr (last 20 lines):"));
+        for (const line of stderrTail.split("\n"))
+          console.log(chalk.red(`    ${line}`));
+      }
+
+      const lastCall = result.toolCalls[result.toolCalls.length - 1];
+      if (lastCall) {
+        const lastResult =
+          typeof lastCall.result === "string"
+            ? lastCall.result
+            : JSON.stringify(lastCall.result ?? "");
         console.log(
           chalk.yellow(
-            `\nINCOMPLETE  ${chalk.bold(scenario.id)}  (agent did not finish — circle status unchanged)`,
+            `  last tool: ${lastCall.tool}(${JSON.stringify(lastCall.args)})`,
           ),
         );
-        const reason =
-          result.exitCode === 1 && result.toolCalls.length >= maxToolCalls
-            ? `exit ${result.exitCode} — hit the ${maxToolCalls}-tool-call limit without finishing`
-            : `exit ${result.exitCode}`;
-        console.log(chalk.yellow(`  reason: ${reason}`));
-        console.log(
-          chalk.yellow(
-            `  tool calls: ${result.toolCalls.length}${maxToolCalls ? `/${maxToolCalls}` : ""}`,
-          ),
-        );
-
-        const stripAnsiText = (s: string) =>
-          s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
-        const tail = (text: string, n: number): string =>
-          stripAnsiText(text)
-            .split("\n")
-            .filter((l) => l.trim())
-            .slice(-n)
-            .join("\n");
-
-        const stderrTail = tail(result.stderr, 20);
-        if (stderrTail) {
-          console.log(chalk.red("  stderr (last 20 lines):"));
-          for (const line of stderrTail.split("\n"))
-            console.log(chalk.red(`    ${line}`));
-        }
-
-        const lastCall = result.toolCalls[result.toolCalls.length - 1];
-        if (lastCall) {
-          const lastResult =
-            typeof lastCall.result === "string"
-              ? lastCall.result
-              : JSON.stringify(lastCall.result ?? "");
+        if (lastResult)
           console.log(
             chalk.yellow(
-              `  last tool: ${lastCall.tool}(${JSON.stringify(lastCall.args)})`,
+              `    → ${lastResult.split("\n").slice(0, 3).join(" ⏎ ")}`,
             ),
           );
-          if (lastResult)
-            console.log(
-              chalk.yellow(
-                `    → ${lastResult.split("\n").slice(0, 3).join(" ⏎ ")}`,
-              ),
-            );
-        }
-
-        if (!stderrTail) {
-          const stdoutTail = tail(result.stdout, 10);
-          if (stdoutTail) {
-            console.log(chalk.dim("  stdout (last 10 lines):"));
-            for (const line of stdoutTail.split("\n"))
-              console.log(chalk.dim(`    ${line}`));
-          }
-        }
-
-        incomplete++;
-        continue;
       }
 
-      const report = runCheckScript(scenario.id, scenarioDir, result);
+      if (!stderrTail) {
+        const stdoutTail = tail(result.stdout, 10);
+        if (stdoutTail) {
+          console.log(chalk.dim("  stdout (last 10 lines):"));
+          for (const line of stdoutTail.split("\n"))
+            console.log(chalk.dim(`    ${line}`));
+        }
+      }
 
-      const allPassed = report.checks
-        .filter((c) => c.kind === "assertion")
-        .every((c) => c.pass);
-      const hasWarnings = report.checks.some(
-        (c) => c.kind === "warning" && !c.pass,
-      );
+      incomplete++;
+      continue;
+    }
 
-      printEvalReport(report);
+    const report = runCheckScript(scenario.id, scenarioDir, result);
 
-      archiveEvalRun(scenarioDir, model, result);
+    const allPassed = report.checks
+      .filter((c) => c.kind === "assertion")
+      .every((c) => c.pass);
+    const hasWarnings = report.checks.some(
+      (c) => c.kind === "warning" && !c.pass,
+    );
 
-      const ts = new Date().toISOString();
+    printEvalReport(report);
 
-      const failedChecks = report.checks.filter(
-        (c) => c.kind === "assertion" && !c.pass,
-      );
-      const failReason = !allPassed && failedChecks.length > 0
-        ? failedChecks
-            .map((c) => c.name + (c.message ? `: ${c.message}` : ""))
-            .join("; ")
-        : undefined;
-      const transcriptTurn = {
-        systemPrompt: buildSystemPrompt(),
-        userMessage: prompt,
+    archiveEvalRun(scenarioDir, model, result);
+
+    const ts = new Date().toISOString();
+
+    const failedChecks = report.checks.filter(
+      (c) => c.kind === "assertion" && !c.pass,
+    );
+    const failReason = !allPassed && failedChecks.length > 0
+      ? failedChecks
+          .map((c) => c.name + (c.message ? `: ${c.message}` : ""))
+          .join("; ")
+      : undefined;
+    const transcriptTurn = {
+      systemPrompt: buildSystemPrompt(),
+      userMessage: prompt,
+      tokenUsage: { input: result.tokens.prompt, output: result.tokens.output },
+      toolCalls: result.toolCalls,
+    };
+    appendEvalRun(
+      model || "",
+      "custom",
+      {
+        timestamp: ts,
+        taskId: scenario.id,
+        pass: allPassed,
+        turns: result.toolCalls.length,
         tokenUsage: { input: result.tokens.prompt, output: result.tokens.output },
-        toolCalls: result.toolCalls,
-      };
-      appendEvalRun(
-        model || "",
-        "custom",
-        {
-          timestamp: ts,
-          taskId: scenario.id,
-          pass: allPassed,
-          turns: result.toolCalls.length,
-          tokenUsage: { input: result.tokens.prompt, output: result.tokens.output },
-          totalTokens: result.tokens.total,
-          durationMs: Date.now() - startMs,
-          error: null,
-          warnings: allPassed && hasWarnings,
-          scenarioHash: computeRunHash(scenarioDir),
-          checks: report.checks,
-        },
-        {
-          pass: allPassed,
-          ...(failReason !== undefined ? { failReason } : {}),
-          freecodeVersion: null,
-          transcript: [transcriptTurn],
-          scoringOutcome: report.checks,
-        },
-      );
+        totalTokens: result.tokens.total,
+        durationMs: Date.now() - startMs,
+        error: null,
+        warnings: allPassed && hasWarnings,
+        scenarioHash: computeRunHash(scenarioDir),
+        checks: report.checks,
+      },
+      {
+        pass: allPassed,
+        ...(failReason !== undefined ? { failReason } : {}),
+        freecodeVersion: null,
+        transcript: [transcriptTurn],
+        scoringOutcome: report.checks,
+      },
+    );
 
-      if (allPassed) passed++;
-      else failed++;
-    }
+    if (allPassed) passed++;
+    else failed++;
+  }
 
-    if (chosen.length > 1) {
-      console.log("");
-      const parts = [
-        passed > 0 ? chalk.green(`${passed} passed`) : null,
-        failed > 0 ? chalk.red(`${failed} failed`) : null,
-        incomplete > 0 ? chalk.yellow(`${incomplete} incomplete`) : null,
-      ].filter(Boolean);
-      const color =
-        failed > 0 ? chalk.red : incomplete > 0 ? chalk.yellow : chalk.green;
-      console.log(color(`Results: ${parts.join(", ")}`));
-    }
-  } finally {
-    rl.pause();
-    if (restoreBottomUI && process.stdin.isTTY) {
-      resetStdinConsoleMode();
-      resetTerminalPrivateModes();
-      setupBottomUI();
-    }
+  if (chosen.length > 1) {
+    console.log("");
+    const parts = [
+      passed > 0 ? chalk.green(`${passed} passed`) : null,
+      failed > 0 ? chalk.red(`${failed} failed`) : null,
+      incomplete > 0 ? chalk.yellow(`${incomplete} incomplete`) : null,
+    ].filter(Boolean);
+    const color =
+      failed > 0 ? chalk.red : incomplete > 0 ? chalk.yellow : chalk.green;
+    console.log(color(`Results: ${parts.join(", ")}`));
   }
 }
