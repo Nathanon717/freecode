@@ -347,27 +347,6 @@ describe('dispatchCommand — /eval', () => {
 });
 
 // ---------------------------------------------------------------------------
-// dispatchCommand — /humaneval
-// ---------------------------------------------------------------------------
-
-describe('dispatchCommand — /humaneval', () => {
-  it('calls runHumanEvalMenu when provided', async () => {
-    const runHumanEvalMenu = vi.fn().mockResolvedValue(undefined);
-    await dispatchCommand('/humaneval', makeRuntime({ runHumanEvalMenu }));
-    expect(runHumanEvalMenu).toHaveBeenCalled();
-  });
-
-  it('logs a dim message when runHumanEvalMenu is absent', async () => {
-    await dispatchCommand('/humaneval', makeRuntime());
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('/humaneval is only available in interactive mode'));
-  });
-
-  it('returns continue', async () => {
-    expect(await dispatchCommand('/humaneval', makeRuntime())).toBe('continue');
-  });
-});
-
-// ---------------------------------------------------------------------------
 // dispatchCommand — /status
 // ---------------------------------------------------------------------------
 

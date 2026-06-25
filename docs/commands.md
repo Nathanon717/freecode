@@ -36,7 +36,6 @@ This table is generated from `src/cli/slash-commands.ts`.
 | `/config` | Open interactive config |
 | `/eval` | Show and run LLM eval scenarios |
 | `/help` | Show this help |
-| `/humaneval` | Run HumanEval code-completion benchmark |
 | `/status` | Show API key status, DB sync, and Doppler |
 | `/model` | Show or set model |
 | `/renderer` | Show a hardcoded demo transcript through the live renderer |

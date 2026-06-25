@@ -44,7 +44,6 @@ export interface CommandRuntime {
   runConfig?(): Promise<void>;
   runModelMenu?(): Promise<void>;
   runEvalMenu(): Promise<void>;
-  runHumanEvalMenu?(): Promise<void>;
 }
 
 function isScriptedConfirmation(input: string): boolean {
@@ -198,15 +197,6 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
 
   if (normalized === '/eval') {
     await runtime.runEvalMenu();
-    return 'continue';
-  }
-
-  if (normalized === '/humaneval') {
-    if (runtime.runHumanEvalMenu) {
-      await runtime.runHumanEvalMenu();
-    } else {
-      console.log(chalk.dim('/humaneval is only available in interactive mode.'));
-    }
     return 'continue';
   }
 

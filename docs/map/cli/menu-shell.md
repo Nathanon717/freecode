@@ -1,6 +1,6 @@
 # src/cli/menu-shell.ts - Menu Lifecycle Chrome
 
-**Role:** Owns the terminal lifecycle chrome shared by every interactive raw-mode menu (`/eval`, `/humaneval`, and — over time — `/config` and `/model`): bottom-UI teardown/restore, readline pause/resume, and the Windows console-mode resets. Wraps the menu body so each menu no longer re-implements this boilerplate (previously duplicated in `scenario-menu.ts`, `humaneval.ts`, and the `session-modes.ts` dispatcher).
+**Role:** Owns the terminal lifecycle chrome shared by every interactive raw-mode menu (`/eval`, and — over time — `/config` and `/model`): bottom-UI teardown/restore, readline pause/resume, and the Windows console-mode resets. Wraps the menu body so each menu no longer re-implements this boilerplate.
 
 ## Exports
 

@@ -10,7 +10,6 @@ export const SLASH_COMMANDS: SlashCommandInfo[] = [
   { command: '/config', description: 'Open interactive config' },
 { command: '/eval', description: 'Show and run LLM eval scenarios' },
   { command: '/help', description: 'Show this help' },
-  { command: '/humaneval', description: 'Run HumanEval code-completion benchmark' },
   { command: '/status', description: 'Show API key status, DB sync, and Doppler' },
   { command: '/model', description: 'Show or set model' },
   { command: '/renderer', description: 'Show a hardcoded demo transcript through the live renderer' },

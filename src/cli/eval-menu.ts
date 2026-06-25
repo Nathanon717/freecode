@@ -20,10 +20,8 @@ import { statusCircle } from './eval-dots.js';
 import { buildCustomEvalTab, runEvalScenarios, type ScenarioHashes } from './scenario-menu.js';
 import {
   buildHumanEvalTab,
-  ensureHumanEvalDataset,
   humanEvalDatasetPath,
   loadHumanEvalProblems,
-  printHumanEvalList,
   runHumanEvalProblems,
   type HumanEvalProblem,
 } from '../commands/humaneval.js';
@@ -39,50 +37,22 @@ type EvalChoice =
   | { kind: 'custom'; scenarios: PlaygroundScenario[] }
   | { kind: 'humaneval'; problems: HumanEvalProblem[] };
 
-interface EvalMenuOptions {
-  initialTab?: EvalTabId;
-  /** Download seam for the HumanEval dataset (tests inject a stub). */
-  downloadFn?: (url: string, dest: string) => Promise<void>;
-}
-
 // Entry point for `/eval` (opens the Custom tab).
 export function runEvalMenu(
   rl: Interface,
   _projectRoot: string,
   getSelectedModel: () => string,
 ): Promise<void> {
-  return runEvalMenuWith(rl, getSelectedModel, {});
-}
-
-// Entry point for `/humaneval` (opens the HumanEval tab; downloads the dataset
-// first if needed). Keeps the legacy `_downloadFn` test seam as the 4th arg.
-export function runHumanEvalMenu(
-  rl: Interface,
-  _projectRoot: string,
-  getSelectedModel: () => string,
-  downloadFn?: (url: string, dest: string) => Promise<void>,
-): Promise<void> {
-  return runEvalMenuWith(rl, getSelectedModel, { initialTab: 'humaneval', downloadFn });
-}
-
-function runEvalMenuWith(
-  rl: Interface,
-  getSelectedModel: () => string,
-  opts: EvalMenuOptions,
-): Promise<void> {
   return runMenuShell<void>(rl, {
     ensureReady: ensureStoreReady,
-    run: () => runEvalMenuBody(rl, getSelectedModel, opts),
+    run: () => runEvalMenuBody(rl, getSelectedModel),
   });
 }
 
 async function runEvalMenuBody(
   rl: Interface,
   getSelectedModel: () => string,
-  opts: EvalMenuOptions,
 ): Promise<void> {
-  const initialTab: EvalTabId = opts.initialTab ?? 'custom';
-
   // Custom (playground/eval) tab data.
   const scenarios = discoverPlaygroundScenarios();
   const evalHistory = loadEvalHistory();
@@ -93,26 +63,16 @@ async function runEvalMenuBody(
     }),
   );
 
-  // HumanEval tab data. The dataset is only downloaded when entering via the
-  // HumanEval tab; from /eval it loads lazily from disk if already present.
+  // HumanEval tab data: load from disk if the dataset is already present.
   let problems: HumanEvalProblem[] = [];
-  if (initialTab === 'humaneval') {
-    if (!(await ensureHumanEvalDataset(opts.downloadFn))) return;
-    const loaded = loadHumanEvalProblems();
-    if (loaded === null) return;
-    problems = loaded;
-  } else if (existsSync(humanEvalDatasetPath())) {
+  if (existsSync(humanEvalDatasetPath())) {
     problems = loadHumanEvalProblems() ?? [];
   }
   const model = getSelectedModel();
   const humanEvalResults = getHumanEvalResults(model);
 
   if (!process.stdin.isTTY) {
-    if (initialTab === 'humaneval') {
-      printHumanEvalList(problems);
-    } else {
-      printEvalScenariosList(scenarios, scenarioHashes, evalHistory, model);
-    }
+    printEvalScenariosList(scenarios, scenarioHashes, evalHistory, model);
     return;
   }
 
@@ -126,7 +86,7 @@ async function runEvalMenuBody(
 
   const chosen = await runListMenu<EvalChoice | null>(rl, {
     tabs,
-    initialTabId: initialTab,
+    initialTabId: 'custom',
     countLines: countWrappedLines,
   });
 

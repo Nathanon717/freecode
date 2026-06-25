@@ -9,7 +9,7 @@ import type {
 } from "../agent/tools/index.js";
 import { loadConfig } from "../config/index.js";
 import { getCommandCompletion, getFilteredCommands } from "./slash-commands.js";
-import { runEvalMenu, runHumanEvalMenu } from "./eval-menu.js";
+import { runEvalMenu } from "./eval-menu.js";
 import type { SessionController } from "../agent/session-controller.js";
 import type { CliSessionMode } from "./session-runner.js";
 import {
@@ -337,7 +337,6 @@ export function createInteractiveMode(
         drawBottomUI();
       }).then(() => undefined),
     runEvalMenu: () => runEvalMenu(rl, projectRoot, getSelectedModel),
-    runHumanEvalMenu: () => runHumanEvalMenu(rl, projectRoot, getSelectedModel),
     onExit: () => {
       teardownFooterUI();
     },

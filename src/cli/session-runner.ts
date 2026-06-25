@@ -17,7 +17,6 @@ export interface CliSessionMode {
   runConfig?(this: void): Promise<void>;
   runModelMenu?(this: void): Promise<void>;
   runEvalMenu(this: void): Promise<void>;
-  runHumanEvalMenu?(this: void): Promise<void>;
   beforeDispatch?(this: void): void | Promise<void>;
   afterDispatch?(this: void): void | Promise<void>;
   onExit?(this: void): void | Promise<void>;
@@ -62,7 +61,6 @@ export async function runCliSession(options: CliSessionRunnerOptions): Promise<v
         runConfig: mode.runConfig,
         runModelMenu: mode.runModelMenu,
         runEvalMenu: mode.runEvalMenu,
-        runHumanEvalMenu: mode.runHumanEvalMenu,
       });
     } finally {
       await mode.afterDispatch?.();

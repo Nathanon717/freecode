@@ -4,16 +4,16 @@ file: src/commands/humaneval.ts
 
 # humaneval.ts
 
-Implements the `/humaneval` slash command.
+Provides the **HumanEval tab** of the unified `/eval` menu.
 
-**Purpose:** Reads the HumanEval benchmark (`playground/humaneval/data/HumanEval.jsonl.gz`) and provides the **HumanEval tab** of the unified eval menu: the picker tab (`buildHumanEvalTab`), the run loop (`runHumanEvalProblems`), the dataset helpers (`ensureHumanEvalDataset`, `loadHumanEvalProblems`, `printHumanEvalList`), and the Python-based scorer. The `/humaneval` slash command itself is composed in `cli/eval-menu.ts` (which opens this tab); this file no longer owns the menu chrome or the `runRawPicker` loop.
+**Purpose:** Reads the HumanEval benchmark (`playground/humaneval/data/HumanEval.jsonl.gz`) and implements the HumanEval tab: the picker tab (`buildHumanEvalTab`), the run loop (`runHumanEvalProblems`), the dataset helpers (`ensureHumanEvalDataset`, `loadHumanEvalProblems`, `printHumanEvalList`), and the Python-based scorer. The tab is composed into `/eval` by `cli/eval-menu.ts`; this file does not own the menu chrome or the `runRawPicker` loop.
 
 **Read when:** Modifying the HumanEval tab or runner, changing how solutions are prompted or checked, or changing per-problem result tracking.
 
-**Exports:** `buildHumanEvalTab(problems, results, choose)`, `runHumanEvalProblems(chosen, model, rl)`, `ensureHumanEvalDataset(downloadFn?)`, `loadHumanEvalProblems()`, `printHumanEvalList(problems)`, `humanEvalDatasetPath()`, `downloadFile(url, dest)`, `readProblems()`, and the `HumanEvalProblem` / `HumanEvalResultMap` types.
+**Exports:** `buildHumanEvalTab(problems, results, choose)`, `runHumanEvalProblems(chosen, model, rl)`, `ensureHumanEvalDataset(downloadFn?)`, `loadHumanEvalProblems()`, `printHumanEvalList(problems)`, `humanEvalDatasetPath()`, `downloadFile(url, dest)`, `readProblems()`, and the `HumanEvalProblem` / `HumanEvalResultMap` types. (`ensureHumanEvalDataset` and `printHumanEvalList` are exported but not called by production paths; they remain for potential future use or scripting.)
 
 **Key neighbors:**
-- `src/cli/eval-menu.ts` — composes this tab into `/eval` + `/humaneval`
+- `src/cli/eval-menu.ts` — composes this tab into `/eval`
 - `src/cli/list-menu.ts` — `MenuTab` shape returned by `buildHumanEvalTab`
 - `src/cli/eval-runner.ts` — `startEvalScenario`, `resetEvalWorkDir`
 - `src/cli/eval-screen.ts` — `printEvalHeader` (shared header/prompt rendering)

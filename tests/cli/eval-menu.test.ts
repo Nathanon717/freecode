@@ -51,14 +51,10 @@ vi.mock('../../src/providers/db.js', () => ({ ensureStoreReady: vi.fn(() => Prom
 vi.mock('../../src/cli/banner.js', () => ({ redrawBanner: vi.fn() }));
 vi.mock('fs', () => ({ existsSync: vi.fn(() => true) }));
 
-import { runEvalMenu, runHumanEvalMenu } from '../../src/cli/eval-menu.js';
+import { runEvalMenu } from '../../src/cli/eval-menu.js';
 import { runListMenu } from '../../src/cli/list-menu.js';
 import { runEvalScenarios } from '../../src/cli/scenario-menu.js';
-import {
-  ensureHumanEvalDataset,
-  printHumanEvalList,
-  runHumanEvalProblems,
-} from '../../src/commands/humaneval.js';
+import { runHumanEvalProblems } from '../../src/commands/humaneval.js';
 import { redrawBanner } from '../../src/cli/banner.js';
 
 const fakeRl = { pause: vi.fn(), resume: vi.fn() } as unknown as Interface;
@@ -101,27 +97,3 @@ describe('runEvalMenu (unified)', () => {
   });
 });
 
-describe('runHumanEvalMenu (unified)', () => {
-  it('downloads the dataset, opens the humaneval tab, and dispatches to runHumanEvalProblems', async () => {
-    vi.mocked(runListMenu).mockResolvedValueOnce({ kind: 'humaneval', problems: [{ task_id: 't/0' }] });
-    await runHumanEvalMenu(fakeRl, '/proj', getModel);
-
-    expect(ensureHumanEvalDataset).toHaveBeenCalled();
-    const opts = vi.mocked(runListMenu).mock.calls[0][1] as { initialTabId?: string };
-    expect(opts.initialTabId).toBe('humaneval');
-    expect(runHumanEvalProblems).toHaveBeenCalledWith([{ task_id: 't/0' }], 'openai:gpt-4o', fakeRl);
-  });
-
-  it('bails before opening the menu when the dataset download fails', async () => {
-    vi.mocked(ensureHumanEvalDataset).mockResolvedValueOnce(false);
-    await runHumanEvalMenu(fakeRl, '/proj', getModel);
-    expect(runListMenu).not.toHaveBeenCalled();
-  });
-
-  it('prints the humaneval list in non-TTY mode', async () => {
-    setTty(false);
-    await runHumanEvalMenu(fakeRl, '/proj', getModel);
-    expect(printHumanEvalList).toHaveBeenCalled();
-    expect(runListMenu).not.toHaveBeenCalled();
-  });
-});

@@ -1,6 +1,6 @@
 {
   "name": "tty-humaneval-fake",
-  "description": "Fake LLM completes HumanEval/0 — verifies data-load, agent, Python-check pipeline end-to-end",
+  "description": "Fake LLM completes HumanEval/0 \u2014 verifies data-load, agent, Python-check pipeline end-to-end",
   "requiresLlm": false,
   "model": "mock:gpt-freecode-test",
   "llmFixture": "tty-humaneval-fake.llm.json",
@@ -16,19 +16,43 @@
     "readyText": "for commands",
     "steps": [
       {
-        "name": "type /humaneval",
-        "send": "/humaneval",
+        "name": "type /eval",
+        "send": "/eval",
         "screenContains": [
-          "> /humaneval"
+          "> /eval"
         ]
       },
       {
-        "name": "submit — picker opens",
+        "name": "submit \u2014 eval menu opens on Custom tab",
         "send": "\r",
+        "waitFor": "Custom",
+        "screenContains": [
+          "Custom",
+          "HumanEval"
+        ]
+      },
+      {
+        "name": "Up \u2014 move focus to tab row",
+        "send": "\u001b[A",
+        "screenContains": [
+          "Custom",
+          "HumanEval"
+        ]
+      },
+      {
+        "name": "Right \u2014 switch to HumanEval tab",
+        "send": "\u001b[C",
         "waitFor": "Run All",
         "screenContains": [
           "Run All",
-          "test/0",
+          "HumanEval/0"
+        ]
+      },
+      {
+        "name": "Down \u2014 focus first item",
+        "send": "\u001b[B",
+        "screenContains": [
+          "Run All",
           "HumanEval/0"
         ]
       },
@@ -50,19 +74,44 @@
         ]
       },
       {
-        "name": "type /humaneval again",
-        "send": "/humaneval",
+        "name": "type /eval again",
+        "send": "/eval",
         "screenContains": [
-          "> /humaneval"
+          "> /eval"
         ]
       },
       {
-        "name": "submit — picker reopens with green dot",
+        "name": "submit \u2014 eval menu opens again",
         "send": "\r",
+        "waitFor": "Custom",
+        "screenContains": [
+          "Custom",
+          "HumanEval"
+        ]
+      },
+      {
+        "name": "Up \u2014 move focus to tab row again",
+        "send": "\u001b[A",
+        "screenContains": [
+          "Custom",
+          "HumanEval"
+        ]
+      },
+      {
+        "name": "Right \u2014 switch to HumanEval tab again",
+        "send": "\u001b[C",
         "waitFor": "Run All",
         "screenContains": [
           "Run All",
-          "●",
+          "HumanEval/0"
+        ]
+      },
+      {
+        "name": "Down \u2014 picker reopens with green dot",
+        "send": "\u001b[B",
+        "screenContains": [
+          "Run All",
+          "\u25cf",
           "HumanEval/0"
         ]
       },

@@ -72,7 +72,7 @@ src/
 |   `-- toggles.ts                -> [Footer toggle state](cli/toggles.md)
 |-- commands/
 |   |-- config.ts                 -> [Interactive /config editor](commands/config.md)
-|   |-- humaneval.ts              -> [/humaneval benchmark command](commands/humaneval.md)
+|   |-- humaneval.ts              -> [HumanEval tab + runner](commands/humaneval.md)
 |   |-- model.ts                  -> [Interactive /model picker](commands/model.md)
 |   |-- renderer.ts               -> [/renderer demo command](commands/renderer.md)
 |   `-- status.ts                 -> [/status system status](commands/status.md)
