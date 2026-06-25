@@ -84,8 +84,8 @@ export function buildEvalPickerScreen(
   for (let i = 0; i < scenarios.length; i++) {
     const s = scenarios[i];
     const active = i === selected;
-    const cursor = active ? chalk.cyan('>') : ' ';
-    const label = active ? chalk.inverse(s.id) : chalk.cyan(s.id);
+    const cursor = active ? getBannerColor()('▶') : ' ';
+    const label = active ? chalk.inverse(s.id) : getBannerColor()(s.id);
     const h = scenarioHashes.get(s.id);
     const circle = statusCircle(getEvalStatus(s.id, h?.runHash ?? '', model, history, h?.fullHash));
     lines.push(`  ${cursor} ${circle} ${label}  ${chalk.dim(s.firstLine)}`);
@@ -101,7 +101,7 @@ export function buildEvalDetailScreen(
 ): string[] {
   const lines: string[] = [];
   lines.push('');
-  lines.push(`  ${chalk.bold.cyan(scenario.id)}`);
+  lines.push(`  ${getBannerColor().bold(scenario.id)}`);
   lines.push(`  ${chalk.dim('← / Esc back')}`);
   lines.push('');
 

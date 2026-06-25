@@ -14,7 +14,7 @@ import { buildEvalDots } from '../cli/eval-dots.js';
 import { InlineActionMenu } from '../cli/action-menu.js';
 import { runListMenu, type MenuTab, type ListMenuContext } from '../cli/list-menu.js';
 import { runMenuShell } from '../cli/menu-shell.js';
-import { redrawBanner } from '../cli/banner.js';
+import { redrawBanner, getBannerColor } from '../cli/banner.js';
 
 export interface ModelMenuItem {
   providerId: string;
@@ -150,7 +150,7 @@ export function buildAllItemLines(
       if (active) selectedLineIdx = itemLines.length;
       const pref = modelPreference(item);
       const current = pref === currentModel;
-      const cursor = active ? chalk.cyan('>') : ' ';
+      const cursor = active ? getBannerColor()('▶') : ' ';
       const renderedName = active ? chalk.inverse(pref) : chalk.yellow(pref);
       const marker = current ? chalk.green(' current') : '';
       const pricingBadge = buildPricingBadge(item.pricing);
@@ -176,13 +176,13 @@ export function buildAllItemLines(
     if (active) selectedLineIdx = itemLines.length;
     const pref = modelPreference(item);
     const current = pref === currentModel;
-    const cursor = active ? chalk.cyan('>') : ' ';
+    const cursor = active ? getBannerColor()('▶') : ' ';
     const id = pref;
     const renderedName = active
       ? chalk.inverse(item.displayName)
       : item.isFavorite
         ? chalk.yellow(item.displayName)
-        : chalk.cyan(item.displayName);
+        : getBannerColor()(item.displayName);
     const marker = current ? chalk.green(' current') : '';
     const favBadge = item.isFavorite ? chalk.yellow(' ★') : '';
     const newBadge = item.isNew ? chalk.yellow(' new') : '';
@@ -223,11 +223,11 @@ function buildScreen(
   while (visibleLines.length < maxItemLines) visibleLines.push('');
 
   const filterLabel = filterQuery
-    ? `${chalk.dim('Filter: ')}${chalk.cyan(filterQuery)}`
+    ? `${chalk.dim('Filter: ')}${getBannerColor()(filterQuery)}`
     : chalk.dim('Type to filter, Backspace clears characters');
   const lines: string[] = [];
   lines.push('');
-  lines.push(`  ${chalk.bold.cyan('Select model')}`);
+  lines.push(`  ${getBannerColor().bold('Select model')}`);
   lines.push(`  ${filterLabel}`);
   lines.push('');
 
@@ -244,10 +244,10 @@ function buildScreen(
 function buildModelDetailScreen(item: ModelMenuItem): string[] {
   const lines: string[] = [];
   lines.push('');
-  lines.push(`  ${chalk.bold.cyan('Model details')}`);
+  lines.push(`  ${getBannerColor().bold('Model details')}`);
   lines.push(`  ${chalk.dim('← or Esc back')}`);
   lines.push('');
-  lines.push(`  ${chalk.bold('ID')}          ${chalk.cyan(`${item.providerId}:${item.modelId}`)}`);
+  lines.push(`  ${chalk.bold('ID')}          ${getBannerColor()(`${item.providerId}:${item.modelId}`)}`);
   lines.push(`  ${chalk.bold('Provider')}    ${item.providerName}${item.modelsSource === 'live' ? chalk.dim(' (live)') : chalk.dim(' (static)')}`);
   lines.push(`  ${chalk.bold('Display')}     ${item.displayName}`);
   if (item.pricing) {

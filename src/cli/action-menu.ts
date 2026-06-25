@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { getBannerColor } from './banner.js';
 
 export type ActionMenuResult =
   | { type: 'close' }
@@ -21,7 +22,7 @@ export class InlineActionMenu {
     const sep = chalk.dim('─'.repeat(this.padWidth));
     const lines = [`      ${sep}`];
     for (let i = 0; i < this.options.length; i++) {
-      const cursor = i === this.sel ? chalk.cyan('>') : ' ';
+      const cursor = i === this.sel ? getBannerColor()('▶') : ' ';
       const text =
         i === this.sel ? chalk.bold(this.options[i]) : this.options[i];
       lines.push(`      ${cursor} ${text}`);

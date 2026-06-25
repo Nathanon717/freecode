@@ -48,7 +48,8 @@ vi.mock('../../src/commands/humaneval.js', () => ({
 
 vi.mock('../../src/providers/model-store.js', () => ({ getHumanEvalResults: vi.fn(() => ({})) }));
 vi.mock('../../src/providers/db.js', () => ({ ensureStoreReady: vi.fn(() => Promise.resolve()) }));
-vi.mock('../../src/cli/banner.js', () => ({ redrawBanner: vi.fn() }));
+const mockAccent = Object.assign((s: string) => s, { bold: (s: string) => s, black: (s: string) => s });
+vi.mock('../../src/cli/banner.js', () => ({ redrawBanner: vi.fn(), getBannerColor: () => mockAccent, getBannerColorRGB: () => [170, 232, 255] as [number, number, number] }));
 vi.mock('fs', () => ({ existsSync: vi.fn(() => true) }));
 
 import { runEvalMenu } from '../../src/cli/eval-menu.js';

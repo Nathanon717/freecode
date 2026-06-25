@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import type { Interface } from 'readline';
+import { getBannerColor } from '../cli/banner.js';
 import { getConfigPaths, loadConfig, readRawConfig, resolveModelSettings, updateGlobalConfig, writeConfigFile } from '../config/index.js';
 import type { Config, OverridableSettings } from '../providers/types.js';
 import { getModelSettings, setModelSetting } from '../providers/model-store.js';
@@ -106,8 +107,8 @@ function renderGlobalValue(value: boolean | number, selected: boolean, setting: 
   if (setting.type === 'number') {
     const s = setting;
     const display = `${value}${s.unit}`;
-    if (selected) return `${chalk.dim('←')} ${chalk.cyan.bold(display)} ${chalk.dim('→')}`;
-    return chalk.cyan(display);
+    if (selected) return `${chalk.dim('←')} ${getBannerColor().bold(display)} ${chalk.dim('→')}`;
+    return getBannerColor()(display);
   }
   const v = value as boolean;
   if (selected) {
@@ -120,7 +121,7 @@ function renderGlobalValue(value: boolean | number, selected: boolean, setting: 
 
 function renderOverrideValue(value: TabValue, effectiveValue: boolean, selected: boolean): string {
   if (selected) {
-    const inh = value === undefined ? chalk.cyan.bold('inherit') : chalk.dim('inherit');
+    const inh = value === undefined ? getBannerColor().bold('inherit') : chalk.dim('inherit');
     const f   = value === false     ? chalk.red.bold('false')   : chalk.dim('false');
     const t   = value === true      ? chalk.green.bold('true')  : chalk.dim('true');
     return `${chalk.dim('←')} ${inh}  ${f}  ${t} ${chalk.dim('→')}`;
@@ -163,7 +164,7 @@ function buildSettingRows(tab: Tab, selected: number, currentModel: string): str
   for (let i = 0; i < visible.length; i++) {
     const s = visible[i];
     const active = i === selected;
-    const cursor = active ? chalk.cyan('▶') : ' ';
+    const cursor = active ? getBannerColor()('▶') : ' ';
     const label  = active ? chalk.bold(s.label.padEnd(LABEL_W)) : chalk.reset(s.label.padEnd(LABEL_W));
     const effectiveVal = effective[s.key as string];
 

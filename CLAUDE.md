@@ -6,10 +6,6 @@ Freecode is a TypeScript CLI coding agent with provider routing, an interactive 
 
 This file is intentionally short. Keep detailed reference material in `docs/` and link to it from here.
 
-NEVER EVER EVER CD INTO THE FREECODE PROJECT ROOT FOLDER YOU ARE ALREADY THERE. NEVERRRR USE BASH TOOL LIKE:
-cd path/to/freecode/root && [some command] 
-JUST DO THE COMMAND, IF YOU USE CD LIKE THIS, THAT IS A A CRITIAL ERROR AND THE USER WILL DIEEE!
-
 ## Required Rules
 
 - Windows only. Run commands in PowerShell or cmd. **Exception:** when running in a Claude Code web container (Linux), use `npm run ...` instead of `npm.cmd run ...`. See `docs/misc/claude_code_web.md`.

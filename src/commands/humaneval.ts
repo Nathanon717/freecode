@@ -6,6 +6,7 @@ import { gunzipSync } from 'zlib';
 import https from 'https';
 import type { Interface } from 'readline';
 import chalk from 'chalk';
+import { getBannerColor } from '../cli/banner.js';
 import { VIEWPORT_SIZE, clampViewport, type MenuTab } from '../cli/list-menu.js';
 import {
   setModelStatus,
@@ -82,7 +83,7 @@ function buildPickerLines(problems: HumanEvalProblem[], sel: number, viewportSta
   const viewportEnd = Math.min(viewportStart + VIEWPORT_SIZE, totalItems);
   for (let i = viewportStart; i < viewportEnd; i++) {
     const active = i === sel;
-    const cursor = active ? chalk.cyan('>') : ' ';
+    const cursor = active ? getBannerColor()('▶') : ' ';
     if (i === 0) {
       const passCount = Object.values(results).filter(v => v === 'pass').length;
       const total = problems.length;
@@ -91,7 +92,7 @@ function buildPickerLines(problems: HumanEvalProblem[], sel: number, viewportSta
       lines.push(`  ${cursor}   ${label}${summary}`);
     } else {
       const p = problems[i - 1];
-      const label = active ? chalk.inverse(p.task_id) : chalk.cyan(p.task_id);
+      const label = active ? chalk.inverse(p.task_id) : getBannerColor()(p.task_id);
       const r = results[p.task_id];
       const dot = statusCircle(r === 'pass' ? 'green' : r === 'fail' ? 'red' : 'grey');
       lines.push(`  ${cursor} ${dot} ${label}  ${chalk.dim(p.entry_point)}`);

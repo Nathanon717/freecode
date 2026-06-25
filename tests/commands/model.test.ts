@@ -47,7 +47,7 @@ describe('buildAllItemLines', () => {
   it('places cursor on the selected item', () => {
     const { itemLines, selectedLineIdx } = buildAllItemLines([openaiItem, anthropicItem], 1, '');
     expect(itemLines[selectedLineIdx]).toContain('Claude Sonnet');
-    expect(itemLines[selectedLineIdx]).toContain('>');
+    expect(itemLines[selectedLineIdx]).toContain('▶');
   });
 
   it('marks current model', () => {
