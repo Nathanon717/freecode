@@ -1,4 +1,4 @@
-# src/cli/session-controller.ts - Session Controller
+# src/agent/session-controller.ts - Session Controller
 
 **Role:** Owns the in-memory conversation for a CLI session and provides token estimation.
 

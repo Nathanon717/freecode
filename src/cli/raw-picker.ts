@@ -1,5 +1,5 @@
 import type { Interface } from 'readline';
-import { composeFooterOutput, drawFooter, getRows, resumeFooterTimer, suspendFooterTimer } from './terminal-ui.js';
+import { composeFooterOutput, drawFooter, getRows, resumeFooterTimer, setPickerUIActive, suspendFooterTimer } from './terminal-ui.js';
 
 // Counts the actual terminal rows a set of rendered lines occupies, accounting
 // for soft-wrapping at the current terminal width. Use this as `countLines` in
@@ -170,12 +170,14 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
       }
     }
     process.stdout.write('\x1b[?25h');
+    setPickerUIActive(false);
     resumeFooterTimer();
     drawFooter();
     rl.resume();
     process.stdin.resume();
   }
 
+  setPickerUIActive(true);
   suspendFooterTimer();
   process.stdout.write('\x1b[?25l');
 

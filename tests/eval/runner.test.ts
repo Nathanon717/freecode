@@ -7,7 +7,7 @@ import {
   archiveEvalRun,
   resetEvalWorkDir,
   type EvalRunResult,
-} from '../../src/cli/eval-runner.js';
+} from '../../src/eval/runner.js';
 
 let tempDir: string;
 

@@ -81,8 +81,7 @@ The module maintains a single `_step` state object. All callers drive it with th
 
 ### Format helpers (low-level)
 
-- `computeLineDiff()` — LCS-based line diff; returns `DiffEntry[]` with `equal | remove | add` types
-- `DiffEntry` — type alias for diff entries
+- `DiffEntry` — re-exported from `util/line-diff.ts`; `equal | remove | add` diff entry type
 - `formatArgs()`
 - `formatEditFileDiff()` — smart diff renderer; red/green for changed lines, dim for file context
 - `formatRationaleLine()`

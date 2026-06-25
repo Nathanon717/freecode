@@ -12,6 +12,16 @@ const LEFT = '\x1b[D';
 const ENTER_CR = '\r';
 const ENTER_LF = '\n';
 
+/** Rows kept on screen at once in a scrolling list-menu tab body. */
+export const VIEWPORT_SIZE = 20;
+
+/** Smallest viewport shift that keeps `sel` in view (no-op when already visible). */
+export function clampViewport(sel: number, viewportStart: number): number {
+  if (sel < viewportStart) return sel;
+  if (sel >= viewportStart + VIEWPORT_SIZE) return sel - VIEWPORT_SIZE + 1;
+  return viewportStart;
+}
+
 /** What a tab's `renderBody` returns: the body screen plus the indices the base
  *  needs to splice the inline action menu and swap the hint line. */
 export interface ListMenuBody {

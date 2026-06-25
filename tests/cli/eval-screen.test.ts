@@ -3,7 +3,8 @@ import {
   buildEvalPickerScreen,
   buildEvalDetailScreen,
 } from '../../src/cli/eval-screen.js';
-import type { PlaygroundScenario, EvalHistoryEntry, EvalCheckResult } from '../../src/cli/eval-dots.js';
+import type { EvalHistoryEntry, EvalCheckResult } from '../../src/eval/history.js';
+import type { PlaygroundScenario } from '../../src/eval/playground.js';
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 

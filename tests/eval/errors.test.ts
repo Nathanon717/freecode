@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractApiErrors } from '../../src/cli/eval-errors.js';
+import { extractApiErrors } from '../../src/eval/errors.js';
 
 describe('extractApiErrors', () => {
   it('returns empty array when no errors in stdout', () => {

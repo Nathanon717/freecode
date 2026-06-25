@@ -6,13 +6,13 @@ import { gunzipSync } from 'zlib';
 import https from 'https';
 import type { Interface } from 'readline';
 import chalk from 'chalk';
-import type { MenuTab } from '../cli/list-menu.js';
+import { VIEWPORT_SIZE, clampViewport, type MenuTab } from '../cli/list-menu.js';
 import {
   setModelStatus,
   setTokenCount,
 } from '../cli/terminal-ui.js';
-import { resetEvalWorkDir, startEvalScenario } from '../cli/eval-runner.js';
-import { printEvalHeader } from '../cli/eval-screen.js';
+import { resetEvalWorkDir, startEvalScenario } from '../eval/runner.js';
+import { printEvalHeader, printEvalSummary } from '../cli/eval-screen.js';
 import { statusCircle } from '../cli/eval-dots.js';
 import { appendEvalRun } from '../providers/model-store.js';
 import { buildSystemPrompt } from '../agent/system-prompt.js';
@@ -23,7 +23,6 @@ const HUMANEVAL_EXAMPLE_DATA_DEFAULT = resolve(_dirname, '..', '..', 'playground
 const HUMANEVAL_RUNS_DIR = resolve(_dirname, '..', '..', 'playground', 'humaneval', '.runs');
 
 const HUMANEVAL_DOWNLOAD_URL = 'https://github.com/openai/human-eval/raw/master/data/HumanEval.jsonl.gz';
-const VIEWPORT_SIZE = 20;
 
 export function downloadFile(url: string, dest: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -73,12 +72,6 @@ function readProblems(): HumanEvalProblem[] {
   }
 
   return [...example, ...main];
-}
-
-function clampViewport(sel: number, viewportStart: number): number {
-  if (sel < viewportStart) return sel;
-  if (sel >= viewportStart + VIEWPORT_SIZE) return sel - VIEWPORT_SIZE + 1;
-  return viewportStart;
 }
 
 function buildPickerLines(problems: HumanEvalProblem[], sel: number, viewportStart: number, results: HumanEvalResultMap): string[] {
@@ -372,14 +365,5 @@ export async function runHumanEvalProblems(
     if (userCancelled) break;
   }
 
-  if (chosen.length > 1) {
-    console.log('');
-    const parts = [
-      passed > 0 ? chalk.green(`${passed} passed`) : null,
-      failed > 0 ? chalk.red(`${failed} failed`) : null,
-      incomplete > 0 ? chalk.yellow(`${incomplete} incomplete`) : null,
-    ].filter(Boolean);
-    const color = failed > 0 ? chalk.red : incomplete > 0 ? chalk.yellow : chalk.green;
-    console.log(color(`Results: ${parts.join(', ')}`));
-  }
+  if (chosen.length > 1) printEvalSummary(passed, failed, incomplete);
 }

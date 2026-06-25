@@ -7,7 +7,7 @@ import {
   parseScenarioSelection,
   getScenarioSummaries,
   type TestScenarioSummary,
-} from '../../src/cli/scenario-catalog.js';
+} from '../../src/eval/scenario-catalog.js';
 
 function makeScenario(over: Partial<TestScenarioSummary> = {}): TestScenarioSummary {
   return {

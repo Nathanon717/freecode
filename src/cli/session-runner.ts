@@ -1,7 +1,7 @@
 import type { AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';
 import { dispatchCommand, type ModelListMode } from './command-dispatcher.js';
-import type { SessionController } from './session-controller.js';
+import type { SessionController } from '../agent/session-controller.js';
 
 export interface CliSessionMode {
   readInput(this: void, tokenCount: number): Promise<string | null>;

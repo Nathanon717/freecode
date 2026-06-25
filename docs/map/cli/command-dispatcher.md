@@ -9,7 +9,6 @@
 | `CommandDispatchResult` | `'continue' \| 'exit'`. |
 | `ModelListMode` | `'current-only' \| 'full'`. |
 | `CommandRuntime` | Dependency bundle passed by `runCliSession()`. |
-| `formatQuotaReset` | Formats raw or millisecond quota reset values. |
 | `dispatchCommand` | Main command/user-input dispatcher. |
 
 ## Slash Commands

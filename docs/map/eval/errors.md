@@ -1,4 +1,4 @@
-# src/cli/eval-errors.ts - Eval API Error Parser
+# src/eval/errors.ts - Eval API Error Parser
 
 **Role:** Parses structured API error objects out of eval run stdout for display after a failed eval.
 

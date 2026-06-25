@@ -3,10 +3,8 @@ import { join, resolve, dirname } from 'path';
 import { spawn, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
-import {
-  modelSlug,
-  type EvalCheckResult,
-} from './eval-dots.js';
+import { modelSlug } from './playground.js';
+import type { EvalCheckResult } from './history.js';
 import { logError } from '../logger.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));

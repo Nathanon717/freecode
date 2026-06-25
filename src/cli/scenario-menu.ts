@@ -4,12 +4,16 @@ import chalk from "chalk";
 import {
   PLAYGROUND_EVAL_DIR,
   computeRunHash,
+} from "../eval/playground.js";
+import {
   getEvalStatus,
   getLatestEvalEntry,
-  type PlaygroundScenario,
   type EvalHistoryEntry,
-} from "./eval-dots.js";
+  type ScenarioHashes,
+} from "../eval/history.js";
 export { getEvalStatus };
+export type { ScenarioHashes };
+import type { PlaygroundScenario } from "../eval/playground.js";
 
 import {
   setModelStatus,
@@ -17,7 +21,7 @@ import {
   setRetryBanner,
   setTokenCount,
 } from "./terminal-ui.js";
-import type { MenuTab } from "./list-menu.js";
+import { VIEWPORT_SIZE, clampViewport, type MenuTab } from "./list-menu.js";
 import {
   loadEvalConfig,
   startEvalScenario,
@@ -25,35 +29,20 @@ import {
   archiveEvalRun,
   runCheckScript,
   type EvalRunResult,
-} from "./eval-runner.js";
-import { extractApiErrors } from "./eval-errors.js";
+} from "../eval/runner.js";
+import { extractApiErrors } from "../eval/errors.js";
 import {
   buildEvalPickerScreen,
   buildEvalDetailScreen,
   printEvalHeader,
   printEvalReport,
+  printEvalSummary,
 } from "./eval-screen.js";
 import { InlineActionMenu } from "./action-menu.js";
 import { appendEvalRun } from "../providers/model-store.js";
 import { getDeadIds } from "../providers/model-cache.js";
 import { invalidateDeadModel } from "../providers/registry.js";
 import { buildSystemPrompt } from "../agent/system-prompt.js";
-
-export interface ScenarioHashes {
-  runHash: string;
-  fullHash: string;
-}
-
-// Rows of scenarios kept on screen at once. Mirrors HumanEval's viewport so the
-// tab bar + header stay visible on short terminals.
-const VIEWPORT_SIZE = 20;
-
-// Smallest viewport shift that keeps `sel` in view (no-op when already visible).
-function clampViewport(sel: number, viewportStart: number): number {
-  if (sel < viewportStart) return sel;
-  if (sel >= viewportStart + VIEWPORT_SIZE) return sel - VIEWPORT_SIZE + 1;
-  return viewportStart;
-}
 
 // Builds the "Custom" eval tab: the playground/eval scenario list with status
 // circles, a detail view (\u2192), and a Run/View/Edit action menu (Enter). 'a' runs
@@ -379,15 +368,5 @@ export async function runEvalScenarios(
     else failed++;
   }
 
-  if (chosen.length > 1) {
-    console.log("");
-    const parts = [
-      passed > 0 ? chalk.green(`${passed} passed`) : null,
-      failed > 0 ? chalk.red(`${failed} failed`) : null,
-      incomplete > 0 ? chalk.yellow(`${incomplete} incomplete`) : null,
-    ].filter(Boolean);
-    const color =
-      failed > 0 ? chalk.red : incomplete > 0 ? chalk.yellow : chalk.green;
-    console.log(color(`Results: ${parts.join(", ")}`));
-  }
+  if (chosen.length > 1) printEvalSummary(passed, failed, incomplete);
 }

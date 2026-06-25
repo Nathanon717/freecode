@@ -10,7 +10,7 @@ import type {
 import { loadConfig } from "../config/index.js";
 import { getCommandCompletion, getFilteredCommands } from "./slash-commands.js";
 import { runEvalMenu, runHumanEvalMenu } from "./eval-menu.js";
-import type { SessionController } from "./session-controller.js";
+import type { SessionController } from "../agent/session-controller.js";
 import type { CliSessionMode } from "./session-runner.js";
 import {
   backspaceAtCursor,
@@ -39,7 +39,7 @@ import {
   teardownBottomUI,
   teardownFooterUI,
 } from "./terminal-ui.js";
-import { refreshOpenAIDailySpend } from "./openai-daily-spend.js";
+import { refreshOpenAIDailySpend } from "../providers/openai-daily-spend.js";
 import { loadCachedQuota, saveQuotaToCache } from "../providers/quota/cache.js";
 import { cycleByChar, setCtrlHint, getAskMode, initAskMode, isReadOnly } from "./toggles.js";
 import {

@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_TRANSCRIPT_MAX_RESULT_LINES,
   TRANSCRIPT_DIVIDER_WIDTH,
-  computeLineDiff,
   formatArgs,
   formatEditFileDiff,
   formatTranscriptStepDivider,
@@ -12,6 +11,7 @@ import {
   getTranscriptRuntimeOptions,
   writeTranscriptStepDivider,
 } from '../../src/cli/transcript-renderer.js';
+import { computeLineDiff } from '../../src/util/line-diff.js';
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 

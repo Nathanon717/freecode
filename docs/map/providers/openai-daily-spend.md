@@ -1,4 +1,4 @@
-# src/cli/openai-daily-spend.ts - OpenAI Daily Spend Footer
+# src/providers/openai-daily-spend.ts - OpenAI Daily Spend Footer
 
 **Role:** Fetches and caches the current UTC day's OpenAI organization cost for the interactive footer.
 
@@ -16,5 +16,5 @@ Requires `OPENAI_ADMIN_KEY`; ordinary OpenAI project keys are not used for organ
 
 ## Key Neighbors
 
-- [terminal-ui.md](terminal-ui.md): renders the daily spend snapshot in the bottom status line.
-- [input-modes.md](input-modes.md): triggers refreshes when the interactive footer is active.
+- [cli/footer-status.md](../cli/footer-status.md): imports `OpenAIDailySpend` type from this module.
+- [cli/input-modes.md](../cli/input-modes.md): triggers refreshes when the interactive footer is active.

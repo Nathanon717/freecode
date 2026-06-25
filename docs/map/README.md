@@ -30,12 +30,14 @@ src/
 |-- util/
 |   |-- guards.ts                 -> [Shared type guards](util/guards.md)
 |   |-- errors.ts                 -> [Error message utilities](util/errors.md)
+|   |-- line-diff.ts              -> [LCS line diff](util/line-diff.md)
 |   `-- screen-buffer.ts          -> [Stdout ring buffer](util/screen-buffer.md)
 |-- logger.ts                     -> [Diagnostic logging](logger.md)
 |-- agent/
 |   |-- context.ts                -> [Mutable project root](agent/context.md)
 |   |-- loop.ts                   -> [Agent loop](agent/loop.md)
 |   |-- prompt-tools.ts           -> [Prompt-based tool harness](agent/prompt-tools.md)
+|   |-- session-controller.ts     -> [In-memory conversation state](agent/session-controller.md)
 |   |-- system-prompt.ts          -> [System prompt](agent/system-prompt.md)
 |   |-- token-count.ts            -> [Context token estimator](agent/token-count.md)
 |   `-- tools/
@@ -58,14 +60,9 @@ src/
 |   |-- eval-menu.ts              -> [Unified eval menu](cli/eval-menu.md)
 |   |-- action-menu.ts            -> [Inline action sub-menu](cli/action-menu.md)
 |   |-- footer-status.ts          -> [Footer status state and formatters](cli/footer-status.md)
-|   |-- eval-dots.ts              -> [Eval status circle utilities](cli/eval-dots.md)
-|   |-- eval-errors.ts            -> [Eval API error parser](cli/eval-errors.md)
-|   |-- eval-runner.ts            -> [Eval subprocess runner](cli/eval-runner.md)
+|   |-- eval-dots.ts              -> [Eval status circle renderers](cli/eval-dots.md)
 |   |-- eval-screen.ts            -> [Eval screen renderers](cli/eval-screen.md)
-|   |-- scenario-catalog.ts       -> [Scenario discovery/runner](cli/scenario-catalog.md)
 |   |-- scenario-menu.ts          -> [Scenario menus](cli/scenario-menu.md)
-|   |-- session-controller.ts     -> [In-memory conversation state](cli/session-controller.md)
-|   |-- openai-daily-spend.ts     -> [OpenAI daily spend footer](cli/openai-daily-spend.md)
 |   |-- session-runner.ts         -> [CLI session loop](cli/session-runner.md)
 |   |-- slash-commands.ts         -> [Slash command list/completion](cli/slash-commands.md)
 |   |-- transcript-renderer.ts    -> [Agent transcript formatting](cli/transcript-renderer.md)
@@ -81,6 +78,13 @@ src/
 |   `-- status.ts                 -> [/status system status](commands/status.md)
 |-- config/
 |   `-- index.ts                  -> [Config loader](config/index.md)
+|-- eval/
+|   |-- errors.ts                 -> [Eval API error parser](eval/errors.md)
+|   |-- history.ts                -> [Eval history and status computation](eval/history.md)
+|   |-- playground.ts             -> [Playground scenario discovery and hashing](eval/playground.md)
+|   |-- result-sink.ts            -> [Eval result JSON IPC sink](eval/result-sink.md)
+|   |-- runner.ts                 -> [Eval subprocess runner](eval/runner.md)
+|   `-- scenario-catalog.ts       -> [Scenario discovery/runner](eval/scenario-catalog.md)
 `-- providers/
     |-- index.ts                  -> [Provider re-exports](providers/index.md)
     |-- types.ts                  -> [Provider/config types](providers/types.md)
@@ -94,6 +98,7 @@ src/
     |-- model-store.ts            -> [Unified model store](providers/model-store.md)
     |-- model-cache.ts            -> [Live model list cache](providers/model-cache.md)
     |-- anthropic-cost.ts         -> [Anthropic cost estimates](providers/anthropic-cost.md)
+    |-- openai-daily-spend.ts     -> [OpenAI daily spend footer](providers/openai-daily-spend.md)
     |-- pricing-verifier.ts       -> [Dual-source pricing verifier](providers/pricing-verifier.md)
     |-- adapters/
     |   |-- openai-compat.ts      -> [OpenAI-compatible adapter](providers/adapters/openai-compat.md)
@@ -110,4 +115,4 @@ src/
 
 Runtime starts in [index.md](index.md), enters [cli/session-runner.md](cli/session-runner.md), dispatches slash commands through [cli/command-dispatcher.md](cli/command-dispatcher.md), and sends normal turns to [agent/loop.md](agent/loop.md).
 
-Provider selection lives in [providers/registry.md](providers/registry.md). Tool wrappers live under [agent/tools/](agent/tools/index.md). Scenario discovery lives in [cli/scenario-catalog.md](cli/scenario-catalog.md).
+Provider selection lives in [providers/registry.md](providers/registry.md). Tool wrappers live under [agent/tools/](agent/tools/index.md). Scenario discovery lives in [eval/scenario-catalog.md](eval/scenario-catalog.md).

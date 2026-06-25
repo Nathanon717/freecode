@@ -1,4 +1,4 @@
-# src/cli/scenario-catalog.ts - Scenario Catalog
+# src/eval/scenario-catalog.ts - Scenario Catalog
 
 **Role:** Discovers scenario JSON files, summarizes their assertions, resolves user selections, and runs individual scenarios.
 
@@ -33,9 +33,3 @@ node <tsx-cli> tests/harness/run-scenarios.ts --no-build --only=<name> [--detail
 ```
 
 with `FORCE_COLOR=1` and `VERBOSE=1` defaults.
-
-## Fake LLM Fixtures
-
-Scenario JSON may include `llmFixture`, a path relative to `tests/scenarios/`. The harness treats these scenarios as free verification: it sets `FREECODE_FAKE_LLM=1`, passes `FREECODE_FAKE_LLM_SCRIPT`, leaves `FREECODE_NO_LLM` unset so `agentLoop()` runs, and still strips real provider API keys from the child environment.
-
-`expect.fakeLlmTrace` can assert the fake model call count plus per-call provider, model, execution path, last-user text, available/absent tools, emitted text, emitted tool calls, and usage values from `FREECODE_FAKE_LLM_TRACE`.

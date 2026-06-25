@@ -1,4 +1,4 @@
-# src/cli/eval-runner.ts - Eval Subprocess Runner
+# src/eval/runner.ts - Eval Subprocess Runner
 
 **Role:** Spawns freecode as a child process for eval scenarios, manages eval file I/O, and runs the check script.
 
@@ -21,7 +21,7 @@
 - Spawns `dist/index.js` (not `src/`) — requires a prior build.
 - Sets `FREECODE_TRANSCRIPT_STREAM=stdout` so the transcript formatter runs inside the subprocess.
 - 120-second hard timeout per run via `setTimeout`.
-- `startEvalScenario` streams subprocess stdout live, skipping the `> ` prompt header line.
+- Imports `modelSlug` from `./playground.js` and `EvalCheckResult` from `./history.js`.
 
 ## Read When
 

@@ -19,6 +19,7 @@ State setters:
 
 Formatting / layout:
 
+- `formatQuotaReset(ms, raw)` — formats raw or millisecond quota reset values into a human-readable string
 - `formatEvalRunStatus(now?)` — returns retry-banner string for footer left side
 - `layoutFooterRightRows(width, rowBudget, now?)` — lays out right-side footer content into 1–3 rows; `result[0]` = bottom row
 - `composeBottomRightStatus(width, now?)` — single-row right status string
@@ -31,5 +32,5 @@ Changing what is shown in the footer status area, adding new status fields, or d
 ## Key neighbors
 
 - `cli/terminal-ui.ts` — imports `layoutFooterRightRows` and `formatEvalRunStatus` for `composeFooterOutput`; re-exports everything for backwards-compat callers
-- `cli/openai-daily-spend.ts` — imports `OpenAIDailySpend` type
+- `providers/openai-daily-spend.ts` — imports `OpenAIDailySpend` type
 - `providers/quota/headers.ts` — imports `RateLimitSnapshot` type

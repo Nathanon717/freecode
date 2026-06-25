@@ -10,14 +10,20 @@ vi.mock('../../src/cli/menu-shell.js', () => ({
 
 vi.mock('../../src/cli/list-menu.js', () => ({ runListMenu: vi.fn() }));
 
-vi.mock('../../src/cli/eval-dots.js', () => ({
+vi.mock('../../src/eval/playground.js', () => ({
   PLAYGROUND_EVAL_DIR: '/eval',
   discoverPlaygroundScenarios: vi.fn(() => [{ id: 's1', firstLine: 'first line' }]),
   computeRunHash: vi.fn(() => 'rh'),
   computeScenarioHash: vi.fn(() => 'fh'),
+}));
+
+vi.mock('../../src/eval/history.js', () => ({
   getEvalStatus: vi.fn(() => 'green'),
-  statusCircle: vi.fn(() => '●'),
   loadEvalHistory: vi.fn(() => []),
+}));
+
+vi.mock('../../src/cli/eval-dots.js', () => ({
+  statusCircle: vi.fn(() => '●'),
 }));
 
 vi.mock('../../src/cli/scenario-menu.js', () => ({

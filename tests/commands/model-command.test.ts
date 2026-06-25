@@ -1,3 +1,4 @@
+// check-tests: orphan
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Interface } from 'readline';
 
@@ -76,8 +77,11 @@ vi.mock('../../src/providers/pricing-verifier.js', () => ({
   getOpenAIVerifiedRates: vi.fn().mockResolvedValue({ confidence: 'agreed', inputPerMillion: 2.5, outputPerMillion: 10.0 }),
 }));
 
-vi.mock('../../src/cli/eval-dots.js', () => ({
+vi.mock('../../src/eval/history.js', () => ({
   loadEvalDotsData: vi.fn().mockReturnValue({}),
+}));
+
+vi.mock('../../src/cli/eval-dots.js', () => ({
   buildEvalDots: vi.fn().mockReturnValue(''),
 }));
 

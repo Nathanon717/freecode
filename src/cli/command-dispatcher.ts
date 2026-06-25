@@ -1,11 +1,10 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
 import chalk from 'chalk';
 import type { AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';
 import { resolveApiKey, resolveModelSettings } from '../config/index.js';
 import { ensureStoreReady } from '../providers/db.js';
 import { toErrorMessage } from '../util/errors.js';
-import { log, logError } from '../logger.js';
+import { log } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/registry.js';
 import {
   addAnthropicSessionCost,
@@ -17,8 +16,13 @@ import {
 import { formatCapturedProviderUsages } from '../providers/adapters/openai-compat.js';
 import { redrawBanner } from './banner.js';
 import { showHelp } from './slash-commands.js';
-import type { SessionController } from './session-controller.js';
+import type { SessionController } from '../agent/session-controller.js';
 import { setTokenCount } from './terminal-ui.js';
+import {
+  writeResultPlaceholder,
+  makePartialResultUpdater,
+  writeFinalResult,
+} from '../eval/result-sink.js';
 
 export type CommandDispatchResult = 'continue' | 'exit';
 export type ModelListMode = 'current-only' | 'full';
@@ -63,23 +67,6 @@ function showFlagsHelp(): void {
 }
 
 
-export function formatQuotaReset(ms: number | null, raw: string | null): string {
-  if (raw?.trim()) return raw;
-  if (ms === null) return '?';
-
-  let totalSeconds = Math.floor(ms / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  totalSeconds -= hours * 3600;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds - minutes * 60;
-
-  const parts: string[] = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-  return parts.join('');
-}
-
 function showModelStatus(runtime: CommandRuntime): void {
   console.log(chalk.blue('Current model: ' + (runtime.getSelectedModel() || chalk.dim('(none)'))));
   if (runtime.modelListMode === 'current-only') return;
@@ -112,20 +99,7 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
     // Write an initial placeholder entry so the footer shows the correct model
     // immediately rather than waiting for the full agent loop to complete.
     if (resultJsonPath) {
-      try {
-        const modelStr = runtime.getSelectedModel() ?? '';
-        const colonIdx = modelStr.indexOf(':');
-        const placeholder = {
-          providerId: colonIdx !== -1 ? modelStr.slice(0, colonIdx) : '',
-          modelId: colonIdx !== -1 ? modelStr.slice(colonIdx + 1) : modelStr,
-          totalTokens: 0,
-        };
-        const existing: unknown[] = existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) as unknown[] : [];
-        existing.push(placeholder);
-        writeFileSync(resultJsonPath, JSON.stringify(existing, null, 2), 'utf-8');
-      } catch (err) {
-        logError('eval', 'Failed to write initial result JSON placeholder', err);
-      }
+      writeResultPlaceholder(resultJsonPath, runtime.getSelectedModel() ?? '');
     }
 
     // Imported lazily so the interactive boot path doesn't pull in the `ai`
@@ -134,19 +108,7 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
     const result = await agentLoop(runtime.session.messages, runtime.projectRoot, runtime.getSelectedModel() ?? undefined, {
       confirmToolCall: runtime.confirmToolCall,
       readOnly: runtime.getReadOnly?.() ?? false,
-      onPartialResult: resultJsonPath ? (partial) => {
-        // Update the last entry with quota as soon as the first API response arrives.
-        if (partial.quota === null) return;
-        try {
-          const entries = existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) as Record<string, unknown>[] : [];
-          if (entries.length > 0) {
-            entries[entries.length - 1] = { ...entries[entries.length - 1], ...partial, quota: partial.quota };
-            writeFileSync(resultJsonPath, JSON.stringify(entries, null, 2), 'utf-8');
-          }
-        } catch (err) {
-          logError('eval', 'Failed to update partial result JSON', err);
-        }
-      } : undefined,
+      onPartialResult: resultJsonPath ? makePartialResultUpdater(resultJsonPath) : undefined,
     });
 
     if (!result.text.trim()) {
@@ -156,26 +118,14 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
     await runtime.onAgentResult?.(result);
 
     if (resultJsonPath) {
-      try {
-        const entry = {
-          totalTokens: result.usage.totalTokens,
-          promptTokens: result.usage.promptTokens,
-          outputTokens: result.usage.outputTokens,
-          providerId: result.providerId,
-          modelId: result.modelId,
-          quota: result.quota ?? undefined,
-        };
-        // Replace the placeholder entry we wrote before the loop with the full result.
-        const existing: unknown[] = existsSync(resultJsonPath) ? JSON.parse(readFileSync(resultJsonPath, 'utf-8')) as unknown[] : [];
-        if (existing.length > 0) {
-          existing[existing.length - 1] = entry;
-        } else {
-          existing.push(entry);
-        }
-        writeFileSync(resultJsonPath, JSON.stringify(existing, null, 2), 'utf-8');
-      } catch (err) {
-        logError('eval', `Failed to write result JSON to ${resultJsonPath}`, err);
-      }
+      writeFinalResult(resultJsonPath, {
+        totalTokens: result.usage.totalTokens,
+        promptTokens: result.usage.promptTokens,
+        outputTokens: result.usage.outputTokens,
+        providerId: result.providerId,
+        modelId: result.modelId,
+        quota: result.quota ?? undefined,
+      });
     }
 
     runtime.session.addAssistantMessage(result.text);

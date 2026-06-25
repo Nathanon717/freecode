@@ -10,11 +10,13 @@ import {
   discoverPlaygroundScenarios,
   computeRunHash,
   computeScenarioHash,
-  getEvalStatus,
-  statusCircle,
-  loadEvalHistory,
   type PlaygroundScenario,
-} from './eval-dots.js';
+} from '../eval/playground.js';
+import {
+  getEvalStatus,
+  loadEvalHistory,
+} from '../eval/history.js';
+import { statusCircle } from './eval-dots.js';
 import { buildCustomEvalTab, runEvalScenarios, type ScenarioHashes } from './scenario-menu.js';
 import {
   buildHumanEvalTab,

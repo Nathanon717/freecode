@@ -5,7 +5,7 @@ import {
   refreshOpenAIDailySpend,
   resetOpenAIDailySpendCache,
   type OpenAIDailySpend,
-} from '../../src/cli/openai-daily-spend.js';
+} from '../../src/providers/openai-daily-spend.js';
 
 describe('OpenAI daily spend footer data', () => {
   const originalAdminKey = process.env.OPENAI_ADMIN_KEY;

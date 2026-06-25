@@ -2,13 +2,13 @@ import chalk from 'chalk';
 import { getBannerColor } from './banner.js';
 import {
   getEvalStatus,
-  statusCircle,
   type EvalCheckResult,
   type EvalHistoryEntry,
-  type PlaygroundScenario,
   type ScenarioHashes,
-} from './eval-dots.js';
-import type { EvalReport } from './eval-runner.js';
+} from '../eval/history.js';
+import type { PlaygroundScenario } from '../eval/playground.js';
+import { statusCircle } from './eval-dots.js';
+import type { EvalReport } from '../eval/runner.js';
 
 export function printEvalHeader(id: string, prompt: string): void {
   const termWidth = process.stdout.columns || 80;
@@ -56,6 +56,19 @@ export function printEvalReport(report: EvalReport): void {
       console.log(chalk.dim(`    ${stat.name}: ${stat.note ?? String(stat.value ?? '')}`));
     }
   }
+}
+
+// Prints the multi-run results summary (passed/failed/incomplete). Callers guard
+// on more than one run having executed.
+export function printEvalSummary(passed: number, failed: number, incomplete: number): void {
+  console.log('');
+  const parts = [
+    passed > 0 ? chalk.green(`${passed} passed`) : null,
+    failed > 0 ? chalk.red(`${failed} failed`) : null,
+    incomplete > 0 ? chalk.yellow(`${incomplete} incomplete`) : null,
+  ].filter(Boolean);
+  const color = failed > 0 ? chalk.red : incomplete > 0 ? chalk.yellow : chalk.green;
+  console.log(color(`Results: ${parts.join(', ')}`));
 }
 
 export function buildEvalPickerScreen(

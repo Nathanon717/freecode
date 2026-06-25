@@ -1,7 +1,7 @@
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { describe, expect, it } from 'vitest';
-import { SessionController } from '../../src/cli/session-controller.js';
+import { SessionController } from '../../src/agent/session-controller.js';
 
 describe('SessionController', () => {
   it('starts with no messages', () => {

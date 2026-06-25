@@ -16,7 +16,7 @@
 
 ## Used By
 
-- [cli/session-controller.md](../cli/session-controller.md) exposes `getContextTokenCount()`.
+- [agent/session-controller.md](session-controller.md) exposes `getContextTokenCount()`.
 - [cli/terminal-ui.md](../cli/terminal-ui.md) displays the count in the bottom status row.
 
 ## Caveat

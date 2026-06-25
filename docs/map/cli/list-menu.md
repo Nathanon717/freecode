@@ -29,7 +29,12 @@ interface ListMenuOptions<TResult> {
   onCancel?: () => TResult; onExitClear?; countLines?;
 }
 runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TResult>
+
+const VIEWPORT_SIZE: number                                // rows kept on screen in a scrolling tab body
+clampViewport(sel: number, viewportStart: number): number  // smallest shift keeping sel in view
 ```
+
+Shared by tab bodies that scroll a long item list (`scenario-menu.ts` Custom tab, `commands/humaneval.ts` HumanEval tab).
 
 ## Behavior
 

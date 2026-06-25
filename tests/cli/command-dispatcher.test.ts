@@ -70,9 +70,9 @@ vi.mock('../../src/commands/renderer.js', () => ({
 
 import {
   dispatchCommand,
-  formatQuotaReset,
   type CommandRuntime,
 } from '../../src/cli/command-dispatcher.js';
+import { formatQuotaReset } from '../../src/cli/footer-status.js';
 import { agentLoop } from '../../src/agent/loop.js';
 import { addAnthropicSessionCost, describeCostEstimateBreakdown, resetAnthropicSessionCost } from '../../src/providers/anthropic-cost.js';
 import { formatCapturedProviderUsages } from '../../src/providers/adapters/openai-compat.js';
