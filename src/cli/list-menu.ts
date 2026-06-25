@@ -77,24 +77,10 @@ export interface ListMenuOptions<TResult> {
   initialSelected?: number;
   /** Wrap Up/Down at the list ends. Default true; set false for non-wrapping menus. */
   wrap?: boolean;
-  /** Custom tab-bar renderer; only used when there is more than one tab. */
-  renderTabBar?: (tabs: readonly MenuTab<TResult>[], activeIndex: number, focused: boolean) => string[];
   /** Value resolved when the user presses Esc. Default null. */
   onCancel?: () => TResult;
   onExitClear?: (rowCount: number) => void;
   countLines?: (lines: string[]) => number;
-}
-
-function defaultTabBar<TResult>(
-  tabs: readonly MenuTab<TResult>[],
-  activeIndex: number,
-  focused: boolean,
-): string[] {
-  const parts = tabs.map((t, i) => {
-    if (i !== activeIndex) return chalk.dim(t.label);
-    return focused ? chalk.inverse(` ${t.label} `) : chalk.bold.cyan(t.label);
-  });
-  return ['', `  ${parts.join(chalk.dim('   '))}`, ''];
 }
 
 /**
@@ -112,7 +98,6 @@ export function runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResul
   const { tabs } = opts;
   const wrap = opts.wrap ?? true;
   const hasTabs = tabs.length > 1;
-  const renderTabBar = opts.renderTabBar ?? defaultTabBar;
   const cancelValue = (): TResult => (opts.onCancel ? opts.onCancel() : (null as TResult));
 
   let tabIndex = Math.max(0, opts.initialTabId ? tabs.findIndex((t) => t.id === opts.initialTabId) : 0);
@@ -124,6 +109,7 @@ export function runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResul
   return runRawPicker<TResult>(rl, {
     countLines: opts.countLines,
     onExitClear: opts.onExitClear,
+    pinToTop: hasTabs,
     render: () => {
       const tab = tabs[tabIndex];
       if (detailMode && tab.renderDetail) {
@@ -136,7 +122,18 @@ export function runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResul
         lines.splice(body.selectedLineIdx + 1, 0, ...tab.actionMenu.menu.renderLines());
         if (body.hintLineIdx !== undefined) lines[body.hintLineIdx] = tab.actionMenu.actionHint;
       }
-      return hasTabs ? [...renderTabBar(tabs, tabIndex, selected === -1), ...lines] : lines;
+      if (!hasTabs) return lines;
+      const focused = selected === -1;
+      const tabBarParts = tabs.map((t, i) => {
+        if (i !== tabIndex) return chalk.dim(t.label);
+        return focused ? chalk.inverse(` ${t.label} `) : chalk.bold.cyan(t.label);
+      });
+      return [
+        chalk.gray(' \u2190esc'),
+        `  ${tabBarParts.join(chalk.dim('   '))}`,
+        '',
+        ...lines,
+      ];
     },
     onKey: (key, redraw, close) => {
       const tab = tabs[tabIndex];

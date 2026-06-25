@@ -1,5 +1,5 @@
 import type { Interface } from 'readline';
-import { composeFooterOutput, drawFooter, getRows, resumeFooterTimer, setPickerUIActive, suspendFooterTimer } from './terminal-ui.js';
+import { composeFooterOutput, drawFooter, getLastReservedRows, getRows, resumeFooterTimer, setPickerUIActive, suspendFooterTimer } from './terminal-ui.js';
 
 // Counts the actual terminal rows a set of rendered lines occupies, accounting
 // for soft-wrapping at the current terminal width. Use this as `countLines` in
@@ -130,6 +130,8 @@ export interface RawPickerOptions<T = void> {
   onExitClear?: (rowCount: number) => void;
   /** Skip the viewport scroll-clear that normally pushes prior output off-screen before the picker draws. */
   skipScrollClear?: boolean;
+  /** Draw the picker from row 1 on every frame instead of at the current cursor. */
+  pinToTop?: boolean;
 }
 
 /**
@@ -145,7 +147,20 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
   function redraw(): void {
     const lines = opts.render();
     let output = '';
-    if (rowCount > 0) {
+    if (opts.pinToTop) {
+      const availableRows = Math.max(0, getRows() - getLastReservedRows());
+      const clearRows = Math.max(rowCount, availableRows);
+      const visibleRows = availableRows;
+      output += '\x1b[?7l';
+      for (let i = 0; i < clearRows; i++) {
+        output += `\x1b[${i + 1};1H\x1b[2K`;
+      }
+      const visibleLines = lines.slice(0, Math.max(0, visibleRows));
+      for (let i = 0; i < visibleLines.length; i++) {
+        output += `\x1b[${i + 1};1H${visibleLines[i]}`;
+      }
+      output += '\x1b[?7h';
+    } else if (rowCount > 0) {
       // Clear only the menu rows (not footer) to avoid erasing and redrawing it.
       output += `\x1b[${rowCount}A\r`;
       for (let i = 0; i < rowCount; i++) {
@@ -154,8 +169,10 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
       }
       if (rowCount > 1) output += `\x1b[${rowCount - 1}A\r`;
     }
-    output += lines.join('\n') + '\n';
-    rowCount = opts.countLines ? opts.countLines(lines) : lines.length;
+    if (!opts.pinToTop) output += lines.join('\n') + '\n';
+    rowCount = opts.pinToTop
+      ? Math.min(opts.countLines ? opts.countLines(lines) : lines.length, Math.max(0, getRows() - getLastReservedRows()))
+      : opts.countLines ? opts.countLines(lines) : lines.length;
     // Append footer in the same write so the terminal sees one atomic update.
     output += composeFooterOutput();
     process.stdout.write(output);
@@ -181,7 +198,7 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
   suspendFooterTimer();
   process.stdout.write('\x1b[?25l');
 
-  if (!opts.skipScrollClear) {
+  if (!opts.skipScrollClear && !opts.pinToTop) {
     // Move to the scroll-region bottom and scroll all old content above the
     // viewport so stale echoes don't remain visible above the picker menu.
     const r = getRows();

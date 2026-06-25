@@ -131,26 +131,6 @@ function renderOverrideValue(value: TabValue, effectiveValue: boolean, selected:
   return value ? chalk.green('true') : chalk.red('false');
 }
 
-function buildTabLine(tabs: Tab[], activeTab: Tab, tabSelected: boolean, currentModel: string): string {
-  const labels: Record<Tab, string> = {
-    global: 'Global',
-    provider: `Provider: ${getProviderId(currentModel)}`,
-    model: `Model: ${currentModel}`,
-  };
-
-  const parts = tabs.map(tab => {
-    const label = labels[tab];
-    if (tab === activeTab) {
-      return tabSelected
-        ? chalk.bgCyan.black(` ${label} `)
-        : chalk.cyan.bold(`[ ${label} ]`);
-    }
-    return chalk.dim(`  ${label}  `);
-  });
-
-  return '  ' + parts.join('  ');
-}
-
 // Settings visible on a given tab. Global hides model-only settings; the
 // provider/model tabs hide global-only settings. Each tab's list is contiguous
 // so the shared list-menu's count()/selected index line up 1:1.
@@ -329,10 +309,6 @@ async function runConfigBody(rl: Interface, currentModel: string): Promise<void>
     tabs,
     wrap: false,
     countLines: countWrappedLines,
-    renderTabBar: (menuTabs, activeIndex, focused) => {
-      const ids = menuTabs.map(t => t.id as Tab);
-      return ['', buildTabLine(ids, ids[activeIndex], focused, currentModel), ''];
-    },
     onExitClear(rowCount) {
       const r = process.stdout.rows || 24;
       // Reset scroll region to full screen so \x1b[J covers all rows (including

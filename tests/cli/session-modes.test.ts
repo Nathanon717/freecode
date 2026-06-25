@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import type { Interface } from 'readline';
-import { createInteractiveMode, createScriptedMode } from '../../src/cli/input-modes.js';
+import { createInteractiveMode, createScriptedMode } from '../../src/cli/session-modes.js';
 
 // readline.Interface stub. Scripted mode only touches rl through askContinueAfterLimit
 // (rl.resume / rl.pause / rl.question), exercised by the auto-confirm limit path.

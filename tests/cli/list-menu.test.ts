@@ -7,6 +7,7 @@ const { store } = vi.hoisted(() => ({
     opts: null as null | {
       render: () => string[];
       onKey: (key: string, redraw: () => void, close: (v: unknown) => void) => void;
+      pinToTop?: boolean;
     },
   },
 }));
@@ -62,6 +63,7 @@ describe('runListMenu — single tab navigation', () => {
   it('renders the body without a tab bar', () => {
     void runListMenu(fakeRl, { tabs: [singleTab()] });
     expect(store.opts!.render()).toEqual(['  header', '  hint', '> alpha', '  beta', '  gamma']);
+    expect(store.opts!.pinToTop).toBe(false);
   });
 
   it('moves Down and Up through items', () => {
@@ -144,9 +146,12 @@ describe('runListMenu — tab bar', () => {
     ];
   }
 
-  it('prepends a tab bar and focuses the tab row on Up from item 0', () => {
+  it('prepends pinned tab chrome and focuses the tab row on Up from item 0', () => {
     void runListMenu(fakeRl, { tabs: twoTabs() });
     const initial = store.opts!.render();
+    expect(store.opts!.pinToTop).toBe(true);
+    expect(initial[0]).toContain('←esc');
+    expect(initial[1]).toContain('AAA');
     expect(initial.join('\n')).toContain('AAA');
     store.opts!.onKey(UP, redraw, close); // item 0 → tab row
     // On the tab row, Right switches to the second tab.

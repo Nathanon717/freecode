@@ -23,9 +23,9 @@ interface MenuTab<TResult> {
 }
 interface ListMenuOptions<TResult> {
   tabs: MenuTab<TResult>[];
+  title?: string;                                           // grey pinned tab chrome label, e.g. "config"
   initialTabId?: string; initialSelected?: number;
   wrap?: boolean;                                           // default true; config sets false
-  renderTabBar?: (tabs, activeIndex, focused) => string[];
   onCancel?: () => TResult; onExitClear?; countLines?;
 }
 runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TResult>
@@ -38,7 +38,8 @@ Shared by tab bodies that scroll a long item list (`scenario-menu.ts` Custom tab
 
 ## Behavior
 
-- **Tab-row focus model** (matches `/config`): with more than one tab, Up from item 0 focuses the tab row (`selected === -1`); Left/Right there switch tabs; Down returns to item 0. Any other key on the tab row falls through to `tab.onKey` (e.g. `/config`'s `q` to quit). With a single tab, no tab bar is drawn and the tab row is unreachable.
+- **Tab-row focus model** (matches `/config`): with more than one tab, Up from item 0 focuses the tab row (`selected === -1`); Left/Right there switch tabs; Down returns to item 0. Any other key on the tab row falls through to `tab.onKey` (e.g. `/config`'s `q` to quit). With a single tab, no tab bar or tab chrome is drawn and the tab row is unreachable.
+- **Pinned tab chrome:** tabbed menus render a grey `←esc` line above the tab row and ask `raw-picker` to pin the menu to viewport row 1. Single-tab menus such as `/model` keep their existing body-only render path.
 - **Navigation:** Up/Down move the selection; `wrap` controls end-wrapping.
 - **Detail:** Right opens `renderDetail` (when present); Esc/Left returns.
 - **Action:** Enter opens `actionMenu` (when present), splicing `menu.renderLines()` after `selectedLineIdx` and overwriting `hintLineIdx` with `actionHint`; delegates keys to `InlineActionMenu`. With no `actionMenu`, Enter calls `onEnter`.

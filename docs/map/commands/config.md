@@ -2,7 +2,7 @@
 
 **Role:** Implements the `/config` terminal UI for editing settings at global, provider, and model levels.
 
-Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle, and `cli/list-menu.ts` owns the tab bar + nav loop. Each config tab is a `MenuTab` whose `onKey` cycles the focused setting's value (no `actionMenu`/`renderDetail`). A custom `renderTabBar` reuses `buildTabLine`, and `wrap: false` matches the editor's non-wrapping navigation.
+Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle, and `cli/list-menu.ts` owns the pinned `←esc` chrome, tab bar, and nav loop when multiple tabs are available. Each config tab is a `MenuTab` whose `onKey` cycles the focused setting's value (no `actionMenu`/`renderDetail`). `wrap: false` matches the editor's non-wrapping navigation.
 
 ## Exports
 
@@ -20,7 +20,7 @@ Three tabs, navigated by pressing Up from the first setting row to reach the tab
 | Provider | Current provider | `config.json` `providerOverrides[providerId]` |
 | Model | Current `provider:model` | `.freecode/models.json` `settings` (sparse) via `model-store` |
 
-Provider and Model tabs are only available when `currentModel` contains a colon. If no model is selected, only Global is shown.
+Provider and Model tabs are only available when `currentModel` contains a colon. If no model is selected, only Global is shown and no tab chrome is drawn.
 
 ## Settings
 

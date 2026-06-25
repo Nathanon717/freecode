@@ -1,6 +1,6 @@
 # src/cli/tool-approval.ts - Tool Approval Prompts
 
-**Role:** Holds the interactive and scripted tool-approval UI shared by both `CliSessionMode` implementations in `cli/input-modes.ts`.
+**Role:** Holds the interactive and scripted tool-approval UI shared by both `CliSessionMode` implementations in `cli/session-modes.ts`.
 
 ## Exports
 
@@ -26,7 +26,7 @@
 
 ## Key neighbors
 
-- `cli/input-modes.ts` — sole consumer; wires these into interactive and scripted modes.
+- `cli/session-modes.ts` — sole consumer; wires these into interactive and scripted modes.
 - `cli/raw-picker.ts` — provides `runRawKeySession` for the stdin lifecycle.
 - `cli/terminal-ui.ts` — footer/bottom-UI state queried for absolute positioning.
 - `agent/tools/index.ts` — `ToolCallPreview` / `ToolCallConfirmation` types, `filterArgs`/`formatArgs`.

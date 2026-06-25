@@ -18,10 +18,10 @@ Rendering:
 
 ## Adding a new toggle
 
-Add an entry to `ALL_TOGGLES` with a unique `char` and a `states` array (`{ label }[]`), and an initial `index`. The hint label is derived automatically from `states[0].label.slice(1)`. No other changes needed; `composeToggleBar` and `cycleByChar` pick it up automatically. Wire the Ctrl+letter shortcut in `cli/input-modes.ts`.
+Add an entry to `ALL_TOGGLES` with a unique `char` and a `states` array (`{ label }[]`), and an initial `index`. The hint label is derived automatically from `states[0].label.slice(1)`. No other changes needed; `composeToggleBar` and `cycleByChar` pick it up automatically. Wire the Ctrl+letter shortcut in `cli/session-modes.ts`.
 
 ## Key neighbors
 
 - `cli/terminal-ui.ts` — imports `composeToggleBar` / `toggleBarWidth` to draw the secondary footer row
-- `cli/input-modes.ts` — imports `cycleByChar`, `getAskMode`, `initAskMode`, `isReadOnly`
+- `cli/session-modes.ts` — imports `cycleByChar`, `getAskMode`, `initAskMode`, `isReadOnly`
 - `cli/session-runner.ts` → `cli/command-dispatcher.ts` → `agent/loop.ts` — `isReadOnly` threads through as `readOnly` in `AgentLoopOptions` to filter tools at creation time

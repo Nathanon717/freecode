@@ -51,7 +51,7 @@ src/
 |-- cli/
 |   |-- banner.ts                 -> [Startup banner](cli/banner.md)
 |   |-- command-dispatcher.ts     -> [Slash command dispatch](cli/command-dispatcher.md)
-|   |-- input-modes.ts            -> [Interactive/scripted input modes](cli/input-modes.md)
+|   |-- session-modes.ts          -> [Interactive/scripted session modes](cli/session-modes.md)
 |   |-- input-buffer.ts           -> [Input buffer and cursor state](cli/input-buffer.md)
 |   |-- tool-approval.ts          -> [Tool approval prompts](cli/tool-approval.md)
 |   |-- raw-picker.ts             -> [Shared raw-mode picker primitive](cli/raw-picker.md)

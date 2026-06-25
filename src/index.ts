@@ -61,7 +61,7 @@ async function main() {
   const { createInterface } = await import('readline');
   const { installScreenBuffer } = await import('./util/screen-buffer.js');
   const { showBanner } = await import('./cli/banner.js');
-  const { createInteractiveMode, createScriptedMode } = await import('./cli/input-modes.js');
+  const { createInteractiveMode, createScriptedMode } = await import('./cli/session-modes.js');
   const { SessionController } = await import('./agent/session-controller.js');
   const { runCliSession } = await import('./cli/session-runner.js');
   const { setupFooterUI, setRetryBanner, setQuotaSnapshot } = await import('./cli/terminal-ui.js');

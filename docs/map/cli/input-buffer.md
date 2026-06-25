@@ -27,4 +27,4 @@ Editing the interactive input area, cursor movement, or visual row/column calcul
 ## Key neighbors
 
 - `cli/terminal-ui.ts` — imports from here for rendering; re-exports everything for backwards-compat callers
-- `cli/input-modes.ts` — calls all cursor/buffer mutations in response to keystrokes
+- `cli/session-modes.ts` — calls all cursor/buffer mutations in response to keystrokes

@@ -115,6 +115,29 @@ describe('runRawPicker', () => {
     await promise;
   });
 
+  it('pins redraws to the top row when requested', async () => {
+    let renderCount = 0;
+    const promise = runRawPicker<void>(rl, {
+      pinToTop: true,
+      render: () => [`frame ${++renderCount}`],
+      onKey: (key, redraw, close) => {
+        if (key === 'r') redraw();
+        if (key === 'q') close();
+      },
+    });
+
+    expect(stdout.out).toContain('\x1b[1;1H');
+    expect(stdout.out).toContain('\x1b[?7l');
+    expect(stdout.out).toContain('\x1b[?7h');
+    expect(stdout.out).not.toContain('frame 1\n');
+
+    stdin.emit('data', 'r');
+    expect(stdout.out).toContain('frame 2');
+
+    stdin.emit('data', 'q');
+    await promise;
+  });
+
   it('enables raw mode on start and disables it on cleanup', async () => {
     const promise = runRawPicker<void>(rl, {
       skipScrollClear: true,

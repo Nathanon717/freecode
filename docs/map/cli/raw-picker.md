@@ -24,6 +24,7 @@ interface RawPickerOptions<T = void> {
   countLines?: (lines: string[]) => number;
   onExitClear?: (rowCount: number) => void;
   skipScrollClear?: boolean;
+  pinToTop?: boolean;
 }
 runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 ```
@@ -47,12 +48,13 @@ runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 - `countLines` (optional): wrapping-aware line count for terminals narrower than the content (used by `/config`).
 - `onExitClear` (optional): replaces the default `\x1b[${rowCount}A\r\x1b[J` erase on exit. Used by `/config` to reset/restore the scroll region (Windows ConPTY workaround).
 - `skipScrollClear` (optional): skip the viewport scroll-clear before first draw.
+- `pinToTop` (optional): draw frames with absolute row positioning from viewport row 1 and cap rendered rows to the footer-free region. Used by tabbed `list-menu` screens so the tab chrome stays pinned.
 
 ## Read when
 
 - Changing the raw-mode lifecycle shared by the pickers.
 - Adding a new interactive picker command.
-- Implementing Phase 3 (input-modes.ts) to reuse `runRawKeySession`.
+- Implementing Phase 3 (session-modes.ts) to reuse `runRawKeySession`.
 
 ## Key neighbors
 
@@ -61,4 +63,4 @@ runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 - `cli/scenario-menu.ts` — `/eval` picker
 - `cli/terminal-ui.ts` — `drawFooter` called after each redraw
 - `cli/tool-approval.ts` — uses `runRawKeySession` for the Approve/Deny menu and line-editor (Phase 2 done)
-- `cli/input-modes.ts` — Phase 3 target
+- `cli/session-modes.ts` — Phase 3 target

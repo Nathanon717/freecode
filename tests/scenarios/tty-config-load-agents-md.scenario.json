@@ -22,6 +22,7 @@
                                   "send":  "\r",
                                   "waitFor":  "Tool rationale",
                                   "screenContains":  [
+                                                         "←esc",
                                                          "Tool rationale"
                                                      ],
                                   "screenAbsent":  [

@@ -1,4 +1,4 @@
-# src/cli/input-modes.ts - Input Modes
+# src/cli/session-modes.ts - Session Modes
 
 **Role:** Builds the concrete `CliSessionMode` implementations for interactive TTY use and deterministic `--script` runs.
 

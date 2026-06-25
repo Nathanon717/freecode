@@ -12,7 +12,7 @@
 
 ## Behavior
 
-- Builds both tabs every time; the active tab is `initialTab` (`custom` for `/eval`, `humaneval` for `/humaneval`). Left/Right on the tab row switches between them.
+- Builds both tabs every time; the active tab is `initialTab` (`custom` for `/eval`, `humaneval` for `/humaneval`). Left/Right on the tab row switches between them, and tabbed rendering uses the pinned list-menu title (`eval` or `humaneval`) above the tab row.
 - **Custom tab data** is always discovered (`discoverPlaygroundScenarios` + history + run/full hashes).
 - **HumanEval data is lazy:** downloaded only when entering via the HumanEval tab; from `/eval` it loads from disk only if already present (otherwise the tab shows an empty list).
 - Non-TTY prints the active tab's list (eval scenarios or HumanEval problems) and returns.
