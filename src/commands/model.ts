@@ -8,9 +8,12 @@ import { markModelSelected } from '../providers/model-cache.js';
 import { clearModelNewFlag } from '../providers/registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import type { PricingConfidence } from '../providers/pricing-verifier.js';
-import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
+import { countWrappedLines } from '../cli/raw-picker.js';
 import { loadEvalDotsData, buildEvalDots, type EvalDotsData } from '../cli/eval-dots.js';
 import { InlineActionMenu } from '../cli/action-menu.js';
+import { runListMenu, type MenuTab, type ListMenuContext } from '../cli/list-menu.js';
+import { runMenuShell } from '../cli/menu-shell.js';
+import { redrawBanner } from '../cli/banner.js';
 
 export interface ModelMenuItem {
   providerId: string;
@@ -287,8 +290,23 @@ function buildModelDetailScreen(item: ModelMenuItem): string[] {
 type ModelPickResult = { item: ModelMenuItem; saveDefault: boolean } | null;
 
 // Returns true if the interactive picker was shown (screen left blank on close),
-// false for early exits that leave text output behind.
+// false for early exits that leave text output behind. The bottom-UI teardown/
+// restore lifecycle is owned by runMenuShell; `onRestore` carries the session
+// footer refresh that can't move into this module.
 export async function runModelCommand(
+  rl: Interface,
+  currentModel: string,
+  setSelectedModel: (model: string) => void,
+  onRestore?: () => void,
+): Promise<boolean> {
+  return runMenuShell<boolean>(rl, {
+    ensureReady: ensureStoreReady,
+    onRestore,
+    run: () => runModelBody(rl, currentModel, setSelectedModel),
+  });
+}
+
+async function runModelBody(
   rl: Interface,
   currentModel: string,
   setSelectedModel: (model: string) => void,
@@ -328,19 +346,19 @@ export async function runModelCommand(
   const currentPref = currentModel;
   let currentIndex = displayItems.findIndex(item => modelPreference(item) === currentPref && !item._favSection);
   if (currentIndex < 0) currentIndex = displayItems.findIndex(item => modelPreference(item) === currentPref);
-  let selected = currentIndex >= 0 ? currentIndex : 0;
+  const initialSelected = currentIndex >= 0 ? currentIndex : 0;
   let viewStart = 0;
-  let actionMode = false;
-  let detailMode = false;
   const actionMenu = new InlineActionMenu(['Select', 'View', 'Edit']);
 
-  function refreshDisplayItems(preferred?: ModelMenuItem): void {
+  // Rebuilds displayItems after a filter/group/favorite change, repositioning the
+  // (base-owned) cursor onto `preferred` so it stays put across the rebuild.
+  function refreshDisplayItems(ctx: ListMenuContext<ModelPickResult>, preferred?: ModelMenuItem): void {
     unfilteredDisplayItems = buildDisplayList(items);
     displayItems = filterModelItems(unfilteredDisplayItems, filterQuery);
     viewStart = 0;
 
     if (displayItems.length === 0) {
-      selected = 0;
+      ctx.setSelected(0);
       return;
     }
 
@@ -349,137 +367,97 @@ export async function runModelCommand(
       // Prefer provider-section copy so cursor stays in stable position after favorite toggle.
       let idx = displayItems.findIndex(item => modelPreference(item) === pref && !item._favSection);
       if (idx < 0) idx = displayItems.findIndex(item => modelPreference(item) === pref);
-      selected = idx >= 0 ? idx : Math.min(selected, displayItems.length - 1);
+      ctx.setSelected(idx >= 0 ? idx : Math.min(ctx.getSelected(), displayItems.length - 1));
     } else {
-      selected = Math.min(selected, displayItems.length - 1);
+      ctx.setSelected(Math.min(ctx.getSelected(), displayItems.length - 1));
     }
   }
 
-  const result = await runRawPicker<ModelPickResult>(rl, {
-    render(): string[] {
-      if (detailMode && displayItems.length > 0) {
-        return buildModelDetailScreen(displayItems[selected]);
-      }
+  const tab: MenuTab<ModelPickResult> = {
+    id: 'models',
+    label: 'Models',
+    count: () => displayItems.length,
+    renderBody: (selected) => {
       const { lines, newViewStart, selectedScreenIdx } = buildScreen(displayItems, selected, currentModel, viewStart, groupMode, filterQuery);
       viewStart = newViewStart;
-      if (actionMode) {
-        lines.splice(selectedScreenIdx + 1, 0, ...actionMenu.renderLines());
-        lines[3] = `  ${chalk.dim('↑/↓ action, Enter select, Esc back')}`;
-      }
-      return lines;
+      return { lines, selectedLineIdx: selectedScreenIdx, hintLineIdx: 3 };
     },
-    countLines: countWrappedLines,
-    onKey(key, redraw, close) {
-      if (detailMode) {
-        if (key === '\x1b' || key === '\x1b[D') {
-          detailMode = false;
-          redraw();
-        }
-        return;
+    renderDetail: (selected) => buildModelDetailScreen(displayItems[selected]),
+    actionMenu: {
+      menu: actionMenu,
+      actionHint: `  ${chalk.dim('↑/↓ action, Enter select, Esc back')}`,
+      onSelect: (option, ctx) => {
+        if (option === 'Select') ctx.close({ item: displayItems[ctx.getSelected()], saveDefault: false });
+        else if (option === 'View') ctx.enterDetail();
+        // Edit: stub — the base exits the action menu and redraws.
+      },
+    },
+    onKey: (key, ctx) => {
+      // On an empty (over-filtered) list, swallow the keys whose handlers would
+      // index a non-existent item; let typing/backspace through to edit the filter.
+      if (displayItems.length === 0 && (key === '\x1b[C' || key === '\r' || key === '\n' || key === '\x1b[D')) {
+        return true;
       }
-      if (actionMode) {
-        const res = actionMenu.handleKey(key);
-        if (res.type === 'close') {
-          actionMode = false;
-          redraw();
-        } else if (res.type === 'select') {
-          if (res.option === 'Select') {
-            close({ item: displayItems[selected], saveDefault: false });
-          } else if (res.option === 'View') {
-            actionMode = false;
-            detailMode = true;
-            redraw();
-          } else {
-            // Edit: stub — close sub-menu and redraw
-            actionMode = false;
-            redraw();
-          }
-        } else {
-          redraw();
-        }
-        return;
-      }
-      if (key === '\x1b') { close(null); return; }
-      if (key === '\x1b[A') {
-        if (displayItems.length > 0) selected = (selected - 1 + displayItems.length) % displayItems.length;
-        redraw();
-        return;
-      }
-      if (key === '\x1b[B') {
-        if (displayItems.length > 0) selected = (selected + 1) % displayItems.length;
-        redraw();
-        return;
-      }
-      if (key === '\x1b[C') {
-        // → opens detail view (like eval picker)
-        if (displayItems.length > 0) {
-          detailMode = true;
-          redraw();
-        }
-        return;
-      }
+      // → detail and Enter → action menu are owned by the base; defer to it.
+      if (key === '\x1b[C' || key === '\r' || key === '\n') return false;
+
       if (key === '\x1b[D') {
         // ← toggles favorite
-        if (displayItems.length > 0) {
-          const item = displayItems[selected];
-          const pref = modelPreference(item);
-          if (favorites.has(pref)) {
-            favorites.delete(pref);
-          } else {
-            favorites.add(pref);
-          }
-          const isFav = favorites.has(pref);
-          for (const baseItem of items) {
-            if (modelPreference(baseItem) === pref) baseItem.isFavorite = isFav;
-          }
-          setFavorite(pref, isFav);
-          sortItemsByFavorites(items);
-          refreshDisplayItems(item);
-          redraw();
+        const item = displayItems[ctx.getSelected()];
+        const pref = modelPreference(item);
+        if (favorites.has(pref)) favorites.delete(pref);
+        else favorites.add(pref);
+        const isFav = favorites.has(pref);
+        for (const baseItem of items) {
+          if (modelPreference(baseItem) === pref) baseItem.isFavorite = isFav;
         }
-        return;
-      }
-      if (key === '\r' || key === '\n') {
-        if (displayItems.length > 0) {
-          actionMode = true;
-          actionMenu.reset();
-          redraw();
-        }
-        return;
+        setFavorite(pref, isFav);
+        sortItemsByFavorites(items);
+        refreshDisplayItems(ctx, item);
+        ctx.redraw();
+        return true;
       }
       if (key === ' ') {
         if (filterQuery) {
           filterQuery += ' ';
-          refreshDisplayItems(displayItems[selected]);
-          redraw();
+          refreshDisplayItems(ctx, displayItems[ctx.getSelected()]);
+          ctx.redraw();
         } else if (displayItems.length > 0) {
-          close({ item: displayItems[selected], saveDefault: true });
+          ctx.close({ item: displayItems[ctx.getSelected()], saveDefault: true });
         }
-        return;
+        return true;
       }
       if (key === '\t') {
-        const currentItem = displayItems[selected];
+        const currentItem = displayItems[ctx.getSelected()];
         const cycle: GroupMode[] = ['pretty', 'provider'];
         groupMode = cycle[(cycle.indexOf(groupMode) + 1) % cycle.length];
-        refreshDisplayItems(currentItem);
-        redraw();
-        return;
+        refreshDisplayItems(ctx, currentItem);
+        ctx.redraw();
+        return true;
       }
       if (key === '\x7f' || key === '\b') {
         if (filterQuery.length > 0) {
           filterQuery = filterQuery.slice(0, -1);
-          refreshDisplayItems(displayItems[selected]);
-          redraw();
+          refreshDisplayItems(ctx, displayItems[ctx.getSelected()]);
+          ctx.redraw();
         }
-        return;
+        return true;
       }
       const typed = [...key].filter(c => c >= ' ' && c !== '\x7f').join('');
       if (typed) {
         filterQuery += typed;
-        refreshDisplayItems(displayItems[selected]);
-        redraw();
+        refreshDisplayItems(ctx, displayItems[ctx.getSelected()]);
+        ctx.redraw();
+        return true;
       }
+      return false;
     },
+  };
+
+  const result = await runListMenu<ModelPickResult>(rl, {
+    tabs: [tab],
+    initialSelected,
+    countLines: countWrappedLines,
   });
 
   if (result) {
@@ -491,5 +469,6 @@ export async function runModelCommand(
     console.log(chalk.blue(`Model set to: ${choice}`));
     if (result.saveDefault) console.log(chalk.green(`Default model set to: ${choice}`));
   }
+  redrawBanner();
   return true;
 }

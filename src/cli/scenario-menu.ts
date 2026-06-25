@@ -44,6 +44,17 @@ export interface ScenarioHashes {
   fullHash: string;
 }
 
+// Rows of scenarios kept on screen at once. Mirrors HumanEval's viewport so the
+// tab bar + header stay visible on short terminals.
+const VIEWPORT_SIZE = 20;
+
+// Smallest viewport shift that keeps `sel` in view (no-op when already visible).
+function clampViewport(sel: number, viewportStart: number): number {
+  if (sel < viewportStart) return sel;
+  if (sel >= viewportStart + VIEWPORT_SIZE) return sel - VIEWPORT_SIZE + 1;
+  return viewportStart;
+}
+
 // Builds the "Custom" eval tab: the playground/eval scenario list with status
 // circles, a detail view (\u2192), and a Run/View/Edit action menu (Enter). 'a' runs
 // every scenario. Selecting Run closes the menu via `choose(scenarios)`.
@@ -55,21 +66,30 @@ export function buildCustomEvalTab<R>(
   choose: (scenarios: PlaygroundScenario[]) => R,
 ): MenuTab<R> {
   const actionMenu = new InlineActionMenu(["Run", "View", "Edit"]);
+  let viewportStart = 0;
   return {
     id: "custom",
     label: "Custom",
     count: () => scenarios.length,
-    renderBody: (selected) => ({
-      lines: buildEvalPickerScreen(
-        scenarios,
-        selected,
-        evalHistory,
-        getSelectedModel(),
-        scenarioHashes,
-      ),
-      selectedLineIdx: 4 + selected,
-      hintLineIdx: 2,
-    }),
+    renderBody: (selected) => {
+      // `selected` is -1 when the tab row is focused; clamp the viewport math to
+      // a real item while still passing the raw value through so no row highlights.
+      const sel = Math.max(0, selected);
+      viewportStart = clampViewport(sel, viewportStart);
+      const viewportEnd = Math.min(viewportStart + VIEWPORT_SIZE, scenarios.length);
+      const visible = scenarios.slice(viewportStart, viewportEnd);
+      return {
+        lines: buildEvalPickerScreen(
+          visible,
+          selected < 0 ? -1 : sel - viewportStart,
+          evalHistory,
+          getSelectedModel(),
+          scenarioHashes,
+        ),
+        selectedLineIdx: 4 + (sel - viewportStart),
+        hintLineIdx: 2,
+      };
+    },
     renderDetail: (selected) => {
       const s = scenarios[selected];
       const h = scenarioHashes.get(s.id);

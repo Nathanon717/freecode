@@ -3,8 +3,11 @@ import type { Interface } from 'readline';
 import { getConfigPaths, loadConfig, readRawConfig, resolveModelSettings, updateGlobalConfig, writeConfigFile } from '../config/index.js';
 import type { Config, OverridableSettings } from '../providers/types.js';
 import { getModelSettings, setModelSetting } from '../providers/model-store.js';
-import { countWrappedLines, runRawPicker } from '../cli/raw-picker.js';
+import { countWrappedLines } from '../cli/raw-picker.js';
 import { ensureStoreReady } from '../providers/db.js';
+import { runMenuShell } from '../cli/menu-shell.js';
+import { runListMenu, type MenuTab } from '../cli/list-menu.js';
+import { redrawBanner } from '../cli/banner.js';
 
 // ── Setting definitions ───────────────────────────────────────────────────────
 
@@ -148,29 +151,41 @@ function buildTabLine(tabs: Tab[], activeTab: Tab, tabSelected: boolean, current
   return '  ' + parts.join('  ');
 }
 
-function buildScreen(
-  tab: Tab,
-  tabs: Tab[],
-  values: Record<string, TabValue | number>,
-  effectiveValues: Record<string, boolean>,
-  sel: number,
-  currentModel: string,
-): string[] {
+// Settings visible on a given tab. Global hides model-only settings; the
+// provider/model tabs hide global-only settings. Each tab's list is contiguous
+// so the shared list-menu's count()/selected index line up 1:1.
+function visibleSettings(tab: Tab): Setting[] {
+  return SETTINGS.filter(s => {
+    if (tab !== 'global' && 'globalOnly' in s && s.globalOnly) return false;
+    if (tab === 'global' && 'modelOnly' in s && s.modelOnly) return false;
+    return true;
+  });
+}
+
+// Resolved (post-inheritance) values, used to show "inherit (true)" on the
+// provider/model tabs. Recomputed live each render so cross-tab edits show.
+function effectiveValues(currentModel: string): Record<string, boolean> {
+  const resolved = resolveModelSettings(currentModel || ':');
+  const vals: Record<string, boolean> = {};
+  for (const s of SETTINGS) {
+    if ('globalOnly' in s && s.globalOnly) continue;
+    vals[s.key] = resolved[s.key as keyof typeof resolved];
+  }
+  return vals;
+}
+
+function buildSettingRows(tab: Tab, selected: number, currentModel: string): string[] {
+  const visible = visibleSettings(tab);
+  const values = tab === 'global' ? loadGlobalValues() : loadOverrideValues(tab, currentModel);
+  const effective = effectiveValues(currentModel);
+
   const lines: string[] = [];
-  lines.push('');
-
-  // Tab row (sel === -1 means tab row is focused)
-  lines.push(buildTabLine(tabs, tab, sel === -1, currentModel));
-  lines.push('');
-
-  for (let i = 0; i < SETTINGS.length; i++) {
-    const s = SETTINGS[i];
-    if (tab !== 'global' && 'globalOnly' in s && s.globalOnly) continue;
-    if (tab === 'global' && 'modelOnly' in s && s.modelOnly) continue;
-    const active = i === sel;
+  for (let i = 0; i < visible.length; i++) {
+    const s = visible[i];
+    const active = i === selected;
     const cursor = active ? chalk.cyan('▶') : ' ';
     const label  = active ? chalk.bold(s.label.padEnd(LABEL_W)) : chalk.reset(s.label.padEnd(LABEL_W));
-    const effectiveVal = effectiveValues[s.key as string];
+    const effectiveVal = effective[s.key as string];
 
     let valueStr: string;
     if (tab === 'global') {
@@ -185,8 +200,7 @@ function buildScreen(
   }
 
   lines.push('');
-  const hintSuffix = chalk.dim('↑ ↓  select     ← →  change     q  exit')
-  lines.push(`  ${hintSuffix}`);
+  lines.push(`  ${chalk.dim('↑ ↓  select     ← →  change     q  exit')}`);
   lines.push('');
   return lines;
 }
@@ -243,41 +257,82 @@ function cycleOverride(current: TabValue, direction: 1 | -1): TabValue {
   return seq[(idx + 1) % seq.length];
 }
 
+// ── Tabs (list-menu) ────────────────────────────────────────────────────────
+
+// One config tab for the shared list-menu. Per-row interaction is value-cycling
+// (not item selection), so there is no actionMenu/renderDetail; Left/Right/Space/
+// Enter cycle the focused setting via onKey, and 'q' closes.
+function buildConfigTab(tab: Tab, currentModel: string, globalPath: string): MenuTab<void> {
+  const labels: Record<Tab, string> = {
+    global: 'Global',
+    provider: `Provider: ${getProviderId(currentModel)}`,
+    model: `Model: ${currentModel}`,
+  };
+  return {
+    id: tab,
+    label: labels[tab],
+    count: () => visibleSettings(tab).length,
+    renderBody: (selected) => ({
+      lines: buildSettingRows(tab, selected, currentModel),
+      selectedLineIdx: selected,
+    }),
+    onKey: (key, ctx) => {
+      if (key === 'q' || key === 'Q') { ctx.close(undefined); return true; }
+      if (key === '\x1b[C' || key === '\x1b[D' || key === ' ' || key === '\r') {
+        const direction: 1 | -1 = key === '\x1b[D' ? -1 : 1;
+        const setting = visibleSettings(tab)[ctx.getSelected()];
+        if (!setting) return true;
+        if (tab === 'global') {
+          const values = loadGlobalValues();
+          const newVal = setting.type === 'number'
+            ? cycleNumeric(values[setting.key] as number, setting, direction)
+            : cycleGlobal(values[setting.key] as boolean, direction);
+          saveGlobalSetting(globalPath, setting.key, newVal);
+        } else {
+          const values = loadOverrideValues(tab, currentModel);
+          const newVal = cycleOverride(values[setting.key], direction);
+          saveOverrideSetting(globalPath, tab, currentModel, setting.key, newVal);
+        }
+        ctx.redraw();
+        return true;
+      }
+      return false;
+    },
+  };
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export async function runConfigCommand(rl: Interface, currentModel = ''): Promise<void> {
-  await ensureStoreReady();
+export async function runConfigCommand(
+  rl: Interface,
+  currentModel = '',
+  onRestore?: () => void,
+): Promise<void> {
+  return runMenuShell<void>(rl, {
+    ensureReady: ensureStoreReady,
+    onRestore,
+    run: () => runConfigBody(rl, currentModel),
+  });
+}
+
+async function runConfigBody(rl: Interface, currentModel: string): Promise<void> {
   if (!process.stdin.isTTY) {
     console.log(chalk.red('Config editor requires an interactive terminal.'));
     return;
   }
 
   const paths = getConfigPaths();
-  const tabs = getAvailableTabs(currentModel);
-  let activeTab: Tab = 'global';
-  let sel = 0;
+  const tabIds = getAvailableTabs(currentModel);
+  const tabs = tabIds.map(t => buildConfigTab(t, currentModel, paths.globalPath));
 
-  function currentValues(): Record<string, TabValue | number> {
-    if (activeTab === 'global') return loadGlobalValues();
-    return loadOverrideValues(activeTab, currentModel);
-  }
-
-  function effectiveValues(): Record<string, boolean> {
-    const resolved = resolveModelSettings(currentModel || ':');
-    const vals: Record<string, boolean> = {};
-    for (const s of SETTINGS) {
-      if ('globalOnly' in s && s.globalOnly) continue;
-      vals[s.key] = resolved[s.key as keyof typeof resolved];
-    }
-    return vals;
-  }
-
-  let values: Record<string, TabValue | number> = currentValues();
-  let effective = effectiveValues();
-
-  await runRawPicker<void>(rl, {
-    render: () => buildScreen(activeTab, tabs, values, effective, sel, currentModel),
+  await runListMenu<void>(rl, {
+    tabs,
+    wrap: false,
     countLines: countWrappedLines,
+    renderTabBar: (menuTabs, activeIndex, focused) => {
+      const ids = menuTabs.map(t => t.id as Tab);
+      return ['', buildTabLine(ids, ids[activeIndex], focused, currentModel), ''];
+    },
     onExitClear(rowCount) {
       const r = process.stdout.rows || 24;
       // Reset scroll region to full screen so \x1b[J covers all rows (including
@@ -287,57 +342,7 @@ export async function runConfigCommand(rl: Interface, currentModel = ''): Promis
       // Restore the scroll region that teardownBottomUI set before us.
       process.stdout.write(`\x1b[1;${r - 2}r`);
     },
-    onKey(key, redraw, close) {
-      if (key === 'q' || key === 'Q' || key === '\x1b') { close(); return; }
-
-      if (key === '\x1b[A') {
-        if (sel > 0) sel--;
-        else if (sel === 0) sel = -1;
-        redraw();
-        return;
-      }
-
-      if (key === '\x1b[B') {
-        if (sel === -1) sel = 0;
-        else if (sel < SETTINGS.length - 1) sel++;
-        redraw();
-        return;
-      }
-
-      if (key === '\x1b[C' || key === '\x1b[D' || key === ' ' || key === '\r') {
-        const direction: 1 | -1 = (key === '\x1b[D') ? -1 : 1;
-
-        if (sel === -1) {
-          const idx = tabs.indexOf(activeTab);
-          const newIdx = Math.max(0, Math.min(tabs.length - 1, idx + direction));
-          if (newIdx !== idx) {
-            activeTab = tabs[newIdx];
-            values = currentValues();
-            effective = effectiveValues();
-          }
-          redraw();
-          return;
-        }
-
-        const setting = SETTINGS[sel];
-        if (activeTab === 'global') {
-          let newVal: boolean | number;
-          if (setting.type === 'number') {
-            newVal = cycleNumeric(values[setting.key] as unknown as number, setting, direction);
-          } else {
-            newVal = cycleGlobal(values[setting.key] as boolean, direction);
-          }
-          (values as Record<string, boolean | number>)[setting.key] = newVal;
-          saveGlobalSetting(paths.globalPath, setting.key, newVal);
-          effective = effectiveValues();
-        } else {
-          const newVal = cycleOverride(values[setting.key] as TabValue, direction);
-          values[setting.key] = newVal;
-          saveOverrideSetting(paths.globalPath, activeTab, currentModel, setting.key, newVal);
-          effective = effectiveValues();
-        }
-        redraw();
-      }
-    },
   });
+
+  redrawBanner();
 }

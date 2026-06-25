@@ -33,7 +33,7 @@ runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TRe
 
 ## Behavior
 
-- **Tab-row focus model** (matches `/config`): with more than one tab, Up from item 0 focuses the tab row (`selected === -1`); Left/Right there switch tabs; Down returns to item 0. With a single tab, no tab bar is drawn and the tab row is unreachable.
+- **Tab-row focus model** (matches `/config`): with more than one tab, Up from item 0 focuses the tab row (`selected === -1`); Left/Right there switch tabs; Down returns to item 0. Any other key on the tab row falls through to `tab.onKey` (e.g. `/config`'s `q` to quit). With a single tab, no tab bar is drawn and the tab row is unreachable.
 - **Navigation:** Up/Down move the selection; `wrap` controls end-wrapping.
 - **Detail:** Right opens `renderDetail` (when present); Esc/Left returns.
 - **Action:** Enter opens `actionMenu` (when present), splicing `menu.renderLines()` after `selectedLineIdx` and overwriting `hintLineIdx` with `actionHint`; delegates keys to `InlineActionMenu`. With no `actionMenu`, Enter calls `onEnter`.

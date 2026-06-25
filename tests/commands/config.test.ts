@@ -19,6 +19,18 @@ vi.mock('../../src/cli/raw-picker.js', () => ({
     return Promise.resolve(undefined);
   }),
   countWrappedLines: vi.fn().mockReturnValue(1),
+  resetStdinConsoleMode: vi.fn(),
+  resetTerminalPrivateModes: vi.fn(),
+}));
+
+vi.mock('../../src/cli/terminal-ui.js', () => ({
+  isBottomUIActive: vi.fn().mockReturnValue(false),
+  setupBottomUI: vi.fn(),
+  teardownBottomUI: vi.fn(),
+}));
+
+vi.mock('../../src/cli/banner.js', () => ({
+  redrawBanner: vi.fn(),
 }));
 
 vi.mock('../../src/config/index.js', () => ({
@@ -171,7 +183,7 @@ describe('runConfigCommand', () => {
     });
 
     it('up arrow from index 0 moves to tab row (sel = -1)', async () => {
-      await runConfigCommand(fakeRl);
+      await runConfigCommand(fakeRl, 'openai:gpt-4o');
       const redraw = makeRedraw();
       store.capturedOpts!.onKey('\x1b[A', redraw, makeClose());
       expect(redraw).toHaveBeenCalled();
@@ -187,7 +199,7 @@ describe('runConfigCommand', () => {
     });
 
     it('down arrow from tab row (sel=-1) moves back to first setting', async () => {
-      await runConfigCommand(fakeRl);
+      await runConfigCommand(fakeRl, 'openai:gpt-4o');
       store.capturedOpts!.onKey('\x1b[A', makeRedraw(), makeClose());
       const redraw = makeRedraw();
       store.capturedOpts!.onKey('\x1b[B', redraw, makeClose());

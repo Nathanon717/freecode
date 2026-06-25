@@ -2,11 +2,13 @@
 
 **Role:** Implements the `/config` terminal UI for editing settings at global, provider, and model levels.
 
+Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle, and `cli/list-menu.ts` owns the tab bar + nav loop. Each config tab is a `MenuTab` whose `onKey` cycles the focused setting's value (no `actionMenu`/`renderDetail`). A custom `renderTabBar` reuses `buildTabLine`, and `wrap: false` matches the editor's non-wrapping navigation.
+
 ## Exports
 
 | Symbol | Signature | Description |
 |--------|-----------|-------------|
-| `runConfigCommand` | `(rl: Interface, currentModel?: string) => Promise<void>` | Runs the raw-mode config editor, then restores readline/stdin state. |
+| `runConfigCommand` | `(rl: Interface, currentModel?: string, onRestore?: () => void) => Promise<void>` | Runs the editor via `runMenuShell`. `onRestore` carries session footer refresh (`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`) that can't move into this module; the shell fires it after `setupBottomUI` when the bottom UI was active on a TTY. |
 
 ## Tabs
 
@@ -47,4 +49,4 @@ Provider/Model tabs cycle: `inherit → true → false → inherit` (Right) or `
 
 ## Terminal Behavior
 
-Requires a TTY. Pauses readline, enables raw mode, hides cursor. `sel === -1` is the tab row; `sel >= 0` is a setting row. Up from row 0 goes to tab row; Down from tab row goes to row 0. `q` or Esc closes. Cleanup erases rendered rows and restores stdin/cursor.
+Requires a TTY (`runConfigBody` bails with a message otherwise). `list-menu` owns selection state: `selected === -1` is the tab row (only present with >1 tab), `selected >= 0` is a setting row indexing that tab's *contiguous visible* settings list. Up from row 0 goes to the tab row; Down from the tab row goes to row 0; Left/Right on the tab row switch tabs. `q`/`Q` or Esc closes — `q` is handled in `tab.onKey` and reaches it even on the tab row (the base falls through unowned keys there). Values and `effectiveValues` are recomputed live in `renderBody` each draw so cross-tab edits show. `onExitClear` resets the scroll region; the menu-shell finally restores stdin/cursor and the bottom UI.

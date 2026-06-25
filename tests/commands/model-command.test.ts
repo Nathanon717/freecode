@@ -20,6 +20,18 @@ vi.mock('../../src/cli/raw-picker.js', () => ({
     return Promise.resolve(pickerStore.resolveReturn);
   }),
   countWrappedLines: vi.fn().mockReturnValue(1),
+  resetStdinConsoleMode: vi.fn(),
+  resetTerminalPrivateModes: vi.fn(),
+}));
+
+vi.mock('../../src/cli/terminal-ui.js', () => ({
+  isBottomUIActive: vi.fn().mockReturnValue(false),
+  setupBottomUI: vi.fn(),
+  teardownBottomUI: vi.fn(),
+}));
+
+vi.mock('../../src/cli/banner.js', () => ({
+  redrawBanner: vi.fn(),
 }));
 
 vi.mock('../../src/config/index.js', () => ({

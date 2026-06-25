@@ -23,9 +23,12 @@ filterModelItems(items, query)
 runModelCommand(
   rl: Interface,
   currentModel: string,
-  setSelectedModel: (model: string) => void
-): Promise<void>
+  setSelectedModel: (model: string) => void,
+  onRestore?: () => void
+): Promise<boolean>   // true if the picker was shown
 ```
+
+Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle (`onRestore` carries the session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`), and `cli/list-menu.ts` owns the nav loop. The picker is a single `MenuTab` (no tab bar): `renderBody` wraps `buildScreen`, `renderDetail` = `buildModelDetailScreen`, `actionMenu` = Select/View/Edit. Favorites (`←`), group cycle (`Tab`), filter typing/backspace, and Space-default are handled in `tab.onKey`, reading/writing the base-owned cursor via `ctx.getSelected`/`ctx.setSelected`. The interactive run loop lives in `runModelBody`.
 
 ## Model Discovery
 

@@ -170,6 +170,8 @@ export function runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResul
         if (key === DOWN) { selected = 0; redraw(); return; }
         if (key === LEFT) { if (tabIndex > 0) tabIndex--; redraw(); return; }
         if (key === RIGHT) { if (tabIndex < tabs.length - 1) tabIndex++; redraw(); return; }
+        // Let the tab consume any other key (e.g. config's 'q' to quit).
+        tab.onKey?.(key, ctx);
         return;
       }
 

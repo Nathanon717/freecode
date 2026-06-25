@@ -20,6 +20,7 @@
 ## Custom eval tab (`buildCustomEvalTab`)
 
 - The scenario list (discovered numbered folders in `playground/eval/`, requiring `prompt.md` + `eval/check.ts`) becomes the **Custom** tab of the unified menu (`cli/eval-menu.ts`, which discovers scenarios + history and composes the tabs). Up/Down navigate, Enter opens the Run/View/Edit action menu, `→` opens detail, `a` runs all, Esc closes.
+- `renderBody` keeps a `VIEWPORT_SIZE` (20) scrolling window (closure `viewportStart`, derived from `selected` each draw, clamped for the `-1` tab-row case) so the tab bar + header stay on screen on short terminals — mirrors `buildHumanEvalTab`. The window is applied by slicing `scenarios` before `buildEvalPickerScreen` (which itself is unchanged).
 - Shows one status circle per scenario from the most recent matching entry in `playground/eval/results/{model-slug}.json`, constrained by the current run hash (prompt + config + start only — not eval/) and selected model; green = latest pass, orange = pass with warnings, red = latest fail. Named canonical groups can share history; `other` is treated as unrelated. Results are stored per-model so files never conflict on `git pull`.
 - The detail view (`→`) shows the stored grading breakdown (assertions, warnings, stats) from the most recent run.
 

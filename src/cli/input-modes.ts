@@ -3,7 +3,6 @@ import type { Interface } from "readline";
 import chalk from "chalk";
 import { runConfigCommand } from "../commands/config.js";
 import { runModelCommand } from "../commands/model.js";
-import { redrawBanner } from "./banner.js";
 import type {
   ToolCallConfirmation,
   ToolCallPreview,
@@ -324,37 +323,19 @@ export function createInteractiveMode(
         drawBottomUI();
       }
     },
-    runConfig: async () => {
-      teardownBottomUI();
-      rl.resume();
-      await runConfigCommand(rl, getSelectedModel());
-      rl.pause();
-      if (process.stdin.isTTY) {
-        redrawBanner();
-        setupBottomUI();
+    runConfig: () =>
+      runConfigCommand(rl, getSelectedModel(), () => {
         resetBottomPromptState(session);
         refreshFooterDailySpend(getSelectedModel);
         drawBottomUI();
-      }
-    },
-    runModelMenu: async () => {
-      teardownBottomUI();
-      rl.resume();
-      const pickerShown = await runModelCommand(
-        rl,
-        getSelectedModel(),
-        setSelectedModel,
-      );
-      rl.pause();
-      applyModelChange(getSelectedModel());
-      if (process.stdin.isTTY) {
-        if (pickerShown) redrawBanner();
-        setupBottomUI();
+      }),
+    runModelMenu: () =>
+      runModelCommand(rl, getSelectedModel(), setSelectedModel, () => {
+        applyModelChange(getSelectedModel());
         resetBottomPromptState(session);
         refreshFooterDailySpend(getSelectedModel);
         drawBottomUI();
-      }
-    },
+      }).then(() => undefined),
     runEvalMenu: () => runEvalMenu(rl, projectRoot, getSelectedModel),
     runHumanEvalMenu: () => runHumanEvalMenu(rl, projectRoot, getSelectedModel),
     onExit: () => {
