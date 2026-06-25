@@ -78,8 +78,6 @@ function buildPickerLines(problems: HumanEvalProblem[], sel: number, viewportSta
   const totalItems = 1 + problems.length; // index 0 = Run All, 1..N = problems
   const lines: string[] = [];
   lines.push('');
-  lines.push(`  ${chalk.bold.cyan('HumanEval problems')}`);
-  lines.push(`  ${chalk.dim('Up/Down navigate, Enter to select, Esc close')}`);
   lines.push('');
   const viewportEnd = Math.min(viewportStart + VIEWPORT_SIZE, totalItems);
   for (let i = viewportStart; i < viewportEnd; i++) {
@@ -126,10 +124,10 @@ export function buildHumanEvalTab<R>(
       viewportStart = clampViewport(sel, viewportStart);
       return {
         lines: buildPickerLines(problems, selected, viewportStart, results),
-        selectedLineIdx: 4 + (sel - viewportStart),
-        hintLineIdx: 2,
+        selectedLineIdx: 2 + (sel - viewportStart),
       };
     },
+    controls: 'Up/Down navigate, Enter to select, Esc close',
     onEnter: (ctx) => {
       const sel = ctx.getSelected();
       ctx.close(choose(sel === 0 ? [...problems] : [problems[sel - 1]]));

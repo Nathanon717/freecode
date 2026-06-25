@@ -23,9 +23,8 @@
       {
         "name": "submit - eval picker opens",
         "send": "\r",
-        "waitFor": "Eval scenarios",
+        "waitFor": "cereal-soup",
         "screenContains": [
-          "Eval scenarios",
           "cereal-soup"
         ]
       },

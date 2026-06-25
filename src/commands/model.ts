@@ -203,7 +203,7 @@ function buildScreen(
   groupMode: GroupMode,
   filterQuery: string,
 ): { lines: string[]; newViewStart: number; selectedScreenIdx: number } {
-  const HEADER = 5;
+  const HEADER = 4;
   const CHROME = 3;
   const termHeight = (process.stdout.rows ?? 24) - 2;
   const maxItemLines = Math.max(4, termHeight - HEADER - CHROME);
@@ -222,9 +222,6 @@ function buildScreen(
   const visibleLines = itemLines.slice(newViewStart, viewEnd);
   while (visibleLines.length < maxItemLines) visibleLines.push('');
 
-  const tabHint = groupMode === 'pretty'
-    ? chalk.dim('Tab show model IDs, ')
-    : chalk.dim('Tab clean view, ');
   const filterLabel = filterQuery
     ? `${chalk.dim('Filter: ')}${chalk.cyan(filterQuery)}`
     : chalk.dim('Type to filter, Backspace clears characters');
@@ -232,16 +229,15 @@ function buildScreen(
   lines.push('');
   lines.push(`  ${chalk.bold.cyan('Select model')}`);
   lines.push(`  ${filterLabel}`);
-  lines.push(`  ${tabHint}${chalk.dim('Up/Down navigate, ← toggle favorite, → view details, Enter action menu, Space select + default, Esc close')}`);
   lines.push('');
 
-  // Header is 5 lines (indices 0-4), then scroll indicator at index 5, items at 6+
+  // Header is 4 lines (indices 0-3), then scroll indicator at index 4, items at 5+
   lines.push(newViewStart > 0 ? chalk.dim('  · · ·') : '');
   for (const line of visibleLines) lines.push(line);
   lines.push(viewEnd < itemLines.length ? chalk.dim('  · · ·') : '');
 
   lines.push('');
-  const selectedScreenIdx = 6 + (selectedLineIdx - newViewStart);
+  const selectedScreenIdx = 5 + (selectedLineIdx - newViewStart);
   return { lines, newViewStart, selectedScreenIdx };
 }
 
@@ -381,7 +377,11 @@ async function runModelBody(
     renderBody: (selected) => {
       const { lines, newViewStart, selectedScreenIdx } = buildScreen(displayItems, selected, currentModel, viewStart, groupMode, filterQuery);
       viewStart = newViewStart;
-      return { lines, selectedLineIdx: selectedScreenIdx, hintLineIdx: 3 };
+      return { lines, selectedLineIdx: selectedScreenIdx };
+    },
+    controls: () => {
+      const hint = groupMode === 'pretty' ? 'Tab show model IDs, ' : 'Tab clean view, ';
+      return `${hint}Up/Down navigate, ← toggle favorite, → view details, Enter action menu, Space select + default, Esc close`;
     },
     renderDetail: (selected) => buildModelDetailScreen(displayItems[selected]),
     actionMenu: {

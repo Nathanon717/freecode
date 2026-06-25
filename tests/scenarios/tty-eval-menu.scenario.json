@@ -17,9 +17,8 @@
       {
         "name": "submit — eval picker opens with scenario list",
         "send": "\r",
-        "waitFor": "Eval scenarios",
+        "waitFor": "001-hello-world",
         "screenContains": [
-          "Eval scenarios",
           "001-hello-world"
         ]
       },

@@ -80,8 +80,6 @@ export function buildEvalPickerScreen(
 ): string[] {
   const lines: string[] = [];
   lines.push('');
-  lines.push(`  ${chalk.bold.cyan('Eval scenarios')}`);
-  lines.push(`  ${chalk.dim('Up/Down navigate, Enter actions, a run all, → details, Esc close')}`);
   lines.push('');
   for (let i = 0; i < scenarios.length; i++) {
     const s = scenarios[i];

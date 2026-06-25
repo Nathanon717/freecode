@@ -8,6 +8,7 @@ const { store } = vi.hoisted(() => {
     capturedOpts: null as {
       render: () => string[];
       onKey: (key: string, redraw: () => void, close: (v: unknown) => void) => void;
+      getControls?: () => string | undefined;
     } | null,
   };
   return { store };
@@ -142,8 +143,8 @@ describe('runConfigCommand', () => {
 
     it('renders hint line with navigation instructions', async () => {
       await runConfigCommand(fakeRl);
-      const lines = store.capturedOpts!.render();
-      expect(lines.join('\n')).toContain('select');
+      const ctrl = store.capturedOpts!.getControls?.();
+      expect(ctrl).toContain('select');
     });
   });
 

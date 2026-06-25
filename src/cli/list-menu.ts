@@ -1,16 +1,16 @@
-import type { Interface } from 'readline';
-import chalk from 'chalk';
-import { runRawPicker } from './raw-picker.js';
-import type { InlineActionMenu } from './action-menu.js';
+import type { Interface } from "readline";
+import chalk from "chalk";
+import { runRawPicker } from "./raw-picker.js";
+import type { InlineActionMenu } from "./action-menu.js";
 
 // Key sequences shared by every raw-mode menu.
-const ESC = '\x1b';
-const UP = '\x1b[A';
-const DOWN = '\x1b[B';
-const RIGHT = '\x1b[C';
-const LEFT = '\x1b[D';
-const ENTER_CR = '\r';
-const ENTER_LF = '\n';
+const ESC = "\x1b";
+const UP = "\x1b[A";
+const DOWN = "\x1b[B";
+const RIGHT = "\x1b[C";
+const LEFT = "\x1b[D";
+const ENTER_CR = "\r";
+const ENTER_LF = "\n";
 
 /** Rows kept on screen at once in a scrolling list-menu tab body. */
 export const VIEWPORT_SIZE = 20;
@@ -67,6 +67,8 @@ export interface MenuTab<TResult> {
    * Up/Down/Esc. Return true if the key was handled.
    */
   onKey?: (key: string, ctx: ListMenuContext<TResult>) => boolean;
+  /** Controls hint pinned to the last row above the footer. Static string or dynamic callback. */
+  controls?: string | (() => string);
 }
 
 export interface ListMenuOptions<TResult> {
@@ -94,13 +96,20 @@ export interface ListMenuOptions<TResult> {
  * focuses the tab row (`selected === -1`); Left/Right there switch tabs; Down
  * returns to item 0.
  */
-export function runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TResult> {
+export function runListMenu<TResult>(
+  rl: Interface,
+  opts: ListMenuOptions<TResult>,
+): Promise<TResult> {
   const { tabs } = opts;
   const wrap = opts.wrap ?? true;
   const hasTabs = tabs.length > 1;
-  const cancelValue = (): TResult => (opts.onCancel ? opts.onCancel() : (null as TResult));
+  const cancelValue = (): TResult =>
+    opts.onCancel ? opts.onCancel() : (null as TResult);
 
-  let tabIndex = Math.max(0, opts.initialTabId ? tabs.findIndex((t) => t.id === opts.initialTabId) : 0);
+  let tabIndex = Math.max(
+    0,
+    opts.initialTabId ? tabs.findIndex((t) => t.id === opts.initialTabId) : 0,
+  );
   if (tabIndex < 0) tabIndex = 0;
   let selected = opts.initialSelected ?? 0;
   let detailMode = false;
@@ -110,6 +119,14 @@ export function runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResul
     countLines: opts.countLines,
     onExitClear: opts.onExitClear,
     pinToTop: hasTabs,
+    getControls: () => {
+      if (detailMode) return undefined;
+      const tab = tabs[tabIndex];
+      if (!tab.controls) return undefined;
+      if (actionMode && tab.actionMenu) return tab.actionMenu.actionHint;
+      const text = typeof tab.controls === 'function' ? tab.controls() : tab.controls;
+      return chalk.dim(`  ${text}`);
+    },
     render: () => {
       const tab = tabs[tabIndex];
       if (detailMode && tab.renderDetail) {
@@ -119,19 +136,26 @@ export function runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResul
       let lines = body.lines;
       if (actionMode && tab.actionMenu) {
         lines = [...lines];
-        lines.splice(body.selectedLineIdx + 1, 0, ...tab.actionMenu.menu.renderLines());
-        if (body.hintLineIdx !== undefined) lines[body.hintLineIdx] = tab.actionMenu.actionHint;
+        lines.splice(
+          body.selectedLineIdx + 1,
+          0,
+          ...tab.actionMenu.menu.renderLines(),
+        );
+        if (body.hintLineIdx !== undefined)
+          lines[body.hintLineIdx] = tab.actionMenu.actionHint;
       }
       if (!hasTabs) return lines;
       const focused = selected === -1;
       const tabBarParts = tabs.map((t, i) => {
         if (i !== tabIndex) return chalk.dim(t.label);
-        return focused ? chalk.inverse(` ${t.label} `) : chalk.bold.cyan(t.label);
+        return focused
+          ? chalk.inverse(` ${t.label} `)
+          : chalk.bold.cyan(t.label);
       });
       return [
-        chalk.gray(' \u2190esc'),
-        `  ${tabBarParts.join(chalk.dim('   '))}`,
-        '',
+        "",
+        `  ${tabBarParts.join(chalk.dim("   "))}`,
+        "",
         ...lines,
       ];
     },
@@ -141,18 +165,31 @@ export function runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResul
       const ctx: ListMenuContext<TResult> = {
         tabIndex,
         getSelected: () => selected,
-        setSelected: (n) => { selected = n; },
+        setSelected: (n) => {
+          selected = n;
+        },
         redraw,
-        close: (result) => { closedHere = true; close(result); },
-        enterDetail: () => { detailMode = true; },
+        close: (result) => {
+          closedHere = true;
+          close(result);
+        },
+        enterDetail: () => {
+          detailMode = true;
+        },
         openAction: () => {
-          if (tab.actionMenu) { actionMode = true; tab.actionMenu.menu.reset(); }
+          if (tab.actionMenu) {
+            actionMode = true;
+            tab.actionMenu.menu.reset();
+          }
         },
       };
 
       // Detail mode: Esc / Left returns to the list.
       if (detailMode) {
-        if (key === ESC || key === LEFT) { detailMode = false; redraw(); }
+        if (key === ESC || key === LEFT) {
+          detailMode = false;
+          redraw();
+        }
         return;
       }
 
@@ -161,28 +198,47 @@ export function runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResul
       // action either closes or returns to the list/detail).
       if (actionMode && tab.actionMenu) {
         const res = tab.actionMenu.menu.handleKey(key);
-        if (res.type === 'close') { actionMode = false; redraw(); }
-        else if (res.type === 'select') {
+        if (res.type === "close") {
+          actionMode = false;
+          redraw();
+        } else if (res.type === "select") {
           actionMode = false;
           tab.actionMenu.onSelect(res.option, ctx);
           if (!closedHere) redraw();
-        }
-        else redraw();
+        } else redraw();
         return;
       }
 
       // Tab-row focus (only reachable with multiple tabs).
       if (selected === -1) {
-        if (key === ESC) { close(cancelValue()); return; }
-        if (key === DOWN) { selected = 0; redraw(); return; }
-        if (key === LEFT) { if (tabIndex > 0) tabIndex--; redraw(); return; }
-        if (key === RIGHT) { if (tabIndex < tabs.length - 1) tabIndex++; redraw(); return; }
+        if (key === ESC) {
+          close(cancelValue());
+          return;
+        }
+        if (key === DOWN) {
+          selected = 0;
+          redraw();
+          return;
+        }
+        if (key === LEFT) {
+          if (tabIndex > 0) tabIndex--;
+          redraw();
+          return;
+        }
+        if (key === RIGHT) {
+          if (tabIndex < tabs.length - 1) tabIndex++;
+          redraw();
+          return;
+        }
         // Let the tab consume any other key (e.g. config's 'q' to quit).
         tab.onKey?.(key, ctx);
         return;
       }
 
-      if (key === ESC) { close(cancelValue()); return; }
+      if (key === ESC) {
+        close(cancelValue());
+        return;
+      }
 
       const count = tab.count();
       if (key === UP) {
@@ -205,9 +261,18 @@ export function runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResul
       if (tab.onKey?.(key, ctx)) return;
 
       // Base fallbacks: Right opens detail, Enter opens the action menu / onEnter.
-      if (key === RIGHT && tab.renderDetail) { detailMode = true; redraw(); return; }
+      if (key === RIGHT && tab.renderDetail) {
+        detailMode = true;
+        redraw();
+        return;
+      }
       if (key === ENTER_CR || key === ENTER_LF) {
-        if (tab.actionMenu) { actionMode = true; tab.actionMenu.menu.reset(); redraw(); return; }
+        if (tab.actionMenu) {
+          actionMode = true;
+          tab.actionMenu.menu.reset();
+          redraw();
+          return;
+        }
         tab.onEnter?.(ctx);
       }
     },

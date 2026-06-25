@@ -7,7 +7,7 @@
 | Symbol | Description |
 |--------|-------------|
 | `printEvalHeader(id, prompt)` | Prints the header bar, "Prompt:", and prompt text to stdout before an eval run. Shared by `/eval` and `/humaneval`. |
-| `buildEvalPickerScreen(scenarios, selected, history, model, scenarioHashes, groups)` | Returns lines for the raw-mode picker: header, keybinding hint, and one status-circle row per scenario. |
+| `buildEvalPickerScreen(scenarios, selected, history, model, scenarioHashes, groups)` | Returns lines for the raw-mode picker: two blank header lines followed by one status-circle row per scenario. (The cyan title and grey controls hint were removed; controls are now pinned to the bottom row via `list-menu`'s `controls` field.) |
 | `buildEvalDetailScreen(scenario, entry, model)` | Returns lines for the detail view: badge, assertion/warning/stat breakdown from the stored `EvalHistoryEntry`. |
 | `printEvalReport(report)` | Prints a PASS/FAIL header, per-assertion icons, warnings, and stats to stdout after a run completes. |
 | `printEvalSummary(passed, failed, incomplete)` | Prints the multi-run results summary line. Shared by the `/eval` and `/humaneval` run loops (called when more than one run executed). |

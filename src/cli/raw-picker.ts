@@ -132,6 +132,8 @@ export interface RawPickerOptions<T = void> {
   skipScrollClear?: boolean;
   /** Draw the picker from row 1 on every frame instead of at the current cursor. */
   pinToTop?: boolean;
+  /** Returns a controls string to pin to the last row above the footer, or undefined to skip. Styled by the caller. */
+  getControls?: () => string | undefined;
 }
 
 /**
@@ -173,12 +175,21 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
     rowCount = opts.pinToTop
       ? Math.min(opts.countLines ? opts.countLines(lines) : lines.length, Math.max(0, getRows() - getLastReservedRows()))
       : opts.countLines ? opts.countLines(lines) : lines.length;
+    const ctrl = opts.getControls?.();
+    if (ctrl !== undefined) {
+      const targetRow = getRows() - getLastReservedRows();
+      output += `\x1b[${targetRow};1H\x1b[2K${ctrl}`;
+    }
     // Append footer in the same write so the terminal sees one atomic update.
     output += composeFooterOutput();
     process.stdout.write(output);
   }
 
   function extraCleanup(): void {
+    if (opts.getControls) {
+      const targetRow = getRows() - getLastReservedRows();
+      process.stdout.write(`\x1b[${targetRow};1H\x1b[2K`);
+    }
     if (rowCount > 0) {
       if (opts.onExitClear) {
         opts.onExitClear(rowCount);

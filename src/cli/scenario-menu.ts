@@ -75,8 +75,7 @@ export function buildCustomEvalTab<R>(
           getSelectedModel(),
           scenarioHashes,
         ),
-        selectedLineIdx: 4 + (sel - viewportStart),
-        hintLineIdx: 2,
+        selectedLineIdx: 2 + (sel - viewportStart),
       };
     },
     renderDetail: (selected) => {
@@ -91,6 +90,7 @@ export function buildCustomEvalTab<R>(
       );
       return buildEvalDetailScreen(s, entry, getSelectedModel());
     },
+    controls: 'Up/Down navigate, Enter actions, a run all, \u2192 details, Esc close',
     actionMenu: {
       menu: actionMenu,
       actionHint: `  ${chalk.dim("\u2191/\u2193 action, Enter select, Esc back")}`,

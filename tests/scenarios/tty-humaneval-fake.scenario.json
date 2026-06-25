@@ -25,9 +25,8 @@
       {
         "name": "submit — picker opens",
         "send": "\r",
-        "waitFor": "HumanEval problems",
+        "waitFor": "Run All",
         "screenContains": [
-          "HumanEval problems",
           "Run All",
           "test/0",
           "HumanEval/0"
@@ -60,9 +59,8 @@
       {
         "name": "submit — picker reopens with green dot",
         "send": "\r",
-        "waitFor": "HumanEval problems",
+        "waitFor": "Run All",
         "screenContains": [
-          "HumanEval problems",
           "Run All",
           "●",
           "HumanEval/0"

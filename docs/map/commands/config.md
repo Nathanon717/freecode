@@ -2,7 +2,7 @@
 
 **Role:** Implements the `/config` terminal UI for editing settings at global, provider, and model levels.
 
-Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle, and `cli/list-menu.ts` owns the pinned `←esc` chrome, tab bar, and nav loop when multiple tabs are available. Each config tab is a `MenuTab` whose `onKey` cycles the focused setting's value (no `actionMenu`/`renderDetail`). `wrap: false` matches the editor's non-wrapping navigation.
+Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle, and `cli/list-menu.ts` owns the pinned blank-line chrome, tab bar, and nav loop when multiple tabs are available. Each config tab is a `MenuTab` whose `onKey` cycles the focused setting's value (no `actionMenu`/`renderDetail`). `wrap: false` matches the editor's non-wrapping navigation.
 
 ## Exports
 

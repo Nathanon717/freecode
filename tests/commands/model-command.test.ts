@@ -9,6 +9,7 @@ const { pickerStore } = vi.hoisted(() => {
     capturedOpts: null as {
       render: () => string[];
       onKey: (key: string, redraw: () => void, close: (v: unknown) => void) => void;
+      getControls?: () => string | undefined;
     } | null,
     resolveReturn: null as unknown,
   };
@@ -273,9 +274,8 @@ describe('runModelCommand', () => {
       const opts = await captureKeys();
       opts.onKey('\t', vi.fn(), vi.fn()); // → provider mode
       opts.onKey('\t', vi.fn(), vi.fn()); // → pretty mode
-      const lines = opts.render();
-      // In pretty mode the tab hint says "Tab show model IDs"
-      expect(lines.join('\n')).toContain('Tab show model IDs');
+      // In pretty mode the controls hint says "Tab show model IDs"
+      expect(opts.getControls?.()).toContain('Tab show model IDs');
     });
 
     it('typing characters filters the model list', async () => {

@@ -25,6 +25,7 @@ interface RawPickerOptions<T = void> {
   onExitClear?: (rowCount: number) => void;
   skipScrollClear?: boolean;
   pinToTop?: boolean;
+  getControls?: () => string | undefined;  // controls hint pinned to last row above footer
 }
 runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 ```
@@ -49,6 +50,7 @@ runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 - `onExitClear` (optional): replaces the default `\x1b[${rowCount}A\r\x1b[J` erase on exit. Used by `/config` to reset/restore the scroll region (Windows ConPTY workaround).
 - `skipScrollClear` (optional): skip the viewport scroll-clear before first draw.
 - `pinToTop` (optional): draw frames with absolute row positioning from viewport row 1 and cap rendered rows to the footer-free region. Used by tabbed `list-menu` screens so the tab chrome stays pinned.
+- `getControls` (optional): returns a styled controls hint string (or `undefined`) to be written atomically to the last row above the footer using absolute positioning. On exit, `extraCleanup` explicitly clears that row before restoring the footer.
 
 ## Read when
 

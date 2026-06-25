@@ -179,9 +179,6 @@ function buildSettingRows(tab: Tab, selected: number, currentModel: string): str
     lines.push(`  ${cursor} ${label}  ${valuePad}   ${desc}`);
   }
 
-  lines.push('');
-  lines.push(`  ${chalk.dim('↑ ↓  select     ← →  change     q  exit')}`);
-  lines.push('');
   return lines;
 }
 
@@ -256,6 +253,7 @@ function buildConfigTab(tab: Tab, currentModel: string, globalPath: string): Men
       lines: buildSettingRows(tab, selected, currentModel),
       selectedLineIdx: selected,
     }),
+    controls: '↑ ↓  select     ← →  change     q  exit',
     onKey: (key, ctx) => {
       if (key === 'q' || key === 'Q') { ctx.close(undefined); return true; }
       if (key === '\x1b[C' || key === '\x1b[D' || key === ' ' || key === '\r') {

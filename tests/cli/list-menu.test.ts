@@ -150,7 +150,7 @@ describe('runListMenu — tab bar', () => {
     void runListMenu(fakeRl, { tabs: twoTabs() });
     const initial = store.opts!.render();
     expect(store.opts!.pinToTop).toBe(true);
-    expect(initial[0]).toContain('←esc');
+    expect(initial[0]).toBe('');
     expect(initial[1]).toContain('AAA');
     expect(initial.join('\n')).toContain('AAA');
     store.opts!.onKey(UP, redraw, close); // item 0 → tab row
