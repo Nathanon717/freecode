@@ -72,21 +72,40 @@ The module maintains a single `_step` state object. All callers drive it with th
 
 ## Exports
 
+### State machine (low-level)
+
 - `beginTranscriptTurn()` — open turn (state machine entry)
 - `notifyTranscriptChunk()` — track model text for spacing decisions
 - `writeTranscriptToolLeadIn()` — normalised separator before each tool call
 - `endTranscriptStep()` — close step / turn
+
+### Format helpers (low-level)
+
 - `computeLineDiff()` — LCS-based line diff; returns `DiffEntry[]` with `equal | remove | add` types
 - `DiffEntry` — type alias for diff entries
 - `formatArgs()`
 - `formatEditFileDiff()` — smart diff renderer; red/green for changed lines, dim for file context
+- `formatRationaleLine()`
 - `formatToolCallLine()`
 - `formatToolErrorLine()`
+- `formatPromptToolCallLine()` — like `formatToolCallLine` but prefixes `~ `
 - `formatToolResultPreview()`
 - `formatTranscriptStepDivider(options?)` — returns the raw divider string (no newlines); uses the target stream's column width when `options` is provided
 - `getTranscriptRuntimeOptions()`
 - `getTranscriptStream()`
 - `writeTranscriptStepDivider()` — legacy; kept for backward compatibility
+
+### Higher-level orchestration API
+
+These sit on top of the format helpers and state machine so that both the live agent path (`tools/index.ts withLogging`) and the `/renderer` demo (`commands/renderer.ts`) share one implementation.
+
+- `ToolStepResult` — union type: `{ kind: 'text' }` | `{ kind: 'create-content' }` | `{ kind: 'edit-diff' }` | `{ kind: 'error' }`
+- `ToolStep` — interface: `name`, `displayArgs`, `rationale?`, `promptTools?`, `result: ToolStepResult`
+- `RenderedStep` — interface: `text?`, `tools?: ToolStep[]`
+- `writeToolCallHeader(step, opts?)` — writes lead-in + optional rationale + call line (called BEFORE tool execution in the live path)
+- `writeToolStepResult(name, result, opts?)` — writes preview or error line (called AFTER execution)
+- `renderToolStep(step, opts?)` — convenience wrapper: `writeToolCallHeader` then `writeToolStepResult`
+- `renderTurn(steps, opts?)` — full turn: `beginTranscriptTurn` + for each step write text/tools + `endTranscriptStep`
 
 ## Read When
 

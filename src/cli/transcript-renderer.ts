@@ -355,3 +355,130 @@ export function writeTranscriptStepDivider(
 ): void {
   getTranscriptStream(options).write(formatTranscriptStepDivider(options) + "\n\n");
 }
+
+// ---------------------------------------------------------------------------
+// Higher-level tool-step orchestration API
+// ---------------------------------------------------------------------------
+// Sits on top of the low-level format helpers and state machine above.
+// Both the live agent path (tools/index.ts withLogging) and the /renderer demo
+// (commands/renderer.ts) call these functions so orchestration logic lives once.
+
+/** A fully-decided tool result, ready to render as a preview block. */
+export type ToolStepResult =
+  | { kind: "text"; result: unknown }
+  | { kind: "create-content"; content: string }
+  | {
+      kind: "edit-diff";
+      path: string;
+      oldText: string;
+      newText: string;
+      contextBefore: string[];
+      contextAfter: string[];
+      lineIndent: string;
+    }
+  | { kind: "error"; error: unknown };
+
+export interface ToolStep {
+  name: string;
+  displayArgs: Record<string, unknown>;
+  rationale?: string;
+  /** true → use formatPromptToolCallLine (the "~" prefix) */
+  promptTools?: boolean;
+  result: ToolStepResult;
+}
+
+/** A single step within a rendered turn: optional text followed by zero or more tool calls. */
+export interface RenderedStep {
+  text?: string;
+  tools?: ToolStep[];
+}
+
+/**
+ * Write the lead-in separator, optional rationale line, and tool call line.
+ * The live path calls this BEFORE executing the tool; the result is written
+ * separately via writeToolStepResult after execution completes.
+ */
+export function writeToolCallHeader(
+  step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "promptTools">,
+  opts?: TranscriptRuntimeOptions,
+): void {
+  const runtimeOpts = opts ?? getTranscriptRuntimeOptions();
+  const stream = getTranscriptStream(runtimeOpts);
+  writeTranscriptToolLeadIn(runtimeOpts);
+  if (typeof step.rationale === "string") {
+    stream.write(formatRationaleLine(step.rationale) + "\n");
+  }
+  const callLine = step.promptTools
+    ? formatPromptToolCallLine(step.name, step.displayArgs)
+    : formatToolCallLine(step.name, step.displayArgs);
+  stream.write(callLine + "\n");
+}
+
+/**
+ * Write the preview or error block for a completed tool call.
+ * For errors, always writes the error line.
+ * For successful results, writes the preview only when non-empty.
+ */
+export function writeToolStepResult(
+  name: string,
+  result: ToolStepResult,
+  opts?: TranscriptRuntimeOptions,
+): void {
+  const runtimeOpts = opts ?? getTranscriptRuntimeOptions();
+  const stream = getTranscriptStream(runtimeOpts);
+  if (result.kind === "error") {
+    stream.write(formatToolErrorLine(name, result.error) + "\n");
+    return;
+  }
+  let preview: string;
+  if (result.kind === "edit-diff") {
+    preview = formatEditFileDiff(
+      result.path,
+      result.oldText,
+      result.newText,
+      result.contextBefore,
+      result.contextAfter,
+      runtimeOpts,
+      result.lineIndent,
+    );
+  } else if (result.kind === "create-content") {
+    preview = formatToolResultPreview(result.content, runtimeOpts);
+  } else {
+    preview = formatToolResultPreview(result.result, runtimeOpts);
+  }
+  if (preview) stream.write(preview + "\n");
+}
+
+/** Render a complete tool step: header (lead-in + call line) then result preview. */
+export function renderToolStep(
+  step: ToolStep,
+  opts?: TranscriptRuntimeOptions,
+): void {
+  writeToolCallHeader(step, opts);
+  writeToolStepResult(step.name, step.result, opts);
+}
+
+/**
+ * Render a complete agent turn: one beginTranscriptTurn followed by one or
+ * more RenderedSteps (each with optional text and zero or more tool calls),
+ * each closed by endTranscriptStep.
+ */
+export function renderTurn(
+  steps: RenderedStep[],
+  opts?: TranscriptRuntimeOptions,
+): void {
+  const runtimeOpts = opts ?? getTranscriptRuntimeOptions();
+  beginTranscriptTurn(runtimeOpts);
+  const stream = getTranscriptStream(runtimeOpts);
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    if (step.text) {
+      stream.write(step.text);
+      notifyTranscriptChunk(step.text);
+    }
+    for (const tool of step.tools ?? []) {
+      renderToolStep(tool, runtimeOpts);
+    }
+    endTranscriptStep(i < steps.length - 1, runtimeOpts);
+  }
+}

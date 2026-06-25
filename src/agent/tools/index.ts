@@ -14,15 +14,10 @@ import { join } from 'path';
 import {
   filterArgs,
   formatArgs,
-  formatEditFileDiff,
-  formatPromptToolCallLine,
-  formatRationaleLine,
-  formatToolCallLine,
-  formatToolErrorLine,
-  formatToolResultPreview,
   getTranscriptRuntimeOptions,
-  getTranscriptStream,
-  writeTranscriptToolLeadIn,
+  writeToolCallHeader,
+  writeToolStepResult,
+  type ToolStepResult,
 } from '../../cli/transcript-renderer.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -51,14 +46,6 @@ interface ToolTraceEvent {
 
 export { formatArgs, filterArgs } from '../../cli/transcript-renderer.js';
 
-function toolOut(): NodeJS.WritableStream {
-  return getTranscriptStream();
-}
-
-function toolError(name: string, err: unknown): void {
-  toolOut().write(formatToolErrorLine(name, err) + '\n');
-}
-
 function appendToolTrace(event: ToolTraceEvent): void {
   const tracePath = process.env.FREECODE_TRACE_JSON;
   if (!tracePath) return;
@@ -81,16 +68,12 @@ function withLogging(name: string, t: AnyCoreTool, promptTools = false): AnyCore
     ...t,
     execute: async (args: Record<string, unknown>, opts: unknown): Promise<unknown> => {
       const { rationale, ...displayArgs } = args;
-      writeTranscriptToolLeadIn(); // normalised blank-line separator before every call
-      const callLine = promptTools
-        ? formatPromptToolCallLine(name, displayArgs)
-        : formatToolCallLine(name, displayArgs);
-      if (typeof rationale === 'string') {
-        toolOut().write(formatRationaleLine(rationale) + '\n');
-        toolOut().write(callLine + '\n');
-      } else {
-        toolOut().write(callLine + '\n');
-      }
+      writeToolCallHeader({
+        name,
+        displayArgs,
+        rationale: typeof rationale === 'string' ? rationale : undefined,
+        promptTools,
+      });
 
       const editContextBefore: string[] = [];
       const editContextAfter: string[] = [];
@@ -100,7 +83,7 @@ function withLogging(name: string, t: AnyCoreTool, promptTools = false): AnyCore
           const filePath = join(process.cwd(), args.path);
           if (existsSync(filePath)) {
             const content = readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n');
-            const normalizedOld = (args.old_text)
+            const normalizedOld = args.old_text
               .replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\r\n/g, '\n');
             const idx = content.indexOf(normalizedOld);
             if (idx !== -1) {
@@ -126,20 +109,28 @@ function withLogging(name: string, t: AnyCoreTool, promptTools = false): AnyCore
       try {
         const result = await original(args, opts);
         appendToolTrace({ tool: name, args: displayArgs, result });
-        let preview: string;
+        let stepResult: ToolStepResult;
         if (name === 'edit' && typeof args.path === 'string' && typeof args.old_text === 'string' && typeof args.new_text === 'string') {
-          preview = formatEditFileDiff(args.path, args.old_text, args.new_text, editContextBefore, editContextAfter, getTranscriptRuntimeOptions(), editLineIndent);
+          stepResult = {
+            kind: 'edit-diff',
+            path: args.path,
+            oldText: args.old_text,
+            newText: args.new_text,
+            contextBefore: editContextBefore,
+            contextAfter: editContextAfter,
+            lineIndent: editLineIndent,
+          };
         } else if (name === 'create' && typeof args.content === 'string' && typeof result === 'string' && result.startsWith('Wrote ')) {
-          preview = formatToolResultPreview(args.content, getTranscriptRuntimeOptions());
+          stepResult = { kind: 'create-content', content: args.content };
         } else {
-          preview = formatToolResultPreview(result, getTranscriptRuntimeOptions());
+          stepResult = { kind: 'text', result };
         }
-        if (preview) toolOut().write(preview + '\n');
+        writeToolStepResult(name, stepResult, getTranscriptRuntimeOptions());
         return result;
       } catch (err) {
         if (isUserAbortError(err)) throw err;
         appendToolTrace({ tool: name, args: displayArgs, error: toErrorMessage(err) });
-        toolError(name, err);
+        writeToolStepResult(name, { kind: 'error', error: err }, getTranscriptRuntimeOptions());
         logError('tool', `${name} threw`, err);
         throw err;
       }

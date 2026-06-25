@@ -8,22 +8,30 @@
 |--------|-----------|-------------|
 | `runRendererDemo` | `() => void` | Renders the full demo transcript to stdout. |
 
+## Implementation
+
+Each demo turn is expressed as a `renderTurn([...], DEMO_OPTS)` call from `cli/transcript-renderer.ts`.
+Private helpers (`writeTool`, `writeToolWithRationale`, `writeResponse`, `transcriptOut`) have been removed;
+all orchestration now goes through the shared `renderTurn` / `renderToolStep` / `writeToolCallHeader` /
+`writeToolStepResult` API.
+
 ## Turn types demonstrated
 
-| Section | Renderer path exercised |
-|---------|------------------------|
-| Tool call only | `beginTranscriptTurn` → `writeTranscriptToolLeadIn` → `formatToolCallLine` → `formatToolResultPreview` |
-| Rationale + tool call | Same as above, plus `chalk.cyan(rationale)` written to transcript stream (no `notifyTranscriptChunk`) |
-| Response only | `writeResponse` → `notifyTranscriptChunk` → `renderMarkdown` |
-| Response + tool call | Response path then tool path; state machine inserts blank line between them |
-| Multiple tool calls in one step | `writeTranscriptToolLeadIn` called twice; state machine inserts blank between parallel calls |
-| Multi-step turn | `endTranscriptStep(true)` produces the shared close+open divider |
-| Tool error | `formatToolErrorLine` |
-| Markdown showcase | `renderMarkdown` with every formatting type (supported and unsupported) |
+| Section | ToolStep kind |
+|---------|---------------|
+| Tool call only (`read`, `list_dir`, `shell_exec`) | `text` |
+| Rationale + tool call (`grep`) | `text` with `rationale` set |
+| Prompt-tool call | `text` with `promptTools: true` |
+| `create` (content preview) | `create-content` |
+| `edit` (colored diff) | `edit-diff` |
+| Response + tool call | `RenderedStep.text` + tool |
+| Multiple tool calls in one step | multiple `ToolStep` entries in one `RenderedStep` |
+| Tool error | `error` |
+| Markdown showcase | `RenderedStep.text` only, no tools |
 
 ## Key neighbors
 
-- `../cli/transcript-renderer.ts` — state machine and formatting functions
+- `../cli/transcript-renderer.ts` — `renderTurn`, `renderToolStep`, `writeToolCallHeader`, `writeToolStepResult`, and the state machine
 - `../cli/markdown-renderer.ts` — `renderMarkdown`
 - `../cli/command-dispatcher.ts` — dispatches `/renderer`
 
