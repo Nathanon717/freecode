@@ -38,7 +38,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   },
   {
     id: "nvidia",
-    name: "NVIDIA NIM",
+    name: "NVIDIA",
     type: "openai-compat",
     baseUrl: "https://integrate.api.nvidia.com/v1",
     apiKeyEnvVar: "NVIDIA_API_KEY",
@@ -76,7 +76,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   },
   {
     id: "github",
-    name: "GitHub Models",
+    name: "GitHub",
     type: "openai-compat",
     baseUrl: "https://models.inference.ai.azure.com",
     apiKeyEnvVar: "GITHUB_TOKEN",
@@ -134,7 +134,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   },
   {
     id: "cloudflare",
-    name: "Cloudflare Workers AI",
+    name: "Cloudflare",
     type: "openai-compat",
     baseUrl: `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID ?? ""}/ai/v1`,
     apiKeyEnvVar: "CLOUDFLARE_API_KEY",
@@ -163,7 +163,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   },
   {
     id: "zai",
-    name: "Z.ai (ZhipuAI)",
+    name: "Z.ai",
     type: "openai-compat",
     baseUrl: "https://api.z.ai/api/paas/v4",
     apiKeyEnvVar: "ZAI_API_KEY",
@@ -211,7 +211,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   },
   {
     id: "zen",
-    name: "OpenCode Zen",
+    name: "OpenCode",
     type: "openai-compat",
     baseUrl: "https://opencode.ai/zen/v1",
     apiKeyEnvVar: "OPENCODE_ZEN_API_KEY",

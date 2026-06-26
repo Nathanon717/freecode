@@ -29,7 +29,8 @@ import {
   resetSubmittedInputArea,
   setInputBuffer,
   setInlineCompletion,
-  setModelStatus,
+  setActiveModel,
+  setActiveModelFromString,
   setOpenAIDailySpend,
   setQuotaSnapshot,
   setSuggestions,
@@ -61,23 +62,17 @@ function resetBottomPromptState(session: SessionController): void {
 let _lastAppliedModel = "";
 let _ctrlHintTimer: ReturnType<typeof setTimeout> | null = null;
 
-function syncModelLabel(model: string): void {
-  const idx = model.indexOf(":");
-  if (idx !== -1) setModelStatus(model.slice(0, idx), model.slice(idx + 1));
-  else if (model) setModelStatus("", model);
-}
-
 // Call when the active model changes. Clears stale quota so the footer shows
 // nothing until the new model's API response fills it in.
 function applyModelChange(model: string): void {
   if (model === _lastAppliedModel) return;
   _lastAppliedModel = model;
-  syncModelLabel(model);
+  setActiveModelFromString(model);
   setQuotaSnapshot(null);
 }
 
 function applyModelStatus(model: string): void {
-  syncModelLabel(model);
+  setActiveModelFromString(model);
   _lastAppliedModel = model;
   const idx = model.indexOf(":");
   if (idx !== -1) {
@@ -302,7 +297,7 @@ export function createInteractiveMode(
       if (process.stdin.isTTY) setupBottomUI();
     },
     onAgentResult: (result) => {
-      setModelStatus(result.providerId, result.modelId);
+      setActiveModel(result.providerId, result.modelId);
       setQuotaSnapshot(result.quota);
       if (result.quota && result.providerId) {
         saveQuotaToCache(result.providerId, result.quota);

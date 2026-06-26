@@ -16,7 +16,8 @@ import {
 export {
   setTokenCount,
   setQuotaSnapshot,
-  setModelStatus,
+  setActiveModel,
+  setActiveModelFromString,
   setOpenAIDailySpend,
   setRetryBanner,
   composeBottomRightStatus,

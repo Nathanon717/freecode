@@ -64,8 +64,6 @@ interface ListMenuOptions<TResult> {
   initialTabId?: string;
   /** Initial selected item index (default 0 = first item). */
   initialSelected?: number;
-  /** Wrap Up/Down at the list ends. Default true; set false for non-wrapping menus. */
-  wrap?: boolean;
   /** Value resolved when the user presses Esc. Default null. */
   onCancel?: () => TResult;
   onExitClear?: (rowCount: number) => void;

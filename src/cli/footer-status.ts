@@ -28,8 +28,13 @@ export function setTokenCount(tokenCount: number): void { lastTokenCount = token
 export function setQuotaSnapshot(quota: RateLimitSnapshot | null): void {
   lastQuota = quota ? { quota, capturedAt: Date.now() } : null;
 }
-export function setModelStatus(providerId: string, modelId: string): void {
+export function setActiveModel(providerId: string, modelId: string): void {
   lastModelStatus = providerId && modelId ? `${providerId}:${modelId}` : (providerId || modelId);
+}
+export function setActiveModelFromString(model: string): void {
+  const idx = model.indexOf(':');
+  if (idx !== -1) setActiveModel(model.slice(0, idx), model.slice(idx + 1));
+  else if (model) setActiveModel('', model);
 }
 export function setOpenAIDailySpend(snapshot: OpenAIDailySpend): void {
   lastOpenAIDailySpend = snapshot;

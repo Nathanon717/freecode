@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "model": "mock-native:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "mustContain": ["grade the run"],
+        "toolsAvailable": ["create"],
+        "systemPromptPresent": true,
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["Let's make this change."],
+        "toolCalls": [
+          {
+            "name": "create",
+            "args": {
+              "rationale": "Writing the grading script as requested",
+              "path": "grade.py",
+              "content": "print('grade: A')\n"
+            }
+          }
+        ],
+        "usage": { "promptTokens": 20, "outputTokens": 8, "totalTokens": 28 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "The script now runs successfully and prints the grade summary.",
+        "usage": { "promptTokens": 40, "outputTokens": 12, "totalTokens": 52 }
+      }
+    }
+  ]
+}

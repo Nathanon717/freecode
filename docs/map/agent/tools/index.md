@@ -6,7 +6,7 @@
 ## Exports
 
 ```typescript
-export { formatArgs, filterArgs } from '../../cli/transcript-renderer.js'
+export { formatArgs, filterArgs } from "../../cli/transcript-renderer.js"
 
 interface ToolCallPreview {
   name: string;
@@ -18,7 +18,9 @@ interface ToolCallConfirmation {
   message?: string;
 }
 
-type ConfirmToolCall = (preview: ToolCallPreview) => Promise<boolean | ToolCallConfirmation>;
+type ConfirmToolCall = (
+  preview: ToolCallPreview,
+) => Promise<boolean | ToolCallConfirmation>;
 
 createTools(confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, promptTools?: boolean, readOnly?: boolean): { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { ...; }
 

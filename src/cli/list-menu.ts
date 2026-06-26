@@ -80,8 +80,6 @@ export interface ListMenuOptions<TResult> {
   initialTabId?: string;
   /** Initial selected item index (default 0 = first item). */
   initialSelected?: number;
-  /** Wrap Up/Down at the list ends. Default true; set false for non-wrapping menus. */
-  wrap?: boolean;
   /** Value resolved when the user presses Esc. Default null. */
   onCancel?: () => TResult;
   onExitClear?: (rowCount: number) => void;
@@ -150,7 +148,6 @@ export function runListMenu<TResult>(
   opts: ListMenuOptions<TResult>,
 ): Promise<TResult> {
   const { tabs } = opts;
-  const wrap = opts.wrap ?? true;
   const hasTabs = tabs.length > 1;
   const cancelValue = (): TResult =>
     opts.onCancel ? opts.onCancel() : (null as TResult);
@@ -297,15 +294,12 @@ export function runListMenu<TResult>(
       if (key === UP) {
         if (selected <= 0) {
           if (hasTabs) selected = -1;
-          else if (wrap && count > 0) selected = count - 1;
         } else selected--;
         redraw();
         return;
       }
       if (key === DOWN) {
-        if (selected >= count - 1) {
-          if (wrap && count > 0) selected = 0;
-        } else selected++;
+        if (selected < count - 1) selected++;
         redraw();
         return;
       }

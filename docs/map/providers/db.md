@@ -50,6 +50,12 @@ Five tables are created idempotently at `initStore()`:
 - Turso sync: `syncUrl` + `authToken` read from env vars (`FREECODE_DB_SYNC_URL`, `FREECODE_DB_AUTH_TOKEN`) or `~/.config/freecode/config.json` under `{ "db": { "syncUrl": "...", "authToken": "..." } }`. Absent → plain local file: client, no sync.
 - `.freecode/freecode.db`, `models.json`, `evals/`, and `model-cache.json` are all gitignored. The DB (synced via Turso) is the cross-device source of truth; no JSON files are written by the running app.
 
+## Init Resilience (`doInit`)
+
+`initStore()` memoizes `doInit()`, so a thrown init would poison the shared promise and re-throw on every later `ensureStoreReady()` — crashing every interactive menu (`runMenuShell` awaits it). `doInit` therefore **never throws**: any failure is caught, the bad client is closed, and the store degrades to an empty in-memory cache (reads empty, writes no-op). The config cache primed from `config-cache.json` at boot is left intact.
+
+WalConflict recovery: a libSQL embedded replica can diverge from the remote (`sync()` can't push the conflicting frames and the next write — the schema `CREATE TABLE` — throws `WalConflict`). `isReplicaConflict()` detects this; recovery closes the client, `wipeLocalDb()` deletes the db + sidecars, and the client is reopened and re-pulled once. The wipe must include the **`-info`** sidecar (replica sync metadata) — `DB_FILE_SUFFIXES` covers `'', -shm, -wal, -info, -meta`. The wipe is **gated on the conflict**: transient network/auth sync errors keep the local replica and run offline, never wiped (a wipe discards un-pushed local writes — models re-fetch, config is mirrored, eval history is the only real loss).
+
 ## Read/Write Architecture
 
 - **Reads:** `load()` in model-store returns `getCache()` when initialized, else returns `{}`.

@@ -3,7 +3,7 @@ import type { Interface } from 'readline';
 import { getBannerColor } from '../cli/banner.js';
 import { getConfigPaths, loadConfig, readRawConfig, resolveModelSettings, updateGlobalConfig, writeConfigFile } from '../config/index.js';
 import type { Config, OverridableSettings } from '../providers/types.js';
-import { getModelSettings, setModelSetting } from '../providers/model-store.js';
+import { getModelSettings, setModelSetting, isNativeToolsDisabled } from '../providers/model-store.js';
 import { countWrappedLines } from '../cli/raw-picker.js';
 import { ensureStoreReady } from '../providers/db.js';
 import { runMenuShell } from '../cli/menu-shell.js';
@@ -21,6 +21,7 @@ interface BoolSetting {
   description: string;
   globalOnly?: true;
   modelOnly?: true;
+  modelTabOnly?: true;
 }
 
 interface NumericSetting {
@@ -45,6 +46,7 @@ const SETTINGS: Setting[] = [
   { type: 'number',  key: 'diffContextLines',   label: 'Diff context',    description: 'Lines of surrounding context shown above/below each edit diff (stops at blank line)', min: 0, max: 10, step: 1, unit: '', globalOnly: true },
   { type: 'boolean', key: 'showEvalDots',      label: 'Eval dots',        description: 'Show per-scenario eval result circles in the model picker', globalOnly: true },
   { type: 'boolean', key: 'loadAgentsMd',     label: 'Load AGENTS.md',   description: 'Inject AGENTS.md from the working directory into the system prompt', modelOnly: true },
+  { type: 'boolean', key: 'parsedTools',      label: 'Parsed tools',     description: 'Use text-based tool protocol instead of native function calling', modelTabOnly: true },
 ];
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -54,6 +56,15 @@ type Tab = 'global' | 'provider' | 'model';
 function getProviderId(model: string): string {
   const idx = model.indexOf(':');
   return idx !== -1 ? model.slice(0, idx) : '';
+}
+
+function getModelId(model: string): string {
+  const idx = model.indexOf(':');
+  return idx !== -1 ? model.slice(idx + 1) : model;
+}
+
+function isParsedToolsForced(currentModel: string): boolean {
+  return isNativeToolsDisabled(getProviderId(currentModel), getModelId(currentModel));
 }
 
 function getAvailableTabs(currentModel: string): Tab[] {
@@ -69,7 +80,7 @@ type TabValue = boolean | undefined;
 function loadGlobalValues(): Record<string, boolean | number> {
   const cfg = loadConfig();
   const vals: Record<string, boolean | number> = {};
-  for (const s of SETTINGS) vals[s.key] = cfg[s.key] as boolean | number;
+  for (const s of visibleSettings('global')) vals[s.key] = cfg[s.key as keyof Config] as boolean | number;
   return vals;
 }
 
@@ -119,6 +130,11 @@ function renderGlobalValue(value: boolean | number, selected: boolean, setting: 
   return v ? chalk.green('true') : chalk.red('false');
 }
 
+function renderForcedValue(selected: boolean): string {
+  if (selected) return chalk.green.bold('true') + ' ' + chalk.dim('(auto-detected, locked)');
+  return chalk.green('true') + chalk.dim(' (auto-detected)');
+}
+
 function renderOverrideValue(value: TabValue, effectiveValue: boolean, selected: boolean): string {
   if (selected) {
     const inh = value === undefined ? getBannerColor().bold('inherit') : chalk.dim('inherit');
@@ -132,13 +148,16 @@ function renderOverrideValue(value: TabValue, effectiveValue: boolean, selected:
   return value ? chalk.green('true') : chalk.red('false');
 }
 
-// Settings visible on a given tab. Global hides model-only settings; the
-// provider/model tabs hide global-only settings. Each tab's list is contiguous
-// so the shared list-menu's count()/selected index line up 1:1.
+// Settings visible on a given tab. Global hides model-only and modelTabOnly
+// settings; the provider/model tabs hide global-only settings; provider tab
+// also hides modelTabOnly settings. Each tab's list is contiguous so the
+// shared list-menu's count()/selected index line up 1:1.
 function visibleSettings(tab: Tab): Setting[] {
   return SETTINGS.filter(s => {
     if (tab !== 'global' && 'globalOnly' in s && s.globalOnly) return false;
     if (tab === 'global' && 'modelOnly' in s && s.modelOnly) return false;
+    if (tab === 'global' && 'modelTabOnly' in s && s.modelTabOnly) return false;
+    if (tab === 'provider' && 'modelTabOnly' in s && s.modelTabOnly) return false;
     return true;
   });
 }
@@ -171,6 +190,8 @@ function buildSettingRows(tab: Tab, selected: number, currentModel: string): str
     let valueStr: string;
     if (tab === 'global') {
       valueStr = renderGlobalValue(values[s.key] as boolean | number, active, s);
+    } else if (tab === 'model' && s.key === 'parsedTools' && isParsedToolsForced(currentModel)) {
+      valueStr = renderForcedValue(active);
     } else {
       valueStr = renderOverrideValue(values[s.key] as TabValue, effectiveVal, active);
     }
@@ -261,6 +282,7 @@ function buildConfigTab(tab: Tab, currentModel: string, globalPath: string): Men
         const direction: 1 | -1 = key === '\x1b[D' ? -1 : 1;
         const setting = visibleSettings(tab)[ctx.getSelected()];
         if (!setting) return true;
+        if (tab === 'model' && setting.key === 'parsedTools' && isParsedToolsForced(currentModel)) return true;
         if (tab === 'global') {
           const values = loadGlobalValues();
           const newVal = setting.type === 'number'
@@ -306,7 +328,6 @@ async function runConfigBody(rl: Interface, currentModel: string): Promise<void>
 
   await runListMenu<void>(rl, {
     tabs,
-    wrap: false,
     countLines: countWrappedLines,
     onExitClear(rowCount) {
       const r = process.stdout.rows || 24;

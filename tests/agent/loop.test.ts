@@ -4,6 +4,7 @@ import { tmpdir } from 'os';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { agentLoop } from '../../src/agent/loop.js';
 import { resetFakeModelState } from '../../src/providers/fake.js';
+import { setModelSetting } from '../../src/providers/model-store.js';
 import { UserAbortError } from '../../src/util/errors.js';
 
 const previousFake = process.env.FREECODE_FAKE_LLM;
@@ -91,7 +92,7 @@ describe('agentLoop with the mock fake-direct provider', () => {
       { confirmToolCall: approve },
     );
 
-    expect(result.text).toBe('Writing the file.All done.');
+    expect(result.text).toBe('Writing the file.\nAll done.');
     expect(result.usage.totalTokens).toBe(36);
     expect(existsSync(join(tempRoot, 'note.txt'))).toBe(true);
     expect(readFileSync(join(tempRoot, 'note.txt'), 'utf-8')).toBe('persisted\n');
@@ -119,7 +120,7 @@ describe('agentLoop with the mock fake-direct provider', () => {
       { confirmToolCall: () => Promise.resolve(false) },
     );
 
-    expect(result.text).toBe('Trying to write.Understood, stopping.');
+    expect(result.text).toBe('Trying to write.\nUnderstood, stopping.');
     expect(existsSync(join(tempRoot, 'blocked.txt'))).toBe(false);
   });
 
@@ -145,7 +146,7 @@ describe('agentLoop with the mock fake-direct provider', () => {
       { confirmToolCall: approve },
     );
 
-    expect(result.text).toBe('Calling a bogus tool.Recovered.');
+    expect(result.text).toBe('Calling a bogus tool.\nRecovered.');
   });
 
   it('errors when the model emits tool calls but the model does not support tools', async () => {
@@ -308,8 +309,32 @@ describe('agentLoop with the mock-native (AI SDK streamText) provider', () => {
       { confirmToolCall: approve },
     );
 
-    expect(result.text).toBe('Writing now.Finished.');
+    expect(result.text).toBe('Writing now.\nFinished.');
     expect(existsSync(join(tempRoot, 'native.txt'))).toBe(true);
     expect(readFileSync(join(tempRoot, 'native.txt'), 'utf-8')).toBe('ok\n');
+  });
+
+  it('uses prompt-based tools when parsedTools is set on the model', async () => {
+    setModelSetting('mock-native:gpt-freecode-test', 'parsedTools', true);
+    writeFixture({
+      version: 1,
+      model: 'mock-native:gpt-freecode-test',
+      steps: [{
+        match: { turn: 1, nativeToolsSupplied: false },
+        response: { chunks: ['Done via prompt tools.'], usage: { promptTokens: 5, outputTokens: 3, totalTokens: 8 } },
+      }],
+    });
+
+    const result = await agentLoop(
+      [{ role: 'user', content: 'ping' }],
+      tempRoot,
+      'mock-native:gpt-freecode-test',
+    );
+
+    const written = stdoutSpy.mock.calls.map(c => String(c[0])).join('');
+    expect(written).toContain('using prompt-based tools');
+    expect(result.text).toContain('Done via prompt tools.');
+
+    setModelSetting('mock-native:gpt-freecode-test', 'parsedTools', undefined);
   });
 });

@@ -8,6 +8,7 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | File | Name | Type | Workspace | Description |
 | --- | --- | --- | --- | --- |
 | `agent-create-fake.scenario.json` | `agent-create-fake` | Non-LLM verification | temp | Fake LLM fixture drives an approved create tool call through the real agent loop |
+| `agent-preamble-flush.scenario.json` | `agent-preamble-flush` | Non-LLM verification | temp | A pre-tool-call preamble with no trailing newline is flushed in its correct position (before the tool call) instead of being held in the markdown line buffer and glued onto the final step's text |
 | `agent-text-fake.scenario.json` | `agent-text-fake` | Non-LLM verification | temp | Fake LLM fixture enters the agent loop and returns deterministic text without live provider access |
 | `agent-text-native.scenario.json` | `agent-text-native` | Non-LLM verification | temp | Fake LLM fixture exercises the real AI SDK streamText path (native-stream) with a deterministic text response |
 | `agent-tool-native.scenario.json` | `agent-tool-native` | Non-LLM verification | temp | Fake native LLM fixture drives a create tool call through the full multi-step streamText orchestration loop |
@@ -24,6 +25,7 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-config-editor.scenario.json` | `tty-config-editor` | Non-LLM verification | repo | Submitting /config opens the interactive settings editor showing all settings; pressing q closes it and restores the input prompt |
 | `tty-config-esc.scenario.json` | `tty-config-esc` | Non-LLM verification | repo | Submitting /config opens the standalone config editor; pressing Esc closes it, erases its screen, and restores the input prompt |
 | `tty-config-load-agents-md.scenario.json` | `tty-config-load-agents-md` | Non-LLM verification | repo | Load AGENTS.md setting appears in Provider and Model tabs but not in the Global tab |
+| `tty-config-parsed-tools.scenario.json` | `tty-config-parsed-tools` | Non-LLM verification | repo | Parsed tools setting appears only on the Model tab (absent from Global and Provider tabs) |
 | `tty-config-toggle.scenario.json` | `tty-config-toggle` | Non-LLM verification | repo | Space key toggles a boolean setting in the config editor; the changed value persists and the editor can be reopened without error |
 | `tty-escape-clears.scenario.json` | `tty-escape-clears` | Non-LLM verification | repo | Escape key clears the input buffer and hides the suggestion list, restoring the empty-prompt hint |
 | `tty-eval-menu.scenario.json` | `tty-eval-menu` | Non-LLM verification | repo | Submitting /eval opens the standalone eval picker showing available scenarios; pressing Esc closes it and restores the input prompt |

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   setTokenCount,
   setQuotaSnapshot,
-  setModelStatus,
+  setActiveModel,
   setOpenAIDailySpend,
   setRetryBanner,
   formatEvalRunStatus,
@@ -15,7 +15,7 @@ function resetState() {
   vi.useRealTimers();
   setTokenCount(0);
   setQuotaSnapshot(null);
-  setModelStatus('', '');
+  setActiveModel('', '');
   setOpenAIDailySpend({ state: 'idle', updatedAt: 0 });
   setRetryBanner(null);
 }
@@ -64,13 +64,13 @@ describe('layoutFooterRightRows', () => {
   });
 
   it('includes model status when both provider and model are set', () => {
-    setModelStatus('openai', 'gpt-4o');
+    setActiveModel('openai', 'gpt-4o');
     const rows = layoutFooterRightRows(80, 1);
     expect(rows[0]).toContain('openai:gpt-4o');
   });
 
   it('returns an array with at most rowBudget rows', () => {
-    setModelStatus('provider', 'model');
+    setActiveModel('provider', 'model');
     setTokenCount(100);
     const rows = layoutFooterRightRows(80, 3);
     expect(rows.length).toBeGreaterThanOrEqual(1);
@@ -87,7 +87,7 @@ describe('layoutFooterRightRows', () => {
 
 describe('composeBottomStatusLine', () => {
   it('returns a string of width-1 characters (reserves one char for left gutter)', () => {
-    setModelStatus('p', 'm');
+    setActiveModel('p', 'm');
     const line = composeBottomStatusLine(30);
     expect(line.length).toBe(29);
   });
@@ -120,7 +120,7 @@ describe('composeBottomRightStatus', () => {
     vi.useFakeTimers();
     vi.setSystemTime(now);
 
-    setModelStatus('groq', 'llama-3.3-70b-versatile');
+    setActiveModel('groq', 'llama-3.3-70b-versatile');
     setQuotaSnapshot([
       { label: 'R', remaining: 985, limit: 1000, resetMs: 1_287_000 },
       { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
@@ -193,7 +193,7 @@ describe('composeBottomRightStatus', () => {
   });
 
   it('drops OpenAI daily spend before dropping model', () => {
-    setModelStatus('openai', 'gpt-5.4-nano-2026-03-17');
+    setActiveModel('openai', 'gpt-5.4-nano-2026-03-17');
     setTokenCount(123);
     setOpenAIDailySpend({
       state: 'ready',

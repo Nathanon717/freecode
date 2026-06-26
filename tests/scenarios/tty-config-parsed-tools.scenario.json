@@ -1,0 +1,49 @@
+{
+  "name": "tty-config-parsed-tools",
+  "description": "Parsed tools setting appears only on the Model tab (absent from Global and Provider tabs)",
+  "requiresLlm": false,
+  "config": { "defaultModel": "mock:gpt-freecode-test" },
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /config",
+        "send": "/config",
+        "screenContains": ["> /config"]
+      },
+      {
+        "name": "submit - Global tab, Parsed tools absent",
+        "send": "\r",
+        "waitFor": "Tool rationale",
+        "screenContains": ["Tool rationale"],
+        "screenAbsent": ["Parsed tools"]
+      },
+      {
+        "name": "Up - move focus to tab row",
+        "send": "\u001b[A",
+        "screenContains": ["Tool rationale"]
+      },
+      {
+        "name": "Right - switch to Provider tab, Parsed tools still absent",
+        "send": "\u001b[C",
+        "screenContains": ["Tool rationale"],
+        "screenAbsent": ["Parsed tools"]
+      },
+      {
+        "name": "Right - switch to Model tab, Parsed tools now visible",
+        "send": "\u001b[C",
+        "screenContains": ["Parsed tools"]
+      },
+      {
+        "name": "q - close editor",
+        "send": "q",
+        "screenContains": ["> / for commands"]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

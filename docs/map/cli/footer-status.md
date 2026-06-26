@@ -12,7 +12,9 @@ setTokenCount(tokenCount: number): void
 
 setQuotaSnapshot(quota: RateLimitSnapshot | null): void
 
-setModelStatus(providerId: string, modelId: string): void
+setActiveModel(providerId: string, modelId: string): void
+
+setActiveModelFromString(model: string): void
 
 setOpenAIDailySpend(snapshot: OpenAIDailySpend): void
 

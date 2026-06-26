@@ -6,16 +6,16 @@ Freecode is a TypeScript CLI coding agent with provider routing, an interactive 
 
 This file is intentionally short. Keep detailed reference material in `docs/` and link to it from here.
 
+## Required Rules
+
+- Before broad source reads, start with `docs/map/README.md` and the relevant map page.
+- After changing any file in `/src/`, make sure to check its corresponding map page and consider if you need to update it.
+- Never prefix Bash commands with `cd <dir> &&` when already in that directory — it triggers a permission prompt on the `cd` even if the actual command is allowed.
+
 ## Enviornment
 
 - If you are on Windows, use `npm.cmd run ...` in bash, not powershell.
 - If you are on Linux, use `npm run ...`.
-
-## Required Rules
-
-- Before broad source reads, start with `docs/map/README.md` and the relevant map page.
-- After changing any file in `/src/`, make sure you to check its corresponding map page and consider if you need to update it.
-- Never prefix Bash commands with `cd <dir> &&` when already in that directory — it triggers a permission prompt on the `cd` even if the actual command is allowed.
 
 ## Verification
 

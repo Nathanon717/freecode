@@ -74,18 +74,14 @@ describe('runListMenu — single tab navigation', () => {
     expect(store.opts!.render()[3]).toBe('> alpha');
   });
 
-  it('wraps at the ends by default', () => {
+  it('stops at the ends without wrapping', () => {
     void runListMenu(fakeRl, { tabs: [singleTab()] });
-    store.opts!.onKey(UP, redraw, close); // from 0 → last
-    expect(store.opts!.render()[5]).toBe('> gamma');
-    store.opts!.onKey(DOWN, redraw, close); // from last → 0
-    expect(store.opts!.render()[3]).toBe('> alpha');
-  });
-
-  it('does not wrap when wrap:false', () => {
-    void runListMenu(fakeRl, { tabs: [singleTab()], wrap: false });
     store.opts!.onKey(UP, redraw, close); // stays at 0
     expect(store.opts!.render()[3]).toBe('> alpha');
+    store.opts!.onKey(DOWN, redraw, close);
+    store.opts!.onKey(DOWN, redraw, close);
+    store.opts!.onKey(DOWN, redraw, close); // stays at last (gamma)
+    expect(store.opts!.render()[5]).toBe('> gamma');
   });
 
   it('closes with null on Esc, or onCancel value', () => {

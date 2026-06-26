@@ -39,8 +39,9 @@ Provider and Model tabs are only available when `currentModel` contains a colon.
 | `diffContextLines` | Diff context | Global only | Lines of surrounding context shown above/below each edit diff. |
 | `showEvalDots` | Eval dots | Global only | Show per-scenario eval result circles in the model picker. |
 | `loadAgentsMd` | Load AGENTS.md | Provider, Model | Inject AGENTS.md from the working directory into the system prompt. Hidden from Global tab to preserve layout. |
+| `parsedTools` | Parsed tools | Model only | Use text-based `<tool_call>` protocol instead of native function calling. Hidden from Global and Provider tabs (`modelTabOnly`). When auto-detected (provider rejected native tools, `isNativeToolsDisabled` returns true), the toggle is rendered as **true (auto-detected)** and cycling is blocked — it cannot be turned off. |
 
-`globalOnly` settings are hidden in Provider and Model tabs. `modelOnly` settings are hidden in the Global tab (they still participate in the three-level cascade via `resolveModelSettings`; the global default is `false`).
+`globalOnly` settings are hidden in Provider and Model tabs. `modelOnly` settings are hidden in the Global tab. `modelTabOnly` settings are hidden from Global and Provider tabs (visible only on the Model tab).
 
 ## Override values
 

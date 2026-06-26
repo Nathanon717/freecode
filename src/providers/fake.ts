@@ -391,7 +391,9 @@ export function runFakeModel(call: FakeModelCall): Promise<FakeModelResult> {
     const usage = step.response.usage ?? { totalTokens: 0 };
     const toolCalls = step.response.toolCalls ?? [];
     for (const chunk of chunks) process.stdout.write(chunk);
-    if (chunks.length > 0 && toolCalls.length === 0 && !chunks[chunks.length - 1].endsWith('\n')) process.stdout.write('\n');
+    // Terminate each step's text with a newline so a pre-tool-call preamble does
+    // not glue onto the next step's text on stdout ("…now.File created…").
+    if (chunks.length > 0 && !chunks[chunks.length - 1].endsWith('\n')) process.stdout.write('\n');
 
     appendTrace({
       callIndex: stepNumber,

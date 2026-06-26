@@ -16,7 +16,8 @@ export type { ScenarioHashes };
 import type { PlaygroundScenario } from "../eval/playground.js";
 
 import {
-  setModelStatus,
+  setActiveModel,
+  setActiveModelFromString,
   setQuotaSnapshot,
   setRetryBanner,
   setTokenCount,
@@ -178,8 +179,8 @@ export async function runEvalScenarios(
             if (last.totalTokens !== undefined)
               setTokenCount(last.totalTokens);
             if (last.providerId && last.modelId)
-              setModelStatus(last.providerId, last.modelId);
-            else if (last.modelId) setModelStatus("", last.modelId);
+              setActiveModel(last.providerId, last.modelId);
+            else if (last.modelId) setActiveModel("", last.modelId);
             if (Array.isArray(last.quota)) setQuotaSnapshot(last.quota);
           }
         }
@@ -213,14 +214,7 @@ export async function runEvalScenarios(
       }
     }
 
-    const evalModel = model || "";
-    const colonIdx = evalModel.indexOf(":");
-    if (colonIdx !== -1)
-      setModelStatus(
-        evalModel.slice(0, colonIdx),
-        evalModel.slice(colonIdx + 1),
-      );
-    else if (evalModel) setModelStatus("", evalModel);
+    setActiveModelFromString(model || "");
     setTokenCount(result.tokens.total);
     setQuotaSnapshot(Array.isArray(result.quota) ? result.quota : null);
 

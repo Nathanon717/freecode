@@ -10,12 +10,10 @@ Use this directory as the project handbook. Generated reference pages report fac
 - [Scenarios](scenarios.md): generated inventory of verification and eval scenarios.
 - [Scenario authoring](testing-scenarios.md): how to write and maintain scenario tests.
 - [Test pipeline timing](time.md): per-section timing tool to identify pipeline bottlenecks.
-- [Architecture decisions](architecture/adr/README.md): durable design records.
 - [Guidelines](guidelines/file-length.md): file length limits and extraction guidance.
 - [Codebase map](map/README.md): agent-oriented source navigation.
 - [Session logs](sessions/README.md): optional records of substantial feature work.
 - [New device setup](device-setup.md): install Doppler, link the project, and get all API keys + DB sync in one step.
-- [Claude Code on the web](misc/claude_code_web.md): Linux container environment notes and session key setup.
 
 ## Tests
 

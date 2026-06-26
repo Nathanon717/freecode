@@ -1,0 +1,40 @@
+{
+  "name": "agent-preamble-flush",
+  "description": "A pre-tool-call preamble with no trailing newline is flushed in its correct position (before the tool call) instead of being held in the markdown line buffer and glued onto the final step's text",
+  "requiresLlm": false,
+  "workspace": "temp",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "agent-preamble-flush.llm.json",
+  "turns": [
+    { "input": "Write grade.py then grade the run." },
+    { "input": "y" }
+  ],
+  "expect": {
+    "stdoutContains": [
+      "Let's make this change.",
+      "The script now runs successfully and prints the grade summary."
+    ],
+    "stdoutAbsent": ["change.The script"],
+    "exitCode": 0,
+    "files": [
+      { "path": "grade.py", "contentExact": "print('grade: A')\n" }
+    ],
+    "fakeLlmTrace": {
+      "callCount": 2,
+      "maxCalls": 2,
+      "calls": [
+        {
+          "provider": "mock-native",
+          "executionPath": "native-stream",
+          "emittedTextContains": ["Let's make this change."],
+          "emittedToolCalls": ["create"]
+        },
+        {
+          "provider": "mock-native",
+          "executionPath": "native-stream",
+          "emittedTextContains": ["The script now runs successfully"]
+        }
+      ]
+    }
+  }
+}

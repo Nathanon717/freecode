@@ -35,7 +35,7 @@ The selected model string is always `providerId:modelId`.
 `runModelCommand()` requires an interactive terminal. It draws a temporary raw-mode screen grouped by provider:
 
 - Type printable characters to search across all models (all providers) by display name, model ID, or `provider:model`; when a filter is active the tab label turns grey, provider headers are shown, and the hint line highlights `filter` in the accent color. Backspace removes filter characters.
-- Up/Down moves the selected row, wrapping at the ends.
+- Up/Down moves the selected row; stops at the top/bottom (no wrap-around).
 - `←` toggles the selected model as a favorite. Favorites are keyed by the full `provider:model` ID and persisted to `favoriteModels` in the global config. They appear on the dedicated **♥ Favourites tab** (always leftmost), grouped by provider with white provider headers and the model's display name in the normal accent color. On each provider tab, favourited models have no special badge.
 - `→` opens the model detail view showing pricing, traits, eval dots, and favorite status. `←` or Esc returns to the list.
 - Enter opens an inline action sub-menu (shared `InlineActionMenu` from `cli/action-menu.ts`) with: **Select** (apply model for this session), **View** (open detail screen), **Edit** (stub).

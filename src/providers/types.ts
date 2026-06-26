@@ -34,6 +34,7 @@ export interface OverridableSettings {
   showProviderUsage?: boolean;
   parallelTools?: boolean;
   loadAgentsMd?: boolean;
+  parsedTools?: boolean;
 }
 
 export interface Config {

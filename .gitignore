@@ -9,6 +9,7 @@ coverage/
 
 # planning / private notes
 dont look/
+docs/.obsidian/
 
 # humaneval dataset (large binary — see playground/humaneval/README.md)
 playground/humaneval/data/

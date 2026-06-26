@@ -42,6 +42,32 @@ type ModelStore = Record<string, ModelEntry>;
 let client: Client | null = null;
 let cache: ModelStore | null = null;
 
+// Sidecar files a libSQL embedded replica keeps next to the main db file. `-info`
+// holds the replication metadata (generation + frame numbers); a WalConflict's
+// diverged frame state lives in `-wal`/`-info`, so a recovery wipe MUST remove
+// `-info` or the conflict survives the re-pull. (Verified against an actual store
+// dir: freecode.db{,-shm,-wal,-info} — there is no `-meta` file.)
+const DB_FILE_SUFFIXES = ['', '-shm', '-wal', '-info', '-meta'] as const;
+
+/** Remove the local db file and all its libSQL sidecars. Never throws. */
+function wipeLocalDb(url: string): void {
+  const dbPath = url.replace(/^file:/, '');
+  for (const suffix of DB_FILE_SUFFIXES) {
+    try { unlinkSync(dbPath + suffix); } catch { /* ignore */ }
+  }
+}
+
+/**
+ * True when `err` is a libSQL embedded-replica WalConflict: the local replica has
+ * diverged from the remote and can neither push its frames nor accept new writes.
+ * The only recovery is to discard the local replica and re-pull. Distinct from
+ * transient network/auth errors, which must NOT trigger a destructive wipe.
+ */
+function isReplicaConflict(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /WalConflict/i.test(msg);
+}
+
 async function createSchema(c: Client): Promise<void> {
   await c.execute('PRAGMA foreign_keys = ON');
   await c.execute(`
@@ -353,35 +379,74 @@ export function getDbSyncConfig(): { syncUrl?: string; authToken?: string } {
 
 let initPromise: Promise<void> | null = null;
 
-async function doInit(): Promise<void> {
+/** Open a synced embedded-replica client, wiping stale sync metadata once if creation fails. */
+function openSyncedClient(url: string, syncUrl: string, authToken: string): Client {
+  try {
+    return createClient({ url, syncUrl, authToken });
+  } catch {
+    // Local db lacks libsql sync metadata (created before sync was configured) — wipe and retry.
+    wipeLocalDb(url);
+    return createClient({ url, syncUrl, authToken });
+  }
+}
+
+/**
+ * Open the client, pull from remote, and create the schema. On a WalConflict the
+ * local replica has diverged — `sync()` can't push the conflicting frames and the
+ * next write (the schema CREATE TABLE) throws — so discard the local replica and
+ * re-pull once. This drops un-pushed local writes (models re-fetch; global config
+ * is mirrored to config-cache.json; eval history is the only real loss), which is
+ * acceptable because a diverged replica can't push them anyway. Transient
+ * sync errors (network/auth) keep the local replica and run offline — never wiped.
+ */
+async function openAndPrepareClient(): Promise<void> {
   const { syncUrl, authToken } = readDbConfig();
   const url = getDbUrl();
 
-  if (syncUrl && authToken) {
-    try {
-      client = createClient({ url, syncUrl, authToken });
-    } catch {
-      // Local db lacks libsql sync metadata (created before sync was configured) — wipe and retry
-      const dbPath = url.replace(/^file:/, '');
-      for (const suffix of ['', '-shm', '-wal', '-meta']) {
-        try { unlinkSync(dbPath + suffix); } catch { /* ignore */ }
-      }
-      client = createClient({ url, syncUrl, authToken });
-    }
-    try {
-      await client.sync();
-    } catch (err) {
-      logError('db', 'Initial sync failed, continuing offline', err);
-    }
-  } else {
+  if (!(syncUrl && authToken)) {
     client = createClient({ url });
+    await createSchema(client);
+    return;
   }
 
-  await createSchema(client);
-  cache = await loadFromDb(client);
-  const dbConfigData = await loadConfigFromDb(client);
-  setDbConfigCache(dbConfigData);
-  writeConfigMirror(dbConfigData);
+  client = openSyncedClient(url, syncUrl, authToken);
+  try {
+    await client.sync();
+    await createSchema(client);
+  } catch (err) {
+    if (isReplicaConflict(err)) {
+      logError('db', 'Local replica diverged (WalConflict); wiping and re-pulling from remote', err);
+      try { client.close(); } catch { /* ignore */ }
+      wipeLocalDb(url);
+      client = openSyncedClient(url, syncUrl, authToken);
+      await client.sync();
+      await createSchema(client);
+    } else {
+      // Network/auth/timeout: keep the local replica and run offline.
+      logError('db', 'Initial sync failed, continuing offline', err);
+      await createSchema(client);
+    }
+  }
+}
+
+async function doInit(): Promise<void> {
+  try {
+    await openAndPrepareClient();
+    cache = await loadFromDb(client!);
+    const dbConfigData = await loadConfigFromDb(client!);
+    setDbConfigCache(dbConfigData);
+    writeConfigMirror(dbConfigData);
+  } catch (err) {
+    // The store is best-effort: a failed init must NEVER crash the interactive
+    // menus that await ensureStoreReady() (a thrown error here would also poison
+    // the memoized initPromise, breaking every later menu open). Degrade to an
+    // empty in-memory cache with no client so reads return empty and writes no-op;
+    // the config cache primed from config-cache.json at boot is left untouched.
+    logError('db', 'Store init failed; continuing without persistence', err);
+    try { client?.close(); } catch { /* ignore */ }
+    client = null;
+    if (cache === null) cache = {};
+  }
   registerConfigPersist(persistDbConfigRowAsync);
 }
 

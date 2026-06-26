@@ -212,5 +212,6 @@ export function resolveModelSettings(selectedModel: string): Required<Overridabl
     showProviderUsage: modelSettings.showProviderUsage ?? providerOver?.showProviderUsage ?? global.showProviderUsage,
     parallelTools: modelSettings.parallelTools ?? providerOver?.parallelTools ?? global.parallelTools,
     loadAgentsMd: modelSettings.loadAgentsMd ?? providerOver?.loadAgentsMd ?? global.loadAgentsMd,
+    parsedTools: modelSettings.parsedTools ?? false,
   };
 }

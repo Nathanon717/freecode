@@ -109,6 +109,12 @@ async function runFakeLlm(
       // writeTranscriptToolLeadIn is called inside withLogging (via toolFn.execute).
       const resultParts = await executeToolCalls(tools, generated.toolCalls, `fake-${step}`, activeMessages);
 
+      // Keep this step's preamble from gluing onto the next step's text in the
+      // accumulated result (runFakeModel emits the matching stdout newline).
+      // Added only after the tool resolves — an aborted call has no next step,
+      // matching the native path where onStepFinish fires only on completion.
+      if (generated.text && !generated.text.endsWith('\n')) fullText += '\n';
+
       endTranscriptStep(true); // close step, open next
       activeMessages = [
         ...activeMessages,
@@ -147,7 +153,7 @@ async function streamWithRetry(
 ): Promise<StreamResult> {
   let activeMessages = messages;
   let toolUseFailureRetries = 0;
-  let usePromptToolsFallback = supportsTools && isNativeToolsDisabled(providerId, modelId);
+  let usePromptToolsFallback = supportsTools && (isNativeToolsDisabled(providerId, modelId) || modelSettings.parsedTools);
   let fullText = '';
   let totalTokens = 0;
   let promptTokens: number | undefined;
@@ -160,6 +166,25 @@ async function streamWithRetry(
     }
     try {
       beginTranscriptTurn();
+      const mdStream = createMarkdownStreamRenderer();
+      const writeRendered = (rendered: string): void => {
+        if (rendered) {
+          process.stdout.write(rendered);
+          notifyTranscriptChunk(rendered);
+        }
+      };
+      // When the model emits response text and then a tool call without a
+      // trailing newline, that partial line stays in the markdown line buffer.
+      // Across the step boundary it would otherwise be held and flushed glued
+      // onto the next step's text ("…change.The script…"), printing in the
+      // wrong place. Force the line out here so the preamble lands in its
+      // correct position — after this step's text, before the tool calls.
+      const flushPendingPreamble = (): void => {
+        if (fullText.length > 0 && !fullText.endsWith('\n')) {
+          writeRendered(mdStream.push('\n'));
+          fullText += '\n';
+        }
+      };
       const result: unknown = await streamText({
         model: languageModel,
         system: systemPrompt,
@@ -170,7 +195,10 @@ async function streamWithRetry(
           onStepFinish: (event) => {
             // Intermediate steps (tool-calls finish reason) get a combined
             // close+open divider. The final step is closed after text normalisation.
-            if (event.finishReason === 'tool-calls') endTranscriptStep(true);
+            if (event.finishReason === 'tool-calls') {
+              flushPendingPreamble();
+              endTranscriptStep(true);
+            }
             const stepQuota = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
             if (stepQuota) options.onPartialResult?.({ providerId, modelId, quota: stepQuota });
           },
@@ -183,21 +211,12 @@ async function streamWithRetry(
       };
 
       let chunkCount = 0;
-      const mdStream = createMarkdownStreamRenderer();
       for await (const chunk of typedResult.textStream) {
-        const rendered = mdStream.push(chunk);
-        if (rendered) {
-          process.stdout.write(rendered);
-          notifyTranscriptChunk(rendered);
-        }
+        writeRendered(mdStream.push(chunk));
         fullText += chunk;
         chunkCount++;
       }
-      const mdTail = mdStream.flush();
-      if (mdTail) {
-        process.stdout.write(mdTail);
-        notifyTranscriptChunk(mdTail);
-      }
+      writeRendered(mdStream.flush());
       fullText = fullText.trimEnd();
       if (fullText && !fullText.endsWith('\n')) {
         process.stdout.write('\n');

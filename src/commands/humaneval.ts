@@ -9,7 +9,7 @@ import chalk from 'chalk';
 import { getBannerColor } from '../cli/banner.js';
 import { VIEWPORT_SIZE, clampViewport, type MenuTab } from '../cli/list-menu.js';
 import {
-  setModelStatus,
+  setActiveModelFromString,
   setTokenCount,
 } from '../cli/terminal-ui.js';
 import { resetEvalWorkDir, startEvalScenario } from '../eval/runner.js';
@@ -205,9 +205,7 @@ async function runOneProblem(problem: HumanEvalProblem, model: string, rl?: Inte
   if (pollTimer !== null) clearInterval(pollTimer);
 
   const evalModel = model || '';
-  const colonIdx = evalModel.indexOf(':');
-  if (colonIdx !== -1) setModelStatus(evalModel.slice(0, colonIdx), evalModel.slice(colonIdx + 1));
-  else if (evalModel) setModelStatus('', evalModel);
+  setActiveModelFromString(evalModel);
   setTokenCount(result.tokens.total);
 
   const baseSummary = {

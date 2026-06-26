@@ -113,10 +113,18 @@ const scenarioFiles = readdirSync(SCENARIOS_DIR)
   .filter(f => f.endsWith('.scenario.json'))
   .sort();
 
-const scenarios = scenarioFiles.map(file => ({
-  file,
-  scenario: JSON.parse(readFileSync(join(SCENARIOS_DIR, file), 'utf-8')) as Scenario,
-}));
+const scenarios = scenarioFiles.map(file => {
+  const raw = readFileSync(join(SCENARIOS_DIR, file), 'utf-8');
+  try {
+    return { file, scenario: JSON.parse(raw) as Scenario };
+  } catch (err) {
+    // A raw control byte (e.g. an ESC from a mangled `` escape) makes
+    // JSON.parse throw without naming the file. Surface the file so the fix is
+    // obvious; the scenario-json-bytes unit test guards against this earlier.
+    console.error(chalk.red(`Failed to parse scenario file ${file}: ${err instanceof Error ? err.message : String(err)}`));
+    process.exit(1);
+  }
+});
 
 let passed = 0;
 let failed = 0;

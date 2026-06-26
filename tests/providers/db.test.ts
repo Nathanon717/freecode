@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -53,6 +53,20 @@ describe('db: lifecycle', () => {
     await db.initStore();
     await db.resetStore();
     await db.initStore();
+    expect(db.getCache()).toEqual({});
+  });
+
+  it('initStore() degrades gracefully when the DB is unusable (never rejects, never poisons later opens)', async () => {
+    // Poison the store: make the db path a directory so opening/CREATE TABLE fails.
+    // A thrown init would reject AND cache the rejected promise, crashing every
+    // later menu that awaits ensureStoreReady(). It must resolve to an empty cache.
+    mkdirSync(join(tempStore, 'freecode.db'), { recursive: true });
+
+    await expect(db.initStore()).resolves.toBeUndefined();
+    expect(db.getCache()).toEqual({});
+
+    // The memoized promise is not poisoned — a second open also resolves.
+    await expect(db.initStore()).resolves.toBeUndefined();
     expect(db.getCache()).toEqual({});
   });
 });

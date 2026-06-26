@@ -70,7 +70,7 @@ return AgentLoopResult
 - Every turn calls `beginTranscriptTurn()` / `endTranscriptStep()` from `transcript-renderer.ts` to emit the normalised divider framing. Intermediate steps use `endTranscriptStep(true)` (combined close+open); the final step uses `endTranscriptStep(false)` after text normalisation. The renderer state machine ensures consistent blank-line spacing regardless of the model or provider.
 - Tool approval is delegated to the supplied `confirmToolCall`.
 - Tool wrappers serialize execution so concurrent tool calls do not mutate files in parallel.
-- If the provider rejects tool use at runtime (`isToolsNotSupportedError`), the loop automatically retries via `runPromptToolsLoop` from `prompt-tools.ts`, which uses a text-based `<tool_call>` protocol instead of native function calling. The rejection is persisted via `setNativeTools(provider, modelId, false)` (model-store) so the fallback is used automatically next time; the startup read uses `isNativeToolsDisabled`.
+- If the provider rejects tool use at runtime (`isToolsNotSupportedError`), the loop automatically retries via `runPromptToolsLoop` from `prompt-tools.ts`, which uses a text-based `<tool_call>` protocol instead of native function calling. The rejection is persisted via `setNativeTools(provider, modelId, false)` (model-store) so the fallback is used automatically next time; the startup read uses `isNativeToolsDisabled`. The user can also manually enable this path by setting `parsedTools: true` in per-model settings (via `/config` → Model tab); both routes check `modelSettings.parsedTools || isNativeToolsDisabled(...)` at the top of `streamWithRetry`.
 
 ## Internal Helpers
 

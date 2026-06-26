@@ -42,6 +42,7 @@ interface OverridableSettings {
   showProviderUsage?: boolean;
   parallelTools?: boolean;
   loadAgentsMd?: boolean;
+  parsedTools?: boolean;
 }
 
 interface Config {

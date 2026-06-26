@@ -66,13 +66,14 @@ vi.mock('../../src/config/index.js', () => ({
 vi.mock('../../src/providers/model-store.js', () => ({
   getModelSettings: vi.fn().mockReturnValue({ toolRationale: true }),
   setModelSetting: vi.fn(),
+  isNativeToolsDisabled: vi.fn().mockReturnValue(false),
 }));
 
 // ── Imports (after mocks are registered) ─────────────────────────────────────
 
 import { runConfigCommand } from '../../src/commands/config.js';
 import { updateGlobalConfig, writeConfigFile } from '../../src/config/index.js';
-import { setModelSetting } from '../../src/providers/model-store.js';
+import { setModelSetting, isNativeToolsDisabled } from '../../src/providers/model-store.js';
 
 const fakeRl = { pause: vi.fn(), resume: vi.fn() } as unknown as Interface;
 
@@ -321,6 +322,30 @@ describe('runConfigCommand', () => {
       vi.mocked(setModelSetting).mockClear();
       store.capturedOpts!.onKey('\x1b[C', makeRedraw(), makeClose());
       expect(setModelSetting).toHaveBeenCalled();
+    });
+
+    it('parsedTools row shows auto-detected label when isNativeToolsDisabled returns true', async () => {
+      vi.mocked(isNativeToolsDisabled).mockReturnValue(true);
+      await openModelTab();
+      // Navigate down to parsedTools: model tab has 5 rows. Start from the
+      // tab row (selected=-1), so need 5 downs to reach the 5th row (index 4).
+      // (toolRationale, showProviderUsage, parallelTools, loadAgentsMd, parsedTools)
+      for (let i = 0; i < 5; i++) {
+        store.capturedOpts!.onKey('\x1b[B', makeRedraw(), makeClose());
+      }
+      const lines = store.capturedOpts!.render();
+      expect(lines.join('\n')).toContain('auto-detected');
+    });
+
+    it('parsedTools row blocks cycling when isNativeToolsDisabled returns true', async () => {
+      vi.mocked(isNativeToolsDisabled).mockReturnValue(true);
+      await openModelTab();
+      for (let i = 0; i < 5; i++) {
+        store.capturedOpts!.onKey('\x1b[B', makeRedraw(), makeClose());
+      }
+      vi.mocked(setModelSetting).mockClear();
+      store.capturedOpts!.onKey('\x1b[C', makeRedraw(), makeClose());
+      expect(setModelSetting).not.toHaveBeenCalled();
     });
   });
 
