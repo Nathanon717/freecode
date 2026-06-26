@@ -1,20 +1,20 @@
-> **Note for AI agents:** `CLAUDE.md` and `AGENTS.md` should stay identical. If you are reading this file, do not read the other one.
+> **Note for AI agents:** `CLAUDE.md` and `AGENTS.md` should stay identical.
 
 # Freecode Agent Guide
 
-Freecode is a TypeScript CLI coding agent with provider routing, an interactive REPL, scenario verification, and session persistence.
+Freecode is a TypeScript CLI coding agent with provider routing, an interactive REPL, and scenario verification.
 
 This file is intentionally short. Keep detailed reference material in `docs/` and link to it from here.
 
-NEVER EVER EVER CD INTO THE FREECODE PROJECT ROOT FOLDER YOU ARE ALREADY THERE. NEVERRRR USE BASH TOOL LIKE:
-cd path/to/freecode/root && [some command] 
-JUST DO THE COMMAND, IF YOU USE CD LIKE THIS, THAT IS A A CRITIAL ERROR AND THE USER WILL DIEEE!
+## Enviornment
+
+- If you are on Windows, use `npm.cmd run ...` in bash, not powershell.
+- If you are on Linux, use `npm run ...`.
 
 ## Required Rules
 
-- Windows only. Run commands in PowerShell or cmd. **Exception:** when running in a Claude Code web container (Linux), use `npm run ...` instead of `npm.cmd run ...`. See `docs/misc/claude_code_web.md`.
-- Run npm scripts as `npm.cmd run ...`;
 - Before broad source reads, start with `docs/map/README.md` and the relevant map page.
+- After changing any file in `/src/`, make sure you to check its corresponding map page and consider if you need to update it.
 - Never prefix Bash commands with `cd <dir> &&` when already in that directory — it triggers a permission prompt on the `cd` even if the actual command is allowed.
 
 ## Verification
@@ -29,7 +29,7 @@ Command details live in `docs/commands.md`. Scenario details live in `docs/scena
 
 ## Interactive Freecode Sessions
 
-See `docs/pty-session.md` on how to drive a live, real freecode TUI.
+See `docs/pty-session.md` on how to drive a live, real freecode TUI (lets you verify and debug the real app just like the user can).
  
 ## Documentation
 
@@ -37,14 +37,6 @@ See `docs/pty-session.md` on how to drive a live, real freecode TUI.
 - Use `docs/docs.md` for generated-doc ownership and maintenance rules.
 - Use `docs/map/README.md` for source navigation.
 - Use `docs/providers.md` for provider setup, registry facts, and provider testing.
-- Use `docs/architecture/adr/` for durable architectural decisions, not routine fixes.
+- After fixing a bug, leave a short md file in `docs/bug log/`.
 
 After code changes, inspect `git diff --name-only` and update only map pages for changed files whose purpose, ownership, exports, dependencies, or read/use guidance changed.
-
-## Session Logs
-
-After completing a new feature or significant change, ask:
-
-> "Want me to write a session log for this?"
-
-Only create a log if the user confirms. Write logs to `docs/sessions/YYYY-MM-DD-slug.md`. Full instructions in `docs/sessions/README.md`.
