@@ -2,11 +2,13 @@
 
 **Role:** Searches files using ripgrep (`rg`) when available, falling back to Windows `findstr`. Results are sorted by file modification time (newest first) so recently-changed code surfaces first.
 
-## Export
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
 
 ```typescript
-grepTool: CoreTool
+grepTool: CoreTool<z.ZodObject<{ pattern: z.ZodString; path: z.ZodOptional<z.ZodString>; include: z.ZodOptional<z.ZodString>; }, 'strip', z.ZodTypeAny, { pattern: string; path?: string | undefined; include?: string | undefined; }, { pattern: string; path?: string | undefined; include?: string | undefined; }>, string> & { execute: (args: { pattern: string; path?: string | undefined; include?: string | undefined; }, options: { abortSignal?: AbortSignal; }) => PromiseLike<string>; }
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Parameters
 

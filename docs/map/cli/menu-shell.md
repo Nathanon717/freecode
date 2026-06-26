@@ -2,16 +2,26 @@
 
 **Role:** Owns the terminal lifecycle chrome shared by every interactive raw-mode menu (`/eval`, and — over time — `/config` and `/model`): bottom-UI teardown/restore, readline pause/resume, and the Windows console-mode resets. Wraps the menu body so each menu no longer re-implements this boilerplate.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
 interface MenuShellOptions<T> {
-  ensureReady?: () => Promise<void>;  // awaited before any terminal state is touched (e.g. ensureStoreReady)
-  run: () => Promise<T>;              // menu body: the raw-mode picker plus any post-selection run loop
-  onRestore?: () => void;             // extra restore run after setupBottomUI (TTY + active only)
+  /** Awaited before any terminal state is touched (e.g. ensureStoreReady). */
+  ensureReady?: () => Promise<void>;
+  /** The menu body: the raw-mode picker plus any post-selection run loop. */
+  run: () => Promise<T>;
+  /**
+   * Extra restore steps run inside the finally, after setupBottomUI, and only
+   * when the bottom UI was active and stdin is a TTY. Use for session-specific
+   * footer refresh (resetBottomPromptState, refreshFooterDailySpend, …).
+   */
+  onRestore?: () => void;
 }
+
 runMenuShell<T>(rl: Interface, opts: MenuShellOptions<T>): Promise<T>
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Responsibilities
 

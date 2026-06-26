@@ -2,16 +2,34 @@
 
 **Role:** Discovers playground eval scenarios from the filesystem, provides content hashing for cache-invalidation, and defines the shared `modelSlug` helper.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `PLAYGROUND_EVAL_DIR` | Absolute path to `playground/eval/`. |
-| `PlaygroundScenario` | `{ id, firstLine }` for a discovered playground scenario. |
-| `modelSlug(model)` | Converts `provider:model` to `provider--model` for use as a filename/dir name. |
-| `discoverPlaygroundScenarios()` | Lists numbered/named scenario folders in `playground/eval/` that have `prompt.md` and `eval/check.ts`, sorted by name. |
-| `computeRunHash(scenarioDir)` | Hashes only prompt, config, and start files — excludes eval/ so scoring changes don't invalidate stored results. |
-| `computeScenarioHash(scenarioDir)` | Full hash including eval/ files. Retained for grandfathering entries written before the run-hash split. |
+```typescript
+PLAYGROUND_EVAL_DIR: string
+
+interface PlaygroundScenario {
+  id: string;
+  firstLine: string;
+}
+
+modelSlug(model: string): string
+
+discoverPlaygroundScenarios(): PlaygroundScenario[]
+
+computeRunHash(scenarioDir: string): string
+
+computeScenarioHash(scenarioDir: string): string
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `PLAYGROUND_EVAL_DIR`: Absolute path to `playground/eval/`.
+- `modelSlug`: Converts `provider:model` to `provider--model` for filesystem artifact directory naming.
+- `discoverPlaygroundScenarios`: Requires `prompt.md` and `eval/check.ts` to be present; sorted by folder name.
+- `computeRunHash`: Excludes `eval/` so scoring changes do not invalidate stored results.
+- `computeScenarioHash`: Includes `eval/` files; retained for grandfathered entries hashed before the run-hash split.
 
 ## Key Facts
 

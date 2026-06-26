@@ -2,15 +2,28 @@
 
 **Role:** Holds the interactive and scripted tool-approval UI shared by both `CliSessionMode` implementations in `cli/session-modes.ts`.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Signature | Description |
-|--------|-----------|-------------|
-| `askQuestion` | `(rl, prompt) => Promise<string>` | Promise wrapper around `rl.question`. |
-| `confirmToolCallInteractive` | `(rl, preview) => Promise<ToolCallConfirmation>` | Raw-mode Approve/Deny menu; denial collects a feedback message. Throws `UserAbortError` on Escape. |
-| `formatScriptedToolMenu` | `(choice) => void` | Prints the Approve/Deny menu for scripted runs. |
-| `parseScriptedToolChoice` | `(input) => "approve" \| "deny" \| null` | Parses a scripted line into a choice (`y/yes/approve/a`, `n/no/deny/d`). |
-| `askContinueAfterLimit` | `(rl, count) => Promise<boolean>` | Prompts to continue after the per-turn tool-call limit. |
+```typescript
+type ToolApprovalChoice = "approve" | "deny";
+
+askQuestion(rl: Interface, prompt: string): Promise<string>
+
+confirmToolCallInteractive(rl: Interface, preview: ToolCallPreview): Promise<ToolCallConfirmation>
+
+formatScriptedToolMenu(choice: ToolApprovalChoice): void
+
+parseScriptedToolChoice(input: string | undefined): ToolApprovalChoice | null
+
+askContinueAfterLimit(rl: Interface, count: number): Promise<boolean>
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `confirmToolCallInteractive` — throws `UserAbortError` on Escape.
+- `parseScriptedToolChoice` — accepts `y/yes/approve/a` (approve) or `n/no/deny/d` (deny); returns `null` for anything else.
 
 ## Responsibilities
 

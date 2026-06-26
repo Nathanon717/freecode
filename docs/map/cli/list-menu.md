@@ -2,40 +2,83 @@
 
 **Role:** The shared tabbed list-menu state machine built on `raw-picker.ts`. Owns the active tab, the selected index (including the `-1` tab-row focus), detail/action modes, Up/Down navigation, the inline-action-menu splice, and the detail-screen swap. Replaces the per-menu copies of this logic in `/eval`, `/config`, and the `/model` picker. Each tab supplies only its body rendering and any extra key behavior.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-interface ListMenuBody { lines: string[]; selectedLineIdx: number; hintLineIdx?: number; }
-interface ListMenuContext<TResult> {
-  readonly tabIndex: number;
-  getSelected(): number; setSelected(n: number): void;
-  redraw(): void; close(result: TResult): void;
-  enterDetail(): void; openAction(): void;
+VIEWPORT_SIZE: 20
+
+clampViewport(sel: number, viewportStart: number): number
+
+interface ListMenuBody {
+  /** The body screen (header + items + footer), with any viewport already applied. */
+  lines: string[];
+  /** Index within `lines` of the selected row; the action sub-menu splices after it. */
+  selectedLineIdx: number;
+  /** Index within `lines` to overwrite with `actionHint` while the action menu is open. */
+  hintLineIdx?: number;
 }
+
+interface ListMenuContext<TResult> {
+  /** Index of the active tab. */
+  readonly tabIndex: number;
+  getSelected(): number;
+  setSelected(n: number): void;
+  redraw(): void;
+  close(result: TResult): void;
+  enterDetail(): void;
+  openAction(): void;
+}
+
 interface MenuTab<TResult> {
-  id: string; label: string;
+  id: string;
+  label: string;
+  /** Number of selectable items in this tab (post-filter). */
   count: () => number;
   renderBody: (selected: number) => ListMenuBody;
-  renderDetail?: (selected: number) => string[];           // enables Right-opens-detail
-  actionMenu?: { menu: InlineActionMenu; actionHint: string; onSelect: (option, ctx) => void };  // enables Enter-opens-action
-  onEnter?: (ctx) => void;                                  // Enter when no actionMenu
-  onKey?: (key: string, ctx) => boolean;                   // escape hatch; true if handled
-  controls?: string | (() => string);                      // hint pinned to last row above footer; hidden in detail mode
+  /** Enables Right-opens-detail when present. */
+  renderDetail?: (selected: number) => string[];
+  /** Enables Enter-opens-action when present. */
+  actionMenu?: {
+    menu: InlineActionMenu;
+    actionHint: string;
+    onSelect: (option: string, ctx: ListMenuContext<TResult>) => void;
+  };
+  /** Enter handler used when this tab has no `actionMenu`. */
+  onEnter?: (ctx: ListMenuContext<TResult>) => void;
+  /**
+   * Escape hatch for keys the base does not own (favorites, filter typing,
+   * value cycling, …). Gets first crack at item-focused keys other than
+   * Up/Down/Esc. Return true if the key was handled.
+   */
+  onKey?: (key: string, ctx: ListMenuContext<TResult>) => boolean;
+  /** Controls hint pinned to the last row above the footer. Static string or dynamic callback. */
+  controls?: string | (() => string);
+  /** When true, tab label renders grey (like inactive tabs) instead of accent-colored. */
+  isFiltered?: () => boolean;
 }
+
 interface ListMenuOptions<TResult> {
   tabs: MenuTab<TResult>[];
-  title?: string;                                           // grey pinned tab chrome label, e.g. "config"
-  initialTabId?: string; initialSelected?: number;
-  wrap?: boolean;                                           // default true; config sets false
-  onCancel?: () => TResult; onExitClear?; countLines?;
+  /** Open on this tab id (else the first tab). */
+  initialTabId?: string;
+  /** Initial selected item index (default 0 = first item). */
+  initialSelected?: number;
+  /** Wrap Up/Down at the list ends. Default true; set false for non-wrapping menus. */
+  wrap?: boolean;
+  /** Value resolved when the user presses Esc. Default null. */
+  onCancel?: () => TResult;
+  onExitClear?: (rowCount: number) => void;
+  countLines?: (lines: string[]) => number;
 }
+
 runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TResult>
-
-const VIEWPORT_SIZE: number                                // rows kept on screen in a scrolling tab body
-clampViewport(sel: number, viewportStart: number): number  // smallest shift keeping sel in view
 ```
+<!-- END GENERATED EXPORTS -->
 
-Shared by tab bodies that scroll a long item list (`scenario-menu.ts` Custom tab, `commands/humaneval.ts` HumanEval tab).
+## Export notes
+
+- `VIEWPORT_SIZE` / `clampViewport` — shared by tab bodies that scroll a long item list (`scenario-menu.ts` Custom tab, `commands/humaneval.ts` HumanEval tab).
 
 ## Behavior
 

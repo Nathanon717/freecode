@@ -2,17 +2,30 @@
 
 **Role:** Catalog of known cloud providers and their models. Source of provider IDs, display names, base URLs, API key env vars, tool support flags, model IDs, static model limits, and live-fetch init logic.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
 PROVIDER_REGISTRY: ProviderConfig[]
+
+initDynamicProviders(): Promise<void>
+
 getProvider(id: string): ProviderConfig | undefined
-getAllProviders(): ProviderConfig[]
-initDynamicProviders(): Promise<void>   // fetches live model lists for all live-source providers
-resolveModel(modelPreference: string): ResolvedModel
+
+clearModelNewFlag(providerId: string, modelId: string): void
+
 invalidateDeadModel(providerId: string, modelId: string): void
-  // Persists modelId to deadIds in model-cache and removes it from entry.models in-memory.
+
+interface ResolvedModel {
+  model: LanguageModel;
+  providerId: string;
+  modelId: string;
+  supportsTools: boolean;
+}
+
+resolveModel(modelPreference: string): ResolvedModel
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Read When
 

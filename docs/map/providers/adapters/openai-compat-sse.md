@@ -2,13 +2,17 @@
 
 **Role:** Pure request/response body transforms used by the OpenAI-compatible adapter. No provider state and no network — just functions over SSE/JSON strings and `Response` bodies.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
 normalizeOpenAICompatToolCallSse(body: string): string
+
 mistralJsonToSse(json: unknown): string
+
 normalizeOpenAICompatToolCallResponse(response: Response): Response
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## `normalizeOpenAICompatToolCallSse`
 

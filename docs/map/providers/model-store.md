@@ -6,37 +6,73 @@ The DB is now lazy — `db.ts`'s `ensureStoreReady()` is called at every consume
 
 The DB migration is complete. `models.json`, `evals/`, and `model-cache.json` are gitignored; the DB (synced via Turso) is the cross-device source of truth. No JSON files are written. All legacy seed functions (`seedFavorites`, `seedNativeTools`, `seedModelSettings`) have been removed — data was migrated once via `store-import.ts` when the DB was introduced.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-getStoreDir(): string                              // .freecode dir; $FREECODE_STORE override, else package root
+interface EvalRunSummary {
+  timestamp: string;
+  taskId: string;
+  pass: boolean;
+  turns: number;
+  tokenUsage: { input?: number; output?: number };
+  totalTokens?: number;
+  durationMs: number;
+  error: string | null;
+  warnings?: boolean;
+  scenarioHash?: string;
+  checks?: EvalCheck[];
+}
 
-// Models
-getModel(key: string): ModelEntry | undefined      // key = "provider:modelId"
-upsertModel(entry: ModelEntry): void               // shallow-merge into the keyed entry
+interface ObservedRateLimitBucket {
+  limit: number;
+  intervalMs: number | null;
+}
 
-// Favorites
+interface ObservedRateLimits {
+  buckets: Record<string, ObservedRateLimitBucket>;
+  observedAt: string;
+}
+
+interface ModelEntry {
+  provider: string;
+  modelId: string;
+  displayName?: string;
+  nativeTools?: boolean;
+  contextWindow?: number | null;
+  isFavorite?: boolean;
+  settings?: OverridableSettings;
+  evals?: { [evalType: string]: EvalRunSummary[] };
+  rateLimits?: ObservedRateLimits;
+}
+
+getStoreDir(): string
+
+getModel(key: string): ModelEntry | undefined
+
+upsertModel(entry: ModelEntry): void
+
 getFavorites(): Set<string>
+
 setFavorite(key: string, isFavorite: boolean): void
 
-// Native-tools detection
 setNativeTools(provider: string, modelId: string, value: boolean): void
-isNativeToolsDisabled(provider: string, modelId: string): boolean
-getNoNativeToolsKeys(): Set<string>                // picker "~tools" badge
 
-// Per-model settings
-getModelSettings(key: string): OverridableSettings   // sparse; {} if nothing overridden
+isNativeToolsDisabled(provider: string, modelId: string): boolean
+
+getNoNativeToolsKeys(): Set<string>
+
+getModelSettings(key: string): OverridableSettings
+
 setModelSetting(key: string, field: keyof OverridableSettings, value: boolean | undefined): void
 
-// Eval run records (humaneval + custom playground scenarios)
-appendEvalRun(key, evalType, summary, doc): void
-  // Updates in-memory cache; persists eval_run + eval_transcript rows to DB via saveTranscriptAsync.
-getHumanEvalResults(key: string): Record<string, 'pass' | 'fail'>  // latest non-error run per taskId
+appendEvalRun(key: string, evalType: string, summary: EvalRunSummary, doc: EvalDoc): void
 
-// Rate limit observation
-saveObservedRateLimits(provider, modelId, buckets): void
-  // No-op when limit values are unchanged.
+getHumanEvalResults(key: string): Record<string, "pass" | "fail">
+
+saveObservedRateLimits(provider: string, modelId: string, buckets: Record<string, ObservedRateLimitBucket>): void
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Key Neighbors
 

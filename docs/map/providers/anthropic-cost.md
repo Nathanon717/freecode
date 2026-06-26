@@ -2,24 +2,101 @@
 
 **Role:** Estimates Anthropic API cost from captured usage metadata and verified pricing rates. The primary production path uses `estimateAnthropicCostVerified` (fed by `pricing-verifier.ts`); `estimateAnthropicCost` with an `AnthropicPricingTable` is retained for tests and the legacy HTML-scraper path.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-ANTHROPIC_PRICING_URL
-ANTHROPIC_USAGE_COST_URL
+ANTHROPIC_PRICING_URL: 'https://platform.claude.com/docs/en/about-claude/pricing'
+
+ANTHROPIC_USAGE_COST_URL: 'https://docs.anthropic.com/en/api/data-usage-cost-api'
+
+type AnthropicPricingSource = 'live' | 'fallback';
+
+interface AnthropicTokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationInputTokens: number;
+  cacheCreation5mInputTokens: number;
+  cacheCreation1hInputTokens: number;
+  cacheReadInputTokens: number;
+  serverToolUse?: Record<string, number>;
+  hasRawUsage: boolean;
+  inferenceGeo?: string;
+}
+
+interface AnthropicModelPricing {
+  modelName: string;
+  inputPerMillion: number;
+  outputPerMillion: number;
+  cacheWrite5mPerMillion: number;
+  cacheWrite1hPerMillion: number;
+  cacheReadPerMillion: number;
+}
+
+interface AnthropicPricingTable {
+  source: AnthropicPricingSource;
+  sourceUrl: string;
+  fetchedAt: string;
+  updatedAt?: string;
+  models: Record<string, AnthropicModelPricing>;
+}
+
+interface CostEstimateBreakdown {
+  inputTokens: number;
+  outputTokens: number;
+  cacheWrite5mTokens: number;
+  cacheWrite1hTokens: number;
+  cacheReadTokens: number;
+  inputPerMillion: number;
+  outputPerMillion: number;
+  cacheWrite5mPerMillion: number;
+  cacheWrite1hPerMillion: number;
+  cacheReadPerMillion: number;
+  inputUsd: number;
+  outputUsd: number;
+  cacheWrite5mUsd: number;
+  cacheWrite1hUsd: number;
+  cacheReadUsd: number;
+  multiplier: number;
+}
+
+interface CostEstimate {
+  usd: number | null;
+  formattedUsd: string;
+  source: AnthropicPricingSource;
+  sourceUrl: string;
+  fetchedAt: string;
+  updatedAt?: string;
+  breakdown?: CostEstimateBreakdown;
+  warnings: string[];
+  confidence?: PricingConfidence;
+}
+
+createSessionCostTracker(): { reset(): void; add(estimate: CostEstimate | null | undefined): number; get(): number; }
 
 resetAnthropicSessionCost(): void
-addAnthropicSessionCost(estimate): number
+
+addAnthropicSessionCost(estimate: CostEstimate | null | undefined): number
+
 getAnthropicSessionCost(): number
-formatUsdCeil(usd): string
-describeCostEstimate(estimate, opts?: { colored?: boolean }): string
-describeCostEstimateBreakdown(estimate): string | null
+
+formatUsdCeil(usd: number | null | undefined): string
+
+describeCostEstimate(estimate: CostEstimate | null | undefined, opts?: { colored?: boolean | undefined; } | undefined): string
+
+describeCostEstimateBreakdown(estimate: CostEstimate | null | undefined): string | null
+
 modelPricingKey(modelId: string): string
-parseAnthropicPricingHtml(html, fetchedAt?): AnthropicPricingTable
+
+parseAnthropicPricingHtml(html: string, fetchedAt?: string): AnthropicPricingTable
+
 getAnthropicPricing(): Promise<AnthropicPricingTable>
-estimateAnthropicCost(modelId, usage, pricingTable): CostEstimate
-estimateAnthropicCostVerified(modelId, usage, rates: VerifiedRates): CostEstimate
+
+estimateAnthropicCostVerified(modelId: string, usage: AnthropicTokenUsage | null | undefined, rates: VerifiedRates): CostEstimate
+
+estimateAnthropicCost(modelId: string, usage: AnthropicTokenUsage | null | undefined, pricingTable: AnthropicPricingTable): CostEstimate
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Pricing Source
 

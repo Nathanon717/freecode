@@ -2,9 +2,11 @@
 
 **Role:** Thin executable entry point. It parses process flags, initializes config/provider probes, creates a `SessionController`, and delegates the REPL/script loop to `src/cli/*`.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-None. This is the `#!/usr/bin/env node` executable entry point.
+_No exported symbols._
+<!-- END GENERATED EXPORTS -->
 
 ## Read When
 

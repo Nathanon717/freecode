@@ -2,16 +2,40 @@
 
 **Role:** Discovers scenario JSON files, summarizes their assertions, resolves user selections, and runs individual scenarios.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `TestScenarioSummary` | Display-oriented scenario metadata. |
-| `ScenarioRunResult` | Exit status and combined output from a scenario run. |
-| `getScenarioSummaries(projectRoot)` | Reads `tests/scenarios/*.scenario.json`, classifies each scenario, and returns sorted summaries. |
-| `runScenario(projectRoot, name, details?)` | Spawns the TypeScript scenario harness for one scenario with `--no-build`. |
-| `findScenario(scenarios, choice)` | Resolves by numeric index, name, file, or file stem. |
-| `parseScenarioSelection(input, scenarios)` | Supports space/comma-separated choices and numeric ranges. |
+```typescript
+interface TestScenarioSummary {
+  name: string;
+  description: string;
+  requiresLlm: boolean;
+  file: string;
+  workspace?: 'repo' | 'temp';
+  checks: string[];
+}
+
+interface ScenarioRunResult {
+  status: number;
+  output: string;
+}
+
+getScenarioSummaries(projectRoot: string): TestScenarioSummary[]
+
+runScenario(projectRoot: string, name: string, details?: boolean): ScenarioRunResult
+
+findScenario(scenarios: TestScenarioSummary[], choice: string): TestScenarioSummary | undefined
+
+parseScenarioSelection(input: string, scenarios: TestScenarioSummary[]): TestScenarioSummary[]
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `getScenarioSummaries`: Reads `tests/scenarios/*.scenario.json`, classifies each scenario, returns sorted summaries.
+- `runScenario`: Spawns the TypeScript harness with `--no-build`; sets `FORCE_COLOR=1` and `VERBOSE=1`.
+- `findScenario`: Resolves by numeric index, name, file path, or file stem.
+- `parseScenarioSelection`: Supports space/comma-separated choices and numeric ranges.
 
 ## Scenario Summary Checks
 

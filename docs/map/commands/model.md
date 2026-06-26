@@ -2,20 +2,21 @@
 
 **Role:** Implements the interactive `/model` picker used by TTY sessions: provider fetch, the per-provider tabs, and the run loop. Pure rendering/data helpers live in [cli/model-screen.ts](../cli/model-screen.md).
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
+export { type ModelMenuItem, filterModelItems, buildAllItemLines } from '../cli/model-screen.js'
+
 getSelectableModels(): Promise<ModelMenuItem[]>
 
-runModelCommand(
-  rl: Interface,
-  currentModel: string,
-  setSelectedModel: (model: string) => void,
-  onRestore?: () => void
-): Promise<boolean>   // true if the picker was shown
+runModelCommand(rl: Interface, currentModel: string, setSelectedModel: (model: string) => void, onRestore?: (() => void) | undefined): Promise<boolean>
 ```
+<!-- END GENERATED EXPORTS -->
 
-`ModelMenuItem`, `filterModelItems`, and `buildAllItemLines` are re-exported from `cli/model-screen.ts` for a stable import surface.
+## Export notes
+
+- `ModelMenuItem`, `filterModelItems`, and `buildAllItemLines` are re-exported from `cli/model-screen.ts` for a stable import surface.
 
 Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle (`onRestore` carries the session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`), and `cli/list-menu.ts` owns the nav loop and the windowed tab bar. The picker builds a **`♥` Favourites tab** (always leftmost, present when ≥1 favourite exists) plus **one tab per provider**. Each tab owns its own filter query, viewport, and `displayItems`; the favorites set and `actionMenu` are shared in the enclosing scope. `renderBody` wraps `buildScreen` (passing the reserved tab-bar rows and `showProviderHeaders`), `renderDetail` = `buildModelDetailScreen`, `actionMenu` = Select/View/Edit. Favourites (`←`), filter typing/backspace, and Space-default are handled in `tab.onKey` (which ignores stray escape sequences so e.g. Up at the tab row never leaks into the filter), reading/writing the base-owned cursor via `ctx.getSelected`/`ctx.setSelected`. The picker opens on the Favourites tab when the current model is a favourite, otherwise on its provider tab. The interactive run loop lives in `runModelBody`.
 
@@ -43,4 +44,3 @@ The selected model string is always `providerId:modelId`.
 - Ctrl+C exits the process.
 
 The command owns raw stdin only while the picker is open, then restores the readline interface before returning.
-

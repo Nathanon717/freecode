@@ -2,14 +2,15 @@
 
 **Role:** Barrel file for the providers subsystem.
 
-## Re-exports
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
 
 ```typescript
-export * from './types.js';
-export * from './registry.js';
-export * from './router.js';
-export * from './ollama.js';
+export * from './types.js'
+
+export * from './registry.js'
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Note
 

@@ -2,33 +2,60 @@
 
 **Role:** Provides the shared raw-mode terminal picker primitive used by `/model`, `/config`, and `/eval`. Also exports `runRawKeySession`, the low-level stdin raw-mode lifecycle primitive that `runRawPicker` is built on.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-// Low-level lifecycle primitive (Phase 1 extraction).
+countWrappedLines(lines: string[]): number
+
+resetTerminalPrivateModes(): void
+
+resetStdinConsoleMode(): void
+
 interface RawKeySessionCallbacks {
+  /** Called for every key that is NOT Ctrl-C. */
   onKey: (key: string) => void;
-  onCtrlC: () => void;           // required; called after core cleanup on Ctrl-C
-  onClose?: () => void;          // called after core cleanup, before promise resolves
+  /**
+   * Called when Ctrl-C is received. The primitive has already cleaned up
+   * (raw mode off, prior listeners restored) before this fires. Must
+   * include any process.exit() or other Ctrl-C teardown the caller needs.
+   */
+  onCtrlC: () => void;
+  /**
+   * Called after the session cleans up (raw mode off, prior listeners
+   * restored) but before the promise resolves. Use it for cursor show,
+   * footer restore, readline resume, etc.
+   */
+  onClose?: () => void;
 }
+
 interface RawKeySession<T> {
+  /** Resolves the session promise with the given value after cleanup. */
   close: (value: T) => void;
+  /** Resolves when close() is called. */
   promise: Promise<T>;
 }
+
 runRawKeySession<T = void>(callbacks: RawKeySessionCallbacks): RawKeySession<T>
 
-// High-level picker built on runRawKeySession.
 interface RawPickerOptions<T = void> {
   render: () => string[];
   onKey: (key: string, redraw: () => void, close: (result: T) => void) => void;
+  /** Override line count used for erase-on-redraw (defaults to lines.length). Use for wrapping-aware counts. */
   countLines?: (lines: string[]) => number;
+  /** Replaces the default line-erase sequence on cleanup. Receives the line count at close time. */
   onExitClear?: (rowCount: number) => void;
+  /** Skip the viewport scroll-clear that normally pushes prior output off-screen before the picker draws. */
   skipScrollClear?: boolean;
+  /** Draw the picker from row 1 on every frame instead of at the current cursor. */
   pinToTop?: boolean;
-  getControls?: () => string | undefined;  // controls hint pinned to last row above footer
+  /** Returns a controls string to pin to the last row above the footer, or undefined to skip. Styled by the caller. */
+  getControls?: () => string | undefined;
 }
+
 runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Responsibilities
 

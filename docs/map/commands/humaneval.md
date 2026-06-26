@@ -1,16 +1,10 @@
----
-file: src/commands/humaneval.ts
----
-
-# humaneval.ts
+# src/commands/humaneval.ts - HumanEval Tab
 
 Provides the **HumanEval tab** of the unified `/eval` menu.
 
 **Purpose:** Reads the HumanEval benchmark (`playground/humaneval/data/HumanEval.jsonl.gz`) and implements the HumanEval tab: the picker tab (`buildHumanEvalTab`), the run loop (`runHumanEvalProblems`), the dataset helpers (`ensureHumanEvalDataset`, `loadHumanEvalProblems`, `printHumanEvalList`), and the Python-based scorer. The tab is composed into `/eval` by `cli/eval-menu.ts`; this file does not own the menu chrome or the `runRawPicker` loop.
 
 **Read when:** Modifying the HumanEval tab or runner, changing how solutions are prompted or checked, or changing per-problem result tracking.
-
-**Exports:** `buildHumanEvalTab(problems, results, choose)`, `runHumanEvalProblems(chosen, model, rl)`, `ensureHumanEvalDataset(downloadFn?)`, `loadHumanEvalProblems()`, `printHumanEvalList(problems)`, `humanEvalDatasetPath()`, `downloadFile(url, dest)`, `readProblems()`, and the `HumanEvalProblem` / `HumanEvalResultMap` types. (`ensureHumanEvalDataset` and `printHumanEvalList` are exported but not called by production paths; they remain for potential future use or scripting.)
 
 **Key neighbors:**
 - `src/cli/eval-menu.ts` — composes this tab into `/eval`
@@ -26,3 +20,37 @@ Provides the **HumanEval tab** of the unified `/eval` menu.
 **Result persistence:** Each run is stored in `.freecode/models.json` (summary) and `.freecode/evals/humaneval/{provider}-{modelId}/{timestamp}.json` (full transcript + scoring). The `transcript` field is an array of turn objects, each with `systemPrompt`, `userMessage`, `tokenUsage: { input?, output? }`, and `toolCalls`. For humaneval (single-turn evals) the array always has exactly one entry. The legacy `playground/humaneval/.runs/.results/` directory has been removed.
 
 **Update triggers:** Prompt wording changes, Python check logic, viewport size, run-dir layout, dot rendering, result persistence format, the HumanEval tab/menu composition (see `cli/eval-menu.ts`), or `HUMANEVAL_DATA` env var override (used in tests to point at the bundled mini fixture).
+
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
+
+```typescript
+downloadFile(url: string, dest: string): Promise<void>
+
+type HumanEvalResultMap = Record<string, 'pass' | 'fail'>;
+
+interface HumanEvalProblem {
+  task_id: string;
+  prompt: string;
+  canonical_solution: string;
+  test: string;
+  entry_point: string;
+}
+
+buildHumanEvalTab<R>(problems: HumanEvalProblem[], results: HumanEvalResultMap, choose: (problems: HumanEvalProblem[]) => R): MenuTab<R>
+
+humanEvalDatasetPath(): string
+
+ensureHumanEvalDataset(downloadFn?: (url: string, dest: string) => Promise<void>): Promise<boolean>
+
+loadHumanEvalProblems(): HumanEvalProblem[] | null
+
+printHumanEvalList(problems: HumanEvalProblem[]): void
+
+runHumanEvalProblems(chosen: HumanEvalProblem[], model: string, rl: Interface): Promise<void>
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `ensureHumanEvalDataset` and `printHumanEvalList` are exported but not called by production paths; they remain for potential future use or scripting.

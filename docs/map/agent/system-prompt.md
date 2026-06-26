@@ -2,13 +2,17 @@
 
 **Role:** Builds the static string injected as the `system` message for every agent turn.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
 buildSystemPrompt(loadAgentsMd?: boolean): string
 ```
+<!-- END GENERATED EXPORTS -->
 
-`loadAgentsMd` defaults to `false`. When `true`, the function reads `AGENTS.md` from `projectRoot` (the working directory set by `src/agent/context.ts`) and appends it under a `# Project Instructions (AGENTS.md)` header. If the file does not exist, the section is silently omitted.
+## Export notes
+
+- `loadAgentsMd` defaults to `false`. When `true`, reads `AGENTS.md` from `projectRoot` and appends it under a `# Project Instructions (AGENTS.md)` header; silently omitted if the file does not exist.
 
 ## Current Prompt Content
 

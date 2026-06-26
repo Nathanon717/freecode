@@ -2,14 +2,32 @@
 
 **Role:** HTTP retry/backoff for OpenAI-compatible providers. Retries 429/503 responses with a bounded wait and surfaces "retrying in Ns" status through a sink, so the CLI layer — not the adapter — owns how it is rendered.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-interface RetryBannerInfo { name: string; label: string; targetMs: number }
-registerRetryBannerSink(fn: ((info: RetryBannerInfo | null) => void) | null): void
+interface RetryBannerInfo {
+  name: string;
+  label: string;
+  targetMs: number;
+}
+
+registerRetryBannerSink(fn: RetryBannerSetter | null): void
+
 parseRetryAfterMs(value: string | null): number
-fetchWithRetry(input, init, options: FetchWithRetryOptions): Promise<Response>
+
+interface FetchWithRetryOptions {
+  /** Display name used in the retry banner (e.g. "OpenRouter"). */
+  providerName: string;
+  /** Upper bound on any single wait, in milliseconds. */
+  maxWaitMs: number;
+  /** Invoked with the headers of each retryable (429/503) response, before waiting. */
+  onRetryableResponse?: (headers: Headers) => void;
+}
+
+fetchWithRetry(input: string | URL | Request, init: RequestInit | undefined, options: FetchWithRetryOptions): Promise<Response>
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## `fetchWithRetry`
 

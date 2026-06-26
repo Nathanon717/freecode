@@ -2,29 +2,42 @@
 
 **Role:** Thin shared module holding the in-memory DB config cache and callback hooks. Exists to break the potential circular import between `db.ts` (which owns the libSQL client) and `config/index.ts` (which needs to read DB-sourced config values). Neither file imports the other; both import this one.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
 type SyncableGlobalConfig = {
-  toolRationale?: boolean; showProviderUsage?: boolean; parallelTools?: boolean;
-  toolConfirmation?: 'ask' | 'auto'; retryMaxWaitSeconds?: number;
-  showEvalDots?: boolean; diffContextLines?: number; defaultModel?: string;
+  toolRationale?: boolean;
+  showProviderUsage?: boolean;
+  parallelTools?: boolean;
+  toolConfirmation?: 'ask' | 'auto';
+  retryMaxWaitSeconds?: number;
+  showEvalDots?: boolean;
+  diffContextLines?: number;
+  defaultModel?: string;
   loadAgentsMd?: boolean;
 };
 
 interface DbConfigData {
-  global: SyncableGlobalConfig | null;         // null = no 'global' row in DB yet
-  providerOverrides: Record<string, OverridableSettings> | null;  // null = no row yet
+  /** null = no 'global' row exists in DB yet (never written) */
+  global: SyncableGlobalConfig | null;
+  /** null = no 'providerOverrides' row exists in DB yet (never written) */
+  providerOverrides: Record<string, OverridableSettings> | null;
 }
 
-getDbConfigCache(): DbConfigData | null        // read the in-memory cache
-setDbConfigCache(data: DbConfigData): void     // replace cache + trigger invalidator
-clearDbConfigCache(): void                     // null out cache + trigger invalidator
+getDbConfigCache(): DbConfigData | null
 
-registerCacheInvalidator(fn: () => void): void // config/index.ts registers (() => { cachedConfig = null })
-registerConfigPersist(fn): void                // db.ts registers its fire-and-forget persist helper
-persistDbConfig(scope, data): void             // config/index.ts calls this to push writes to DB
+setDbConfigCache(data: DbConfigData): void
+
+clearDbConfigCache(): void
+
+registerCacheInvalidator(fn: () => void): void
+
+registerConfigPersist(fn: (scope: string, data: unknown) => void): void
+
+persistDbConfig(scope: string, data: unknown): void
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Lifecycle
 

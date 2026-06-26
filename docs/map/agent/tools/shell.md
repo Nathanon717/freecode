@@ -2,12 +2,15 @@
 
 **Role:** Executes shell commands in the active project root with a regex-based destructive-command guard.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-shellTool: CoreTool
 isDestructiveCommand(command: string): boolean
+
+shellTool: CoreTool<z.ZodObject<{ command: z.ZodString; timeout_ms: z.ZodOptional<z.ZodNumber>; confirmDestructive: z.ZodOptional<z.ZodBoolean>; }, 'strip', z.ZodTypeAny, { command: string; timeout_ms?: number | undefined; confirmDestructive?: boolean | undefined; }, { command: string; timeout_ms?: number | undefined; confirmDestructive?: boolean | undefined; }>, string> & { execute: (args: { command: string; timeout_ms?: number | undefined; confirmDestructive?: boolean | undefined; }, options: { abortSignal?: AbortSignal; }) => PromiseLike<string>; }
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Parameters
 

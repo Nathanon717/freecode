@@ -2,6 +2,7 @@
 
 **Role:** Executes one model turn. It routes to a provider, sets the active project root, builds the system prompt, streams or generates text, optionally enables tools, and returns response metadata.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
@@ -10,21 +11,14 @@ interface AgentLoopResult {
   usage: { totalTokens: number; promptTokens?: number; outputTokens?: number };
   providerId: string;
   modelId: string;
-  quota: GroqRateLimitHeaders | null;
+  quota: RateLimitSnapshot | null;
   providerUsage?: CapturedProviderUsage[];
   costEstimate?: CostEstimate;
 }
 
-agentLoop(
-  messages: CoreMessage[],
-  projectRoot: string,
-  modelPreference?: string,
-  options?: {
-    confirmToolCall?: ConfirmToolCall;
-    onPartialResult?: (partial: { providerId: string; modelId: string; quota: RateLimitSnapshot | null }) => void;
-  }
-): Promise<AgentLoopResult>
+agentLoop(messages: CoreMessage[], projectRoot: string, modelPreference?: string | undefined, options?: AgentLoopOptions): Promise<AgentLoopResult>
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Read When
 

@@ -2,11 +2,13 @@
 
 **Role:** Reads a UTF-8 file relative to the active project root, with line-based pagination and fuzzy "did you mean" suggestions on ENOENT.
 
-## Export
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
 
 ```typescript
-readFileTool: CoreTool
+readFileTool: CoreTool<z.ZodObject<{ path: z.ZodString; offset: z.ZodOptional<z.ZodNumber>; limit: z.ZodOptional<z.ZodNumber>; }, 'strip', z.ZodTypeAny, { path: string; offset?: number | undefined; limit?: number | undefined; }, { path: string; offset?: number | undefined; limit?: number | undefined; }>, string> & { execute: (args: { path: string; offset?: number | undefined; limit?: number | undefined; }, options: { abortSignal?: AbortSignal; }) => PromiseLike<string>; }
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Parameters
 

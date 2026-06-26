@@ -2,13 +2,23 @@
 
 **Role:** Lightweight, provider-agnostic estimate of context tokens for the bottom terminal status line.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Signature | Description |
-|--------|-----------|-------------|
-| `estimateTextTokens` | `(text: string) => number` | Splits words/punctuation and approximates word chunks as one token per four characters. |
-| `estimateMessageTokens` | `(message: CoreMessage) => number` | Adds per-message overhead plus role/content estimates. |
-| `estimateContextTokens` | `(messages: CoreMessage[]) => number` | Adds request overhead, current system prompt tokens, and all message estimates. |
+```typescript
+estimateTextTokens(text: string): number
+
+estimateMessageTokens(message: CoreMessage): number
+
+estimateContextTokens(messages: CoreMessage[]): number
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `estimateTextTokens`: splits words/punctuation and approximates word chunks as one token per four characters.
+- `estimateMessageTokens`: adds per-message overhead plus role/content estimates.
+- `estimateContextTokens`: adds request overhead, current system prompt tokens, and all message estimates.
 
 ## Content Handling
 

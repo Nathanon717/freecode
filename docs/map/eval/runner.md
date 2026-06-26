@@ -2,19 +2,42 @@
 
 **Role:** Spawns freecode as a child process for eval scenarios, manages eval file I/O, and runs the check script.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `EvalRunResult` | Result of one eval agent run: exit code, stdout/stderr, tool calls, token usage, work dir, quota. |
-| `EvalReport` | Output of `run-check.ts`: scenario id and an array of `EvalCheckResult`. |
-| `EvalToolCall` | Single tool call captured in the trace. |
-| `EvalTokenUsage` | Token count breakdown from the result JSON. |
-| `loadEvalConfig(scenarioDir)` | Reads `eval.config.json` from the scenario dir; returns `{}` on missing/parse error. |
-| `startEvalScenario(scenarioDir, prompt, model?)` | Spawns the compiled freecode agent via `--script` mode; returns a `CancellableEval` with a promise, cancel fn, and paths to the live status files. |
-| `resetEvalWorkDir(scenarioDir)` | Wipes and re-seeds `work/` and `.run/` from `start/`. |
-| `archiveEvalRun(scenarioDir, model, result)` | Copies `work/` and result JSON to `.artifacts/{modelSlug}/`. |
-| `runCheckScript(scenarioId, scenarioDir, result)` | Writes result JSON to `.run/result-input.json` then runs `playground/eval/run-check.ts` via `tsx`; throws on failure, returns `EvalReport`. |
+```typescript
+interface EvalToolCall { tool: string; args: Record<string, unknown>; result?: unknown; }
+
+interface EvalTokenUsage { total: number; prompt?: number; output?: number; }
+
+interface EvalRunResult {
+  exitCode: number; stdout: string; stderr: string;
+  toolCalls: EvalToolCall[]; tokens: EvalTokenUsage; workDir: string;
+  quota: unknown;
+}
+
+interface EvalReport { scenarioId: string; checks: EvalCheckResult[]; }
+
+loadEvalConfig(scenarioDir: string): EvalConfig
+
+archiveEvalRun(scenarioDir: string, model: string, result: EvalRunResult): void
+
+resetEvalWorkDir(scenarioDir: string): void
+
+startEvalScenario(scenarioDir: string, prompt: string, model?: string | undefined): CancellableEval
+
+runCheckScript(scenarioId: string, scenarioDir: string, result: EvalRunResult): EvalReport
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `EvalReport`: Output of `run-check.ts` — scenario id and array of `EvalCheckResult`.
+- `loadEvalConfig`: Reads `eval.config.json`; returns `{}` on missing or parse error.
+- `startEvalScenario`: Returns a `CancellableEval` with a promise, cancel function, and paths to the live status files.
+- `resetEvalWorkDir`: Wipes and re-seeds `work/` and `.run/` from `start/`.
+- `archiveEvalRun`: Copies `work/` and result JSON to `.artifacts/{modelSlug}/`.
+- `runCheckScript`: Writes result to `.run/result-input.json`, runs `run-check.ts` via `tsx`; throws on failure.
 
 ## Key Facts
 

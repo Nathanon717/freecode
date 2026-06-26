@@ -2,12 +2,15 @@
 
 **Role:** Pure LCS-based line diff algorithm with no rendering dependencies. Returns a structured diff array for consumption by renderers.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `DiffEntry` | `{ type: 'equal' \| 'remove' \| 'add'; text: string }` — one line in a diff result. |
-| `computeLineDiff(oldLines, newLines)` | Computes LCS diff between two string arrays; returns `DiffEntry[]`. |
+```typescript
+type DiffEntry = { type: 'equal' | 'remove' | 'add'; text: string };
+
+computeLineDiff(oldLines: string[], newLines: string[]): DiffEntry[]
+```
+<!-- END GENERATED EXPORTS -->
 
 ## Key Facts
 

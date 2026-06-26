@@ -2,29 +2,77 @@
 
 **Role:** Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and input-area overlay logic; status state lives in `footer-status.ts` and buffer/cursor state lives in `input-buffer.ts`. Re-exports everything from those modules for backwards-compat callers.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-Direct (defined here):
+```typescript
+export {
+  setTokenCount,
+  setQuotaSnapshot,
+  setModelStatus,
+  setOpenAIDailySpend,
+  setRetryBanner,
+  composeBottomRightStatus,
+  composeBottomStatusLine,
+} from './footer-status.js'
 
-- `isBottomUIActive()`, `isFooterUIActive()`
-- `setSuggestions()`, `setInlineCompletion()` — input-area suggestion overlay state
-- `getInlineCompletionSuffix(input, completion)`
-- `composeFooterOutput()` — returns ANSI escape string for footer rows
-- `drawFooter()`, `drawBottomUI()`
-- `parkCursorInScrollRegion()`, `parkCursorAboveBottomUI()`
-- `setupFooterUI()`, `setupInputUI()`, `setupBottomUI()`
-- `teardownBottomUI()`, `teardownFooterUI()`
-- `resetSubmittedInputArea()`
-- `getRows()`, `getLastReservedRows()`
-- `suspendFooterTimer()`, `resumeFooterTimer()`
+export {
+  getInputBuffer,
+  setInputBuffer,
+  insertAtCursor,
+  backspaceAtCursor,
+  deleteAtCursor,
+  moveCursorLeft,
+  moveCursorRight,
+  moveCursorHome,
+  moveCursorEnd,
+  moveCursorUp,
+  moveCursorDown,
+  visualRowsForLine,
+  cursorToVisualPos,
+} from './input-buffer.js'
 
-Re-exported from `footer-status.ts`:
+isBottomUIActive(): boolean
 
-- `PreflightInputCost` type, all `set*` status setters, `composeBottomRightStatus`, `composeBottomStatusLine`
+isFooterUIActive(): boolean
 
-Re-exported from `input-buffer.ts`:
+suspendFooterTimer(): void
 
-- `getInputBuffer`, `setInputBuffer`, all cursor mutations, `visualRowsForLine`, `cursorToVisualPos`
+resumeFooterTimer(): void
+
+getRows(): number
+
+getLastReservedRows(): number
+
+setSuggestions(suggestions: string[]): void
+
+setInlineCompletion(completion: string | null): void
+
+getInlineCompletionSuffix(input: string, completion: string | null): string
+
+composeFooterOutput(): string
+
+drawFooter(): void
+
+drawBottomUI(): void
+
+parkCursorInScrollRegion(): void
+
+parkCursorAboveBottomUI(): void
+
+setupFooterUI(): void
+
+setupInputUI(): void
+
+setupBottomUI(): void
+
+teardownBottomUI(): void
+
+teardownFooterUI(): void
+
+resetSubmittedInputArea(): void
+```
+<!-- END GENERATED EXPORTS -->
 
 ## Layout
 

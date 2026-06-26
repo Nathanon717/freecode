@@ -2,12 +2,22 @@
 
 **Role:** Parses structured API error objects out of eval run stdout for display after a failed eval.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `ApiError` | Parsed API error with `message`, `code`, `type`, `param`, `failedGeneration`, and `diagnosis` fields. |
-| `extractApiErrors(stdout)` | Scans ANSI-stripped stdout for `Error: {...}` patterns and extracts `ApiError[]`. |
+```typescript
+interface ApiError {
+  message: string;
+  code?: string;
+  type?: string;
+  param?: string;
+  failedGeneration?: string;
+  diagnosis?: string;
+}
+
+extractApiErrors(stdout: string): ApiError[]
+```
+<!-- END GENERATED EXPORTS -->
 
 ## How It Works
 

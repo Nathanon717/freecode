@@ -4,44 +4,35 @@
 
 All four phases of the eval/model store migration are complete. See `docs/eval-db-migration-plan.md`.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-initStore(): Promise<void>
-  // Creates the libSQL client (local file: or embedded Turso replica if syncUrl+authToken
-  // are configured), bootstraps the schema (CREATE TABLE IF NOT EXISTS),
-  // syncs from remote if available, then loads all rows into the in-memory cache.
-  // Called once at process startup (src/index.ts).
+writeConfigMirror(data: DbConfigData): void
 
-resetStore(): void
-  // Closes the client and nulls out the cache. For tests only.
-
-getCache(): Record<string, ModelEntry> | null
-  // Returns the in-memory cache, or null if initStore() has not been called.
-  // model-store.ts calls this on every load(); null → returns empty store.
-
-setCache(store: Record<string, ModelEntry>): void
-  // Replaces the in-memory cache synchronously. Does NOT write to the DB.
-  // Called by model-store.ts save(); DB persistence is driven by persistModelRowAsync.
+primeConfigCacheFromFile(): void
 
 persistModelRowAsync(key: string, entry: ModelEntry): void
-  // Persists a single model row via one c.execute() INSERT OR REPLACE.
-  // Fire-and-forget; tracked in pendingWrites so resetStore() can drain it.
-  // Avoids large c.batch() calls that deadlock on synced embedded replicas.
-  // Called by model-store.ts save() for each changed key.
 
-saveTranscriptAsync(modelKey, evalType, summary, failReason, transcript, scoringOutcome): void
-  // First ensures a minimal models row exists (INSERT OR IGNORE on key/provider/model_id):
-  // eval_runs.model_key has an ENFORCED FOREIGN KEY to models(key), so without the parent
-  // row the eval insert fails and the run is silently dropped. Then writes the eval_run row
-  // (INSERT OR IGNORE) and the eval_transcripts row for one eval run.
-  // Fire-and-forget; tracked in pendingWrites so resetStore() can drain it.
-  // Called from model-store.ts appendEvalRun() for every new run.
+saveTranscriptAsync(modelKey: string, evalType: string, summary: EvalRunSummary, failReason: string | undefined, transcript: unknown, scoringOutcome: unknown): void
 
-getDbSyncConfig(): { syncUrl?: string; authToken?: string }
-  // Returns the current DB sync configuration (from env vars or config.json).
-  // Used by /status to display Turso sync status.
+getDbSyncConfig(): { syncUrl?: string | undefined; authToken?: string | undefined; }
+
+initStore(): Promise<void>
+
+ensureStoreReady(): Promise<void>
+
+drainPendingWrites(): Promise<void>
+
+resetStore(): Promise<void>
+
+getCache(): ModelStore | null
+
+setCache(store: ModelStore): void
+
+executeRawForTesting(sql: string, args: InValue[]): Promise<void>
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Schema
 

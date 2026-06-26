@@ -4,11 +4,17 @@
 
 Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle, and `cli/list-menu.ts` owns the pinned blank-line chrome, tab bar, and nav loop when multiple tabs are available. Each config tab is a `MenuTab` whose `onKey` cycles the focused setting's value (no `actionMenu`/`renderDetail`). `wrap: false` matches the editor's non-wrapping navigation.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Signature | Description |
-|--------|-----------|-------------|
-| `runConfigCommand` | `(rl: Interface, currentModel?: string, onRestore?: () => void) => Promise<void>` | Runs the editor via `runMenuShell`. `onRestore` carries session footer refresh (`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`) that can't move into this module; the shell fires it after `setupBottomUI` when the bottom UI was active on a TTY. |
+```typescript
+runConfigCommand(rl: Interface, currentModel?: string, onRestore?: (() => void) | undefined): Promise<void>
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `runConfigCommand`: `onRestore` carries session footer refresh (`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`) that can't move into this module; the shell fires it after `setupBottomUI` when the bottom UI was active on a TTY.
 
 ## Tabs
 

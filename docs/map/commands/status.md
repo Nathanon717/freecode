@@ -4,15 +4,13 @@
 
 No state is mutated; output only.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
 runStatusCommand(): void
-  // Prints three sections to stdout:
-  //   API Keys — per-provider env/config/not-set status
-  //   Database — Turso sync configured or local-only
-  //   Environment — Doppler active or not detected
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Read When
 

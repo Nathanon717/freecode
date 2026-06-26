@@ -2,15 +2,35 @@
 
 **Role:** Loads settings/API keys from defaults, global config, local config, and environment variables into one cached `Config` object.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Signature | Description |
-|--------|-----------|-------------|
-| `loadConfig` | `() => Config` | Load and cache merged configuration. |
-| `getConfigPaths` | `() => { globalPath: string; localPath: string }` | Return global and local config paths. |
-| `readRawConfig` | `(path: string) => Partial<Config> \| null` | Read one JSON config file without merging. |
-| `writeConfigFile` | `(path: string, data: Partial<Config>) => void` | Write JSON config and clear the cache. |
-| `resolveModelSettings` | `(selectedModel: string) => Required<OverridableSettings>` | Resolve effective settings for a `provider:model` string using model > provider > global priority. |
+```typescript
+getConfigDir(): string
+
+resolveApiKey(provider: ProviderConfig): string | undefined
+
+loadConfig(): Config
+
+getConfigPaths(): { globalPath: string; localPath: string; }
+
+readRawConfig(path: string): Partial<Config> | null
+
+writeConfigFile(path: string, data: Partial<Config>): void
+
+updateGlobalConfig(patch: Record<string, unknown>): void
+
+saveDefaultModel(model: string): void
+
+resolveModelSettings(selectedModel: string): Required<OverridableSettings>
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `readRawConfig`: reads one JSON config file without merging (used by model-store for legacy migration).
+- `writeConfigFile`: writes JSON config and clears the in-memory cache so the next `loadConfig()` re-reads disk.
+- `resolveModelSettings`: applies model > provider > global priority cascade.
 
 ## Defaults
 

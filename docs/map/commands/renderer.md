@@ -2,11 +2,13 @@
 
 **Role:** Implements `/renderer` — a hardcoded example transcript that exercises every turn layout type through the live transcript and markdown renderers. Because it calls the real renderer functions, any change to those renderers is immediately reflected in the demo output.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Signature | Description |
-|--------|-----------|-------------|
-| `runRendererDemo` | `() => void` | Renders the full demo transcript to stdout. |
+```typescript
+runRendererDemo(): void
+```
+<!-- END GENERATED EXPORTS -->
 
 ## Implementation
 

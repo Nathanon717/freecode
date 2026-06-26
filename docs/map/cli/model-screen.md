@@ -2,25 +2,49 @@
 
 **Role:** Pure rendering + data helpers for the `/model` picker. Holds the `ModelMenuItem` shape and every function that turns model lists into screen lines, with no terminal/raw-mode or provider-fetch logic.
 
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
+
+```typescript
+interface ModelMenuItem {
+  providerId: string;
+  providerName: string;
+  modelId: string;
+  displayName: string;
+  modelsSource?: 'static' | 'live';
+  isNew?: boolean;
+  noNativeTools?: boolean;
+  isFavorite?: boolean;
+  pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
+  evalDots?: string;
+  rateLimits?: { buckets: Record<string, { limit: number; intervalMs: number | null }>; observedAt: string };
+}
+
+modelPreference(item: ModelMenuItem): string
+
+sortItemsAlphabetically(items: ModelMenuItem[]): void
+
+filterModelItems(items: ModelMenuItem[], query: string): ModelMenuItem[]
+
+buildAllItemLines(items: ModelMenuItem[], selected: number, currentModel: string, showProviderHeaders?: boolean): { itemLines: string[]; selectedLineIdx: number; }
+
+buildScreen(items: ModelMenuItem[], selected: number, currentModel: string, viewStart: number, filterQuery: string, reserveRows?: number, showProviderHeaders?: boolean): { lines: string[]; newViewStart: number; selectedScreenIdx: number; }
+
+buildModelDetailScreen(item: ModelMenuItem): string[]
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `modelPreference(item)` — returns `${providerId}:${modelId}`.
+- `sortItemsAlphabetically(items)` — sorts in-place, alphabetical by displayName within each provider group.
+- `buildScreen` — sizes the body to the terminal height minus `reserveRows` (caller passes the tab-bar height when the picker is multi-provider so the body never overflows); off-screen rows are flagged with `↑ N more above` / `↓ N more below`.
+- `showProviderHeaders` (default `true`): when `false`, provider name headers are omitted and favorites render in gold; when `true`, provider headers group the list and model names render in the normal accent color.
+
 ## Read when
 
 - Changing how model rows, the Favorites section, pricing/eval/`~tools` badges, the scroll indicators, or the model detail screen look.
 - Adjusting filtering, sort order, or the `showProviderHeaders` flag that controls provider headers and gold-highlight behavior.
-
-## Exports
-
-```typescript
-interface ModelMenuItem { providerId; providerName; modelId; displayName; modelsSource?; isNew?; noNativeTools?; isFavorite?; pricing?; evalDots?; rateLimits? }
-modelPreference(item)            // `${providerId}:${modelId}`
-sortItemsAlphabetically(items)   // in-place: alphabetical by displayName within each provider group
-filterModelItems(items, query)
-buildAllItemLines(items, selected, currentModel, showProviderHeaders?)
-buildScreen(items, selected, currentModel, viewStart, filterQuery, reserveRows?, showProviderHeaders?)
-buildModelDetailScreen(item)
-```
-
-- `buildScreen` sizes the body to the terminal height minus `reserveRows` (the caller passes the tab-bar height when the picker is multi-provider, so the body never overflows). Off-screen rows are flagged with `↑ N more above` / `↓ N more below`.
-- `showProviderHeaders` (default `true`): when `false`, provider name headers are omitted and favorites render in gold; when `true` (favourites tab), provider headers group the list and model names render in the normal accent color.
 
 ## Key neighbors
 

@@ -1,6 +1,28 @@
-# src/cli/markdown-renderer.ts — Markdown Renderer
+# src/cli/markdown-renderer.ts - Markdown Renderer
 
 **Role:** Converts plain markdown text (from LLM responses) into chalk-styled terminal output. Active when `process.stdout.isTTY` is truthy **or** `FORCE_COLOR` is set — the eval subprocess runner sets `FORCE_COLOR=1` so eval output renders identically to interactive chat. Scripted runs without either flag receive raw text unchanged.
+
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
+
+```typescript
+renderMarkdown(text: string): string
+
+interface MarkdownStreamRenderer {
+  /** Feed a raw chunk; returns any complete rendered lines ready to write. */
+  push(chunk: string): string;
+  /** Flush any buffered partial line at end of stream. */
+  flush(): string;
+}
+
+createMarkdownStreamRenderer(): MarkdownStreamRenderer
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `renderMarkdown(text)` — renders a complete string; use for OpenAI and prompt-tools paths where the full text is available at once.
+- `createMarkdownStreamRenderer()` — stateful line-buffered streaming renderer; call `.push(chunk)` per incoming chunk (returns ready rendered lines), then `.flush()` at end of stream to emit any remaining partial line. Preserves live token-by-token output.
 
 ## What is rendered
 
@@ -10,11 +32,6 @@
 - `**bold**`: `chalk.bold`
 - `*italic*`: `chalk.italic`
 - Inline `` `code` `` spans: passed through untouched (no bold/italic applied inside).
-
-## Exports
-
-- `renderMarkdown(text)` — render a complete string; use for OpenAI and prompt-tools paths where the full text is available at once.
-- `createMarkdownStreamRenderer()` — stateful line-buffered streaming renderer. Call `.push(chunk)` per incoming chunk (returns ready rendered lines), then `.flush()` at end of stream to emit any remaining partial line. Preserves live token-by-token output.
 
 ## Key neighbours
 

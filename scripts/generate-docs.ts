@@ -4,6 +4,16 @@ import { dirname, join, relative } from 'path';
 import { fileURLToPath } from 'url';
 import { PROVIDER_REGISTRY, initDynamicProviders } from '../src/providers/registry.js';
 import { SLASH_COMMANDS } from '../src/cli/slash-commands.js';
+import {
+  listSourceFiles,
+  mapPageForSource,
+  renderExportsBlock,
+  buildStructureBlock,
+  EXPORTS_BEGIN,
+  EXPORTS_END,
+  STRUCTURE_BEGIN,
+  STRUCTURE_END,
+} from './map-exports.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -215,6 +225,28 @@ const updates: Array<[string, (content: string) => string]> = [
     return replaceGeneratedSection(base, 'SCENARIOS', scenarioReference());
   }],
 ];
+
+function replaceMarkerSection(content: string, begin: string, end: string, block: string): string {
+  const pattern = new RegExp(`${escapeRegExp(begin)}[\\s\\S]*?${escapeRegExp(end)}`);
+  return pattern.test(content) ? content.replace(pattern, block) : content;
+}
+
+// Maintain the generated EXPORTS block on every map page that has the markers.
+for (const srcAbs of listSourceFiles()) {
+  const pageRel = relative(ROOT, mapPageForSource(srcAbs)).replace(/\\/g, '/');
+  if (!existsSync(join(ROOT, pageRel))) continue;
+  updates.push([pageRel, content =>
+    replaceMarkerSection(content, EXPORTS_BEGIN, EXPORTS_END, renderExportsBlock(srcAbs))]);
+}
+
+// Maintain the generated structure tree in the map README.
+updates.push(['docs/map/README.md', content => {
+  const block = buildStructureBlock();
+  if (content.includes(STRUCTURE_BEGIN)) {
+    return replaceMarkerSection(content, STRUCTURE_BEGIN, STRUCTURE_END, block);
+  }
+  return content.replace(/## Structure\n\n```text\n[\s\S]*?\n```/, `## Structure\n\n${block}`);
+}]);
 
 await initDynamicProviders();
 

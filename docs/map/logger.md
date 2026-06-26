@@ -2,13 +2,22 @@
 
 **Role:** Category-colored stderr logging. Diagnostic logging is disabled by default; errors always surface.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Signature | Description |
-|--------|-----------|-------------|
-| `enableLog` | `() => void` | Enables diagnostic logging for the process lifetime. |
-| `log` | `(category: string, message: string, data?: unknown) => void` | Emits one timestamped log line — only when `enableLog()` has been called (`-log` flag). |
-| `logError` | `(category: string, message: string, err: unknown) => void` | Always writes to stderr regardless of `enableLog` state. Includes message, error text, and stack trace. |
+```typescript
+enableLog(): void
+
+log(category: string, message: string, data?: unknown): void
+
+logError(category: string, message: string, err: unknown): void
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `log`: Only emits when `enableLog()` has been called (`-log` flag at startup); no-op otherwise.
+- `logError`: Always writes to stderr regardless of `enableLog` state; includes the error text and stack trace.
 
 ## Category Colors
 

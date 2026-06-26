@@ -2,13 +2,24 @@
 
 **Role:** Defines slash command names, fuzzy filtering, inline completion, and help text.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Signature | Description |
-|--------|-----------|-------------|
-| `getCommandCompletion` | `(input: string) => string \| null` | Returns an exact prefix/fuzzy completion for slash input, excluding already complete commands. |
-| `getFilteredCommands` | `(input: string) => string[]` | Returns matching command suggestions, excluding the inline completion. |
-| `showHelp` | `() => void` | Prints command descriptions. |
+```typescript
+interface SlashCommandInfo {
+  command: string;
+  description: string;
+}
+
+SLASH_COMMANDS: SlashCommandInfo[]
+
+getCommandCompletion(input: string): string | null
+
+getFilteredCommands(input: string): string[]
+
+showHelp(): void
+```
+<!-- END GENERATED EXPORTS -->
 
 ## Commands
 

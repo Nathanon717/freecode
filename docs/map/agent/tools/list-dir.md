@@ -2,11 +2,13 @@
 
 **Role:** Lists one directory relative to the active project root.
 
-## Export
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
 
 ```typescript
-listDirTool: CoreTool
+listDirTool: CoreTool<z.ZodObject<{ path: z.ZodOptional<z.ZodString>; }, 'strip', z.ZodTypeAny, { path?: string | undefined; }, { path?: string | undefined; }>, string> & { execute: (args: { path?: string | undefined; }, options: { abortSignal?: AbortSignal; }) => PromiseLike<string>; }
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Parameters
 

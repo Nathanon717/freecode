@@ -2,17 +2,34 @@
 
 **Role:** Provides the current project root and per-root file read tracking to tool modules that are created outside a single request scope.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `projectRoot` | `string` | Mutable module-level root path, initialized to `process.cwd()`. |
-| `setProjectRoot` | `(path: string) => void` | Resolves and updates `projectRoot` before a tool-enabled agent turn and clears read tracking. |
-| `markFileRead` | `(path: string) => void` | Records that a relative path was successfully read. |
-| `hasFileBeenRead` | `(path: string) => boolean` | Checks whether a relative path has been successfully read in the current root context. |
-| `resolveProjectPath` | `(path: string) => ResolvedProjectPath` | Rejects absolute paths and `..` escapes, then returns the full path plus normalized relative path. |
-| `resolveExistingProjectPath` | `(path: string) => Promise<ResolvedProjectPath>` | Resolves an existing target through `realpath` and rejects symlink/junction escapes. |
-| `resolveWritableProjectPath` | `(path: string) => Promise<ResolvedProjectPath>` | Resolves the writable parent through `realpath` and rejects symlink/junction escapes before writes. |
+```typescript
+projectRoot: string
+
+setProjectRoot(path: string): void
+
+markFileRead(path: string): void
+
+hasFileBeenRead(path: string): boolean
+
+interface ResolvedProjectPath {
+  fullPath: string;
+  relativePath: string;
+}
+
+resolveProjectPath(path: string): ResolvedProjectPath
+
+resolveExistingProjectPath(path: string): Promise<ResolvedProjectPath>
+
+resolveWritableProjectPath(path: string): Promise<ResolvedProjectPath>
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `projectRoot` is initialized to `process.cwd()` at module load.
 
 ## Used By
 

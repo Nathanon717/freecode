@@ -2,6 +2,7 @@
 
 **Role:** Shared interfaces for provider metadata, model metadata, static limits, and loaded config.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
@@ -17,6 +18,7 @@ interface ModelConfig {
   displayName: string;
   contextWindow?: number;
   limits?: RateLimits;
+  isNew?: boolean;
 }
 
 interface ProviderConfig {
@@ -25,12 +27,14 @@ interface ProviderConfig {
   type: 'openai-compat' | 'anthropic';
   baseUrl?: string;
   apiKeyEnvVar: string;
+  defaultApiKey?: string;
   models: ModelConfig[];
   supportsTools?: boolean;
   paid?: boolean;
-  modelsSource?: 'static' | 'live';  // 'live' = model list fetched from provider API at runtime
-  modelIdBlocklist?: string[];       // substring filters for live model IDs
-  modelIdExactBlocklist?: string[];  // exact filters for live model IDs
+  modelsSource?: 'static' | 'live';
+  modelIdBlocklist?: string[];
+  modelIdExactBlocklist?: string[];
+  modelTierBlocklist?: string[];
 }
 
 interface OverridableSettings {
@@ -47,10 +51,14 @@ interface Config {
   showProviderUsage: boolean;
   toolConfirmation: 'ask' | 'auto';
   parallelTools: boolean;
-  loadAgentsMd: boolean;
   providerOverrides?: Record<string, OverridableSettings>;
+  retryMaxWaitSeconds: number;
+  showEvalDots: boolean;
+  diffContextLines: number;
+  loadAgentsMd: boolean;
 }
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Notes
 

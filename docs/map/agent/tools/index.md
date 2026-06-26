@@ -2,9 +2,12 @@
 
 **Role:** Aggregates all agent tools and wraps them with rationale support, confirmation, logging, trace capture, and serialized execution.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
+export { formatArgs, filterArgs } from '../../cli/transcript-renderer.js'
+
 interface ToolCallPreview {
   name: string;
   args: Record<string, unknown>;
@@ -15,23 +18,25 @@ interface ToolCallConfirmation {
   message?: string;
 }
 
-type ConfirmToolCall =
-  (preview: ToolCallPreview) => Promise<boolean | ToolCallConfirmation>;
+type ConfirmToolCall = (preview: ToolCallPreview) => Promise<boolean | ToolCallConfirmation>;
 
-createTools(confirmToolCall?: ConfirmToolCall): Record<string, CoreTool>
-allTools: Record<string, CoreTool>
+createTools(confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, promptTools?: boolean, readOnly?: boolean): { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { ...; }
+
+allTools: { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { create: AnyCoreTool; edit: AnyCoreTool; shell_exec: AnyCoreTool; read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; }
+
+readFileTool: CoreTool<ZodObject<{ path: ZodString; offset: ZodOptional<ZodNumber>; limit: ZodOptional<ZodNumber>; }, "strip", ZodTypeAny, { ...; }, { ...; }>, string> & { ...; }
+
+createTool: CoreTool<ZodObject<{ path: ZodString; content: ZodString; }, "strip", ZodTypeAny, { path: string; content: string; }, { path: string; content: string; }>, string> & { ...; }
+
+editTool: CoreTool<ZodObject<{ path: ZodString; old_text: ZodString; new_text: ZodString; }, "strip", ZodTypeAny, { path: string; old_text: string; new_text: string; }, { ...; }>, string> & { ...; }
+
+grepTool: CoreTool<ZodObject<{ pattern: ZodString; path: ZodOptional<ZodString>; include: ZodOptional<ZodString>; }, "strip", ZodTypeAny, { ...; }, { ...; }>, string> & { ...; }
+
+shellTool: CoreTool<ZodObject<{ command: ZodString; timeout_ms: ZodOptional<ZodNumber>; confirmDestructive: ZodOptional<ZodBoolean>; }, "strip", ZodTypeAny, { ...; }, { ...; }>, string> & { ...; }
+
+listDirTool: CoreTool<ZodObject<{ path: ZodOptional<ZodString>; }, "strip", ZodTypeAny, { path?: string | undefined; }, { path?: string | undefined; }>, string> & { ...; }
 ```
-
-Individual tools are re-exported for tests:
-
-```text
-readFileTool
-createTool
-editTool
-grepTool
-shellTool
-listDirTool
-```
+<!-- END GENERATED EXPORTS -->
 
 ## Tool Keys
 

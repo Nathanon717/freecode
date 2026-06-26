@@ -2,17 +2,18 @@
 
 **Role:** Owns the in-memory conversation for a CLI session and provides token estimation.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `SessionController` | Class wrapping `CoreMessage[]` and token estimation. |
-
-## Methods
-
-| Method | Description |
-|--------|-------------|
-| `clearMessages()` | Clears in-memory history. |
-| `getContextTokenCount()` | Returns `estimateContextTokens(messages)`. |
-| `addUserMessage(content)` | Appends a user `CoreMessage`. |
-| `addAssistantMessage(content)` | Appends an assistant `CoreMessage`. |
+```typescript
+class SessionController {
+  readonly projectRoot: string;
+  messages: CoreMessage[];
+  constructor(projectRoot: string): SessionController;
+  clearMessages(): void;
+  getContextTokenCount(): number;
+  addUserMessage(content: string): void;
+  addAssistantMessage(content: string): void;
+}
+```
+<!-- END GENERATED EXPORTS -->

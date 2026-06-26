@@ -2,10 +2,12 @@
 
 **Role:** Fallback agentic loop for models that reject native function calling. Augments the system prompt with a text-based `<tool_call>` protocol and drives a ReAct-style loop by injecting tool results as user messages.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
 buildPromptToolsSystemPrompt(base: string): string
+
 parseToolCalls(text: string): ParsedToolCall[]
 
 interface PromptToolsResult {
@@ -15,21 +17,11 @@ interface PromptToolsResult {
   outputTokens?: number;
 }
 
-executeToolCalls(
-  tools: ReturnType<typeof createTools>,
-  calls: ReadonlyArray<{ name: string; args: Record<string, unknown> }>,
-  idPrefix: string,
-  messages: CoreMessage[],
-): Promise<string[]>
+executeToolCalls(tools: { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { create: AnyCoreTool; edit: AnyCoreTool; shell_exec: AnyCoreTool; read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; }, calls: readonly { ...; }[], idPrefix: string, messages: CoreMessage[]): Promise<...>
 
-runPromptToolsLoop(
-  messages: CoreMessage[],
-  systemPrompt: string,
-  model: LanguageModel,
-  confirmToolCall?: ConfirmToolCall,
-  toolRationale?: boolean,
-): Promise<PromptToolsResult>
+runPromptToolsLoop(messages: CoreMessage[], systemPrompt: string, model: LanguageModelV1, confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, readOnly?: boolean | undefined): Promise<...>
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Read When
 

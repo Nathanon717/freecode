@@ -2,15 +2,31 @@
 
 **Role:** Intercepts `process.stdout.write` at startup to maintain rolling buffers of recent terminal output. Keeps a plain (ANSI-stripped) buffer for text search and a parallel styled buffer (ANSI codes preserved) for overlay repaints. Used by the bottom TUI to repaint rows after temporary overlays.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `installScreenBuffer` | Installs the stdout interceptor. Call once at process startup (index.ts). No-op if already installed. |
-| `getScreenBuffer` | Returns the last <=150 non-empty transcript lines as a newline-joined string. |
-| `getScreenBufferDisplayLines` | Returns recent plain transcript lines, including intentional blank lines. |
-| `startOverlayEpoch` | Marks the current write position as the start of the scroll-region epoch. Call once on first `setupInputUI` to exclude pre-UI output (startup banner) from overlay repaints. |
-| `getScreenBufferDisplayLinesForOverlay` | Returns the styled lines (ANSI codes intact) needed to repaint `count` overlay rows after a suggestion list closes. Accounts for freecode's cursor-at-bottom-of-scroll-region output model: the bottom overlay row is always blank, the preceding `count-1` rows hold the last epoch lines, top-padded with blanks. |
+```typescript
+stripAnsi(str: string): string
+
+installScreenBuffer(): void
+
+getScreenBuffer(): string
+
+getScreenBufferDisplayLines(count: number): string[]
+
+startOverlayEpoch(): void
+
+getScreenBufferDisplayLinesForOverlay(count: number, _scrollHeight: number): string[]
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `installScreenBuffer` — call once at process startup (`index.ts`); no-op if already installed.
+- `getScreenBuffer` — returns the last <=150 non-empty transcript lines as a newline-joined string.
+- `getScreenBufferDisplayLines` — returns recent plain transcript lines, including intentional blank lines.
+- `startOverlayEpoch` — marks the current write position as the start of the scroll-region epoch; call once on first `setupInputUI` to exclude pre-UI output (startup banner) from overlay repaints.
+- `getScreenBufferDisplayLinesForOverlay` — returns styled lines (ANSI codes intact) needed to repaint `count` overlay rows after a suggestion list closes. Accounts for freecode's cursor-at-bottom-of-scroll-region output model: the bottom overlay row is always blank, the preceding `count-1` rows hold the last epoch lines, top-padded with blanks.
 
 ## Key neighbors
 

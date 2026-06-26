@@ -2,20 +2,40 @@
 
 **Role:** Creates `@ai-sdk/openai` provider factories for registry providers and Ollama, applies per-provider request quirks, captures rate-limit headers, auto-retries short 429 waits, and captures raw usage metadata from OpenAI-compatible responses. Pure body transforms live in [openai-compat-sse](openai-compat-sse.md), the retry loop in [adapter-http-retry](adapter-http-retry.md), and the capture stores in [adapter-usage-capture](adapter-usage-capture.md).
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-registerQuotaUpdateSink(fn): void
-getLastCapturedHeaders(providerId: string): RateLimitSnapshot | null
-beginProviderUsageCapture(providerId: string): void
-endProviderUsageCapture(providerId: string): Promise<CapturedProviderUsage[]>
-formatCapturedProviderUsages(usages): string | null
-formatOpenAICompatHttpError(providerName, response): Promise<string | null>
-getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined
+registerQuotaUpdateSink(fn: QuotaUpdateSink | null): void
+
+interface CapturedProviderUsage {
+  providerId: string;
+  responseId?: string;
+  model?: string;
+  usage: unknown;
+  source: 'json' | 'sse';
+  capturedAt: number;
+}
+
 setParallelToolsDisabled(providerId: string, disabled: boolean): void
-createOpenAICompatProvider(providerConfig: ProviderConfig)
-createOllamaProvider()
+
+formatOpenAICompatHttpError(providerName: string, response: Response): Promise<string | null>
+
+getLastCapturedHeaders(providerId: string): RateLimitSnapshot | null
+
+beginProviderUsageCapture(providerId: string): void
+
+endProviderUsageCapture(providerId: string): Promise<CapturedProviderUsage[]>
+
+formatCapturedProviderUsages(usages: CapturedProviderUsage[] | null | undefined): string | null
+
+getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined
+
+createOpenAICompatProvider(providerConfig: ProviderConfig): OpenAIProvider
+
+createOllamaProvider(): OpenAIProvider
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## `createOpenAICompatProvider`
 

@@ -2,12 +2,15 @@
 
 **Role:** Orchestrates the unified, tabbed eval menu behind `/eval`. Wraps the lifecycle chrome (`menu-shell.ts`) around a tabbed list menu (`list-menu.ts`) whose tabs are the **Custom** tab (playground/eval scenarios, from `scenario-menu.ts`) and the **HumanEval** tab (from `commands/humaneval.ts`). After the picker closes it dispatches the tagged choice to the matching run loop.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `runEvalMenu(rl, projectRoot, getSelectedModel)` | `/eval` entry; opens on the Custom tab. |
-| `type EvalTabId` | `'custom' \| 'humaneval'`. |
+```typescript
+type EvalTabId = 'custom' | 'humaneval';
+
+runEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string): Promise<void>
+```
+<!-- END GENERATED EXPORTS -->
 
 ## Behavior
 

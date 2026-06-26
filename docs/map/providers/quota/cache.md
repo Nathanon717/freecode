@@ -2,12 +2,15 @@
 
 **Role:** Persists the most-recently seen `RateLimitSnapshot` per provider to disk so the footer can show stale quota data on app start or immediately after `/model` switch, before any inference call.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-loadCachedQuota(providerId: string): { snapshot: RateLimitSnapshot; savedAt: number } | null
+loadCachedQuota(providerId: string): { snapshot: RateLimitSnapshot; savedAt: number; } | null
+
 saveQuotaToCache(providerId: string, snapshot: RateLimitSnapshot): void
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Storage
 

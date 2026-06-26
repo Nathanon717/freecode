@@ -2,12 +2,15 @@
 
 **Role:** Builds the concrete `CliSessionMode` implementations for interactive TTY use and deterministic `--script` runs.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Signature | Description |
-|--------|-----------|-------------|
-| `createInteractiveMode` | `(rl, projectRoot, session, getSelectedModel, setSelectedModel) => CliSessionMode` | Raw-mode TTY input, autocomplete, model picker, tool approval menu, bottom UI hooks. |
-| `createScriptedMode` | `(scriptPath, projectRoot) => CliSessionMode` | Reads non-empty script lines and feeds them through the same dispatcher. |
+```typescript
+createInteractiveMode(rl: Interface, projectRoot: string, session: SessionController, getSelectedModel: () => string, setSelectedModel: (model: string) => void): CliSessionMode
+
+createScriptedMode(scriptPath: string, projectRoot: string, rl: Interface): CliSessionMode
+```
+<!-- END GENERATED EXPORTS -->
 
 ## Interactive Mode
 

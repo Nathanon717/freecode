@@ -2,16 +2,23 @@
 
 **Role:** Creates native Anthropic AI SDK provider factories, captures Anthropic rate-limit headers, and extracts streamed usage metadata for cost estimates and raw usage display. The per-provider header snapshot and usage-capture stores come from [adapter-usage-capture](adapter-usage-capture.md), shared with the OpenAI-compatible adapter.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-getLastCapturedAnthropicHeaders(providerId: string): GroqRateLimitHeaders | null
-parseAnthropicUsageFromSse(body: string, inferenceGeo?: string): AnthropicTokenUsage | null
+getLastCapturedAnthropicHeaders(providerId: string): RateLimitSnapshot | null
+
+parseAnthropicUsageFromSse(body: string, inferenceGeo?: string | undefined): AnthropicTokenUsage | null
+
 beginAnthropicUsageCapture(providerId: string): void
+
 endAnthropicUsageCapture(providerId: string): Promise<AnthropicTokenUsage | null>
+
 mergeAnthropicUsages(usages: AnthropicTokenUsage[]): AnthropicTokenUsage | null
-createAnthropicProvider(providerConfig: ProviderConfig)
+
+createAnthropicProvider(providerConfig: ProviderConfig): AnthropicProvider
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Provider Creation
 

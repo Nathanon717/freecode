@@ -73,6 +73,14 @@ for (const sourceFile of sourceFiles) {
   if (mapNav && !mapNav.includes(toPosix(relative(MAP_ROOT, expectedMap)))) {
     failures.push(`${mapRelative} is not linked from docs/map/README.md.`);
   }
+
+  if (existsSync(expectedMap) && !readFileSync(expectedMap, 'utf-8').includes('<!-- BEGIN GENERATED EXPORTS -->')) {
+    failures.push(`${mapRelative} is missing the generated exports block. Run npm run docs:generate.`);
+  }
+}
+
+if (mapNav && !mapNav.includes('<!-- BEGIN GENERATED MAP STRUCTURE -->')) {
+  failures.push('docs/map/README.md is missing the generated structure block. Run npm run docs:generate.');
 }
 
 for (const mapFile of mapFiles) {

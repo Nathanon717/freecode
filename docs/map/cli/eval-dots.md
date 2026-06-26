@@ -2,12 +2,20 @@
 
 **Role:** Chalk-based renderers for eval status circles. The domain logic (history loading, status computation, hashing, types) has been extracted to `src/eval/history.ts` and `src/eval/playground.ts`. This file keeps only the visual rendering functions.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `statusCircle(status)` | Returns a chalk-colored `●` string for an `EvalStatus`. |
-| `buildEvalDots(model, data)` | Returns a compact string of colored circles, one per scenario in discovery order. |
+```typescript
+statusCircle(status: EvalStatus): string
+
+buildEvalDots(model: string, data: EvalDotsData): string
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `statusCircle(status)` — returns a chalk-colored `●` string for an `EvalStatus`.
+- `buildEvalDots(model, data)` — returns a compact string of colored circles, one per scenario in discovery order.
 
 ## Key Neighbors
 

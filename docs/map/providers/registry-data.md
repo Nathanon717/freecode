@@ -2,11 +2,13 @@
 
 **Role:** Static data file containing the `PROVIDER_REGISTRY` array — the catalog of all known cloud providers with their IDs, names, base URLs, API key env vars, blocklists, and static model lists. No logic; pure configuration.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
 PROVIDER_REGISTRY: ProviderConfig[]
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Read When
 

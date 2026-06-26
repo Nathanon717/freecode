@@ -2,14 +2,40 @@
 
 **Role:** Handles slash commands and sends normal user input to the agent loop.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `CommandDispatchResult` | `'continue' \| 'exit'`. |
-| `ModelListMode` | `'current-only' \| 'full'`. |
-| `CommandRuntime` | Dependency bundle passed by `runCliSession()`. |
-| `dispatchCommand` | Main command/user-input dispatcher. |
+```typescript
+type CommandDispatchResult = 'continue' | 'exit';
+
+type ModelListMode = 'current-only' | 'full';
+
+interface CommandRuntime {
+  projectRoot: string;
+  session: SessionController;
+  getSelectedModel(): string;
+  setSelectedModel(model: string): void;
+  confirmToolCall: ConfirmToolCall;
+  getReadOnly?(): boolean;
+  modelListMode: ModelListMode;
+  skipStrayConfirmations?: boolean;
+  beforeAgentCall?(): void | Promise<void>;
+  afterAgentCall?(): void | Promise<void>;
+  onAgentResult?(result: AgentLoopResult): void | Promise<void>;
+  beforeScreenClear?(): void | Promise<void>;
+  afterScreenClear?(): void | Promise<void>;
+  runConfig?(): Promise<void>;
+  runModelMenu?(): Promise<void>;
+  runEvalMenu(): Promise<void>;
+}
+
+dispatchCommand(input: string, runtime: CommandRuntime): Promise<CommandDispatchResult>
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `CommandRuntime` is the dependency bundle assembled and passed by `runCliSession()`.
 
 ## Slash Commands
 

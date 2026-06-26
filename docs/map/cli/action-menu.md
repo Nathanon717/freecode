@@ -2,12 +2,29 @@
 
 **Role:** Shared inline action sub-menu that splices into any list-picker screen below the selected row. Used by both `scenario-menu.ts` (eval picker) and `commands/model.ts` (model picker).
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `InlineActionMenu` | Class managing action sub-menu state, rendering, and key handling. |
-| `ActionMenuResult` | Discriminated union returned by `handleKey`: `close`, `redraw`, or `select`. |
+```typescript
+type ActionMenuResult =
+  | { type: 'close' }
+  | { type: 'redraw' }
+  | { type: 'select'; option: string };
+
+class InlineActionMenu {
+  sel;
+  readonly padWidth: number;
+  constructor(options: readonly string[]): InlineActionMenu;
+  renderLines(): string[];
+  handleKey(key: string): ActionMenuResult;
+  reset(): void;
+}
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `InlineActionMenu` manages action sub-menu state, rendering, and key handling; spliced inline below the selected row in any list-picker screen.
 
 ## Usage
 

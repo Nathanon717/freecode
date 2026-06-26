@@ -2,24 +2,72 @@
 
 **Role:** Test-only fake model runner for free agent-loop verification. It validates ordered JSON fixture steps, emits deterministic text/chunk responses and scripted tool calls, and records fake-model traces for scenario assertions when requested.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-FAKE_PROVIDER_ID           // 'mock' — fake-direct execution path
-FAKE_NATIVE_PROVIDER_ID    // 'mock-native' — native AI SDK streamText path
-FAKE_DEFAULT_MODEL_ID
-FAKE_MODEL_PREFIX
-FAKE_NATIVE_MODEL_PREFIX
-isFakeLlmMode()
-isFakeModelPreference(modelPreference)
-isFakeNativeModelPreference(modelPreference)
-createPlaceholderFakeLanguageModel()
-createFakeNativeLanguageModel(modelId, modelSettings)
-fakeModelSupportsTools(modelId)
-resetFakeModelState()
-assertFakeFixtureComplete()
-runFakeModel(call)
+FAKE_PROVIDER_ID: 'mock'
+
+FAKE_NATIVE_PROVIDER_ID: 'mock-native'
+
+FAKE_DEFAULT_MODEL_ID: 'gpt-freecode-test'
+
+FAKE_MODEL_PREFIX: 'mock:'
+
+FAKE_NATIVE_MODEL_PREFIX: 'mock-native:'
+
+interface FakeUsage {
+  totalTokens: number;
+  promptTokens?: number;
+  outputTokens?: number;
+}
+
+interface FakeModelCall {
+  providerId: string;
+  modelId: string;
+  systemPrompt: string;
+  messages: CoreMessage[];
+  toolNames: string[];
+  toolRationale: boolean;
+  parallelTools: boolean;
+  nativeToolsSupplied: boolean;
+}
+
+interface FakeModelResult {
+  text: string;
+  usage: FakeUsage;
+  toolCalls: FakeToolCall[];
+}
+
+interface FakeToolCall {
+  name: string;
+  args: Record<string, unknown>;
+}
+
+isFakeLlmMode(): boolean
+
+isFakeModelPreference(modelPreference: string): boolean
+
+isFakeNativeModelPreference(modelPreference: string): boolean
+
+createPlaceholderFakeLanguageModel(): LanguageModelV1
+
+fakeModelSupportsTools(modelId: string): boolean
+
+resetFakeModelState(): void
+
+assertFakeFixtureComplete(): void
+
+interface FakeNativeModelSettings {
+  toolRationale: boolean;
+  parallelTools: boolean;
+}
+
+createFakeNativeLanguageModel(modelId: string, modelSettings: FakeNativeModelSettings): LanguageModelV1
+
+runFakeModel(call: FakeModelCall): Promise<FakeModelResult>
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Read When
 

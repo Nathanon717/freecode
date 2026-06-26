@@ -2,21 +2,32 @@
 
 **Role:** Persists the most recent successful model-list fetch for each live provider to `<packageRoot>/.freecode/model-cache.json` (or `$FREECODE_STORE/model-cache.json`). Provides fallback data when a live fetch fails, tracks which model IDs are newly appeared (for "new" badge display), and clears that flag when a model is selected.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-interface RawCachedModel { id: string; displayName: string; contextWindow?: number }
+interface RawCachedModel {
+  id: string;
+  displayName: string;
+  contextWindow?: number;
+}
 
 getProviderCache(providerId: string): ModelCacheEntry | null
+
+interface CacheUpdateResult {
+  newIds: string[];
+  removedIds: string[];
+}
+
 updateProviderCache(providerId: string, models: RawCachedModel[]): CacheUpdateResult
-  // CacheUpdateResult = { newIds: string[], removedIds: string[] }
-  // No-op (no write) if the set of IDs is unchanged.
+
 markModelSelected(providerId: string, modelId: string): void
-  // Removes modelId from newIds so the "new" badge is cleared.
+
 getDeadIds(providerId: string): string[]
+
 markModelDead(providerId: string, modelId: string): void
-  // Adds modelId to deadIds; no-op if already dead.
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Cache File Shape
 

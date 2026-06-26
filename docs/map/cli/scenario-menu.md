@@ -2,13 +2,23 @@
 
 **Role:** Provides the **Custom** tab of the unified eval menu (`buildCustomEvalTab`) and the eval scenario run loop (`runEvalScenarios`) backed by `playground/eval/`. The `/eval` menu itself is composed in `cli/eval-menu.ts`. Delegates subprocess execution to `eval-runner.ts`, rendering to `eval-screen.ts`, error parsing to `eval-errors.ts`, and the inline action sub-menu to `action-menu.ts`.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-| Symbol | Description |
-|--------|-------------|
-| `buildCustomEvalTab(scenarios, history, hashes, getModel, choose)` | Builds the Custom eval `MenuTab` (status circles, → detail, Run/View/Edit action menu, `a` runs all). |
-| `runEvalScenarios(chosen, model)` | Runs the chosen scenarios, scores via each `eval/check.ts`, persists results, prints a summary. |
-| `getEvalStatus(scenarioId, currentHash, model, history, groups)` | Re-exported from `cli/eval-dots.ts`. Computes the eval menu status circle from the most recent exact/default model history entry plus named canonical groups. |
+```typescript
+getEvalStatus: (scenarioId: string, runHash: string, model: string, history: EvalHistoryEntry[], legacyFullHash?: string | undefined) => EvalStatus
+
+ScenarioHashes: any
+
+buildCustomEvalTab<R>(scenarios: PlaygroundScenario[], evalHistory: EvalHistoryEntry[], scenarioHashes: Map<string, ScenarioHashes>, getSelectedModel: () => string, choose: (scenarios: PlaygroundScenario[]) => R): MenuTab<...>
+
+runEvalScenarios(chosen: PlaygroundScenario[], model: string): Promise<void>
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `getEvalStatus` is re-exported from `cli/eval-dots.ts`.
 
 ## `/test`
 

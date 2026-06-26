@@ -2,15 +2,15 @@
 
 **Role:** Thin shared module holding the `getModelSettings` function pointer. Exists to break the circular-import risk between `model-store.ts` (which depends on `db.ts`) and `config/index.ts` (which calls `getModelSettings` inside `resolveModelSettings`). Neither file imports the other; `model-store.ts` registers into this module and `config/index.ts` reads from it.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-registerModelSettings(fn: (key: string) => OverridableSettings): void
-  // model-store.ts calls this at module-load time to wire up its implementation.
+registerModelSettings(fn: GetModelSettingsFn): void
 
 getModelSettings(key: string): OverridableSettings
-  // config/index.ts calls this in resolveModelSettings(). Returns {} if nothing registered.
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Lifecycle
 

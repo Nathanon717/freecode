@@ -2,11 +2,13 @@
 
 **Role:** Retry-banner sink for non-TTY sessions. Renders the "retrying in Ns" countdown to stdout. This is the presentation half of the retry flow — the adapter ([adapter-http-retry](../providers/adapters/adapter-http-retry.md)) only emits target times; how (and whether) they are shown belongs to the CLI layer.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
 createStdoutRetrySink(): (info: RetryBannerInfo | null) => void
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Behavior
 

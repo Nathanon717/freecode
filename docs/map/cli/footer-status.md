@@ -2,28 +2,38 @@
 
 **Role:** Owns the mutable state for the footer status display, all formatting helpers, and the multi-row layout logic.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-Type:
+```typescript
+formatQuotaReset(ms: number | null, raw: string | null): string
 
-- `PreflightInputCost` — snapshot type for OpenAI input token/cost estimates
+setTokenCount(tokenCount: number): void
 
-State setters:
+setQuotaSnapshot(quota: RateLimitSnapshot | null): void
 
-- `setTokenCount(n)` — context token count shown as `N ctx`
-- `setQuotaSnapshot(quota | null)` — Groq rate-limit headers; refill is estimated each second
-- `setModelStatus(providerId, modelId)` — shown as `provider:model`
-- `setPreflightInputCost(snapshot)` — OpenAI preflight cost snapshot
-- `setOpenAIDailySpend(snapshot)` — OpenAI daily spend snapshot
-- `setRetryBanner(info | null)` — rate-limit countdown; `info` has `{ name, label, targetMs }`
+setModelStatus(providerId: string, modelId: string): void
 
-Formatting / layout:
+setOpenAIDailySpend(snapshot: OpenAIDailySpend): void
 
-- `formatQuotaReset(ms, raw)` — formats raw or millisecond quota reset values into a human-readable string
-- `formatEvalRunStatus(now?)` — returns retry-banner string for footer left side
-- `layoutFooterRightRows(width, rowBudget, now?)` — lays out right-side footer content into 1–3 rows; `result[0]` = bottom row
-- `composeBottomRightStatus(width, now?)` — single-row right status string
-- `composeBottomStatusLine(width, now?)` — right-aligned full-width status line
+setRetryBanner(info: { name: string; label: string; targetMs: number; } | null): void
+
+formatEvalRunStatus(now?: number): string
+
+layoutFooterRightRows(width: number, rowBudget: number, now?: number): string[]
+
+composeBottomRightStatus(width: number, now?: number): string
+
+composeBottomStatusLine(width: number, now?: number): string
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `formatEvalRunStatus` — returns the retry-banner string for the footer left side.
+- `layoutFooterRightRows` — lays out right-side footer content into 1–3 rows; `result[0]` is the bottom row.
+- `composeBottomRightStatus` — single-row right status string.
+- `composeBottomStatusLine` — right-aligned full-width status line.
 
 ## Read when
 

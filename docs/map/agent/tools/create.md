@@ -2,11 +2,13 @@
 
 **Role:** Creates a new UTF-8 file relative to the active project root.
 
-## Export
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
 
 ```typescript
-createTool: CoreTool
+createTool: CoreTool<z.ZodObject<{ path: z.ZodString; content: z.ZodString; }, 'strip', z.ZodTypeAny, { path: string; content: string; }, { path: string; content: string; }>, string> & { execute: (args: { path: string; content: string; }, options: { abortSignal?: AbortSignal; }) => PromiseLike<string>; }
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Parameters
 

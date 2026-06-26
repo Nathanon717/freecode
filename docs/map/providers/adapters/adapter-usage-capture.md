@@ -2,19 +2,24 @@
 
 **Role:** Capture infrastructure shared by the OpenAI-compatible and Anthropic adapters. Both keep a per-provider store of the latest rate-limit header snapshot and accumulate per-turn usage-capture promises; only the payload shape differs, so the stores are generic.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
 class HeaderSnapshotStore {
-  set(providerId: string, snapshot: RateLimitSnapshot): void
-  get(providerId: string): RateLimitSnapshot | null
+  private snapshots;
+  set(providerId: string, snapshot: RateLimitSnapshot): void;
+  get(providerId: string): RateLimitSnapshot | null;
 }
+
 class UsageCaptureStore<T> {
-  begin(providerId: string): void
-  push(providerId: string, capture: Promise<T | null>): void
-  end(providerId: string): Promise<T[]>
+  private sessions;
+  begin(providerId: string): void;
+  push(providerId: string, capture: Promise<T | null>): void;
+  end(providerId: string): Promise<T[]>;
 }
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## `HeaderSnapshotStore`
 

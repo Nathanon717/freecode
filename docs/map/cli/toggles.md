@@ -2,19 +2,33 @@
 
 **Role:** Holds runtime state for the footer toggle bar — Ask (tool-confirmation) and Read (read-only mode) — and exposes getters, cyclers, and the renderer used by `terminal-ui.ts`.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-State accessors:
+```typescript
+setCtrlHint(active: boolean): void
 
-- `getAskMode()` → `'ask' | 'auto'`
-- `isReadOnly()` → `boolean`
-- `initAskMode(mode)` — seeds Ask toggle from persisted config at startup
-- `cycleByChar(char)` — advances the toggle whose `char` matches; returns `true` when a toggle was found
+type AskMode = 'ask' | 'auto';
 
-Rendering:
+initAskMode(mode: AskMode): void
 
-- `composeToggleBar()` — ANSI string prefixed with grey `ctrl+ `, then each toggle rendered as: char in banner art color (fg when off; bg+black when on) followed by the grey remainder of the first state's label (e.g. `Ask`, `Read`)
-- `toggleBarWidth()` — visible character count of the toggle bar
+getAskMode(): AskMode
+
+isReadOnly(): boolean
+
+cycleByChar(char: string): boolean
+
+composeToggleBar(): string
+
+toggleBarWidth(): number
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `cycleByChar(char)` — advances the toggle whose `char` matches; returns `true` when a toggle was found.
+- `composeToggleBar()` — ANSI string prefixed with grey `ctrl+ `, then each toggle rendered as: char in banner art color (fg when off; bg+black when on) followed by the grey remainder of the first state's label (e.g. `Ask`, `Read`).
+- `toggleBarWidth()` — visible character count of the toggle bar.
 
 ## Adding a new toggle
 

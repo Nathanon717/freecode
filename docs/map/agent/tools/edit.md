@@ -2,11 +2,13 @@
 
 **Role:** Applies one exact text replacement inside an existing UTF-8 file relative to the active project root.
 
-## Export
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
 
 ```typescript
-editTool: CoreTool
+editTool: CoreTool<z.ZodObject<{ path: z.ZodString; old_text: z.ZodString; new_text: z.ZodString; }, 'strip', z.ZodTypeAny, { path: string; old_text: string; new_text: string; }, { path: string; old_text: string; new_text: string; }>, string> & { execute: (args: { path: string; old_text: string; new_text: string; }, options: { abortSignal?: AbortSignal; }) => PromiseLike<string>; }
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Parameters
 

@@ -2,12 +2,17 @@
 
 **Role:** Single home for all static per-model capability predicates. Keeps model-ID checks out of the adapter and off the hot path.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
 openAIModelDisallowsTemperature(modelId: string): boolean
-  // o1, o3, gpt-5 family — strip temperature from request body entirely.
+
+mistralCodestralRequiresSystemInjection(modelId: string): boolean
+
+injectSystemIntoFirstUserMessage(messages: Record<string, unknown>[]): Record<string, unknown>[]
 ```
+<!-- END GENERATED EXPORTS -->
 
 ## Read When
 

@@ -2,23 +2,46 @@
 
 **Role:** Owns the mutable input buffer and cursor position used by the interactive prompt.
 
+<!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
-State access:
+```typescript
+getInputBuffer(): string
 
-- `getInputBuffer()` — current flat buffer string (newlines embedded for multi-line)
-- `getCursorPos()` — current cursor index within the flat buffer
-- `setInputBuffer(input)` — replace buffer and move cursor to end
+getCursorPos(): number
 
-Cursor-aware mutations:
+setInputBuffer(input: string): void
 
-- `insertAtCursor(text)`, `backspaceAtCursor()`, `deleteAtCursor()`
-- `moveCursorLeft()`, `moveCursorRight()`, `moveCursorHome()`, `moveCursorEnd()`, `moveCursorUp()`, `moveCursorDown()`
+insertAtCursor(text: string): void
 
-Visual layout helpers (used by `terminal-ui.ts` to convert buffer positions to screen coordinates):
+backspaceAtCursor(): void
 
-- `visualRowsForLine(content, w)` — number of terminal rows a logical line occupies
-- `cursorToVisualPos(buf, cursor, w)` — maps flat cursor index to `{ visualRow, visualCol }`
+deleteAtCursor(): void
+
+moveCursorLeft(): void
+
+moveCursorRight(): void
+
+moveCursorHome(): void
+
+moveCursorEnd(): void
+
+moveCursorUp(): void
+
+moveCursorDown(): void
+
+visualRowsForLine(content: string, w: number): number
+
+cursorToVisualPos(buf: string, cursor: number, w: number): { visualRow: number; visualCol: number; }
+```
+<!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `getInputBuffer()` — current flat buffer string (newlines embedded for multi-line).
+- `getCursorPos()` — current cursor index within the flat buffer.
+- `setInputBuffer(input)` — replaces buffer and moves cursor to end.
+- `visualRowsForLine` / `cursorToVisualPos` — used by `terminal-ui.ts` to convert buffer positions to screen coordinates.
 
 ## Read when
 
