@@ -75,7 +75,7 @@ export function buildCustomEvalTab<R>(
           getSelectedModel(),
           scenarioHashes,
         ),
-        selectedLineIdx: 2 + (sel - viewportStart),
+        selectedLineIdx: sel - viewportStart,
       };
     },
     renderDetail: (selected) => {

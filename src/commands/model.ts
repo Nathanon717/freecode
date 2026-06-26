@@ -16,7 +16,6 @@ import { runMenuShell } from '../cli/menu-shell.js';
 import { redrawBanner } from '../cli/banner.js';
 import {
   type ModelMenuItem,
-  type GroupMode,
   modelPreference,
   sortItemsAlphabetically,
   filterModelItems,
@@ -123,7 +122,6 @@ async function runModelBody(
   }
   sortItemsAlphabetically(items);
 
-  let groupMode: GroupMode = 'pretty';
   const actionMenu = new InlineActionMenu(['Select', 'View', 'Edit']);
   // Rows list-menu prepends above the body: 1 blank for single-tab, or
   // blank+bar+blank (3) for multi-tab. Reserved so the body doesn't overflow.
@@ -168,14 +166,11 @@ async function runModelBody(
       count: () => displayItems.length,
       renderBody: (selected) => {
         const effectiveHeaders = (filterQuery && getGlobalItems) ? true : showProviderHeaders;
-        const { lines, newViewStart, selectedScreenIdx } = buildScreen(displayItems, selected, currentModel, viewStart, groupMode, filterQuery, tabBarRows, effectiveHeaders);
+        const { lines, newViewStart, selectedScreenIdx } = buildScreen(displayItems, selected, currentModel, viewStart, filterQuery, tabBarRows, effectiveHeaders);
         viewStart = newViewStart;
         return { lines, selectedLineIdx: selectedScreenIdx };
       },
-      controls: () => {
-        const lead = groupMode === 'pretty' ? 'Tab IDs' : 'Tab clean';
-        return `${lead} · ↑↓ nav · ← fav · → view · Enter menu · Space default · Esc close`;
-      },
+      controls: '↑↓ nav · ← fav · → view · Enter menu · Space default · Esc close',
       renderDetail: (selected) => buildModelDetailScreen(displayItems[selected]),
       actionMenu: {
         menu: actionMenu,
@@ -219,14 +214,6 @@ async function runModelBody(
           } else if (displayItems.length > 0) {
             ctx.close({ item: displayItems[ctx.getSelected()], saveDefault: true });
           }
-          return true;
-        }
-        if (key === '\t') {
-          const currentItem = displayItems[ctx.getSelected()];
-          const cycle: GroupMode[] = ['pretty', 'provider'];
-          groupMode = cycle[(cycle.indexOf(groupMode) + 1) % cycle.length];
-          refreshDisplayItems(ctx, currentItem);
-          ctx.redraw();
           return true;
         }
         if (key === '\x7f' || key === '\b') {

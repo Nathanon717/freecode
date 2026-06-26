@@ -16,8 +16,6 @@ export interface ModelMenuItem {
   rateLimits?: { buckets: Record<string, { limit: number; intervalMs: number | null }>; observedAt: string };
 }
 
-export type GroupMode = 'pretty' | 'provider';
-
 export function modelPreference(item: ModelMenuItem): string {
   return `${item.providerId}:${item.modelId}`;
 }
@@ -65,10 +63,8 @@ export function buildAllItemLines(
   items: ModelMenuItem[],
   selected: number,
   currentModel: string,
-  groupMode: GroupMode = 'pretty',
   showProviderHeaders = true,
 ): { itemLines: string[]; selectedLineIdx: number } {
-  const showId = groupMode === 'provider';
   const itemLines: string[] = [];
   let lastProvider = '';
   let selectedLineIdx = 0;
@@ -92,11 +88,10 @@ export function buildAllItemLines(
     const pref = modelPreference(item);
     const current = pref === currentModel;
     const cursor = active ? bannerColor('▶') : current ? chalk.green('▶') : ' ';
-    const id = pref;
     const isFavTab = item.isFavorite && !showProviderHeaders;
     const renderedName = active
       ? isFavTab
-        ? chalk.bgRgb(br, bg, bb).yellow(item.displayName)
+        ? chalk.bgYellow.black(item.displayName)
         : chalk.bgRgb(br, bg, bb).black(item.displayName)
       : isFavTab
         ? chalk.yellow(item.displayName)
@@ -105,7 +100,7 @@ export function buildAllItemLines(
     const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
     const pricingBadge = buildPricingBadge(item.pricing);
     const dotsBadge = item.evalDots ? ` ${item.evalDots}` : '';
-    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge}${showId ? ` ${chalk.dim(id)}` : ''}${dotsBadge}`);
+    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge}${dotsBadge}`);
   }
 
   return { itemLines, selectedLineIdx };
@@ -116,17 +111,16 @@ export function buildScreen(
   selected: number,
   currentModel: string,
   viewStart: number,
-  groupMode: GroupMode,
   filterQuery: string,
   reserveRows = 0,
   showProviderHeaders = true,
 ): { lines: string[]; newViewStart: number; selectedScreenIdx: number } {
-  const HEADER = 3;
+  const HEADER = 2;
   const CHROME = 3;
   const termHeight = (process.stdout.rows ?? 24) - 2;
   const maxItemLines = Math.max(4, termHeight - HEADER - CHROME - reserveRows);
 
-  const { itemLines: rawItemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, groupMode, showProviderHeaders);
+  const { itemLines: rawItemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, showProviderHeaders);
   const itemLines = rawItemLines.length > 0
     ? rawItemLines
     : [`  ${chalk.dim('No models match the current filter')}`];
@@ -145,9 +139,8 @@ export function buildScreen(
     : chalk.dim('type to filter');
   const lines: string[] = [];
   lines.push(`  ${filterLabel}`);
-  lines.push('');
 
-  // Header is 2 lines (indices 0-1), then scroll indicator at index 2, items at 3+.
+  // Header is 1 line (index 0), then scroll indicator at index 1, items at 2+.
   // The indicators count the clipped rows so off-screen models are obvious.
   const hiddenAbove = newViewStart;
   const hiddenBelow = itemLines.length - viewEnd;
@@ -156,7 +149,7 @@ export function buildScreen(
   lines.push(hiddenBelow > 0 ? chalk.dim(`  ↓ ${hiddenBelow} more below`) : '');
 
   lines.push('');
-  const selectedScreenIdx = 3 + (selectedLineIdx - newViewStart);
+  const selectedScreenIdx = 2 + (selectedLineIdx - newViewStart);
   return { lines, newViewStart, selectedScreenIdx };
 }
 

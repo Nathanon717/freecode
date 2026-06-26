@@ -266,21 +266,6 @@ describe('runModelCommand', () => {
       expect(lines.some(l => l.includes('↑/↓ action') || l.includes('Select') || l.includes('View'))).toBe(true);
     });
 
-    it('Tab toggles group mode to show model IDs', async () => {
-      const opts = await captureKeys();
-      opts.onKey('\t', vi.fn(), vi.fn());
-      const lines = opts.render();
-      expect(lines.some(l => l.includes('openai:gpt'))).toBe(true);
-    });
-
-    it('Tab toggles back to pretty mode', async () => {
-      const opts = await captureKeys();
-      opts.onKey('\t', vi.fn(), vi.fn()); // → provider mode
-      opts.onKey('\t', vi.fn(), vi.fn()); // → pretty mode
-      // In pretty mode the controls hint leads with "Tab IDs" (press Tab to show IDs)
-      expect(opts.getControls?.()).toContain('Tab IDs');
-    });
-
     it('typing characters filters the model list', async () => {
       const opts = await captureKeys();
       opts.onKey('3', vi.fn(), vi.fn()); // "3" matches "GPT-3.5 Turbo"

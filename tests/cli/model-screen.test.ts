@@ -113,7 +113,7 @@ describe('buildAllItemLines', () => {
   });
 
   it('omits provider headers when showProviderHeaders=false', () => {
-    const { itemLines } = buildAllItemLines([openaiItem, anthropicItem], 0, '', 'pretty', false);
+    const { itemLines } = buildAllItemLines([openaiItem, anthropicItem], 0, '', false);
     expect(itemLines.every(l => !l.includes('OpenAI') && !l.includes('Anthropic'))).toBe(true);
   });
 
@@ -133,11 +133,6 @@ describe('buildAllItemLines', () => {
     const item = { ...openaiItem, pricing: { input: null, output: null, confidence: 'disagree' as const } };
     const { itemLines } = buildAllItemLines([item], 0, '');
     expect(itemLines.some(l => l.includes('sources disagree'))).toBe(true);
-  });
-
-  it('shows model ID in provider groupMode', () => {
-    const { itemLines } = buildAllItemLines([openaiItem], 0, '', 'provider');
-    expect(itemLines.some(l => l.includes('openai:gpt-4o'))).toBe(true);
   });
 
   it('separates providers with a blank line between them', () => {

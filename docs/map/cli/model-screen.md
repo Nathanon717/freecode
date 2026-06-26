@@ -11,12 +11,11 @@
 
 ```typescript
 interface ModelMenuItem { providerId; providerName; modelId; displayName; modelsSource?; isNew?; noNativeTools?; isFavorite?; pricing?; evalDots?; rateLimits? }
-type GroupMode = 'pretty' | 'provider'
 modelPreference(item)            // `${providerId}:${modelId}`
 sortItemsAlphabetically(items)   // in-place: alphabetical by displayName within each provider group
 filterModelItems(items, query)
-buildAllItemLines(items, selected, currentModel, groupMode?, showProviderHeaders?)
-buildScreen(items, selected, currentModel, viewStart, groupMode, filterQuery, reserveRows?, showProviderHeaders?)
+buildAllItemLines(items, selected, currentModel, showProviderHeaders?)
+buildScreen(items, selected, currentModel, viewStart, filterQuery, reserveRows?, showProviderHeaders?)
 buildModelDetailScreen(item)
 ```
 

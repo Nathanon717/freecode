@@ -185,6 +185,11 @@ export function runListMenu<TResult>(
       let lines = body.lines;
       if (actionMode && tab.actionMenu) {
         lines = [...lines];
+        // Strip the ▶ cursor from the selected row — the action menu has its own.
+        const selLine = lines[body.selectedLineIdx];
+        if (selLine !== undefined) {
+          lines[body.selectedLineIdx] = selLine.replace(/(?:\x1b\[[0-9;]*m)*▶(?:\x1b\[[0-9;]*m)*/g, ' ');
+        }
         lines.splice(
           body.selectedLineIdx + 1,
           0,

@@ -79,8 +79,6 @@ export function buildEvalPickerScreen(
   scenarioHashes: Map<string, ScenarioHashes>,
 ): string[] {
   const lines: string[] = [];
-  lines.push('');
-  lines.push('');
   for (let i = 0; i < scenarios.length; i++) {
     const s = scenarios[i];
     const active = i === selected;
