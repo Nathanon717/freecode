@@ -84,6 +84,7 @@
         "name": "submit \u2014 eval menu opens again",
         "send": "\r",
         "waitFor": "Custom",
+        "quietMs": 1000,
         "screenContains": [
           "Custom",
           "HumanEval"
