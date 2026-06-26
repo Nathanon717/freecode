@@ -277,8 +277,8 @@ describe('runModelCommand', () => {
       const opts = await captureKeys();
       opts.onKey('\t', vi.fn(), vi.fn()); // → provider mode
       opts.onKey('\t', vi.fn(), vi.fn()); // → pretty mode
-      // In pretty mode the controls hint says "Tab show model IDs"
-      expect(opts.getControls?.()).toContain('Tab show model IDs');
+      // In pretty mode the controls hint leads with "Tab IDs" (press Tab to show IDs)
+      expect(opts.getControls?.()).toContain('Tab IDs');
     });
 
     it('typing characters filters the model list', async () => {

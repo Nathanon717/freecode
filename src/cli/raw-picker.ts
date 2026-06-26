@@ -161,7 +161,10 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
       for (let i = 0; i < visibleLines.length; i++) {
         output += `\x1b[${i + 1};1H${visibleLines[i]}`;
       }
-      output += '\x1b[?7h';
+      // Autowrap stays OFF through the controls + footer writes below; otherwise
+      // an over-long controls hint written near the bottom row wraps past the
+      // last line and scrolls the pinned screen up by one, eating the top row.
+      // Re-enabled at the very end so subsequent normal output wraps as usual.
     } else if (rowCount > 0) {
       // Clear only the menu rows (not footer) to avoid erasing and redrawing it.
       output += `\x1b[${rowCount}A\r`;
@@ -182,6 +185,7 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
     }
     // Append footer in the same write so the terminal sees one atomic update.
     output += composeFooterOutput();
+    if (opts.pinToTop) output += '\x1b[?7h';
     process.stdout.write(output);
   }
 

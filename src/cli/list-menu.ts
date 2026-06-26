@@ -86,6 +86,52 @@ export interface ListMenuOptions<TResult> {
   countLines?: (lines: string[]) => number;
 }
 
+/** Plain (un-styled) width of a tab cell: the label plus its one-space padding each side. */
+function tabCellWidth(label: string): number {
+  return label.length + 2;
+}
+
+/**
+ * Renders the tab bar, windowed around the active tab so it never runs past the
+ * terminal width. When tabs are clipped on a side, a dim `‹` / `›` marks that
+ * more tabs exist off-screen. `styleTab(i)` returns the styled cell for tab `i`.
+ */
+function renderTabBar(
+  tabs: { label: string }[],
+  tabIndex: number,
+  styleTab: (i: number) => string,
+): string {
+  const SEP = "   ";
+  const cols = process.stdout.columns ?? 80;
+  // Reserve the leading indent plus room for both overflow arrows.
+  const budget = Math.max(8, cols - 2 - 4);
+
+  // Greedily grow a window outward from the active tab while it still fits.
+  let lo = tabIndex;
+  let hi = tabIndex;
+  let used = tabCellWidth(tabs[tabIndex].label);
+  for (;;) {
+    let grew = false;
+    if (hi + 1 < tabs.length && used + SEP.length + tabCellWidth(tabs[hi + 1].label) <= budget) {
+      used += SEP.length + tabCellWidth(tabs[hi + 1].label);
+      hi++;
+      grew = true;
+    }
+    if (lo - 1 >= 0 && used + SEP.length + tabCellWidth(tabs[lo - 1].label) <= budget) {
+      used += SEP.length + tabCellWidth(tabs[lo - 1].label);
+      lo--;
+      grew = true;
+    }
+    if (!grew) break;
+  }
+
+  const parts: string[] = [];
+  for (let i = lo; i <= hi; i++) parts.push(styleTab(i));
+  const left = lo > 0 ? chalk.dim("‹ ") : "";
+  const right = hi < tabs.length - 1 ? chalk.dim(" ›") : "";
+  return `  ${left}${parts.join(chalk.dim(SEP))}${right}`;
+}
+
 /**
  * Shared tabbed list menu, built on `runRawPicker`. Owns the active tab, the
  * selected index (incl. the `-1` tab-row focus when there is more than one tab),
@@ -145,22 +191,17 @@ export function runListMenu<TResult>(
         if (body.hintLineIdx !== undefined)
           lines[body.hintLineIdx] = tab.actionMenu.actionHint;
       }
-      if (!hasTabs) return lines;
+      if (!hasTabs) return ["", ...lines];
       const focused = selected === -1;
-      const tabBarParts = tabs.map((t, i) => {
-        if (i !== tabIndex) return chalk.dim(t.label);
+      const styleTab = (i: number): string => {
+        if (i !== tabIndex) return chalk.dim(` ${tabs[i].label} `);
         if (focused) {
           const [r, g, b] = getBannerColorRGB();
-          return chalk.bgRgb(r, g, b).black(` ${t.label} `);
+          return chalk.bgRgb(r, g, b).black(` ${tabs[i].label} `);
         }
-        return getBannerColor().bold(t.label);
-      });
-      return [
-        "",
-        `  ${tabBarParts.join(chalk.dim("   "))}`,
-        "",
-        ...lines,
-      ];
+        return getBannerColor().bold(` ${tabs[i].label} `);
+      };
+      return ["", renderTabBar(tabs, tabIndex, styleTab), "", ...lines];
     },
     onKey: (key, redraw, close) => {
       const tab = tabs[tabIndex];

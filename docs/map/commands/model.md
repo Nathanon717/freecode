@@ -1,24 +1,11 @@
 # src/commands/model.ts - Interactive Model Picker
 
-**Role:** Implements the interactive `/model` picker used by TTY sessions.
+**Role:** Implements the interactive `/model` picker used by TTY sessions: provider fetch, the per-provider tabs, and the run loop. Pure rendering/data helpers live in [cli/model-screen.ts](../cli/model-screen.md).
 
 ## Exports
 
 ```typescript
-interface ModelMenuItem {
-  providerId: string;
-  providerName: string;
-  modelId: string;
-  displayName: string;
-  modelsSource?: 'static' | 'live';
-  isNew?: boolean;
-  isFavorite?: boolean;
-  pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
-}
-
 getSelectableModels(): Promise<ModelMenuItem[]>
-buildAllItemLines(items, selected, currentModel, groupMode?, canonicalGroups?)
-filterModelItems(items, query)
 
 runModelCommand(
   rl: Interface,
@@ -28,7 +15,9 @@ runModelCommand(
 ): Promise<boolean>   // true if the picker was shown
 ```
 
-Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle (`onRestore` carries the session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`), and `cli/list-menu.ts` owns the nav loop. The picker is a single `MenuTab` (no tab bar): `renderBody` wraps `buildScreen`, `renderDetail` = `buildModelDetailScreen`, `actionMenu` = Select/View/Edit. Favorites (`←`), group cycle (`Tab`), filter typing/backspace, and Space-default are handled in `tab.onKey`, reading/writing the base-owned cursor via `ctx.getSelected`/`ctx.setSelected`. The interactive run loop lives in `runModelBody`.
+`ModelMenuItem`, `filterModelItems`, and `buildAllItemLines` are re-exported from `cli/model-screen.ts` for a stable import surface.
+
+Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle (`onRestore` carries the session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`), and `cli/list-menu.ts` owns the nav loop and the windowed tab bar. The picker builds **one `MenuTab` per provider** (built from the providers present in `getSelectableModels()`); with a single provider `list-menu` shows no tab bar, matching the old flat picker. Each tab owns its own filter query, viewport, and derived `displayItems` (that provider's models, with favorites duplicated at top via `buildDisplayList`); `groupMode`, the favorites set, and `actionMenu` are shared in the enclosing scope. `renderBody` wraps `buildScreen` (passing the reserved tab-bar rows), `renderDetail` = `buildModelDetailScreen`, `actionMenu` = Select/View/Edit. Favorites (`←`), group cycle (`Tab`), filter typing/backspace, and Space-default are handled in `tab.onKey` (which ignores stray escape sequences so e.g. Up at the tab row never leaks into the filter), reading/writing the base-owned cursor via `ctx.getSelected`/`ctx.setSelected`. The picker opens on the current model's provider tab. The interactive run loop lives in `runModelBody`.
 
 ## Model Discovery
 

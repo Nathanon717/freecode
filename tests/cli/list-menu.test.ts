@@ -60,32 +60,32 @@ function singleTab(overrides?: Partial<MenuTab<unknown>>): MenuTab<unknown> {
 }
 
 describe('runListMenu — single tab navigation', () => {
-  it('renders the body without a tab bar', () => {
+  it('renders the body without a tab bar (with leading blank injected by parent)', () => {
     void runListMenu(fakeRl, { tabs: [singleTab()] });
-    expect(store.opts!.render()).toEqual(['  header', '  hint', '> alpha', '  beta', '  gamma']);
+    expect(store.opts!.render()).toEqual(['', '  header', '  hint', '> alpha', '  beta', '  gamma']);
     expect(store.opts!.pinToTop).toBe(false);
   });
 
   it('moves Down and Up through items', () => {
     void runListMenu(fakeRl, { tabs: [singleTab()] });
     store.opts!.onKey(DOWN, redraw, close);
-    expect(store.opts!.render()[3]).toBe('> beta');
+    expect(store.opts!.render()[4]).toBe('> beta');
     store.opts!.onKey(UP, redraw, close);
-    expect(store.opts!.render()[2]).toBe('> alpha');
+    expect(store.opts!.render()[3]).toBe('> alpha');
   });
 
   it('wraps at the ends by default', () => {
     void runListMenu(fakeRl, { tabs: [singleTab()] });
     store.opts!.onKey(UP, redraw, close); // from 0 → last
-    expect(store.opts!.render()[4]).toBe('> gamma');
+    expect(store.opts!.render()[5]).toBe('> gamma');
     store.opts!.onKey(DOWN, redraw, close); // from last → 0
-    expect(store.opts!.render()[2]).toBe('> alpha');
+    expect(store.opts!.render()[3]).toBe('> alpha');
   });
 
   it('does not wrap when wrap:false', () => {
     void runListMenu(fakeRl, { tabs: [singleTab()], wrap: false });
     store.opts!.onKey(UP, redraw, close); // stays at 0
-    expect(store.opts!.render()[2]).toBe('> alpha');
+    expect(store.opts!.render()[3]).toBe('> alpha');
   });
 
   it('closes with null on Esc, or onCancel value', () => {
@@ -110,7 +110,7 @@ describe('runListMenu — detail mode', () => {
     expect(store.opts!.render()).toEqual(['detail of item 0']);
     store.opts!.onKey(ESC, redraw, close);
     expect(closed).toBe(false);
-    expect(store.opts!.render()[2]).toBe('> alpha');
+    expect(store.opts!.render()[3]).toBe('> alpha');
   });
 
   it('does not open detail when renderDetail is absent', () => {
@@ -131,7 +131,7 @@ describe('runListMenu — action menu', () => {
     });
     store.opts!.onKey(ENTER, redraw, close);
     const screen = store.opts!.render();
-    expect(screen[1]).toBe('  ACTION HINT'); // hint line swapped
+    expect(screen[2]).toBe('  ACTION HINT'); // hint line swapped (screen[0] is the parent-injected blank)
     expect(screen.some((l) => l.includes('Run'))).toBe(true);
     store.opts!.onKey(ENTER, redraw, close); // select first option
     expect(onSelect).toHaveBeenCalledWith('Run', expect.anything());

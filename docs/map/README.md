@@ -57,6 +57,7 @@ src/
 |   |-- raw-picker.ts             -> [Shared raw-mode picker primitive](cli/raw-picker.md)
 |   |-- menu-shell.ts             -> [Menu lifecycle chrome](cli/menu-shell.md)
 |   |-- list-menu.ts              -> [Shared tabbed list menu](cli/list-menu.md)
+|   |-- model-screen.ts           -> [Model picker screen renderers](cli/model-screen.md)
 |   |-- eval-menu.ts              -> [Unified eval menu](cli/eval-menu.md)
 |   |-- action-menu.ts            -> [Inline action sub-menu](cli/action-menu.md)
 |   |-- footer-status.ts          -> [Footer status state and formatters](cli/footer-status.md)

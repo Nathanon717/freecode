@@ -23,7 +23,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     baseUrl: "https://openrouter.ai/api/v1",
     apiKeyEnvVar: "OPENROUTER_API_KEY",
     modelsSource: "live",
-    modelIdBlocklist: [],
+    modelIdBlocklist: ["liquid/lfm-2.5-1.2b-thinking"],
     models: [],
   },
   {
