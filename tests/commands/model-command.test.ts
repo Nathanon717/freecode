@@ -172,7 +172,7 @@ describe('runModelCommand', () => {
     const opts = await captureKeys();
     const lines = opts.render();
 
-    expect(lines.some(l => l.includes('Select model'))).toBe(true);
+    expect(lines.some(l => l.includes('type to filter'))).toBe(true);
     expect(lines.some(l => l.includes('GPT-4o'))).toBe(true);
   });
 
@@ -239,7 +239,7 @@ describe('runModelCommand', () => {
       opts.onKey('\x1b[C', vi.fn(), vi.fn()); // enter detail
       opts.onKey('\x1b[D', vi.fn(), vi.fn()); // exit detail
       const lines = opts.render();
-      expect(lines.some(l => l.includes('Select model'))).toBe(true);
+      expect(lines.some(l => l.includes('type to filter'))).toBe(true);
     });
 
     it('Escape in detail view exits detail mode (not picker)', async () => {
@@ -249,7 +249,7 @@ describe('runModelCommand', () => {
       // The actual handler only checks detailMode when in detail mode
       opts.onKey('\x1b[D', vi.fn(), vi.fn()); // use left arrow to exit detail instead
       const lines = opts.render();
-      expect(lines.some(l => l.includes('Select model'))).toBe(true);
+      expect(lines.some(l => l.includes('type to filter'))).toBe(true);
     });
 
     it('left arrow toggles favorite and calls setFavorite', async () => {
@@ -285,7 +285,7 @@ describe('runModelCommand', () => {
       const opts = await captureKeys();
       opts.onKey('3', vi.fn(), vi.fn()); // "3" matches "GPT-3.5 Turbo"
       const lines = opts.render();
-      expect(lines.join('\n')).toContain('Filter');
+      expect(lines.join('\n')).toContain('filter');
     });
 
     it('backspace removes the last filter character', async () => {
@@ -312,7 +312,7 @@ describe('runModelCommand', () => {
       opts.onKey('g', vi.fn(), vi.fn()); // start filter
       opts.onKey(' ', vi.fn(), vi.fn()); // space appended to filter
       const lines = opts.render();
-      expect(lines.join('\n')).toContain('Filter');
+      expect(lines.join('\n')).toContain('filter');
     });
 
     it('ctrl-H (backspace) also removes filter character', async () => {
@@ -334,7 +334,7 @@ describe('runModelCommand', () => {
       opts.onKey('\r', vi.fn(), vi.fn()); // open action menu
       opts.onKey('\x1b', vi.fn(), vi.fn()); // close action menu
       const lines = opts.render();
-      expect(lines.some(l => l.includes('Select model'))).toBe(true);
+      expect(lines.some(l => l.includes('type to filter'))).toBe(true);
     });
 
     it('Select in action menu closes picker with item', async () => {
@@ -365,7 +365,7 @@ describe('runModelCommand', () => {
       opts.onKey('\r', vi.fn(), vi.fn()); // select Edit (stub — just closes menu)
       const lines = opts.render();
       // Menu closed, back to list
-      expect(lines.some(l => l.includes('Select model'))).toBe(true);
+      expect(lines.some(l => l.includes('type to filter'))).toBe(true);
     });
   });
 

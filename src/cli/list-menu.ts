@@ -70,6 +70,8 @@ export interface MenuTab<TResult> {
   onKey?: (key: string, ctx: ListMenuContext<TResult>) => boolean;
   /** Controls hint pinned to the last row above the footer. Static string or dynamic callback. */
   controls?: string | (() => string);
+  /** When true, tab label renders grey (like inactive tabs) instead of accent-colored. */
+  isFiltered?: () => boolean;
 }
 
 export interface ListMenuOptions<TResult> {
@@ -193,8 +195,10 @@ export function runListMenu<TResult>(
       }
       if (!hasTabs) return ["", ...lines];
       const focused = selected === -1;
+      const activeFiltered = tabs[tabIndex].isFiltered?.();
       const styleTab = (i: number): string => {
         if (i !== tabIndex) return chalk.dim(` ${tabs[i].label} `);
+        if (activeFiltered) return chalk.dim(` ${tabs[i].label} `);
         if (focused) {
           const [r, g, b] = getBannerColorRGB();
           return chalk.bgRgb(r, g, b).black(` ${tabs[i].label} `);

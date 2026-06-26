@@ -18,8 +18,7 @@ import {
   type ModelMenuItem,
   type GroupMode,
   modelPreference,
-  sortItemsByFavorites,
-  buildDisplayList,
+  sortItemsAlphabetically,
   filterModelItems,
   buildScreen,
   buildModelDetailScreen,
@@ -122,7 +121,7 @@ async function runModelBody(
   for (const item of items) {
     item.isFavorite = favorites.has(modelPreference(item));
   }
-  sortItemsByFavorites(items);
+  sortItemsAlphabetically(items);
 
   let groupMode: GroupMode = 'pretty';
   const actionMenu = new InlineActionMenu(['Select', 'View', 'Edit']);
@@ -130,21 +129,22 @@ async function runModelBody(
   // blank+bar+blank (3) for multi-tab. Reserved so the body doesn't overflow.
   let tabBarRows = 0;
 
-  // One tab per provider. Each tab owns its own filter query, viewport, and
-  // derived displayItems (that provider's models, with favorites duplicated at
-  // the top via buildDisplayList). Favorites set, `items`, the shared
-  // groupMode/actionMenu live in the enclosing scope and are read/written by
-  // every tab.
-  function buildProviderTab(providerId: string, providerName: string): MenuTab<ModelPickResult> {
+  // Unified tab builder. Provider tabs pass showProviderHeaders=false (tab IS the provider).
+  // The favourites tab passes showProviderHeaders=true to group models by provider name.
+  function buildModelTab(
+    tabId: string,
+    label: string,
+    getBaseItems: () => ModelMenuItem[],
+    showProviderHeaders: boolean,
+    getGlobalItems?: () => ModelMenuItem[],
+  ): MenuTab<ModelPickResult> {
     let filterQuery = '';
     let viewStart = 0;
-    const providerItems = (): ModelMenuItem[] => items.filter(i => i.providerId === providerId);
-    let displayItems = filterModelItems(buildDisplayList(providerItems()), filterQuery);
+    let displayItems = filterModelItems(getBaseItems(), filterQuery);
 
-    // Rebuilds this tab's displayItems after a filter/group/favorite change,
-    // repositioning the (base-owned) cursor onto `preferred` so it stays put.
     function refreshDisplayItems(ctx: ListMenuContext<ModelPickResult>, preferred?: ModelMenuItem): void {
-      displayItems = filterModelItems(buildDisplayList(providerItems()), filterQuery);
+      const sourceItems = (filterQuery && getGlobalItems) ? getGlobalItems() : getBaseItems();
+      displayItems = filterModelItems(sourceItems, filterQuery);
       viewStart = 0;
 
       if (displayItems.length === 0) {
@@ -154,9 +154,7 @@ async function runModelBody(
 
       if (preferred) {
         const pref = modelPreference(preferred);
-        // Prefer provider-section copy so cursor stays in stable position after favorite toggle.
-        let idx = displayItems.findIndex(item => modelPreference(item) === pref && !item._favSection);
-        if (idx < 0) idx = displayItems.findIndex(item => modelPreference(item) === pref);
+        const idx = displayItems.findIndex(item => modelPreference(item) === pref);
         ctx.setSelected(idx >= 0 ? idx : Math.min(ctx.getSelected(), displayItems.length - 1));
       } else {
         ctx.setSelected(Math.min(ctx.getSelected(), displayItems.length - 1));
@@ -164,17 +162,17 @@ async function runModelBody(
     }
 
     return {
-      id: providerId,
-      label: providerName,
+      id: tabId,
+      label,
+      isFiltered: () => !!filterQuery,
       count: () => displayItems.length,
       renderBody: (selected) => {
-        const { lines, newViewStart, selectedScreenIdx } = buildScreen(displayItems, selected, currentModel, viewStart, groupMode, filterQuery, tabBarRows);
+        const effectiveHeaders = (filterQuery && getGlobalItems) ? true : showProviderHeaders;
+        const { lines, newViewStart, selectedScreenIdx } = buildScreen(displayItems, selected, currentModel, viewStart, groupMode, filterQuery, tabBarRows, effectiveHeaders);
         viewStart = newViewStart;
         return { lines, selectedLineIdx: selectedScreenIdx };
       },
       controls: () => {
-        // Kept to one terminal row: the controls hint is pinned to a single
-        // viewport line, so anything longer is clipped at the right edge.
         const lead = groupMode === 'pretty' ? 'Tab IDs' : 'Tab clean';
         return `${lead} · ↑↓ nav · ← fav · → view · Enter menu · Space default · Esc close`;
       },
@@ -208,7 +206,7 @@ async function runModelBody(
             if (modelPreference(baseItem) === pref) baseItem.isFavorite = isFav;
           }
           setFavorite(pref, isFav);
-          sortItemsByFavorites(items);
+          sortItemsAlphabetically(items);
           refreshDisplayItems(ctx, item);
           ctx.redraw();
           return true;
@@ -264,17 +262,27 @@ async function runModelBody(
       providerNames.set(item.providerId, item.providerName);
     }
   }
-  tabBarRows = providerOrder.length > 1 ? 3 : 1;
-  const tabs = providerOrder.map(pid => buildProviderTab(pid, providerNames.get(pid)!));
 
-  // Open on the current model's provider tab, positioned on that model.
+  const providerTabs = providerOrder.map(pid =>
+    buildModelTab(pid, providerNames.get(pid)!, () => items.filter(i => i.providerId === pid), false, () => items),
+  );
+  const favTab = favorites.size > 0
+    ? buildModelTab('favorites', '♥', () => items.filter(i => i.isFavorite), true, () => items)
+    : null;
+  const tabs = favTab ? [favTab, ...providerTabs] : providerTabs;
+  tabBarRows = tabs.length > 1 ? 3 : 1;
+
+  // If the current model is a favourite, open on the favourites tab; otherwise open on its provider tab.
   const currentItem = items.find(i => modelPreference(i) === currentModel);
-  const initialTabId = currentItem ? currentItem.providerId : providerOrder[0];
+  const openOnFav = favTab && currentItem?.isFavorite;
+  const initialTabId = openOnFav ? 'favorites' : (currentItem?.providerId ?? providerOrder[0]);
   let initialSelected = 0;
   if (currentItem) {
-    const di = filterModelItems(buildDisplayList(items.filter(i => i.providerId === initialTabId)), '');
-    let idx = di.findIndex(i => modelPreference(i) === currentModel && !i._favSection);
-    if (idx < 0) idx = di.findIndex(i => modelPreference(i) === currentModel);
+    const tabItems = openOnFav
+      ? items.filter(i => i.isFavorite)
+      : items.filter(i => i.providerId === initialTabId);
+    const di = filterModelItems(tabItems, '');
+    const idx = di.findIndex(i => modelPreference(i) === currentModel);
     initialSelected = idx >= 0 ? idx : 0;
   }
 

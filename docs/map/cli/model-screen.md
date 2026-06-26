@@ -5,23 +5,23 @@
 ## Read when
 
 - Changing how model rows, the Favorites section, pricing/eval/`~tools` badges, the scroll indicators, or the model detail screen look.
-- Adjusting filtering, favorite sorting, or the displayItems (`_favSection`) duplication model.
+- Adjusting filtering, sort order, or the `showProviderHeaders` flag that controls provider headers and gold-highlight behavior.
 
 ## Exports
 
 ```typescript
-interface ModelMenuItem { providerId; providerName; modelId; displayName; modelsSource?; isNew?; noNativeTools?; isFavorite?; _favSection?; pricing?; evalDots?; rateLimits? }
+interface ModelMenuItem { providerId; providerName; modelId; displayName; modelsSource?; isNew?; noNativeTools?; isFavorite?; pricing?; evalDots?; rateLimits? }
 type GroupMode = 'pretty' | 'provider'
 modelPreference(item)            // `${providerId}:${modelId}`
-sortItemsByFavorites(items)      // in-place: favorites first within each provider group
-buildDisplayList(items)          // prepends _favSection=true copies of favorites
+sortItemsAlphabetically(items)   // in-place: alphabetical by displayName within each provider group
 filterModelItems(items, query)
-buildAllItemLines(items, selected, currentModel, groupMode?)
-buildScreen(items, selected, currentModel, viewStart, groupMode, filterQuery, reserveRows?)
+buildAllItemLines(items, selected, currentModel, groupMode?, showProviderHeaders?)
+buildScreen(items, selected, currentModel, viewStart, groupMode, filterQuery, reserveRows?, showProviderHeaders?)
 buildModelDetailScreen(item)
 ```
 
 - `buildScreen` sizes the body to the terminal height minus `reserveRows` (the caller passes the tab-bar height when the picker is multi-provider, so the body never overflows). Off-screen rows are flagged with `↑ N more above` / `↓ N more below`.
+- `showProviderHeaders` (default `true`): when `false`, provider name headers are omitted and favorites render in gold; when `true` (favourites tab), provider headers group the list and model names render in the normal accent color.
 
 ## Key neighbors
 

@@ -50,14 +50,23 @@ describe('buildAllItemLines', () => {
     expect(itemLines[selectedLineIdx]).toContain('▶');
   });
 
-  it('marks current model', () => {
-    const { itemLines } = buildAllItemLines([openaiItem], 0, 'openai:gpt-4o');
-    expect(itemLines.some(l => l.includes('current'))).toBe(true);
+  it('shows green triangle on current model when not selected', () => {
+    // openaiItem is current but anthropicItem is selected — openaiItem's line must have ▶
+    const { itemLines, selectedLineIdx } = buildAllItemLines([openaiItem, anthropicItem], 1, 'openai:gpt-4o');
+    const openaiLine = itemLines.find(l => l.includes('GPT-4o'));
+    expect(openaiLine).toContain('▶');
+    // the selected line should NOT be the openaiItem line
+    expect(itemLines[selectedLineIdx]).toContain('Claude Sonnet');
   });
 
-  it('does not mark current when model differs', () => {
-    const { itemLines } = buildAllItemLines([openaiItem], 0, 'anthropic:claude-sonnet');
-    expect(itemLines.some(l => l.includes('current'))).toBe(false);
+  it('does not show triangle on non-selected, non-current items', () => {
+    // anthropicItem is selected; openai is not current — anthropicItem line has ▶ via cursor, openaiItem line has space
+    const { itemLines, selectedLineIdx } = buildAllItemLines([openaiItem, anthropicItem], 1, 'anthropic:claude-sonnet');
+    const openaiLine = itemLines.find(l => l.includes('GPT-4o'));
+    // openaiItem is not active and not current, so no ▶
+    expect(openaiLine).not.toContain('▶');
+    // but the selected line (anthropicItem) has the cursor ▶
+    expect(itemLines[selectedLineIdx]).toContain('▶');
   });
 
   it('shows static badge in provider header', () => {
@@ -92,17 +101,20 @@ describe('buildAllItemLines', () => {
     expect(itemLines.some(l => l.includes('●○●'))).toBe(true);
   });
 
-  it('shows favorite star badge for favorites', () => {
+  it('does not show star badge for favorites', () => {
     const item = { ...openaiItem, isFavorite: true };
     const { itemLines } = buildAllItemLines([item], 0, '');
-    expect(itemLines.some(l => l.includes('★'))).toBe(true);
+    expect(itemLines.some(l => l.includes('★'))).toBe(false);
   });
 
-  it('shows Favorites section header when _favSection items are present', () => {
-    const favSectionEntry = { ...openaiItem, isFavorite: true, _favSection: true };
-    const normalEntry = { ...openaiItem, isFavorite: true };
-    const { itemLines } = buildAllItemLines([favSectionEntry, normalEntry], 0, '');
-    expect(itemLines.some(l => l.includes('Favorites'))).toBe(true);
+  it('shows provider headers when showProviderHeaders=true (default)', () => {
+    const { itemLines } = buildAllItemLines([openaiItem, anthropicItem], 0, '');
+    expect(itemLines.some(l => l.includes('OpenAI'))).toBe(true);
+  });
+
+  it('omits provider headers when showProviderHeaders=false', () => {
+    const { itemLines } = buildAllItemLines([openaiItem, anthropicItem], 0, '', 'pretty', false);
+    expect(itemLines.every(l => !l.includes('OpenAI') && !l.includes('Anthropic'))).toBe(true);
   });
 
   it('shows agreed pricing badge', () => {
@@ -147,8 +159,8 @@ describe('buildAllItemLines', () => {
     expect(selectedLineIdx).toBe(0);
   });
 
-  it('inverse-renders the selected item name', () => {
-    // When active, name is wrapped in chalk.inverse — can only verify content presence
+  it('renders the selected item name with pastel background', () => {
+    // When active, name is wrapped in chalk.bgRgb — can only verify content presence
     const { itemLines, selectedLineIdx } = buildAllItemLines([openaiItem], 0, '');
     expect(itemLines[selectedLineIdx]).toContain('GPT-4o');
   });

@@ -15,9 +15,9 @@
         ]
       },
       {
-        "name": "submit \u2014 picker opens (Select model appears in raw stream)",
+        "name": "submit \u2014 picker opens (filter hint appears in raw stream)",
         "send": "\r",
-        "waitFor": "Select model"
+        "waitFor": "type to filter"
       },
       {
         "name": "ESC closes picker; prompt comes back",

@@ -43,7 +43,6 @@ const ESC = '\x1b[';
 let footerActive = false;
 let inputUIActive = false;
 let footerTimerSuspended = false;
-let pickerUIActive = false;
 let footerRowCount = 2;
 let lastReservedRows = 2;
 let lastSuggestions: string[] = [];
@@ -82,7 +81,6 @@ function clearLineSequence(): string {
 
 export function isBottomUIActive(): boolean { return inputUIActive; }
 export function isFooterUIActive(): boolean { return footerActive; }
-export function setPickerUIActive(active: boolean): void { pickerUIActive = active; }
 
 export function suspendFooterTimer(): void { footerTimerSuspended = true; }
 export function resumeFooterTimer(): void { footerTimerSuspended = false; }
@@ -135,10 +133,12 @@ export function composeFooterOutput(): string {
     output += moveToSequence(r - footerRowCount + 1 + i, 1) + clearLineSequence();
   }
 
-  // Secondary row (r-1): toggle bar on the left (hidden in picker menus), secondary right-content (if any) on the right.
+  // Secondary row (r-1): toggle bar on the left, secondary right-content (if any) on the right.
+  // The toggle bar is part of the input-bar component: it is drawn iff the input bar is shown
+  // (inputUIActive), so the two always hide/show together and can't drift apart.
   {
-    const toggleBar = pickerUIActive ? '' : composeToggleBar();
-    const toggleVis = pickerUIActive ? 0 : toggleBarWidth();
+    const toggleBar = inputUIActive ? composeToggleBar() : '';
+    const toggleVis = inputUIActive ? toggleBarWidth() : 0;
     const secRight = rightRows.length > 1 ? rightRows[1] : '';
     const secRightVis = stripAnsi(secRight).length;
     const spacer = Math.max(0, w - 1 - toggleVis - secRightVis);
@@ -344,6 +344,9 @@ export function setupInputUI() {
   process.stdout.write(`${ESC}${r - footerRowCount};1H\n\n\n`);
   setScrollRegion(1, r - reserved);
   lastReservedRows = reserved;
+  // Repaint the footer so the toggle bar (a footer row) appears together with the input
+  // bar instead of lagging in on the next timer tick.
+  drawFooter();
   drawInputArea();
 }
 
@@ -371,6 +374,9 @@ export function teardownBottomUI() {
   }
   setScrollRegion(1, r - footerRowCount);
   lastReservedRows = footerRowCount;
+  // Repaint the footer in the same write so the toggle bar (a footer row) clears at
+  // the same instant as the input bar, rather than lingering until the next timer tick.
+  output += composeFooterOutput();
   process.stdout.write(output);
 }
 
