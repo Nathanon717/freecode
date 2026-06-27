@@ -19,6 +19,7 @@ runEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string)
 - **HumanEval data is lazy:** loaded from disk only if already present (otherwise the tab shows an empty list).
 - Non-TTY prints the eval scenarios list and returns.
 - The picker resolves with a tagged `EvalChoice` (`{ kind: 'custom' | 'humaneval', … }`) or null; the body then calls `runEvalScenarios` or `runHumanEvalProblems`.
+- When a choice is made, the body does a full screen clear (`\x1b[1;1H\x1b[J`) and redraws the footer before starting the run loop. This ensures the eval header starts at row 1 regardless of how many items were in the list. Sequential evals (run-all) are not cleared between them — only this one-time clear at the menu→run boundary fires.
 
 ## Read when
 
@@ -30,3 +31,4 @@ runEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string)
 - `cli/list-menu.ts` — tabbed list-menu state machine.
 - `cli/scenario-menu.ts` — `buildCustomEvalTab` + `runEvalScenarios` (Custom tab + run loop).
 - `commands/humaneval.ts` — `buildHumanEvalTab` + `runHumanEvalProblems` + dataset helpers (HumanEval tab + run loop).
+- `cli/terminal-ui.ts` — `drawFooter` (redrawn after the full-screen clear at menu→run boundary).

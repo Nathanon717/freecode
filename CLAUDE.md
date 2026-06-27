@@ -37,6 +37,6 @@ See `docs/pty-session.md` on how to drive a live, real freecode TUI (lets you ve
 - Use `docs/docs.md` for generated-doc ownership and maintenance rules.
 - Use `docs/map/README.md` for source navigation.
 - Use `docs/providers.md` for provider setup, registry facts, and provider testing.
-- After fixing a bug, leave a short md file in `docs/bug log/`.
+- After fixing a bug, make a new, short file in `docs/bug log/`.
 
 After code changes, inspect `git diff --name-only` and update only map pages for changed files whose purpose, ownership, exports, dependencies, or read/use guidance changed.

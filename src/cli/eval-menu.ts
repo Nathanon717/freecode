@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { runMenuShell } from './menu-shell.js';
 import { runListMenu, type MenuTab } from './list-menu.js';
 import { countWrappedLines } from './raw-picker.js';
+import { drawFooter } from './terminal-ui.js';
 import { redrawBanner } from './banner.js';
 import {
   PLAYGROUND_EVAL_DIR,
@@ -94,6 +95,12 @@ async function runEvalMenuBody(
     redrawBanner();
     return;
   }
+
+  // Tear down the menu UI fully and position cursor at row 1 before the first
+  // eval prints. extraCleanup in runRawPicker only erases `rowCount` rows up
+  // from the controls row, which misses rows 1..N when the list is short.
+  process.stdout.write('\x1b[1;1H\x1b[J');
+  drawFooter();
 
   if (chosen.kind === 'custom') {
     await runEvalScenarios(chosen.scenarios, getSelectedModel());
