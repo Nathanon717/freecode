@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
-  formatOpenAICompatHttpError,
   getOpenAICompatProviderHeaders,
 } from '../../../src/providers/adapters/openai-compat.js';
+import { formatOpenAICompatHttpError } from '../../../src/providers/adapters/adapter-http-retry.js';
+import { providerQuirks } from '../../../src/providers/adapters/openai-compat-quirks.js';
 
 describe('Router Logic', () => {
   describe('provider API format detection', () => {
@@ -45,6 +46,17 @@ describe('Router Logic', () => {
         .resolves.toBe('OpenRouter HTTP 401 Unauthorized: User not found. (code: 401)');
     });
 
+    it('omits retry hint when retry-after header is absent', async () => {
+      const response = new Response(
+        JSON.stringify({ error: { message: 'Rate limited', code: 429 } }),
+        { status: 429, statusText: 'Too Many Requests' },
+      );
+
+      const result = await formatOpenAICompatHttpError('Groq', response);
+      expect(result).toBe('Groq HTTP 429 Too Many Requests: Rate limited (code: 429)');
+      expect(result).not.toContain('Retry after');
+    });
+
     it('adds OpenRouter rate-limit guidance for 429s', async () => {
       const response = new Response(
         JSON.stringify({ error: { message: 'Provider returned error', code: 429 } }),
@@ -55,7 +67,7 @@ describe('Router Logic', () => {
         },
       );
 
-      await expect(formatOpenAICompatHttpError('OpenRouter', response))
+      await expect(formatOpenAICompatHttpError('OpenRouter', response, providerQuirks['openrouter'].httpErrorHint))
         .resolves.toBe(
           'OpenRouter HTTP 429 Too Many Requests: Provider returned error (code: 429) Retry after 12 seconds. OpenRouter rate limits can come from OpenRouter or the upstream model provider; try again later or switch models/providers.',
         );

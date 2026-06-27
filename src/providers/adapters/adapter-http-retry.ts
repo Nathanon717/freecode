@@ -1,6 +1,8 @@
-// HTTP retry/backoff for OpenAI-compatible providers. Retries 429/503 responses
-// with a bounded wait, and surfaces "retrying in Ns" status through a sink so
-// the CLI layer — not this adapter — owns how it is rendered.
+// HTTP retry/backoff and HTTP error formatting for OpenAI-compatible providers.
+// Retries 429/503 responses with a bounded wait, surfaces "retrying in Ns" status
+// through a sink so the CLI layer — not this adapter — owns how it is rendered.
+
+import { isRecord } from '../../util/guards.js';
 
 export interface RetryBannerInfo {
   name: string;
@@ -41,6 +43,53 @@ export interface FetchWithRetryOptions {
   maxWaitMs: number;
   /** Invoked with the headers of each retryable (429/503) response, before waiting. */
   onRetryableResponse?: (headers: Headers) => void;
+}
+
+function humanRetryAfter(header: string): string {
+  const seconds = Math.ceil(parseRetryAfterMs(header) / 1000);
+  return seconds === 1 ? '1 second' : `${seconds} seconds`;
+}
+
+/**
+ * Format a non-OK OpenAI-compatible HTTP response into a human-readable error string.
+ * Pass an optional `httpErrorHint` to append provider-specific guidance (e.g. OpenRouter 429 text).
+ */
+export async function formatOpenAICompatHttpError(
+  providerName: string,
+  response: Response,
+  httpErrorHint?: (response: Response) => string | null,
+): Promise<string | null> {
+  if (response.ok) return null;
+
+  const body = await response.clone().text().catch(() => '');
+  let providerMessage: string | undefined;
+  let providerCode: string | number | undefined;
+
+  if (body) {
+    try {
+      const parsed = JSON.parse(body) as unknown;
+      if (isRecord(parsed) && isRecord(parsed.error)) {
+        providerMessage = typeof parsed.error.message === 'string' ? parsed.error.message : undefined;
+        providerCode =
+          typeof parsed.error.code === 'string' || typeof parsed.error.code === 'number'
+            ? parsed.error.code
+            : undefined;
+      }
+    } catch {
+      providerMessage = body.slice(0, 500);
+    }
+  }
+
+  const status = `${response.status} ${response.statusText}`.trim();
+  const retryHeader = response.headers.get('retry-after');
+  const retryHint = response.status === 429 && retryHeader ? ` Retry after ${humanRetryAfter(retryHeader)}.` : '';
+  const providerHint = httpErrorHint?.(response) ?? '';
+  const details = providerMessage
+    ? `${providerMessage}${providerCode !== undefined ? ` (code: ${providerCode})` : ''}`
+    : body.slice(0, 500);
+  return details
+    ? `${providerName} HTTP ${status}: ${details}${retryHint}${providerHint}`
+    : `${providerName} HTTP ${status}${retryHint}${providerHint}`;
 }
 
 /**

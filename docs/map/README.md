@@ -85,6 +85,8 @@ Do not duplicate reference facts that belong in generated docs.
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) — Adapter HTTP Retry/Backoff
   - [`adapter-usage-capture.ts`](providers/adapters/adapter-usage-capture.md) — Shared Usage/Header Capture
   - [`anthropic.ts`](providers/adapters/anthropic.md) — Anthropic Adapter
+  - [`openai-compat-quirks.ts`](providers/adapters/openai-compat-quirks.md) — OpenAI-Compatible Provider Quirk Profiles
+  - [`openai-compat-request.ts`](providers/adapters/openai-compat-request.md) — OpenAI-Compatible Request Transforms
   - [`openai-compat-sse.ts`](providers/adapters/openai-compat-sse.md) — OpenAI-Compatible SSE Transforms
   - [`openai-compat.ts`](providers/adapters/openai-compat.md) — OpenAI-Compatible Adapter
 - `src/providers/`

@@ -1,6 +1,6 @@
 # src/providers/adapters/adapter-http-retry.ts - Adapter HTTP Retry/Backoff
 
-**Role:** HTTP retry/backoff for OpenAI-compatible providers. Retries 429/503 responses with a bounded wait and surfaces "retrying in Ns" status through a sink, so the CLI layer — not the adapter — owns how it is rendered.
+**Role:** HTTP retry/backoff and error formatting for OpenAI-compatible providers. Retries 429/503 responses with a bounded wait and surfaces "retrying in Ns" status through a sink, so the CLI layer — not the adapter — owns how it is rendered. Also owns `formatOpenAICompatHttpError`, which parses non-OK responses for provider-specific `{ error: { message, code } }` bodies and formats a human-readable error string; accepts an optional `httpErrorHint` callback for per-provider extra context (e.g. OpenRouter 429 guidance).
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -25,6 +25,8 @@ interface FetchWithRetryOptions {
   onRetryableResponse?: (headers: Headers) => void;
 }
 
+formatOpenAICompatHttpError(providerName: string, response: Response, httpErrorHint?: ((response: Response) => string | null) | undefined): Promise<string | null>
+
 fetchWithRetry(input: string | URL | Request, init: RequestInit | undefined, options: FetchWithRetryOptions): Promise<Response>
 ```
 <!-- END GENERATED EXPORTS -->
@@ -43,6 +45,10 @@ During each wait, `RetryBannerInfo` (with the wait's target time) is pushed to t
 
 When no sink is registered the wait still happens; only the countdown display is skipped.
 
+## `formatOpenAICompatHttpError`
+
+Reads the response body (non-consuming — uses `.clone()`) and tries to parse an OpenAI-compatible `{ error: { message, code } }` structure. On a 429 with a `retry-after` header, appends "Retry after Ns." using `parseRetryAfterMs` internally (no duplicate parse logic). Appends the result of `httpErrorHint?.(response)` when provided. Returns `null` for OK responses.
+
 ## Read When
 
-Changing retry/backoff policy (attempts, caps, which status codes retry) or how retry status is surfaced to the UI.
+Changing retry/backoff policy (attempts, caps, which status codes retry), how retry status is surfaced to the UI, or how non-OK HTTP responses are formatted for callers.

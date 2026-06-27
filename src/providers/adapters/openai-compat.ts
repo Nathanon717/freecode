@@ -2,19 +2,13 @@ import { createOpenAI } from '@ai-sdk/openai';
 import type { ProviderConfig } from '../types.js';
 import { loadConfig, resolveApiKey } from '../../config/index.js';
 import { isRecord } from '../../util/guards.js';
-import { openAIModelDisallowsTemperature, mistralCodestralRequiresSystemInjection, injectSystemIntoFirstUserMessage } from '../model-quirks.js';
-import {
-  parseGroqRateLimitHeaders,
-  groqHeadersToSnapshot,
-  parseMistralRateLimitSnapshot,
-  parseCerebrasRateLimitSnapshot,
-  extractOpenAICompatRateLimitBuckets,
-  type RateLimitSnapshot,
-} from '../quota/headers.js';
+import { extractOpenAICompatRateLimitBuckets, type RateLimitSnapshot } from '../quota/headers.js';
 import { saveObservedRateLimits } from '../model-store.js';
 import { mistralJsonToSse, normalizeOpenAICompatToolCallResponse } from './openai-compat-sse.js';
 import { HeaderSnapshotStore, UsageCaptureStore } from './adapter-usage-capture.js';
-import { fetchWithRetry } from './adapter-http-retry.js';
+import { fetchWithRetry, formatOpenAICompatHttpError } from './adapter-http-retry.js';
+import { providerQuirks } from './openai-compat-quirks.js';
+import { injectParallelToolCallsFalse } from './openai-compat-request.js';
 
 type QuotaUpdateSink = (snapshot: RateLimitSnapshot) => void;
 let quotaUpdateSink: QuotaUpdateSink | null = null;
@@ -42,43 +36,6 @@ const parallelToolsDisabled = new Set<string>();
 export function setParallelToolsDisabled(providerId: string, disabled: boolean): void {
   if (disabled) parallelToolsDisabled.add(providerId);
   else parallelToolsDisabled.delete(providerId);
-}
-
-export async function formatOpenAICompatHttpError(providerName: string, response: Response): Promise<string | null> {
-  if (response.ok) return null;
-
-  const body = await response.clone().text().catch(() => '');
-  let providerMessage: string | undefined;
-  let providerCode: string | number | undefined;
-
-  if (body) {
-    try {
-      const parsed = JSON.parse(body) as unknown;
-      if (isRecord(parsed) && isRecord(parsed.error)) {
-        providerMessage = typeof parsed.error.message === 'string' ? parsed.error.message : undefined;
-        providerCode = typeof parsed.error.code === 'string' || typeof parsed.error.code === 'number'
-          ? parsed.error.code
-          : undefined;
-      }
-    } catch {
-      providerMessage = body.slice(0, 500);
-    }
-  }
-
-  const status = `${response.status} ${response.statusText}`.trim();
-  const retryAfter = formatRetryAfter(response.headers.get('retry-after'));
-  const retryHint = response.status === 429 && retryAfter
-    ? ` Retry after ${retryAfter}.`
-    : '';
-  const providerHint = response.status === 429 && providerName === 'OpenRouter'
-    ? ' OpenRouter rate limits can come from OpenRouter or the upstream model provider; try again later or switch models/providers.'
-    : '';
-  const details = providerMessage
-    ? `${providerMessage}${providerCode !== undefined ? ` (code: ${providerCode})` : ''}`
-    : body.slice(0, 500);
-  return details
-    ? `${providerName} HTTP ${status}: ${details}${retryHint}${providerHint}`
-    : `${providerName} HTTP ${status}${retryHint}${providerHint}`;
 }
 
 /**
@@ -109,22 +66,9 @@ export function formatCapturedProviderUsages(usages: CapturedProviderUsage[] | n
   return JSON.stringify(usages.length === 1 ? payload[0] : payload, null, 2);
 }
 
-function formatRetryAfter(value: string | null): string | null {
-  if (!value) return null;
-  const seconds = Number(value);
-  if (Number.isFinite(seconds) && seconds >= 0) {
-    if (seconds === 1) return '1 second';
-    return `${Math.ceil(seconds)} seconds`;
-  }
-
-  const date = Date.parse(value);
-  if (!Number.isNaN(date)) {
-    const secondsUntil = Math.max(0, Math.ceil((date - Date.now()) / 1000));
-    if (secondsUntil === 1) return '1 second';
-    return `${secondsUntil} seconds`;
-  }
-
-  return value;
+/** Return the static extra headers for a provider (e.g. OpenRouter HTTP-Referer). */
+export function getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined {
+  return providerQuirks[providerId]?.staticHeaders;
 }
 
 function usageFromPayload(providerId: string, payload: unknown, source: 'json' | 'sse'): CapturedProviderUsage | null {
@@ -189,14 +133,6 @@ function captureProviderUsage(providerId: string, response: Response): void {
   usageStore.push(providerId, parseProviderUsage(providerId, response));
 }
 
-export function getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined {
-  if (providerId !== 'openrouter') return undefined;
-  return {
-    'HTTP-Referer': 'https://freecode.local',
-    'X-Title': 'freecode',
-  };
-}
-
 function saveLimitsFromHeaders(providerId: string, headers: Headers, body: RequestInit['body']): void {
   let modelId: string | undefined;
   try { modelId = typeof body === 'string' ? (JSON.parse(body) as Record<string, unknown>)['model'] as string : undefined; } catch { /* ignore */ }
@@ -206,114 +142,83 @@ function saveLimitsFromHeaders(providerId: string, headers: Headers, body: Reque
 
 export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
   const apiKey = resolveApiKey(providerConfig) ?? 'placeholder';
-
-  // Capture Groq rate-limit headers unless explicitly disabled (DEBUG_QUOTA=0).
-  // Defaults to ON so Phase-1 observation works out of the box.
+  const profile = providerQuirks[providerConfig.id];
   const debugQuota = process.env['DEBUG_QUOTA'] !== '0';
-  const shouldCapture = debugQuota && ['groq', 'mistral', 'cerebras'].includes(providerConfig.id);
-  const shouldCaptureUsage = true;
+  const shouldCapture = debugQuota && (profile?.captureRateLimits ?? false);
 
-  // Some OpenAI reasoning models only accept the default temperature. The AI SDK
-  // may send temperature: 0, so remove it and let OpenAI apply the default.
-  const shouldStripTemperature = providerConfig.id === 'openai';
+  const customFetch: typeof globalThis.fetch = async (input, init) => {
+    let patchedInit = init;
+    let forcedNonStream = false;
 
-  const customFetch: typeof globalThis.fetch | undefined = (shouldCapture || shouldStripTemperature || shouldCaptureUsage)
-    ? async (input, init) => {
-        if (shouldCapture && process.env['DEBUG_TOOLS'] === '1' && init?.body) {
-          try {
-            const body = JSON.parse(init.body as string) as Record<string, unknown>;
-            const tools = Array.isArray(body['tools']) ? body['tools'] as { function?: { name: string; parameters: unknown } }[] : [];
-            process.stderr.write(`[groq-req] tools: ${JSON.stringify(tools.map(t => ({ name: t.function?.name, schema: t.function?.parameters })), null, 2)}\n`);
-          } catch { /* ignore */ }
+    if (patchedInit?.body) {
+      try {
+        let body = JSON.parse(patchedInit.body as string) as Record<string, unknown>;
+
+        if (shouldCapture && process.env['DEBUG_TOOLS'] === '1') {
+          const tools = Array.isArray(body['tools']) ? body['tools'] as { function?: { name: string; parameters: unknown } }[] : [];
+          process.stderr.write(`[groq-req] tools: ${JSON.stringify(tools.map(t => ({ name: t.function?.name, schema: t.function?.parameters })), null, 2)}\n`);
         }
 
-        let patchedInit = init;
-        let mistralForcedNonStream = false;
-        if (providerConfig.id === 'mistral' && patchedInit?.body) {
-          try {
-            let body = JSON.parse(patchedInit.body as string) as Record<string, unknown>;
-            if (body['stream']) {
-              const { stream: _s, stream_options: _so, ...rest } = body;
-              body = rest;
-              mistralForcedNonStream = true;
-            }
-            if (mistralCodestralRequiresSystemInjection(typeof body['model'] === 'string' ? body['model'] : '') && Array.isArray(body['messages'])) {
-              body = { ...body, messages: injectSystemIntoFirstUserMessage(body['messages'] as Array<Record<string, unknown>>) };
-            }
-            patchedInit = { ...patchedInit, body: JSON.stringify(body) };
-          } catch { /* leave body untouched */ }
-        }
-        if (shouldStripTemperature && init?.body) {
-          try {
-            const body = JSON.parse(init.body as string) as Record<string, unknown>;
-            if (openAIModelDisallowsTemperature(typeof body['model'] === 'string' ? body['model'] : '') && 'temperature' in body) {
-              const { temperature: _t, ...rest } = body;
-              patchedInit = { ...init, body: JSON.stringify(rest) };
-            }
-          } catch { /* ignore — leave body untouched */ }
+        if (profile?.transformRequest) {
+          const result = profile.transformRequest(body);
+          body = result.body;
+          forcedNonStream = result.forcedNonStream ?? false;
         }
 
-        if (parallelToolsDisabled.has(providerConfig.id) && patchedInit?.body) {
-          try {
-            const body = JSON.parse(patchedInit.body as string) as Record<string, unknown>;
-            const bodyTools = body['tools'];
-            if (Array.isArray(bodyTools) && bodyTools.length > 0) {
-              patchedInit = { ...patchedInit, body: JSON.stringify({ ...body, parallel_tool_calls: false }) };
-            }
-          } catch { /* ignore — leave body untouched */ }
+        if (parallelToolsDisabled.has(providerConfig.id)) {
+          body = injectParallelToolCallsFalse(body);
         }
 
-        const parseSnapshot = (headers: Headers): RateLimitSnapshot => {
-          if (providerConfig.id === 'mistral') return parseMistralRateLimitSnapshot(headers);
-          if (providerConfig.id === 'cerebras') return parseCerebrasRateLimitSnapshot(headers);
-          return groqHeadersToSnapshot(parseGroqRateLimitHeaders(headers));
-        };
+        patchedInit = { ...patchedInit, body: JSON.stringify(body) };
+      } catch { /* leave body untouched */ }
+    }
 
-        let response = await fetchWithRetry(input, patchedInit, {
-          providerName: providerConfig.name,
-          maxWaitMs: loadConfig().retryMaxWaitSeconds * 1000,
-          onRetryableResponse: shouldCapture
-            ? (headers) => {
-                if (!quotaUpdateSink) return;
-                const snap = parseSnapshot(headers);
-                if (snap.length > 0) {
-                  headerStore.set(providerConfig.id, snap);
-                  quotaUpdateSink(snap);
-                }
-              }
-            : undefined,
-        });
-        if (shouldCapture) {
-          const snapshot = parseSnapshot(response.headers);
-          if (snapshot.length > 0) {
-            headerStore.set(providerConfig.id, snapshot);
-            saveLimitsFromHeaders(providerConfig.id, response.headers, patchedInit?.body ?? init?.body);
+    let response = await fetchWithRetry(input, patchedInit, {
+      providerName: providerConfig.name,
+      maxWaitMs: loadConfig().retryMaxWaitSeconds * 1000,
+      onRetryableResponse: shouldCapture
+        ? (headers) => {
+            if (!quotaUpdateSink) return;
+            const snap = profile.parseRateLimitSnapshot?.(headers) ?? [];
+            if (snap.length > 0) {
+              headerStore.set(providerConfig.id, snap);
+              quotaUpdateSink(snap);
+            }
           }
-        }
-        const httpError = await formatOpenAICompatHttpError(providerConfig.name, response);
-        if (httpError) {
-          throw Object.assign(new Error(httpError), { statusCode: response.status });
-        }
-        if (mistralForcedNonStream && response.ok) {
-          const jsonBody = await response.json().catch(() => null);
-          const sseText = mistralJsonToSse(jsonBody);
-          const sseHeaders = new Headers(response.headers);
-          sseHeaders.set('content-type', 'text/event-stream; charset=utf-8');
-          response = new Response(sseText, { status: 200, statusText: 'OK', headers: sseHeaders });
-        }
-        response = normalizeOpenAICompatToolCallResponse(response);
-        if (shouldCaptureUsage) {
-          captureProviderUsage(providerConfig.id, response);
-        }
-        return response;
+        : undefined,
+    });
+
+    if (shouldCapture) {
+      const snapshot = profile.parseRateLimitSnapshot?.(response.headers) ?? [];
+      if (snapshot.length > 0) {
+        headerStore.set(providerConfig.id, snapshot);
+        saveLimitsFromHeaders(providerConfig.id, response.headers, patchedInit?.body);
       }
-    : undefined;
+    }
+
+    const httpError = await formatOpenAICompatHttpError(providerConfig.name, response, profile?.httpErrorHint);
+    if (httpError) {
+      throw Object.assign(new Error(httpError), { statusCode: response.status });
+    }
+
+    if (forcedNonStream && response.ok) {
+      const jsonBody = await response.json().catch(() => null);
+      const sseText = mistralJsonToSse(jsonBody);
+      const sseHeaders = new Headers(response.headers);
+      sseHeaders.set('content-type', 'text/event-stream; charset=utf-8');
+      response = new Response(sseText, { status: 200, statusText: 'OK', headers: sseHeaders });
+    }
+
+    response = normalizeOpenAICompatToolCallResponse(response);
+    captureProviderUsage(providerConfig.id, response);
+    return response;
+  };
 
   return createOpenAI({
     baseURL: providerConfig.baseUrl,
     apiKey,
-    headers: getOpenAICompatProviderHeaders(providerConfig.id),
-    ...(customFetch ? { fetch: customFetch } : {}),
+    headers: profile?.staticHeaders,
+    fetch: customFetch,
   });
 }
 
