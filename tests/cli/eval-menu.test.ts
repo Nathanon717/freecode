@@ -34,15 +34,18 @@ vi.mock('../../src/cli/scenario-menu.js', () => ({
   runEvalScenarios: vi.fn(() => Promise.resolve()),
 }));
 
-vi.mock('../../src/commands/humaneval.js', () => ({
+vi.mock('../../src/cli/humaneval-menu.js', () => ({
   buildHumanEvalTab: vi.fn((problems: unknown[]) => ({
-    id: 'humaneval', label: 'HumanEval', count: () => 1 + problems.length,
+    id: 'humaneval', label: 'HumanEval', count: () => problems.length,
     renderBody: () => ({ lines: [], selectedLineIdx: 0 }),
   })),
-  ensureHumanEvalDataset: vi.fn(() => Promise.resolve(true)),
-  loadHumanEvalProblems: vi.fn(() => [{ task_id: 't/0', entry_point: 'add' }]),
   printHumanEvalList: vi.fn(),
   runHumanEvalProblems: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('../../src/eval/humaneval-data.js', () => ({
+  ensureHumanEvalDataset: vi.fn(() => Promise.resolve(true)),
+  loadHumanEvalProblems: vi.fn(() => [{ task_id: 't/0', entry_point: 'add' }]),
   humanEvalDatasetPath: vi.fn(() => '/data.gz'),
 }));
 
@@ -55,7 +58,7 @@ vi.mock('fs', () => ({ existsSync: vi.fn(() => true) }));
 import { runEvalMenu } from '../../src/cli/eval-menu.js';
 import { runListMenu } from '../../src/cli/list-menu.js';
 import { runEvalScenarios } from '../../src/cli/scenario-menu.js';
-import { runHumanEvalProblems } from '../../src/commands/humaneval.js';
+import { runHumanEvalProblems } from '../../src/cli/humaneval-menu.js';
 import { redrawBanner } from '../../src/cli/banner.js';
 
 const fakeRl = { pause: vi.fn(), resume: vi.fn() } as unknown as Interface;

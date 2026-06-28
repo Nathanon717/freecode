@@ -42,29 +42,38 @@
       {
         "name": "Right \u2014 switch to HumanEval tab",
         "send": "\u001b[C",
-        "waitFor": "Run All",
+        "waitFor": "HumanEval/0",
         "screenContains": [
-          "Run All",
+          "test/0",
           "HumanEval/0"
         ]
       },
       {
-        "name": "Down \u2014 focus first item",
+        "name": "Down \u2014 focus first item (test/0)",
         "send": "\u001b[B",
         "screenContains": [
-          "Run All",
+          "test/0",
           "HumanEval/0"
         ]
       },
       {
-        "name": "navigate down to HumanEval/0",
-        "send": "\u001b[B\u001b[B",
+        "name": "Down \u2014 focus HumanEval/0",
+        "send": "\u001b[B",
         "screenContains": [
           "HumanEval/0"
         ]
       },
       {
-        "name": "run HumanEval/0",
+        "name": "Enter \u2014 open the Run/View action menu",
+        "send": "\r",
+        "waitFor": "View",
+        "screenContains": [
+          "Run",
+          "View"
+        ]
+      },
+      {
+        "name": "Enter \u2014 select Run for HumanEval/0",
         "send": "\r",
         "waitFor": "tokens:",
         "waitForMs": 25000,
@@ -101,9 +110,9 @@
       {
         "name": "Right \u2014 switch to HumanEval tab again",
         "send": "\u001b[C",
-        "waitFor": "Run All",
+        "waitFor": "HumanEval/0",
         "screenContains": [
-          "Run All",
+          "test/0",
           "HumanEval/0"
         ]
       },
@@ -111,7 +120,6 @@
         "name": "Down \u2014 picker reopens with green dot",
         "send": "\u001b[B",
         "screenContains": [
-          "Run All",
           "\u25cf",
           "HumanEval/0"
         ]

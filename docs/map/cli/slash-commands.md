@@ -31,7 +31,6 @@ showHelp(): void
 /keys
 /model
 /renderer
-/test
 ```
 
 ## Matching

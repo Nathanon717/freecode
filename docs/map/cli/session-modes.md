@@ -30,5 +30,5 @@ createScriptedMode(scriptPath: string, projectRoot: string, rl: Interface): CliS
 - Reads the script file once, trimming trailing whitespace and dropping empty lines.
 - Tool approval consumes the next line only if it is `y/yes/approve/a` or `n/no/deny/d`.
 - If a denial has a following line, that line is treated as the user's instruction after denial.
-- `/test` and `/eval` print scenario lists instead of opening interactive menus.
+- `/eval` prints the scenario list instead of opening the interactive menu.
 - On EOF, prints `Goodbye!`.

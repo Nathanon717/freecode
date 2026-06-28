@@ -49,6 +49,7 @@ Do not duplicate reference facts that belong in generated docs.
   - [`eval-menu.ts`](cli/eval-menu.md) — Unified Eval Menu
   - [`eval-screen.ts`](cli/eval-screen.md) — Eval Screen Renderers
   - [`footer-status.ts`](cli/footer-status.md) — Footer Status State and Formatters
+  - [`humaneval-menu.ts`](cli/humaneval-menu.md) — HumanEval Tab + Run Loop
   - [`input-buffer.ts`](cli/input-buffer.md) — Input Buffer State
   - [`list-menu.ts`](cli/list-menu.md) — Shared Tabbed List Menu
   - [`markdown-renderer.ts`](cli/markdown-renderer.md) — Markdown Renderer
@@ -66,7 +67,6 @@ Do not duplicate reference facts that belong in generated docs.
   - [`transcript-renderer.ts`](cli/transcript-renderer.md) — Agent Transcript Formatting
 - `src/commands/`
   - [`config.ts`](commands/config.md) — Interactive Config Editor
-  - [`humaneval.ts`](commands/humaneval.md) — HumanEval Tab
   - [`model.ts`](commands/model.md) — Interactive Model Picker
   - [`renderer.ts`](commands/renderer.md) — Renderer Demo Command
   - [`status.ts`](commands/status.md) — /status Command
@@ -75,10 +75,10 @@ Do not duplicate reference facts that belong in generated docs.
 - `src/eval/`
   - [`errors.ts`](eval/errors.md) — Eval API Error Parser
   - [`history.ts`](eval/history.md) — Eval History and Status Computation
+  - [`humaneval-data.ts`](eval/humaneval-data.md) — HumanEval Dataset Loader
   - [`playground.ts`](eval/playground.md) — Playground Scenario Discovery and Hashing
   - [`result-sink.ts`](eval/result-sink.md) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) — Eval Subprocess Runner
-  - [`scenario-catalog.ts`](eval/scenario-catalog.md) — Scenario Catalog
 - [`index.ts`](index.md) — CLI Entry Point
 - [`logger.ts`](logger.md) — Logging Utility
 - `src/providers/adapters/`
@@ -119,4 +119,4 @@ Do not duplicate reference facts that belong in generated docs.
 
 Runtime starts in [index.md](index.md), enters [cli/session-runner.md](cli/session-runner.md), dispatches slash commands through [cli/command-dispatcher.md](cli/command-dispatcher.md), and sends normal turns to [agent/loop.md](agent/loop.md).
 
-Provider selection lives in [providers/registry.md](providers/registry.md). Tool wrappers live under [agent/tools/](agent/tools/index.md). Scenario discovery lives in [eval/scenario-catalog.md](eval/scenario-catalog.md).
+Provider selection lives in [providers/registry.md](providers/registry.md). Tool wrappers live under [agent/tools/](agent/tools/index.md).

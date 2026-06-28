@@ -20,7 +20,7 @@ buildEvalDots(model: string, data: EvalDotsData): string
 ## Key Neighbors
 
 - Imports `getEvalStatus`, `EvalStatus`, `EvalDotsData` from [eval/history.md](../eval/history.md).
-- Read by `commands/humaneval.ts` and `commands/model.ts` for circle display.
+- Read by `cli/humaneval-menu.ts` and `commands/model.ts` for circle display.
 - `cli/eval-menu.ts` uses `statusCircle` directly for non-TTY list output.
 
 ## Update Triggers

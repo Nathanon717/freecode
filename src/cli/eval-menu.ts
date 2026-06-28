@@ -19,13 +19,12 @@ import {
 } from '../eval/history.js';
 import { statusCircle } from './eval-dots.js';
 import { buildCustomEvalTab, runEvalScenarios, type ScenarioHashes } from './scenario-menu.js';
+import { buildHumanEvalTab, runHumanEvalProblems } from './humaneval-menu.js';
 import {
-  buildHumanEvalTab,
   humanEvalDatasetPath,
   loadHumanEvalProblems,
-  runHumanEvalProblems,
   type HumanEvalProblem,
-} from '../commands/humaneval.js';
+} from '../eval/humaneval-data.js';
 import { getHumanEvalResults } from '../providers/model-store.js';
 import { ensureStoreReady } from '../providers/db.js';
 import { existsSync } from 'fs';

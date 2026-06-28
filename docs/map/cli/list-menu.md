@@ -76,7 +76,7 @@ runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TRe
 
 ## Export notes
 
-- `VIEWPORT_SIZE` / `clampViewport` — shared by tab bodies that scroll a long item list (`scenario-menu.ts` Custom tab, `commands/humaneval.ts` HumanEval tab).
+- `VIEWPORT_SIZE` / `clampViewport` — shared by tab bodies that scroll a long item list (`scenario-menu.ts` Custom tab, `cli/humaneval-menu.ts` HumanEval tab).
 
 ## Behavior
 
@@ -98,4 +98,4 @@ runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TRe
 - `cli/raw-picker.ts` — the underlying raw-mode picker.
 - `cli/action-menu.ts` — `InlineActionMenu` used for the action sub-menu.
 - `cli/menu-shell.ts` — the lifecycle chrome menus wrap around this.
-- `cli/scenario-menu.ts`, `commands/humaneval.ts`, `commands/config.ts`, `commands/model.ts` — adopters.
+- `cli/scenario-menu.ts`, `cli/humaneval-menu.ts`, `commands/config.ts`, `commands/model.ts` — adopters.

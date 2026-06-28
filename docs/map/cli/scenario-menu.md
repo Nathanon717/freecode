@@ -20,13 +20,6 @@ runEvalScenarios(chosen: PlaygroundScenario[], model: string): Promise<void>
 
 - `getEvalStatus` is re-exported from `cli/eval-dots.ts`.
 
-## `/test`
-
-- Filters summaries where `requiresLlm` is false.
-- Allows one number/name choice.
-- Runs the selected scenario without `--details`.
-- Prints pass/fail based on harness exit status.
-
 ## Custom eval tab (`buildCustomEvalTab`)
 
 - The scenario list (discovered numbered folders in `playground/eval/`, requiring `prompt.md` + `eval/check.ts`) becomes the **Custom** tab of the unified menu (`cli/eval-menu.ts`, which discovers scenarios + history and composes the tabs). Up/Down navigate, Enter opens the Run/View/Edit action menu, `→` opens detail, `a` runs all, Esc closes.

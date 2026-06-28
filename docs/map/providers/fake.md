@@ -94,7 +94,6 @@ Two fake execution paths share the same fixture format and trace mechanism:
 
 - [registry.md](registry.md): gates `mock:*` model resolution and blocks real providers in fake mode.
 - [agent/loop.md](../agent/loop.md): calls `runFakeModel()` after building the real system prompt and tool list.
-- [eval/scenario-catalog.md](../eval/scenario-catalog.md): scenario harness env wiring for fake fixtures.
 
 ## Update Triggers
 

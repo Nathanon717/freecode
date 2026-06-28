@@ -1,6 +1,6 @@
 # src/cli/eval-menu.ts - Unified Eval Menu
 
-**Role:** Orchestrates the unified, tabbed eval menu behind `/eval`. Wraps the lifecycle chrome (`menu-shell.ts`) around a tabbed list menu (`list-menu.ts`) whose tabs are the **Custom** tab (playground/eval scenarios, from `scenario-menu.ts`) and the **HumanEval** tab (from `commands/humaneval.ts`). After the picker closes it dispatches the tagged choice to the matching run loop.
+**Role:** Orchestrates the unified, tabbed eval menu behind `/eval`. Wraps the lifecycle chrome (`menu-shell.ts`) around a tabbed list menu (`list-menu.ts`) whose tabs are the **Custom** tab (playground/eval scenarios, from `scenario-menu.ts`) and the **HumanEval** tab (from `cli/humaneval-menu.ts`, with dataset loading from `eval/humaneval-data.ts`). After the picker closes it dispatches the tagged choice to the matching run loop.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -30,5 +30,6 @@ runEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string)
 - `cli/menu-shell.ts` — lifecycle chrome wrapper.
 - `cli/list-menu.ts` — tabbed list-menu state machine.
 - `cli/scenario-menu.ts` — `buildCustomEvalTab` + `runEvalScenarios` (Custom tab + run loop).
-- `commands/humaneval.ts` — `buildHumanEvalTab` + `runHumanEvalProblems` + dataset helpers (HumanEval tab + run loop).
+- `cli/humaneval-menu.ts` — `buildHumanEvalTab` + `runHumanEvalProblems` (HumanEval tab + run loop).
+- `eval/humaneval-data.ts` — `humanEvalDatasetPath` + `loadHumanEvalProblems` (HumanEval dataset helpers).
 - `cli/terminal-ui.ts` — `drawFooter` (redrawn after the full-screen clear at menu→run boundary).

@@ -1,6 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   getOpenAICompatProviderHeaders,
+  formatCapturedProviderUsages,
+  registerQuotaUpdateSink,
+  setParallelToolsDisabled,
+  getLastCapturedHeaders,
+  beginProviderUsageCapture,
+  endProviderUsageCapture,
+  type CapturedProviderUsage,
 } from '../../../src/providers/adapters/openai-compat.js';
 import { formatOpenAICompatHttpError } from '../../../src/providers/adapters/adapter-http-retry.js';
 import { providerQuirks } from '../../../src/providers/adapters/openai-compat-quirks.js';
@@ -32,6 +39,106 @@ describe('Router Logic', () => {
 
     it('should not add OpenRouter headers to other providers', () => {
       expect(getOpenAICompatProviderHeaders('groq')).toBeUndefined();
+    });
+  });
+
+  describe('formatCapturedProviderUsages', () => {
+    const base: CapturedProviderUsage = {
+      providerId: 'groq',
+      source: 'json',
+      usage: { prompt_tokens: 10, completion_tokens: 5 },
+      capturedAt: 0,
+    };
+
+    it('returns null for null input', () => {
+      expect(formatCapturedProviderUsages(null)).toBeNull();
+    });
+
+    it('returns null for undefined input', () => {
+      expect(formatCapturedProviderUsages(undefined)).toBeNull();
+    });
+
+    it('returns null for an empty array', () => {
+      expect(formatCapturedProviderUsages([])).toBeNull();
+    });
+
+    it('formats a single usage as a plain object (not wrapped in array)', () => {
+      const result = formatCapturedProviderUsages([{ ...base, model: 'llama3', responseId: 'r1' }]);
+      expect(result).not.toBeNull();
+      const parsed: Record<string, unknown> = JSON.parse(result!) as Record<string, unknown>;
+      expect(Array.isArray(parsed)).toBe(false);
+      expect(parsed['providerId']).toBe('groq');
+      expect(parsed['model']).toBe('llama3');
+      expect(parsed['responseId']).toBe('r1');
+      expect(parsed['source']).toBe('json');
+      expect(parsed).not.toHaveProperty('capturedAt');
+    });
+
+    it('formats multiple usages as an array', () => {
+      const result = formatCapturedProviderUsages([base, { ...base, providerId: 'openai' }]);
+      expect(result).not.toBeNull();
+      const parsed: unknown[] = JSON.parse(result!) as unknown[];
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed).toHaveLength(2);
+    });
+
+    it('omits model and responseId when absent', () => {
+      const result = formatCapturedProviderUsages([base]);
+      const parsed: Record<string, unknown> = JSON.parse(result!) as Record<string, unknown>;
+      expect(parsed).not.toHaveProperty('model');
+      expect(parsed).not.toHaveProperty('responseId');
+    });
+  });
+
+  describe('registerQuotaUpdateSink', () => {
+    afterEach(() => { registerQuotaUpdateSink(null); });
+
+    it('accepts a function without throwing', () => {
+      expect(() => registerQuotaUpdateSink(() => {})).not.toThrow();
+    });
+
+    it('accepts null to deregister', () => {
+      registerQuotaUpdateSink(() => {});
+      expect(() => registerQuotaUpdateSink(null)).not.toThrow();
+    });
+  });
+
+  describe('setParallelToolsDisabled', () => {
+    afterEach(() => { setParallelToolsDisabled('test-provider', false); });
+
+    it('enables without throwing', () => {
+      expect(() => setParallelToolsDisabled('test-provider', true)).not.toThrow();
+    });
+
+    it('disables without throwing', () => {
+      setParallelToolsDisabled('test-provider', true);
+      expect(() => setParallelToolsDisabled('test-provider', false)).not.toThrow();
+    });
+  });
+
+  describe('getLastCapturedHeaders', () => {
+    it('returns null for a provider with no recorded headers', () => {
+      expect(getLastCapturedHeaders('unknown-provider-xyz')).toBeNull();
+    });
+  });
+
+  describe('beginProviderUsageCapture / endProviderUsageCapture', () => {
+    it('end without begin returns an empty array', async () => {
+      const result = await endProviderUsageCapture('never-begun');
+      expect(result).toEqual([]);
+    });
+
+    it('begin then end with no captures returns empty array', async () => {
+      beginProviderUsageCapture('empty-capture-test');
+      const result = await endProviderUsageCapture('empty-capture-test');
+      expect(result).toEqual([]);
+    });
+
+    it('end clears the session so a second end returns empty', async () => {
+      beginProviderUsageCapture('double-end-test');
+      await endProviderUsageCapture('double-end-test');
+      const second = await endProviderUsageCapture('double-end-test');
+      expect(second).toEqual([]);
     });
   });
 

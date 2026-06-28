@@ -36,7 +36,7 @@ npm test
 
 **Windows / ConPTY gotcha**: `node -e "..."` subprocesses spawned through ConPTY crash at startup (CSPRNG init) unless the parent's full `process.env` is forwarded. Always pass `env: { ...process.env }` when creating a driver with an arbitrary node subprocess as the command.
 
-Inside the CLI, run `/test` to open the non-LLM verification menu. Run `/eval` to list provider-backed evals, see the checks each one performs, and select one or many evals to run sequentially. `/eval` accepts numbers, names, comma/space-separated selections, and numeric ranges such as `1-3`.
+Inside the CLI, run `/eval` to list evals, see the checks each one performs, and select one or many evals to run sequentially. `/eval` accepts numbers, names, comma/space-separated selections, and numeric ranges such as `1-3`.
 
 For the generated scenario inventory, see [scenarios.md](scenarios.md).
 

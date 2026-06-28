@@ -45,8 +45,7 @@ dispatchCommand(input: string, runtime: CommandRuntime): Promise<CommandDispatch
 | `/models [id]` | Alias for `/model [id]`. |
 | `/config` | Runs config editor if the current mode supplies `runConfig`; otherwise prints unavailable. |
 | `/help` | Prints slash command help plus CLI flags. |
-| `/test` | Opens/renders non-LLM scenario menu. |
-| `/eval` | Opens/renders LLM eval scenario menu. |
+| `/eval` | Opens/renders eval scenario menu. |
 | `/keys` | Prints API key status from env/config. |
 | `/clear` | Clears in-memory history and Anthropic session cost, redraws banner, and restores screen hooks. |
 

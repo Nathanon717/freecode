@@ -1,135 +1,115 @@
-import { createWriteStream, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
-import { gunzipSync } from 'zlib';
-import https from 'https';
 import type { Interface } from 'readline';
 import chalk from 'chalk';
-import { getBannerColor } from '../cli/banner.js';
-import { VIEWPORT_SIZE, clampViewport, type MenuTab } from '../cli/list-menu.js';
+import { getBannerColor } from './banner.js';
+import { VIEWPORT_SIZE, clampViewport, type MenuTab } from './list-menu.js';
 import {
   setActiveModelFromString,
   setTokenCount,
-} from '../cli/terminal-ui.js';
+} from './terminal-ui.js';
 import { resetEvalWorkDir, startEvalScenario } from '../eval/runner.js';
-import { printEvalHeader, printEvalSummary } from '../cli/eval-screen.js';
-import { statusCircle } from '../cli/eval-dots.js';
+import { printEvalHeader, printEvalSummary } from './eval-screen.js';
+import { statusCircle } from './eval-dots.js';
+import { InlineActionMenu } from './action-menu.js';
 import { appendEvalRun } from '../providers/model-store.js';
 import { buildSystemPrompt } from '../agent/system-prompt.js';
+import type { HumanEvalProblem, HumanEvalResultMap } from '../eval/humaneval-data.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
-const HUMANEVAL_DATA_DEFAULT = resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'HumanEval.jsonl.gz');
-const HUMANEVAL_EXAMPLE_DATA_DEFAULT = resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'example_problem.jsonl');
 const HUMANEVAL_RUNS_DIR = resolve(_dirname, '..', '..', 'playground', 'humaneval', '.runs');
 
-const HUMANEVAL_DOWNLOAD_URL = 'https://github.com/openai/human-eval/raw/master/data/HumanEval.jsonl.gz';
-
-export function downloadFile(url: string, dest: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    mkdirSync(dirname(dest), { recursive: true });
-    const file = createWriteStream(dest);
-    const follow = (u: string) => {
-      https.get(u, res => {
-        if (res.statusCode === 301 || res.statusCode === 302) {
-          follow(res.headers.location!);
-          return;
-        }
-        if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); return; }
-        res.pipe(file);
-        file.on('finish', () => file.close(() => resolve()));
-        file.on('error', reject);
-      }).on('error', reject);
-    };
-    follow(url);
-  });
-}
-
-export type HumanEvalResultMap = Record<string, 'pass' | 'fail'>;
-
-export interface HumanEvalProblem {
-  task_id: string;
-  prompt: string;
-  canonical_solution: string;
-  test: string;
-  entry_point: string;
-}
-
-function readProblems(): HumanEvalProblem[] {
-  const dataPath = process.env['HUMANEVAL_DATA'] ?? HUMANEVAL_DATA_DEFAULT;
-  const exampleDataPath = process.env['HUMANEVAL_EXAMPLE_DATA'] ?? HUMANEVAL_EXAMPLE_DATA_DEFAULT;
-  const compressed = readFileSync(dataPath);
-  const text = gunzipSync(compressed).toString('utf-8');
-  const main = text.split('\n')
-    .filter(line => line.trim())
-    .map(line => JSON.parse(line) as HumanEvalProblem);
-
-  let example: HumanEvalProblem[] = [];
-  if (existsSync(exampleDataPath)) {
-    example = readFileSync(exampleDataPath, 'utf-8')
-      .split('\n')
-      .filter(line => line.trim())
-      .map(line => JSON.parse(line) as HumanEvalProblem);
-  }
-
-  return [...example, ...main];
-}
-
-function buildPickerLines(problems: HumanEvalProblem[], sel: number, viewportStart: number, results: HumanEvalResultMap): string[] {
-  const totalItems = 1 + problems.length; // index 0 = Run All, 1..N = problems
+// Renders the problem rows with a status dot (from prior results) and the
+// entry_point. Mirrors `buildEvalPickerScreen` for the Custom tab; the viewport
+// slice is applied by the caller. `selected` is -1 when the tab row is focused
+// (no row highlighted).
+function buildHumanEvalPickerScreen(
+  problems: HumanEvalProblem[],
+  selected: number,
+  results: HumanEvalResultMap,
+): string[] {
   const lines: string[] = [];
-  const viewportEnd = Math.min(viewportStart + VIEWPORT_SIZE, totalItems);
-  for (let i = viewportStart; i < viewportEnd; i++) {
-    const active = i === sel;
+  for (let i = 0; i < problems.length; i++) {
+    const p = problems[i];
+    const active = i === selected;
     const cursor = active ? getBannerColor()('▶') : ' ';
-    if (i === 0) {
-      const passCount = Object.values(results).filter(v => v === 'pass').length;
-      const total = problems.length;
-      const summary = passCount > 0 ? chalk.dim(` ${passCount}/${total} passed`) : chalk.dim(` ${total} problems`);
-      const label = active ? chalk.inverse('Run All') : chalk.bold('Run All');
-      lines.push(`  ${cursor}   ${label}${summary}`);
-    } else {
-      const p = problems[i - 1];
-      const label = active ? chalk.inverse(p.task_id) : getBannerColor()(p.task_id);
-      const r = results[p.task_id];
-      const dot = statusCircle(r === 'pass' ? 'green' : r === 'fail' ? 'red' : 'grey');
-      lines.push(`  ${cursor} ${dot} ${label}  ${chalk.dim(p.entry_point)}`);
-    }
+    const label = active ? chalk.inverse(p.task_id) : getBannerColor()(p.task_id);
+    const r = results[p.task_id];
+    const dot = statusCircle(r === 'pass' ? 'green' : r === 'fail' ? 'red' : 'grey');
+    lines.push(`  ${cursor} ${dot} ${label}  ${chalk.dim(p.entry_point)}`);
   }
-  lines.push('');
-  lines.push(chalk.dim(`  ${sel + 1} / ${totalItems}`));
   lines.push('');
   return lines;
 }
 
-// Builds the HumanEval list-menu tab. Item 0 is "Run All"; items 1..N are the
-// individual problems. Viewport scroll state is kept in the closure and derived
-// from the selected index on each render. On Enter it closes the menu with the
-// chosen problem(s).
+// Detail view for a single problem: last pass/fail badge, entry_point, and the
+// problem prompt. Mirrors `buildEvalDetailScreen` for the Custom tab, but the
+// HumanEval results map only carries pass/fail (no per-check grading details).
+function buildHumanEvalDetailScreen(
+  problem: HumanEvalProblem,
+  results: HumanEvalResultMap,
+): string[] {
+  const lines: string[] = [];
+  lines.push('');
+  lines.push(`  ${getBannerColor().bold(problem.task_id)}`);
+  lines.push(`  ${chalk.dim('← / Esc back')}`);
+  lines.push('');
+  const r = results[problem.task_id];
+  const badge = r === 'pass' ? chalk.green('PASS') : r === 'fail' ? chalk.red('FAIL') : chalk.gray('No results yet');
+  lines.push(`  ${badge}  ${chalk.dim(problem.entry_point)}`);
+  lines.push('');
+  for (const line of problem.prompt.split('\n')) lines.push(`  ${chalk.dim(line)}`);
+  lines.push('');
+  return lines;
+}
+
+// Builds the HumanEval list-menu tab. Items are the individual problems with a
+// status dot; a detail view (→) and a Run/View action menu (Enter). 'a' runs
+// every problem. Selecting Run closes the menu via `choose([problem])`. Mirrors
+// `buildCustomEvalTab` (the Custom sibling); there is no "Edit" action because
+// benchmark problems are not editable.
 export function buildHumanEvalTab<R>(
   problems: HumanEvalProblem[],
   results: HumanEvalResultMap,
   choose: (problems: HumanEvalProblem[]) => R,
 ): MenuTab<R> {
+  const actionMenu = new InlineActionMenu(['Run', 'View']);
   let viewportStart = 0;
   return {
     id: 'humaneval',
     label: 'HumanEval',
-    count: () => 1 + problems.length,
+    count: () => problems.length,
     renderBody: (selected) => {
       // `selected` is -1 when the tab row is focused; clamp the viewport math to
       // a real item while still passing the raw value through so no row highlights.
       const sel = Math.max(0, selected);
       viewportStart = clampViewport(sel, viewportStart);
+      const viewportEnd = Math.min(viewportStart + VIEWPORT_SIZE, problems.length);
+      const visible = problems.slice(viewportStart, viewportEnd);
       return {
-        lines: buildPickerLines(problems, selected, viewportStart, results),
+        lines: buildHumanEvalPickerScreen(
+          visible,
+          selected < 0 ? -1 : sel - viewportStart,
+          results,
+        ),
         selectedLineIdx: sel - viewportStart,
       };
     },
-    controls: 'Up/Down navigate, Enter to select, Esc close',
-    onEnter: (ctx) => {
-      const sel = ctx.getSelected();
-      ctx.close(choose(sel === 0 ? [...problems] : [problems[sel - 1]]));
+    renderDetail: (selected) => buildHumanEvalDetailScreen(problems[selected], results),
+    controls: 'Up/Down navigate, Enter actions, a run all, → details, Esc close',
+    actionMenu: {
+      menu: actionMenu,
+      actionHint: `  ${chalk.dim('↑/↓ action, Enter select, Esc back')}`,
+      onSelect: (option, ctx) => {
+        if (option === 'Run') ctx.close(choose([problems[ctx.getSelected()]]));
+        else if (option === 'View') ctx.enterDetail();
+      },
+    },
+    onKey: (key, ctx) => {
+      if (key === 'a' || key === 'A') { ctx.close(choose([...problems])); return true; }
+      return false;
     },
   };
 }
@@ -161,6 +141,40 @@ function askContinuePrompt(rl: Interface, message: string): Promise<boolean> {
   });
 }
 
+interface RetryStatusInfo { name: string; label: string; targetMs: number }
+
+// Builds the poll callback that watches `retryStatusFile` for rate-limit events.
+// On each tick, when a *new* event appears (a targetMs not seen before) it asks the
+// user whether to continue, calling `onDecline` if they decline. Re-prompts are
+// suppressed while a prompt is open and for any targetMs already handled; read
+// errors are swallowed. State (`promptingUser`, `lastSeenTargetMs`) lives in the
+// returned closure, so the caller just installs it on a timer.
+export function makeRetryPrompter(
+  retryStatusFile: string,
+  ask: (message: string) => Promise<boolean>,
+  onDecline: () => void,
+): () => void {
+  let promptingUser = false;
+  let lastSeenTargetMs: number | null = null;
+  return () => {
+    if (promptingUser) return;
+    try {
+      if (!existsSync(retryStatusFile)) return;
+      const raw = readFileSync(retryStatusFile, 'utf-8').trim();
+      if (!raw) return;
+      const info = JSON.parse(raw) as RetryStatusInfo | null;
+      if (info === null || info.targetMs === lastSeenTargetMs) return;
+      lastSeenTargetMs = info.targetMs;
+      promptingUser = true;
+      const waitSec = Math.ceil((info.targetMs - Date.now()) / 1000);
+      const label = waitSec > 0 ? ` (waiting ${waitSec}s)` : '';
+      ask(`Rate limit hit${label}. Continue?`)
+        .then(cont => { promptingUser = false; if (!cont) onDecline(); })
+        .catch(() => { promptingUser = false; });
+    } catch { /* ignore poll errors */ }
+  };
+}
+
 async function runOneProblem(problem: HumanEvalProblem, model: string, rl?: Interface): Promise<RunResult> {
   const startMs = Date.now();
   const taskSlug = problem.task_id.replace(/\//g, '-');
@@ -173,33 +187,15 @@ async function runOneProblem(problem: HumanEvalProblem, model: string, rl?: Inte
   const handle = startEvalScenario(runDir, buildAgentPrompt(problem), model || undefined);
 
   let userCancelled = false;
-  let promptingUser = false;
-  let lastSeenTargetMs: number | null = null;
 
-  const pollTimer = rl ? setInterval(() => {
-    if (promptingUser) return;
-    try {
-      if (existsSync(handle.retryStatusFile)) {
-        const raw = readFileSync(handle.retryStatusFile, 'utf-8').trim();
-        if (raw) {
-          const info = JSON.parse(raw) as { name: string; label: string; targetMs: number } | null;
-          if (info !== null && info.targetMs !== lastSeenTargetMs) {
-            lastSeenTargetMs = info.targetMs;
-            promptingUser = true;
-            const waitSec = Math.ceil((info.targetMs - Date.now()) / 1000);
-            const label = waitSec > 0 ? ` (waiting ${waitSec}s)` : '';
-            askContinuePrompt(rl, `Rate limit hit${label}. Continue?`).then(cont => {
-              promptingUser = false;
-              if (!cont) {
-                userCancelled = true;
-                handle.cancel();
-              }
-            }).catch(() => { promptingUser = false; });
-          }
-        }
-      }
-    } catch { /* ignore poll errors */ }
-  }, 500) : null;
+  const pollTimer = rl ? setInterval(
+    makeRetryPrompter(
+      handle.retryStatusFile,
+      (message) => askContinuePrompt(rl, message),
+      () => { userCancelled = true; handle.cancel(); },
+    ),
+    500,
+  ) : null;
 
   const result = await handle.promise;
   if (pollTimer !== null) clearInterval(pollTimer);
@@ -296,41 +292,6 @@ async function runOneProblem(problem: HumanEvalProblem, model: string, rl?: Inte
     );
   }
   return { status: 'fail', userCancelled };
-}
-
-// Resolved path of the HumanEval dataset (env override or bundled default).
-export function humanEvalDatasetPath(): string {
-  return process.env['HUMANEVAL_DATA'] ?? HUMANEVAL_DATA_DEFAULT;
-}
-
-// Downloads the HumanEval dataset if it is missing, printing progress. Returns
-// false (after printing an error) if the download was needed and failed.
-export async function ensureHumanEvalDataset(
-  downloadFn: (url: string, dest: string) => Promise<void> = downloadFile,
-): Promise<boolean> {
-  const dataPath = humanEvalDatasetPath();
-  if (existsSync(dataPath)) return true;
-  process.stdout.write(chalk.cyan('Downloading HumanEval dataset...'));
-  try {
-    await downloadFn(HUMANEVAL_DOWNLOAD_URL, dataPath);
-    process.stdout.write(chalk.green(' done\n'));
-    return true;
-  } catch (err) {
-    process.stdout.write(chalk.red(` failed\n`));
-    console.log(chalk.red(`Could not download dataset: ${err instanceof Error ? err.message : String(err)}`));
-    return false;
-  }
-}
-
-// Loads and parses the HumanEval problems. Returns null (after printing an
-// error) if the dataset cannot be read/parsed.
-export function loadHumanEvalProblems(): HumanEvalProblem[] | null {
-  try {
-    return readProblems();
-  } catch (err) {
-    console.log(chalk.red(`Failed to load HumanEval dataset: ${err instanceof Error ? err.message : String(err)}`));
-    return null;
-  }
 }
 
 // Non-TTY listing of the HumanEval problems.
