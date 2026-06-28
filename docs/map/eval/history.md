@@ -31,7 +31,7 @@ interface EvalHistoryEntry {
 interface ScenarioHashes { runHash: string; fullHash: string; }
 
 interface EvalDotsData {
-  scenarios: PlaygroundScenario[];
+  scenarios: CustomEval[];
   hashes: Map<string, ScenarioHashes>;
   history: EvalHistoryEntry[];
 }
@@ -50,13 +50,13 @@ loadEvalDotsData(): EvalDotsData
 
 - `loadEvalHistory()`: returns `[]` if the DB is not yet initialized.
 - `getEvalStatus()`: matches on `runHash`; also accepts `legacyFullHash` for grandfathering old entries.
-- `loadEvalDotsData()`: convenience bundle — discovers scenarios via `playground.ts`, hashes them all, and loads all history.
+- `loadEvalDotsData()`: convenience bundle — discovers scenarios via `custom.ts`, hashes them all, and loads all history.
 
 ## Key Neighbors
 
-- Imports scenario discovery and hashing from [playground.md](playground.md).
-- `EvalCheckResult` shape must stay in sync with `playground/eval/shared/types.ts`.
-- Consumed by `cli/eval-menu.ts`, `cli/eval-screen.ts`, `cli/scenario-menu.ts`, and `commands/model.ts`.
+- Imports scenario discovery and hashing from [custom.md](custom.md).
+- `EvalCheckResult` shape must stay in sync with `evals/custom/shared/types.ts`.
+- Consumed by `cli/eval-menu.ts`, `cli/eval-screen.ts`, `cli/custom-eval-menu.ts`, and `commands/model.ts`.
 
 ## Update Triggers
 

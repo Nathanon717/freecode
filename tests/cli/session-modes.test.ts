@@ -29,6 +29,7 @@ const capturedRawSession = vi.hoisted(() => ({
 // ---------------------------------------------------------------------------
 
 vi.mock('../../src/cli/terminal-ui.js', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const mod = await importOriginal<typeof import('../../src/cli/terminal-ui.js')>();
   return {
     // Keep real input-buffer functions — key-handler tests verify real buffer state.
@@ -132,6 +133,7 @@ vi.mock('../../src/cli/toggles.js', () => ({
 }));
 
 vi.mock('../../src/cli/tool-approval.js', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const mod = await importOriginal<typeof import('../../src/cli/tool-approval.js')>();
   return {
     // Real: used by scripted-mode tests.
@@ -456,12 +458,15 @@ describe('createInteractiveMode — detailed', () => {
     it.each(['create', 'edit', 'shell_exec'])(
       'read-only mode denies write tool %s',
       async (toolName) => {
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
         vi.mocked(isReadOnly).mockReturnValue(true);
         const { mode } = makeMode();
         const result = await mode.confirmToolCall({ name: toolName, args: {} });
         expect(result.approved).toBe(false);
         expect(result.message).toContain('Read-only');
         expect(confirmToolCallInteractive).not.toHaveBeenCalled();
+        expect(logSpy).toHaveBeenCalledWith(expect.stringContaining(`denied ${toolName}`));
+        logSpy.mockRestore();
       },
     );
 

@@ -40,5 +40,5 @@ Does **not** own: the picker render/key loop (see `raw-picker.ts` / `list-menu.t
 ## Key neighbors
 
 - `cli/raw-picker.ts` — provides the raw-mode reset helpers and the picker the body runs.
-- `cli/scenario-menu.ts`, `cli/humaneval-menu.ts` — current adopters.
+- `cli/custom-eval-menu.ts`, `cli/humaneval-menu.ts` — current adopters.
 - `cli/terminal-ui.ts` — `isBottomUIActive` / `teardownBottomUI` / `setupBottomUI`.

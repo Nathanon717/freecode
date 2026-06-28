@@ -27,6 +27,7 @@ const { mocks } = vi.hoisted(() => {
 // Partial mock of 'fs': pass through all real implementations except readFileSync,
 // which needs to be controllable in specific tests.
 vi.mock('fs', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const actual = await importOriginal<typeof import('fs')>();
   return {
     ...actual,
@@ -39,6 +40,7 @@ vi.mock('fs', async (importOriginal) => {
 });
 
 vi.mock('child_process', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const actual = await importOriginal<typeof import('child_process')>();
   return {
     ...actual,
@@ -94,9 +96,9 @@ import { appendEvalRun } from '../../src/providers/model-store.js';
 import { printEvalSummary } from '../../src/cli/eval-screen.js';
 
 // Mirrors the HUMANEVAL_RUNS_DIR constant from src/cli/humaneval-menu.ts
-// (_dirname there is src/cli/, so two levels up to project root, then into playground/).
+// (_dirname there is src/cli/, so two levels up to project root, then into evals/).
 const SRC_CLI_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'cli');
-const HUMANEVAL_RUNS_DIR = resolve(SRC_CLI_DIR, '..', '..', 'playground', 'humaneval', '.runs');
+const HUMANEVAL_RUNS_DIR = resolve(SRC_CLI_DIR, '..', '..', 'evals', 'humaneval', '.runs');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

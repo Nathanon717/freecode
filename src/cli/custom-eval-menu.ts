@@ -2,9 +2,9 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import chalk from "chalk";
 import {
-  PLAYGROUND_EVAL_DIR,
+  CUSTOM_EVAL_DIR,
   computeRunHash,
-} from "../eval/playground.js";
+} from "../eval/custom.js";
 import {
   getEvalStatus,
   getLatestEvalEntry,
@@ -13,7 +13,7 @@ import {
 } from "../eval/history.js";
 export { getEvalStatus };
 export type { ScenarioHashes };
-import type { PlaygroundScenario } from "../eval/playground.js";
+import type { CustomEval } from "../eval/custom.js";
 
 import {
   setActiveModel,
@@ -45,15 +45,15 @@ import { getDeadIds } from "../providers/model-cache.js";
 import { invalidateDeadModel } from "../providers/registry.js";
 import { buildSystemPrompt } from "../agent/system-prompt.js";
 
-// Builds the "Custom" eval tab: the playground/eval scenario list with status
+// Builds the "Custom" eval tab: the evals/custom scenario list with status
 // circles, a detail view (\u2192), and a Run/View/Edit action menu (Enter). 'a' runs
 // every scenario. Selecting Run closes the menu via `choose(scenarios)`.
 export function buildCustomEvalTab<R>(
-  scenarios: PlaygroundScenario[],
+  scenarios: CustomEval[],
   evalHistory: EvalHistoryEntry[],
   scenarioHashes: Map<string, ScenarioHashes>,
   getSelectedModel: () => string,
-  choose: (scenarios: PlaygroundScenario[]) => R,
+  choose: (scenarios: CustomEval[]) => R,
 ): MenuTab<R> {
   const actionMenu = new InlineActionMenu(["Run", "View", "Edit"]);
   let viewportStart = 0;
@@ -112,7 +112,7 @@ export function buildCustomEvalTab<R>(
 // subprocess, scores via the scenario's check.ts, persists results, and prints a
 // summary when more than one scenario ran.
 export async function runEvalScenarios(
-  chosen: PlaygroundScenario[],
+  chosen: CustomEval[],
   model: string,
 ): Promise<void> {
   let passed = 0;
@@ -121,7 +121,7 @@ export async function runEvalScenarios(
 
   for (const scenario of chosen) {
     const startMs = Date.now();
-    const scenarioDir = join(PLAYGROUND_EVAL_DIR, scenario.id);
+    const scenarioDir = join(CUSTOM_EVAL_DIR, scenario.id);
     const promptPath = join(scenarioDir, "prompt.md");
     const checkPath = join(scenarioDir, "eval", "check.ts");
 

@@ -6,8 +6,8 @@ import https from 'https';
 import chalk from 'chalk';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
-const HUMANEVAL_DATA_DEFAULT = resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'HumanEval.jsonl.gz');
-const HUMANEVAL_EXAMPLE_DATA_DEFAULT = resolve(_dirname, '..', '..', 'playground', 'humaneval', 'data', 'example_problem.jsonl');
+const HUMANEVAL_DATA_DEFAULT = resolve(_dirname, '..', '..', 'evals', 'humaneval', 'data', 'HumanEval.jsonl.gz');
+const HUMANEVAL_EXAMPLE_DATA_DEFAULT = resolve(_dirname, '..', '..', 'evals', 'humaneval', 'data', 'example_problem.jsonl');
 
 const HUMANEVAL_DOWNLOAD_URL = 'https://github.com/openai/human-eval/raw/master/data/HumanEval.jsonl.gz';
 

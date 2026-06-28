@@ -10,9 +10,9 @@ vi.mock('../../src/cli/menu-shell.js', () => ({
 
 vi.mock('../../src/cli/list-menu.js', () => ({ runListMenu: vi.fn() }));
 
-vi.mock('../../src/eval/playground.js', () => ({
-  PLAYGROUND_EVAL_DIR: '/eval',
-  discoverPlaygroundScenarios: vi.fn(() => [{ id: 's1', firstLine: 'first line' }]),
+vi.mock('../../src/eval/custom.js', () => ({
+  CUSTOM_EVAL_DIR: '/eval',
+  discoverCustomEvals: vi.fn(() => [{ id: 's1', firstLine: 'first line' }]),
   computeRunHash: vi.fn(() => 'rh'),
   computeScenarioHash: vi.fn(() => 'fh'),
 }));
@@ -26,7 +26,7 @@ vi.mock('../../src/cli/eval-dots.js', () => ({
   statusCircle: vi.fn(() => '●'),
 }));
 
-vi.mock('../../src/cli/scenario-menu.js', () => ({
+vi.mock('../../src/cli/custom-eval-menu.js', () => ({
   buildCustomEvalTab: vi.fn((scenarios: unknown[]) => ({
     id: 'custom', label: 'Custom', count: () => scenarios.length,
     renderBody: () => ({ lines: [], selectedLineIdx: 0 }),
@@ -57,7 +57,7 @@ vi.mock('fs', () => ({ existsSync: vi.fn(() => true) }));
 
 import { runEvalMenu } from '../../src/cli/eval-menu.js';
 import { runListMenu } from '../../src/cli/list-menu.js';
-import { runEvalScenarios } from '../../src/cli/scenario-menu.js';
+import { runEvalScenarios } from '../../src/cli/custom-eval-menu.js';
 import { runHumanEvalProblems } from '../../src/cli/humaneval-menu.js';
 import { redrawBanner } from '../../src/cli/banner.js';
 

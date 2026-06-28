@@ -1,12 +1,12 @@
 import { join } from 'path';
 import { getCache } from '../providers/db.js';
 import {
-  PLAYGROUND_EVAL_DIR,
-  discoverPlaygroundScenarios,
+  CUSTOM_EVAL_DIR,
+  discoverCustomEvals,
   computeRunHash,
   computeScenarioHash,
-  type PlaygroundScenario,
-} from './playground.js';
+  type CustomEval,
+} from './custom.js';
 
 export type EvalStatus = 'grey' | 'green' | 'red' | 'orange';
 
@@ -33,7 +33,7 @@ export interface EvalHistoryEntry {
 export interface ScenarioHashes { runHash: string; fullHash: string; }
 
 export interface EvalDotsData {
-  scenarios: PlaygroundScenario[];
+  scenarios: CustomEval[];
   hashes: Map<string, ScenarioHashes>;
   history: EvalHistoryEntry[];
 }
@@ -102,10 +102,10 @@ export function getLatestEvalEntry(
 }
 
 export function loadEvalDotsData(): EvalDotsData {
-  const scenarios = discoverPlaygroundScenarios();
+  const scenarios = discoverCustomEvals();
   const hashes = new Map<string, ScenarioHashes>();
   for (const s of scenarios) {
-    const dir = join(PLAYGROUND_EVAL_DIR, s.id);
+    const dir = join(CUSTOM_EVAL_DIR, s.id);
     hashes.set(s.id, { runHash: computeRunHash(dir), fullHash: computeScenarioHash(dir) });
   }
   const history = loadEvalHistory();

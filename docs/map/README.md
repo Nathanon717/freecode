@@ -45,6 +45,7 @@ Do not duplicate reference facts that belong in generated docs.
   - [`action-menu.ts`](cli/action-menu.md) — Inline Action Sub-menu
   - [`banner.ts`](cli/banner.md) — Startup Banner
   - [`command-dispatcher.ts`](cli/command-dispatcher.md) — Command Dispatcher
+  - [`custom-eval-menu.ts`](cli/custom-eval-menu.md) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval-dots.md) — Eval Status Circle Renderers
   - [`eval-menu.ts`](cli/eval-menu.md) — Unified Eval Menu
   - [`eval-screen.ts`](cli/eval-screen.md) — Eval Screen Renderers
@@ -56,7 +57,6 @@ Do not duplicate reference facts that belong in generated docs.
   - [`menu-shell.ts`](cli/menu-shell.md) — Menu Lifecycle Chrome
   - [`model-screen.ts`](cli/model-screen.md) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/raw-picker.md) — Shared Raw-Mode Picker
-  - [`scenario-menu.ts`](cli/scenario-menu.md) — Custom Eval Tab + Run Loop
   - [`session-modes.ts`](cli/session-modes.md) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) — Slash Commands
@@ -73,10 +73,10 @@ Do not duplicate reference facts that belong in generated docs.
 - `src/config/`
   - [`index.ts`](config/index.md) — Configuration Loader
 - `src/eval/`
+  - [`custom.ts`](eval/custom.md) — Custom Eval Discovery and Hashing
   - [`errors.ts`](eval/errors.md) — Eval API Error Parser
   - [`history.ts`](eval/history.md) — Eval History and Status Computation
   - [`humaneval-data.ts`](eval/humaneval-data.md) — HumanEval Dataset Loader
-  - [`playground.ts`](eval/playground.md) — Playground Scenario Discovery and Hashing
   - [`result-sink.ts`](eval/result-sink.md) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) — Eval Subprocess Runner
 - [`index.ts`](index.md) — CLI Entry Point

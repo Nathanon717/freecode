@@ -6,7 +6,7 @@ import {
   type EvalHistoryEntry,
   type ScenarioHashes,
 } from '../eval/history.js';
-import type { PlaygroundScenario } from '../eval/playground.js';
+import type { CustomEval } from '../eval/custom.js';
 import { statusCircle } from './eval-dots.js';
 import type { EvalReport } from '../eval/runner.js';
 
@@ -72,7 +72,7 @@ export function printEvalSummary(passed: number, failed: number, incomplete: num
 }
 
 export function buildEvalPickerScreen(
-  scenarios: PlaygroundScenario[],
+  scenarios: CustomEval[],
   selected: number,
   history: EvalHistoryEntry[],
   model: string,
@@ -93,7 +93,7 @@ export function buildEvalPickerScreen(
 }
 
 export function buildEvalDetailScreen(
-  scenario: PlaygroundScenario,
+  scenario: CustomEval,
   entry: EvalHistoryEntry | null,
   model: string,
 ): string[] {

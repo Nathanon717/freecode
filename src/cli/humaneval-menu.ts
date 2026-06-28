@@ -19,7 +19,7 @@ import { buildSystemPrompt } from '../agent/system-prompt.js';
 import type { HumanEvalProblem, HumanEvalResultMap } from '../eval/humaneval-data.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
-const HUMANEVAL_RUNS_DIR = resolve(_dirname, '..', '..', 'playground', 'humaneval', '.runs');
+const HUMANEVAL_RUNS_DIR = resolve(_dirname, '..', '..', 'evals', 'humaneval', '.runs');
 
 // Renders the problem rows with a status dot (from prior results) and the
 // entry_point. Mirrors `buildEvalPickerScreen` for the Custom tab; the viewport

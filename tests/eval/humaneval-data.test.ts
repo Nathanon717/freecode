@@ -23,6 +23,7 @@ const { mocks } = vi.hoisted(() => {
 // Partial mock of 'fs': pass through all real implementations except createWriteStream
 // and readFileSync, which need to be controllable in specific tests.
 vi.mock('fs', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const actual = await importOriginal<typeof import('fs')>();
   return {
     ...actual,
@@ -191,7 +192,7 @@ describe('loadHumanEvalProblems', () => {
 
   it('loads from HUMANEVAL_DATA_DEFAULT when env var is not set', () => {
     // Neither env var is set → readProblems falls through to the default bundled paths.
-    // playground/humaneval/data/HumanEval.jsonl.gz exists in this repo.
+    // evals/humaneval/data/HumanEval.jsonl.gz exists in this repo.
     delete process.env['HUMANEVAL_DATA'];
     delete process.env['HUMANEVAL_EXAMPLE_DATA'];
     const problems = loadHumanEvalProblems();

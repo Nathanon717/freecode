@@ -4,26 +4,22 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { resolve } from 'path';
 import { stat } from 'fs/promises';
+import { rgPath } from '@vscode/ripgrep';
 import { resolveExistingProjectPath } from '../context.js';
 
 const execFileAsync = promisify(execFile);
 
-// Detect rg once at module load — no per-call overhead.
-const rgAvailable: Promise<boolean> = execFileAsync('rg', ['--version'], { timeout: 5000 })
-  .then(() => true)
-  .catch(() => false);
-
 const MAX_LINE_LENGTH = 2000;
 const RESULT_LIMIT = 100;
 
-async function grepWithRg(pattern: string, cwd: string, include?: string): Promise<string> {
+async function runRipgrep(pattern: string, cwd: string, include?: string): Promise<string> {
   const args = ['--no-config', '-n', '--no-heading', '--hidden', '--glob=!.git/*', '--no-messages'];
   if (include) args.push(`--glob=${include}`);
   args.push('--', pattern, '.');
 
   let stdout: string;
   try {
-    ({ stdout } = await execFileAsync('rg', args, { cwd, timeout: 10000, maxBuffer: 10 * 1024 * 1024 }));
+    ({ stdout } = await execFileAsync(rgPath, args, { cwd, timeout: 10000, maxBuffer: 10 * 1024 * 1024 }));
   } catch (err: unknown) {
     // exit code 1 = no matches, exit code 2 = partial (some inaccessible paths)
     const e = err as { code?: number | string; stdout?: string };
@@ -99,46 +95,9 @@ async function grepWithRg(pattern: string, cwd: string, include?: string): Promi
   return out.join('\n');
 }
 
-async function grepWithFindstr(pattern: string, cwd: string): Promise<string> {
-  const safePattern = pattern.replace(/"/g, '\\"');
-  try {
-    const { stdout } = await execFileAsync('findstr', ['/s', '/n', '/i', safePattern, '*'], {
-      cwd,
-      timeout: 10000,
-      shell: true,
-    });
-    if (stdout.trim()) {
-      const lines = stdout.split('\n').filter((l) => l.length > 0).slice(0, 50);
-      return lines.join('\n');
-    }
-    return 'No matches found';
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('not recognized') || msg.includes('not found') || msg.includes('exit code 1') || msg.includes('Command failed')) {
-      return 'No matches found';
-    }
-    throw err;
-  }
-}
-
-async function grepWithGrep(pattern: string, cwd: string): Promise<string> {
-  try {
-    const { stdout } = await execFileAsync(
-      'grep', ['-rn', '--include=*', '-E', pattern, '.'],
-      { cwd, timeout: 10000, maxBuffer: 10 * 1024 * 1024 },
-    );
-    if (!stdout.trim()) return 'No matches found';
-    const lines = stdout.split('\n').filter((l) => l.trim()).slice(0, 100);
-    return lines.join('\n');
-  } catch (err: unknown) {
-    if ((err as { code?: number | string }).code === 1) return 'No matches found';
-    throw err;
-  }
-}
-
 export const grepTool = tool({
   description:
-    'Search for a regex pattern in files. Uses ripgrep when available for fast, accurate results. ' +
+    'Search for a regex pattern in files using ripgrep for fast, accurate results. ' +
     'Supports an optional include glob (e.g. "*.ts") to narrow the search. Results are sorted by file recency.',
   parameters: z.object({
     pattern: z.string().describe('The regex pattern to search for'),
@@ -154,13 +113,7 @@ export const grepTool = tool({
     }
     const cwd = resolved.fullPath;
     try {
-      if (await rgAvailable) {
-        return await grepWithRg(pattern, cwd, include);
-      }
-      if (process.platform === 'win32') {
-        return await grepWithFindstr(pattern, cwd);
-      }
-      return await grepWithGrep(pattern, cwd);
+      return await runRipgrep(pattern, cwd, include);
     } catch (error) {
       return `Error searching: ${error instanceof Error ? error.message : String(error)}`;
     }

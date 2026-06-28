@@ -4,9 +4,9 @@ import { join, resolve, dirname, relative } from 'path';
 import { fileURLToPath } from 'url';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
-export const PLAYGROUND_EVAL_DIR = resolve(_dirname, '..', '..', 'playground', 'eval');
+export const CUSTOM_EVAL_DIR = resolve(_dirname, '..', '..', 'evals', 'custom');
 
-export interface PlaygroundScenario {
+export interface CustomEval {
   id: string;
   firstLine: string;
 }
@@ -15,12 +15,12 @@ export function modelSlug(model: string): string {
   return model.replace(/[:/]/g, '--');
 }
 
-export function discoverPlaygroundScenarios(): PlaygroundScenario[] {
-  if (!existsSync(PLAYGROUND_EVAL_DIR)) return [];
-  const dirs = readdirSync(PLAYGROUND_EVAL_DIR, { withFileTypes: true })
+export function discoverCustomEvals(): CustomEval[] {
+  if (!existsSync(CUSTOM_EVAL_DIR)) return [];
+  const dirs = readdirSync(CUSTOM_EVAL_DIR, { withFileTypes: true })
     .filter(d => d.isDirectory() && /^(\d{3}-|\w)/.test(d.name) && d.name !== 'shared' && d.name !== 'results')
     .filter(d => {
-      const dir = join(PLAYGROUND_EVAL_DIR, d.name);
+      const dir = join(CUSTOM_EVAL_DIR, d.name);
       return existsSync(join(dir, 'prompt.md')) && existsSync(join(dir, 'eval', 'check.ts'));
     });
   // Non-numbered dirs sort before numbered ones
@@ -32,7 +32,7 @@ export function discoverPlaygroundScenarios(): PlaygroundScenario[] {
     return a.name.localeCompare(b.name);
   });
   return dirs.map(d => {
-    const promptPath = join(PLAYGROUND_EVAL_DIR, d.name, 'prompt.md');
+    const promptPath = join(CUSTOM_EVAL_DIR, d.name, 'prompt.md');
     const firstLine = readFileSync(promptPath, 'utf-8').trim().split('\n')[0].slice(0, 80);
     return { id: d.name, firstLine };
   });

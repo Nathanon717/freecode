@@ -89,7 +89,7 @@ runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 
 - `commands/model.ts` — `/model` picker
 - `commands/config.ts` — `/config` editor
-- `cli/scenario-menu.ts` — `/eval` picker
+- `cli/custom-eval-menu.ts` — `/eval` picker
 - `cli/terminal-ui.ts` — `drawFooter` called after each redraw
 - `cli/tool-approval.ts` — uses `runRawKeySession` for the Approve/Deny menu and line-editor (Phase 2 done)
 - `cli/session-modes.ts` — Phase 3 target

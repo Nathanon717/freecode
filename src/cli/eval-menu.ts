@@ -7,18 +7,18 @@ import { countWrappedLines } from './raw-picker.js';
 import { drawFooter } from './terminal-ui.js';
 import { redrawBanner } from './banner.js';
 import {
-  PLAYGROUND_EVAL_DIR,
-  discoverPlaygroundScenarios,
+  CUSTOM_EVAL_DIR,
+  discoverCustomEvals,
   computeRunHash,
   computeScenarioHash,
-  type PlaygroundScenario,
-} from '../eval/playground.js';
+  type CustomEval,
+} from '../eval/custom.js';
 import {
   getEvalStatus,
   loadEvalHistory,
 } from '../eval/history.js';
 import { statusCircle } from './eval-dots.js';
-import { buildCustomEvalTab, runEvalScenarios, type ScenarioHashes } from './scenario-menu.js';
+import { buildCustomEvalTab, runEvalScenarios, type ScenarioHashes } from './custom-eval-menu.js';
 import { buildHumanEvalTab, runHumanEvalProblems } from './humaneval-menu.js';
 import {
   humanEvalDatasetPath,
@@ -34,7 +34,7 @@ export type EvalTabId = 'custom' | 'humaneval';
 // What the unified eval menu resolves with: a tagged choice dispatched to the
 // matching run loop, or null when the user cancels.
 type EvalChoice =
-  | { kind: 'custom'; scenarios: PlaygroundScenario[] }
+  | { kind: 'custom'; scenarios: CustomEval[] }
   | { kind: 'humaneval'; problems: HumanEvalProblem[] };
 
 // Entry point for `/eval` (opens the Custom tab).
@@ -53,12 +53,12 @@ async function runEvalMenuBody(
   rl: Interface,
   getSelectedModel: () => string,
 ): Promise<void> {
-  // Custom (playground/eval) tab data.
-  const scenarios = discoverPlaygroundScenarios();
+  // Custom (evals/custom) tab data.
+  const scenarios = discoverCustomEvals();
   const evalHistory = loadEvalHistory();
   const scenarioHashes = new Map<string, ScenarioHashes>(
     scenarios.map((s) => {
-      const dir = join(PLAYGROUND_EVAL_DIR, s.id);
+      const dir = join(CUSTOM_EVAL_DIR, s.id);
       return [s.id, { runHash: computeRunHash(dir), fullHash: computeScenarioHash(dir) }];
     }),
   );
@@ -109,7 +109,7 @@ async function runEvalMenuBody(
 }
 
 function printEvalScenariosList(
-  scenarios: PlaygroundScenario[],
+  scenarios: CustomEval[],
   scenarioHashes: Map<string, ScenarioHashes>,
   evalHistory: ReturnType<typeof loadEvalHistory>,
   model: string,

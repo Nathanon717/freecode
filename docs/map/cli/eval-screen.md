@@ -12,9 +12,9 @@ printEvalReport(report: EvalReport): void
 
 printEvalSummary(passed: number, failed: number, incomplete: number): void
 
-buildEvalPickerScreen(scenarios: PlaygroundScenario[], selected: number, history: EvalHistoryEntry[], model: string, scenarioHashes: Map<string, ScenarioHashes>): string[]
+buildEvalPickerScreen(scenarios: CustomEval[], selected: number, history: EvalHistoryEntry[], model: string, scenarioHashes: Map<string, ScenarioHashes>): string[]
 
-buildEvalDetailScreen(scenario: PlaygroundScenario, entry: EvalHistoryEntry | null, model: string): string[]
+buildEvalDetailScreen(scenario: CustomEval, entry: EvalHistoryEntry | null, model: string): string[]
 ```
 <!-- END GENERATED EXPORTS -->
 

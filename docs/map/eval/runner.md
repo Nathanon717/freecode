@@ -44,7 +44,7 @@ runCheckScript(scenarioId: string, scenarioDir: string, result: EvalRunResult): 
 - Spawns `dist/index.js` (not `src/`) — requires a prior build.
 - Sets `FREECODE_TRANSCRIPT_STREAM=stdout` so the transcript formatter runs inside the subprocess.
 - 120-second hard timeout per run via `setTimeout`.
-- Imports `modelSlug` from `./playground.js` and `EvalCheckResult` from `./history.js`.
+- Imports `modelSlug` from `./custom.js` and `EvalCheckResult` from `./history.js`.
 
 ## Read When
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { statusCircle, buildEvalDots } from '../../src/cli/eval-dots.js';
 import type { EvalDotsData } from '../../src/eval/history.js';
-import type { PlaygroundScenario } from '../../src/eval/playground.js';
+import type { CustomEval } from '../../src/eval/custom.js';
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 
@@ -16,7 +16,7 @@ describe('statusCircle', () => {
 
 describe('buildEvalDots', () => {
   it('returns one circle per scenario', () => {
-    const scenarios: PlaygroundScenario[] = [
+    const scenarios: CustomEval[] = [
       { id: 's1', firstLine: 'first' },
       { id: 's2', firstLine: 'second' },
     ];

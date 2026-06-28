@@ -163,7 +163,7 @@ if (ttyScenarios.length > 0) {
     }
     const fakeFixturePath = scenario.llmFixture ? join(SCENARIOS_DIR, scenario.llmFixture) : '';
     const fakeEvalResultPath = scenario.llmFixture && scenario.model
-      ? join(ROOT, 'playground', 'eval', 'results', `${scenario.model.replace(/[:/]/g, '--')}.json`)
+      ? join(ROOT, 'evals', 'custom', 'results', `${scenario.model.replace(/[:/]/g, '--')}.json`)
       : '';
     const previousFakeEvalResult = fakeEvalResultPath && existsSync(fakeEvalResultPath)
       ? readFileSync(fakeEvalResultPath, 'utf-8')

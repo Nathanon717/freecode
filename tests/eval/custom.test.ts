@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { modelSlug } from '../../src/eval/playground.js';
+import { modelSlug } from '../../src/eval/custom.js';
 
 describe('modelSlug', () => {
   it('replaces colons and slashes with double dashes', () => {

@@ -18,7 +18,12 @@
       "Bash(npx tsc *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(sed -i \"s/'playground', 'eval'/'evals', 'custom'/g\" src/eval/runner.ts src/eval/custom.ts tests/harness/run-scenarios.ts)",
+      "Bash(sed -i \"s/'playground', 'humaneval'/'evals', 'humaneval'/g\" src/cli/humaneval-menu.ts src/eval/humaneval-data.ts tests/cli/humaneval-menu.test.ts)",
+      "Bash(sed -i 's#playground/eval#evals/custom#g' src/cli/eval-menu.ts src/cli/custom-eval-menu.ts)",
+      "Bash(sed -i 's#playground/humaneval#evals/humaneval#g' tests/eval/humaneval-data.test.ts)",
+      "Bash(sed -i 's#into playground/#into evals/#g' tests/cli/humaneval-menu.test.ts)"
     ]
   }
 }

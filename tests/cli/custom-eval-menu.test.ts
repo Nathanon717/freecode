@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getEvalStatus } from '../../src/cli/scenario-menu.js';
+import { getEvalStatus } from '../../src/cli/custom-eval-menu.js';
 
 const currentHash = 'current-hash';
 

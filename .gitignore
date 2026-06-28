@@ -11,8 +11,8 @@ coverage/
 dont look/
 docs/.obsidian/
 
-# humaneval dataset (large binary — see playground/humaneval/README.md)
-playground/humaneval/data/
+# humaneval dataset (large binary — see evals/humaneval/README.md)
+evals/humaneval/data/
 __pycache__/
 *.pyc
 
@@ -41,14 +41,11 @@ isolate-*.log
 .freecode/config-cache.json
 
 # eval run artifacts — data now lives in freecode.db
-playground/eval/results/
-playground/eval/**/.artifacts/
-playground/eval/**/.run/
-playground/eval/**/work/
-playground/humaneval/.runs/
+evals/custom/results/
+evals/custom/**/.artifacts/
+evals/custom/**/.run/
+evals/custom/**/work/
+evals/humaneval/.runs/
 
 # opencode source checkout
 opencode source code/
-
-# opencode playground
-playground/opencode/

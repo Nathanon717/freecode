@@ -4,7 +4,7 @@ import {
   buildEvalDetailScreen,
 } from '../../src/cli/eval-screen.js';
 import type { EvalHistoryEntry, EvalCheckResult } from '../../src/eval/history.js';
-import type { PlaygroundScenario } from '../../src/eval/playground.js';
+import type { CustomEval } from '../../src/eval/custom.js';
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 
@@ -20,7 +20,7 @@ function makeEntry(over: Partial<EvalHistoryEntry> = {}): EvalHistoryEntry {
 }
 
 describe('buildEvalPickerScreen', () => {
-  const scenarios: PlaygroundScenario[] = [
+  const scenarios: CustomEval[] = [
     { id: 'alpha', firstLine: 'First scenario' },
     { id: 'beta', firstLine: 'Second scenario' },
   ];
@@ -46,7 +46,7 @@ describe('buildEvalPickerScreen', () => {
 });
 
 describe('buildEvalDetailScreen', () => {
-  const scenario: PlaygroundScenario = { id: 'my-eval', firstLine: 'Do something' };
+  const scenario: CustomEval = { id: 'my-eval', firstLine: 'Do something' };
 
   it('shows no-results message when entry is null', () => {
     const lines = buildEvalDetailScreen(scenario, null, 'test:model');

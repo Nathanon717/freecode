@@ -1,6 +1,6 @@
 # src/eval/result-sink.ts - Eval Result JSON IPC Sink
 
-**Role:** Manages reads and writes to the `FREECODE_RESULT_JSON` file used for IPC between the eval subprocess and its parent. Preserves the placeholder→partial→final write semantics required by `scenario-menu.ts` polling.
+**Role:** Manages reads and writes to the `FREECODE_RESULT_JSON` file used for IPC between the eval subprocess and its parent. Preserves the placeholder→partial→final write semantics required by `custom-eval-menu.ts` polling.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

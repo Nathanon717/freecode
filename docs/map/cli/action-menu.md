@@ -1,6 +1,6 @@
 # src/cli/action-menu.ts - Inline Action Sub-menu
 
-**Role:** Shared inline action sub-menu that splices into any list-picker screen below the selected row. Used by both `scenario-menu.ts` (eval picker) and `commands/model.ts` (model picker).
+**Role:** Shared inline action sub-menu that splices into any list-picker screen below the selected row. Used by both `custom-eval-menu.ts` (eval picker) and `commands/model.ts` (model picker).
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -40,7 +40,7 @@ if (res.type === 'select') { /* res.option */ }
 ## Key Neighbours
 
 - `cli/raw-picker.ts` — `runRawPicker` host that callers use
-- `cli/scenario-menu.ts` — eval picker consumer
+- `cli/custom-eval-menu.ts` — eval picker consumer
 - `commands/model.ts` — model picker consumer
 
 ## Update Triggers

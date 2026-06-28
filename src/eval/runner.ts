@@ -3,14 +3,14 @@ import { join, resolve, dirname } from 'path';
 import { spawn, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
-import { modelSlug } from './playground.js';
+import { modelSlug } from './custom.js';
 import type { EvalCheckResult } from './history.js';
 import { logError } from '../logger.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const DIST_ENTRY = resolve(_dirname, '..', '..', 'dist', 'index.js');
 const TSX_CLI = resolve(_dirname, '..', '..', 'node_modules', 'tsx', 'dist', 'cli.mjs');
-const RUN_CHECK_SCRIPT = resolve(_dirname, '..', '..', 'playground', 'eval', 'run-check.ts');
+const RUN_CHECK_SCRIPT = resolve(_dirname, '..', '..', 'evals', 'custom', 'run-check.ts');
 
 export interface EvalToolCall { tool: string; args: Record<string, unknown>; result?: unknown; }
 export interface EvalTokenUsage { total: number; prompt?: number; output?: number; }
