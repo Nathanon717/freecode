@@ -86,50 +86,84 @@ export interface ListMenuOptions<TResult> {
   countLines?: (lines: string[]) => number;
 }
 
+/** Separator drawn between tab cells in the bar. */
+const TAB_SEP = "   ";
+
 /** Plain (un-styled) width of a tab cell: the label plus its one-space padding each side. */
 function tabCellWidth(label: string): number {
   return label.length + 2;
 }
 
+/** Horizontal budget for tab cells: terminal width less the leading indent and both overflow arrows. */
+function tabBarBudget(): number {
+  const cols = process.stdout.columns ?? 80;
+  return Math.max(8, cols - 2 - 4);
+}
+
+/** Pack tabs rightward from `lo`, returning the last index whose cell still fits in `budget`. */
+function packTabsRight(tabs: { label: string }[], lo: number, budget: number): number {
+  let used = tabCellWidth(tabs[lo].label);
+  let hi = lo;
+  while (
+    hi + 1 < tabs.length &&
+    used + TAB_SEP.length + tabCellWidth(tabs[hi + 1].label) <= budget
+  ) {
+    used += TAB_SEP.length + tabCellWidth(tabs[hi + 1].label);
+    hi++;
+  }
+  return hi;
+}
+
 /**
- * Renders the tab bar, windowed around the active tab so it never runs past the
- * terminal width. When tabs are clipped on a side, a dim `‹` / `›` marks that
- * more tabs exist off-screen. `styleTab(i)` returns the styled cell for tab `i`.
+ * Window of visible tab indices, scrolled with a one-tab margin (scrolloff=1):
+ * the active tab always keeps at least one neighbour visible on each side, except
+ * at the very ends. The bar scrolls only when the selection reaches that margin —
+ * it never recentres on the active tab. `prevScroll` is the previously rendered
+ * left edge, so a satisfied window stays put.
+ *
+ * Returns the inclusive `[lo, hi]` range of visible tabs.
+ */
+export function computeTabWindow(
+  tabs: { label: string }[],
+  prevScroll: number,
+  tabIndex: number,
+  budget: number,
+): { lo: number; hi: number } {
+  const last = tabs.length - 1;
+  // Start from the persisted left edge, but never scroll past the selection.
+  let lo = Math.min(Math.max(prevScroll, 0), tabIndex);
+  // Left margin: keep one tab visible to the left of the selection (unless it's the first tab).
+  if (tabIndex > 0 && lo > tabIndex - 1) lo = tabIndex - 1;
+  let hi = packTabsRight(tabs, lo, budget);
+  // Right margin: scroll right until one tab is visible past the selection (unless it's the
+  // last tab), but never push the selection off the left edge.
+  const rightTarget = tabIndex < last ? tabIndex + 1 : tabIndex;
+  while (hi < rightTarget && lo < tabIndex) {
+    lo++;
+    hi = packTabsRight(tabs, lo, budget);
+  }
+  // Reclaim left space when the right end is already shown (e.g. after a widen): pull `lo`
+  // back as long as the last tab stays visible, so we never draw a spurious `‹`.
+  while (lo > 0 && packTabsRight(tabs, lo - 1, budget) >= last) lo--;
+  return { lo, hi: packTabsRight(tabs, lo, budget) };
+}
+
+/**
+ * Renders the tab bar for the visible `[lo, hi]` window. When tabs are clipped on
+ * a side, a dim `‹` / `›` marks that more tabs exist off-screen. `styleTab(i)`
+ * returns the styled cell for tab `i`.
  */
 function renderTabBar(
   tabs: { label: string }[],
-  tabIndex: number,
+  lo: number,
+  hi: number,
   styleTab: (i: number) => string,
 ): string {
-  const SEP = "   ";
-  const cols = process.stdout.columns ?? 80;
-  // Reserve the leading indent plus room for both overflow arrows.
-  const budget = Math.max(8, cols - 2 - 4);
-
-  // Greedily grow a window outward from the active tab while it still fits.
-  let lo = tabIndex;
-  let hi = tabIndex;
-  let used = tabCellWidth(tabs[tabIndex].label);
-  for (;;) {
-    let grew = false;
-    if (hi + 1 < tabs.length && used + SEP.length + tabCellWidth(tabs[hi + 1].label) <= budget) {
-      used += SEP.length + tabCellWidth(tabs[hi + 1].label);
-      hi++;
-      grew = true;
-    }
-    if (lo - 1 >= 0 && used + SEP.length + tabCellWidth(tabs[lo - 1].label) <= budget) {
-      used += SEP.length + tabCellWidth(tabs[lo - 1].label);
-      lo--;
-      grew = true;
-    }
-    if (!grew) break;
-  }
-
   const parts: string[] = [];
   for (let i = lo; i <= hi; i++) parts.push(styleTab(i));
   const left = lo > 0 ? chalk.dim("‹ ") : "";
   const right = hi < tabs.length - 1 ? chalk.dim(" ›") : "";
-  return `  ${left}${parts.join(chalk.dim(SEP))}${right}`;
+  return `  ${left}${parts.join(chalk.dim(TAB_SEP))}${right}`;
 }
 
 /**
@@ -160,6 +194,9 @@ export function runListMenu<TResult>(
   let selected = opts.initialSelected ?? 0;
   let detailMode = false;
   let actionMode = false;
+  // Persisted left edge of the visible tab window; updated each render so the bar
+  // scrolls with a one-tab margin instead of recentring on the active tab.
+  let tabScroll = 0;
 
   return runRawPicker<TResult>(rl, {
     countLines: opts.countLines,
@@ -207,7 +244,9 @@ export function runListMenu<TResult>(
         }
         return getBannerColor().bold(` ${tabs[i].label} `);
       };
-      return ["", renderTabBar(tabs, tabIndex, styleTab), "", ...lines];
+      const { lo, hi } = computeTabWindow(tabs, tabScroll, tabIndex, tabBarBudget());
+      tabScroll = lo;
+      return ["", renderTabBar(tabs, lo, hi, styleTab), "", ...lines];
     },
     onKey: (key, redraw, close) => {
       const tab = tabs[tabIndex];

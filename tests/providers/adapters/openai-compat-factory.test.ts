@@ -75,6 +75,26 @@ function okJsonResponse(body: unknown = {}, extraHeaders?: Record<string, string
   });
 }
 
+// Capture the request body customFetch forwards to fetchWithRetry. Returns a
+// getter so callers read the captured body after awaiting the fetch.
+function captureBody(): () => Record<string, unknown> | undefined {
+  let sentBody: Record<string, unknown> | undefined;
+  vi.mocked(fetchWithRetry).mockImplementation((_input, reqInit) => {
+    sentBody = JSON.parse(reqInit!.body as string) as Record<string, unknown>;
+    return Promise.resolve(okJsonResponse());
+  });
+  return () => sentBody;
+}
+
+// Drive one usage-capturing request through a provider's customFetch.
+async function captureUsage(providerId: string, response: Response) {
+  vi.mocked(fetchWithRetry).mockResolvedValue(response);
+  const fetch = captureCustomFetch(providerId);
+  beginProviderUsageCapture(providerId);
+  await fetch(URL, init({ model: 'x', messages: [] }));
+  return endProviderUsageCapture(providerId);
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('createOllamaProvider', () => {
@@ -145,37 +165,25 @@ describe('createOpenAICompatProvider', () => {
 
     it('applies openai transformRequest: strips temperature for o1 models', async () => {
       const fetch = captureCustomFetch('openai');
-      let sentBody: Record<string, unknown> | undefined;
-      vi.mocked(fetchWithRetry).mockImplementation((_input, reqInit) => {
-        sentBody = JSON.parse(reqInit!.body as string) as Record<string, unknown>;
-        return Promise.resolve(okJsonResponse());
-      });
+      const body = captureBody();
       await fetch(URL, init({ model: 'o1-mini', messages: [], temperature: 1 }));
-      expect(sentBody).not.toHaveProperty('temperature');
+      expect(body()).not.toHaveProperty('temperature');
     });
 
     it('leaves temperature intact for non-reasoning models', async () => {
       const fetch = captureCustomFetch('openai');
-      let sentBody: Record<string, unknown> | undefined;
-      vi.mocked(fetchWithRetry).mockImplementation((_input, reqInit) => {
-        sentBody = JSON.parse(reqInit!.body as string) as Record<string, unknown>;
-        return Promise.resolve(okJsonResponse());
-      });
+      const body = captureBody();
       await fetch(URL, init({ model: 'gpt-4o', messages: [], temperature: 0.7 }));
-      expect(sentBody).toHaveProperty('temperature', 0.7);
+      expect(body()).toHaveProperty('temperature', 0.7);
     });
 
     it('injects parallel_tool_calls:false when the provider is disabled', async () => {
       setParallelToolsDisabled('groq', true);
       try {
         const fetch = captureCustomFetch('groq');
-        let sentBody: Record<string, unknown> | undefined;
-        vi.mocked(fetchWithRetry).mockImplementation((_input, reqInit) => {
-          sentBody = JSON.parse(reqInit!.body as string) as Record<string, unknown>;
-          return Promise.resolve(okJsonResponse());
-        });
+        const body = captureBody();
         await fetch(URL, init({ model: 'x', messages: [], tools: [{ type: 'function', function: { name: 'f' } }] }));
-        expect(sentBody).toHaveProperty('parallel_tool_calls', false);
+        expect(body()).toHaveProperty('parallel_tool_calls', false);
       } finally {
         setParallelToolsDisabled('groq', false);
       }
@@ -185,13 +193,9 @@ describe('createOpenAICompatProvider', () => {
       setParallelToolsDisabled('groq', true);
       try {
         const fetch = captureCustomFetch('groq');
-        let sentBody: Record<string, unknown> | undefined;
-        vi.mocked(fetchWithRetry).mockImplementation((_input, reqInit) => {
-          sentBody = JSON.parse(reqInit!.body as string) as Record<string, unknown>;
-          return Promise.resolve(okJsonResponse());
-        });
+        const body = captureBody();
         await fetch(URL, init({ model: 'x', messages: [], tools: [] }));
-        expect(sentBody).not.toHaveProperty('parallel_tool_calls');
+        expect(body()).not.toHaveProperty('parallel_tool_calls');
       } finally {
         setParallelToolsDisabled('groq', false);
       }
@@ -266,9 +270,7 @@ describe('createOpenAICompatProvider', () => {
 
     it('updates headerStore for groq when rate limit headers are present', async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue(okJsonResponse({}, groqRateLimitHeaders));
-      createOpenAICompatProvider(makeConfig('groq'));
-      const calls = vi.mocked(createOpenAI).mock.calls;
-      const customFetch = (calls[calls.length - 1][0] as { fetch?: typeof globalThis.fetch }).fetch!;
+      const customFetch = captureCustomFetch('groq');
 
       await customFetch(URL, init({ model: 'llama3-8b', messages: [] }));
 
@@ -281,9 +283,7 @@ describe('createOpenAICompatProvider', () => {
       // groqHeadersToSnapshot always returns 2 buckets regardless of header presence.
       // This means headerStore.set fires even when no rate-limit headers are returned.
       vi.mocked(fetchWithRetry).mockResolvedValue(okJsonResponse());
-      createOpenAICompatProvider(makeConfig('groq'));
-      const calls = vi.mocked(createOpenAI).mock.calls;
-      const customFetch = (calls[calls.length - 1][0] as { fetch?: typeof globalThis.fetch }).fetch!;
+      const customFetch = captureCustomFetch('groq');
       // no groq rate-limit headers → snapshot still has length 2 → headerStore.set fires
       await customFetch(URL, init({ model: 'x', messages: [] }));
       // The headerStore will have been set because groq snapshot length is always > 0
@@ -299,9 +299,7 @@ describe('createOpenAICompatProvider', () => {
     it('mistral with no rate-limit headers does NOT update headerStore', async () => {
       // parseMistralRateLimitSnapshot returns [] when the specific headers are absent
       vi.mocked(fetchWithRetry).mockResolvedValue(okJsonResponse({}, { 'content-type': 'application/json' }));
-      createOpenAICompatProvider(makeConfig('mistral'));
-      const calls = vi.mocked(createOpenAI).mock.calls;
-      const customFetch = (calls[calls.length - 1][0] as { fetch?: typeof globalThis.fetch }).fetch!;
+      const customFetch = captureCustomFetch('mistral');
       // Call with a non-streaming body so mistral won't try JSON→SSE conversion
       await customFetch(URL, init({ model: 'mistral-large', messages: [] }));
       // Cannot check by provider ID since 'mistral' may have been set elsewhere;
@@ -385,14 +383,13 @@ describe('createOpenAICompatProvider', () => {
   });
 
   describe('customFetch — usage capture', () => {
+    function sseResponse(lines: string[]): Response {
+      return new Response(lines.join('\n'), { status: 200, headers: { 'content-type': 'text/event-stream' } });
+    }
+
     it('captures usage fields from a JSON response', async () => {
-      vi.mocked(fetchWithRetry).mockResolvedValue(
-        okJsonResponse({ id: 'resp-1', model: 'gpt-4o', usage: { prompt_tokens: 10, completion_tokens: 5 } })
-      );
-      const fetch = captureCustomFetch('openai');
-      beginProviderUsageCapture('openai');
-      await fetch(URL, init({ model: 'gpt-4o', messages: [] }));
-      const [usage] = await endProviderUsageCapture('openai');
+      const [usage] = await captureUsage('openai',
+        okJsonResponse({ id: 'resp-1', model: 'gpt-4o', usage: { prompt_tokens: 10, completion_tokens: 5 } }));
 
       expect(usage).toBeDefined();
       expect(usage.providerId).toBe('openai');
@@ -403,27 +400,14 @@ describe('createOpenAICompatProvider', () => {
     });
 
     it('returns empty array when JSON response has no usage field', async () => {
-      vi.mocked(fetchWithRetry).mockResolvedValue(okJsonResponse({ id: 'r', model: 'm' }));
-      const fetch = captureCustomFetch('custom-no-usage');
-      beginProviderUsageCapture('custom-no-usage');
-      await fetch(URL, init({ model: 'x', messages: [] }));
-      const usages = await endProviderUsageCapture('custom-no-usage');
-      expect(usages).toHaveLength(0);
+      expect(await captureUsage('custom-no-usage', okJsonResponse({ id: 'r', model: 'm' }))).toHaveLength(0);
     });
 
     it('falls back to response.usage when top-level usage is absent', async () => {
       const body = {
-        response: {
-          id: 'nested-id',
-          model: 'nested-model',
-          usage: { prompt_tokens: 3, completion_tokens: 1 },
-        },
+        response: { id: 'nested-id', model: 'nested-model', usage: { prompt_tokens: 3, completion_tokens: 1 } },
       };
-      vi.mocked(fetchWithRetry).mockResolvedValue(okJsonResponse(body));
-      const fetch = captureCustomFetch('custom-nested');
-      beginProviderUsageCapture('custom-nested');
-      await fetch(URL, init({ model: 'nested-model', messages: [] }));
-      const [usage] = await endProviderUsageCapture('custom-nested');
+      const [usage] = await captureUsage('custom-nested', okJsonResponse(body));
 
       expect(usage).toBeDefined();
       expect(usage.responseId).toBe('nested-id');
@@ -432,23 +416,14 @@ describe('createOpenAICompatProvider', () => {
     });
 
     it('captures usage from an SSE response (last chunk with usage field)', async () => {
-      const sseBody = [
+      const [usage] = await captureUsage('openai-sse', sseResponse([
         'data: {"id":"sse-r1","model":"gpt-4o","choices":[{"index":0,"delta":{"role":"assistant","content":"hi"},"finish_reason":null}]}',
         '',
         'data: {"id":"sse-r1","model":"gpt-4o","choices":[],"usage":{"prompt_tokens":5,"completion_tokens":2,"total_tokens":7}}',
         '',
         'data: [DONE]',
         '',
-      ].join('\n');
-
-      vi.mocked(fetchWithRetry).mockResolvedValue(
-        new Response(sseBody, { status: 200, headers: { 'content-type': 'text/event-stream' } })
-      );
-
-      const fetch = captureCustomFetch('openai-sse');
-      beginProviderUsageCapture('openai-sse');
-      await fetch(URL, init({ model: 'gpt-4o', messages: [] }));
-      const [usage] = await endProviderUsageCapture('openai-sse');
+      ]));
 
       expect(usage).toBeDefined();
       expect(usage.source).toBe('sse');
@@ -456,62 +431,39 @@ describe('createOpenAICompatProvider', () => {
     });
 
     it('ignores malformed JSON SSE lines', async () => {
-      const sseBody = [
+      const [usage] = await captureUsage('openai-malformed', sseResponse([
         'data: not-valid-json',
         '',
         'data: {"id":"r1","choices":[],"usage":{"prompt_tokens":1,"completion_tokens":1}}',
         '',
         'data: [DONE]',
         '',
-      ].join('\n');
-
-      vi.mocked(fetchWithRetry).mockResolvedValue(
-        new Response(sseBody, { status: 200, headers: { 'content-type': 'text/event-stream' } })
-      );
-
-      const fetch = captureCustomFetch('openai-malformed');
-      beginProviderUsageCapture('openai-malformed');
-      await fetch(URL, init({ model: 'gpt-4o', messages: [] }));
-      const [usage] = await endProviderUsageCapture('openai-malformed');
+      ]));
       expect(usage).toBeDefined();
       expect(usage.usage).toEqual({ prompt_tokens: 1, completion_tokens: 1 });
     });
 
     it('returns empty when JSON body is a valid JSON non-object (array, null, primitive)', async () => {
       // Covers the !isRecord(payload) early-return in usageFromPayload.
-      // Some providers might return a JSON array or primitive on error paths.
-      vi.mocked(fetchWithRetry).mockResolvedValue(
-        new Response(JSON.stringify([1, 2, 3]), { status: 200, headers: { 'content-type': 'application/json' } })
-      );
-      const fetch = captureCustomFetch('array-payload');
-      beginProviderUsageCapture('array-payload');
-      await fetch(URL, init({ model: 'x', messages: [] }));
-      const usages = await endProviderUsageCapture('array-payload');
+      const usages = await captureUsage('array-payload',
+        new Response(JSON.stringify([1, 2, 3]), { status: 200, headers: { 'content-type': 'application/json' } }));
       expect(usages).toHaveLength(0);
     });
 
     it('returns empty when no session was started (push outside session)', async () => {
-      vi.mocked(fetchWithRetry).mockResolvedValue(
-        okJsonResponse({ usage: { prompt_tokens: 5 } })
-      );
+      vi.mocked(fetchWithRetry).mockResolvedValue(okJsonResponse({ usage: { prompt_tokens: 5 } }));
       const fetch = captureCustomFetch('no-session');
       // intentionally no beginProviderUsageCapture call
       await fetch(URL, init({ model: 'x', messages: [] }));
       // endProviderUsageCapture with no session returns empty
-      const usages = await endProviderUsageCapture('no-session');
-      expect(usages).toHaveLength(0);
+      expect(await endProviderUsageCapture('no-session')).toHaveLength(0);
     });
 
     it('returns empty when non-SSE response body is malformed JSON (parseProviderUsage catch)', async () => {
-      // This exercises the catch branch in parseProviderUsage for non-SSE responses
-      // with an unparseable body (e.g. binary data sent with application/json content-type).
-      vi.mocked(fetchWithRetry).mockResolvedValue(
-        new Response('not-valid-json', { status: 200, headers: { 'content-type': 'application/json' } })
-      );
-      const fetch = captureCustomFetch('malformed-json-provider');
-      beginProviderUsageCapture('malformed-json-provider');
-      await fetch(URL, init({ model: 'x', messages: [] }));
-      const usages = await endProviderUsageCapture('malformed-json-provider');
+      // Exercises the catch branch in parseProviderUsage for non-SSE responses with an
+      // unparseable body (e.g. binary data sent with application/json content-type).
+      const usages = await captureUsage('malformed-json-provider',
+        new Response('not-valid-json', { status: 200, headers: { 'content-type': 'application/json' } }));
       expect(usages).toHaveLength(0);
     });
   });

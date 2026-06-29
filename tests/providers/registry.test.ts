@@ -1,30 +1,34 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PROVIDER_REGISTRY, getProvider, initDynamicProviders, resolveModel, clearModelNewFlag, invalidateDeadModel } from '../../src/providers/registry.js';
 
+// Set the given env vars (undefined deletes), run fn, then restore originals.
+// Collapses the save/try/finally/restore boilerplate that every env-sensitive test needs.
+async function withEnv(vars: Record<string, string | undefined>, fn: () => void | Promise<void>) {
+  const saved: Record<string, string | undefined> = {};
+  for (const k of Object.keys(vars)) saved[k] = process.env[k];
+  for (const [k, v] of Object.entries(vars)) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
+  try {
+    await fn();
+  } finally {
+    for (const [k, v] of Object.entries(saved)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+}
+
+const EXPECTED_PROVIDER_IDS = [
+  'groq', 'openrouter', 'siliconflow', 'nvidia', 'llm7', 'github', 'cohere', 'cerebras',
+  'mistral', 'anthropic', 'openai', 'cloudflare', 'zai', 'zen', 'huggingface',
+];
+
 describe('Provider Registry', () => {
   describe('PROVIDER_REGISTRY', () => {
-    it('should have all expected providers', () => {
-      const providerIds = PROVIDER_REGISTRY.map(p => p.id);
-
-      expect(providerIds).toContain('groq');
-      expect(providerIds).toContain('openrouter');
-      expect(providerIds).toContain('siliconflow');
-      expect(providerIds).toContain('nvidia');
-      expect(providerIds).toContain('llm7');
-      expect(providerIds).toContain('github');
-      expect(providerIds).toContain('cohere');
-      expect(providerIds).toContain('cerebras');
-      expect(providerIds).toContain('mistral');
-      expect(providerIds).toContain('anthropic');
-      expect(providerIds).toContain('openai');
-      expect(providerIds).toContain('cloudflare');
-      expect(providerIds).toContain('zai');
-      expect(providerIds).toContain('zen');
-      expect(providerIds).toContain('huggingface');
-    });
-
-    it('should have 15 providers total', () => {
-      expect(PROVIDER_REGISTRY).toHaveLength(15);
+    it('contains exactly the expected providers', () => {
+      expect(PROVIDER_REGISTRY.map(p => p.id).sort()).toEqual([...EXPECTED_PROVIDER_IDS].sort());
     });
 
     it('each provider should have required fields', () => {
@@ -109,61 +113,36 @@ describe('Provider Registry', () => {
   });
 
   describe('fake LLM guard', () => {
-    it('hides mock models unless fake mode is active', () => {
-      const previous = process.env.FREECODE_FAKE_LLM;
-      delete process.env.FREECODE_FAKE_LLM;
-      try {
+    it('hides mock models unless fake mode is active', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: undefined }, () => {
         expect(() => resolveModel('mock:gpt-freecode-test')).toThrow('only available when FREECODE_FAKE_LLM=1');
-      } finally {
-        if (previous === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = previous;
-      }
+      });
     });
 
-    it('hides mock-native models unless fake mode is active', () => {
-      const previous = process.env.FREECODE_FAKE_LLM;
-      delete process.env.FREECODE_FAKE_LLM;
-      try {
+    it('hides mock-native models unless fake mode is active', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: undefined }, () => {
         expect(() => resolveModel('mock-native:gpt-freecode-test')).toThrow('only available when FREECODE_FAKE_LLM=1');
-      } finally {
-        if (previous === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = previous;
-      }
+      });
     });
 
-    it('resolves mock-native models in fake mode with native provider id', () => {
-      const previous = process.env.FREECODE_FAKE_LLM;
-      process.env.FREECODE_FAKE_LLM = '1';
-      try {
+    it('resolves mock-native models in fake mode with native provider id', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: '1' }, () => {
         const resolved = resolveModel('mock-native:gpt-freecode-test');
         expect(resolved.providerId).toBe('mock-native');
         expect(resolved.modelId).toBe('gpt-freecode-test');
-      } finally {
-        if (previous === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = previous;
-      }
+      });
     });
 
-    it('blocks real provider resolution in fake mode before reading keys', () => {
-      const previous = process.env.FREECODE_FAKE_LLM;
-      process.env.FREECODE_FAKE_LLM = '1';
-      try {
+    it('blocks real provider resolution in fake mode before reading keys', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: '1' }, () => {
         expect(() => resolveModel('openai:gpt-5.1')).toThrow('Real provider access is blocked');
-      } finally {
-        if (previous === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = previous;
-      }
+      });
     });
 
     it('blocks live model discovery in fake mode', async () => {
-      const previous = process.env.FREECODE_FAKE_LLM;
-      process.env.FREECODE_FAKE_LLM = '1';
-      try {
+      await withEnv({ FREECODE_FAKE_LLM: '1' }, async () => {
         await expect(initDynamicProviders()).rejects.toThrow('Live model discovery is blocked');
-      } finally {
-        if (previous === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = previous;
-      }
+      });
     });
   });
 
@@ -217,22 +196,10 @@ describe('Provider Registry', () => {
   });
 
   describe('resolveModel supportsTools flag', () => {
-    it('is false for providers with supportsTools: false', () => {
-      const prevFake = process.env.FREECODE_FAKE_LLM;
-      const prevKey = process.env.GROQ_API_KEY;
-      delete process.env.FREECODE_FAKE_LLM;
-      // Find a provider that explicitly disables tools if any, otherwise test the default
-      // Most providers default to supportsTools !== false, so supportsTools === true
-      process.env.GROQ_API_KEY = 'test-key';
-      try {
-        const result = resolveModel('groq:llama-3.3-70b-versatile');
-        expect(result.supportsTools).toBe(true);
-      } finally {
-        if (prevFake === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = prevFake;
-        if (prevKey === undefined) delete process.env.GROQ_API_KEY;
-        else process.env.GROQ_API_KEY = prevKey;
-      }
+    it('defaults supportsTools to true for providers that do not disable it', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: undefined, GROQ_API_KEY: 'test-key' }, () => {
+        expect(resolveModel('groq:llama-3.3-70b-versatile').supportsTools).toBe(true);
+      });
     });
   });
 
@@ -241,106 +208,58 @@ describe('Provider Registry', () => {
       expect(() => resolveModel('')).toThrow('No model selected');
     });
 
-    it('throws when model preference has no colon separator', () => {
-      const prev = process.env.FREECODE_FAKE_LLM;
-      delete process.env.FREECODE_FAKE_LLM;
-      try {
+    it('throws when model preference has no colon separator', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: undefined }, () => {
         expect(() => resolveModel('no-colon-string')).toThrow('Invalid model format');
-      } finally {
-        if (prev === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = prev;
-      }
+      });
     });
 
-    it('resolves mock: prefix in fake mode', () => {
-      const prev = process.env.FREECODE_FAKE_LLM;
-      process.env.FREECODE_FAKE_LLM = '1';
-      try {
+    it('resolves mock: prefix in fake mode', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: '1' }, () => {
         const result = resolveModel('mock:test-model-id');
         expect(result.providerId).toBe('mock');
         expect(result.modelId).toBe('test-model-id');
         expect(result.supportsTools).toBe(true);
         expect(result.model).toBeDefined();
-      } finally {
-        if (prev === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = prev;
-      }
+      });
     });
 
-    it('supportsTools is false when modelId contains no-tools in fake mode', () => {
-      const prev = process.env.FREECODE_FAKE_LLM;
-      process.env.FREECODE_FAKE_LLM = '1';
-      try {
-        const result = resolveModel('mock:my-no-tools-model');
-        expect(result.supportsTools).toBe(false);
-      } finally {
-        if (prev === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = prev;
-      }
+    it('supportsTools is false when modelId contains no-tools in fake mode', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: '1' }, () => {
+        expect(resolveModel('mock:my-no-tools-model').supportsTools).toBe(false);
+      });
     });
 
-    it('throws for an unknown provider in real mode', () => {
-      const prev = process.env.FREECODE_FAKE_LLM;
-      delete process.env.FREECODE_FAKE_LLM;
-      try {
+    it('throws for an unknown provider in real mode', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: undefined }, () => {
         expect(() => resolveModel('no-such-provider:some-model')).toThrow('Unknown provider');
-      } finally {
-        if (prev === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = prev;
-      }
+      });
     });
 
-    it('throws when no API key is configured for the provider', () => {
-      const prevFake = process.env.FREECODE_FAKE_LLM;
-      const prevKey = process.env.GROQ_API_KEY;
-      delete process.env.FREECODE_FAKE_LLM;
-      delete process.env.GROQ_API_KEY;
-      try {
+    it('throws when no API key is configured for the provider', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: undefined, GROQ_API_KEY: undefined }, () => {
         expect(() => resolveModel('groq:llama-3.3-70b-versatile')).toThrow('No API key configured');
-      } finally {
-        if (prevFake === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = prevFake;
-        if (prevKey === undefined) delete process.env.GROQ_API_KEY;
-        else process.env.GROQ_API_KEY = prevKey;
-      }
+      });
     });
 
-    it('resolves an openai-compat model when API key is present', () => {
-      const prevFake = process.env.FREECODE_FAKE_LLM;
-      const prevKey = process.env.GROQ_API_KEY;
-      delete process.env.FREECODE_FAKE_LLM;
-      process.env.GROQ_API_KEY = 'test-key';
-      try {
+    it('resolves an openai-compat model when API key is present', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: undefined, GROQ_API_KEY: 'test-key' }, () => {
         const result = resolveModel('groq:llama-3.3-70b-versatile');
         expect(result.providerId).toBe('groq');
         expect(result.modelId).toBe('llama-3.3-70b-versatile');
         expect(result.supportsTools).toBe(true);
         expect(result.model).toBeDefined();
-      } finally {
-        if (prevFake === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = prevFake;
-        if (prevKey === undefined) delete process.env.GROQ_API_KEY;
-        else process.env.GROQ_API_KEY = prevKey;
-      }
+      });
     });
 
-    it('resolves an anthropic model when API key is present', () => {
-      const prevFake = process.env.FREECODE_FAKE_LLM;
-      const prevKey = process.env.ANTHROPIC_API_KEY;
-      delete process.env.FREECODE_FAKE_LLM;
-      process.env.ANTHROPIC_API_KEY = 'test-key';
-      try {
+    it('resolves an anthropic model when API key is present', async () => {
+      await withEnv({ FREECODE_FAKE_LLM: undefined, ANTHROPIC_API_KEY: 'test-key' }, () => {
         const result = resolveModel('anthropic:claude-sonnet-4-6');
         expect(result.providerId).toBe('anthropic');
         expect(result.modelId).toBe('claude-sonnet-4-6');
         expect(result.supportsTools).toBe(true);
         expect(result.model).toBeDefined();
-      } finally {
-        if (prevFake === undefined) delete process.env.FREECODE_FAKE_LLM;
-        else process.env.FREECODE_FAKE_LLM = prevFake;
-        if (prevKey === undefined) delete process.env.ANTHROPIC_API_KEY;
-        else process.env.ANTHROPIC_API_KEY = prevKey;
-      }
+      });
     });
   });
 });

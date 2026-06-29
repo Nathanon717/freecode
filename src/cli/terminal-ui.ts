@@ -428,6 +428,12 @@ export function resetSubmittedInputArea() {
 }
 
 let _resizeDebounce: ReturnType<typeof setTimeout> | null = null;
+let _onResizeCallback: (() => void) | null = null;
+
+/** Register a callback to run after each resize redraw (e.g. a raw picker that needs to repaint). Pass null to unregister. */
+export function setOnResizeCallback(cb: (() => void) | null): void {
+  _onResizeCallback = cb;
+}
 
 process.stdout.on('resize', () => {
   if (!footerActive) return;
@@ -453,6 +459,9 @@ process.stdout.on('resize', () => {
     setScrollRegion(1, rows() - reserved);
 
     drawBottomUI();
+
+    // Let an active pinned picker (e.g. list menu) repaint itself on top.
+    _onResizeCallback?.();
   }, 32);
 });
 

@@ -58,6 +58,22 @@ function ttyRl(): Interface {
 
 const preview = { name: 'read', args: { path: 'foo.ts' } };
 
+// Installs process streams + a stdout spy and primes the terminal-ui flags.
+function setupStreams(opts: { tty: boolean; footer: boolean }) {
+  const streams = installProcessStreams({ tty: opts.tty });
+  const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+  vi.mocked(isFooterUIActive).mockReturnValue(opts.footer);
+  vi.mocked(isBottomUIActive).mockReturnValue(false);
+  vi.mocked(teardownBottomUI).mockClear();
+  vi.mocked(setupInputUI).mockClear();
+  return { streams, stdin: streams.stdin, writeSpy };
+}
+
+function resetUIFlags(): void {
+  vi.mocked(isFooterUIActive).mockReturnValue(false);
+  vi.mocked(isBottomUIActive).mockReturnValue(false);
+}
+
 // ---------------------------------------------------------------------------
 // askQuestion
 // ---------------------------------------------------------------------------
@@ -198,21 +214,8 @@ describe('confirmToolCallInteractive (non-TTY)', () => {
   let streams: ProcessStreamFixture;
   let writeSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, 'write'>>;
 
-  beforeEach(() => {
-    streams = installProcessStreams({ tty: false });
-    writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    vi.mocked(isFooterUIActive).mockReturnValue(false);
-    vi.mocked(isBottomUIActive).mockReturnValue(false);
-    vi.mocked(teardownBottomUI).mockClear();
-    vi.mocked(setupInputUI).mockClear();
-  });
-
-  afterEach(() => {
-    streams.restore();
-    writeSpy.mockRestore();
-    vi.mocked(isFooterUIActive).mockReturnValue(false);
-    vi.mocked(isBottomUIActive).mockReturnValue(false);
-  });
+  beforeEach(() => { ({ streams, writeSpy } = setupStreams({ tty: false, footer: false })); });
+  afterEach(() => { streams.restore(); writeSpy.mockRestore(); resetUIFlags(); });
 
   it('returns { approved: true } for "approve"', async () => {
     const result = await confirmToolCallInteractive(makeRl(['approve']), preview);
@@ -262,31 +265,20 @@ describe('confirmToolCallInteractive (TTY, non-absolute menu)', () => {
   let streams: ProcessStreamFixture;
   let writeSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, 'write'>>;
 
-  beforeEach(() => {
-    streams = installProcessStreams({ tty: true });
-    stdin = streams.stdin;
-    writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    vi.mocked(isFooterUIActive).mockReturnValue(false);
-    vi.mocked(isBottomUIActive).mockReturnValue(false);
-    vi.mocked(setupInputUI).mockClear();
-  });
+  beforeEach(() => { ({ stdin, streams, writeSpy } = setupStreams({ tty: true, footer: false })); });
+  afterEach(() => { streams.restore(); writeSpy.mockRestore(); resetUIFlags(); });
 
-  afterEach(() => {
-    streams.restore();
-    writeSpy.mockRestore();
-    vi.mocked(isFooterUIActive).mockReturnValue(false);
-    vi.mocked(isBottomUIActive).mockReturnValue(false);
-  });
-
-  it('returns approved:true on Enter (\\r) with default approve selection', async () => {
+  // Keys that leave (or return) selection on Approve, then Enter confirms.
+  it.each([
+    ['Enter (\\r) with default approve selection', ['\r']],
+    ['Enter (\\n)', ['\n']],
+    ['"a" keeps approve selected', ['a', '\r']],
+    ['"A" uppercase keeps approve selected', ['A', '\r']],
+    ['"k" moves selection back to approve', ['j', 'k', '\r']],
+    ['up arrow (\\x1b[A) moves selection to approve', ['\x1b[B', '\x1b[A', '\r']],
+  ])('%s → approved:true', async (_label, keys) => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: true });
-  });
-
-  it('returns approved:true on Enter (\\n)', async () => {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', '\n');
+    for (const k of keys) stdin.emit('data', k);
     await expect(promise).resolves.toEqual({ approved: true });
   });
 
@@ -296,75 +288,20 @@ describe('confirmToolCallInteractive (TTY, non-absolute menu)', () => {
     await expect(promise).rejects.toThrow(UserAbortError);
   });
 
-  it('"a" keeps approve selected, Enter confirms', async () => {
+  // Selector key moves to Deny; Enter opens the message prompt; message is typed then submitted.
+  it.each([
+    ['"j" moves to deny', 'j', ['a', 'b'], 'ab'],
+    ['"d" moves to deny', 'd', ['x'], 'x'],
+    ['"D" uppercase moves to deny', 'D', ['m'], 'm'],
+    ['down arrow (\\x1b[B) moves to deny', '\x1b[B', ['z'], 'z'],
+  ])('%s, Enter opens message prompt', async (_label, selector, msgKeys, message) => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', 'a');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: true });
-  });
-
-  it('"A" uppercase also keeps approve selected', async () => {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', 'A');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: true });
-  });
-
-  it('"k" moves selection to approve', async () => {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', 'j');   // move to deny first
-    stdin.emit('data', 'k');   // move back to approve
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: true });
-  });
-
-  it('up arrow (\\x1b[A) moves selection to approve', async () => {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', '\x1b[B');  // down → deny
-    stdin.emit('data', '\x1b[A');  // up → approve
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: true });
-  });
-
-  it('"j" moves to deny, Enter opens message prompt', async () => {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', 'j');
+    stdin.emit('data', selector);
     stdin.emit('data', '\r');
     await flush();
-    stdin.emit('data', 'a');
-    stdin.emit('data', 'b');
+    for (const k of msgKeys) stdin.emit('data', k);
     stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'ab' });
-  });
-
-  it('"d" moves to deny', async () => {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', 'd');
-    stdin.emit('data', '\r');
-    await flush();
-    stdin.emit('data', 'x');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'x' });
-  });
-
-  it('"D" uppercase moves to deny', async () => {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', 'D');
-    stdin.emit('data', '\r');
-    await flush();
-    stdin.emit('data', 'm');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'm' });
-  });
-
-  it('down arrow (\\x1b[B) moves to deny', async () => {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', '\x1b[B');
-    stdin.emit('data', '\r');
-    await flush();
-    stdin.emit('data', 'z');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'z' });
+    await expect(promise).resolves.toEqual({ approved: false, message });
   });
 
   it('calls process.exit on Ctrl-C in menu', () => {
@@ -397,21 +334,8 @@ describe('confirmToolCallInteractive (TTY, absolute menu)', () => {
   let streams: ProcessStreamFixture;
   let writeSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, 'write'>>;
 
-  beforeEach(() => {
-    streams = installProcessStreams({ tty: true });
-    stdin = streams.stdin;
-    writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    vi.mocked(isFooterUIActive).mockReturnValue(true);
-    vi.mocked(isBottomUIActive).mockReturnValue(false);
-    vi.mocked(setupInputUI).mockClear();
-  });
-
-  afterEach(() => {
-    streams.restore();
-    writeSpy.mockRestore();
-    vi.mocked(isFooterUIActive).mockReturnValue(false);
-    vi.mocked(isBottomUIActive).mockReturnValue(false);
-  });
+  beforeEach(() => { ({ stdin, streams, writeSpy } = setupStreams({ tty: true, footer: true })); });
+  afterEach(() => { streams.restore(); writeSpy.mockRestore(); resetUIFlags(); });
 
   it('returns approved:true using absolute positioned menu', async () => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
@@ -462,20 +386,8 @@ describe('askQuestionOrEscape (TTY, via deny flow)', () => {
   let streams: ProcessStreamFixture;
   let writeSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, 'write'>>;
 
-  beforeEach(() => {
-    streams = installProcessStreams({ tty: true });
-    stdin = streams.stdin;
-    writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    vi.mocked(isFooterUIActive).mockReturnValue(false);
-    vi.mocked(isBottomUIActive).mockReturnValue(false);
-  });
-
-  afterEach(() => {
-    streams.restore();
-    writeSpy.mockRestore();
-    vi.mocked(isFooterUIActive).mockReturnValue(false);
-    vi.mocked(isBottomUIActive).mockReturnValue(false);
-  });
+  beforeEach(() => { ({ stdin, streams, writeSpy } = setupStreams({ tty: true, footer: false })); });
+  afterEach(() => { streams.restore(); writeSpy.mockRestore(); resetUIFlags(); });
 
   // Selects Deny and lands in message-entry mode. The returned confirm promise
   // is intentionally still pending (waiting for the denial message), so it is
@@ -488,76 +400,27 @@ describe('askQuestionOrEscape (TTY, via deny flow)', () => {
     return box(promise);
   }
 
-  it('submits accumulated buffer on \\r', async () => {
+  // Each row enters the deny message-entry flow, types a key sequence, and the
+  // resulting denial message reveals how the editor handled it.
+  it.each([
+    ['submits accumulated buffer on \\r', ['h', 'i', '\r'], 'hi'],
+    ['submits buffer on \\n', ['o', 'k', '\n'], 'ok'],
+    ['ignores \\x1b[ escape sequences (arrow keys)', ['\x1b[A', 'z', '\r'], 'z'],
+    ['ignores \\x1bO SS3 sequences', ['\x1bOA', 'q', '\r'], 'q'],
+    ['handles \\x7f backspace (DEL)', ['a', 'b', '\x7f', '\r'], 'a'],
+    ['handles \\x08 backspace (BS)', ['x', '\x08', 'y', '\r'], 'y'],
+    ['backspace on empty buffer is a no-op', ['\x7f', 'q', '\r'], 'q'],
+    ['filters out non-printable characters', ['\x01', 'a', '\r'], 'a'],
+  ])('%s', async (_label, keys, message) => {
     const { promise } = await enterDenyFlow();
-    stdin.emit('data', 'h');
-    stdin.emit('data', 'i');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'hi' });
-  });
-
-  it('submits buffer on \\n', async () => {
-    const { promise } = await enterDenyFlow();
-    stdin.emit('data', 'o');
-    stdin.emit('data', 'k');
-    stdin.emit('data', '\n');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'ok' });
+    for (const k of keys) stdin.emit('data', k);
+    await expect(promise).resolves.toEqual({ approved: false, message });
   });
 
   it('throws UserAbortError on Escape', async () => {
     const { promise } = await enterDenyFlow();
     stdin.emit('data', '\x1b');
     await expect(promise).rejects.toThrow(UserAbortError);
-  });
-
-  it('ignores \\x1b[ escape sequences (arrow keys)', async () => {
-    const { promise } = await enterDenyFlow();
-    stdin.emit('data', '\x1b[A');
-    stdin.emit('data', 'z');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'z' });
-  });
-
-  it('ignores \\x1bO SS3 sequences', async () => {
-    const { promise } = await enterDenyFlow();
-    stdin.emit('data', '\x1bOA');
-    stdin.emit('data', 'q');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'q' });
-  });
-
-  it('handles \\x7f backspace (DEL)', async () => {
-    const { promise } = await enterDenyFlow();
-    stdin.emit('data', 'a');
-    stdin.emit('data', 'b');
-    stdin.emit('data', '\x7f');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'a' });
-  });
-
-  it('handles \\x08 backspace (BS)', async () => {
-    const { promise } = await enterDenyFlow();
-    stdin.emit('data', 'x');
-    stdin.emit('data', '\x08');
-    stdin.emit('data', 'y');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'y' });
-  });
-
-  it('backspace on empty buffer is a no-op', async () => {
-    const { promise } = await enterDenyFlow();
-    stdin.emit('data', '\x7f');
-    stdin.emit('data', 'q');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'q' });
-  });
-
-  it('filters out non-printable characters', async () => {
-    const { promise } = await enterDenyFlow();
-    stdin.emit('data', '\x01');
-    stdin.emit('data', 'a');
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message: 'a' });
   });
 
   it('calls process.exit on Ctrl-C during message entry', async () => {

@@ -19,7 +19,7 @@ vi.mock('../../src/cli/raw-picker.js', () => ({
   }),
 }));
 
-import { runListMenu, type MenuTab, type ListMenuBody } from '../../src/cli/list-menu.js';
+import { runListMenu, computeTabWindow, type MenuTab, type ListMenuBody } from '../../src/cli/list-menu.js';
 import { InlineActionMenu } from '../../src/cli/action-menu.js';
 
 const fakeRl = { pause: vi.fn(), resume: vi.fn() } as unknown as Interface;
@@ -161,6 +161,49 @@ describe('runListMenu — tab bar', () => {
   it('opens on initialTabId', () => {
     void runListMenu(fakeRl, { tabs: twoTabs(), initialTabId: 'b' });
     expect(store.opts!.render()).toContain('> b0');
+  });
+});
+
+describe('computeTabWindow — one-tab-margin scrolling', () => {
+  // Six single-char tabs; budget 21 fits exactly 4 equal-width cells (3 wide + 3 sep).
+  const tabs = ['A', 'B', 'C', 'D', 'E', 'F'].map((label) => ({ label }));
+  const B = 21;
+  // Walk the bar carrying the previous left edge forward, like runListMenu does.
+  const walk = (start: number, indices: number[]): Array<{ lo: number; hi: number }> => {
+    let scroll = start;
+    return indices.map((i) => {
+      const w = computeTabWindow(tabs, scroll, i, B);
+      scroll = w.lo;
+      return w;
+    });
+  };
+
+  it('does not scroll until the selection reaches the right margin', () => {
+    // Press Right from A: A,B,C hold the window at [0,3]; D scrolls to [1,4].
+    expect(walk(0, [0, 1, 2, 3, 4, 5])).toEqual([
+      { lo: 0, hi: 3 }, // A | A B C D ›
+      { lo: 0, hi: 3 }, // B | A B C D ›
+      { lo: 0, hi: 3 }, // C | A B C D ›   (one tab D still visible to the right)
+      { lo: 1, hi: 4 }, // D | ‹ B C D E ›
+      { lo: 2, hi: 5 }, // E | ‹ C D E F
+      { lo: 2, hi: 5 }, // F | ‹ C D E F    (last tab, no right margin)
+    ]);
+  });
+
+  it('does not scroll until the selection reaches the left margin', () => {
+    // Starting windowed at [1,4] (showing B C D E) with D selected, press Left.
+    expect(walk(1, [3, 2, 1, 0])).toEqual([
+      { lo: 1, hi: 4 }, // D | ‹ B C D E ›
+      { lo: 1, hi: 4 }, // C | ‹ B C D E ›   (one tab B still visible to the left)
+      { lo: 0, hi: 3 }, // B | A B C D ›
+      { lo: 0, hi: 3 }, // A | A B C D ›
+    ]);
+  });
+
+  it('reclaims left space (no spurious ‹) when a widen lets all tabs fit', () => {
+    // Scrolled right to [2,5] while narrow, then the budget grows to fit all six.
+    const wide = computeTabWindow(tabs, 2, 5, 99);
+    expect(wide).toEqual({ lo: 0, hi: 5 });
   });
 });
 

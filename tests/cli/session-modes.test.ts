@@ -190,6 +190,10 @@ function makeSession(): SessionController {
   return { getContextTokenCount: vi.fn(() => 0) } as unknown as SessionController;
 }
 
+function setTTY(value: boolean | undefined): void {
+  Object.defineProperty(process.stdin, 'isTTY', { value, writable: true, configurable: true });
+}
+
 // ---------------------------------------------------------------------------
 // createScriptedMode
 // ---------------------------------------------------------------------------
@@ -396,12 +400,7 @@ describe('createInteractiveMode — detailed', () => {
   });
 
   afterEach(() => {
-    // Reset isTTY (some tests set it to true).
-    Object.defineProperty(process.stdin, 'isTTY', {
-      value: undefined,
-      writable: true,
-      configurable: true,
-    });
+    setTTY(undefined); // some tests set it to true
   });
 
   // -------------------------------------------------------------------------
@@ -507,44 +506,20 @@ describe('createInteractiveMode — detailed', () => {
   // -------------------------------------------------------------------------
 
   describe('lifecycle (non-TTY)', () => {
-    beforeEach(() => {
-      Object.defineProperty(process.stdin, 'isTTY', {
-        value: false,
-        writable: true,
-        configurable: true,
-      });
-    });
+    beforeEach(() => setTTY(false));
 
-    it('beforeAgentCall does not call teardownBottomUI when stdin is not a TTY', () => {
-      const { mode } = makeMode();
-      void mode.beforeAgentCall!();
-      expect(teardownBottomUI).not.toHaveBeenCalled();
-    });
-
-    it('afterAgentCall is a no-op when stdin is not a TTY', () => {
-      const { mode } = makeMode();
-      void mode.afterAgentCall!();
-      expect(setupBottomUI).not.toHaveBeenCalled();
-      expect(drawBottomUI).not.toHaveBeenCalled();
-    });
-
-    it('afterScreenClear does not call setupBottomUI when stdin is not a TTY', () => {
-      const { mode } = makeMode();
-      void mode.afterScreenClear!();
-      expect(setupBottomUI).not.toHaveBeenCalled();
-    });
-
-    it('beforeDispatch does not call teardownBottomUI when stdin is not a TTY', () => {
-      const { mode } = makeMode();
-      void mode.beforeDispatch!();
-      expect(teardownBottomUI).not.toHaveBeenCalled();
-    });
-
-    it('afterDispatch does not call setupBottomUI when stdin is not a TTY', () => {
-      const { mode } = makeMode();
-      void mode.afterDispatch!();
-      expect(setupBottomUI).not.toHaveBeenCalled();
-    });
+    // Every TTY-guarded hook must skip all bottom-UI drawing off a TTY.
+    // (beforeScreenClear tears down unconditionally, so it is not listed here.)
+    it.each(['beforeAgentCall', 'afterAgentCall', 'afterScreenClear', 'beforeDispatch', 'afterDispatch'] as const)(
+      '%s draws no bottom UI when stdin is not a TTY',
+      (hook) => {
+        const { mode } = makeMode();
+        void (mode[hook] as () => unknown)();
+        expect(teardownBottomUI).not.toHaveBeenCalled();
+        expect(setupBottomUI).not.toHaveBeenCalled();
+        expect(drawBottomUI).not.toHaveBeenCalled();
+      },
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -552,41 +527,19 @@ describe('createInteractiveMode — detailed', () => {
   // -------------------------------------------------------------------------
 
   describe('lifecycle (TTY)', () => {
-    beforeEach(() => {
-      Object.defineProperty(process.stdin, 'isTTY', {
-        value: true,
-        writable: true,
-        configurable: true,
-      });
-    });
+    beforeEach(() => setTTY(true));
 
-    it('beforeAgentCall tears down the bottom UI', () => {
+    it.each([
+      ['beforeAgentCall', [teardownBottomUI]],
+      ['afterAgentCall', [setupBottomUI, drawBottomUI]],
+      ['beforeScreenClear', [teardownBottomUI]],
+      ['afterScreenClear', [setupBottomUI]],
+      ['beforeDispatch', [teardownBottomUI, parkCursorAboveBottomUI]],
+    ] as const)('%s drives the expected bottom-UI hooks (TTY)', (hook, expected) => {
       const { mode } = makeMode();
       vi.clearAllMocks();
-      void mode.beforeAgentCall!();
-      expect(teardownBottomUI).toHaveBeenCalled();
-    });
-
-    it('afterAgentCall sets up and redraws the bottom UI', () => {
-      const { mode } = makeMode();
-      vi.clearAllMocks();
-      void mode.afterAgentCall!();
-      expect(setupBottomUI).toHaveBeenCalled();
-      expect(drawBottomUI).toHaveBeenCalled();
-    });
-
-    it('beforeScreenClear tears down the bottom UI', () => {
-      const { mode } = makeMode();
-      vi.clearAllMocks();
-      void mode.beforeScreenClear!();
-      expect(teardownBottomUI).toHaveBeenCalled();
-    });
-
-    it('afterScreenClear sets up the bottom UI when TTY', () => {
-      const { mode } = makeMode();
-      vi.clearAllMocks();
-      void mode.afterScreenClear!();
-      expect(setupBottomUI).toHaveBeenCalled();
+      void (mode[hook] as () => unknown)();
+      for (const fn of expected) expect(fn).toHaveBeenCalled();
     });
 
     it('onAgentResult sets the active model, quota snapshot, and saves to cache', () => {
@@ -605,14 +558,6 @@ describe('createInteractiveMode — detailed', () => {
       void mode.onAgentResult!({ providerId: 'anthropic', modelId: 'claude-3', quota: null } as never);
       expect(setActiveModel).toHaveBeenCalledWith('anthropic', 'claude-3');
       expect(saveQuotaToCache).not.toHaveBeenCalled();
-    });
-
-    it('beforeDispatch tears down the UI and parks cursor', () => {
-      const { mode } = makeMode();
-      vi.clearAllMocks();
-      void mode.beforeDispatch!();
-      expect(teardownBottomUI).toHaveBeenCalled();
-      expect(parkCursorAboveBottomUI).toHaveBeenCalled();
     });
 
     it('afterDispatch fires applyModelChange when the model has changed', () => {
@@ -690,11 +635,7 @@ describe('createInteractiveMode — detailed', () => {
 
   describe('readInput', () => {
     it('non-TTY path: calls askQuestion and returns its result', async () => {
-      Object.defineProperty(process.stdin, 'isTTY', {
-        value: false,
-        writable: true,
-        configurable: true,
-      });
+      setTTY(false);
       vi.mocked(askQuestion).mockResolvedValueOnce('user typed this');
       const { mode } = makeMode();
       const result = await mode.readInput(0);
@@ -704,11 +645,7 @@ describe('createInteractiveMode — detailed', () => {
     });
 
     it('TTY path: calls runRawKeySession instead of askQuestion', async () => {
-      Object.defineProperty(process.stdin, 'isTTY', {
-        value: true,
-        writable: true,
-        configurable: true,
-      });
+      setTTY(true);
       const { mode } = makeMode();
       // Kick off readInput (it awaits the raw session promise).
       const p = mode.readInput(0);
@@ -733,12 +670,18 @@ describe('createInteractiveMode — detailed', () => {
       return p;
     }
 
+    // Set the buffer, fire keys through the captured handler, return the result.
+    function pressKeys(initial: string, keys: string[]): string {
+      void startReadInput(); // resets the buffer
+      setInputBuffer(initial);
+      for (const k of keys) capturedRawSession.onKey?.(k);
+      const result = getInputBuffer();
+      capturedRawSession.resolve?.('');
+      return result;
+    }
+
     beforeEach(() => {
-      Object.defineProperty(process.stdin, 'isTTY', {
-        value: true,
-        writable: true,
-        configurable: true,
-      });
+      setTTY(true);
       stdoutSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
       stdinPauseSpy = vi.spyOn(process.stdin, 'pause').mockReturnValue(process.stdin);
     });
@@ -774,17 +717,7 @@ describe('createInteractiveMode — detailed', () => {
       expect(getInputBuffer()).toBe('');
     });
 
-    // --- Ctrl+J: newline ---
-
-    it('Ctrl+J (\\n) inserts a newline into the buffer', () => {
-      void startReadInput();
-      setInputBuffer('line1');
-      capturedRawSession.onKey?.('\n');
-      expect(getInputBuffer()).toBe('line1\n');
-      capturedRawSession.resolve?.('');
-    });
-
-    // --- Tab completion ---
+    // --- Tab completion (needs an active completion) ---
 
     it('Tab applies the completion and updates the buffer', () => {
       vi.mocked(getCommandCompletion).mockReturnValue('/help');
@@ -795,154 +728,29 @@ describe('createInteractiveMode — detailed', () => {
       capturedRawSession.resolve?.('');
     });
 
-    it('Tab with no completion is a no-op', () => {
-      void startReadInput();
-      setInputBuffer('abc');
-      capturedRawSession.onKey?.('\t');
-      expect(getInputBuffer()).toBe('abc');
-      capturedRawSession.resolve?.('');
-    });
+    // --- Buffer edits. Cursor moves are probed behaviorally via a trailing
+    // backspace/delete: the buffer position the edit lands on reveals the cursor. ---
 
-    // --- Backspace ---
-
-    it('Backspace (\\x7f) removes the last character', () => {
-      void startReadInput();
-      setInputBuffer('hi');
-      capturedRawSession.onKey?.('\x7f');
-      expect(getInputBuffer()).toBe('h');
-      capturedRawSession.resolve?.('');
-    });
-
-    it('Backspace on an empty buffer is a no-op', () => {
-      void startReadInput();
-      // buffer is already '' after startReadInput
-      capturedRawSession.onKey?.('\x7f');
-      expect(getInputBuffer()).toBe('');
-      capturedRawSession.resolve?.('');
-    });
-
-    it('Ctrl+H (\\x08) also triggers backspace', () => {
-      void startReadInput();
-      setInputBuffer('abc');
-      capturedRawSession.onKey?.('\x08');
-      expect(getInputBuffer()).toBe('ab');
-      capturedRawSession.resolve?.('');
-    });
-
-    // --- Cursor movement ---
-
-    it('left arrow moves cursor left (behavioral: backspace deletes previous char)', () => {
-      void startReadInput();
-      setInputBuffer('hello'); // cursor at 5
-      capturedRawSession.onKey?.('\x1b[D'); // left → cursor 4
-      capturedRawSession.onKey?.('\x7f');   // backspace at 4 → removes 'l' at index 3
-      expect(getInputBuffer()).toBe('helo');
-      capturedRawSession.resolve?.('');
-    });
-
-    it('alternate left arrow (\\x1bOD) also moves cursor left', () => {
-      void startReadInput();
-      setInputBuffer('hi'); // cursor at 2
-      capturedRawSession.onKey?.('\x1bOD'); // left → cursor 1
-      capturedRawSession.onKey?.('\x7f');   // backspace → removes 'h'
-      expect(getInputBuffer()).toBe('i');
-      capturedRawSession.resolve?.('');
-    });
-
-    it('right arrow moves cursor right (behavioral: delete removes next char)', () => {
-      void startReadInput();
-      setInputBuffer('hi'); // cursor at 2
-      capturedRawSession.onKey?.('\x1b[H'); // home → cursor 0
-      capturedRawSession.onKey?.('\x1b[C'); // right → cursor 1
-      capturedRawSession.onKey?.('\x1b[3~'); // delete at 1 → removes 'i'
-      expect(getInputBuffer()).toBe('h');
-      capturedRawSession.resolve?.('');
-    });
-
-    it('home key moves cursor to start of line (behavioral: delete removes first char)', () => {
-      void startReadInput();
-      setInputBuffer('abc');
-      capturedRawSession.onKey?.('\x1b[H'); // home → cursor 0
-      capturedRawSession.onKey?.('\x1b[3~'); // delete at 0 → removes 'a'
-      expect(getInputBuffer()).toBe('bc');
-      capturedRawSession.resolve?.('');
-    });
-
-    it('end key moves cursor to end of line (behavioral: backspace removes last char)', () => {
-      void startReadInput();
-      setInputBuffer('abc');
-      capturedRawSession.onKey?.('\x1b[H'); // home → cursor 0
-      capturedRawSession.onKey?.('\x1b[F'); // end → cursor 3
-      capturedRawSession.onKey?.('\x7f');   // backspace at 3 → removes 'c'
-      expect(getInputBuffer()).toBe('ab');
-      capturedRawSession.resolve?.('');
-    });
-
-    it('up arrow on multiline buffer moves to previous line', () => {
-      void startReadInput();
-      setInputBuffer('hello\nworld'); // cursor at 11
-      capturedRawSession.onKey?.('\x1b[A'); // up → cursor at col 5 of 'hello' = pos 5
-      capturedRawSession.onKey?.('\x7f');   // backspace at 5 → removes 'o' from 'hello'
-      expect(getInputBuffer()).toBe('hell\nworld');
-      capturedRawSession.resolve?.('');
-    });
-
-    it('down arrow on multiline buffer moves to next line', () => {
-      void startReadInput();
-      setInputBuffer('hello\nworld'); // cursor at 11 (end)
-      capturedRawSession.onKey?.('\x1b[A'); // up → end of 'hello' (pos 5)
-      capturedRawSession.onKey?.('\x1b[B'); // down → end of 'world' (pos 11)
-      capturedRawSession.onKey?.('\x7f');   // backspace at 11 → removes 'd'
-      expect(getInputBuffer()).toBe('hello\nworl');
-      capturedRawSession.resolve?.('');
-    });
-
-    it('Delete key (\\x1b[3~) removes the character at the cursor', () => {
-      void startReadInput();
-      setInputBuffer('abc'); // cursor at 3
-      capturedRawSession.onKey?.('\x1b[H'); // home → cursor 0
-      capturedRawSession.onKey?.('\x1b[3~'); // delete at 0 → removes 'a'
-      expect(getInputBuffer()).toBe('bc');
-      capturedRawSession.resolve?.('');
-    });
-
-    // --- Escape ---
-
-    it('Escape clears the buffer when it has content', () => {
-      void startReadInput();
-      setInputBuffer('something');
-      capturedRawSession.onKey?.('\x1b');
-      expect(getInputBuffer()).toBe('');
-      capturedRawSession.resolve?.('');
-    });
-
-    it('Escape on an empty buffer is a no-op', () => {
-      void startReadInput();
-      // buffer is already '' after startReadInput
-      capturedRawSession.onKey?.('\x1b');
-      expect(getInputBuffer()).toBe('');
-      capturedRawSession.resolve?.('');
-    });
-
-    // --- Printable characters ---
-
-    it('printable characters are inserted into the buffer', () => {
-      void startReadInput();
-      capturedRawSession.onKey?.('h');
-      capturedRawSession.onKey?.('i');
-      capturedRawSession.onKey?.('!');
-      expect(getInputBuffer()).toBe('hi!');
-      capturedRawSession.resolve?.('');
-    });
-
-    it('non-printable control chars below 0x20 are filtered out', () => {
-      setInputBuffer('');
-      void startReadInput();
-      // \x02 is a control char that's not a toggle (charCode 2, letter 'B')
-      // cycleByChar is mocked to return false → falls through to hint clear then printable filter
-      capturedRawSession.onKey?.('\x02');
-      expect(getInputBuffer()).toBe(''); // filtered: < 0x20
-      capturedRawSession.resolve?.('');
+    it.each([
+      ['Ctrl+J inserts a newline', 'line1', ['\n'], 'line1\n'],
+      ['Tab with no completion is a no-op', 'abc', ['\t'], 'abc'],
+      ['Backspace removes the last char', 'hi', ['\x7f'], 'h'],
+      ['Backspace on an empty buffer is a no-op', '', ['\x7f'], ''],
+      ['Ctrl+H (\\x08) also backspaces', 'abc', ['\x08'], 'ab'],
+      ['left arrow moves the cursor left', 'hello', ['\x1b[D', '\x7f'], 'helo'],
+      ['alternate left arrow (\\x1bOD) moves the cursor left', 'hi', ['\x1bOD', '\x7f'], 'i'],
+      ['right arrow moves the cursor right', 'hi', ['\x1b[H', '\x1b[C', '\x1b[3~'], 'h'],
+      ['home moves the cursor to the start', 'abc', ['\x1b[H', '\x1b[3~'], 'bc'],
+      ['end moves the cursor to the end', 'abc', ['\x1b[H', '\x1b[F', '\x7f'], 'ab'],
+      ['up arrow moves to the previous line', 'hello\nworld', ['\x1b[A', '\x7f'], 'hell\nworld'],
+      ['down arrow moves to the next line', 'hello\nworld', ['\x1b[A', '\x1b[B', '\x7f'], 'hello\nworl'],
+      ['Delete (\\x1b[3~) removes the char at the cursor', 'abc', ['\x1b[H', '\x1b[3~'], 'bc'],
+      ['Escape clears a non-empty buffer', 'something', ['\x1b'], ''],
+      ['Escape on an empty buffer is a no-op', '', ['\x1b'], ''],
+      ['printable characters are inserted', '', ['h', 'i', '!'], 'hi!'],
+      ['non-printable control chars below 0x20 are filtered out', '', ['\x02'], ''],
+    ] as const)('%s', (_label, initial, keys, expected) => {
+      expect(pressKeys(initial, [...keys])).toBe(expected);
     });
 
     // --- Ctrl+letter toggles ---

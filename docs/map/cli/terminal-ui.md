@@ -72,6 +72,8 @@ teardownBottomUI(): void
 teardownFooterUI(): void
 
 resetSubmittedInputArea(): void
+
+setOnResizeCallback(cb: (() => void) | null): void
 ```
 <!-- END GENERATED EXPORTS -->
 

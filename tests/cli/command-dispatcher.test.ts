@@ -185,17 +185,14 @@ describe('formatQuotaReset', () => {
 });
 
 // ---------------------------------------------------------------------------
-// dispatchCommand — empty / whitespace
+// dispatchCommand — return value (shared invariant across all inputs)
 // ---------------------------------------------------------------------------
 
-describe('dispatchCommand — empty / whitespace', () => {
-  it('returns continue for empty string', async () => {
-    expect(await dispatchCommand('', makeRuntime())).toBe('continue');
-  });
-
-  it('returns continue for whitespace-only input', async () => {
-    expect(await dispatchCommand('   ', makeRuntime())).toBe('continue');
-  });
+describe('dispatchCommand — returns continue', () => {
+  it.each(['', '   ', '/model', '/config', '/help', '/eval', '/status', '/renderer', '/clear', '/unknown', 'hello'])(
+    '%p → continue', async (input) => {
+      expect(await dispatchCommand(input, makeRuntime())).toBe('continue');
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -264,11 +261,6 @@ describe('dispatchCommand — /model', () => {
     expect(setSelectedModel).toHaveBeenCalledWith('anthropic:claude-3');
   });
 
-  it('returns continue', async () => {
-    const runModelMenu = vi.fn().mockResolvedValue(undefined);
-    expect(await dispatchCommand('/model', makeRuntime({ runModelMenu }))).toBe('continue');
-  });
-
   it('shows "No providers configured" when modelListMode=full and no API keys', async () => {
     await dispatchCommand('/model', makeRuntime({ modelListMode: 'full' }));
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('No providers configured'));
@@ -307,10 +299,6 @@ describe('dispatchCommand — /config', () => {
     await dispatchCommand('/config', makeRuntime());
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('/config is only available in interactive mode'));
   });
-
-  it('returns continue', async () => {
-    expect(await dispatchCommand('/config', makeRuntime())).toBe('continue');
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -327,10 +315,6 @@ describe('dispatchCommand — /help', () => {
     await dispatchCommand('/help', makeRuntime());
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Flags'));
   });
-
-  it('returns continue', async () => {
-    expect(await dispatchCommand('/help', makeRuntime())).toBe('continue');
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -343,10 +327,6 @@ describe('dispatchCommand — /eval', () => {
     await dispatchCommand('/eval', makeRuntime({ runEvalMenu }));
     expect(runEvalMenu).toHaveBeenCalled();
   });
-
-  it('returns continue', async () => {
-    expect(await dispatchCommand('/eval', makeRuntime())).toBe('continue');
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -358,10 +338,6 @@ describe('dispatchCommand — /status', () => {
     await dispatchCommand('/status', makeRuntime());
     expect(runStatusCommand).toHaveBeenCalled();
   });
-
-  it('returns continue', async () => {
-    expect(await dispatchCommand('/status', makeRuntime())).toBe('continue');
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -372,10 +348,6 @@ describe('dispatchCommand — /renderer', () => {
   it('calls runRendererDemo', async () => {
     await dispatchCommand('/renderer', makeRuntime());
     expect(runRendererDemo).toHaveBeenCalled();
-  });
-
-  it('returns continue', async () => {
-    expect(await dispatchCommand('/renderer', makeRuntime())).toBe('continue');
   });
 });
 
@@ -412,10 +384,6 @@ describe('dispatchCommand — /clear', () => {
     expect(beforeScreenClear).toHaveBeenCalled();
     expect(afterScreenClear).toHaveBeenCalled();
   });
-
-  it('returns continue', async () => {
-    expect(await dispatchCommand('/clear', makeRuntime())).toBe('continue');
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -431,10 +399,6 @@ describe('dispatchCommand — unknown slash command', () => {
   it('uses only the first token in the error message', async () => {
     await dispatchCommand('/foo bar baz', makeRuntime());
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('No command: /foo'));
-  });
-
-  it('returns continue', async () => {
-    expect(await dispatchCommand('/unknown', makeRuntime())).toBe('continue');
   });
 });
 
@@ -546,9 +510,6 @@ describe('dispatchCommand — sendToAgent', () => {
     expect(consoleSpy).not.toHaveBeenCalledWith(expect.stringContaining('Provider usage'));
   });
 
-  it('returns continue after a successful agent call', async () => {
-    expect(await dispatchCommand('hello', makeRuntime())).toBe('continue');
-  });
 });
 
 // ---------------------------------------------------------------------------

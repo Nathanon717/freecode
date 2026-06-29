@@ -7,6 +7,7 @@ const TOKENS_PER_REQUEST_OVERHEAD = 2;
 function stringifyContent(value: unknown): string {
   if (typeof value === 'string') return value;
   if (value === null || value === undefined) return '';
+  /* v8 ignore next -- defensive: a well-typed CoreMessage content is never a scalar number/boolean */
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (Array.isArray(value)) {
     return value.map(stringifyContent).filter(Boolean).join('\n');
@@ -17,6 +18,7 @@ function stringifyContent(value: unknown): string {
     if (typeof record['content'] === 'string') return record['content'];
     return JSON.stringify(value);
   }
+  /* v8 ignore next 2 -- defensive: CoreMessage content is never a bigint/symbol/function */
   if (typeof value === 'bigint' || typeof value === 'symbol') return String(value);
   return '';
 }

@@ -70,6 +70,8 @@ interface ListMenuOptions<TResult> {
   countLines?: (lines: string[]) => number;
 }
 
+computeTabWindow(tabs: { label: string; }[], prevScroll: number, tabIndex: number, budget: number): { lo: number; hi: number; }
+
 runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TResult>
 ```
 <!-- END GENERATED EXPORTS -->
@@ -82,7 +84,7 @@ runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TRe
 
 - **Tab-row focus model** (matches `/config`): with more than one tab, Up from item 0 focuses the tab row (`selected === -1`); Left/Right there switch tabs; Down returns to item 0. Any other key on the tab row falls through to `tab.onKey` (e.g. `/config`'s `q` to quit). With a single tab, no tab bar or tab chrome is drawn and the tab row is unreachable.
 - **Pinned tab chrome:** tabbed menus render a blank line above the tab row and ask `raw-picker` to pin the menu to viewport row 1. Single-tab menus keep their body-only render path (no tab bar).
-- **Windowed tab bar** (`renderTabBar`): the bar is clamped to the terminal width, windowed around the active tab so it's always visible; a dim `‹` / `›` marks tabs clipped off either side. Tab bodies that size themselves to the terminal height should reserve the bar's rows (3: blank + bar + blank) — e.g. `/model` passes `reserveRows` into its `buildScreen`.
+- **Windowed tab bar** (`computeTabWindow` + `renderTabBar`): the bar is clamped to the terminal width and scrolled with a one-tab margin (scrolloff=1) — the active tab always keeps at least one neighbour visible on each side (except at the ends), and the bar scrolls only when the selection reaches that margin, never recentring. `runListMenu` persists the window's left edge in `tabScroll` so a satisfied window stays put; a dim `‹` / `›` marks tabs clipped off either side. After a widen, `computeTabWindow` reclaims left space so it never draws a spurious `‹`. Tab bodies that size themselves to the terminal height should reserve the bar's rows (3: blank + bar + blank) — e.g. `/model` passes `reserveRows` into its `buildScreen`.
 - **Navigation:** Up/Down move the selection; `wrap` controls end-wrapping.
 - **Detail:** Right opens `renderDetail` (when present); Esc/Left returns.
 - **Action:** Enter opens `actionMenu` (when present), splicing `menu.renderLines()` after `selectedLineIdx` and overwriting `hintLineIdx` with `actionHint`; delegates keys to `InlineActionMenu`. With no `actionMenu`, Enter calls `onEnter`.

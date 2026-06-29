@@ -82,15 +82,10 @@ describe('parseGroqRateLimitHeaders', () => {
   });
 
   it('returns nulls for missing headers', () => {
-    const result = parseGroqRateLimitHeaders({});
-    expect(result.limitRequests).toBeNull();
-    expect(result.limitTokens).toBeNull();
-    expect(result.remainingRequests).toBeNull();
-    expect(result.remainingTokens).toBeNull();
-    expect(result.resetRequestsMs).toBeNull();
-    expect(result.resetTokensMs).toBeNull();
-    expect(result.resetRequestsRaw).toBeNull();
-    expect(result.resetTokensRaw).toBeNull();
+    expect(parseGroqRateLimitHeaders({})).toEqual({
+      limitRequests: null, limitTokens: null, remainingRequests: null, remainingTokens: null,
+      resetRequestsMs: null, resetTokensMs: null, resetRequestsRaw: null, resetTokensRaw: null,
+    });
   });
 
   it('returns null resetMs when duration is unparseable', () => {
@@ -160,15 +155,10 @@ describe('parseAnthropicRateLimitHeaders', () => {
   });
 
   it('returns nulls for missing headers', () => {
-    const result = parseAnthropicRateLimitHeaders({});
-    expect(result.limitRequests).toBeNull();
-    expect(result.limitTokens).toBeNull();
-    expect(result.remainingRequests).toBeNull();
-    expect(result.remainingTokens).toBeNull();
-    expect(result.resetRequestsMs).toBeNull();
-    expect(result.resetTokensMs).toBeNull();
-    expect(result.resetRequestsRaw).toBeNull();
-    expect(result.resetTokensRaw).toBeNull();
+    expect(parseAnthropicRateLimitHeaders({})).toEqual({
+      limitRequests: null, limitTokens: null, remainingRequests: null, remainingTokens: null,
+      resetRequestsMs: null, resetTokensMs: null, resetRequestsRaw: null, resetTokensRaw: null,
+    });
   });
 
   it('returns null resetMs for invalid ISO timestamps', () => {
@@ -242,16 +232,11 @@ describe('parseAnthropicExtendedHeaders', () => {
   });
 
   it('returns nulls for missing headers', () => {
-    const result = parseAnthropicExtendedHeaders({});
-    expect(result.inputTokensLimit).toBeNull();
-    expect(result.inputTokensRemaining).toBeNull();
-    expect(result.inputTokensResetMs).toBeNull();
-    expect(result.inputTokensResetRaw).toBeNull();
-    expect(result.outputTokensLimit).toBeNull();
-    expect(result.outputTokensRemaining).toBeNull();
-    expect(result.outputTokensResetMs).toBeNull();
-    expect(result.outputTokensResetRaw).toBeNull();
-    expect(result.requestId).toBeNull();
+    expect(parseAnthropicExtendedHeaders({})).toEqual({
+      inputTokensLimit: null, inputTokensRemaining: null, inputTokensResetMs: null, inputTokensResetRaw: null,
+      outputTokensLimit: null, outputTokensRemaining: null, outputTokensResetMs: null, outputTokensResetRaw: null,
+      requestId: null,
+    });
   });
 
   it('returns null resetMs for invalid ISO timestamps', () => {

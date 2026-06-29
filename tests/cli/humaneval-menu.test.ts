@@ -115,6 +115,29 @@ function makeProblem(overrides?: Partial<HumanEvalProblem>): HumanEvalProblem {
 
 const fakeRl = { question: vi.fn(), pause: vi.fn(), resume: vi.fn() } as unknown as Interface;
 
+// Capture console.log lines for assertions.
+function captureLog(): string[] {
+  const logged: string[] = [];
+  vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+    logged.push(args.map(String).join(' '));
+  });
+  return logged;
+}
+
+// Destructure the first appendEvalRun call: (_, kind, summary, detail).
+function lastRun() {
+  const [, kind, summary, detail] = vi.mocked(appendEvalRun).mock.calls[0];
+  return { kind, summary, detail: detail as Record<string, unknown> };
+}
+
+// spawnSync impl where `python --version` succeeds and the actual check returns `result`.
+function pythonCheck(result: { status: number | null; error?: unknown; stderr?: string; stdout?: string }) {
+  return (_cmd: string, args: string[]) => {
+    if (args.includes('--version')) return { status: 0, error: null };
+    return { status: result.status, error: result.error ?? null, stderr: result.stderr ?? '', stdout: result.stdout ?? '' };
+  };
+}
+
 // ── buildHumanEvalTab ─────────────────────────────────────────────────────────
 
 describe('buildHumanEvalTab', () => {
@@ -222,10 +245,7 @@ describe('printHumanEvalList', () => {
       makeProblem({ task_id: 'HumanEval/0', entry_point: 'has_close_elements' }),
       makeProblem({ task_id: 'HumanEval/1', entry_point: 'separate_paren_groups' }),
     ];
-    const logged: string[] = [];
-    vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-      logged.push(args.map(String).join(' '));
-    });
+    const logged = captureLog();
     printHumanEvalList(problems);
     const joined = logged.join('\n');
     expect(joined).toContain('HumanEval/0');
@@ -236,10 +256,7 @@ describe('printHumanEvalList', () => {
   });
 
   it('prints header', () => {
-    const logged: string[] = [];
-    vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-      logged.push(args.map(String).join(' '));
-    });
+    const logged = captureLog();
     printHumanEvalList([]);
     expect(logged.some(l => l.includes('HumanEval'))).toBe(true);
     vi.restoreAllMocks();
@@ -273,6 +290,10 @@ describe('runHumanEvalProblems', () => {
     };
   }
 
+  function writeSolution(body = 'def add(a, b):\n    return a + b\n'): void {
+    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), body);
+  }
+
   // Task IDs used in these tests — create their .run subdirs so writeFileSync(check.py) works.
   // resetEvalWorkDir is mocked (no-op) so we must create the directory structure ourselves.
   const TEST_SLUGS = ['test-0', 'p-1', 'p-2'];
@@ -297,22 +318,15 @@ describe('runHumanEvalProblems', () => {
   });
 
   it('logs PASS and calls appendEvalRun with pass:true when solution exists and python check passes', async () => {
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return a + b\n');
-    // spawnSync: python3 --version → ok, python check → pass (status 0)
-    mocks.spawnSyncImpl = () => {
-      return { status: 0, error: null, stderr: '', stdout: '' };
-    };
-
-    const logged: string[] = [];
-    vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-      logged.push(args.map(String).join(' '));
-    });
+    writeSolution();
+    mocks.spawnSyncImpl = pythonCheck({ status: 0 });
+    const logged = captureLog();
 
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
     expect(logged.some(l => l.includes('PASS'))).toBe(true);
     expect(vi.mocked(appendEvalRun)).toHaveBeenCalledOnce();
-    const [, kind, summary] = vi.mocked(appendEvalRun).mock.calls[0];
+    const { kind, summary } = lastRun();
     expect(kind).toBe('humaneval');
     expect(summary.pass).toBe(true);
     expect(summary.error).toBeNull();
@@ -320,113 +334,85 @@ describe('runHumanEvalProblems', () => {
   });
 
   it('records token and turn counts in appendEvalRun summary', async () => {
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return a + b\n');
-    const toolCalls = [{ tool: 'shell_exec', args: {} }, { tool: 'create', args: {} }];
-    mocks.evalHandle = makeHandle({ toolCalls });
+    writeSolution();
+    mocks.evalHandle = makeHandle({ toolCalls: [{ tool: 'shell_exec', args: {} }, { tool: 'create', args: {} }] });
+    captureLog();
 
-    vi.spyOn(console, 'log').mockImplementation(() => {});
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
-    const [,, summary] = vi.mocked(appendEvalRun).mock.calls[0];
+    const { summary } = lastRun();
     expect(summary.turns).toBe(2);
     expect(summary.tokenUsage).toEqual({ input: 100, output: 50 });
   });
 
   it('logs FAIL and calls appendEvalRun with pass:false when solution.py is missing', async () => {
     // No solution.py in TEMP_WORK_DIR
-    const logged: string[] = [];
-    vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-      logged.push(args.map(String).join(' '));
-    });
+    const logged = captureLog();
 
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
     expect(logged.some(l => l.includes('FAIL') && l.includes('solution.py not found'))).toBe(true);
-    const [,, summary] = vi.mocked(appendEvalRun).mock.calls[0];
+    const { summary } = lastRun();
     expect(summary.pass).toBe(false);
     expect(summary.error).toContain('solution.py not found');
   });
 
   it('logs FAIL and records failReason when python check fails with non-zero exit', async () => {
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return a - b  # bug\n');
-    mocks.spawnSyncImpl = (_cmd, args) => {
-      if (args.includes('--version')) return { status: 0, error: null };
-      return { status: 1, error: null, stderr: 'AssertionError: assert 3 == -1', stdout: '' };
-    };
-
-    const logged: string[] = [];
-    vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-      logged.push(args.map(String).join(' '));
-    });
+    writeSolution('def add(a, b):\n    return a - b  # bug\n');
+    mocks.spawnSyncImpl = pythonCheck({ status: 1, stderr: 'AssertionError: assert 3 == -1' });
+    const logged = captureLog();
 
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
     expect(logged.some(l => l.includes('FAIL'))).toBe(true);
-    const [,, summary, detail] = vi.mocked(appendEvalRun).mock.calls[0];
+    const { summary, detail } = lastRun();
     expect(summary.pass).toBe(false);
     // detail.scoringOutcome should carry the exit code and stderr
-    const outcome = (detail as Record<string, unknown>).scoringOutcome as Record<string, unknown>;
+    const outcome = detail.scoringOutcome as Record<string, unknown>;
     expect(outcome.exitCode).toBe(1);
     expect(outcome.stderr).toContain('AssertionError');
   });
 
   it('records failReason from stderr tail in appendEvalRun detail', async () => {
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return a - b\n');
+    writeSolution('def add(a, b):\n    return a - b\n');
     const stderrLines = ['line1', 'line2', 'line3', 'line4', 'line5', 'AssertionError: failed'];
-    mocks.spawnSyncImpl = (_cmd, args) => {
-      if (args.includes('--version')) return { status: 0, error: null };
-      return { status: 1, error: null, stderr: stderrLines.join('\n'), stdout: '' };
-    };
+    mocks.spawnSyncImpl = pythonCheck({ status: 1, stderr: stderrLines.join('\n') });
+    captureLog();
 
-    vi.spyOn(console, 'log').mockImplementation(() => {});
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
-    const [,, , detail] = vi.mocked(appendEvalRun).mock.calls[0];
-    const failReason = (detail as Record<string, unknown>).failReason as string;
-    expect(failReason).toContain('AssertionError: failed');
+    expect(lastRun().detail.failReason).toContain('AssertionError: failed');
   });
 
   it('records pythonError when spawnSync returns an error object', async () => {
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return a + b\n');
-    mocks.spawnSyncImpl = (_cmd, args) => {
-      if (args.includes('--version')) return { status: 0, error: null };
-      return { status: null, error: new Error('ENOENT: python not found'), stderr: '', stdout: '' };
-    };
-
-    const logged: string[] = [];
-    vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-      logged.push(args.map(String).join(' '));
-    });
+    writeSolution();
+    mocks.spawnSyncImpl = pythonCheck({ status: null, error: new Error('ENOENT: python not found') });
+    const logged = captureLog();
 
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
     expect(logged.some(l => l.includes('could not run python'))).toBe(true);
-    const [,, summary, detail] = vi.mocked(appendEvalRun).mock.calls[0];
+    const { summary, detail } = lastRun();
     expect(summary.pass).toBe(false);
-    const outcome = (detail as Record<string, unknown>).scoringOutcome as Record<string, unknown>;
+    const outcome = detail.scoringOutcome as Record<string, unknown>;
     expect(outcome.pythonError).toContain('ENOENT');
   });
 
   it('logs INCOMPLETE and returns incomplete status when agent exits with non-zero code', async () => {
     mocks.evalHandle = makeHandle({ exitCode: 1 });
-
-    const logged: string[] = [];
-    vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-      logged.push(args.map(String).join(' '));
-    });
+    const logged = captureLog();
 
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
     expect(logged.some(l => l.includes('INCOMPLETE'))).toBe(true);
-    const [,, summary] = vi.mocked(appendEvalRun).mock.calls[0];
+    const { summary } = lastRun();
     expect(summary.pass).toBe(false);
     expect(summary.error).toContain('agent did not finish');
   });
 
   it('prints summary when multiple problems are run', async () => {
-    // All problems pass
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return a + b\n');
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    writeSolution(); // all problems pass
+    captureLog();
 
     await runHumanEvalProblems(
       [makeProblem({ task_id: 'p/1' }), makeProblem({ task_id: 'p/2' })],
@@ -438,8 +424,8 @@ describe('runHumanEvalProblems', () => {
   });
 
   it('does not print summary when a single problem is run', async () => {
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return a + b\n');
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    writeSolution();
+    captureLog();
 
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
@@ -447,13 +433,12 @@ describe('runHumanEvalProblems', () => {
   });
 
   it('transcript turn has exactly one entry with required fields', async () => {
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return a + b\n');
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    writeSolution();
+    captureLog();
 
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
-    const [,, , detail] = vi.mocked(appendEvalRun).mock.calls[0];
-    const transcript = (detail as Record<string, unknown>).transcript as unknown[];
+    const transcript = lastRun().detail.transcript as unknown[];
     expect(transcript).toHaveLength(1);
     const turn = transcript[0] as Record<string, unknown>;
     expect(turn).toHaveProperty('systemPrompt');
@@ -465,8 +450,8 @@ describe('runHumanEvalProblems', () => {
   });
 
   it('passes falsy model string as empty string to setActiveModelFromString', async () => {
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return a + b\n');
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    writeSolution();
+    captureLog();
 
     const { setActiveModelFromString } = await import('../../src/cli/terminal-ui.js');
     await runHumanEvalProblems([makeProblem()], '', fakeRl);
@@ -482,7 +467,7 @@ describe('runHumanEvalProblems', () => {
     // won't fire in unit tests (promise resolves before 500ms). Test that the loop
     // exits when userCancelled is true; to trigger that we need the retryStatusFile
     // path — skip this branch and just assert the loop runs both problems when not cancelled.
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    captureLog();
 
     await runHumanEvalProblems(
       [makeProblem({ task_id: 'p/1' }), makeProblem({ task_id: 'p/2' })],
@@ -495,33 +480,23 @@ describe('runHumanEvalProblems', () => {
   });
 
   it('passes stdout error text to appendEvalRun when stderr is empty', async () => {
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return a - b\n');
-    mocks.spawnSyncImpl = (_cmd, args) => {
-      if (args.includes('--version')) return { status: 0, error: null };
-      return { status: 1, error: null, stderr: '', stdout: 'TypeError: something wrong' };
-    };
+    writeSolution('def add(a, b):\n    return a - b\n');
+    mocks.spawnSyncImpl = pythonCheck({ status: 1, stdout: 'TypeError: something wrong' });
+    captureLog();
 
-    vi.spyOn(console, 'log').mockImplementation(() => {});
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
-    const [,, , detail] = vi.mocked(appendEvalRun).mock.calls[0];
-    const failReason = (detail as Record<string, unknown>).failReason as string;
-    expect(failReason).toContain('TypeError');
+    expect(lastRun().detail.failReason).toContain('TypeError');
   });
 
   it('falls back to "python" when both python3 and python --version checks fail', async () => {
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return a + b\n');
-    // Both python3 and python --version fail → pythonCmd falls back to 'python', then check runs
+    writeSolution();
+    // Both python3 and python --version fail → pythonCmd falls back to 'python', then check passes.
     mocks.spawnSyncImpl = (_cmd, args) => {
       if (args.includes('--version')) return { status: 1, error: null, stderr: '', stdout: '' };
-      // The actual python check passes
       return { status: 0, error: null, stderr: '', stdout: '' };
     };
-
-    const logged: string[] = [];
-    vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-      logged.push(args.map(String).join(' '));
-    });
+    const logged = captureLog();
 
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
@@ -555,7 +530,7 @@ describe('runHumanEvalProblems', () => {
       resume: vi.fn(),
     } as unknown as Interface;
 
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    captureLog();
 
     const runPromise = runHumanEvalProblems(
       [makeProblem({ task_id: 'p/1' }), makeProblem({ task_id: 'p/2' })],
@@ -589,18 +564,13 @@ describe('runHumanEvalProblems', () => {
   });
 
   it('python check fails with empty stderr and stdout → failReason is "python check failed"', async () => {
-    writeFileSync(join(TEMP_WORK_DIR, 'solution.py'), 'def add(a, b):\n    return None\n');
-    mocks.spawnSyncImpl = (_cmd, args) => {
-      if (args.includes('--version')) return { status: 0, error: null };
-      return { status: 1, error: null, stderr: '', stdout: '' };
-    };
+    writeSolution('def add(a, b):\n    return None\n');
+    mocks.spawnSyncImpl = pythonCheck({ status: 1 });
+    captureLog();
 
-    vi.spyOn(console, 'log').mockImplementation(() => {});
     await runHumanEvalProblems([makeProblem()], 'mock:model', fakeRl);
 
-    const [,, , detail] = vi.mocked(appendEvalRun).mock.calls[0];
-    const failReason = (detail as Record<string, unknown>).failReason as string;
-    expect(failReason).toBe('python check failed');
+    expect(lastRun().detail.failReason).toBe('python check failed');
   });
 });
 
