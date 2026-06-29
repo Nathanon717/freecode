@@ -22,6 +22,7 @@ import { buildCustomEvalTab, runEvalScenarios, type ScenarioHashes } from './cus
 import { buildHumanEvalTab, runHumanEvalProblems } from './humaneval-menu.js';
 import {
   humanEvalDatasetPath,
+  ensureHumanEvalDataset,
   loadHumanEvalProblems,
   type HumanEvalProblem,
 } from '../eval/humaneval-data.js';
@@ -63,9 +64,9 @@ async function runEvalMenuBody(
     }),
   );
 
-  // HumanEval tab data: load from disk if the dataset is already present.
+  // HumanEval tab data: download if missing, then load.
   let problems: HumanEvalProblem[] = [];
-  if (existsSync(humanEvalDatasetPath())) {
+  if (existsSync(humanEvalDatasetPath()) || await ensureHumanEvalDataset()) {
     problems = loadHumanEvalProblems() ?? [];
   }
   const model = getSelectedModel();
