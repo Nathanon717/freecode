@@ -664,6 +664,20 @@ describe('initDynamicProviders live fetching', () => {
     expect(zen.models.find((m) => m.id === 'old-model-free')?.isNew).toBeUndefined();
   });
 
+  it('concurrent initDynamicProviders calls share one underlying fetch (initPromise memoization)', async () => {
+    let fetchCount = 0;
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      if (url.includes('opencode.ai')) fetchCount++;
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+    }));
+    const { initDynamicProviders } = await import('../../src/providers/registry.js');
+    // Simulate startup warm (e.g. from getSelectableModels) racing the user opening /model.
+    const p1 = initDynamicProviders();
+    const p2 = initDynamicProviders();
+    await Promise.all([p1, p2]);
+    expect(fetchCount).toBe(1);
+  });
+
   it('provider is not re-initialized when already in initializedProviders', async () => {
     const calledUrls: string[] = [];
     vi.stubGlobal('fetch', vi.fn((url: string) => {

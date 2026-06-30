@@ -189,6 +189,8 @@ if (ttyScenarios.length > 0) {
           DOPPLER_PROJECT: '1',
           FREECODE_DB_SYNC_URL: '',
           FREECODE_DB_AUTH_TOKEN: '',
+          // Suppress startup model prefetch so TTY scenarios don't fire live network calls.
+          FREECODE_NO_PREFETCH: '1',
           ...(scenario.model ? { FREECODE_MODEL: scenario.model } : {}),
           ...(scenario.llmFixture ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath } : {}),
           ...(scenario.humanEvalDataFixture ? { HUMANEVAL_DATA: join(SCENARIOS_DIR, scenario.humanEvalDataFixture) } : {}),

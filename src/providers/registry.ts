@@ -21,6 +21,26 @@ export { PROVIDER_REGISTRY };
 
 const initializedProviders = new Set<string>();
 
+// Shared promise across all callers so a prefetch fired at startup and a later
+// /model open await the same in-flight fetch rather than duplicating it.
+let initPromise: Promise<void> | null = null;
+
+async function _doInit(): Promise<void> {
+  try {
+    await Promise.all([
+      initOpenRouterModels(),
+      initZenModels(),
+      initAnthropicModels(),
+      ...LIVE_PROVIDER_IDS.map((id) => {
+        const entry = PROVIDER_REGISTRY.find((p) => p.id === id);
+        return initProviderModels(id, entry ? resolveApiKey(entry) : undefined);
+      }),
+    ]);
+  } catch (err) {
+    logError("registry", "Unexpected error during model init", err);
+  }
+}
+
 function applyBlocklist(
   models: ModelConfig[],
   blocklist: string[],
@@ -269,18 +289,9 @@ export async function initDynamicProviders(): Promise<void> {
       "Live model discovery is blocked while FREECODE_FAKE_LLM=1",
     );
   }
-
-  await Promise.all([
-    initOpenRouterModels(),
-    initZenModels(),
-    initAnthropicModels(),
-    ...LIVE_PROVIDER_IDS.map((id) => {
-      const entry = PROVIDER_REGISTRY.find((p) => p.id === id);
-      return initProviderModels(id, entry ? resolveApiKey(entry) : undefined);
-    }),
-  ]);
+  if (!initPromise) initPromise = _doInit();
+  await initPromise;
 }
-
 
 export function getProvider(id: string): ProviderConfig | undefined {
   return PROVIDER_REGISTRY.find((p) => p.id === id);

@@ -20,6 +20,7 @@ _No exported symbols._
 2. Validates arguments (`--model`/`--script` presence, `--script` file readability) **before** importing the runtime graph or opening the DB, so bad invocations exit in milliseconds. The runtime graph pulls the `ai` SDK (~4s cold) and libSQL (~1s); only `child_process`/`fs`/`chalk`/`logger` are statically imported, everything else is loaded via dynamic `import()` after validation passes.
 3. Dynamically imports the runtime graph (screen buffer, banner, session modes, session controller/runner, config, db), then creates a process-wide readline interface, sets `projectRoot` to `process.cwd()`, and constructs the `SessionController`.
 4. Calls `initStore()` to initialize the libSQL DB client and in-memory model cache.
+4a. In interactive TTY mode, fires `getSelectableModels()` in the background (model lists + pricing) so `/model` opens instantly. Suppressed by `FREECODE_NO_PREFETCH=1` (TTY test harness).
 5. Loads config and seeds the selected model from `FREECODE_MODEL`, `config.defaultModel`, or `--model <provider:model>`.
 6. Routes to script mode or interactive mode. Ollama is probed lazily within each path (via `route()`) rather than unconditionally on startup — this avoids a network round-trip in scripted/scenario mode.
 

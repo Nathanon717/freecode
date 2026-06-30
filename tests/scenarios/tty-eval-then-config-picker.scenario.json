@@ -40,6 +40,7 @@
         "name": "run first eval",
         "send": "\r",
         "waitFor": "tokens:",
+        "waitForMs": 25000,
         "quietMs": 600,
         "screenContains": [
           "PASS  cereal-soup"

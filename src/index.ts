@@ -141,6 +141,13 @@ async function main() {
 
   showBanner();
 
+  // Warm model lists and pricing in background so /model opens instantly.
+  if (process.stdin.isTTY && process.env.FREECODE_NO_PREFETCH !== '1') {
+    import('./commands/model.js')
+      .then(({ getSelectableModels }) => getSelectableModels())
+      .catch(() => {});
+  }
+
   if (!selectedModel) {
     console.log(chalk.yellow('No model selected. Use /model to choose one.\n'));
   }
