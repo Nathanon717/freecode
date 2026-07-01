@@ -23,7 +23,10 @@
       "Bash(sed -i \"s/'playground', 'humaneval'/'evals', 'humaneval'/g\" src/cli/humaneval-menu.ts src/eval/humaneval-data.ts tests/cli/humaneval-menu.test.ts)",
       "Bash(sed -i 's#playground/eval#evals/custom#g' src/cli/eval-menu.ts src/cli/custom-eval-menu.ts)",
       "Bash(sed -i 's#playground/humaneval#evals/humaneval#g' tests/eval/humaneval-data.test.ts)",
-      "Bash(sed -i 's#into playground/#into evals/#g' tests/cli/humaneval-menu.test.ts)"
+      "Bash(sed -i 's#into playground/#into evals/#g' tests/cli/humaneval-menu.test.ts)",
+      "Bash(repomix --style xml -o repomix-out/tests.xml /root/freecode/tests)",
+      "Bash(repomix --style xml -o repomix-out/docs.xml /root/freecode/docs)",
+      "WebSearch"
     ]
   }
 }
