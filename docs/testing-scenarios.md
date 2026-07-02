@@ -295,7 +295,7 @@ Per-phase timing for a single TTY scenario is part of the unified timing tool �
 npm run time -- scenario tty-autocomplete
 ```
 
-That sets `TTY_TIMING=1` internally and narrows the run to the one scenario, so the harness records one timing per phase (startup → each step → exit) and `time.ts` nests them as children of the scenario in the timing report — no separate raw output. See [time.md](time.md) for the full timing model (depth follows scope). `TTY_TIMING` itself is an internal mechanism, not a knob you type.
+That sets `TTY_TIMING=1` internally and narrows the run to the one scenario, so the harness records one timing per phase (startup → each step → exit) and `time.ts` nests them as children of the scenario in the timing report — no separate raw output. See [time.md](scripts/time.md) for the full timing model (depth follows scope). `TTY_TIMING` itself is an internal mechanism, not a knob you type.
 
 The phases appear as a chronological timeline under the scenario, and the leftover wall clock (Node spawn, harness boot, teardown) is reconciled into a sibling `harness startup + teardown` line so the children sum to the section total:
 

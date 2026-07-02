@@ -8,7 +8,7 @@
  * same function the picker and the startup prefetch call — so filtering here is
  * identical to the app's, not reimplemented.
  *
- * Usage: npx tsx scripts/test-all-models.ts
+ * Usage: npm run test-all-models
  */
 import { writeFileSync } from 'fs';
 import { spawnSync } from 'child_process';
@@ -124,9 +124,9 @@ async function main(): Promise<void> {
       for await (const _chunk of result.textStream) {
         // discard content; only success/failure matters
       }
-      await result.text;
+      const text = await result.text;
       status = 'works';
-      detail = 'works';
+      detail = text.trim() || '(empty response)';
     } catch (error) {
       status = 'failed';
       detail = describeError(error);
@@ -136,7 +136,7 @@ async function main(): Promise<void> {
     const durationMs = Date.now() - startedAt;
     outcomes.push({ modelPref, status, detail, durationMs });
 
-    const line = `[${i + 1}/${total}] ${modelPref} — ${status === 'works' ? 'works' : detail} (${formatElapsed(durationMs)})`;
+    const line = `[${i + 1}/${total}] ${modelPref} — ${status === 'works' ? 'works' : 'failed'} (${formatElapsed(durationMs)})`;
     if (isTTY) {
       process.stdout.write(`\r\x1b[K${line}\n`);
     } else {
@@ -148,7 +148,7 @@ async function main(): Promise<void> {
   const lines = [
     `${succeeded}/${total} models succeeded`,
     '',
-    ...outcomes.map(o => `${o.modelPref}\t${o.status === 'works' ? 'works' : o.detail}\t${formatElapsed(o.durationMs)}`),
+    ...outcomes.flatMap(o => [o.modelPref, `${o.detail} (${formatElapsed(o.durationMs)})`, '']),
   ];
   writeFileSync(RESULTS_PATH, lines.join('\n') + '\n');
   console.log(`\nResults written to ${RESULTS_PATH}`);

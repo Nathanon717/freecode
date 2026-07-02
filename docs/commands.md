@@ -19,6 +19,7 @@ This table is generated from `package.json`.
 | `npm run pty:session` | `cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts` |
 | `npm run start` | `node dist/index.js` |
 | `npm run test` | `tsx scripts/test.ts` |
+| `npm run test-all-models` | `tsx scripts/test-all-models.ts` |
 | `npm run test:pty` | `vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts` |
 | `npm run time` | `tsx scripts/time.ts` |
 | `npm run unit:watch` | `vitest` |

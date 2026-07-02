@@ -131,6 +131,8 @@ This applies whenever input starts with `/`. For all control characters (Enter, 
 
 **A brief cmd window may flash** when the PTY daemon starts or stops. This is a ConPTY limitation on Windows and doesn't affect functionality.
 
+**The first keystroke right after `start` can be silently dropped.** ConPTY's raw-mode key handler isn't guaranteed live the instant the prompt paints. `runServer` in `session.ts` probes with a harmless space keystroke (clearing it afterward) before marking the daemon ready, so callers of `start`/`goto` don't need to work around this themselves.
+
 **`$'\r'` and other `$'...'` control chars as positional args are unreliable on Windows.** The CR byte in the argument can mangle the Windows command line parser. Use `printf` + stdin instead:
 
 ```bash
