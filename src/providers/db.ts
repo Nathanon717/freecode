@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from '
 import { join, dirname, resolve } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
-import { logError } from '../logger.js';
+import { log, logError } from '../logger.js';
 import type { ModelEntry, EvalRunSummary } from './model-store.js';
 import { setDbConfigCache, clearDbConfigCache, registerConfigPersist, type DbConfigData } from './db-config-cache.js';
 
@@ -42,15 +42,12 @@ type ModelStore = Record<string, ModelEntry>;
 let client: Client | null = null;
 let cache: ModelStore | null = null;
 
-// Sidecar files a libSQL embedded replica keeps next to the main db file. `-info`
-// holds the replication metadata (generation + frame numbers); a WalConflict's
-// diverged frame state lives in `-wal`/`-info`, so a recovery wipe MUST remove
-// `-info` or the conflict survives the re-pull. (Verified against an actual store
-// dir: freecode.db{,-shm,-wal,-info} — there is no `-meta` file.)
+// libSQL replica sidecars. A recovery wipe MUST remove `-info` (sync metadata) or a
+// WalConflict survives the re-pull; verified real dir has no `-meta`. See db.md.
 const DB_FILE_SUFFIXES = ['', '-shm', '-wal', '-info', '-meta'] as const;
 
-/** Remove the local db file and all its libSQL sidecars. Never throws. */
-function wipeLocalDb(url: string): void {
+/** Remove the local db file and all its libSQL sidecars. Never throws. Exported for tests. */
+export function wipeLocalDb(url: string): void {
   const dbPath = url.replace(/^file:/, '');
   for (const suffix of DB_FILE_SUFFIXES) {
     try { unlinkSync(dbPath + suffix); } catch { /* ignore */ }
@@ -58,14 +55,17 @@ function wipeLocalDb(url: string): void {
 }
 
 /**
- * True when `err` is a libSQL embedded-replica WalConflict: the local replica has
- * diverged from the remote and can neither push its frames nor accept new writes.
- * The only recovery is to discard the local replica and re-pull. Distinct from
- * transient network/auth errors, which must NOT trigger a destructive wipe.
+ * True for a libSQL WalConflict (diverged replica → wipe + re-pull); NOT transient
+ * network/auth errors, which must not trigger a destructive wipe. Exported for tests. See db.md.
  */
-function isReplicaConflict(err: unknown): boolean {
+export function isReplicaConflict(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
   return /WalConflict/i.test(msg);
+}
+
+/** True when the db file at `url` is a libSQL embedded replica (has an `-info` sync-metadata sidecar). See db.md. */
+function isSyncReplica(url: string): boolean {
+  return existsSync(url.replace(/^file:/, '') + '-info');
 }
 
 async function createSchema(c: Client): Promise<void> {
@@ -391,19 +391,21 @@ function openSyncedClient(url: string, syncUrl: string, authToken: string): Clie
 }
 
 /**
- * Open the client, pull from remote, and create the schema. On a WalConflict the
- * local replica has diverged — `sync()` can't push the conflicting frames and the
- * next write (the schema CREATE TABLE) throws — so discard the local replica and
- * re-pull once. This drops un-pushed local writes (models re-fetch; global config
- * is mirrored to config-cache.json; eval history is the only real loss), which is
- * acceptable because a diverged replica can't push them anyway. Transient
- * sync errors (network/auth) keep the local replica and run offline — never wiped.
+ * Open the client, pull from remote, and create the schema. On a WalConflict discard
+ * the diverged replica and re-pull once (drops un-pushed writes — only eval history is
+ * a real loss). Transient sync errors keep the replica and run offline. See db.md.
  */
 async function openAndPrepareClient(): Promise<void> {
   const { syncUrl, authToken } = readDbConfig();
   const url = getDbUrl();
 
   if (!(syncUrl && authToken)) {
+    // Opening an existing sync replica as a plain client corrupts its sync metadata and
+    // forces a re-bootstrap next tokened run. Decline (leave `client` null) to preserve it. See db.md.
+    if (isSyncReplica(url)) {
+      log('db', 'Tokenless run over a sync replica; skipping local open to preserve replica sync metadata');
+      return;
+    }
     client = createClient({ url });
     await createSchema(client);
     return;
@@ -432,10 +434,15 @@ async function openAndPrepareClient(): Promise<void> {
 async function doInit(): Promise<void> {
   try {
     await openAndPrepareClient();
-    cache = await loadFromDb(client!);
-    const dbConfigData = await loadConfigFromDb(client!);
-    setDbConfigCache(dbConfigData);
-    writeConfigMirror(dbConfigData);
+    if (client) {
+      cache = await loadFromDb(client);
+      const dbConfigData = await loadConfigFromDb(client);
+      setDbConfigCache(dbConfigData);
+      writeConfigMirror(dbConfigData);
+    } else if (cache === null) {
+      // Declined open (tokenless run over a sync replica): calm degrade, NOT the error branch. See db.md.
+      cache = {};
+    }
   } catch (err) {
     // The store is best-effort: a failed init must NEVER crash the interactive
     // menus that await ensureStoreReady() (a thrown error here would also poison

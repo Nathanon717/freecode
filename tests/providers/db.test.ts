@@ -335,3 +335,86 @@ describe('db: config persistence round-trip', () => {
     expect(cache?.providerOverrides?.['openai']?.showProviderUsage).toBe(true);
   });
 });
+
+// Regression guard for the "local state is incorrect, db file exists but metadata
+// file does not" re-bootstrap (docs/bug log). A db file opened WITH sync tokens on a
+// prior run leaves an `-info` replica-metadata sidecar. Opening that same file as a
+// PLAIN (tokenless) client — which happens whenever Doppler didn't inject tokens —
+// dirties the WAL and invalidates that metadata, so the next tokened run silently
+// re-pulls the whole DB. The fix: a tokenless run over a replica declines to open.
+describe('db: tokenless run over a sync replica', () => {
+  it('declines to open a plain client when a `-info` replica sidecar exists (no persistence, replica preserved)', async () => {
+    // Build a REAL, valid db file with a persisted model row, then close it. This is
+    // what a prior synced run leaves behind. (Using a valid db is what makes this a
+    // genuine guard: without the fix, the plain client opens it and loads the row.)
+    await db.initStore();
+    const entry = { provider: 'groq', modelId: 'llama' };
+    db.setCache({ 'groq:llama': entry });
+    db.persistModelRowAsync('groq:llama', entry);
+    await db.resetStore(); // drains the write, closes the client
+
+    // Mark it as a sync replica by planting an `-info` sidecar. No sync tokens are set.
+    const dbPath = join(tempStore, 'freecode.db');
+    const infoPath = dbPath + '-info';
+    const sidecar = '{"generation":15}';
+    writeFileSync(infoPath, sidecar);
+    const dbBytesBefore = readFileSync(dbPath);
+
+    // Re-init tokenless. Must NOT crash, and must NOT emit the "Store init failed"
+    // degrade (that path is for real errors, not this calm decline).
+    await expect(db.initStore()).resolves.toBeUndefined();
+
+    // Declined: the persisted `groq:llama` row is NOT loaded — the cache is empty.
+    // Without the fix, the plain client would open the file and load it.
+    expect(db.getCache()).toEqual({});
+    // The client was never opened — raw execution reports it's not initialized.
+    await expect(db.executeRawForTesting('SELECT 1', [])).rejects.toThrow('DB not initialized');
+    // The replica and its sync metadata are byte-for-byte intact (not opened, not wiped).
+    expect(readFileSync(infoPath, 'utf-8')).toBe(sidecar);
+    expect(readFileSync(dbPath).equals(dbBytesBefore)).toBe(true);
+  });
+
+  it('opens a real plain client when no `-info` sidecar exists (genuinely tokenless user)', async () => {
+    await db.initStore();
+    // A real client was opened against a plain local file — raw SQL works.
+    await expect(db.executeRawForTesting('SELECT 1', [])).resolves.toBeUndefined();
+    // A plain client is not a replica, so it never creates `-info` sync metadata.
+    expect(existsSync(join(tempStore, 'freecode.db-info'))).toBe(false);
+  });
+});
+
+describe('db: isReplicaConflict', () => {
+  // A WalConflict is thrown and requires a destructive wipe+re-pull. "local state is
+  // incorrect" is NOT thrown (libSQL self-heals) and must NOT match — wiping on it
+  // would discard a replica libSQL is about to legitimately re-pull.
+  it.each([
+    ['ERROR libsql::sync: insert error (frame=84): WalConflict', true],
+    ['WalConflict', true],
+    ['local state is incorrect, db file exists but metadata file does not', false],
+    ['network timeout', false],
+    ['401 Unauthorized', false],
+  ])('%s → %s', (message, expected) => {
+    expect(db.isReplicaConflict(new Error(message))).toBe(expected);
+  });
+
+  it('handles non-Error values without throwing', () => {
+    expect(db.isReplicaConflict('WalConflict')).toBe(true);
+    expect(db.isReplicaConflict(null)).toBe(false);
+  });
+});
+
+describe('db: wipeLocalDb', () => {
+  it('removes the db file and every libSQL sidecar including `-info`', () => {
+    const dbPath = join(tempStore, 'freecode.db');
+    const suffixes = ['', '-shm', '-wal', '-info', '-meta'];
+    for (const s of suffixes) writeFileSync(dbPath + s, 'x');
+
+    db.wipeLocalDb('file:' + dbPath);
+
+    for (const s of suffixes) expect(existsSync(dbPath + s)).toBe(false);
+  });
+
+  it('never throws when the files are absent', () => {
+    expect(() => db.wipeLocalDb('file:' + join(tempStore, 'nonexistent.db'))).not.toThrow();
+  });
+});
