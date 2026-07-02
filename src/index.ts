@@ -160,7 +160,6 @@ async function main() {
     mode: createInteractiveMode(
       rl,
       projectRoot,
-      session,
       () => selectedModel,
       (model) => { selectedModel = model; },
     ),

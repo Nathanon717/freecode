@@ -11,6 +11,7 @@ Use this directory as the project handbook. Generated reference pages report fac
 - [Scenario authoring](testing-scenarios.md): how to write and maintain scenario tests.
 - [Writing unit tests](unit-tests.md): behavior-first testing rules to prevent test-file bloat. Read before writing unit tests.
 - [Test pipeline timing](time.md): per-section timing tool to identify pipeline bottlenecks.
+- [Model availability smoke test](test-all-models.md): sends "hi" to every free model to check which ones currently respond.
 - [Guidelines](guidelines/file-length.md): file length limits and extraction guidance.
 - [Codebase map](map/README.md): agent-oriented source navigation.
 - [Session logs](sessions/README.md): optional records of substantial feature work.

@@ -53,7 +53,6 @@ vi.mock('../../src/cli/terminal-ui.js', () => ({
   setActiveModelFromString: vi.fn(),
   setQuotaSnapshot: vi.fn(),
   setRetryBanner: vi.fn(),
-  setTokenCount: vi.fn(),
 }));
 
 vi.mock('../../src/providers/model-store.js', () => ({

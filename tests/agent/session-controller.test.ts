@@ -25,11 +25,4 @@ describe('SessionController', () => {
     controller.clearMessages();
     expect(controller.messages).toEqual([]);
   });
-
-  it('reports a non-negative context token count that grows with messages', () => {
-    const controller = new SessionController(join(tmpdir(), 'ctrl-tokens'));
-    const empty = controller.getContextTokenCount();
-    controller.addUserMessage('a reasonably long message to add some tokens to the context');
-    expect(controller.getContextTokenCount()).toBeGreaterThanOrEqual(empty);
-  });
 });

@@ -12,7 +12,6 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import type { Interface } from 'readline';
 import { createInteractiveMode, createScriptedMode } from '../../src/cli/session-modes.js';
-import type { SessionController } from '../../src/agent/session-controller.js';
 
 // ---------------------------------------------------------------------------
 // Capture raw-key-session handlers so tests can fire key events directly.
@@ -57,7 +56,6 @@ vi.mock('../../src/cli/terminal-ui.js', async (importOriginal) => {
     setActiveModelFromString: vi.fn(),
     setQuotaSnapshot: vi.fn(),
     setOpenAIDailySpend: vi.fn(),
-    setTokenCount: vi.fn(),
     setInlineCompletion: vi.fn(),
     setSuggestions: vi.fn(),
     isBottomUIActive: vi.fn(() => false),
@@ -186,10 +184,6 @@ function makeRl(answer = ''): Interface {
   } as unknown as Interface;
 }
 
-function makeSession(): SessionController {
-  return { getContextTokenCount: vi.fn(() => 0) } as unknown as SessionController;
-}
-
 function setTTY(value: boolean | undefined): void {
   Object.defineProperty(process.stdin, 'isTTY', { value, writable: true, configurable: true });
 }
@@ -223,16 +217,16 @@ describe('createScriptedMode', () => {
 
   it('reads non-empty lines in order then returns null when exhausted', async () => {
     const mode = createScriptedMode(writeScript(['hello', '', 'world']), dir, makeRl());
-    expect(await mode.readInput(0)).toBe('hello');
-    expect(await mode.readInput(0)).toBe('world');
-    expect(await mode.readInput(0)).toBeNull();
+    expect(await mode.readInput()).toBe('hello');
+    expect(await mode.readInput()).toBe('world');
+    expect(await mode.readInput()).toBeNull();
   });
 
   it('decodes a JSON-encoded line as a single multiline message', async () => {
     const multiline = 'line one\nline two\nline three';
     const mode = createScriptedMode(writeScript([JSON.stringify(multiline)]), dir, makeRl());
-    expect(await mode.readInput(0)).toBe(multiline);
-    expect(await mode.readInput(0)).toBeNull();
+    expect(await mode.readInput()).toBe(multiline);
+    expect(await mode.readInput()).toBeNull();
   });
 
   it('approves a tool call when the next scripted line approves', async () => {
@@ -332,12 +326,9 @@ describe('createInteractiveMode', () => {
   });
 
   it('returns a full session mode exposing the interactive capabilities', () => {
-    const session = { getContextTokenCount: () => 0, messages: [] };
     const mode = createInteractiveMode(
       makeRl(),
       process.cwd(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-      session as any,
       () => 'groq:test-model',
       () => {},
     );
@@ -369,7 +360,7 @@ describe('createInteractiveMode — detailed', () => {
     const m = model ?? freshModel();
     const getModel = vi.fn(() => m);
     const setModel = vi.fn();
-    const mode = createInteractiveMode(makeRl(), process.cwd(), makeSession(), getModel, setModel);
+    const mode = createInteractiveMode(makeRl(), process.cwd(), getModel, setModel);
     return { mode, getModel, setModel };
   }
 
@@ -563,7 +554,7 @@ describe('createInteractiveMode — detailed', () => {
     it('afterDispatch fires applyModelChange when the model has changed', () => {
       const m = freshModel();
       const getModel = vi.fn(() => m);
-      const mode = createInteractiveMode(makeRl(), process.cwd(), makeSession(), getModel, vi.fn());
+      const mode = createInteractiveMode(makeRl(), process.cwd(), getModel, vi.fn());
       // _lastAppliedModel is now m (set by applyModelStatus)
       vi.clearAllMocks();
       vi.mocked(getAskMode).mockReturnValue('auto');
@@ -638,7 +629,7 @@ describe('createInteractiveMode — detailed', () => {
       setTTY(false);
       vi.mocked(askQuestion).mockResolvedValueOnce('user typed this');
       const { mode } = makeMode();
-      const result = await mode.readInput(0);
+      const result = await mode.readInput();
       expect(result).toBe('user typed this');
       expect(askQuestion).toHaveBeenCalledOnce();
       expect(runRawKeySession).not.toHaveBeenCalled();
@@ -648,7 +639,7 @@ describe('createInteractiveMode — detailed', () => {
       setTTY(true);
       const { mode } = makeMode();
       // Kick off readInput (it awaits the raw session promise).
-      const p = mode.readInput(0);
+      const p = mode.readInput();
       expect(runRawKeySession).toHaveBeenCalledOnce();
       expect(askQuestion).not.toHaveBeenCalled();
       capturedRawSession.resolve?.('done');
@@ -666,7 +657,7 @@ describe('createInteractiveMode — detailed', () => {
 
     function startReadInput() {
       const { mode } = makeMode();
-      const p = mode.readInput(0);
+      const p = mode.readInput();
       return p;
     }
 

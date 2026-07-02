@@ -8,7 +8,6 @@ import { getBannerColor } from './banner.js';
 import { VIEWPORT_SIZE, clampViewport, type MenuTab } from './list-menu.js';
 import {
   setActiveModelFromString,
-  setTokenCount,
 } from './terminal-ui.js';
 import { resetEvalWorkDir, startEvalScenario } from '../eval/runner.js';
 import { printEvalHeader, printEvalSummary } from './eval-screen.js';
@@ -202,7 +201,6 @@ async function runOneProblem(problem: HumanEvalProblem, model: string, rl?: Inte
 
   const evalModel = model || '';
   setActiveModelFromString(evalModel);
-  setTokenCount(result.tokens.total);
 
   const baseSummary = {
     timestamp: new Date().toISOString(),

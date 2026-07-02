@@ -40,6 +40,9 @@ isolate-*.log
 # boot fast-path mirror of the DB config cache — local, rebuilt from the DB
 .freecode/config-cache.json
 
+# downloaded tokenizer files (tokenizer.json, .model, rank files) — fetched on demand
+.freecode/tokenizers/
+
 # eval run artifacts — data now lives in freecode.db
 evals/custom/results/
 evals/custom/**/.artifacts/

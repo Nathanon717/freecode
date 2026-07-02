@@ -1,6 +1,6 @@
 # Plans
 
-This directory holds implementation plans for multi-session work. A plan is a single markdown file split into phases, where each phase is meant to be completed in a separate session.
+This directory holds implementation plans for multi-session work. A plan is a single markdown file split into phases, where each phase is meant to be completed in a separate session. Avoid bloat, this is for LLM context only, so make sure every word is actual useful context for the implementing agent. 
 
 ## Format
 
@@ -24,5 +24,5 @@ After the introduction, split the work into numbered phases.
 
 - Split along session boundaries: each phase should be small enough to finish in one session.
 - Aim for phases that touch mostly different files, with as little overlap between phases as possible.
-- Each phase must end with `npm test` passing.
+- Each phase should end with `npm test` passing. However there may be times where phases would split very nicely at a certain point, but doing so would require fixing tests for the SOLE purpose of ending the phase. In such cases, leaving the fails is okay but the plan must be explicit about this. 
 - Each phase may optionally include an in-app verification step for the user to perform manually.

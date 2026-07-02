@@ -4,7 +4,7 @@ import { dispatchCommand, type ModelListMode } from './command-dispatcher.js';
 import type { SessionController } from '../agent/session-controller.js';
 
 export interface CliSessionMode {
-  readInput(this: void, tokenCount: number): Promise<string | null>;
+  readInput(this: void): Promise<string | null>;
   confirmToolCall: ConfirmToolCall;
   getReadOnly?(this: void): boolean;
   modelListMode: ModelListMode;
@@ -35,7 +35,7 @@ export async function runCliSession(options: CliSessionRunnerOptions): Promise<v
   const { projectRoot, session, getSelectedModel, setSelectedModel, mode } = options;
 
   while (true) {
-    const input = await mode.readInput(session.getContextTokenCount());
+    const input = await mode.readInput();
     if (input === null) {
       await mode.onInputExhausted?.();
       return;

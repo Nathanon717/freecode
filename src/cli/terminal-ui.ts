@@ -14,7 +14,6 @@ import {
 } from './input-buffer.js';
 
 export {
-  setTokenCount,
   setQuotaSnapshot,
   setActiveModel,
   setActiveModelFromString,

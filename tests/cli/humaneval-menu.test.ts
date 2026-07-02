@@ -64,7 +64,6 @@ vi.mock('../../src/cli/eval-screen.js', () => ({
 
 vi.mock('../../src/cli/terminal-ui.js', () => ({
   setActiveModelFromString: vi.fn(),
-  setTokenCount: vi.fn(),
   isBottomUIActive: vi.fn().mockReturnValue(false),
   setupBottomUI: vi.fn(),
   teardownBottomUI: vi.fn(),

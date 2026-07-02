@@ -18,13 +18,11 @@ export function formatQuotaReset(ms: number | null, raw: string | null): string 
   return parts.join('');
 }
 
-let lastTokenCount = 0;
 let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
 let lastModelStatus = '';
 let lastOpenAIDailySpend: OpenAIDailySpend = { state: 'idle', updatedAt: 0 };
 let retryBannerInfo: { name: string; label: string; targetMs: number } | null = null;
 
-export function setTokenCount(tokenCount: number): void { lastTokenCount = tokenCount; }
 export function setQuotaSnapshot(quota: RateLimitSnapshot | null): void {
   lastQuota = quota ? { quota, capturedAt: Date.now() } : null;
 }
@@ -144,8 +142,6 @@ function formatOpenAIDailySpend(): string {
 // Budget=1 matches the old single-row drop behaviour (existing tests rely on this).
 export function layoutFooterRightRows(width: number, rowBudget: number, now = Date.now()): string[] {
   const quotaStr = formatQuotaStatus(now);
-  const tokenStr = `${lastTokenCount} ctx`;
-  const statusStr = quotaStr ? `${quotaStr} | ${tokenStr}` : tokenStr;
   const dailySpendStr = formatOpenAIDailySpend();
   const modelStr = lastModelStatus;
 
@@ -154,51 +150,47 @@ export function layoutFooterRightRows(width: number, rowBudget: number, now = Da
 
   // Single-row fallback — drops least-important content progressively.
   function singleRow(): string {
-    const full = [modelStr, ...secondaryParts, statusStr].filter(Boolean).join(' | ');
+    const full = [modelStr, ...secondaryParts, quotaStr].filter(Boolean).join(' | ');
     if (full.length <= width) return full;
 
-    const withoutSecondary = [modelStr, statusStr].filter(Boolean).join(' | ');
+    const withoutSecondary = [modelStr, quotaStr].filter(Boolean).join(' | ');
     if (withoutSecondary.length <= width) return withoutSecondary;
 
-    const withTokenOnly = [modelStr, tokenStr].filter(Boolean).join(' | ');
-    if (withTokenOnly.length <= width) return withTokenOnly;
-
     if (modelStr && modelStr.length <= width) return modelStr;
-    return (modelStr || tokenStr).slice(0, width);
+    return (modelStr || quotaStr).slice(0, width);
   }
 
   if (rowBudget <= 1) return [singleRow()];
 
   // Multi-row: try fitting everything on the primary row first.
-  const full = [modelStr, ...secondaryParts, statusStr].filter(Boolean).join(' | ');
+  const full = [modelStr, ...secondaryParts, quotaStr].filter(Boolean).join(' | ');
   if (full.length <= width) return [full];
 
-  // Split: primary = model + quota/ctx, secondary row = spend.
-  const primaryStr = [modelStr, statusStr].filter(Boolean).join(' | ');
+  // Split: primary = model + quota, secondary row = spend.
+  const primaryStr = [modelStr, quotaStr].filter(Boolean).join(' | ');
   if (primaryStr.length <= width) {
     if (!secondaryStr || secondaryStr.length <= width) {
       return secondaryStr ? [primaryStr, secondaryStr] : [primaryStr];
     }
   }
 
-  // Primary still too wide — drop quota to bare ctx on the primary row.
-  const minPrimaryStr = [modelStr, tokenStr].filter(Boolean).join(' | ');
-  if (minPrimaryStr.length <= width) {
+  // Primary still too wide — drop quota, keep model alone on the primary row.
+  if (modelStr.length <= width) {
     const upperCombined = [secondaryStr, quotaStr].filter(Boolean).join(' | ');
     if (!upperCombined || upperCombined.length <= width) {
-      return upperCombined ? [minPrimaryStr, upperCombined] : [minPrimaryStr];
+      return upperCombined ? [modelStr, upperCombined] : [modelStr];
     }
     // Upper content overflows one row; use a third row if budget allows.
     if (rowBudget >= 3 && quotaStr && quotaStr.length <= width) {
       if (secondaryStr && secondaryStr.length <= width) {
-        return [minPrimaryStr, quotaStr, secondaryStr]; // secondary topmost
+        return [modelStr, quotaStr, secondaryStr]; // secondary topmost
       }
-      return [minPrimaryStr, quotaStr];
+      return [modelStr, quotaStr];
     }
     // Budget=2: prefer quota over secondary on the one available upper row.
-    if (quotaStr && quotaStr.length <= width) return [minPrimaryStr, quotaStr];
-    if (secondaryStr && secondaryStr.length <= width) return [minPrimaryStr, secondaryStr];
-    return [minPrimaryStr];
+    if (quotaStr && quotaStr.length <= width) return [modelStr, quotaStr];
+    if (secondaryStr && secondaryStr.length <= width) return [modelStr, secondaryStr];
+    return [modelStr];
   }
 
   return [singleRow()];

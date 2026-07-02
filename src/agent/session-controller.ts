@@ -1,5 +1,4 @@
 import type { CoreMessage } from 'ai';
-import { estimateContextTokens } from '../agent/token-count.js';
 
 export class SessionController {
   readonly projectRoot: string;
@@ -11,10 +10,6 @@ export class SessionController {
 
   clearMessages(): void {
     this.messages = [];
-  }
-
-  getContextTokenCount(): number {
-    return estimateContextTokens(this.messages);
   }
 
   addUserMessage(content: string): void {

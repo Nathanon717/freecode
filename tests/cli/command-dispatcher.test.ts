@@ -50,10 +50,6 @@ vi.mock('../../src/cli/slash-commands.js', () => ({
   showHelp: vi.fn(),
 }));
 
-vi.mock('../../src/cli/terminal-ui.js', () => ({
-  setTokenCount: vi.fn(),
-}));
-
 vi.mock('../../src/logger.js', () => ({
   log: vi.fn(),
   logError: vi.fn(),
@@ -81,7 +77,6 @@ import { addAnthropicSessionCost, describeCostEstimateBreakdown, resetAnthropicS
 import { formatCapturedProviderUsages } from '../../src/providers/adapters/openai-compat.js';
 import { redrawBanner } from '../../src/cli/banner.js';
 import { showHelp } from '../../src/cli/slash-commands.js';
-import { setTokenCount } from '../../src/cli/terminal-ui.js';
 import { resolveApiKey, resolveModelSettings } from '../../src/config/index.js';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { ensureStoreReady } from '../../src/providers/db.js';
@@ -96,13 +91,11 @@ function makeSession() {
   const clearMessages = vi.fn();
   const addUserMessage = vi.fn();
   const addAssistantMessage = vi.fn();
-  const getContextTokenCount = vi.fn(() => 0);
   const session = {
     messages: [] as unknown[],
     clearMessages,
     addUserMessage,
     addAssistantMessage,
-    getContextTokenCount,
   };
   return { session: session as unknown as CommandRuntime['session'], clearMessages, addUserMessage, addAssistantMessage };
 }
@@ -427,20 +420,6 @@ describe('dispatchCommand — sendToAgent', () => {
     const { session, addAssistantMessage } = makeSession();
     await dispatchCommand('hello', makeRuntime({ session }));
     expect(addAssistantMessage).toHaveBeenCalledWith('Hello from AI');
-  });
-
-  it('calls setTokenCount when promptTokens is defined', async () => {
-    await dispatchCommand('hello', makeRuntime());
-    expect(setTokenCount).toHaveBeenCalledWith(80);
-  });
-
-  it('does not call setTokenCount when promptTokens is undefined', async () => {
-    vi.mocked(agentLoop).mockResolvedValue({
-      ...DEFAULT_AGENT_RESULT,
-      usage: { totalTokens: 100 },
-    } as never);
-    await dispatchCommand('hello', makeRuntime());
-    expect(setTokenCount).not.toHaveBeenCalled();
   });
 
   it('logs a yellow warning when the response text is blank', async () => {

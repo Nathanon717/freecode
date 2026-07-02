@@ -26,7 +26,9 @@
       "Bash(sed -i 's#into playground/#into evals/#g' tests/cli/humaneval-menu.test.ts)",
       "Bash(repomix --style xml -o repomix-out/tests.xml /root/freecode/tests)",
       "Bash(repomix --style xml -o repomix-out/docs.xml /root/freecode/docs)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm view *)",
+      "Read(//root/**)"
     ]
   }
 }

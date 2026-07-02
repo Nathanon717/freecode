@@ -39,5 +39,4 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-model-picker-no-arg.scenario.json` | `tty-model-picker-no-arg` | Non-LLM verification | repo | /model with no argument opens the interactive picker (zen free models available by default); ESC closes it and returns the prompt |
 | `tty-prefix-multi-match.scenario.json` | `tty-prefix-multi-match` | Non-LLM verification | repo | Typing /c shows /clear as the inline completion and /config as a suggestion; unrelated commands are absent |
 | `tty-slash-backspace-restore.scenario.json` | `tty-slash-backspace-restore` | Non-LLM verification | repo | After /help output fills the scroll region, typing / shows the suggestion overlay; backspace restores the help output exactly. The cycle repeats correctly a second time. |
-| `tty-status-line.scenario.json` | `tty-status-line` | Non-LLM verification | repo | Status line shows context token count at the bottom of the terminal at idle |
 <!-- END GENERATED SCENARIOS -->

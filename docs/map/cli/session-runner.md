@@ -7,7 +7,7 @@
 
 ```typescript
 interface CliSessionMode {
-  readInput(this: void, tokenCount: number): Promise<string | null>;
+  readInput(this: void): Promise<string | null>;
   confirmToolCall: ConfirmToolCall;
   getReadOnly?(this: void): boolean;
   modelListMode: ModelListMode;
@@ -34,7 +34,7 @@ runCliSession(options: CliSessionRunnerOptions): Promise<void>
 
 Modes provide:
 
-- `readInput(tokenCount)`: returns the next input or `null` when exhausted.
+- `readInput()`: returns the next input or `null` when exhausted.
 - `confirmToolCall`: approval callback passed to tools.
 - `modelListMode`: `full` or `current-only`.
 - Hooks for dispatch, agent calls, screen clearing, scenario menus, config, model picker, exit, and input exhaustion.
@@ -43,7 +43,7 @@ Modes provide:
 
 ```text
 while true:
-  input = mode.readInput(session.getContextTokenCount())
+  input = mode.readInput()
   if input is null:
     mode.onInputExhausted()
     return

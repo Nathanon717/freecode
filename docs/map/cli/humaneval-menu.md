@@ -13,7 +13,7 @@ Provides the **HumanEval tab** of the unified `/eval` menu and its run loop.
 - `src/cli/list-menu.ts` — `MenuTab` shape returned by `buildHumanEvalTab`
 - `src/eval/runner.ts` — `startEvalScenario`, `resetEvalWorkDir`
 - `src/cli/eval-screen.ts` — `printEvalHeader`, `printEvalSummary` (shared header/summary rendering)
-- `src/cli/terminal-ui.ts` — `setActiveModelFromString`, `setTokenCount`
+- `src/cli/terminal-ui.ts` — `setActiveModelFromString`
 - `src/cli/eval-dots.ts` — `statusCircle` (colored dot renderer) reused for picker dots
 - `src/providers/model-store.ts` — `appendEvalRun` (records each run to `.freecode/`)
 - `evals/humaneval/.runs/` — per-problem work dirs (not tracked in git; gitignored under `evals/*`)

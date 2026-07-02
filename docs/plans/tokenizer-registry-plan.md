@@ -105,96 +105,119 @@ leave `npm.cmd test` green.
 
 ## Phases
 
-### Phase 1 — Foundation + generic fallback (replaces chars/4 entirely)
+### Phase 1 — Foundation + generic fallback (replaces chars/4 entirely) ✅ COMPLETE
 
-- Add `js-tiktoken` dependency (verify current package name/version first).
-- Create `src/tokenizers/`:
-  - `fallback-estimate.ts` — a fresh implementation backed by `js-tiktoken`'s `o200k_base` (or
-    `cl100k_base`) encoding: `estimateContextTokens(messages): number` and whatever smaller
-    building-block exports the call sites need. This is a real BPE tokenizer for the wrong model
-    family — still meaningfully more accurate than chars/4, and it's the permanent fallback for
-    any model with no exact family match, not a stopgap.
-  - `model-family.ts` — resolver skeleton: `resolveTokenizerFamily(modelId: string): TokenizerFamily | null`.
-    Every model returns `null` for now (no exact families implemented yet) — behavior in this
-    phase comes entirely from the new fallback.
-  - `count.ts` — new public surface: a synchronous `countTokens(messages, modelId): number` that
-    checks an in-memory `Map<family, Encoder>` cache, falls back to `fallback-estimate.ts` when no
-    family is resolved or no encoder is cached yet; and an async `preloadTokenizerFor(modelId): Promise<void>`
-    that resolves the family and (for now, since no exact backends exist) is a no-op.
-- Delete `src/agent/token-count.ts` outright and its map page. Delete
-  `tests/agent/token-count.test.ts` (its chars/4 exact-count assertions — `hello`→2,
-  `superlongword`→4, etc. — assert the old algorithm's arithmetic and don't carry over).
-  Write fresh tests in `tests/tokenizers/fallback-estimate.test.ts` against the real tiktoken
-  output, plus `tests/tokenizers/model-family.test.ts` and `tests/tokenizers/count.test.ts` (every
-  new `src/tokenizers/**/*.ts` file needs its mirrored test file in this same phase, per
-  `docs/README.md`'s mirroring rule — don't leave any until a later phase).
-- **Rip out the estimate→footer path (no rewiring).** The engine has no interactive consumer in this
-  task, so there are no count call sites to re-plumb — instead, delete the old ones:
-  - Remove `SessionController.getContextTokenCount()` and its `estimateContextTokens` import.
-  - Remove its two callers: the `session.getContextTokenCount()` argument to `mode.readInput(...)`
-    in `session-runner.ts` (change `readInput`'s signature to take no token count), and the
-    `setTokenCount(session.getContextTokenCount())` call in `resetBottomPromptState`
-    (`session-modes.ts`).
-  - Remove the `ctx` display from `footer-status.ts`: `lastTokenCount`, `setTokenCount`, the
-    `${lastTokenCount} ctx` string, and every footer-layout branch that references `tokenStr`/
-    `statusStr` (the quota-only rows change shape — update `layoutFooterRightRows` and its tests in
-    `tests/cli/footer-status.test.ts` accordingly; the footer now shows quota + model + spend, no
-    token count).
-  - Drop the now-unused `setTokenCount` import from `terminal-ui.ts`, `session-modes.ts`,
-    `command-dispatcher.ts` (its `setTokenCount(result.usage.promptTokens)` call goes too — that
-    real number was never rendered anyway; it still flows to `FREECODE_RESULT_JSON` and the
-    Anthropic cost line, both untouched), and any eval menu still importing it.
-  - The async `preloadTokenizerFor` export exists but is called by nobody yet — that's expected; the
-    live-counter task wires it. Don't add a caller here just to have one.
-- Add `docs/map/tokenizers/README.md` + per-file map pages (`count.md`, `model-family.md`,
-  `fallback-estimate.md`). Update `docs/map/agent/session-controller.md` (drop the token-estimation
-  role) and any footer/terminal-ui map page that documents the `ctx` slot.
-- `.gitignore`: add `.freecode/tokenizers/`.
-- User-visible change: the footer no longer shows a token count at all. Update footer scenario/docs
-  coverage to match (the live-counter task re-adds one later). This is intended.
-- Ends with `npm.cmd test` green.
+Built `src/tokenizers/` (`fallback-estimate.ts`, `model-family.ts`, `count.ts`), each with a
+mirrored test file, backed by `js-tiktoken@1.0.21`'s `o200k_base` encoding. Deleted the chars/4
+estimator and its footer `ctx` slot outright, with no rewiring (see git for the exact deleted call
+sites). Map pages in `docs/map/tokenizers/` own the detailed contract; the notes below are only
+what a later phase needs to know before building on this.
 
-### Phase 2 — tiktoken family (GPT-OSS exact match)
+**What Phase 2+ must know:**
 
-- `src/tokenizers/backends/tiktoken.ts`: loads a named tiktoken encoding for exact family matches,
-  starting with `o200k_harmony` for GPT-OSS (confirm whether `js-tiktoken` bundles it or whether
-  its rank file needs fetching from `openai/tiktoken` and caching under
-  `.freecode/tokenizers/tiktoken/`). This reuses the `js-tiktoken` dependency from Phase 1 but
-  resolves an *exact* encoding tied to a specific family, distinct from the generic fallback.
-- `model-family.ts`: add the GPT-OSS predicate (match against real live-fetched model ID strings
-  for GPT-OSS across whichever providers serve it — check `registry-data.ts`/live dumps first).
-- Tests: `tests/tokenizers/backends/tiktoken.test.ts` — exact known token counts for a few fixed
-  strings against the real encoding; mirrors the new source file per `docs/README.md`.
-- Ends with `npm.cmd test` green.
+- **`TokenizerFamily = string`** (not a union of future family names) — each phase adds a predicate
+  in `model-family.ts` without touching a shared type.
+- **`count.ts` is cache/lookup/fallback wiring only, with no per-family encoder.** `encoderCache` is
+  never populated and `preloadTokenizerFor` is a no-op this phase, so the cache-hit branch is
+  unreachable until a phase registers a real backend into it. This is the trigger for Phase 2; see
+  `docs/map/tokenizers/count.md`.
+- **Any `js-tiktoken` `encode` call must pass empty special-token lists** (`encode(text, [], [])`).
+  The default throws on text containing `<|endoftext|>`/`<|endofprompt|>`, which breaks the sync
+  path's "never throws" invariant (pasted output containing those literals would crash the counter).
+  `fallback-estimate.ts` does this; new tiktoken-based backends must too. Regression-tested.
+- **No folder-level README** — `scripts/check-map.ts` requires a 1:1 source↔page mapping, matching
+  the `agent/tools/`, `providers/adapters/`, `providers/quota/` precedent.
 
-### Phase 3 — HF fast-tokenizer family (`tokenizer.json`)
+Ends with `npm test` green.
 
-Biggest model-coverage phase: Llama 3.x, DeepSeek V3/R1, GLM-4.x, Kimi K2.
+### Phase 2 — tiktoken family (GPT-OSS) ✅ COMPLETE
 
-- Add `@huggingface/tokenizers` dependency (verify current package name/API first — this is the
-  Rust-core WASM/N-API port of HF's `tokenizers` library).
-- `src/tokenizers/backends/bpe-json.ts`: given a cached `tokenizer.json` path, loads and returns an
-  encoder with an `encode(text): number[]`-shaped API (or whatever the chosen library exposes).
-- `src/tokenizers/download-tokenizer.ts`: given a canonical HF repo ID, fetches
-  `https://huggingface.co/<repo>/resolve/main/tokenizer.json` if not already cached under
-  `.freecode/tokenizers/hf/<repo-slug>/tokenizer.json`. Mirror `humaneval-data.ts`'s
-  injectable-`downloadFn` shape for testability.
-- `model-family.ts`: add one predicate + canonical HF repo ID per family (not per model name —
-  e.g. one Llama-3 repo ID covers all Llama 3.x finetunes that didn't retrain the tokenizer).
-  Verify each canonical repo actually has a `tokenizer.json` before committing to it as the
-  source, especially for GLM and Kimi K2 where it's published in some repos but not guaranteed
-  universally.
-- **DeepSeek gotcha:** `tokenizer_config.json` in DeepSeek repos declares
-  `"tokenizer_class": "LlamaTokenizerFast"`, which (per a live HF `transformers` bug,
-  huggingface/transformers#45488) makes some loaders install a Metaspace pre-tokenizer that drops
-  spaces, because DeepSeek's actual vocab has no SentencePiece `▁` markers. Load the raw
-  `tokenizer.json` directly through whatever low-level API the chosen library exposes; do not go
-  through any "auto-detect from config" convenience wrapper for DeepSeek.
-- Tests: known-token-count fixtures per family, loaded from the actual cached `tokenizer.json`
-  (small real file, or a trimmed fixture if the real file is too large to fixture in-repo — decide
-  based on file size). Mirror every new source file (`bpe-json.ts`, `download-tokenizer.ts`) with
-  its own test file per `docs/README.md`.
-- Ends with `npm.cmd test` green.
+Built `src/tokenizers/backends/tiktoken.ts` and `chat-format.ts`, wiring GPT-OSS as the first
+family resolved into `count.ts`'s encoder cache. Map pages in `docs/map/tokenizers/` own the
+details; the notes below are only what a later phase needs to know.
+
+**What Phase 3+ must know:**
+
+- **`chat-format.ts` is the shared per-message overhead formula**, extracted from
+  `fallback-estimate.ts` so the fallback and every backend apply one overhead constant. New
+  backends bind their encoder to its `countContextTokens` (as `createTiktokenEncoder` does).
+- **`createTiktokenEncoder(encoding)` is a generic `Tiktoken → TokenizerEncoder` wrapper** (not
+  GPT-OSS-specific). Phase 5 (Mistral Tekken) reuses it once `tekken.json`'s vocab/merges are
+  parsed into a `js-tiktoken` encoding.
+- **No download or cache dir is used by this backend** — GPT-OSS reuses `js-tiktoken`'s bundled
+  `o200k_base` ranks. Phase 3/4/5 are the first to actually fetch/cache under `.freecode/tokenizers/`.
+- **GPT-OSS's count is currently numerically identical to the fallback** (the harmony template's
+  wrapper-token cost isn't modeled; only the flat overhead constant is). It's classified "exact"
+  for cache wiring only. Relevant to Phase 6's "fallback reached only for unmapped models" check —
+  see `docs/map/tokenizers/backends/tiktoken.md`'s "Known inaccuracy" section.
+
+Ends with `npm test` green.
+
+### Phase 3 — HF fast-tokenizer family (`tokenizer.json`) ✅ COMPLETE
+
+Built `src/tokenizers/backends/bpe-json.ts` and `src/tokenizers/download-tokenizer.ts`, wiring
+Llama 3.x, DeepSeek V3, DeepSeek V4, and GLM-4.5-4.7 into `count.ts`'s encoder cache via
+`@huggingface/tokenizers@0.1.3`. Map pages in `docs/map/tokenizers/` own the details; the notes
+below are only what a later phase needs to know, plus the deviations from the original plan text
+found during live verification.
+
+**Deviations from the plan (found via live HF API checks on 2026-07-01, not guessed):**
+
+- **Kimi K2 is out of scope, not built.** The plan assumed a "converted `tokenizer.json`" existed
+  somewhere. It doesn't: `moonshotai/Kimi-K2-Instruct` and every checked variant/mirror (K2-Thinking,
+  K2.5/2.6/2.7, unsloth, mlx-community) ship only a raw `tiktoken.model` ranks file plus a custom
+  `tokenization_kimi.py` — tiktoken-family machinery (same shape as Phase 5's Tekken), not this
+  backend. Flagged to the user rather than silently dropped; a future phase could fold it into the
+  tiktoken backend alongside or instead of Tekken.
+- **DeepSeek is two families, not one.** V3/V3.1/V3.2/R1 share one tokenizer
+  (`deepseek-ai/DeepSeek-V3`); V4-Pro/V4-Flash retrained the vocab entirely (different content hash,
+  smaller file) → `DEEPSEEK_V3_FAMILY` and `DEEPSEEK_V4_FAMILY`, both loaded through the same
+  `bpe-json.ts`. `deepseek-r1-distill-*` models are excluded from both (they reuse their distillation
+  base model's tokenizer, not DeepSeek's own — unmapped is correct here, not a gap).
+- **GLM-4 covers only the verified 4.5-4.7 main line.** Confirmed identical tokenizer content hash
+  across `GLM-4.5-Air`/`GLM-4.6`/`GLM-4.7`/`GLM-4.5V`/`GLM-4.6V`. `-flash` variants and pre-4.5
+  releases retrain the vocab and are excluded, not merged in.
+- **Cache path is `.freecode/tokenizers/<family>/tokenizer.json`**, keyed by family (not
+  `hf/<repo-slug>/` as originally sketched) — matches `count.ts`'s `encoderCache` key, and Phase 3
+  only ever has one repo per family so no extra namespacing was needed.
+- **The DeepSeek `tokenizer_config.json` gotcha turned out to be avoidable by construction**, not by
+  special-casing: `@huggingface/tokenizers` builds `normalizer`/`pre_tokenizer`/`model`/`decoder`
+  straight off `tokenizer.json`'s own fields and never reads `tokenizer_class` at all, so
+  `loadBpeJsonEncoder` passes `{}` as the config argument for every family — `tokenizer_config.json`
+  is never fetched for any of them.
+- **Test fixtures are synthetic, not trimmed-real.** Real `tokenizer.json` files for these families
+  are 6-20MB — too large to commit and, for BPE, not safely trimmable without risking a different
+  merge order. `tests/tokenizers/fixtures/mini-tokenizer.json` is a small hand-built real BPE
+  tokenizer (Whitespace pre-tokenizer, 6-entry vocab) exercising the same code path
+  (`@huggingface/tokenizers`' real BPE algorithm) without a production-size vocab. `download-tokenizer.test.ts`
+  and `count.test.ts`'s HF-family preload test both use an injected/mocked `downloadFn` /
+  `ensureTokenizerFile` — no test in this repo hits the real network. Note this means the *real*
+  production files' pre-tokenizer (ByteLevel + Split sequences, not the fixture's plain Whitespace)
+  is not exercised by the committed test suite — covered instead by the one-time manual verification
+  below, not by a regression test.
+- **All four real canonical files were manually verified end-to-end**, not just etag-checked: each
+  of `NousResearch/Meta-Llama-3-8B`, `deepseek-ai/DeepSeek-V3`, `deepseek-ai/DeepSeek-V4-Pro`, and
+  `zai-org/GLM-4.5-Air`'s real `tokenizer.json` was downloaded and run through `loadBpeJsonEncoder`
+  on a real message pair, confirming no throw and a non-fallback count (220/227/227/220 vs. a 222
+  fallback estimate on the same input) — proof the real ByteLevel/Split pre-tokenizer path parses
+  and encodes correctly, not just the fixture's simpler Whitespace path. Also diffed DeepSeek
+  V3/R1/V3.1's `model.vocab`/`model.merges` directly: byte-identical across all three (R1 only swaps
+  2 placeholder `added_tokens` for `<think>`/`</think>`), confirming the "one tokenizer" family claim
+  is earned, not assumed from matching etags alone.
+
+**What Phase 4+ must know:**
+
+- `model-family.ts`'s `HF_TOKENIZER_REPO` is the family→canonical-repo-ID map; `count.ts`'s
+  `preloadTokenizerFor` now does a real async ensure-download → load → cache sequence for any family
+  present in that map (de-duped per family via a `pendingLoads` map), not just a synchronous
+  bundled-encoder registration like GPT-OSS. Phase 4 (SentencePiece) and Phase 5 (Tekken) will need
+  their own download/cache entry points (`download-tokenizer.ts`'s shape is HF-repo-specific; don't
+  assume it's reusable as-is for a raw `.model`/`tekken.json` fetch).
+- See `docs/map/tokenizers/model-family.md`'s "Phase 3 verification trail" note before widening any
+  existing family regex to a new model generation — every mapping here was checked against live HF
+  API responses, not inferred from naming.
+
+Ends with `npm.cmd test` green.
 
 ### Phase 4 — SentencePiece family (legacy Llama 1/2, legacy Mistral)
 

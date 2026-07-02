@@ -61,6 +61,14 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
       "gliner",
       // "bge",
     ],
+    // Listed in /models but confirmed live (2026-07-02) to 404 "Function ...
+    // Not found for account" — not deployed as an inference endpoint on this
+    // account's (free) tier.
+    modelIdExactBlocklist: [
+      "nvidia/llama-3.1-nemotron-51b-instruct",
+      "nvidia/llama-3.1-nemotron-70b-instruct",
+      "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    ],
     models: [],
   },
   {
@@ -144,11 +152,8 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
         displayName: "Llama 3.3 70B Fast",
         contextWindow: 128000,
       },
-      {
-        id: "@cf/meta/llama-3.1-8b-instruct",
-        displayName: "Llama 3.1 8B",
-        contextWindow: 128000,
-      },
+      // @cf/meta/llama-3.1-8b-instruct removed: deprecated by Cloudflare on
+      // 2026-05-30 (confirmed via live HTTP 410 "Model has been deprecated").
       {
         id: "@cf/qwen/qwen2.5-coder-32b-instruct",
         displayName: "Qwen2.5 Coder 32B",

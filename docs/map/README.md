@@ -32,7 +32,6 @@ Do not duplicate reference facts that belong in generated docs.
   - [`prompt-tools.ts`](agent/prompt-tools.md) — Prompt-Based Tool Harness
   - [`session-controller.ts`](agent/session-controller.md) — Session Controller
   - [`system-prompt.ts`](agent/system-prompt.md) — System Prompt
-  - [`token-count.ts`](agent/token-count.md) — Context Token Estimator
 - `src/agent/tools/`
   - [`create.ts`](agent/tools/create.md) — create Tool
   - [`edit.ts`](agent/tools/edit.md) — edit Tool
@@ -108,6 +107,15 @@ Do not duplicate reference facts that belong in generated docs.
   - [`registry-data.ts`](providers/registry-data.md) — Provider Registry Data
   - [`registry.ts`](providers/registry.md) — Provider Registry
   - [`types.ts`](providers/types.md) — Type Definitions
+- `src/tokenizers/backends/`
+  - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) — HF Fast-Tokenizer (tokenizer.json) Backend
+  - [`tiktoken.ts`](tokenizers/backends/tiktoken.md) — Tiktoken-Backed Exact Encoders
+- `src/tokenizers/`
+  - [`chat-format.ts`](tokenizers/chat-format.md) — Shared Chat-Overhead Formula
+  - [`count.ts`](tokenizers/count.md) — Tokenizer Engine Public Surface
+  - [`download-tokenizer.ts`](tokenizers/download-tokenizer.md) — HF Tokenizer File Cache/Download
+  - [`fallback-estimate.ts`](tokenizers/fallback-estimate.md) — Generic Tiktoken Fallback Estimator
+  - [`model-family.ts`](tokenizers/model-family.md) — Tokenizer Family Resolver
 - `src/util/`
   - [`errors.ts`](util/errors.md) — Shared Error Utilities
   - [`guards.ts`](util/guards.md) — Type Guard Utilities

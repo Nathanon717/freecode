@@ -8,8 +8,6 @@
 ```typescript
 formatQuotaReset(ms: number | null, raw: string | null): string
 
-setTokenCount(tokenCount: number): void
-
 setQuotaSnapshot(quota: RateLimitSnapshot | null): void
 
 setActiveModel(providerId: string, modelId: string): void
@@ -40,6 +38,10 @@ composeBottomStatusLine(width: number, now?: number): string
 ## Read when
 
 Changing what is shown in the footer status area, adding new status fields, or debugging the multi-row layout.
+
+## Note
+
+The footer has no token-count slot as of the tokenizer-engine work (`docs/plans/tokenizer-registry-plan.md` Phase 1): `setTokenCount`/`lastTokenCount` and the `${n} ctx` fallback text were removed along with `agent/token-count.ts`. `layoutFooterRightRows` now lays out quota | model | spend only. A later "live counter" task re-adds a token display on top of `src/tokenizers/count.ts`.
 
 ## Key neighbors
 

@@ -10,7 +10,6 @@ import type {
 import { loadConfig } from "../config/index.js";
 import { getCommandCompletion, getFilteredCommands } from "./slash-commands.js";
 import { runEvalMenu } from "./eval-menu.js";
-import type { SessionController } from "../agent/session-controller.js";
 import type { CliSessionMode } from "./session-runner.js";
 import {
   backspaceAtCursor,
@@ -34,7 +33,6 @@ import {
   setOpenAIDailySpend,
   setQuotaSnapshot,
   setSuggestions,
-  setTokenCount,
   setupBottomUI,
   setupInputUI,
   teardownBottomUI,
@@ -52,8 +50,7 @@ import {
 } from "./tool-approval.js";
 import { runRawKeySession } from "./raw-picker.js";
 
-function resetBottomPromptState(session: SessionController): void {
-  setTokenCount(session.getContextTokenCount());
+function resetBottomPromptState(): void {
   setInputBuffer("");
   setInlineCompletion(null);
   setSuggestions(getFilteredCommands(""));
@@ -91,15 +88,12 @@ function refreshFooterDailySpend(getSelectedModel: () => string): void {
 
 async function readLineWithAutocomplete(
   rl: Interface,
-  tokenCount: number,
-  session: SessionController,
   getSelectedModel: () => string,
 ): Promise<string> {
   if (!process.stdin.isTTY) {
     return askQuestion(rl, chalk.green("> "));
   }
 
-  setTokenCount(tokenCount);
   setInputBuffer("");
   setInlineCompletion(null);
   setSuggestions(getFilteredCommands(""));
@@ -234,7 +228,6 @@ const TOOL_CALL_LIMIT = 10;
 export function createInteractiveMode(
   rl: Interface,
   projectRoot: string,
-  session: SessionController,
   getSelectedModel: () => string,
   setSelectedModel: (model: string) => void,
 ): CliSessionMode {
@@ -272,20 +265,20 @@ export function createInteractiveMode(
   }
 
   return {
-    readInput: (tokenCount) =>
-      readLineWithAutocomplete(rl, tokenCount, session, getSelectedModel),
+    readInput: () =>
+      readLineWithAutocomplete(rl, getSelectedModel),
     confirmToolCall,
     getReadOnly: isReadOnly,
     modelListMode: "full",
     beforeAgentCall: () => {
       toolCallsThisTurn = 0;
       if (process.stdin.isTTY) teardownBottomUI();
-      resetBottomPromptState(session);
+      resetBottomPromptState();
     },
     afterAgentCall: () => {
       if (process.stdin.isTTY) {
         setupBottomUI();
-        resetBottomPromptState(session);
+        resetBottomPromptState();
         refreshFooterDailySpend(getSelectedModel);
         drawBottomUI();
       }
@@ -313,21 +306,21 @@ export function createInteractiveMode(
       if (process.stdin.isTTY) {
         applyModelChange(getSelectedModel());
         setupBottomUI();
-        resetBottomPromptState(session);
+        resetBottomPromptState();
         refreshFooterDailySpend(getSelectedModel);
         drawBottomUI();
       }
     },
     runConfig: () =>
       runConfigCommand(rl, getSelectedModel(), () => {
-        resetBottomPromptState(session);
+        resetBottomPromptState();
         refreshFooterDailySpend(getSelectedModel);
         drawBottomUI();
       }),
     runModelMenu: () =>
       runModelCommand(rl, getSelectedModel(), setSelectedModel, () => {
         applyModelChange(getSelectedModel());
-        resetBottomPromptState(session);
+        resetBottomPromptState();
         refreshFooterDailySpend(getSelectedModel);
         drawBottomUI();
       }).then(() => undefined),

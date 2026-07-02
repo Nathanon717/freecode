@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setTokenCount,
   setQuotaSnapshot,
   setActiveModel,
   setOpenAIDailySpend,
@@ -13,7 +12,6 @@ import {
 
 function resetState() {
   vi.useRealTimers();
-  setTokenCount(0);
   setQuotaSnapshot(null);
   setActiveModel('', '');
   setOpenAIDailySpend({ state: 'idle', updatedAt: 0 });
@@ -56,33 +54,29 @@ describe('formatEvalRunStatus', () => {
 });
 
 describe('layoutFooterRightRows', () => {
-  it('returns a single row when budget is 1', () => {
-    setTokenCount(42);
-    const rows = layoutFooterRightRows(80, 1);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toContain('42 ctx');
+  it('returns a single empty row when nothing is set', () => {
+    expect(layoutFooterRightRows(80, 1)).toEqual(['']);
   });
 
-  it('includes model status when both provider and model are set', () => {
+  it('returns a single row containing the model when budget is 1', () => {
     setActiveModel('openai', 'gpt-4o');
     const rows = layoutFooterRightRows(80, 1);
+    expect(rows).toHaveLength(1);
     expect(rows[0]).toContain('openai:gpt-4o');
   });
 
   it('returns an array with at most rowBudget rows', () => {
     setActiveModel('provider', 'model');
-    setTokenCount(100);
+    setQuotaSnapshot([{ label: 'R', remaining: 10, limit: 100, resetMs: 1000 }]);
     const rows = layoutFooterRightRows(80, 3);
     expect(rows.length).toBeGreaterThanOrEqual(1);
     expect(rows.length).toBeLessThanOrEqual(3);
   });
 
-  it('shows token count even with empty model', () => {
-    setTokenCount(7);
-    const rows = layoutFooterRightRows(80, 1);
-    expect(rows[0]).toContain('7 ctx');
+  it('shows quota status even with an empty model', () => {
+    setQuotaSnapshot([{ label: 'R', remaining: 7, limit: 10, resetMs: 1000 }]);
+    expect(layoutFooterRightRows(80, 1)[0]).toContain('R');
   });
-
 });
 
 describe('composeBottomStatusLine', () => {
@@ -97,7 +91,7 @@ describe('composeBottomStatusLine', () => {
     expect(line.length).toBe(0);
   });
 
-  it('right-aligns quota status and current context token count', () => {
+  it('right-aligns the quota status', () => {
     const now = new Date('2026-05-18T12:00:00.000Z');
     vi.useFakeTimers();
     vi.setSystemTime(now);
@@ -106,16 +100,15 @@ describe('composeBottomStatusLine', () => {
       { label: 'R', remaining: 974, limit: 1000, resetMs: 2_205_000 },
       { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
     ]);
-    setTokenCount(123);
 
     expect(composeBottomStatusLine(123, now.getTime())).toBe(
-      '                                                             R  974/1000 full 36m45s | T 12000/12000 full 0s     | 123 ctx'
+      '                                                                       R  974/1000 full 36m45s | T 12000/12000 full 0s    '
     );
   });
 });
 
 describe('composeBottomRightStatus', () => {
-  it('keeps model and token count visible when quota status is too wide', () => {
+  it('keeps model visible when quota status is too wide', () => {
     const now = new Date('2026-05-18T12:00:00.000Z');
     vi.useFakeTimers();
     vi.setSystemTime(now);
@@ -125,12 +118,10 @@ describe('composeBottomRightStatus', () => {
       { label: 'R', remaining: 985, limit: 1000, resetMs: 1_287_000 },
       { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
     ]);
-    setTokenCount(123);
 
     const status = composeBottomRightStatus(62, now.getTime());
 
     expect(status).toContain('groq:llama-3.3-70b-versatile');
-    expect(status).toContain('123 ctx');
     expect(status).not.toContain('R  985/1000');
     expect(status.length).toBeLessThanOrEqual(62);
   });
@@ -144,24 +135,20 @@ describe('composeBottomRightStatus', () => {
       { label: 'R', remaining: 9, limit: 1000, resetMs: 2_000 },
       { label: 'T', remaining: 89, limit: 12000, resetMs: 0 },
     ]);
-    setTokenCount(7);
     const lowValues = composeBottomRightStatus(80, now.getTime());
 
     setQuotaSnapshot([
       { label: 'R', remaining: 986, limit: 1000, resetMs: 1_188_000 },
       { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
     ]);
-    setTokenCount(289);
     const highValues = composeBottomRightStatus(80, now.getTime());
 
     for (const label of ['/1000 full', '| T', '/12000 full', '|']) {
       expect(highValues.indexOf(label)).toBe(lowValues.indexOf(label));
     }
-    // ctx position is not fixed-width since token count has no upper bound to align against
   });
 
   it('renders OpenAI daily spend when available', () => {
-    setTokenCount(123);
     setOpenAIDailySpend({
       state: 'ready',
       amountUsd: 1.23,
@@ -172,11 +159,9 @@ describe('composeBottomRightStatus', () => {
     const status = composeBottomRightStatus(80);
 
     expect(status).toContain('OpenAI today $1.23');
-    expect(status).toContain('123 ctx');
   });
 
   it('renders OpenAI daily spend missing-key and failure states', () => {
-    setTokenCount(123);
     setOpenAIDailySpend({
       state: 'idle',
       warning: 'OPENAI_ADMIN_KEY missing',
@@ -194,7 +179,6 @@ describe('composeBottomRightStatus', () => {
 
   it('drops OpenAI daily spend before dropping model', () => {
     setActiveModel('openai', 'gpt-5.4-nano-2026-03-17');
-    setTokenCount(123);
     setOpenAIDailySpend({
       state: 'ready',
       amountUsd: 1.23,
@@ -208,5 +192,4 @@ describe('composeBottomRightStatus', () => {
     expect(status).not.toContain('OpenAI today $1.23');
     expect(status.length).toBeLessThanOrEqual(44);
   });
-
 });

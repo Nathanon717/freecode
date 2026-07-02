@@ -20,7 +20,6 @@ import {
   setActiveModelFromString,
   setQuotaSnapshot,
   setRetryBanner,
-  setTokenCount,
 } from "./terminal-ui.js";
 import { VIEWPORT_SIZE, clampViewport, type MenuTab } from "./list-menu.js";
 import {
@@ -166,7 +165,6 @@ export async function runEvalScenarios(
       try {
         if (existsSync(handle.resultFile)) {
           interface AgentEntry {
-            totalTokens?: number;
             providerId?: string;
             modelId?: string;
             quota?: unknown;
@@ -176,8 +174,6 @@ export async function runEvalScenarios(
           ) as AgentEntry[];
           const last = entries[entries.length - 1];
           if (last) {
-            if (last.totalTokens !== undefined)
-              setTokenCount(last.totalTokens);
             if (last.providerId && last.modelId)
               setActiveModel(last.providerId, last.modelId);
             else if (last.modelId) setActiveModel("", last.modelId);
@@ -215,7 +211,6 @@ export async function runEvalScenarios(
     }
 
     setActiveModelFromString(model || "");
-    setTokenCount(result.tokens.total);
     setQuotaSnapshot(Array.isArray(result.quota) ? result.quota : null);
 
     if (!result.stdout.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").trim()) {

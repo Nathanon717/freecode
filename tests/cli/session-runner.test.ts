@@ -10,7 +10,7 @@ import { dispatchCommand } from '../../src/cli/command-dispatcher.js';
 const mockDispatch = dispatchCommand as ReturnType<typeof vi.fn>;
 
 function makeSession() {
-  return { getContextTokenCount: vi.fn(() => 0) } as unknown as Parameters<typeof runCliSession>[0]['session'];
+  return {} as unknown as Parameters<typeof runCliSession>[0]['session'];
 }
 
 function makeMode(overrides: Partial<CliSessionMode> = {}): CliSessionMode {

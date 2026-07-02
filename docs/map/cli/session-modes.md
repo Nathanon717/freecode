@@ -6,7 +6,7 @@
 ## Exports
 
 ```typescript
-createInteractiveMode(rl: Interface, projectRoot: string, session: SessionController, getSelectedModel: () => string, setSelectedModel: (model: string) => void): CliSessionMode
+createInteractiveMode(rl: Interface, projectRoot: string, getSelectedModel: () => string, setSelectedModel: (model: string) => void): CliSessionMode
 
 createScriptedMode(scriptPath: string, projectRoot: string, rl: Interface): CliSessionMode
 ```
