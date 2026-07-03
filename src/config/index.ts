@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir } from 'os';
 import type { Config, OverridableSettings, ProviderConfig } from '../providers/types.js';
@@ -12,6 +12,7 @@ import {
   type SyncableGlobalConfig,
 } from '../providers/db-config-cache.js';
 import { writeConfigMirror } from '../providers/db.js';
+import { readTextFile } from '../util/text-encoding.js';
 
 const SYNCABLE_GLOBAL_KEYS: ReadonlyArray<keyof SyncableGlobalConfig> = [
   'toolRationale', 'showProviderUsage', 'parallelTools', 'toolConfirmation',
@@ -37,7 +38,7 @@ function loadJsonFile<T>(path: string): T | null {
     if (!existsSync(path)) {
       return null;
     }
-    const content = readFileSync(path, 'utf-8');
+    const content = readTextFile(path);
     const parsed = JSON.parse(content) as T;
     log('config', `Loaded`);
     return parsed;

@@ -6,6 +6,7 @@ import { tmpdir, availableParallelism } from 'os';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { PROVIDER_REGISTRY } from '../../src/providers/registry.js';
+import { readTextFile } from '../../src/util/text-encoding.js';
 import { assertScenarioExpectations } from './assertions/index.js';
 import type { FakeLlmTraceEvent, ScenarioExpectations, ToolTraceEvent } from './assertions/index.js';
 import type { TtyScenario } from './pty/run-tty-scenario.js';
@@ -114,7 +115,7 @@ const scenarioFiles = readdirSync(SCENARIOS_DIR)
   .sort();
 
 const scenarios = scenarioFiles.map(file => {
-  const raw = readFileSync(join(SCENARIOS_DIR, file), 'utf-8');
+  const raw = readTextFile(join(SCENARIOS_DIR, file));
   try {
     return { file, scenario: JSON.parse(raw) as Scenario };
   } catch (err) {

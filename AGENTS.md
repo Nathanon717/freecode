@@ -16,6 +16,8 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 - If you are on Windows, use `npm.cmd run ...` in bash, not powershell.
 - If you are on Linux, use `npm run ...`.
+- To inspect the raw bytes of a file (checking for a BOM, or whether a `\uXXXX` escape got mangled into a real control byte), run `node -e "console.log(require('fs').readFileSync(process.argv[1]).subarray(0,64).toString('hex'))" <path>`. It works identically on Windows and Linux — don't improvise a PowerShell/xxd/od one-liner.
+- When reading a text file that may have been authored or edited outside this app (config, prompts, downloaded eval datasets, recorded scenarios), use `readTextFile`/`readJsonFile` from `src/util/text-encoding.ts` instead of bare `readFileSync`. It strips a leading UTF-8 BOM, which otherwise silently breaks `JSON.parse`. `tests/repo-encoding.test.ts` fails the build if any tracked text file has a BOM.
 
 ## Verification
 

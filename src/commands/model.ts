@@ -22,6 +22,7 @@ import {
   buildScreen,
   buildModelDetailScreen,
 } from '../cli/model-screen.js';
+import { isBackspaceKey } from '../util/keys.js';
 
 // Re-exported so existing importers (and tests) keep a stable surface.
 export { type ModelMenuItem, filterModelItems, buildAllItemLines } from '../cli/model-screen.js';
@@ -216,7 +217,7 @@ async function runModelBody(
           }
           return true;
         }
-        if (key === '\x7f' || key === '\b') {
+        if (isBackspaceKey(key)) {
           if (filterQuery.length > 0) {
             filterQuery = filterQuery.slice(0, -1);
             refreshDisplayItems(ctx, displayItems[ctx.getSelected()]);

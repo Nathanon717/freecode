@@ -5,6 +5,7 @@ import {
   CUSTOM_EVAL_DIR,
   computeRunHash,
 } from "../eval/custom.js";
+import { readTextFile } from "../util/text-encoding.js";
 import {
   getEvalStatus,
   getLatestEvalEntry,
@@ -133,7 +134,7 @@ export async function runEvalScenarios(
       continue;
     }
 
-    const prompt = readFileSync(promptPath, "utf-8").trim();
+    const prompt = readTextFile(promptPath).trim();
 
     printEvalHeader(scenario.id, prompt);
 

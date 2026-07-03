@@ -1,4 +1,4 @@
-﻿import { readFileSync } from "fs";
+import { readFileSync } from "fs";
 import type { Interface } from "readline";
 import chalk from "chalk";
 import { runConfigCommand } from "../commands/config.js";
@@ -49,6 +49,7 @@ import {
   parseScriptedToolChoice,
 } from "./tool-approval.js";
 import { runRawKeySession } from "./raw-picker.js";
+import { isBackspaceKey } from "../util/keys.js";
 
 function resetBottomPromptState(): void {
   setInputBuffer("");
@@ -176,7 +177,7 @@ async function readLineWithAutocomplete(
         return;
       }
 
-      if (data === "\x7f" || data === "\x08") {
+      if (isBackspaceKey(data)) {
         if (getInputBuffer().length > 0) {
           backspaceAtCursor();
           refresh();

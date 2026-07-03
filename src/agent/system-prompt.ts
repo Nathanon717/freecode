@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import { projectRoot } from './context.js';
+import { readTextFile } from '../util/text-encoding.js';
 
 export function buildSystemPrompt(loadAgentsMd = false): string {
   const env = process.platform === "win32" ? "Windows" : "Linux";
@@ -21,7 +22,7 @@ HANDY TIPS:
   if (loadAgentsMd) {
     const agentsMdPath = join(projectRoot, 'AGENTS.md');
     if (existsSync(agentsMdPath)) {
-      prompt += `\n\n# Project Instructions (AGENTS.md)\n\n${readFileSync(agentsMdPath, 'utf-8')}`;
+      prompt += `\n\n# Project Instructions (AGENTS.md)\n\n${readTextFile(agentsMdPath)}`;
     }
   }
 

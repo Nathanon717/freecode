@@ -119,8 +119,10 @@ Do not duplicate reference facts that belong in generated docs.
 - `src/util/`
   - [`errors.ts`](util/errors.md) — Shared Error Utilities
   - [`guards.ts`](util/guards.md) — Type Guard Utilities
+  - [`keys.ts`](util/keys.md) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) — LCS Line Diff
   - [`screen-buffer.ts`](util/screen-buffer.md) — Screen Buffer
+  - [`text-encoding.ts`](util/text-encoding.md) — Text Encoding Helpers
 <!-- END GENERATED MAP STRUCTURE -->
 
 ## Main Flow

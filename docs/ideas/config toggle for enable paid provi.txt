@@ -1,1 +1,0 @@
-config toggle for enable paid providors

@@ -1,8 +1,8 @@
 import type { CoreMessage } from 'ai';
-import { readFileSync } from 'fs';
 import { Tokenizer } from '@huggingface/tokenizers';
 import { countContextTokens } from '../chat-format.js';
 import type { TokenizerEncoder } from '../count.js';
+import { readJsonFile } from '../../util/text-encoding.js';
 
 // Loads a cached tokenizer.json into a real HF fast-tokenizer (BPE) encoder.
 // Passes {} as the tokenizer_config.json argument: @huggingface/tokenizers
@@ -21,7 +21,7 @@ interface HfTokenizer {
 }
 
 export function loadBpeJsonEncoder(tokenizerJsonPath: string): TokenizerEncoder {
-  const json = JSON.parse(readFileSync(tokenizerJsonPath, 'utf-8')) as object;
+  const json = readJsonFile<object>(tokenizerJsonPath);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- see HfTokenizer note above
   const tokenizer = new Tokenizer(json, {}) as HfTokenizer;
   return {

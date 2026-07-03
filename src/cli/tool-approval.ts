@@ -7,6 +7,7 @@ import type {
   ToolCallPreview,
 } from "../agent/tools/index.js";
 import { UserAbortError } from "../util/errors.js";
+import { isBackspaceKey } from "../util/keys.js";
 import {
   getLastReservedRows,
   getRows,
@@ -198,7 +199,7 @@ function askQuestionOrEscape(
 
       if (data.startsWith("\x1b[") || data.startsWith("\x1bO")) return;
 
-      if (data === "\x7f" || data === "\x08") {
+      if (isBackspaceKey(data)) {
         if (buffer.length > 0) {
           buffer = buffer.slice(0, -1);
           process.stdout.write("\r\x1b[2K" + prompt + buffer);

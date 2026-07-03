@@ -4,6 +4,7 @@ import { dirname, join, relative } from 'path';
 import { fileURLToPath } from 'url';
 import { PROVIDER_REGISTRY, initDynamicProviders } from '../src/providers/registry.js';
 import { SLASH_COMMANDS } from '../src/cli/slash-commands.js';
+import { readJsonFile } from '../src/util/text-encoding.js';
 import {
   listSourceFiles,
   mapPageForSource,
@@ -167,7 +168,7 @@ function readScenarios(): ScenarioDoc[] {
     .filter(file => file.endsWith('.scenario.json'))
     .sort()
     .map(file => {
-      const scenario = JSON.parse(readFileSync(join(scenariosDir, file), 'utf-8')) as ScenarioDoc;
+      const scenario = readJsonFile<ScenarioDoc>(join(scenariosDir, file));
       return {
         file,
         name: scenario.name,

@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'fs';
 import { createHash } from 'crypto';
 import { join, resolve, dirname, relative } from 'path';
 import { fileURLToPath } from 'url';
+import { readTextFile } from '../util/text-encoding.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 export const CUSTOM_EVAL_DIR = resolve(_dirname, '..', '..', 'evals', 'custom');
@@ -33,7 +34,7 @@ export function discoverCustomEvals(): CustomEval[] {
   });
   return dirs.map(d => {
     const promptPath = join(CUSTOM_EVAL_DIR, d.name, 'prompt.md');
-    const firstLine = readFileSync(promptPath, 'utf-8').trim().split('\n')[0].slice(0, 80);
+    const firstLine = readTextFile(promptPath).trim().split('\n')[0].slice(0, 80);
     return { id: d.name, firstLine };
   });
 }

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { gunzipSync } from 'zlib';
 import https from 'https';
 import chalk from 'chalk';
+import { stripBom, readTextFile } from '../util/text-encoding.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const HUMANEVAL_DATA_DEFAULT = resolve(_dirname, '..', '..', 'evals', 'humaneval', 'data', 'HumanEval.jsonl.gz');
@@ -45,14 +46,14 @@ function readProblems(): HumanEvalProblem[] {
   const dataPath = process.env['HUMANEVAL_DATA'] ?? HUMANEVAL_DATA_DEFAULT;
   const exampleDataPath = process.env['HUMANEVAL_EXAMPLE_DATA'] ?? HUMANEVAL_EXAMPLE_DATA_DEFAULT;
   const compressed = readFileSync(dataPath);
-  const text = gunzipSync(compressed).toString('utf-8');
+  const text = stripBom(gunzipSync(compressed).toString('utf-8'));
   const main = text.split('\n')
     .filter(line => line.trim())
     .map(line => JSON.parse(line) as HumanEvalProblem);
 
   let example: HumanEvalProblem[] = [];
   if (existsSync(exampleDataPath)) {
-    example = readFileSync(exampleDataPath, 'utf-8')
+    example = readTextFile(exampleDataPath)
       .split('\n')
       .filter(line => line.trim())
       .map(line => JSON.parse(line) as HumanEvalProblem);
