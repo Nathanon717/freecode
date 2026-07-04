@@ -25,104 +25,106 @@ Do not duplicate reference facts that belong in generated docs.
 
 ## Structure
 
+Format: filename (linecount)
+
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
-  - [`context.ts`](agent/context.md) — Agent Tool Context
-  - [`loop.ts`](agent/loop.md) — Agent Loop
-  - [`prompt-tools.ts`](agent/prompt-tools.md) — Prompt-Based Tool Harness
-  - [`session-controller.ts`](agent/session-controller.md) — Session Controller
-  - [`system-prompt.ts`](agent/system-prompt.md) — System Prompt
+  - [`context.ts`](agent/context.md) (72) — Agent Tool Context
+  - [`loop.ts`](agent/loop.md) (474) — Agent Loop
+  - [`prompt-tools.ts`](agent/prompt-tools.md) (247) — Prompt-Based Tool Harness
+  - [`session-controller.ts`](agent/session-controller.md) (23) — Session Controller
+  - [`system-prompt.ts`](agent/system-prompt.md) (31) — System Prompt
 - `src/agent/tools/`
-  - [`create.ts`](agent/tools/create.md) — create Tool
-  - [`edit.ts`](agent/tools/edit.md) — edit Tool
-  - [`grep.ts`](agent/tools/grep.md) — grep Tool
-  - [`index.ts`](agent/tools/index.md) — Tool Registry
-  - [`list-dir.ts`](agent/tools/list-dir.md) — list_dir Tool
-  - [`read.ts`](agent/tools/read.md) — read Tool
-  - [`shell.ts`](agent/tools/shell.md) — shell_exec Tool
+  - [`create.ts`](agent/tools/create.md) (33) — create Tool
+  - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
+  - [`grep.ts`](agent/tools/grep.md) (122) — grep Tool
+  - [`index.ts`](agent/tools/index.md) (370) — Tool Registry
+  - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
+  - [`read.ts`](agent/tools/read.md) (87) — read Tool
+  - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
 - `src/cli/`
-  - [`action-menu.ts`](cli/action-menu.md) — Inline Action Sub-menu
-  - [`banner.ts`](cli/banner.md) — Startup Banner
-  - [`command-dispatcher.ts`](cli/command-dispatcher.md) — Command Dispatcher
-  - [`custom-eval-menu.ts`](cli/custom-eval-menu.md) — Custom Eval Tab + Run Loop
-  - [`eval-dots.ts`](cli/eval-dots.md) — Eval Status Circle Renderers
-  - [`eval-menu.ts`](cli/eval-menu.md) — Unified Eval Menu
-  - [`eval-screen.ts`](cli/eval-screen.md) — Eval Screen Renderers
-  - [`footer-status.ts`](cli/footer-status.md) — Footer Status State and Formatters
-  - [`humaneval-menu.ts`](cli/humaneval-menu.md) — HumanEval Tab + Run Loop
-  - [`input-buffer.ts`](cli/input-buffer.md) — Input Buffer State
-  - [`list-menu.ts`](cli/list-menu.md) — Shared Tabbed List Menu
-  - [`markdown-renderer.ts`](cli/markdown-renderer.md) — Markdown Renderer
-  - [`menu-shell.ts`](cli/menu-shell.md) — Menu Lifecycle Chrome
-  - [`model-screen.ts`](cli/model-screen.md) — Model Picker Screen Renderers
-  - [`raw-picker.ts`](cli/raw-picker.md) — Shared Raw-Mode Picker
-  - [`session-modes.ts`](cli/session-modes.md) — Session Modes
-  - [`session-runner.ts`](cli/session-runner.md) — CLI Session Loop
-  - [`slash-commands.ts`](cli/slash-commands.md) — Slash Commands
-  - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) — Non-TTY Retry Countdown Sink
-  - [`terminal-ui.ts`](cli/terminal-ui.md) — Bottom Terminal UI
-  - [`toggles.ts`](cli/toggles.md) — Footer Toggle State
-  - [`tool-approval.ts`](cli/tool-approval.md) — Tool Approval Prompts
-  - [`transcript-renderer.ts`](cli/transcript-renderer.md) — Agent Transcript Formatting
+  - [`action-menu.ts`](cli/action-menu.md) (53) — Inline Action Sub-menu
+  - [`banner.ts`](cli/banner.md) (119) — Startup Banner
+  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (229) — Command Dispatcher
+  - [`custom-eval-menu.ts`](cli/custom-eval-menu.md) (363) — Custom Eval Tab + Run Loop
+  - [`eval-dots.ts`](cli/eval-dots.md) (28) — Eval Status Circle Renderers
+  - [`eval-menu.ts`](cli/eval-menu.md) (125) — Unified Eval Menu
+  - [`eval-screen.ts`](cli/eval-screen.md) (162) — Eval Screen Renderers
+  - [`footer-status.ts`](cli/footer-status.md) (209) — Footer Status State and Formatters
+  - [`humaneval-menu.ts`](cli/humaneval-menu.md) (324) — HumanEval Tab + Run Loop
+  - [`input-buffer.ts`](cli/input-buffer.md) (109) — Input Buffer State
+  - [`list-menu.ts`](cli/list-menu.md) (367) — Shared Tabbed List Menu
+  - [`markdown-renderer.ts`](cli/markdown-renderer.md) (359) — Markdown Renderer
+  - [`menu-shell.ts`](cli/menu-shell.md) (47) — Menu Lifecycle Chrome
+  - [`model-screen.ts`](cli/model-screen.md) (198) — Model Picker Screen Renderers
+  - [`raw-picker.ts`](cli/raw-picker.md) (240) — Shared Raw-Mode Picker
+  - [`session-modes.ts`](cli/session-modes.md) (422) — Session Modes
+  - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
+  - [`slash-commands.ts`](cli/slash-commands.md) (64) — Slash Commands
+  - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
+  - [`terminal-ui.ts`](cli/terminal-ui.md) (473) — Bottom Terminal UI
+  - [`toggles.ts`](cli/toggles.md) (96) — Footer Toggle State
+  - [`tool-approval.ts`](cli/tool-approval.md) (314) — Tool Approval Prompts
+  - [`transcript-renderer.ts`](cli/transcript-renderer.md) (448) — Agent Transcript Formatting
 - `src/commands/`
-  - [`config.ts`](commands/config.md) — Interactive Config Editor
-  - [`model.ts`](commands/model.md) — Interactive Model Picker
-  - [`renderer.ts`](commands/renderer.md) — Renderer Demo Command
-  - [`status.ts`](commands/status.md) — /status Command
+  - [`config.ts`](commands/config.md) (345) — Interactive Config Editor
+  - [`model.ts`](commands/model.md) (296) — Interactive Model Picker
+  - [`renderer.ts`](commands/renderer.md) (249) — Renderer Demo Command
+  - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`
-  - [`index.ts`](config/index.md) — Configuration Loader
+  - [`index.ts`](config/index.md) (219) — Configuration Loader
 - `src/eval/`
-  - [`custom.ts`](eval/custom.md) — Custom Eval Discovery and Hashing
-  - [`errors.ts`](eval/errors.md) — Eval API Error Parser
-  - [`history.ts`](eval/history.md) — Eval History and Status Computation
-  - [`humaneval-data.ts`](eval/humaneval-data.md) — HumanEval Dataset Loader
-  - [`result-sink.ts`](eval/result-sink.md) — Eval Result JSON IPC Sink
-  - [`runner.ts`](eval/runner.md) — Eval Subprocess Runner
-- [`index.ts`](index.md) — CLI Entry Point
-- [`logger.ts`](logger.md) — Logging Utility
+  - [`custom.ts`](eval/custom.md) (96) — Custom Eval Discovery and Hashing
+  - [`errors.ts`](eval/errors.md) (77) — Eval API Error Parser
+  - [`history.ts`](eval/history.md) (114) — Eval History and Status Computation
+  - [`humaneval-data.ts`](eval/humaneval-data.md) (99) — HumanEval Dataset Loader
+  - [`result-sink.ts`](eval/result-sink.md) (79) — Eval Result JSON IPC Sink
+  - [`runner.ts`](eval/runner.md) (203) — Eval Subprocess Runner
+- [`index.ts`](index.md) (175) — CLI Entry Point
+- [`logger.ts`](logger.md) (53) — Logging Utility
 - `src/providers/adapters/`
-  - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) — Adapter HTTP Retry/Backoff
-  - [`adapter-usage-capture.ts`](providers/adapters/adapter-usage-capture.md) — Shared Usage/Header Capture
-  - [`anthropic.ts`](providers/adapters/anthropic.md) — Anthropic Adapter
-  - [`openai-compat-quirks.ts`](providers/adapters/openai-compat-quirks.md) — OpenAI-Compatible Provider Quirk Profiles
-  - [`openai-compat-request.ts`](providers/adapters/openai-compat-request.md) — OpenAI-Compatible Request Transforms
-  - [`openai-compat-sse.ts`](providers/adapters/openai-compat-sse.md) — OpenAI-Compatible SSE Transforms
-  - [`openai-compat.ts`](providers/adapters/openai-compat.md) — OpenAI-Compatible Adapter
+  - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (120) — Adapter HTTP Retry/Backoff
+  - [`adapter-usage-capture.ts`](providers/adapters/adapter-usage-capture.md) (52) — Shared Usage/Header Capture
+  - [`anthropic.ts`](providers/adapters/anthropic.md) (205) — Anthropic Adapter
+  - [`openai-compat-quirks.ts`](providers/adapters/openai-compat-quirks.md) (54) — OpenAI-Compatible Provider Quirk Profiles
+  - [`openai-compat-request.ts`](providers/adapters/openai-compat-request.md) (35) — OpenAI-Compatible Request Transforms
+  - [`openai-compat-sse.ts`](providers/adapters/openai-compat-sse.md) (142) — OpenAI-Compatible SSE Transforms
+  - [`openai-compat.ts`](providers/adapters/openai-compat.md) (231) — OpenAI-Compatible Adapter
 - `src/providers/`
-  - [`anthropic-cost.ts`](providers/anthropic-cost.md) — Anthropic Cost Estimates
-  - [`db-config-cache.ts`](providers/db-config-cache.md) — DB Config Cache
-  - [`db.ts`](providers/db.md) — SQLite Store (libSQL/Turso)
-  - [`fake.ts`](providers/fake.md) — Fake LLM Fixtures
-  - [`index.ts`](providers/index.md) — Provider Re-exports
-  - [`model-cache.ts`](providers/model-cache.md) — Model Cache
-  - [`model-quirks.ts`](providers/model-quirks.md) — Per-Model Static Quirks
-  - [`model-settings-registry.ts`](providers/model-settings-registry.md) — Model Settings Registry
-  - [`model-store.ts`](providers/model-store.md) — Unified Model Store
-  - [`openai-daily-spend.ts`](providers/openai-daily-spend.md) — OpenAI Daily Spend Footer
-  - [`pricing-verifier.ts`](providers/pricing-verifier.md) — Dual-Source Pricing Verifier
+  - [`anthropic-cost.ts`](providers/anthropic-cost.md) (377) — Anthropic Cost Estimates
+  - [`db-config-cache.ts`](providers/db-config-cache.md) (54) — DB Config Cache
+  - [`db.ts`](providers/db.md) (492) — SQLite Store (libSQL/Turso)
+  - [`fake.ts`](providers/fake.md) (424) — Fake LLM Fixtures
+  - [`index.ts`](providers/index.md) (3) — Provider Re-exports
+  - [`model-cache.ts`](providers/model-cache.md) (105) — Model Cache
+  - [`model-quirks.ts`](providers/model-quirks.md) (38) — Per-Model Static Quirks
+  - [`model-settings-registry.ts`](providers/model-settings-registry.md) (14) — Model Settings Registry
+  - [`model-store.ts`](providers/model-store.md) (220) — Unified Model Store
+  - [`openai-daily-spend.ts`](providers/openai-daily-spend.md) (181) — OpenAI Daily Spend Footer
+  - [`pricing-verifier.ts`](providers/pricing-verifier.md) (123) — Dual-Source Pricing Verifier
 - `src/providers/quota/`
-  - [`cache.ts`](providers/quota/cache.md) — Quota Cache
-  - [`headers.ts`](providers/quota/headers.md) — Provider Rate-Limit Header Parsing
+  - [`cache.ts`](providers/quota/cache.md) (39) — Quota Cache
+  - [`headers.ts`](providers/quota/headers.md) (370) — Provider Rate-Limit Header Parsing
 - `src/providers/`
-  - [`registry-data.ts`](providers/registry-data.md) — Provider Registry Data
-  - [`registry.ts`](providers/registry.md) — Provider Registry
-  - [`types.ts`](providers/types.md) — Type Definitions
+  - [`registry-data.ts`](providers/registry-data.md) (265) — Provider Registry Data
+  - [`registry.ts`](providers/registry.md) (397) — Provider Registry
+  - [`types.ts`](providers/types.md) (53) — Type Definitions
 - `src/tokenizers/backends/`
-  - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) — HF Fast-Tokenizer (tokenizer.json) Backend
-  - [`tiktoken.ts`](tokenizers/backends/tiktoken.md) — Tiktoken-Backed Exact Encoders
+  - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) (36) — HF Fast-Tokenizer (tokenizer.json) Backend
+  - [`tiktoken.ts`](tokenizers/backends/tiktoken.md) (41) — Tiktoken-Backed Exact Encoders
 - `src/tokenizers/`
-  - [`chat-format.ts`](tokenizers/chat-format.md) — Shared Chat-Overhead Formula
-  - [`count.ts`](tokenizers/count.md) — Tokenizer Engine Public Surface
-  - [`download-tokenizer.ts`](tokenizers/download-tokenizer.md) — HF Tokenizer File Cache/Download
-  - [`fallback-estimate.ts`](tokenizers/fallback-estimate.md) — Generic Tiktoken Fallback Estimator
-  - [`model-family.ts`](tokenizers/model-family.md) — Tokenizer Family Resolver
+  - [`chat-format.ts`](tokenizers/chat-format.md) (42) — Shared Chat-Overhead Formula
+  - [`count.ts`](tokenizers/count.md) (64) — Tokenizer Engine Public Surface
+  - [`download-tokenizer.ts`](tokenizers/download-tokenizer.md) (51) — HF Tokenizer File Cache/Download
+  - [`fallback-estimate.ts`](tokenizers/fallback-estimate.md) (30) — Generic Tiktoken Fallback Estimator
+  - [`model-family.ts`](tokenizers/model-family.md) (70) — Tokenizer Family Resolver
 - `src/util/`
-  - [`errors.ts`](util/errors.md) — Shared Error Utilities
-  - [`guards.ts`](util/guards.md) — Type Guard Utilities
-  - [`keys.ts`](util/keys.md) — Raw-Key Helpers
-  - [`line-diff.ts`](util/line-diff.md) — LCS Line Diff
-  - [`screen-buffer.ts`](util/screen-buffer.md) — Screen Buffer
-  - [`text-encoding.ts`](util/text-encoding.md) — Text Encoding Helpers
+  - [`errors.ts`](util/errors.md) (236) — Shared Error Utilities
+  - [`guards.ts`](util/guards.md) (4) — Type Guard Utilities
+  - [`keys.ts`](util/keys.md) (5) — Raw-Key Helpers
+  - [`line-diff.ts`](util/line-diff.md) (39) — LCS Line Diff
+  - [`screen-buffer.ts`](util/screen-buffer.md) (93) — Screen Buffer
+  - [`text-encoding.ts`](util/text-encoding.md) (24) — Text Encoding Helpers
 <!-- END GENERATED MAP STRUCTURE -->
 
 ## Main Flow

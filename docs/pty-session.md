@@ -4,33 +4,12 @@
 
 Source: `tests/harness/pty/session.ts` — wrapper: `pty.cmd` (Windows) / `pty` (bash)
 
-## Reviewing screens for correctness
+<!-- PTY QUICKSTART: hand-written. sync-docs measures the last non-empty line before END PTY QUICKSTART and writes "read lines 1–n" into docs/README.md. Keep everything needed to drive pty ABOVE the END marker — never push usage-essential content below it. -->
+## Quick usage
 
-When you capture a screen after a command, don't just check that the expected content is present — check the **layout** too. Common rendering bugs look like:
+Everything you need to drive `pty` is in this section. Sections below it are reference detail — per-flag behavior, platform caveats, and internals.
 
-- **Status line text bleeding into scroll content**: `211 ctx tokens` or other right-aligned status text appears on the same row as output text instead of being pinned to the last row.
-- **Stale bottom UI rows**: the prompt hint (`> / for commands`) or status bar content remains visible inside an interactive UI (config editor, model picker, etc.) because the rows weren't cleared on teardown.
-- **Garbage suffix on a line**: a line like `Eval scenariosds` where the trailing characters (`ds`) are leftover from a previous render that wasn't fully overwritten.
-
-For each screen you review, explicitly check:
-1. Is any status bar / token count text appearing mid-output instead of only on the bottom status row?
-2. Are any prompt hints (`> / for commands`) visible inside an interactive UI that should own the full screen?
-3. Do any output lines have unexpected trailing characters that don't belong?
-
-These are easy to miss when scanning for functional correctness — look for them deliberately.
-
-## When to use this
-
-Use `pty` whenever you want to:
-
-- Check what freecode actually looks like after a UI change (model picker, config editor, autocomplete, status line, etc.)
-- Navigate menus interactively (arrow keys, Enter, Tab)
-- Confirm a slash command works end-to-end in the live TUI
-- Do anything in freecode that a human would do at the terminal
-
-For one-shot batch assertions in automated tests, prefer a TTY scenario file instead (see `docs/testing-scenarios.md`).
-
-## Workflow
+### Workflow
 
 ```bash
 # 1. Start a session (add --screen to also print the initial screen)
@@ -48,7 +27,64 @@ pty stop
 
 `start` and `goto` write the active session to `active.json` in the session dir, so subsequent `send`, `screen`, and `stop` pick it up automatically.
 
-## Commands
+### Commands
+
+| Command | What it does |
+|---|---|
+| `pty start [--screen]` | Spawn a freecode daemon in a real PTY; `--screen` prints the initial screen |
+| `pty goto <screen> [--screen]` | BFS-navigate to a named screen; `--screen` also prints it |
+| `pty send <keys> [--wait-for <text>]` | Write keystrokes, print the screen after output settles |
+| `pty screen` | Snapshot the current screen without sending input |
+| `pty stop` | Kill the daemon and clean up |
+
+**Screens for `goto`:** `home`, `models`, `config`, `eval`
+
+### Sending keys
+
+Use named aliases as positional args — they work on every platform:
+
+| Alias                 | Key         |
+|-----------------------|-------------|
+| `enter` or `ent`      | Enter (CR)  |
+| `esc` or `escape`     | Escape      |
+| `up`                  | Up arrow    |
+| `down`                | Down arrow  |
+| `left`                | Left arrow  |
+| `right`               | Right arrow |
+| `space`               | Space       |
+| `tab`                 | Tab         |
+| `backspace` or `back` | Backspace   |
+
+```bash
+pty send down down enter   # arrow down twice, then select
+pty send /model            # slash commands auto-submit — no separate enter
+```
+
+Send typed text and control keys as **separate steps** — don't expect a single `printf '/model\r'` to work, because the app needs to settle between typing and submitting. (`pty send hello enter` in one call is fine.)
+
+For keys with no alias, or for slash commands on Windows (where MSYS rewrites `/model` into a path), pipe the input via stdin with `-`:
+
+| Input          | stdin form                     |
+|----------------|--------------------------------|
+| Ctrl-C         | `printf '\x03' \| pty send -`  |
+| Backspace      | `printf '\x7f' \| pty send -`  |
+| Slash command  | `printf '/model' \| pty send -`|
+<!-- END PTY QUICKSTART -->
+
+## When to use this
+
+Use `pty` whenever you want to:
+
+- Check what freecode actually looks like after a UI change (model picker, config editor, autocomplete, status line, etc.)
+- Navigate menus interactively (arrow keys, Enter, Tab)
+- Confirm a slash command works end-to-end in the live TUI
+- Do anything in freecode that a human would do at the terminal
+
+For one-shot batch assertions in automated tests, prefer a TTY scenario file instead (see `docs/testing-scenarios.md`).
+
+## Command reference
+
+Per-command detail beyond the [Quick usage](#quick-usage) summary.
 
 ### `start [--screen] [--cols N] [--rows N]`
 
@@ -67,42 +103,11 @@ Output format:
 
 Navigates from the current screen to `<screen>` by BFS-pathfinding through the nav graph. Prints `navigated: <from> → <to>`. With `--screen`, also prints the resulting screen render. Auto-starts a session if none is running.
 
-**Available screens:** `home`, `models`, `config`, `eval`
-
 ### `send <keys> [<keys>...] [--wait-for <text>] [--quiet-ms N]`
 
-Writes keystrokes to the running session and prints the screen after output settles.
+Writes keystrokes to the running session and prints the screen after output settles. Multiple key arguments are **concatenated in order**: `pty send h e l l o` sends `"hello"`. For the named key aliases, slash auto-submit, and the `-`/stdin form, see [Quick usage](#quick-usage).
 
-- Multiple key arguments are **concatenated in order**: `pty send h e l l o` sends `"hello"`.
-- **Named key aliases** — use these instead of raw escape sequences:
-
-  | Alias                | Key        |
-  |----------------------|------------|
-  | `enter` or `ent`     | Enter (CR) |
-  | `esc` or `escape`    | Escape     |
-  | `up`                 | Up arrow   |
-  | `down`               | Down arrow |
-  | `left`               | Left arrow |
-  | `right`              | Right arrow|
-  | `space`              | Space      |
-  | `tab`                | Tab        |
-  | `backspace` or `back`| Backspace  |
-
-  ```bash
-  pty send down down enter   # arrow down twice, then select
-  pty send esc               # dismiss a menu
-  ```
-
-- **Slash commands auto-submit** — a `/command` argument automatically appends Enter, so you don't need a separate step:
-  ```bash
-  pty send /model    # types /model and submits — no extra enter needed
-  pty send /config   # same
-  ```
-
-- Pass **`-`** as the keys argument to read keystrokes from stdin (slash commands from stdin also auto-submit). Use this on Windows to avoid MSYS path mangling:
-  ```bash
-  printf '/model' | pty send -   # types /model and submits
-  ```
+- On Linux/Mac you can also pass raw escape sequences as positional args using Bash ANSI-C quoting (`$'\r'`, `$'\x1b[B'`); on Windows these are unreliable, so use the stdin form (see [Windows notes](#windows-local-notes)).
 - `--wait-for <text>`: wait for a specific string to appear in the raw output stream before snapshotting. Use this when a keystroke triggers LLM work — wait for `"for commands"` to know the prompt is back.
 - `--quiet-ms N`: override the settle window (default 350 ms). Increase for slow renders.
 
@@ -127,7 +132,7 @@ printf '/model' | pty send -   # type command
 printf '\r'     | pty send -   # submit (separate step)
 ```
 
-This applies whenever input starts with `/`. For all control characters (Enter, arrows, etc.) use the `printf` stdin form — see the Control Characters section below.
+This applies whenever input starts with `/`.
 
 **A brief cmd window may flash** when the PTY daemon starts or stops. This is a ConPTY limitation on Windows and doesn't affect functionality.
 
@@ -138,26 +143,6 @@ printf '\r'     | pty send -
 printf '\x1b[B' | pty send -
 ```
 
-## Control characters
-
-On any platform, use the named key aliases described in the `send` section above — they work as positional arguments directly:
-
-```bash
-pty send enter        # Enter
-pty send esc          # Escape
-pty send up           # Up arrow
-pty send down down    # Down arrow twice
-```
-
-For keys without an alias (Ctrl-C, Backspace, etc.) use `printf` piped to stdin:
-
-| Key        | stdin form           |
-|------------|----------------------|
-| Ctrl-C     | `printf '\x03'`      |
-| Backspace  | `printf '\x7f'`      |
-
-On Linux/Mac you can also pass raw escape sequences as positional args using Bash ANSI-C quoting (`$'\r'`, `$'\x1b[B'`, etc.).
-
 ## Common patterns
 
 ### Open the model picker and navigate it
@@ -167,16 +152,6 @@ pty start
 pty goto models --screen
 pty send down    # arrow down
 pty send enter   # select
-pty stop
-```
-
-Always send typed text and control keys (Enter, arrow keys, Tab) as **separate steps**. Combining them in one call (e.g. `pty send hello enter`) is fine; just don't expect a single `printf '/model\r'` to work — the app needs to settle between typing and submitting.
-
-### Open a slash command directly
-
-```bash
-pty start --screen
-pty send /model   # types /model and auto-submits; opens model picker
 pty stop
 ```
 
@@ -197,12 +172,6 @@ pty send enter --wait-for "for commands"
 ```
 
 The `--wait-for "for commands"` waits until the prompt is live again, which means the agent turn is complete.
-
-### Check a screen without disturbing input
-
-```bash
-pty screen
-```
 
 ## Session lifecycle
 

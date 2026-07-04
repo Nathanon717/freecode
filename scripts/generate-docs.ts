@@ -145,6 +145,20 @@ function providerReference(content: string): string {
   );
 }
 
+function ptyQuickstartRef(): string {
+  const src = readProjectFile('docs/pty-session.md').replace(/\r\n/g, '\n');
+  const lines = src.split('\n');
+  const endIdx = lines.findIndex(line => line.trim() === '<!-- END PTY QUICKSTART -->');
+  if (endIdx === -1) {
+    throw new Error('docs/pty-session.md is missing the <!-- END PTY QUICKSTART --> marker');
+  }
+  // n = last non-empty content line before the end marker (1-indexed), so a
+  // "read lines 1–n" reader never pulls the marker comment or a trailing blank.
+  let contentIdx = endIdx - 1;
+  while (contentIdx >= 0 && lines[contentIdx].trim() === '') contentIdx--;
+  return `For usage only, read lines 1–${contentIdx + 1}.`;
+}
+
 function packageScriptReference(): string {
   const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts?: Record<string, string> };
   const scripts = Object.entries(packageJson.scripts ?? {}).sort(([a], [b]) => a.localeCompare(b));
@@ -225,6 +239,8 @@ const updates: Array<[string, (content: string) => string]> = [
     ].join('\n');
     return replaceGeneratedSection(base, 'SCENARIOS', scenarioReference());
   }],
+  ['docs/README.md', content =>
+    replaceGeneratedSection(content, 'PTY QUICKSTART REF', ptyQuickstartRef())],
 ];
 
 function replaceMarkerSection(content: string, begin: string, end: string, block: string): string {

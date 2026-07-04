@@ -196,6 +196,11 @@ export function pageLabel(mapAbsPath: string): string {
   return first.slice(2).trim().replace(/^src\/\S+\.ts\s*[-—]?\s*/, '').trim();
 }
 
+/** Line count of a source file, as shown next to its entry in the structure tree. */
+function lineCount(srcAbsPath: string): number {
+  return readFileSync(srcAbsPath, 'utf-8').split('\n').length;
+}
+
 /** Generated, directory-grouped structure tree + nav links for docs/map/README.md. */
 export function buildStructureBlock(): string {
   const files = listSourceFiles();
@@ -211,7 +216,7 @@ export function buildStructureBlock(): string {
     const indent = dir === '' ? '' : '  ';
     const base = link.slice(link.lastIndexOf('/') + 1).replace(/\.md$/, '.ts');
     const label = pageLabel(mapPageForSource(file));
-    lines.push(`${indent}- [\`${base}\`](${link})${label ? ` — ${label}` : ''}`);
+    lines.push(`${indent}- [\`${base}\`](${link}) (${lineCount(file)})${label ? ` — ${label}` : ''}`);
   }
   lines.push(STRUCTURE_END);
   return lines.join('\n');
