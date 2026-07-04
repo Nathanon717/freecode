@@ -1,3 +1,4 @@
+// check-tests: no-test — pure type declarations; erased at compile time, no runtime behavior to test
 export interface RateLimits {
   rpm: number;
   rpd: number;

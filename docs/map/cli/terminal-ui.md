@@ -78,15 +78,7 @@ setOnResizeCallback(cb: (() => void) | null): void
 
 ## Layout
 
-The module uses ANSI scroll-region controls so normal output scrolls above the reserved bottom rows.
-
-**Footer** (always active): 2 rows normally; expands to 3 rows when content overflows at narrow terminal widths (only when the input UI is not active). The bottom row (`r`) carries the primary status (model + quota); the row above (`r-1`) carries the toggle bar on the left (from `cli/toggles.ts`) and any secondary content (OpenAI daily spend, preflight cost) on the right. The toggle bar is part of the input-bar component: it is drawn iff `inputUIActive`, so it always hides/shows together with the input UI (e.g. it disappears under picker menus and tool-approval prompts, which tear down the input bar). `footerRowCount` tracks the current size and the scroll region is updated inline when it changes.
-
-**Input UI** (active while the user is typing): top bar + N input lines + bottom bar above the footer. Total reserved = `footerRowCount + 2 + N` where N = number of lines in the current input buffer (minimum 1). When the user inserts a `\n` (Ctrl+J), N increases and `drawInputArea` scrolls content up to make room; when a line is deleted N decreases and the reclaimed rows are cleared. Slash-command suggestions are drawn as an overlay above the top bar; when suggestions appear the renderer snapshots the underlying scroll-region rows via `getScreenBufferDisplayLinesForOverlay` (styled, ANSI codes intact) and repaints them when the overlay closes. Restore uses `maxWidth = width` (full terminal width) — using `width - 1` truncates 80-char lines and leaves ANSI color artifacts. The start row is captured at draw time into `suggestionOverlayStartRow` so that footer row count changes between open and close do not corrupt the repaint target. The overlay epoch is started on the first `setupInputUI` call so that pre-UI output (startup banner) is excluded from repaints.
-
-A `cursorPos` index tracks the insertion point within the flat buffer (with embedded `\n` for multi-line). `cursorLineCol()` converts it to (lineIdx, colInLine) at draw time. The cursor position is updated by the cursor-movement exports. Inline completion is only shown when the buffer is single-line.
-
-The input row shows the prompt and inline completion. The status row right-aligns model, OpenAI daily spend, and quota. There is no context-token count in the footer as of the tokenizer-engine work (see `footer-status.md`'s Note); a later task re-adds one on top of `src/tokenizers/count.ts`.
+Uses an ANSI scroll-region to pin the footer/input UI to the bottom rows while normal output scrolls above it. Footer is 2 rows normally, 3 when content overflows at narrow widths (only while the input UI is inactive); the input UI adds top/bottom bars plus the current input line count on top of the footer. Slash-command suggestions draw as an overlay that snapshots the scroll-region's screen content to repaint on close; the overlay epoch starts at the first `setupInputUI` call so pre-UI output (startup banner) is excluded from repaints. A `cursorPos` index tracks the insertion point in the flat buffer; `cursorLineCol()` derives (line, col) from it at draw time.
 
 ## Quota Display
 
@@ -94,7 +86,7 @@ The input row shows the prompt and inline completion. The status row right-align
 
 ## Resize
 
-On `process.stdout` `resize`, the handler debounces at 32 ms (smooth during drag), then: invalidates the suggestion overlay (stale absolute row positions), resets `footerRowCount` and `lastReservedRows` to their defaults so `drawFooter`/`drawInputArea` recompute from the new dimensions, clears the visible screen without erasing scrollback (`\x1b[2J`), redraws the banner at the new width via `clearAndRedrawBanner()` (imported from `banner.ts`), re-establishes the scroll region, and calls `drawBottomUI()`. In-progress input buffer and conversation memory are preserved across resize.
+Debounces 32 ms, then recomputes the scroll region: invalidates the suggestion overlay, resets footer/input row counts to defaults, redraws the banner at the new width, and re-establishes the region and bottom UI. Input buffer and conversation memory persist across resize.
 
 ## Cleanup
 

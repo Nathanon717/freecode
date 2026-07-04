@@ -2,7 +2,7 @@
 
 **Role:** Implements the `/config` terminal UI for editing settings at global, provider, and model levels.
 
-Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle, and `cli/list-menu.ts` owns the pinned blank-line chrome, tab bar, and nav loop when multiple tabs are available. Each config tab is a `MenuTab` whose `onKey` cycles the focused setting's value (no `actionMenu`/`renderDetail`). `wrap: false` matches the editor's non-wrapping navigation.
+Built on the shared menu layers ([menu-shell](../cli/menu-shell.md), [list-menu](../cli/list-menu.md)). Each config tab is a `MenuTab` whose `onKey` cycles the focused setting's value (no `actionMenu`/`renderDetail`). `wrap: false` matches the editor's non-wrapping navigation.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -32,14 +32,14 @@ Provider and Model tabs are only available when `currentModel` contains a colon.
 
 | Key | Label | Tabs | Behavior |
 |-----|-------|------|----------|
-| `toolRationale` | Tool rationale | Global, Provider, Model | Ask model to explain each tool call before executing. |
+| `toolRationale` | Tool rationale | Global, Provider, Model | Explain each tool call before executing. |
 | `showProviderUsage` | Provider usage | Global, Provider, Model | Print token/rate-limit usage after each turn. |
-| `parallelTools` | Parallel tools | Global, Provider, Model | Allow model to call multiple tools in the same response. |
-| `retryMaxWaitSeconds` | Max retry wait | Global only | Max seconds to wait before retrying a rate-limited request. |
-| `diffContextLines` | Diff context | Global only | Lines of surrounding context shown above/below each edit diff. |
-| `showEvalDots` | Eval dots | Global only | Show per-scenario eval result circles in the model picker. |
-| `loadAgentsMd` | Load AGENTS.md | Provider, Model | Inject AGENTS.md from the working directory into the system prompt. Hidden from Global tab to preserve layout. |
-| `parsedTools` | Parsed tools | Model only | Use text-based `<tool_call>` protocol instead of native function calling. Hidden from Global and Provider tabs (`modelTabOnly`). When auto-detected (provider rejected native tools, `isNativeToolsDisabled` returns true), the toggle is rendered as **true (auto-detected)** and cycling is blocked — it cannot be turned off. |
+| `parallelTools` | Parallel tools | Global, Provider, Model | Allow multiple tool calls per response. |
+| `retryMaxWaitSeconds` | Max retry wait | Global only | Max seconds before retrying a rate-limited request. |
+| `diffContextLines` | Diff context | Global only | Context lines shown around each edit diff. |
+| `showEvalDots` | Eval dots | Global only | Show per-scenario eval circles in the model picker. |
+| `loadAgentsMd` | Load AGENTS.md | Provider, Model | Inject AGENTS.md into the system prompt. Hidden from Global to preserve layout. |
+| `parsedTools` | Parsed tools | Model only | Text `<tool_call>` protocol instead of native function calling. `modelTabOnly`. Auto-detected (native tools rejected) shows **true (auto-detected)** and blocks cycling — can't be turned off. |
 
 `globalOnly` settings are hidden in Provider and Model tabs. `modelOnly` settings are hidden in the Global tab. `modelTabOnly` settings are hidden from Global and Provider tabs (visible only on the Model tab).
 

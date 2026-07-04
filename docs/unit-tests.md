@@ -16,6 +16,32 @@ it.each([['user', 'hello', 7], ['user', null, 5]])(
   (role, content, n) => expect(estimateMessageTokens({ role, content } as CoreMessage)).toBe(n));
 ```
 
+## Exempting a file from the mirrored-test rule
+
+Every `src/**/*.ts` file must have a matching `tests/**/*.test.ts` with at least one real `it`/`test`/`describe`, enforced by `scripts/check-tests.ts`. A file opts out with an inline marker **and a mandatory reason**:
+
+```ts
+// check-tests: no-test — pure type declarations; erased at compile time, no runtime behavior to test
+```
+
+A marker with no reason is a hard build failure. The exemption list is kept out of the normal `npm test` output; audit it on demand with `npx tsx scripts/check-tests.ts --list-exempt`. The exemption is deliberately narrow — **default to writing the test.** A file qualifies only if *both* are true:
+
+1. **It has no runtime behavior of its own to observe.** Nothing in it can compute a wrong answer, throw, or return the wrong shape at runtime.
+2. **Any test you could write would restate the source, not check it** — asserting the language/compiler works rather than catching a regression a caller would notice.
+
+Two categories pass, and essentially nothing else does:
+
+- **Pure type files** — only `type`/`interface`/type-only `import`/`export`. They vanish at compile time; a runtime test just re-declares a literal and asserts its own fields (see the deleted `types.test.ts`). `tsc` is the real check.
+- **Pure barrels** — a file whose every statement is `export … from './x.js'` with no logic. `it('re-exports X')` only fails when someone deletes a line *and* stops importing it, which the build already catches.
+
+### Not exemptions — write the test
+
+- **A file with any executable code:** a `const` computed from a call, a function, a default value, a mapper, a guard, a `return`. If a line runs, it can be wrong. `src/config/index.ts` looks index-ish but caches and parses — it is tested.
+- **Static data files** (`registry-data.ts` and similar). Data is not type-only: ids collide, a URL goes missing, an enum drifts. Assert the *invariants* of the data (unique ids, required fields present) — that is a real, valuable test, not a tautology. See `tests/providers/registry-data.test.ts`.
+- **"It's small / obvious / I'll add it later."** Not criteria. Size and confidence say nothing about whether a runtime regression can hit it.
+
+If you reach for the marker on anything other than a pure-type or pure-barrel file, that is the signal to write the test instead. When unsure, the file is not exempt.
+
 ## Coverage & length
 
 Coverage is a by-product, not a target — don't chase it past the point where the only way up is bloat. Mark deliberately-uncovered defensive branches `/* v8 ignore */`; branch coverage matters least.

@@ -33,7 +33,9 @@ const failures: string[] = [];
 
 for (const file of sourceFiles) {
   const content = readFileSync(file, "utf-8");
-  const lineCount = content.split("\n").length;
+  const lines = content.split("\n");
+  const lineCount =
+    lines[lines.length - 1] === "" ? lines.length - 1 : lines.length;
   if (lineCount > MAX_LINES) {
     failures.push(toPosix(relative(ROOT, file)));
   }

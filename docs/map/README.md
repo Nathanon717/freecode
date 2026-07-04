@@ -2,6 +2,8 @@
 
 This is the agent navigation layer for the `freecode` source tree. Use it before broad source reads to decide which files matter for a task.
 
+These docs exist purely for agent context — there is no human-facing audience. The map's whole point is token reduction: it lets an agent decide which files matter without reading them. So keep every page terse. Prose that costs more tokens than it saves defeats the purpose.
+
 The map is maintained incrementally:
 
 1. Start from this file and the relevant area page.
@@ -95,7 +97,7 @@ Format: filename (linecount)
   - [`db-config-cache.ts`](providers/db-config-cache.md) (54) — DB Config Cache
   - [`db.ts`](providers/db.md) (492) — SQLite Store (libSQL/Turso)
   - [`fake.ts`](providers/fake.md) (424) — Fake LLM Fixtures
-  - [`index.ts`](providers/index.md) (3) — Provider Re-exports
+  - [`index.ts`](providers/index.md) (4) — Provider Re-exports
   - [`model-cache.ts`](providers/model-cache.md) (105) — Model Cache
   - [`model-quirks.ts`](providers/model-quirks.md) (38) — Per-Model Static Quirks
   - [`model-settings-registry.ts`](providers/model-settings-registry.md) (14) — Model Settings Registry
@@ -108,7 +110,7 @@ Format: filename (linecount)
 - `src/providers/`
   - [`registry-data.ts`](providers/registry-data.md) (265) — Provider Registry Data
   - [`registry.ts`](providers/registry.md) (397) — Provider Registry
-  - [`types.ts`](providers/types.md) (53) — Type Definitions
+  - [`types.ts`](providers/types.md) (54) — Type Definitions
 - `src/tokenizers/backends/`
   - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) (36) — HF Fast-Tokenizer (tokenizer.json) Backend
   - [`tiktoken.ts`](tokenizers/backends/tiktoken.md) (41) — Tiktoken-Backed Exact Encoders

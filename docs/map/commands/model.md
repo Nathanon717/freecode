@@ -18,7 +18,7 @@ runModelCommand(rl: Interface, currentModel: string, setSelectedModel: (model: s
 
 - `ModelMenuItem`, `filterModelItems`, and `buildAllItemLines` are re-exported from `cli/model-screen.ts` for a stable import surface.
 
-Built on the shared menu layers: `cli/menu-shell.ts` owns the bottom-UI teardown/restore lifecycle (`onRestore` carries the session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`), and `cli/list-menu.ts` owns the nav loop and the windowed tab bar. The picker builds a **`♥` Favourites tab** (always leftmost, present when ≥1 favourite exists) plus **one tab per provider**. Each tab owns its own filter query, viewport, and `displayItems`; the favorites set and `actionMenu` are shared in the enclosing scope. `renderBody` wraps `buildScreen` (passing the reserved tab-bar rows and `showProviderHeaders`), `renderDetail` = `buildModelDetailScreen`, `actionMenu` = Select/View/Edit. Favourites (`←`), filter typing/backspace, and Space-default are handled in `tab.onKey` (which ignores stray escape sequences so e.g. Up at the tab row never leaks into the filter), reading/writing the base-owned cursor via `ctx.getSelected`/`ctx.setSelected`. The picker opens on the Favourites tab when the current model is a favourite, otherwise on its provider tab. The interactive run loop lives in `runModelBody`.
+Built on the shared menu layers ([menu-shell](../cli/menu-shell.md), [list-menu](../cli/list-menu.md); `onRestore` carries the session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`). The picker builds a **`♥` Favourites tab** (leftmost, present when ≥1 favourite exists) plus one tab per provider. Each tab owns its filter query, viewport, and `displayItems`; the favorites set and `actionMenu` are shared in the enclosing scope. `renderBody` wraps `buildScreen` (reserved tab-bar rows, `showProviderHeaders`), `renderDetail` = `buildModelDetailScreen`, `actionMenu` = Select/View/Edit. Favourites (`←`), filter typing/backspace, and Space-default are handled in `tab.onKey` (ignores stray escape sequences so e.g. Up at the tab row never leaks into the filter), via `ctx.getSelected`/`ctx.setSelected`. Opens on Favourites tab if the current model is a favourite, else its provider tab. Run loop: `runModelBody`.
 
 ## Model Discovery
 
@@ -34,12 +34,12 @@ The selected model string is always `providerId:modelId`.
 
 `runModelCommand()` requires an interactive terminal. It draws a temporary raw-mode screen grouped by provider:
 
-- Type printable characters to search across all models (all providers) by display name, model ID, or `provider:model`; when a filter is active the tab label turns grey, provider headers are shown, and the hint line highlights `filter` in the accent color. Backspace removes filter characters.
-- Up/Down moves the selected row; stops at the top/bottom (no wrap-around).
-- `←` toggles the selected model as a favorite. Favorites are keyed by the full `provider:model` ID and persisted to `favoriteModels` in the global config. They appear on the dedicated **♥ Favourites tab** (always leftmost), grouped by provider with white provider headers and the model's display name in the normal accent color. On each provider tab, favourited models have no special badge.
-- `→` opens the model detail view showing pricing, traits, eval dots, and favorite status. `←` or Esc returns to the list.
-- Enter opens an inline action sub-menu (shared `InlineActionMenu` from `cli/action-menu.ts`) with: **Select** (apply model for this session), **View** (open detail screen), **Edit** (stub).
-- Space applies the selected `provider:model` and writes it as `defaultModel` in the global config.
+- Typing searches all providers by display name, model ID, or `provider:model` (filter active → grey tab label, provider headers shown, hint line highlights `filter`). Backspace removes filter characters.
+- Up/Down moves selection; stops at top/bottom (no wrap-around).
+- `←` toggles favorite, keyed by `provider:model`, persisted to `favoriteModels` in global config; shown on the **♥ Favourites tab** (no badge on provider tabs).
+- `→` opens model detail (pricing, traits, eval dots, favorite status). `←`/Esc returns to the list.
+- Enter opens `InlineActionMenu` (from `cli/action-menu.ts`): **Select** (apply for session), **View** (detail screen), **Edit** (stub).
+- Space applies the selected `provider:model` as `defaultModel` in global config.
 - Esc closes without changing the model.
 - Ctrl+C exits the process.
 

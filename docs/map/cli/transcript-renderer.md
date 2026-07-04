@@ -105,61 +105,19 @@ renderTurn(steps: RenderedStep[], opts?: TranscriptRuntimeOptions | undefined): 
 
 ## Desired Turn Layout
 
-Each model step is framed by a pair of `───` dividers. Between consecutive steps the dividers are merged (the closing divider of step N is the opening divider of step N+1).
+Each step is framed by a pair of `───` dividers; consecutive steps share one (close of step N = open of step N+1). Inside a step, a blank line separates the divider from content on both sides. Rationale sits directly above its tool call (no blank between); response text and a following tool call are separated by one blank line.
 
-**Tool call only:**
+Single step (response + tool call) and multi-step (shared divider):
 ```
-───
-                    ← blank line
-tool_call(args)
+───              ───
+
+response text    [step N]
+
+tool_call(args)  ───
   result preview
-                    ← blank line
+                 [step N+1]
 ───
-```
-
-**Rationale + tool call** (rationale is part of the same block):
-```
-───
-
-rationale
-tool_call(args)
-  result preview
-
-───
-```
-
-**Response only:**
-```
-───
-
-response text
-
-───
-```
-
-**Response + tool call:**
-```
-───
-
-response text
-
-tool_call(args)
-  result preview
-
-───
-```
-
-**Multi-step turn (step N ends / step N+1 begins — shared divider):**
-```
-───
-
-[step N content]
-
-───
-
-[step N+1 content]
-
-───
+                 ───
 ```
 
 ## Turn State Machine

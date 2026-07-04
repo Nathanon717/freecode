@@ -1,10 +1,6 @@
 # src/cli/humaneval-menu.ts - HumanEval Tab + Run Loop
 
-Provides the **HumanEval tab** of the unified `/eval` menu and its run loop.
-
-**Purpose:** Implements the HumanEval tab (`buildHumanEvalTab`), the run loop (`runHumanEvalProblems`/`runOneProblem`), the rate-limit retry prompter (`makeRetryPrompter`), and the Python-based scorer. The tab is composed into `/eval` by `cli/eval-menu.ts`; this file does not own the menu chrome or the `runRawPicker` loop. Dataset loading/download lives in `eval/humaneval-data.ts`; this file imports only the `HumanEvalProblem`/`HumanEvalResultMap` types from there. This is the HumanEval sibling of `cli/custom-eval-menu.ts` (the Custom tab).
-
-**Read when:** Modifying the HumanEval tab or runner, changing how solutions are prompted or checked, or changing per-problem result tracking.
+**Role:** Implements the HumanEval tab (`buildHumanEvalTab`), the run loop (`runHumanEvalProblems`/`runOneProblem`), the rate-limit retry prompter (`makeRetryPrompter`), and the Python-based scorer. Composed into `/eval` by `cli/eval-menu.ts` (this file doesn't own the menu chrome or the `runRawPicker` loop). Dataset loading/download lives in `eval/humaneval-data.ts`; this file only imports its `HumanEvalProblem`/`HumanEvalResultMap` types. Sibling of `cli/custom-eval-menu.ts` (the Custom tab).
 
 **Key neighbors:**
 - `src/cli/eval-menu.ts` — composes this tab into `/eval`
@@ -21,7 +17,7 @@ Provides the **HumanEval tab** of the unified `/eval` menu and its run loop.
 
 **Result persistence:** Each run is stored in `.freecode/models.json` (summary) and `.freecode/evals/humaneval/{provider}-{modelId}/{timestamp}.json` (full transcript + scoring). The `transcript` field is an array of turn objects, each with `systemPrompt`, `userMessage`, `tokenUsage: { input?, output? }`, and `toolCalls`. For humaneval (single-turn evals) the array always has exactly one entry.
 
-**Update triggers:** Prompt wording changes, Python check logic, viewport size, run-dir layout, dot rendering, result persistence format, or the HumanEval tab/menu composition (see `cli/eval-menu.ts`).
+**Read when:** Changing prompt wording, the Python check logic, viewport size, run-dir layout, dot rendering, result persistence format, or the tab/menu composition (see `cli/eval-menu.ts`).
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

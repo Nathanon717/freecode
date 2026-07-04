@@ -1,10 +1,8 @@
 # src/eval/humaneval-data.ts - HumanEval Dataset Loader
 
-Loads and downloads the HumanEval benchmark dataset for the `/eval` HumanEval tab.
+**Role:** Owns the HumanEval dataset concern for the `/eval` HumanEval tab: resolving the dataset path (`humanEvalDatasetPath`), downloading it if missing (`ensureHumanEvalDataset`/`downloadFile`), and parsing it into `HumanEvalProblem[]` (`loadHumanEvalProblems`). Defines the `HumanEvalProblem`/`HumanEvalResultMap` types consumed by the tab/run loop. Counterpart of `eval/custom.ts` (scenario discovery for the Custom tab).
 
-**Purpose:** Owns the HumanEval dataset concern: resolving the dataset path (`humanEvalDatasetPath`), downloading it if missing (`ensureHumanEvalDataset`/`downloadFile`), and parsing it into `HumanEvalProblem[]` (`loadHumanEvalProblems`). Defines the `HumanEvalProblem` and `HumanEvalResultMap` types consumed by the tab/run loop. This is the HumanEval counterpart of `eval/custom.ts` (scenario discovery for the Custom tab).
-
-**Read when:** Changing the dataset location/format, the download/redirect behavior, the example-problem prepend, or the `HUMANEVAL_DATA` / `HUMANEVAL_EXAMPLE_DATA` env overrides (used in tests to point at bundled mini fixtures).
+**Read when:** Changing dataset location/format, download/redirect behavior, the example-problem prepend, or the `HUMANEVAL_DATA` / `HUMANEVAL_EXAMPLE_DATA` env overrides (test fixtures).
 
 **Key neighbors:**
 - `src/cli/humaneval-menu.ts` — the tab + run loop that consume the problems and types
