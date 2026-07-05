@@ -95,6 +95,17 @@ describe('buildAllItemLines', () => {
     expect(itemLines.some(l => l.includes('~tools'))).toBe(true);
   });
 
+  it('shows eye badge for models with an exact tokenizer', () => {
+    const item = { ...openaiItem, exactTokenizer: true };
+    const { itemLines } = buildAllItemLines([item], 0, '');
+    expect(itemLines.some(l => l.includes('◉'))).toBe(true);
+  });
+
+  it('omits eye badge when no exact tokenizer exists', () => {
+    const { itemLines } = buildAllItemLines([openaiItem], 0, '');
+    expect(itemLines.some(l => l.includes('◉'))).toBe(false);
+  });
+
   it('shows evalDots badge', () => {
     const item = { ...openaiItem, evalDots: '●○●' };
     const { itemLines } = buildAllItemLines([item], 0, '');

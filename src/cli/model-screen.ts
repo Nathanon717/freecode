@@ -10,6 +10,7 @@ export interface ModelMenuItem {
   modelsSource?: 'static' | 'live';
   isNew?: boolean;
   noNativeTools?: boolean;
+  exactTokenizer?: boolean;
   isFavorite?: boolean;
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
   evalDots?: string;
@@ -98,9 +99,11 @@ export function buildAllItemLines(
         : bannerColor(item.displayName);
     const newBadge = item.isNew ? chalk.yellow(' new') : '';
     const ptBadge = item.noNativeTools ? chalk.dim(' ~tools') : '';
+    // Eye = an exact tokenizer backend exists for this model (banner-tinted).
+    const tokBadge = item.exactTokenizer ? ` ${bannerColor('◉')}` : '';
     const pricingBadge = buildPricingBadge(item.pricing);
     const dotsBadge = item.evalDots ? ` ${item.evalDots}` : '';
-    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${pricingBadge}${dotsBadge}`);
+    itemLines.push(`  ${cursor} ${renderedName}${newBadge}${ptBadge}${tokBadge}${pricingBadge}${dotsBadge}`);
   }
 
   return { itemLines, selectedLineIdx };
@@ -173,6 +176,9 @@ export function buildModelDetailScreen(item: ModelMenuItem): string[] {
   }
   if (item.noNativeTools) {
     lines.push(`  ${chalk.bold('Traits')}      ${chalk.dim('~tools (no native tool use)')}`);
+  }
+  if (item.exactTokenizer) {
+    lines.push(`  ${chalk.bold('Tokenizer')}   ${getBannerColor()('◉')} ${chalk.dim('exact')}`);
   }
   if (item.evalDots) {
     lines.push(`  ${chalk.bold('Eval dots')}   ${item.evalDots}`);

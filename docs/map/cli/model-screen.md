@@ -14,6 +14,7 @@ interface ModelMenuItem {
   modelsSource?: 'static' | 'live';
   isNew?: boolean;
   noNativeTools?: boolean;
+  exactTokenizer?: boolean;
   isFavorite?: boolean;
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
   evalDots?: string;
@@ -43,7 +44,7 @@ buildModelDetailScreen(item: ModelMenuItem): string[]
 
 ## Read when
 
-- Changing how model rows, the Favorites section, pricing/eval/`~tools` badges, the scroll indicators, or the model detail screen look.
+- Changing how model rows, the Favorites section, pricing/eval/`~tools`/`◉` (exact-tokenizer eye) badges, the scroll indicators, or the model detail screen look. The eye badge is banner-tinted and driven by `ModelMenuItem.exactTokenizer`, which `commands/model.ts` fills from `tokenizers/count.ts`'s `hasExactTokenizer`.
 - Adjusting filtering, sort order, or the `showProviderHeaders` flag that controls provider headers and gold-highlight behavior.
 
 ## Key neighbors

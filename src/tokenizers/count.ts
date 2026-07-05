@@ -27,6 +27,12 @@ export function countTokens(messages: CoreMessage[], modelId: string): number {
   return encoder ? encoder.countMessages(messages) : estimateContextTokens(messages);
 }
 
+// Does an exact tokenizer backend *exist* for this model? Capability check for
+// catalog UI (the model-picker badge) — not whether an encoder is loaded yet.
+export function hasExactTokenizer(modelId: string): boolean {
+  return resolveTokenizerFamily(modelId) !== null;
+}
+
 // Downloads (if needed) and loads a family backed by backends/bpe-json.ts.
 // Never throws — a failed download or parse just leaves encoderCache unset.
 async function loadHfEncoder(family: TokenizerFamily, repoId: string): Promise<void> {

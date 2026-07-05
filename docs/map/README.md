@@ -58,7 +58,7 @@ Format: filename (linecount)
   - [`list-menu.ts`](cli/list-menu.md) (367) — Shared Tabbed List Menu
   - [`markdown-renderer.ts`](cli/markdown-renderer.md) (359) — Markdown Renderer
   - [`menu-shell.ts`](cli/menu-shell.md) (47) — Menu Lifecycle Chrome
-  - [`model-screen.ts`](cli/model-screen.md) (198) — Model Picker Screen Renderers
+  - [`model-screen.ts`](cli/model-screen.md) (204) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/raw-picker.md) (240) — Shared Raw-Mode Picker
   - [`session-modes.ts`](cli/session-modes.md) (422) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
@@ -70,7 +70,7 @@ Format: filename (linecount)
   - [`transcript-renderer.ts`](cli/transcript-renderer.md) (448) — Agent Transcript Formatting
 - `src/commands/`
   - [`config.ts`](commands/config.md) (345) — Interactive Config Editor
-  - [`model.ts`](commands/model.md) (296) — Interactive Model Picker
+  - [`model.ts`](commands/model.md) (298) — Interactive Model Picker
   - [`renderer.ts`](commands/renderer.md) (249) — Renderer Demo Command
   - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`
@@ -116,7 +116,7 @@ Format: filename (linecount)
   - [`tiktoken.ts`](tokenizers/backends/tiktoken.md) (41) — Tiktoken-Backed Exact Encoders
 - `src/tokenizers/`
   - [`chat-format.ts`](tokenizers/chat-format.md) (42) — Shared Chat-Overhead Formula
-  - [`count.ts`](tokenizers/count.md) (64) — Tokenizer Engine Public Surface
+  - [`count.ts`](tokenizers/count.md) (70) — Tokenizer Engine Public Surface
   - [`download-tokenizer.ts`](tokenizers/download-tokenizer.md) (51) — HF Tokenizer File Cache/Download
   - [`fallback-estimate.ts`](tokenizers/fallback-estimate.md) (30) — Generic Tiktoken Fallback Estimator
   - [`model-family.ts`](tokenizers/model-family.md) (70) — Tokenizer Family Resolver

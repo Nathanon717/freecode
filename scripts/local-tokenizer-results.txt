@@ -1,0 +1,35 @@
+7/7 measured models matched their provider exactly (32 targeted, repeat=1)
+!! 23 exact tokenizer(s) failed to load: llama-3, deepseek-v4
+
+groq:openai/gpt-oss-20b	gpt-oss	local=145	server=145	match	exact
+groq:openai/gpt-oss-safeguard-20b	gpt-oss	local=145	server=145	match	exact
+groq:openai/gpt-oss-120b	gpt-oss	local=145	server=145	match	exact
+groq:llama-3.1-8b-instant	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+groq:llama-3.3-70b-versatile	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+openrouter:openai/gpt-oss-120b:free	gpt-oss	local=145	server=145	match	exact
+openrouter:openai/gpt-oss-20b:free	gpt-oss	local=145	server=145	match	exact
+openrouter:meta-llama/llama-3.3-70b-instruct:free	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+openrouter:meta-llama/llama-3.2-3b-instruct:free	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+openrouter:nousresearch/hermes-3-llama-3.1-405b:free	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:abacusai/dracarys-llama-3.1-70b-instruct	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:deepseek-ai/deepseek-v4-flash	deepseek-v4	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:deepseek-ai/deepseek-v4-pro	deepseek-v4	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:meta/llama-3.1-70b-instruct	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:meta/llama-3.1-8b-instruct	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:meta/llama-3.2-11b-vision-instruct	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:meta/llama-3.2-1b-instruct	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:meta/llama-3.2-3b-instruct	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:meta/llama-3.2-90b-vision-instruct	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:meta/llama-3.3-70b-instruct	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:nvidia/llama-3.1-nemotron-nano-8b-v1	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:nvidia/llama-3.1-nemotron-nano-vl-8b-v1	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:nvidia/llama-3.3-nemotron-super-49b-v1	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:nvidia/llama-3.3-nemotron-super-49b-v1.5	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+nvidia:openai/gpt-oss-120b	gpt-oss	local=145	server=-	failed	The operation was aborted due to timeout
+nvidia:openai/gpt-oss-20b	gpt-oss	local=145	server=-	failed	The operation was aborted due to timeout
+github:Meta-Llama-3.1-405B-Instruct	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+github:Meta-Llama-3.1-8B-Instruct	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+cerebras:gpt-oss-120b	gpt-oss	local=145	server=145	match	exact
+cerebras:zai-glm-4.7	glm-4	local=152	server=152	match	exact
+cloudflare:@cf/meta/llama-3.3-70b-instruct-fp8-fast	llama-3	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input
+zen:deepseek-v4-flash-free	deepseek-v4	local=null	server=-	load-error	EXACT TOKENIZER FAILED TO LOAD: Unexpected end of JSON input

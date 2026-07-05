@@ -23,6 +23,7 @@ import {
   buildModelDetailScreen,
 } from '../cli/model-screen.js';
 import { isBackspaceKey } from '../util/keys.js';
+import { hasExactTokenizer } from '../tokenizers/count.js';
 
 // Re-exported so existing importers (and tests) keep a stable surface.
 export { type ModelMenuItem, filterModelItems, buildAllItemLines } from '../cli/model-screen.js';
@@ -42,6 +43,7 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
         displayName: model.displayName,
         modelsSource: provider.modelsSource,
         isNew: model.isNew,
+        exactTokenizer: hasExactTokenizer(model.id),
       });
     }
   }
