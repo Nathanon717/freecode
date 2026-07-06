@@ -35,10 +35,12 @@ by the separate live-counter task on top of this engine.
 2. **tiktoken encodings** — GPT-OSS's `o200k_harmony` is a first-class entry in OpenAI's own
    `tiktoken` repo. Also serves as the generic fallback estimator (`cl100k`/`o200k`) for anything
    unmapped.
-3. **Raw SentencePiece `.model`** — legacy Llama 1/2, legacy (pre-Tekken) Mistral.
+3. **Raw SentencePiece `.model`** — legacy Llama 1/2, legacy (pre-Tekken) Mistral. *Not built (see
+   Phase 4): every such model also ships a `tokenizer.json`, so it falls back cleanly or folds into
+   the HF-fast backend — a SentencePiece binding buys nothing.*
 4. **Mistral Tekken (`tekken.json`)** — tiktoken-based under the hood but a non-standard file
-   layout; no ready-made JS library. Build last, reusing the tiktoken engine from (2) once the
-   vocab/merges are parsed out of `tekken.json`.
+   layout; no ready-made JS library. Reuses the tiktoken engine from (2) once the vocab/merges are
+   parsed out of `tekken.json`. This is the modern-Mistral traffic, so it's the priority (Phase 4).
 
 ## Decisions (locked)
 
@@ -91,10 +93,8 @@ by the separate live-counter task on top of this engine.
   persistence, only the `getStoreDir()` helper is reused).
 - **Dependency names are not final until verified.** Re-check current npm package name, version,
   and maintenance status at the start of each phase that adds one — this space shifts. Candidates
-  from research: `js-tiktoken` (tiktoken family + generic fallback estimator), `@huggingface/tokenizers`
-  (HF fast-tokenizer family), a SentencePiece WASM binding (candidates: `@sctg/sentencepiece-js`,
-  `@agnai/sentencepiece-js` — pick one after checking it round-trips against a real model's
-  Python-computed tokens, don't trust it blindly).
+  from research: `js-tiktoken` (tiktoken family + generic fallback estimator, and Phase 4's Tekken
+  encoding), `@huggingface/tokenizers` (HF fast-tokenizer family).
 
 ## Phase instructions
 
@@ -142,13 +142,13 @@ details; the notes below are only what a later phase needs to know.
   `fallback-estimate.ts` so the fallback and every backend apply one overhead constant. New
   backends bind their encoder to its `countContextTokens` (as `createTiktokenEncoder` does).
 - **`createTiktokenEncoder(encoding)` is a generic `Tiktoken → TokenizerEncoder` wrapper** (not
-  GPT-OSS-specific). Phase 5 (Mistral Tekken) reuses it once `tekken.json`'s vocab/merges are
+  GPT-OSS-specific). Phase 4 (Mistral Tekken) reuses it once `tekken.json`'s vocab/merges are
   parsed into a `js-tiktoken` encoding.
 - **No download or cache dir is used by this backend** — GPT-OSS reuses `js-tiktoken`'s bundled
-  `o200k_base` ranks. Phase 3/4/5 are the first to actually fetch/cache under `.freecode/tokenizers/`.
+  `o200k_base` ranks. Phase 3/4 are the first to actually fetch/cache under `.freecode/tokenizers/`.
 - **GPT-OSS's count is currently numerically identical to the fallback** (the harmony template's
   wrapper-token cost isn't modeled; only the flat overhead constant is). It's classified "exact"
-  for cache wiring only. Relevant to Phase 6's "fallback reached only for unmapped models" check —
+  for cache wiring only. Relevant to Phase 5's "fallback reached only for unmapped models" check —
   see `docs/map/tokenizers/backends/tiktoken.md`'s "Known inaccuracy" section.
 
 Ends with `npm test` green.
@@ -166,7 +166,7 @@ found during live verification.
 - **Kimi K2 is out of scope, not built.** The plan assumed a "converted `tokenizer.json`" existed
   somewhere. It doesn't: `moonshotai/Kimi-K2-Instruct` and every checked variant/mirror (K2-Thinking,
   K2.5/2.6/2.7, unsloth, mlx-community) ship only a raw `tiktoken.model` ranks file plus a custom
-  `tokenization_kimi.py` — tiktoken-family machinery (same shape as Phase 5's Tekken), not this
+  `tokenization_kimi.py` — tiktoken-family machinery (same shape as Phase 4's Tekken), not this
   backend. Flagged to the user rather than silently dropped; a future phase could fold it into the
   tiktoken backend alongside or instead of Tekken.
 - **DeepSeek is two families, not one.** V3/V3.1/V3.2/R1 share one tokenizer
@@ -205,57 +205,107 @@ found during live verification.
   2 placeholder `added_tokens` for `<think>`/`</think>`), confirming the "one tokenizer" family claim
   is earned, not assumed from matching etags alone.
 
-**What Phase 4+ must know:**
+**What Phase 4 must know:**
 
 - `model-family.ts`'s `HF_TOKENIZER_REPO` is the family→canonical-repo-ID map; `count.ts`'s
   `preloadTokenizerFor` now does a real async ensure-download → load → cache sequence for any family
   present in that map (de-duped per family via a `pendingLoads` map), not just a synchronous
-  bundled-encoder registration like GPT-OSS. Phase 4 (SentencePiece) and Phase 5 (Tekken) will need
-  their own download/cache entry points (`download-tokenizer.ts`'s shape is HF-repo-specific; don't
-  assume it's reusable as-is for a raw `.model`/`tekken.json` fetch).
+  bundled-encoder registration like GPT-OSS. Phase 4 (Tekken) needs its own encoder build, but
+  `tekken.json` is fetchable via the same HF `resolve/main/<file>` route `download-tokenizer.ts`
+  already uses — parameterize its hardcoded `tokenizer.json` filename rather than adding a parallel
+  download path.
 - See `docs/map/tokenizers/model-family.md`'s "Phase 3 verification trail" note before widening any
   existing family regex to a new model generation — every mapping here was checked against live HF
   API responses, not inferred from naming.
 
 Ends with `npm.cmd test` green.
 
-### Phase 4 — SentencePiece family (legacy Llama 1/2, legacy Mistral)
+### Phase 4 — Modern Mistral Tekken family (priority) ✅ COMPLETE
 
-- Pick a SentencePiece WASM binding (see candidates above) after checking maintenance status and
-  verifying it reproduces known token counts for a real model's `.model` file.
-- `src/tokenizers/backends/sentencepiece.ts`, same load-from-cache-or-download shape as Phase 3.
-  Mirror it with a test file per `docs/README.md`.
-- `model-family.ts`: predicates for Llama 1/2 and pre-Tekken Mistral (v1/v2/v3).
-- Lower priority than Phases 2–3 — most of the user's actual traffic is on newer models. Can be
-  deferred or dropped if the chosen binding proves unreliable; fallback estimator covers it either way.
-- Ends with `npm.cmd test` green.
+Built `src/tokenizers/backends/tekken.ts` (`loadTekkenEncoder`), wiring the modern Mistral line
+(`MISTRAL_TEKKEN_FAMILY`) into `count.ts`'s encoder cache. Tekken parses into plain vocab+ranks that
+Phase 2's `createTiktokenEncoder` consumes directly — **no `mistral-common` preprocessing**, so this
+was a clean exact-count job, not the feared scope-down to best-effort. Map pages in
+`docs/map/tokenizers/backends/tekken.md` (+ `model-family.md`, `download-tokenizer.md`, `count.md`,
+`tiktoken.md`) own the details; the notes below are only what Phase 5 needs.
 
-### Phase 5 — Mistral Tekken family
+**What Phase 5 must know:**
 
-- Investigate `tekken.json`'s actual structure (fetch one, e.g. from a Mistral NeMo/Small/Large
-  repo) to confirm whether it's parseable into plain vocab+merges that Phase 2's tiktoken engine
-  can consume directly, or whether it needs `mistral-common`-equivalent logic beyond that.
-- `src/tokenizers/backends/tekken.ts`: parses `tekken.json`, feeds Phase 2's tiktoken backend.
-  Mirror it with a test file per `docs/README.md`.
-- `model-family.ts`: predicate for Tekken-era Mistral models (NeMo, Pixtral, Small, Large — verify
-  against real live-fetched Mistral model IDs).
-- Hardest/most exploratory phase — if `tekken.json`'s format turns out to require the full
-  `mistral-common` preprocessing pipeline (not just vocab/merges), this phase may need to be
-  scoped down to "best-effort approximate Tekken count via the fallback estimator" instead of exact.
-- Ends with `npm.cmd test` green.
+- **The load recipe lives in `backends/tekken.ts`.** Slice `vocab` to
+  `default_vocab_size - default_num_special_tokens` (130072), emit js-tiktoken's `_ <rank> <base64>`
+  bpe_ranks lines, build `new Tiktoken({ pat_str: config.pattern, special_tokens: {}, bpe_ranks })`.
+  The **slice is load-bearing** (verified: js-tiktoken's counts match Mistral's own canonical
+  `tokenizer.json` exactly on 7/7 samples only *with* the slice — the tokenizer.json diff via
+  `@huggingface/tokenizers` was the oracle, since `mistral-common` won't build on Termux).
+- **One repo covers the whole line** — Nemo (v3) and Magistral (v11) have byte-identical used-vocab.
+  `MISTRAL_TEKKEN_REPO = mistralai/Mistral-Nemo-Instruct-2407`, fetched as `tekken.json` (not
+  `tokenizer.json`) via `ensureTokenizerFile`'s new `filename` param.
+- **`isMistralTekken` was built ID-by-ID against the live catalog, not a broad regex** — see
+  `model-family.md`'s landmine list (Nemotron/`nvidia/` are Llama not Mistral; Mixtral/7B/first-gen
+  Codestral/`-v0.x` are legacy SentencePiece; `-embed`/`-ocr`/`-moderation`/`voxtral`/`saba` are
+  non-chat; `mistral-large-2407`/`-2411` predate Tekken). Re-check the catalog before widening it.
 
-### Phase 6 — Cleanup and verification
+**Notes (deviations from the pre-investigation plan):**
 
-- Confirm the fallback estimate is now only reached for genuinely unmapped models, not families
-  that should have exact loaders.
-- There is **no interactive surface to pty-check in this task** — the footer shows no token count
-  yet. Validation is by unit tests: exact known counts per family (`tests/tokenizers/**`), and the
-  background-preload/cache behavior (family resolved, encoder compiled and cached, sync count reads
-  it; unresolved/in-flight/offline falls back without throwing). If you want a live smoke test of
-  the engine before the live-counter task exists, add a throwaway script under the scratchpad dir
-  (not committed), don't wire a temporary footer readout.
+- **Magistral-Small-2506 is `v11`, not the guessed v13** — the version-label guesses in the original
+  plan text were approximate; the byte-identical-vocab check is what actually earned "one repo."
+- **Verified against Mistral's canonical `tokenizer.json`, not `mistral-common`.** `pip install
+  mistral-common` compiles native deps (pydantic-core) and did not finish in a practical window on
+  this Termux env; the HF-tokenizer.json diff is an equivalent oracle using already-installed deps.
+- **The `isMistralTekken` predicate excludes two ambiguous cases conservatively** (fallback, not a
+  possibly-wrong exact count): bare `mistral-large-latest` (which "latest" points at drifts) and the
+  `mistral-code-*` API models (Codestral-based but unconfirmed). Widen later if the server-diff
+  confirms them.
+- **Proprietary `mistral:` API models are covered by the shared vocab but not yet server-diff'd.**
+  End-to-end smoke through the production path (`preloadTokenizerFor` → real `tekken.json` download →
+  exact `countTokens` diverging from the fallback) passed for `mistral:mistral-small-2506`. The
+  `scripts/verify-local-tokenizers.ts --model mistral` differential-vs-server delta against the live
+  `mistral:` provider is deferred to Phase 5 as the ground-truth confirmation for the API-only models.
+
+Ends with `npm.cmd test` green.
+
+### Phase 5 — Cleanup and verification ✅ COMPLETE
+
+Closed the Phase 4 deferral (the live Mistral server-diff) and confirmed the fallback is only
+reached for genuinely unmapped models. The single code change was to `scripts/verify-local-tokenizers.ts`
+(no `src/` change, so no map page needed one). `npm test` is green; `docs:generate` is clean.
+
+**What was done:**
+
+- **The verify script gained a Tekken branch.** `verify-local-tokenizers.ts`'s `loadExactEncoder`
+  handled only GPT-OSS and the `HF_TOKENIZER_REPO` families — the Tekken family fell through to the
+  `else` branch and threw "no configured HF tokenizer repo," so the whole modern-Mistral line was
+  unmeasurable. Added a `MISTRAL_TEKKEN_FAMILY` case (`ensureTokenizerFile(..., TEKKEN_FILENAME)` →
+  `loadTekkenEncoder`) mirroring the never-fallback contract of the other branches, and updated the
+  header comment's family list. This was the actual gap blocking the deferred diff, not a side-note.
+- **Fallback-only-for-unmapped confirmed via `--dry-run`** (load-success is the pass criterion, not
+  count-difference — GPT-OSS is documented numerically identical to the fallback, so a
+  count-difference check would false-flag it). All 53 selectable exact-tokenizer models across every
+  family (gpt-oss, llama-3, deepseek-v4, glm-4, mistral-tekken; deepseek-v3 had no live selectable
+  model but is Phase-3-verified) compiled their exact encoder with **zero `load-error`s**. The
+  unmapped exclusions (Kimi, `*-distill`, `glm-*-flash`, pre-Tekken Mistral) are each documented
+  with a reason in `model-family.ts` — unmapped on purpose, not gaps.
+- **Live Mistral server-diff (the Phase 4 deferral) passed 12/12.** `verify-local-tokenizers.ts
+  --model "mistral:"` against the live `mistral:` provider: every measured proprietary API model
+  (`mistral-medium-2505/2508/2604`, `mistral-tiny-2407`, `codestral-2508`, `devstral-2512`,
+  `mistral-large-2512`, `ministral-3b/8b/14b-2512`, `magistral-small-2509`, `mistral-small-2506`)
+  matched Mistral's own `usage.promptTokens` delta **to the token**. The 2 unmeasured models were
+  transient HTTP 504s (provider-side), not tokenizer mismatches. The Phase 4 note's "shared vocab
+  but not yet server-diff'd" caveat for the API-only models is now retired.
+
+**Notes:**
+
+- No unit test was added for `count.ts`'s `loadTekkenFamily` glue: the backend
+  (`backends/tekken.test.ts`) and the tekken.json download path (`download-tokenizer.test.ts`'s
+  "non-default filename" case) are both covered directly, and `loadTekkenFamily` is a two-line wire
+  identical in shape to the HF path already exercised by `count.test.ts`. Forcing a filename-conditional
+  mock into `count.test.ts` for it would violate `docs/unit-tests.md`'s anti-bloat rule for no new
+  coverage. (Judgment call, documented rather than silently skipped.)
+- The `mistral:` provider is **not** flagged `paid` in `registry-data.ts` (only `openai`/`anthropic`
+  are), so the script's paid-provider filter does not drop it — the Tekken branch alone was enough
+  to surface the API models.
 - Note for the live-counter task: whether to visually distinguish exact vs. estimated counts (e.g.
   a marker character) is an open UI decision that belongs to *that* task, since it owns the footer
   surface — not decided here.
-- Final `npm.cmd test` green, `npm run docs:generate` clean, `git diff --name-only` reviewed for
-  map pages needing updates.
+
+Ends with `npm.cmd test` green.

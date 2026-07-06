@@ -18,6 +18,12 @@ DEEPSEEK_V4_FAMILY: 'deepseek-v4'
 
 GLM4_FAMILY: 'glm-4'
 
+MISTRAL_TEKKEN_FAMILY: 'mistral-tekken'
+
+MISTRAL_TEKKEN_REPO: 'mistralai/Mistral-Nemo-Instruct-2407'
+
+TEKKEN_FILENAME: 'tekken.json'
+
 HF_TOKENIZER_REPO: Partial<Record<string, string>>
 
 resolveTokenizerFamily(modelId: string): string | null
@@ -26,8 +32,9 @@ resolveTokenizerFamily(modelId: string): string | null
 
 ## Export notes
 
-- `resolveTokenizerFamily` resolves, in order: GPT-OSS (regex on `gpt-oss`, matched against real fetched model IDs across Groq/OpenRouter/NVIDIA/Cerebras), DeepSeek V4, DeepSeek V3, Llama 3.x, GLM-4 — everything else falls back to the generic tiktoken estimate. Legacy Llama/Mistral (SentencePiece) and Mistral Tekken are still unimplemented (later phases).
-- `HF_TOKENIZER_REPO`: the family→canonical-HF-repo-ID map consumed by `count.ts`'s `preloadTokenizerFor` and `download-tokenizer.ts`. Every entry was verified live against the HF API (content-hash compared across sibling model versions) before being committed — not guessed from model names. See "Phase 3 verification trail" below before trusting or extending this map.
+- `resolveTokenizerFamily` resolves, in order: GPT-OSS (regex on `gpt-oss`, matched against real fetched model IDs across Groq/OpenRouter/NVIDIA/Cerebras), DeepSeek V4, DeepSeek V3, Llama 3.x, GLM-4, Mistral Tekken — everything else falls back to the generic tiktoken estimate. Legacy Llama/Mistral (SentencePiece) stays unimplemented (folds cleanly into the fallback).
+- `HF_TOKENIZER_REPO`: the family→canonical-HF-repo-ID map consumed by `count.ts`'s `preloadTokenizerFor` and `download-tokenizer.ts`. Every entry was verified live against the HF API (content-hash compared across sibling model versions) before being committed — not guessed from model names. See "Phase 3 verification trail" below before trusting or extending this map. Tekken is deliberately **not** in this map — it fetches a different repo file (`tekken.json`), so its repo/filename constants (`MISTRAL_TEKKEN_REPO`, `TEKKEN_FILENAME`) sit alongside it and `count.ts` loads it through `backends/tekken.ts`.
+- **`isMistralTekken` covers the modern Mistral line** (NeMo-era and newer: Ministral, Mistral Small 3.x/4, Magistral, Devstral, modern Codestral, Pixtral, Mistral Medium 3.x, `mistral-vibe-cli`, `mistral-large-2512`/`-3`, and proprietary `mistral:` API models). Built ID-by-ID against the live catalog with hard excludes first, because the naming has landmines: NVIDIA **Nemotron** and anything under `nvidia/` are Llama-family despite the "nemo" substring; Mixtral / Mistral-7B / first-gen Codestral / any `-v0.x` are legacy SentencePiece; `-embed`/`-ocr`/`-moderation`/`voxtral`/`saba` are non-chat; and `mistral-large-2407`/`-2411` predate Tekken (they ship `tokenizer.json` + SentencePiece, no `tekken.json`). One canonical repo covers the whole line — Nemo (v3) and Magistral (v11) have byte-identical used-vocab (verified 2026-07-06).
 - **Kimi K2 is deliberately unmapped.** The plan assumed a "converted `tokenizer.json`" existed; live-checking `moonshotai/Kimi-K2-Instruct` and every variant/mirror repo (K2-Thinking, K2.5/2.6/2.7, unsloth, mlx-community) found none — Moonshot ships only a raw `tiktoken.model` ranks file plus a custom `tokenization_kimi.py` loader. That's tiktoken-family machinery (same shape as Mistral Tekken), not this HF-fast-tokenizer backend. Deferred, not silently dropped — surfaced to the user at the end of Phase 3.
 - **DeepSeek splits into two families, not one.** V3/V3.1/V3.2/R1 share one tokenizer (`deepseek-ai/DeepSeek-V3`); V4-Pro/V4-Flash retrained the vocab (`deepseek-ai/DeepSeek-V4-Pro`, confirmed via a different content hash and a ~1.5MB-smaller file). `deepseek-r1-distill-*` models are excluded from both — they're fine-tunes distilled onto a different base model's tokenizer (Llama/Qwen), which this resolver doesn't try to guess.
 - **GLM-4 covers only the verified 4.5-4.7 main line** (including `-air`/`-v` vision variants, confirmed identical tokenizer content hash across `GLM-4.5-Air`/`GLM-4.6`/`GLM-4.7`/`GLM-4.5V`/`GLM-4.6V`). `-flash` variants and pre-4.5 releases (e.g. `glm-4-9b-chat`) use a different tokenizer and are excluded.
@@ -45,6 +52,7 @@ Every repo/hash claim above was checked live against `https://huggingface.co/api
 - [count.md](count.md): sole consumer; looks up the resolved family in its encoder cache, and reads `HF_TOKENIZER_REPO` to drive `preloadTokenizerFor`'s download step.
 - [backends/tiktoken.md](backends/tiktoken.md): the GPT-OSS family's encoder.
 - [backends/bpe-json.md](backends/bpe-json.md): the encoder every `HF_TOKENIZER_REPO` family loads into.
+- [backends/tekken.md](backends/tekken.md): the encoder the `MISTRAL_TEKKEN_FAMILY` loads into.
 - `providers/model-quirks.ts`: same one-predicate-per-case pattern, different concern (request-body quirks, not tokenizer selection).
 
 ## Update Triggers

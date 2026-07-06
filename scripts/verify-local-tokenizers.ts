@@ -3,7 +3,7 @@
  * Verifies the *exact* local tokenizers against real provider token accounting.
  *
  * For every selectable free model whose family has an exact local tokenizer
- * backend (gpt-oss, llama-3, deepseek-v3/v4, glm-4 — see
+ * backend (gpt-oss, llama-3, deepseek-v3/v4, glm-4, mistral-tekken — see
  * src/tokenizers/model-family.ts), it measures how many tokens a fixed sample
  * of text costs, two ways:
  *
@@ -149,8 +149,9 @@ async function main(): Promise<void> {
   const { modelPreference } = await import('../src/cli/model-screen.js');
   const { resolveModel, PROVIDER_REGISTRY } = await import('../src/providers/registry.js');
   const { hasExactTokenizer } = await import('../src/tokenizers/count.js');
-  const { resolveTokenizerFamily, GPT_OSS_FAMILY, HF_TOKENIZER_REPO } = await import('../src/tokenizers/model-family.js');
+  const { resolveTokenizerFamily, GPT_OSS_FAMILY, HF_TOKENIZER_REPO, MISTRAL_TEKKEN_FAMILY, MISTRAL_TEKKEN_REPO, TEKKEN_FILENAME } = await import('../src/tokenizers/model-family.js');
   const { loadBpeJsonEncoder } = await import('../src/tokenizers/backends/bpe-json.js');
+  const { loadTekkenEncoder } = await import('../src/tokenizers/backends/tekken.js');
   const { getGptOssEncoder } = await import('../src/tokenizers/backends/tiktoken.js');
   const { ensureTokenizerFile } = await import('../src/tokenizers/download-tokenizer.js');
   const { generateText } = await import('ai');
@@ -167,6 +168,13 @@ async function main(): Promise<void> {
     let encoder: TokenizerEncoder;
     if (family === GPT_OSS_FAMILY) {
       encoder = getGptOssEncoder();
+    } else if (family === MISTRAL_TEKKEN_FAMILY) {
+      // Tekken fetches tekken.json (not tokenizer.json) from one shared repo and
+      // parses it through backends/tekken.ts — same never-fallback contract: a
+      // missing download or unparseable file is a hard error, not an estimate.
+      const path = await ensureTokenizerFile(family, MISTRAL_TEKKEN_REPO, TEKKEN_FILENAME);
+      if (!path) throw new Error(`could not download ${TEKKEN_FILENAME} for ${family} (${MISTRAL_TEKKEN_REPO})`);
+      encoder = loadTekkenEncoder(path); // throws on an empty/corrupt cache file
     } else {
       const repoId = HF_TOKENIZER_REPO[family];
       if (!repoId) throw new Error(`family "${family}" has no configured HF tokenizer repo`);

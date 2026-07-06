@@ -47,20 +47,24 @@ export function downloadFile(url: string, dest: string): Promise<void> {
 
 // Cache path is keyed by family (not repo ID or model ID) to match
 // count.ts's encoderCache key — one family currently maps to one canonical repo.
-export function tokenizerCachePath(family: TokenizerFamily): string {
-  return join(getStoreDir(), 'tokenizers', family, 'tokenizer.json');
+// `filename` is the HF repo file to fetch/store: the HF-fast families use the
+// default `tokenizer.json`; the Tekken family passes `tekken.json` (a different
+// file in the same repo layout), so it caches beside it without collision.
+export function tokenizerCachePath(family: TokenizerFamily, filename = 'tokenizer.json'): string {
+  return join(getStoreDir(), 'tokenizers', family, filename);
 }
 
-// Downloads a canonical HF repo's tokenizer.json if not already cached under
-// .freecode/tokenizers/<family>/tokenizer.json. Returns the cached path, or
+// Downloads a canonical HF repo file if not already cached under
+// .freecode/tokenizers/<family>/<filename>. Returns the cached path, or
 // null (never throws) if the download fails — callers fall back to the
 // generic estimate on null.
 export async function ensureTokenizerFile(
   family: TokenizerFamily,
   repoId: string,
+  filename = 'tokenizer.json',
   downloadFn: (url: string, dest: string) => Promise<void> = downloadFile,
 ): Promise<string | null> {
-  const dest = tokenizerCachePath(family);
+  const dest = tokenizerCachePath(family, filename);
   // A 0-byte file means a previous download died before its first body byte
   // (interrupted process, or a redirect/status we mishandled). existsSync alone
   // would pin us to that broken file forever — the exact registry would think
@@ -74,7 +78,7 @@ export async function ensureTokenizerFile(
   // the same directory; the temp lives beside dest so it can't cross a fs.
   const tmp = `${dest}.download`;
   try {
-    await downloadFn(`https://huggingface.co/${repoId}/resolve/main/tokenizer.json`, tmp);
+    await downloadFn(`https://huggingface.co/${repoId}/resolve/main/${filename}`, tmp);
     if (!existsSync(tmp) || statSync(tmp).size === 0) { rmSync(tmp, { force: true }); return null; }
     renameSync(tmp, dest);
     return dest;

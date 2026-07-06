@@ -1,12 +1,14 @@
 import type { CoreMessage } from 'ai';
-import { getEncoding } from 'js-tiktoken';
+import { getEncoding, type Tiktoken } from 'js-tiktoken';
 import { countContextTokens } from '../chat-format.js';
 import type { TokenizerEncoder } from '../count.js';
 
-// Wraps a bundled js-tiktoken encoding as a TokenizerEncoder. Shared by every
-// tiktoken-based family (starting with GPT-OSS here; Mistral Tekken reuses
-// this same wrapper once its vocab/merges are parsed out of tekken.json).
-export function createTiktokenEncoder(encoding: ReturnType<typeof getEncoding>): TokenizerEncoder {
+// Wraps any js-tiktoken encoding as a TokenizerEncoder. Shared by every
+// tiktoken-based family: a bundled encoding via getEncoding (GPT-OSS here), or a
+// Tiktoken constructed directly from parsed ranks (Mistral Tekken's tekken.json,
+// see backends/tekken.ts). Typed as Tiktoken, not `ReturnType<typeof getEncoding>`,
+// so a directly-constructed instance is accepted.
+export function createTiktokenEncoder(encoding: Tiktoken): TokenizerEncoder {
   return {
     countMessages(messages: CoreMessage[]): number {
       return countContextTokens(messages, (text) => encoding.encode(text, [], []).length);

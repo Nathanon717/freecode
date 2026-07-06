@@ -1,9 +1,18 @@
 import type { CoreMessage } from 'ai';
 import { loadBpeJsonEncoder } from './backends/bpe-json.js';
 import { getGptOssEncoder } from './backends/tiktoken.js';
+import { loadTekkenEncoder } from './backends/tekken.js';
 import { ensureTokenizerFile } from './download-tokenizer.js';
 import { estimateContextTokens } from './fallback-estimate.js';
-import { GPT_OSS_FAMILY, HF_TOKENIZER_REPO, resolveTokenizerFamily, type TokenizerFamily } from './model-family.js';
+import {
+  GPT_OSS_FAMILY,
+  HF_TOKENIZER_REPO,
+  MISTRAL_TEKKEN_FAMILY,
+  MISTRAL_TEKKEN_REPO,
+  TEKKEN_FILENAME,
+  resolveTokenizerFamily,
+  type TokenizerFamily,
+} from './model-family.js';
 
 export interface TokenizerEncoder {
   countMessages(messages: CoreMessage[]): number;
@@ -40,11 +49,18 @@ async function loadHfEncoder(family: TokenizerFamily, repoId: string): Promise<v
   if (path) encoderCache.set(family, loadBpeJsonEncoder(path));
 }
 
+// Same ensure-download → load → cache shape as loadHfEncoder, but fetches the
+// repo's tekken.json (not tokenizer.json) and builds a tiktoken encoder from it.
+async function loadTekkenFamily(family: TokenizerFamily): Promise<void> {
+  const path = await ensureTokenizerFile(family, MISTRAL_TEKKEN_REPO, TEKKEN_FILENAME);
+  if (path) encoderCache.set(family, loadTekkenEncoder(path));
+}
+
 // Resolves the family and compiles/caches its encoder in the background so
 // countTokens can read it synchronously on the next call. GPT-OSS resolves
 // immediately (bundled); the HF fast-tokenizer families (Llama 3.x, DeepSeek
-// V3/V4, GLM-4.5-4.7) go through ensure-download → load → cache, since Phase 3
-// is the first to actually fetch tokenizer files over the network. Never
+// V3/V4, GLM-4.5-4.7) and the modern Mistral Tekken family go through
+// ensure-download → load → cache over the network. Never
 // throws — an unresolved family or a download/build failure just leaves
 // encoderCache unset, which keeps countTokens on the fallback path.
 export async function preloadTokenizerFor(modelId: string): Promise<void> {
@@ -54,6 +70,8 @@ export async function preloadTokenizerFor(modelId: string): Promise<void> {
     try {
       if (family === GPT_OSS_FAMILY) {
         encoderCache.set(family, getGptOssEncoder());
+      } else if (family === MISTRAL_TEKKEN_FAMILY) {
+        await loadTekkenFamily(family);
       } else {
         const repoId = HF_TOKENIZER_REPO[family];
         if (repoId) await loadHfEncoder(family, repoId);

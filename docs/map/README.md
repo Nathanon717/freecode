@@ -113,13 +113,14 @@ Format: filename (linecount)
   - [`types.ts`](providers/types.md) (54) — Type Definitions
 - `src/tokenizers/backends/`
   - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) (36) — HF Fast-Tokenizer (tokenizer.json) Backend
-  - [`tiktoken.ts`](tokenizers/backends/tiktoken.md) (41) — Tiktoken-Backed Exact Encoders
+  - [`tekken.ts`](tokenizers/backends/tekken.md) (48) — Mistral Tekken (tekken.json) Backend
+  - [`tiktoken.ts`](tokenizers/backends/tiktoken.md) (43) — Tiktoken-Backed Exact Encoders
 - `src/tokenizers/`
   - [`chat-format.ts`](tokenizers/chat-format.md) (42) — Shared Chat-Overhead Formula
-  - [`count.ts`](tokenizers/count.md) (70) — Tokenizer Engine Public Surface
-  - [`download-tokenizer.ts`](tokenizers/download-tokenizer.md) (86) — HF Tokenizer File Cache/Download
+  - [`count.ts`](tokenizers/count.md) (88) — Tokenizer Engine Public Surface
+  - [`download-tokenizer.ts`](tokenizers/download-tokenizer.md) (90) — HF Tokenizer File Cache/Download
   - [`fallback-estimate.ts`](tokenizers/fallback-estimate.md) (30) — Generic Tiktoken Fallback Estimator
-  - [`model-family.ts`](tokenizers/model-family.md) (70) — Tokenizer Family Resolver
+  - [`model-family.ts`](tokenizers/model-family.md) (112) — Tokenizer Family Resolver
 - `src/util/`
   - [`errors.ts`](util/errors.md) (236) — Shared Error Utilities
   - [`guards.ts`](util/guards.md) (4) — Type Guard Utilities

@@ -1,6 +1,6 @@
 # src/tokenizers/backends/tiktoken.ts - Tiktoken-Backed Exact Encoders
 
-**Role:** Wraps a bundled `js-tiktoken` encoding as a `TokenizerEncoder`, and registers the first exact family (GPT-OSS) into `count.ts`'s `encoderCache`. `createTiktokenEncoder` is the reusable wrapper: Phase 5 (Mistral Tekken) reuses it once `tekken.json`'s vocab/merges are parsed into a `js-tiktoken` encoding.
+**Role:** Wraps a `js-tiktoken` encoding as a `TokenizerEncoder`, and registers the GPT-OSS exact family into `count.ts`'s `encoderCache`. `createTiktokenEncoder` is the reusable wrapper — typed to accept any `Tiktoken`, whether from `getEncoding` (GPT-OSS) or constructed directly from parsed ranks. The Mistral Tekken backend ([tekken.md](tekken.md)) reuses it, building a `Tiktoken` from `tekken.json`'s vocab.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -28,6 +28,7 @@ GPT-OSS's real tokenizer is `o200k_harmony`, not `o200k_base`. Verified against 
 ## Used By
 
 - [count.md](../count.md): `preloadTokenizerFor` registers `getGptOssEncoder()` into `encoderCache` for the GPT-OSS family.
+- [tekken.md](tekken.md): `loadTekkenEncoder` feeds its `tekken.json`-derived `Tiktoken` through `createTiktokenEncoder`.
 
 ## Update Triggers
 
