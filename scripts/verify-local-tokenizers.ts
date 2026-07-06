@@ -54,9 +54,10 @@
  * lowest free quotas. Scale it with `--repeat N` for a heavier probe.
  *
  * Usage:
- *   npx tsx scripts/verify-local-tokenizers.ts            # run against live free providers
- *   npx tsx scripts/verify-local-tokenizers.ts --dry-run  # local exact counts only, no API calls
- *   npx tsx scripts/verify-local-tokenizers.ts --repeat 4 # 4x larger sample
+ *   npx tsx scripts/verify-local-tokenizers.ts                      # all live free providers
+ *   npx tsx scripts/verify-local-tokenizers.ts --dry-run            # local exact counts only, no API calls
+ *   npx tsx scripts/verify-local-tokenizers.ts --repeat 4           # 4x larger sample
+ *   npx tsx scripts/verify-local-tokenizers.ts --model gpt-oss-20b  # only models matching this substring
  */
 import { writeFileSync } from 'fs';
 import { spawnSync } from 'child_process';
@@ -101,12 +102,14 @@ Unicode: café, naïve, Zürich, 日本語, Ελληνικά, 🚀🔥, — em-d
 snake_case, camelCase, PascalCase, SCREAMING_SNAKE, kebab-case-token.
 `;
 
-function parseArgs(): { dryRun: boolean; repeat: number } {
+function parseArgs(): { dryRun: boolean; repeat: number; model: string | null } {
   const argv = process.argv.slice(2);
   const dryRun = argv.includes('--dry-run');
   const repeatIdx = argv.indexOf('--repeat');
   const repeat = repeatIdx !== -1 ? Math.max(1, Number(argv[repeatIdx + 1]) || 1) : 1;
-  return { dryRun, repeat };
+  const modelIdx = argv.indexOf('--model');
+  const model = modelIdx !== -1 ? (argv[modelIdx + 1] ?? '').trim() || null : null;
+  return { dryRun, repeat, model };
 }
 
 interface Row {
@@ -135,7 +138,7 @@ function describeError(error: unknown): string {
 }
 
 async function main(): Promise<void> {
-  const { dryRun, repeat } = parseArgs();
+  const { dryRun, repeat, model } = parseArgs();
   const sample = SAMPLE_UNIT.repeat(repeat);
 
   tryInjectDoppler();
@@ -180,13 +183,26 @@ async function main(): Promise<void> {
   // OpenAI-compatible providers anyway, so this drops nothing we can measure.
   const paidProviderIds = new Set(PROVIDER_REGISTRY.filter(p => p.paid).map(p => p.id));
 
-  const items = (await getSelectableModels())
+  const allExact = (await getSelectableModels())
     .filter(item => !paidProviderIds.has(item.providerId))
     .filter(item => hasExactTokenizer(item.modelId));
 
+  // `--model <substr>` narrows to a single model (or a handful): case-insensitive
+  // substring match against the "provider:modelId" preference, the same string
+  // the results table prints, so you can copy one straight back in.
+  const needle = model?.toLowerCase();
+  const items = needle
+    ? allExact.filter(item => modelPreference(item).toLowerCase().includes(needle))
+    : allExact;
+
   if (items.length === 0) {
-    console.error('No selectable free models with an exact local tokenizer found.');
-    console.error('(Need configured free-provider API keys; see /keys in the app.)');
+    if (needle && allExact.length > 0) {
+      console.error(`No exact-tokenizer model matches --model "${model}". Available:`);
+      for (const item of allExact) console.error(`  ${modelPreference(item)}`);
+    } else {
+      console.error('No selectable free models with an exact local tokenizer found.');
+      console.error('(Need configured free-provider API keys; see /keys in the app.)');
+    }
     process.exitCode = 1;
     return;
   }
@@ -264,9 +280,10 @@ async function main(): Promise<void> {
   const matched = rows.filter(r => r.status === 'match').length;
   const measured = rows.filter(r => r.status === 'match' || r.status === 'mismatch').length;
   const loadErrors = rows.filter(r => r.status === 'load-error');
+  const scope = `repeat=${repeat}${model ? `, model~${model}` : ''}`;
   const header = dryRun
-    ? `Dry run — ${total} exact-tokenizer models (repeat=${repeat})`
-    : `${matched}/${measured} measured models matched their provider exactly (${total} targeted, repeat=${repeat})`;
+    ? `Dry run — ${total} exact-tokenizer models (${scope})`
+    : `${matched}/${measured} measured models matched their provider exactly (${total} targeted, ${scope})`;
 
   const lines = [
     header,

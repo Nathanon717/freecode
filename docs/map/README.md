@@ -117,7 +117,7 @@ Format: filename (linecount)
 - `src/tokenizers/`
   - [`chat-format.ts`](tokenizers/chat-format.md) (42) — Shared Chat-Overhead Formula
   - [`count.ts`](tokenizers/count.md) (70) — Tokenizer Engine Public Surface
-  - [`download-tokenizer.ts`](tokenizers/download-tokenizer.md) (51) — HF Tokenizer File Cache/Download
+  - [`download-tokenizer.ts`](tokenizers/download-tokenizer.md) (86) — HF Tokenizer File Cache/Download
   - [`fallback-estimate.ts`](tokenizers/fallback-estimate.md) (30) — Generic Tiktoken Fallback Estimator
   - [`model-family.ts`](tokenizers/model-family.md) (70) — Tokenizer Family Resolver
 - `src/util/`

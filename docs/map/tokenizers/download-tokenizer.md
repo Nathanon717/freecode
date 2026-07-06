@@ -17,8 +17,8 @@ ensureTokenizerFile(family: string, repoId: string, downloadFn?: (url: string, d
 ## Export notes
 
 - `tokenizerCachePath`: keyed by **family**, not repo ID or model ID — mirrors `count.ts`'s `encoderCache` key, since (so far) one family maps to exactly one canonical repo.
-- `ensureTokenizerFile`: returns the cached path immediately if it already exists (no `downloadFn` call); otherwise downloads from `https://huggingface.co/<repoId>/resolve/main/tokenizer.json`. Never throws — a failed download returns `null`, and `count.ts` treats that the same as an unresolved family (fallback estimate).
-- `downloadFile`: plain HTTPS GET with redirect-following, same shape as `humaneval-data.ts`'s `downloadFile`. Not shared between the two modules on purpose — this one has no gzip/JSONL concerns, and cross-module reuse would couple `tokenizers/` to `eval/` for a ~15-line helper.
+- `ensureTokenizerFile`: returns the cached path only if it already exists **and is non-empty** (a 0-byte leftover from a failed download is treated as absent and re-fetched — see `docs/bug log/05-07-2026.md`); otherwise downloads from `https://huggingface.co/<repoId>/resolve/main/tokenizer.json`. Downloads land on a sibling `<dest>.download` temp and are promoted onto `dest` via atomic `rename` only after a non-empty check, so `dest` is only ever a complete file. Never throws — a failed/empty download removes the temp and returns `null`, which `count.ts` treats the same as an unresolved family (fallback estimate).
+- `downloadFile`: plain HTTPS GET with redirect-following, same shape as `humaneval-data.ts`'s `downloadFile`. Follows the full redirect family (301/302/303/307/308) and resolves **relative** `Location` headers against the current URL — HF's CDN redirect is a 307 to a relative `/api/resolve-cache/...` path, and following only 301/302 (or treating the relative path as absolute) is what left the 0-byte files. Removes its partial output on any failure. Not shared with `humaneval-data.ts` on purpose — this one has no gzip/JSONL concerns, and cross-module reuse would couple `tokenizers/` to `eval/` for a small helper.
 
 ## Key Neighbors
 
