@@ -133,6 +133,22 @@ async function runServer(id: string, cols: number, rows: number): Promise<void> 
   if (!await driver.waitForText('for commands', 20_000)) process.exit(1);
   await driver.settle(400);
 
+  // The prompt text paints before the raw-mode key handler is actually live
+  // (ConPTY on Windows lags here in particular). Probe with a harmless space
+  // keystroke until it registers — the empty-buffer placeholder disappearing
+  // confirms input is wired up — then clear it and confirm ESC restored the
+  // placeholder too, so a cosmetic echo covering the slash (cooked mode,
+  // handler still dead) can't be mistaken for a live handler.
+  for (let i = 0; i < 40; i++) {
+    driver.send(' ');
+    await driver.settle(150);
+    if (!driver.snapshot().join('\n').includes('/ for commands')) {
+      driver.send('\x1b');
+      await driver.settle(150);
+      if (driver.snapshot().join('\n').includes('/ for commands')) break;
+    }
+  }
+
   const fp = flagPath(id);
   let lastActivityAt = Date.now();
 
@@ -235,11 +251,12 @@ const KEY_ALIASES: Record<string, string> = {
 };
 
 // Resolve a single send argument: named key aliases map to their escape sequences;
-// slash commands get Enter appended so callers don't need a separate step.
+// slash commands get Enter appended so callers don't need a separate step. A bare
+// "/" is excluded — that just opens the autocomplete list and shouldn't submit.
 function resolveKey(arg: string): string {
   const alias = KEY_ALIASES[arg.toLowerCase()];
   if (alias !== undefined) return alias;
-  if (arg.startsWith('/')) return arg + '\r';
+  if (arg.startsWith('/') && arg.length > 1) return arg + '\r';
   return arg;
 }
 
@@ -292,7 +309,7 @@ async function cmdSend(
   // slash-prefixed commands like "/model" aren't mangled by MSYS path conversion.
   if (keys === '-') {
     keys = readFileSync(0, 'utf8');
-    if (keys.startsWith('/') && !keys.includes('\r') && !keys.includes('\n')) keys += '\r';
+    if (keys.startsWith('/') && keys.length > 1 && !keys.includes('\r') && !keys.includes('\n')) keys += '\r';
   }
   const res = await rpc(id, { type: 'send', keys, waitFor: opts.waitFor, quietMs: opts.quietMs });
   if ('error' in res) { console.error('Error:', res.error); process.exit(1); }

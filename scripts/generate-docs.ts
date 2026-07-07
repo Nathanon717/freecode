@@ -208,8 +208,8 @@ function scenarioReference(): string {
 function updateFile(path: string, update: (content: string) => string): boolean {
   const current = existsSync(join(ROOT, path)) ? readProjectFile(path) : '';
   const normalized = current.replace(/\r\n/g, '\n');
-  const next = `${update(normalized).trimEnd()}\n`;
-  if (current === next) return false;
+  const next = `${update(normalized).replace(/\r\n/g, '\n').trimEnd()}\n`;
+  if (normalized === next) return false;
 
   if (!CHECK) {
     writeProjectFile(path, next);

@@ -2,8 +2,6 @@
 
 No-cost CLI coding agent.
 
-## What It Does
-
 Freecode runs as an interactive REPL. You describe a coding task and the agent reads, edits, creates, and runs files on your behalf using a set of built-in tools.
 
 ## Providers
@@ -15,7 +13,6 @@ See [docs/providers.md](docs/providers.md) for the full provider and model table
 ## Requirements
 
 - Node.js 18+
-- Windows (primary). Linux is supported in Claude Code web containers -- see [docs/misc/claude_code_web.md](docs/misc/claude_code_web.md).
 
 ## Install
 
