@@ -95,7 +95,7 @@ Format: filename (linecount)
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (377) — Anthropic Cost Estimates
   - [`db-config-cache.ts`](providers/db-config-cache.md) (54) — DB Config Cache
-  - [`db.ts`](providers/db.md) (492) — SQLite Store (libSQL/Turso)
+  - [`db.ts`](providers/db.md) (499) — SQLite Store (libSQL/Turso)
   - [`fake.ts`](providers/fake.md) (424) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
   - [`model-cache.ts`](providers/model-cache.md) (105) — Model Cache
@@ -108,7 +108,7 @@ Format: filename (linecount)
   - [`cache.ts`](providers/quota/cache.md) (39) — Quota Cache
   - [`headers.ts`](providers/quota/headers.md) (370) — Provider Rate-Limit Header Parsing
 - `src/providers/`
-  - [`registry-data.ts`](providers/registry-data.md) (265) — Provider Registry Data
+  - [`registry-data.ts`](providers/registry-data.md) (311) — Provider Registry Data
   - [`registry.ts`](providers/registry.md) (397) — Provider Registry
   - [`types.ts`](providers/types.md) (54) — Type Definitions
 - `src/tokenizers/backends/`
