@@ -1,7 +1,6 @@
 {
   "name": "tty-config-esc",
   "description": "Submitting /config opens the standalone config editor; pressing Esc closes it, erases its screen, and restores the input prompt",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

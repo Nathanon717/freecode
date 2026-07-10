@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock",
+        "model": "gpt-freecode-test",
+        "messageCount": 1,
+        "mustContain": ["List docs/scripts"],
+        "toolsAvailable": ["list_dir"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["I'll list that directory."],
+        "toolCalls": [
+          { "name": "list_dir", "args": { "path": "docs/scripts" } }
+        ],
+        "usage": { "promptTokens": 20, "outputTokens": 6, "totalTokens": 26 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "messageCount": 3,
+        "mustContain": ["<tool_result name=\"list_dir\">"]
+      },
+      "response": {
+        "text": "Done listing.",
+        "usage": { "promptTokens": 30, "outputTokens": 4, "totalTokens": 34 }
+      }
+    }
+  ]
+}

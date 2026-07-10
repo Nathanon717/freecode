@@ -1,7 +1,6 @@
 {
   "name": "agent-create-fake",
   "description": "Fake LLM fixture drives an approved create tool call through the real agent loop",
-  "requiresLlm": false,
   "workspace": "temp",
   "model": "mock:gpt-freecode-test",
   "llmFixture": "agent-create-fake.llm.json",

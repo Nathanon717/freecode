@@ -1,7 +1,6 @@
 {
   "name": "tty-config-parsed-tools",
   "description": "Parsed tools setting appears only on the Model tab (absent from Global and Provider tabs)",
-  "requiresLlm": false,
   "config": { "defaultModel": "mock:gpt-freecode-test" },
   "tty": {
     "cols": 80,

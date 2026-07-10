@@ -45,8 +45,7 @@ Use these ownership rules:
 - Provider facts belong in `src/providers/registry.ts`.
 - Slash command names and descriptions belong in `src/cli/slash-commands.ts`.
 - Npm script facts belong in `package.json`.
-- Scenario names, descriptions, workspaces, and LLM classification belong in `tests/scenarios/*.scenario.json`.
-- Why a decision exists belongs in an ADR under `docs/architecture/adr/`.
+- Scenario names, descriptions, and workspaces belong in `tests/scenarios/*.scenario.json`.
 
 Generated docs should report facts. Human-written docs should explain how to use those facts.
 
@@ -63,26 +62,12 @@ The map checker in `scripts/check-map.ts` enforces these structural rules:
 - every source map page is linked from `docs/map/README.md`;
 - every source map page contains its generated exports block, and the README contains its generated structure block.
 
-## ADRs
-
-Architecture Decision Records live in `docs/architecture/adr/`.
-
-Create an ADR for durable decisions that future maintainers need to understand before changing a boundary, workflow, or user-visible policy. Good ADR topics include provider routing rules, verification policy, CLI ownership boundaries, or generated-docs policy.
-
-Do not create ADRs for routine fixes, small refactors, typo fixes, or implementation notes that belong near the code.
-
-To add one:
-
-1. Copy `docs/architecture/adr/template.md`.
-2. Name it with the next four-digit sequence and a short slug, for example `0005-generated-docs-policy.md`.
-3. Keep it short: context, decision, consequences.
-
 ## Examples
 
 - Adding a provider: update `src/providers/registry.ts`, config wiring if needed, then run `npm run docs:generate`.
 - Adding a slash command: update `src/cli/slash-commands.ts`, command dispatch behavior, a scenario if user-visible, then run `npm run docs:generate`.
 - Adding a scenario: add `tests/scenarios/*.scenario.json`, then run `npm run docs:generate`.
-- Changing verification policy: update `AGENTS.md`, affected npm scripts, and add or update an ADR.
+- Changing verification policy: update `AGENTS.md` and affected npm scripts.
 
 ## Review Checklist
 
@@ -91,4 +76,3 @@ Before reporting a docs-related or user-visible change complete:
 - Run `npm run docs:generate`.
 - Run `npm test` for changes that touch `src/` or scenario behavior.
 - Confirm generated sections were not hand-edited.
-- Confirm major architectural decisions are captured as ADRs.

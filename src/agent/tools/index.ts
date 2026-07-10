@@ -16,6 +16,7 @@ import {
   formatArgs,
   getTranscriptRuntimeOptions,
   writeToolCallHeader,
+  writeToolResultPreview,
   writeToolStepResult,
   type ToolStepResult,
 } from "../../cli/transcript-renderer.js";
@@ -31,6 +32,14 @@ type ToolExecuteFn = (
 export interface ToolCallPreview {
   name: string;
   args: Record<string, unknown>;
+  /**
+   * True when a read-only content preview was already flowed to the transcript
+   * (right after the header, before this confirmation call) for this tool call.
+   * Interactive UIs that draw a menu at fixed terminal rows near the bottom
+   * need this to pad clearance so they don't overwrite the preview's tail —
+   * see cli/tool-approval.ts.
+   */
+  previewedContent?: boolean;
 }
 
 export interface ToolCallConfirmation {
@@ -70,6 +79,7 @@ function withLogging(
   name: string,
   t: AnyCoreTool,
   promptTools = false,
+  previewState?: PreviewState,
 ): AnyCoreTool {
   if (!t.execute) return t;
   const original: ToolExecuteFn = t.execute as ToolExecuteFn;
@@ -79,6 +89,7 @@ function withLogging(
       args: Record<string, unknown>,
       opts: unknown,
     ): Promise<unknown> => {
+      if (previewState) previewState.suppressed = false;
       const { rationale, ...displayArgs } = args;
       writeToolCallHeader({
         name,
@@ -169,7 +180,9 @@ function withLogging(
         } else {
           stepResult = { kind: "text", result };
         }
-        writeToolStepResult(name, stepResult, getTranscriptRuntimeOptions());
+        if (!previewState?.suppressed) {
+          writeToolStepResult(name, stepResult, getTranscriptRuntimeOptions());
+        }
         return result;
       } catch (err) {
         if (isUserAbortError(err)) throw err;
@@ -190,10 +203,21 @@ function withLogging(
   };
 }
 
+// Tools whose read-only local action is safe to run before the user confirms —
+// the preview shown in the approval UI is the actual result, reused on approval
+// instead of re-executing. Never add a tool here that has a side effect beyond
+// reading (e.g. shell_exec, edit) — the approval UI would then act before consent.
+const PRECOMPUTE_BEFORE_CONFIRM = new Set(["read", "grep", "list_dir"]);
+
+interface PreviewState {
+  suppressed: boolean;
+}
+
 function withConfirmation(
   name: string,
   t: AnyCoreTool,
   confirmToolCall?: ConfirmToolCall,
+  previewState?: PreviewState,
 ): AnyCoreTool {
   if (!t.execute) return t;
   const original: ToolExecuteFn = t.execute as ToolExecuteFn;
@@ -207,7 +231,32 @@ function withConfirmation(
       if (!confirmToolCall) {
         return `Tool call denied: ${name} requires user confirmation, but no confirmation handler is available.`;
       }
-      const confirmation = await confirmToolCall({ name, args: displayArgs });
+
+      let precomputedResult: unknown;
+      let hasPrecomputed = false;
+      let previewedContent = false;
+
+      if (PRECOMPUTE_BEFORE_CONFIRM.has(name)) {
+        precomputedResult = await original(args, opts);
+        hasPrecomputed = true;
+        previewedContent = writeToolResultPreview(
+          name,
+          { kind: "text", result: precomputedResult },
+          getTranscriptRuntimeOptions(),
+        );
+      } else if (name === "create" && typeof args.content === "string") {
+        previewedContent = writeToolResultPreview(
+          name,
+          { kind: "create-content", content: args.content },
+          getTranscriptRuntimeOptions(),
+        );
+      }
+
+      const confirmation = await confirmToolCall({
+        name,
+        args: displayArgs,
+        previewedContent,
+      });
       const approved =
         typeof confirmation === "boolean"
           ? confirmation
@@ -220,6 +269,12 @@ function withConfirmation(
           : "";
         return `Tool call denied by user: ${name}(${formatArgs(filterArgs(name, displayArgs))})${userMessage}`;
       }
+
+      if (previewedContent && previewState) {
+        previewState.suppressed = true;
+      }
+
+      if (hasPrecomputed) return precomputedResult;
       return original(args, opts);
     },
   };
@@ -286,6 +341,7 @@ function wrap(
   confirmToolCall?: ConfirmToolCall,
   promptTools = false,
 ): AnyCoreTool {
+  const previewState: PreviewState = { suppressed: false };
   return withSerializedExecution(
     withLogging(
       name,
@@ -293,8 +349,10 @@ function wrap(
         name,
         useRationale ? withRationale(t) : t,
         confirmToolCall,
+        previewState,
       ),
       promptTools,
+      previewState,
     ),
     queueExecution,
   );

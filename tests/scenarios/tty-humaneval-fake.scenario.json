@@ -1,7 +1,6 @@
 {
   "name": "tty-humaneval-fake",
   "description": "Fake LLM completes HumanEval/0 \u2014 verifies data-load, agent, Python-check pipeline end-to-end",
-  "requiresLlm": false,
   "model": "mock:gpt-freecode-test",
   "llmFixture": "tty-humaneval-fake.llm.json",
   "humanEvalDataFixture": "humaneval-mini.jsonl.gz",

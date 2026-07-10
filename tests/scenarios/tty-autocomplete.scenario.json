@@ -1,7 +1,6 @@
 {
   "name": "tty-autocomplete",
   "description": "Interactive TUI: slash command suggestions, prefix filtering, tab completion, and submit reset, verified against the rendered screen",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

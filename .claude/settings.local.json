@@ -28,7 +28,8 @@
       "Bash(repomix --style xml -o repomix-out/docs.xml /root/freecode/docs)",
       "WebSearch",
       "Bash(npm view *)",
-      "Read(//root/**)"
+      "Read(//root/**)",
+      "Bash(npm.cmd run *)"
     ]
   }
 }

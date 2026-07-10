@@ -1,7 +1,6 @@
 {
   "name": "tty-fuzzy-completion",
   "description": "Fuzzy query /ss matches /status; Tab expands the buffer to /status, Enter submits and shows the status output",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

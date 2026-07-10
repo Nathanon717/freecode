@@ -22,7 +22,7 @@ askContinueAfterLimit(rl: Interface, count: number): Promise<boolean>
 
 ## Export notes
 
-- `confirmToolCallInteractive` — throws `UserAbortError` on Escape.
+- `confirmToolCallInteractive` — throws `UserAbortError` on Escape. The absolute-positioned menu (`drawToolApprovalMenuAbsolute`) draws only Approve/Deny, not a redundant header row — the tool call header is already flowed into the transcript by `agent/tools/index.ts` just above. When `preview.previewedContent` is true (a read-only tool preview was also flowed there) and the absolute-positioned menu is in play (`isFooterUIActive()`), pads 2 blank lines before drawing — otherwise the menu's fixed bottom rows can silently overwrite the tail of that preview once the scroll region fills. See the `Wrapper Stack` section of `agent/tools/index.md` for the full mechanism.
 - `parseScriptedToolChoice` — accepts `y/yes/approve/a` (approve) or `n/no/deny/d` (deny); returns `null` for anything else.
 
 ## Responsibilities
@@ -42,4 +42,4 @@ askContinueAfterLimit(rl: Interface, count: number): Promise<boolean>
 - `cli/session-modes.ts` — sole consumer; wires these into interactive and scripted modes.
 - `cli/raw-picker.ts` — provides `runRawKeySession` for the stdin lifecycle.
 - `cli/terminal-ui.ts` — footer/bottom-UI state queried for absolute positioning.
-- `agent/tools/index.ts` — `ToolCallPreview` / `ToolCallConfirmation` types, `filterArgs`/`formatArgs`.
+- `agent/tools/index.ts` — `ToolCallPreview` / `ToolCallConfirmation` types.

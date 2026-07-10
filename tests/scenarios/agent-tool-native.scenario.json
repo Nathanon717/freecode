@@ -1,7 +1,6 @@
 {
   "name": "agent-tool-native",
   "description": "Fake native LLM fixture drives a create tool call through the full multi-step streamText orchestration loop",
-  "requiresLlm": false,
   "workspace": "temp",
   "model": "mock-native:gpt-freecode-test",
   "llmFixture": "agent-tool-native.llm.json",

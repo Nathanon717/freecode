@@ -69,7 +69,7 @@ Use `/config` inside the REPL to set defaults interactively, or set `FREECODE_MO
 npm test
 ```
 
-This runs the TypeScript build, doc generation, all non-LLM scenario tests, and all unit tests. Build, doc, and scenario failures are blocking.
+This runs the TypeScript build, doc generation, all scenario tests, and all unit tests. Scenarios never call a live LLM. Build, doc, and scenario failures are blocking.
 
 ## Project Layout
 

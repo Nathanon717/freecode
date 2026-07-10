@@ -1,0 +1,33 @@
+{
+  "name": "tty-tool-approval-preview",
+  "description": "Interactive tool approval UI shows a dim, indented content preview for list_dir before the user confirms",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "tty-tool-approval-preview.llm.json",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type prompt",
+        "send": "List docs/scripts",
+        "screenContains": ["> List docs/scripts"]
+      },
+      {
+        "name": "submit - tool call preview renders before the approve/deny menu",
+        "send": "\r",
+        "waitFor": "test-all-models.md",
+        "screenContains": ["list_dir", "test-all-models.md", "time.md", "Approve", "Deny"]
+      },
+      {
+        "name": "approve - default selection confirms",
+        "send": "\r",
+        "waitFor": "Done listing.",
+        "screenContains": ["Done listing."]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

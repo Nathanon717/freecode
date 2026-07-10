@@ -1,7 +1,6 @@
 {
   "name": "tty-config-toggle",
   "description": "Space key toggles a boolean setting in the config editor; the changed value persists and the editor can be reopened without error",
-  "requiresLlm": false,
   "config": {
     "toolRationale": false
   },

@@ -11,11 +11,11 @@ import { assertScenarioExpectations } from './assertions/index.js';
 import type { FakeLlmTraceEvent, ScenarioExpectations, ToolTraceEvent } from './assertions/index.js';
 import type { TtyScenario } from './pty/run-tty-scenario.js';
 
-// Env vars to strip from all non-LLM test processes so provider API fetches
-// can't make live network requests.
+// Env vars to strip from every scenario subprocess so provider API fetches
+// can't make live network requests. Scenarios never call a live LLM.
 const PROVIDER_API_KEY_VARS = new Set(PROVIDER_REGISTRY.map(p => p.apiKeyEnvVar));
 
-// Base env with all provider API keys removed, used for every non-LLM subprocess.
+// Base env with all provider API keys removed, used for every scenario subprocess.
 const safeBaseEnv = Object.fromEntries(
   Object.entries(process.env).filter(([k]) => !PROVIDER_API_KEY_VARS.has(k)),
 );
@@ -28,7 +28,6 @@ const DIST_ENTRY = join(ROOT, 'dist', 'index.js');
 interface Scenario {
   name: string;
   description: string;
-  requiresLlm: boolean;
   workspace?: 'repo' | 'temp';
   config?: Record<string, unknown>;
   filesBefore?: Array<{ path: string; content: string }>;
@@ -84,8 +83,6 @@ function printCapturedOutput(stdout: string, stderr: string): void {
 }
 
 const args = process.argv.slice(2);
-const skipLlm = args.includes('--skip-llm');
-const onlyLlm = args.includes('--only-llm');
 const skipTty = args.includes('--skip-tty');
 const onlyTty = args.includes('--only-tty');
 const noBuild = args.includes('--no-build');
@@ -131,8 +128,6 @@ let passed = 0;
 let failed = 0;
 
 const runnableScenarios = scenarios.filter(({ scenario }) => {
-  if (skipLlm && scenario.requiresLlm) return false;
-  if (onlyLlm && !scenario.requiresLlm) return false;
   if (skipTty && scenario.tty) return false;
   if (onlyTty && !scenario.tty) return false;
   return true;
@@ -292,7 +287,7 @@ if (nonTtyScenarios.length > 0) {
             FREECODE_DB_AUTH_TOKEN: '',
             ...(scenario.llmFixture
               ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath, FREECODE_FAKE_LLM_TRACE: fakeTraceFile }
-              : scenario.requiresLlm ? {} : { FREECODE_NO_LLM: '1' }),
+              : { FREECODE_NO_LLM: '1' }),
             ...(scenario.expect.toolTrace ? { FREECODE_TRACE_JSON: traceFile } : {}),
           },
         });
@@ -351,7 +346,7 @@ if (nonTtyScenarios.length > 0) {
       if (scenario.expect.fakeLlmTrace) checks.push('fakeLlmTrace');
       console.log(`\n  ${chalk.cyan('RUN')}   ${chalk.cyan(scenario.name)}`);
       console.log(`        ${chalk.dim(scenario.description || '(no description)')}`);
-      console.log(`        type: ${chalk.yellow(scenario.requiresLlm ? 'LLM eval' : 'non-LLM verification')} | workspace: ${chalk.magenta(scenario.workspace ?? 'repo')}`);
+      console.log(`        type: ${chalk.yellow('scenario verification')} | workspace: ${chalk.magenta(scenario.workspace ?? 'repo')}`);
       console.log(`        checks: ${checks.length > 0 ? checks.join(', ') : chalk.dim('(none)')}`);
     }
 

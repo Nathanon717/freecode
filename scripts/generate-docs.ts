@@ -24,7 +24,6 @@ interface ScenarioDoc {
   file: string;
   name: string;
   description: string;
-  requiresLlm: boolean;
   workspace?: string;
 }
 
@@ -187,7 +186,6 @@ function readScenarios(): ScenarioDoc[] {
         file,
         name: scenario.name,
         description: scenario.description,
-        requiresLlm: Boolean(scenario.requiresLlm),
         workspace: scenario.workspace ?? 'repo',
       };
     });
@@ -197,12 +195,11 @@ function scenarioReference(): string {
   const rows = readScenarios().map(scenario => [
     `\`${scenario.file}\``,
     `\`${scenario.name}\``,
-    scenario.requiresLlm ? 'LLM eval' : 'Non-LLM verification',
     scenario.workspace ?? 'repo',
     scenario.description,
   ]);
 
-  return markdownTable(['File', 'Name', 'Type', 'Workspace', 'Description'], rows);
+  return markdownTable(['File', 'Name', 'Workspace', 'Description'], rows);
 }
 
 function updateFile(path: string, update: (content: string) => string): boolean {

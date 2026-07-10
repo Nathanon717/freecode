@@ -23,7 +23,7 @@ This table is generated from `package.json`.
 | `npm run test:pty` | `vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts` |
 | `npm run time` | `tsx scripts/time.ts` |
 | `npm run unit:watch` | `vitest` |
-| `npm run verify:scenarios` | `tsx tests/harness/run-scenarios.ts --no-build --skip-llm` |
+| `npm run verify:scenarios` | `tsx tests/harness/run-scenarios.ts --no-build` |
 <!-- END GENERATED NPM SCRIPTS -->
 
 ## Slash Commands

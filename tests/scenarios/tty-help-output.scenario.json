@@ -1,7 +1,6 @@
 {
   "name": "tty-help-output",
   "description": "Submitting /help renders the command list in the scroll region while the input prompt remains pinned at the bottom; slash suggestion overlay opens and restores cleanly over the output",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

@@ -1,7 +1,6 @@
 {
   "name": "slash-status",
   "description": "/status command shows API keys, DB, and Doppler info without crashing",
-  "requiresLlm": false,
   "turns": [
     { "input": "/status" }
   ],

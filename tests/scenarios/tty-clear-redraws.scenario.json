@@ -1,7 +1,6 @@
 {
   "name": "tty-clear-redraws",
   "description": "Submitting /clear clears the whole terminal, redraws the banner, and the cleared message appears in the raw stream",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

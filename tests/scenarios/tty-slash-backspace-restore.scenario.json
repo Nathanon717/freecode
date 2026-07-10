@@ -1,7 +1,6 @@
 {
   "name": "tty-slash-backspace-restore",
   "description": "After /help output fills the scroll region, typing / shows the suggestion overlay; backspace restores the help output exactly. The cycle repeats correctly a second time.",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

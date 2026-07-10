@@ -1,7 +1,6 @@
 {
   "name": "startup-help-exit",
   "description": "Boot the CLI, print help, exit cleanly",
-  "requiresLlm": false,
   "turns": [
     { "input": "/help" }
   ],

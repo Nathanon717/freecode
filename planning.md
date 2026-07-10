@@ -36,7 +36,7 @@ Maintenance instructions:
 - `mock:gpt-freecode-test` resolves only in fake mode and is virtual, so it does not appear in the normal provider registry, `/keys`, or `/model` provider lists.
 - The CLI parses `--model <provider:model>`, so scenario-provided mock models seed the selected model for scripted runs.
 - Fake mode fails closed if code tries to resolve a real provider or initialize live model discovery.
-- Scenario JSON supports `llmFixture`, classified as free verification when paired with `requiresLlm: false` and a `mock:*` model.
+- Scenario JSON supports `llmFixture`, using a `mock:*` model for free verification.
 - The scenario harness strips provider keys, sets `FREECODE_FAKE_LLM=1`, passes `FREECODE_FAKE_LLM_SCRIPT`, leaves `FREECODE_NO_LLM` unset, and runs the real CLI script path for fake-fixture scenarios.
 - The fixture-driven fake runner validates ordered text, chunk, and tool-call steps against provider, model, turn number, system prompt presence, last user message contents, and available tool names.
 - The fake runner returns deterministic usage metadata, validates unused steps, and can write a fake-model trace through `FREECODE_FAKE_LLM_TRACE`.

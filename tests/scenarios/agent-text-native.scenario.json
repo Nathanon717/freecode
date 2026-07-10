@@ -1,7 +1,6 @@
 {
   "name": "agent-text-native",
   "description": "Fake LLM fixture exercises the real AI SDK streamText path (native-stream) with a deterministic text response",
-  "requiresLlm": false,
   "workspace": "temp",
   "model": "mock-native:gpt-freecode-test",
   "llmFixture": "agent-text-native.llm.json",

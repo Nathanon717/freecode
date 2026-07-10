@@ -1,7 +1,6 @@
 {
   "name": "tty-backspace",
   "description": "Backspace key removes the last character from the input buffer; repeated backspaces restore the empty-prompt hint",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

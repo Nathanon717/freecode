@@ -32,7 +32,7 @@ Format: filename (linecount)
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
   - [`context.ts`](agent/context.md) (72) — Agent Tool Context
-  - [`loop.ts`](agent/loop.md) (474) — Agent Loop
+  - [`loop.ts`](agent/loop.md) (473) — Agent Loop
   - [`prompt-tools.ts`](agent/prompt-tools.md) (247) — Prompt-Based Tool Harness
   - [`session-controller.ts`](agent/session-controller.md) (23) — Session Controller
   - [`system-prompt.ts`](agent/system-prompt.md) (31) — System Prompt
@@ -40,7 +40,7 @@ Format: filename (linecount)
   - [`create.ts`](agent/tools/create.md) (33) — create Tool
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
   - [`grep.ts`](agent/tools/grep.md) (122) — grep Tool
-  - [`index.ts`](agent/tools/index.md) (370) — Tool Registry
+  - [`index.ts`](agent/tools/index.md) (428) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (87) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
@@ -66,8 +66,8 @@ Format: filename (linecount)
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
   - [`terminal-ui.ts`](cli/terminal-ui.md) (473) — Bottom Terminal UI
   - [`toggles.ts`](cli/toggles.md) (96) — Footer Toggle State
-  - [`tool-approval.ts`](cli/tool-approval.md) (314) — Tool Approval Prompts
-  - [`transcript-renderer.ts`](cli/transcript-renderer.md) (448) — Agent Transcript Formatting
+  - [`tool-approval.ts`](cli/tool-approval.md) (311) — Tool Approval Prompts
+  - [`transcript-renderer.ts`](cli/transcript-renderer.md) (457) — Agent Transcript Formatting
 - `src/commands/`
   - [`config.ts`](commands/config.md) (345) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (298) — Interactive Model Picker

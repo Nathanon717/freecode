@@ -1,7 +1,6 @@
 {
   "name": "agent-text-fake",
   "description": "Fake LLM fixture enters the agent loop and returns deterministic text without live provider access",
-  "requiresLlm": false,
   "workspace": "temp",
   "model": "mock:gpt-freecode-test",
   "llmFixture": "agent-text-fake.llm.json",

@@ -162,15 +162,6 @@ export function formatEditFileDiff(
     : formatted;
 }
 
-export function writeTranscriptSystemPrompt(
-  systemPrompt: string,
-  options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions(),
-): void {
-  const stream = getTranscriptStream(options);
-  const lines = systemPrompt.split("\n").map((l) => chalk.dim("  " + l)).join("\n");
-  stream.write(chalk.dim("system prompt:\n") + lines + "\n\n");
-}
-
 export function formatTranscriptStepDivider(options?: TranscriptRuntimeOptions): string {
   const stream = options ? getTranscriptStream(options) : process.stdout;
   const tty = stream as NodeJS.WriteStream;
@@ -378,21 +369,18 @@ export function writeToolCallHeader(
 }
 
 /**
- * Write the preview or error block for a completed tool call.
- * For errors, always writes the error line.
- * For successful results, writes the preview only when non-empty.
+ * Write the preview block for a non-error tool result (edit diff, created
+ * file content, or plain text). Returns whether anything was written, so
+ * callers that print a preview ahead of execution (read-only precompute) can
+ * tell the later post-execution write to skip a duplicate.
  */
-export function writeToolStepResult(
+export function writeToolResultPreview(
   name: string,
-  result: ToolStepResult,
+  result: Exclude<ToolStepResult, { kind: "error" }>,
   opts?: TranscriptRuntimeOptions,
-): void {
+): boolean {
   const runtimeOpts = opts ?? getTranscriptRuntimeOptions();
   const stream = getTranscriptStream(runtimeOpts);
-  if (result.kind === "error") {
-    stream.write(formatToolErrorLine(name, result.error) + "\n");
-    return;
-  }
   let preview: string;
   if (result.kind === "edit-diff") {
     preview = formatEditFileDiff(
@@ -410,6 +398,27 @@ export function writeToolStepResult(
     preview = formatToolResultPreview(result.result, runtimeOpts);
   }
   if (preview) stream.write(preview + "\n");
+  return preview.length > 0;
+}
+
+/**
+ * Write the preview or error block for a completed tool call.
+ * For errors, always writes the error line.
+ * For successful results, writes the preview only when non-empty.
+ */
+export function writeToolStepResult(
+  name: string,
+  result: ToolStepResult,
+  opts?: TranscriptRuntimeOptions,
+): void {
+  const runtimeOpts = opts ?? getTranscriptRuntimeOptions();
+  if (result.kind === "error") {
+    getTranscriptStream(runtimeOpts).write(
+      formatToolErrorLine(name, result.error) + "\n",
+    );
+    return;
+  }
+  writeToolResultPreview(name, result, runtimeOpts);
 }
 
 /** Render a complete tool step: header (lead-in + call line) then result preview. */

@@ -8,12 +8,11 @@ Scenario tests live in `tests/scenarios/*.scenario.json` and run through `tests/
 ## Commands
 
 ```powershell
-npm test              # build + docs check + all non-LLM scenarios including TTY + unit tests (no PTY)
+npm test              # build + docs check + all scenarios including TTY + unit tests (no PTY)
 npm run test:pty      # PTY driver + session manager vitest unit tests (require a PTY)
-npm run eval          # build + LLM eval scenarios with detailed breakdown
 ```
 
-`npm test` is the normal post-change safety check and never calls a live LLM. Use evals only when you explicitly want provider-backed tests.
+`npm test` is the normal post-change safety check. Scenarios never call a live LLM — fake LLM fixtures cover the agent loop deterministically, and every other scenario runs with the loop hard-blocked (`FREECODE_NO_LLM=1`) and provider keys stripped from its environment.
 
 ## PTY unit tests
 
@@ -42,11 +41,14 @@ For the generated scenario inventory, see [scenarios.md](scenarios.md).
 
 ## Basic Shape
 
+Any scenario that drives the agent loop pairs a `mock:*` model with an `llmFixture` (fake fixture — see [Fake LLM Fixtures](#fake-llm-fixtures) below); scenarios never reach a live provider.
+
 ```json
 {
   "name": "02-eval-medium-create-files",
   "description": "Medium: create a small nested project with exact code and JSON files",
-  "requiresLlm": true,
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "02-eval-medium-create-files.llm.json",
   "config": {
     "toolRationale": false,
     "useOllama": false
@@ -86,13 +88,12 @@ For the generated scenario inventory, see [scenarios.md](scenarios.md).
 
 - `name`: Stable kebab-case identifier shown in harness output.
 - `description`: Human-readable purpose of the scenario.
-- `requiresLlm`: Set `true` for prompts that call a provider. These are skipped by `verify` and shown under `/eval`.
 - `config`: Optional temporary `config.json` contents written under the scenario's isolated `FREECODE_HOME`.
 - `workspace`: Use `"temp"` for file-writing or project-mutating scenarios. Omit it or use `"repo"` for structural CLI checks.
 - `filesBefore`: Optional seed files written before the CLI runs. Use with `workspace: "temp"` for edit/preservation scenarios.
 - `flags`: Optional CLI flags inserted before `--script`.
 - `model`: Optional model preference passed as `--model <value>`.
-- `llmFixture`: Optional fake LLM script path, relative to `tests/scenarios/`. When present, set `requiresLlm: false` and use a `mock:*` model.
+- `llmFixture`: Fake LLM script path, relative to `tests/scenarios/`. Required for any scenario that drives the agent loop; pair it with a `mock:*` model. Without a fixture, the loop is hard-blocked (`FREECODE_NO_LLM=1`).
 - `turns`: Input lines sent to script mode. Script mode exits cleanly after the final turn.
 - `y`/`yes` and `n`/`no` turns are consumed as tool-call confirmations when the agent requests a tool. If the next turn is not an approval answer, the tool call is denied and the turn remains available as normal user input.
 - Approval turns are skipped if there is no pending tool request, so a failed provider call does not accidentally turn `y` into a user prompt.
@@ -122,7 +123,6 @@ Use this mode for free verification of prompt construction, model routing, deter
 {
   "name": "agent-text-fake",
   "description": "Agent loop returns deterministic text through a fake model",
-  "requiresLlm": false,
   "workspace": "temp",
   "model": "mock:gpt-freecode-test",
   "llmFixture": "agent-text-fake.llm.json",
@@ -221,7 +221,6 @@ Tool-driving fixtures use the same ordered steps. A step may emit `toolCalls`; t
 
 Fake mode is intentionally strict:
 
-- Scenarios with `llmFixture` must set `requiresLlm: false`.
 - Scenarios with `llmFixture` must use a `mock:*` model.
 - `mock:*` models are rejected unless `FREECODE_FAKE_LLM=1`.
 - Real providers are rejected while `FREECODE_FAKE_LLM=1`.
@@ -234,13 +233,12 @@ Fake mode is intentionally strict:
 
 A scenario with a top-level `tty` block is driven through a real pseudo-terminal instead of script mode, and its assertions run against the *rendered screen* (what a human would see), not raw stdout. Use this for interactive UI behavior: autocomplete, suggestion lists, the pinned input/status line, menus, and screen redraws. Nothing is reconstructed — the escape sequences the CLI emits are applied by a VT emulator (`@xterm/headless`) over a PTY (`node-pty`).
 
-Set `requiresLlm: false` and omit `turns`/`expect`; the `tty` block fully describes the run.
+Omit `turns`/`expect`; the `tty` block fully describes the run.
 
 ```json
 {
   "name": "tty-autocomplete",
   "description": "Interactive TUI: slash command suggestions and tab completion",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,
@@ -328,14 +326,8 @@ A phase is marked failed (`✗`) if any assertion in that phase failed.
 ## Guidelines
 
 - Prefer `workspace: "temp"` for agent tasks that create or edit files.
-- Keep LLM assertions structural and outcome-based. Check files, tool trace, and broad output markers instead of exact assistant prose.
+- Fixture output is deterministic, so exact text, file, and tool-trace assertions are all reliable — assert on whatever most precisely pins the behavior under test.
 - Use exact file assertions for deterministic artifacts.
 - Use tool trace assertions to catch inefficient behavior, but avoid overfitting unless the workflow truly requires a specific sequence.
 - Include only the tool approval turns you expect the scenario to need. Extra unexpected tool calls will be denied unless followed by another `y`/`yes`.
 - Keep each scenario focused on one user-visible behavior.
-
-## Gotchas
-
-- LLM eval scenarios make real provider network calls. Fake LLM fixture scenarios do not. In sandboxed Codex runs, rerun only provider-backed evals with escalated network permissions if they fail with `EACCES` / `Cannot connect to API`.
-- Groq tool-call failures can surface as `code: "tool_use_failed"` and may be followed by Windows exit code `3221226505` (`0xC0000409`) if the child process aborts during shutdown. Treat the provider error as the root cause; the exit code is a secondary crash symptom.
-- For tool scenarios, write prompts that name the expected tool sequence and exact tool arguments. This reduces malformed provider tool calls and keeps trace assertions meaningful.

@@ -1,7 +1,6 @@
 {
   "name": "tty-inline-completion",
   "description": "A partial prefix renders the full command inline before Tab is pressed; inline completion updates as the buffer changes",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

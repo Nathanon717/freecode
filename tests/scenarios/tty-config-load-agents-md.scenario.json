@@ -1,7 +1,6 @@
 {
     "name":  "tty-config-load-agents-md",
     "description":  "Load AGENTS.md setting appears in Provider and Model tabs but not in the Global tab",
-    "requiresLlm":  false,
     "config":  {
                    "defaultModel":  "mock:gpt-freecode-test"
                },

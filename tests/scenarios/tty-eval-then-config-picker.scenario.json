@@ -1,7 +1,6 @@
 {
   "name": "tty-eval-then-config-picker",
   "description": "After a fake eval completes, another raw picker can still receive input and Ctrl-C exits cleanly",
-  "requiresLlm": false,
   "model": "mock:gpt-freecode-test",
   "llmFixture": "eval-cereal-soup-fake.llm.json",
   "config": {

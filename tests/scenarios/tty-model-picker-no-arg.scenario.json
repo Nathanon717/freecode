@@ -1,7 +1,6 @@
 {
   "name": "tty-model-picker-no-arg",
   "description": "/model with no argument opens the interactive picker (zen free models available by default); ESC closes it and returns the prompt",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

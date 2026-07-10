@@ -1,7 +1,6 @@
 {
   "name": "slash-config-script-mode",
   "description": "/config in script mode (no TTY) prints a message that the editor is only available in interactive mode",
-  "requiresLlm": false,
   "turns": [
     { "input": "/config" }
   ],

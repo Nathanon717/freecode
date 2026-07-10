@@ -152,7 +152,7 @@ note - if u get the 500 max line count thing, ignore it untill ur ready to delet
 - Background `.sync()` on startup + after eval-run appends (already wired in `initStore` + `persistAsync`).
 - `saveTranscriptAsync` added to `db.ts`: new runs write `eval_runs` + `eval_transcripts` to the DB so transcript content syncs cross-device.
 - Gitignored + `git rm --cached`: `.freecode/models.json`, `.freecode/evals/`, `.freecode/model-cache.json`. Local JSON files remain as write-through fallback.
-- Docs: `db.md` and `model-store.md` updated; ADR `docs/architecture/adr/0005-libsql-turso-sync.md` written; map page `docs/map/commands/db.md` added; `docs:generate` clean.
+- Docs: `db.md` and `model-store.md` updated; map page `docs/map/commands/db.md` added; `docs:generate` clean.
 - **Verify (cross-device):** configure Turso credentials on both machines, run an eval on machine A, confirm machine B sees the run on next startup via Turso sync.
 - **Verified:** 496/496 tests green, build clean, docs:generate clean.
 

@@ -1,7 +1,6 @@
 {
   "name": "tty-all-commands-shown",
   "description": "Typing / shows all slash commands in the suggestion list",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

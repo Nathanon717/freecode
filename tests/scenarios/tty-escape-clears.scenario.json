@@ -1,7 +1,6 @@
 {
   "name": "tty-escape-clears",
   "description": "Escape key clears the input buffer and hides the suggestion list, restoring the empty-prompt hint",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

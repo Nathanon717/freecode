@@ -20,7 +20,7 @@
     "unit:watch": "vitest",
     "coverage": "vitest run --coverage",
     "docs:generate": "tsx scripts/sync-docs.ts",
-    "verify:scenarios": "tsx tests/harness/run-scenarios.ts --no-build --skip-llm",
+    "verify:scenarios": "tsx tests/harness/run-scenarios.ts --no-build",
     "pty:session": "cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts",
     "lint": "eslint src tests scripts --cache",
     "lint:fix": "eslint src tests scripts --cache --fix"

@@ -1,7 +1,5 @@
 import type { Interface } from "readline";
 import chalk from "chalk";
-import { getBannerColor } from "./banner.js";
-import { filterArgs, formatArgs } from "./transcript-renderer.js";
 import type {
   ToolCallConfirmation,
   ToolCallPreview,
@@ -37,23 +35,21 @@ function drawToolApprovalMenu(selected: ToolApprovalChoice): void {
 }
 
 // Draws the tool menu options at absolute terminal rows, above the pinned footer.
-// headerRow = r - reserved - 2, approveRow = r - reserved - 1, denyRow = r - reserved.
+// approveRow = r - reserved - 1, denyRow = r - reserved. No header row here — the
+// tool call header is already flowed into the transcript just above; redrawing it
+// would only duplicate it.
 // Parks the cursor at the selected row so it doesn't drift into the footer.
 function drawToolApprovalMenuAbsolute(
   selected: ToolApprovalChoice,
   r: number,
   reserved: number,
-  header?: string,
 ): void {
   const approve =
     selected === "approve" ? chalk.inverse("> Approve") : "  Approve";
   const deny = selected === "deny" ? chalk.inverse("> Deny") : "  Deny";
-  const w = process.stdout.columns || 80;
-  const headerText = header ? getBannerColor()(header.slice(0, w - 1)) : "";
   const cursorRow = selected === "approve" ? r - reserved - 1 : r - reserved;
   process.stdout.write(
-    `\x1b[${r - reserved - 2};1H\x1b[2K${headerText}` +
-      `\x1b[${r - reserved - 1};1H\x1b[2K${approve}` +
+    `\x1b[${r - reserved - 1};1H\x1b[2K${approve}` +
       `\x1b[${r - reserved};1H\x1b[2K${deny}` +
       `\x1b[${cursorRow};1H`,
   );
@@ -61,7 +57,6 @@ function drawToolApprovalMenuAbsolute(
 
 async function readToolApprovalMenu(
   rl: Interface,
-  header?: string,
 ): Promise<ToolApprovalChoice | null> {
   if (!process.stdin.isTTY) {
     rl.resume();
@@ -99,7 +94,7 @@ async function readToolApprovalMenu(
   if (useAbsolute) {
     const r = getRows();
     const reserved = getLastReservedRows();
-    drawToolApprovalMenuAbsolute(selected, r, reserved, header);
+    drawToolApprovalMenuAbsolute(selected, r, reserved);
   } else {
     drawToolApprovalMenu(selected);
   }
@@ -108,12 +103,7 @@ async function readToolApprovalMenu(
 
   function redraw() {
     if (useAbsolute) {
-      drawToolApprovalMenuAbsolute(
-        selected,
-        getRows(),
-        getLastReservedRows(),
-        header,
-      );
+      drawToolApprovalMenuAbsolute(selected, getRows(), getLastReservedRows());
     } else {
       process.stdout.write("\r\x1b[1A");
       drawToolApprovalMenu(selected);
@@ -232,11 +222,20 @@ export async function confirmToolCallInteractive(
   const restoreInputUI = isBottomUIActive();
   teardownBottomUI();
 
-  const header = `${preview.name}(${formatArgs(filterArgs(preview.name, preview.args))})`;
+  // The absolute-positioned menu below draws at 2 fixed rows near the bottom of the
+  // terminal (see drawToolApprovalMenuAbsolute). Those rows are only guaranteed to be
+  // blank when nothing has been written since the header — but agent/tools/index.ts
+  // flows a read-only content preview right after the header for some tools, and once
+  // the scroll region fills, that preview's tail lands exactly on the menu's fixed
+  // rows and gets silently overwritten. Pad blank lines to push it clear first
+  // (confirmed via a live PTY probe — this is not a hypothetical edge case).
+  if (preview.previewedContent && isFooterUIActive()) {
+    process.stdout.write("\n\n");
+  }
 
   try {
     while (true) {
-      const choice = await readToolApprovalMenu(rl, header);
+      const choice = await readToolApprovalMenu(rl);
       if (choice === null) throw new UserAbortError();
       if (choice === "approve") return { approved: true };
 
@@ -250,15 +249,13 @@ export async function confirmToolCallInteractive(
     }
   } finally {
     rl.pause();
-    // Clear the 3 absolute rows (header, approve, deny) drawn by drawToolApprovalMenuAbsolute
+    // Clear the 2 absolute rows (approve, deny) drawn by drawToolApprovalMenuAbsolute
     // before any scroll that would move them out of reach.
     if (isFooterUIActive()) {
       const r = getRows();
       const reserved = getLastReservedRows();
       process.stdout.write(
-        `\x1b[${r - reserved - 2};1H\x1b[2K` +
-          `\x1b[${r - reserved - 1};1H\x1b[2K` +
-          `\x1b[${r - reserved};1H\x1b[2K`,
+        `\x1b[${r - reserved - 1};1H\x1b[2K` + `\x1b[${r - reserved};1H\x1b[2K`,
       );
     }
     if (restoreInputUI && process.stdin.isTTY) setupInputUI();

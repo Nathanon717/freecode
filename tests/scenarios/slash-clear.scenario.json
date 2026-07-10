@@ -1,7 +1,6 @@
 {
   "name": "slash-clear",
   "description": "/clear resets history, clears the screen, and redraws the banner",
-  "requiresLlm": false,
   "turns": [
     { "input": "/clear" }
   ],

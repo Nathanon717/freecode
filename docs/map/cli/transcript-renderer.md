@@ -38,8 +38,6 @@ formatToolResultPreview(result: unknown, options?: TranscriptRenderOptions): str
 
 formatEditFileDiff(_path: string, oldText: string, newText: string, contextBefore?: string[], contextAfter?: string[], options?: TranscriptRenderOptions, lineIndent?: string): string
 
-writeTranscriptSystemPrompt(systemPrompt: string, options?: TranscriptRuntimeOptions): void
-
 formatTranscriptStepDivider(options?: TranscriptRuntimeOptions | undefined): string
 
 beginTranscriptTurn(options?: TranscriptRuntimeOptions): void
@@ -85,6 +83,8 @@ interface RenderedStep {
 }
 
 writeToolCallHeader(step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "promptTools">, opts?: TranscriptRuntimeOptions | undefined): void
+
+writeToolResultPreview(name: string, result: { kind: "text"; result: unknown; } | { kind: "create-content"; content: string; } | { kind: "edit-diff"; path: string; oldText: string; newText: string; contextBefore: string[]; contextAfter: string[]; lineIndent: string; }, opts?: TranscriptRuntimeOptions | undefined): boolean
 
 writeToolStepResult(name: string, result: ToolStepResult, opts?: TranscriptRuntimeOptions | undefined): void
 

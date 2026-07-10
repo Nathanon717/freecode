@@ -1,7 +1,6 @@
 {
   "name": "tty-eval-menu",
   "description": "Submitting /eval opens the standalone eval picker showing available scenarios; pressing Esc closes it and restores the input prompt",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,

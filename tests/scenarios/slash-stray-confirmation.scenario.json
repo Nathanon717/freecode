@@ -1,7 +1,6 @@
 {
   "name": "slash-stray-confirmation",
   "description": "Sending 'y' with no pending tool call is silently skipped rather than forwarded to the agent",
-  "requiresLlm": false,
   "turns": [
     { "input": "y" }
   ],

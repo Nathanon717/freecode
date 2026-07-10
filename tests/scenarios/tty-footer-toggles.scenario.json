@@ -1,7 +1,6 @@
 {
   "name": "tty-footer-toggles",
   "description": "Footer toggle bar shows A and R toggles at startup with ctrl+ prefix; Ctrl+A and Ctrl+R cycle the toggles without corrupting the input area",
-  "requiresLlm": false,
   "tty": {
     "cols": 80,
     "rows": 24,
