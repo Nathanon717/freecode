@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import chalk, { type ChalkInstance } from "chalk";
+import { startOverlayEpoch } from "../util/screen-buffer.js";
 
 const PASTEL_COLORS: [number, number, number][] = [
   [255, 182, 193],
@@ -29,6 +30,7 @@ export function clearAndRedrawBanner() {
   const cols = process.stdout.columns ?? 80;
   const banner = cols < 82 ? COMPACT_BANNER : FULL_BANNER;
   console.log(getBannerColor()(banner));
+  startOverlayEpoch(); // Exclude the just-drawn banner from overlay repaints.
 }
 
 function nextBannerColor(): ChalkInstance {
@@ -108,6 +110,7 @@ export function showBanner() {
   const cols = process.stdout.columns ?? 80;
   const banner = cols < 82 ? COMPACT_BANNER : FULL_BANNER;
   console.log(nextBannerColor()(banner));
+  startOverlayEpoch(); // Exclude the just-drawn banner from overlay repaints.
 }
 
 export function redrawBanner() {
@@ -115,4 +118,5 @@ export function redrawBanner() {
   const cols = process.stdout.columns ?? 80;
   const banner = cols < 82 ? COMPACT_BANNER : FULL_BANNER;
   console.log(getBannerColor()(banner));
+  startOverlayEpoch(); // Exclude the just-drawn banner from overlay repaints.
 }

@@ -25,13 +25,15 @@ getScreenBufferDisplayLinesForOverlay(count: number, _scrollHeight: number): str
 - `installScreenBuffer` — call once at process startup (`index.ts`); no-op if already installed.
 - `getScreenBuffer` — returns the last <=150 non-empty transcript lines as a newline-joined string.
 - `getScreenBufferDisplayLines` — returns recent plain transcript lines, including intentional blank lines.
-- `startOverlayEpoch` — marks the current write position as the start of the scroll-region epoch; call once on first `setupInputUI` to exclude pre-UI output (startup banner) from overlay repaints.
+- `startOverlayEpoch` — marks the current write position as the start of the scroll-region epoch; lines before it (banner/chrome) are excluded from overlay repaints. Called after **every** banner (re)draw in `banner.ts`, not just startup, so mid-session banner reprints (/clear, /model, /config, /eval, resize) don't leak into overlay repaints.
+- A write containing a full-screen / scrollback erase (`\x1b[…J`, e.g. the `\x1b[2J` in `clearEntireTerminal`/`clearAndRedrawBanner`) resets all buffers and the epoch, since nothing previously on screen can sit behind an overlay anymore. Line erase (`\x1b[2K`) does not trigger this.
 - `getScreenBufferDisplayLinesForOverlay` — returns styled lines (ANSI codes intact) needed to repaint `count` overlay rows after a suggestion list closes. Accounts for freecode's cursor-at-bottom-of-scroll-region output model: the bottom overlay row is always blank, the preceding `count-1` rows hold the last epoch lines, top-padded with blanks.
 
 ## Key neighbors
 
 - Called from `src/index.ts` at startup.
 - Read by `src/cli/terminal-ui.ts` when slash-command suggestions temporarily cover transcript rows.
+- `startOverlayEpoch` is called by `src/cli/banner.ts` after each banner draw.
 
 ## Update triggers
 

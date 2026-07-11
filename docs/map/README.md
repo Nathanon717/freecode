@@ -47,7 +47,7 @@ Format: filename (linecount)
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
 - `src/cli/`
   - [`action-menu.ts`](cli/action-menu.md) (53) — Inline Action Sub-menu
-  - [`banner.ts`](cli/banner.md) (119) — Startup Banner
+  - [`banner.ts`](cli/banner.md) (123) — Startup Banner
   - [`command-dispatcher.ts`](cli/command-dispatcher.md) (229) — Command Dispatcher
   - [`custom-eval-menu.ts`](cli/custom-eval-menu.md) (363) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval-dots.md) (28) — Eval Status Circle Renderers
@@ -127,7 +127,7 @@ Format: filename (linecount)
   - [`guards.ts`](util/guards.md) (4) — Type Guard Utilities
   - [`keys.ts`](util/keys.md) (5) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) (39) — LCS Line Diff
-  - [`screen-buffer.ts`](util/screen-buffer.md) (93) — Screen Buffer
+  - [`screen-buffer.ts`](util/screen-buffer.md) (115) — Screen Buffer
   - [`text-encoding.ts`](util/text-encoding.md) (24) — Text Encoding Helpers
 <!-- END GENERATED MAP STRUCTURE -->
 

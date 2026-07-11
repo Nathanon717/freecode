@@ -17,6 +17,12 @@ function hasCursorOrScreenControl(str: string): boolean {
   return /\x1b(?:\[[0-9;?]*[HJKrstu]|\[[su]|[DM78])/.test(str);
 }
 
+// Erase-in-Display (ED): `\x1b[J`, `\x1b[0J`, `\x1b[1J`, `\x1b[2J`, `\x1b[3J`.
+// Matches a full-screen / scrollback wipe but NOT line erase (`\x1b[2K`).
+function hasFullScreenErase(str: string): boolean {
+  return /\x1b\[[0-3]?J/.test(str);
+}
+
 function pushDisplayLines(clean: string, styled: string): void {
   const lines = clean.split('\n');
   const styledLines = styled.split('\n');
@@ -41,6 +47,18 @@ export function installScreenBuffer(): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
   (process.stdout as any).write = function (chunk: string | Buffer, ...args: unknown[]): boolean {
     if (typeof chunk === 'string') {
+      if (hasFullScreenErase(chunk)) {
+        // A full-screen / scrollback erase wipes everything currently on
+        // screen, so nothing buffered can still sit behind a suggestion
+        // overlay. Drop the buffers and reset the epoch; the banner a redraw
+        // prints next becomes the new pre-epoch chrome once the caller
+        // re-marks the epoch via startOverlayEpoch(). Without this, a redrawn
+        // banner would be resurrected into overlay repaints as stale content.
+        lineBuffer.length = 0;
+        displayLineBuffer.length = 0;
+        displayLineBufferStyled.length = 0;
+        epochStart = 0;
+      }
       if (!hasCursorOrScreenControl(chunk)) {
         const clean = stripAnsi(chunk).replace(/\r/g, '');
         const styled = chunk.replace(/\r/g, '');
@@ -68,9 +86,13 @@ export function getScreenBufferDisplayLines(count: number): string[] {
 }
 
 // Records the current write position as the start of the scroll-region epoch.
-// Call once at the first setupInputUI to exclude pre-UI output (e.g. the
-// startup banner) from overlay repaints.  Subsequent reinits must NOT call
-// this again or they would discard transcript lines the user can still see.
+// Lines before this index (the banner and other chrome) are excluded from
+// overlay repaints. Call it right after every banner (re)draw so the freshly
+// printed banner is treated as chrome — not just once at startup, since
+// /clear, /model, /config, /eval and resize all reprint the banner mid-session
+// and their banner lines would otherwise leak into overlay repaints. Do NOT
+// call it from per-turn input reinit that isn't preceded by a screen clear, or
+// it would discard transcript lines the user can still see.
 export function startOverlayEpoch(): void {
   epochStart = displayLineBuffer.length;
 }

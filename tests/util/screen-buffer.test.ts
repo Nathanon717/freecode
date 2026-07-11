@@ -108,6 +108,41 @@ describe('screen buffer', () => {
     });
   });
 
+  describe('full-screen erase resets the overlay model', () => {
+    // Regression: a banner reprinted mid-session (via /clear, /model, /config,
+    // /eval or resize) is a full-screen erase followed by console.log(banner).
+    // Its lines must not leak into overlay repaints — otherwise shrinking the
+    // slash-command suggestion list repaints revealed rows with the banner.
+    it('drops buffered lines so a redrawn banner never leaks into overlay repaints', () => {
+      installScreenBuffer();
+      startOverlayEpoch();
+      // Pre-existing transcript, then a full-screen erase + banner reprint
+      // (mirrors redrawBanner: clearEntireTerminal then console.log(banner)).
+      process.stdout.write('old-transcript-line\n');
+      process.stdout.write('\x1b[0m\x1b[r\x1b[H\x1b[2J\x1b[3J\x1b[H');
+      process.stdout.write('BANNER_A\nBANNER_B\nBANNER_C\n');
+      startOverlayEpoch(); // banner functions re-mark the epoch after drawing
+      const lines = getScreenBufferDisplayLinesForOverlay(6, 19);
+      expect(lines.join('|')).not.toContain('BANNER_');
+      expect(lines.join('|')).not.toContain('old-transcript-line');
+      expect(lines.every(l => l === '')).toBe(true);
+    });
+
+    it('keeps post-erase transcript available for overlay repaints', () => {
+      installScreenBuffer();
+      startOverlayEpoch();
+      process.stdout.write('\x1b[2J');
+      process.stdout.write('BANNER_ONLY\n');
+      startOverlayEpoch();
+      const tag = `sb-post-erase-${Math.random().toString(36).slice(2)}`;
+      process.stdout.write(`${tag}-1\n`);
+      const lines = getScreenBufferDisplayLinesForOverlay(3, 19);
+      // Real transcript printed after the banner is restorable; banner is not.
+      expect(lines.join('|')).toContain(`${tag}-1`);
+      expect(lines.join('|')).not.toContain('BANNER_ONLY');
+    });
+  });
+
   it('does not record cursor-addressed UI writes as transcript display lines', () => {
     installScreenBuffer();
     const token = `sb-ui-${Math.random().toString(36).slice(2)}`;
