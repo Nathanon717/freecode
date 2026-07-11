@@ -32,15 +32,16 @@ Format: filename (linecount)
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
   - [`context.ts`](agent/context.md) (72) — Agent Tool Context
-  - [`loop.ts`](agent/loop.md) (473) — Agent Loop
+  - [`loop.ts`](agent/loop.md) (501) — Agent Loop
   - [`prompt-tools.ts`](agent/prompt-tools.md) (247) — Prompt-Based Tool Harness
   - [`session-controller.ts`](agent/session-controller.md) (23) — Session Controller
   - [`system-prompt.ts`](agent/system-prompt.md) (31) — System Prompt
+  - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
 - `src/agent/tools/`
   - [`create.ts`](agent/tools/create.md) (33) — create Tool
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
   - [`grep.ts`](agent/tools/grep.md) (122) — grep Tool
-  - [`index.ts`](agent/tools/index.md) (428) — Tool Registry
+  - [`index.ts`](agent/tools/index.md) (433) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (87) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool

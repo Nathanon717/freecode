@@ -23,6 +23,31 @@ describe('scenario expectation assertions', () => {
     ]);
   });
 
+  it('passes stdoutOrder when substrings appear in order', () => {
+    expect(assertOutput({
+      stdoutOrder: ['preamble', 'read(x)', 'done'],
+    }, 'preamble\nread(x)\n  result\ndone')).toEqual([]);
+  });
+
+  it('flags stdoutOrder when a present substring is out of order', () => {
+    // The tool call "read(x)" is present but prints before the preamble it should
+    // follow — the classic out-of-order bug. "preamble" matches at its late
+    // position, so "read(x)" can no longer be found after it.
+    expect(assertOutput({
+      stdoutOrder: ['preamble', 'read(x)'],
+    }, 'read(x)\n  result\npreamble')).toEqual([
+      'out of order: "read(x)" appears before an earlier expected item',
+    ]);
+  });
+
+  it('flags stdoutOrder when an ordered substring is absent', () => {
+    expect(assertOutput({
+      stdoutOrder: ['preamble', 'nope'],
+    }, 'preamble only')).toEqual([
+      'missing (ordered): "nope"',
+    ]);
+  });
+
   it('checks exact file content relative to the scenario workspace', () => {
     const workspace = mkdtempSync(join(tmpdir(), 'freecode-assertions-'));
     try {

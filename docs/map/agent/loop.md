@@ -50,9 +50,12 @@ streamText({
   messages,
   ...(supportsTools ? { tools: createTools(confirmToolCall), maxSteps: 10, onStepFinish } : {})
 })
-for await chunk of textStream:
-  write chunk to stdout
-  append to fullText
+beginToolRenderGate()                     (tool-render-gate.ts)
+for await part of fullStream:             (ordered: text-delta -> tool-call -> tool-result)
+  text-delta: write to stdout, append to fullText
+  tool-call:  flush pending preamble line, then releaseToolRenderGate()
+  error:      capture and re-throw after the loop (fullStream reports, not throws)
+endToolRenderGate()
 await usage
 finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens)
   -> ends Anthropic SSE capture or OpenAI-compat raw capture
@@ -68,6 +71,7 @@ return AgentLoopResult
 - For `mock:*` fake models, the loop does not call the AI SDK. It passes the real system prompt, message history, and available tool names into `runFakeModel()` so fixture matching can validate the model-facing shape without live provider access. If a fake step emits `toolCalls`, the loop executes them through `createTools()`, appends tool results as user messages, and continues until a final no-tool response.
 - `maxSteps: 10` allows multi-step tool use.
 - Every turn calls `beginTranscriptTurn()` / `endTranscriptStep()` from `transcript-renderer.ts` to emit the normalised divider framing. Intermediate steps use `endTranscriptStep(true)` (combined close+open); the final step uses `endTranscriptStep(false)` after text normalisation. The renderer state machine ensures consistent blank-line spacing regardless of the model or provider.
+- `streamWithRetry` drives display from the ordered `fullStream` (not the text-only `textStream`) so a step's preamble can never render after the tool call it precedes. Because the AI SDK invokes a tool's `execute` (which draws the header) before that preamble reaches the consumer, the `tool-render-gate.ts` semaphore holds `execute` until the consumer processes that call's `tool-call` part and flushes the pending text. See [tool-render-gate.md](tool-render-gate.md).
 - Tool approval is delegated to the supplied `confirmToolCall`.
 - Tool wrappers serialize execution so concurrent tool calls do not mutate files in parallel.
 - If the provider rejects tool use at runtime (`isToolsNotSupportedError`), the loop automatically retries via `runPromptToolsLoop` from `prompt-tools.ts`, which uses a text-based `<tool_call>` protocol instead of native function calling. The rejection is persisted via `setNativeTools(provider, modelId, false)` (model-store) so the fallback is used automatically next time; the startup read uses `isNativeToolsDisabled`. The user can also manually enable this path by setting `parsedTools: true` in per-model settings (via `/config` → Model tab); both routes check `modelSettings.parsedTools || isNativeToolsDisabled(...)` at the top of `streamWithRetry`.
@@ -86,6 +90,7 @@ return AgentLoopResult
 - [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md) and [providers/adapters/anthropic.md](../providers/adapters/anthropic.md): capture provider metadata and usage details.
 - [providers/fake.md](../providers/fake.md): fake fixture runner for free agent-loop verification.
 - [providers/model-store.md](../providers/model-store.md): `isNativeToolsDisabled`/`setNativeTools` for the native-tools fallback trait.
+- [tool-render-gate.md](tool-render-gate.md): orders streamed text before tool-call headers on the native `fullStream` path.
 
 ## Error Handling
 

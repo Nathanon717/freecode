@@ -4,6 +4,7 @@
   "workspace": "temp",
   "model": "mock-native:gpt-freecode-test",
   "llmFixture": "agent-preamble-flush.llm.json",
+  "env": { "FREECODE_TRANSCRIPT_STREAM": "stdout" },
   "turns": [
     { "input": "Write grade.py then grade the run." },
     { "input": "y" }
@@ -14,6 +15,11 @@
       "The script now runs successfully and prints the grade summary."
     ],
     "stdoutAbsent": ["change.The script"],
+    "stdoutOrder": [
+      "Let's make this change.",
+      "create(grade.py)",
+      "The script now runs successfully"
+    ],
     "exitCode": 0,
     "files": [
       { "path": "grade.py", "contentExact": "print('grade: A')\n" }

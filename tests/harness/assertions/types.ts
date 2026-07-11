@@ -41,6 +41,12 @@ export interface FakeLlmTraceExpectation {
 export interface ScenarioExpectations {
   stdoutContains?: string[];
   stdoutAbsent?: string[];
+  /**
+   * Substrings that must appear in this left-to-right order in the output.
+   * Each must be present, and each must occur after the previous one — use it
+   * to pin transcript ordering (e.g. a preamble before the tool call it precedes).
+   */
+  stdoutOrder?: string[];
   exitCode?: number;
   files?: FileExpectation[];
   toolTrace?: ToolTraceExpectation;

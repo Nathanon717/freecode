@@ -11,6 +11,7 @@ import { z } from "zod";
 import type { CoreTool } from "ai";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
+import { awaitToolRenderGate } from "../tool-render-gate.js";
 import {
   filterArgs,
   formatArgs,
@@ -90,6 +91,10 @@ function withLogging(
       opts: unknown,
     ): Promise<unknown> => {
       if (previewState) previewState.suppressed = false;
+      // On the native fullStream path, wait until the consumer has flushed this
+      // step's streamed text before drawing the header, so the model's pre-tool
+      // preamble can't print after the call. No-op on non-streaming paths.
+      await awaitToolRenderGate();
       const { rationale, ...displayArgs } = args;
       writeToolCallHeader({
         name,

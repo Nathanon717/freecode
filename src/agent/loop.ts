@@ -19,6 +19,7 @@ import {
   type CostEstimate,
 } from '../providers/anthropic-cost.js';
 import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk } from '../cli/transcript-renderer.js';
+import { beginToolRenderGate, endToolRenderGate, releaseToolRenderGate } from './tool-render-gate.js';
 import { createMarkdownStreamRenderer } from '../cli/markdown-renderer.js';
 import { getAnthropicVerifiedRates } from '../providers/pricing-verifier.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
@@ -195,8 +196,9 @@ async function streamWithRetry(
           onStepFinish: (event) => {
             // Intermediate steps (tool-calls finish reason) get a combined
             // close+open divider. The final step is closed after text normalisation.
+            // Preamble flushing is handled on the `tool-call` part below (before the
+            // tool's execute renders its header); here we only close the step.
             if (event.finishReason === 'tool-calls') {
-              flushPendingPreamble();
               endTranscriptStep(true);
             }
             const stepQuota = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
@@ -206,16 +208,42 @@ async function streamWithRetry(
       });
 
       const typedResult = result as {
-        textStream: AsyncIterable<string>;
+        fullStream: AsyncIterable<{ type: string } & Record<string, unknown>>;
         usage: Promise<{ totalTokens: number; promptTokens?: number; completionTokens?: number; outputTokens?: number }>;
       };
 
       let chunkCount = 0;
-      for await (const chunk of typedResult.textStream) {
-        writeRendered(mdStream.push(chunk));
-        fullText += chunk;
-        chunkCount++;
+      let streamError: unknown;
+      let streamHadError = false;
+      // Drive display from the ordered fullStream (text-delta → tool-call →
+      // tool-result) instead of the text-only textStream, so a step's preamble text
+      // can never render after the tool call it precedes. The gate lets each tool's
+      // execute (which draws the header) wait until the consumer has reached that
+      // call's tool-call part.
+      beginToolRenderGate();
+      try {
+        for await (const part of typedResult.fullStream) {
+          if (part.type === 'text-delta') {
+            const delta = part.textDelta as string;
+            writeRendered(mdStream.push(delta));
+            fullText += delta;
+            chunkCount++;
+          } else if (part.type === 'tool-call') {
+            // Flush the pending partial line, then release the tool's execute so its
+            // header renders after this step's preamble text, never before it.
+            flushPendingPreamble();
+            releaseToolRenderGate();
+          } else if (part.type === 'error') {
+            // fullStream reports mid-stream failures as an error part rather than
+            // throwing; re-throw after the loop so the retry/catch logic still runs.
+            streamError = part.error;
+            streamHadError = true;
+          }
+        }
+      } finally {
+        endToolRenderGate();
       }
+      if (streamHadError) throw streamError;
       writeRendered(mdStream.flush());
       fullText = fullText.trimEnd();
       if (fullText && !fullText.endsWith('\n')) {

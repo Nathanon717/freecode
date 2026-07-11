@@ -289,6 +289,7 @@ if (nonTtyScenarios.length > 0) {
               ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath, FREECODE_FAKE_LLM_TRACE: fakeTraceFile }
               : { FREECODE_NO_LLM: '1' }),
             ...(scenario.expect.toolTrace ? { FREECODE_TRACE_JSON: traceFile } : {}),
+            ...(scenario.env ?? {}),
           },
         });
         let out = '';
@@ -341,6 +342,7 @@ if (nonTtyScenarios.length > 0) {
       if (scenario.expect.exitCode !== undefined) checks.push(`exitCode=${scenario.expect.exitCode}`);
       if (scenario.expect.stdoutContains?.length) checks.push(`stdoutContains=${scenario.expect.stdoutContains.length}`);
       if (scenario.expect.stdoutAbsent?.length) checks.push(`stdoutAbsent=${scenario.expect.stdoutAbsent.length}`);
+      if (scenario.expect.stdoutOrder?.length) checks.push(`stdoutOrder=${scenario.expect.stdoutOrder.length}`);
       if (scenario.expect.files?.length) checks.push(`files=${scenario.expect.files.length}`);
       if (scenario.expect.toolTrace) checks.push('toolTrace');
       if (scenario.expect.fakeLlmTrace) checks.push('fakeLlmTrace');
