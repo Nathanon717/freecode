@@ -37,7 +37,7 @@ Two categories pass, and essentially nothing else does:
 ### Not exemptions — write the test
 
 - **A file with any executable code:** a `const` computed from a call, a function, a default value, a mapper, a guard, a `return`. If a line runs, it can be wrong. `src/config/index.ts` looks index-ish but caches and parses — it is tested.
-- **Static data files** (`registry-data.ts` and similar). Data is not type-only: ids collide, a URL goes missing, an enum drifts. Assert the *invariants* of the data (unique ids, required fields present) — that is a real, valuable test, not a tautology. See `tests/providers/registry-data.test.ts`.
+- **Static data files** (`provider-catalog.ts` and similar). Data is not type-only: ids collide, a URL goes missing, an enum drifts. Assert the *invariants* of the data (unique ids, required fields present) — that is a real, valuable test, not a tautology. See `tests/providers/provider-catalog.test.ts`.
 - **"It's small / obvious / I'll add it later."** Not criteria. Size and confidence say nothing about whether a runtime regression can hit it.
 
 If you reach for the marker on anything other than a pure-type or pure-barrel file, that is the signal to write the test instead. When unsure, the file is not exempt.

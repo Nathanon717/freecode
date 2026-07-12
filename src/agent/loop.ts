@@ -1,6 +1,6 @@
 import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
-import { invalidateDeadModel, resolveModel } from '../providers/registry.js';
+import { retireDeadModel, resolveModel } from '../providers/provider-registry.js';
 import { buildSystemPrompt } from './system-prompt.js';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
 import {
@@ -24,12 +24,12 @@ import { createMarkdownStreamRenderer } from '../cli/markdown-renderer.js';
 import { getAnthropicVerifiedRates } from '../providers/pricing-verifier.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
-import { setProjectRoot } from './context.js';
+import { setProjectRoot } from './workspace.js';
 import { isContextOverflowError, isInvalidToolArgumentsError, isModelNotFoundError, isNoSuchToolError, isProviderToolUseFailed, isToolsNotSupportedError, isUserAbortError, invalidToolName, noSuchToolAvailableList, noSuchToolName, serializeError, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
 import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
-import { executeToolCalls, runPromptToolsLoop } from './prompt-tools.js';
-import { isNativeToolsDisabled, setNativeTools } from '../providers/model-store.js';
+import { executeToolCalls, runParsedToolsLoop } from './parsed-tools.js';
+import { isNativeToolsDisabled, setNativeTools } from '../providers/model-data.js';
 import { ensureStoreReady } from '../providers/db.js';
 import { FAKE_PROVIDER_ID, FAKE_NATIVE_PROVIDER_ID, assertFakeFixtureComplete, createFakeNativeLanguageModel, runFakeModel } from '../providers/fake.js';
 
@@ -107,7 +107,7 @@ async function runFakeLlm(
         throw new Error(`Fake LLM fixture emitted tool calls, but ${providerId}:${modelId} does not support tools`);
       }
 
-      // writeTranscriptToolLeadIn is called inside withLogging (via toolFn.execute).
+      // writeTranscriptToolLeadIn is called inside withToolRendering (via toolFn.execute).
       const resultParts = await executeToolCalls(tools, generated.toolCalls, `fake-${step}`, activeMessages);
 
       // Keep this step's preamble from gluing onto the next step's text in the
@@ -139,7 +139,7 @@ interface StreamResult {
   totalTokens: number;
   promptTokens: number | undefined;
   outputTokens: number | undefined;
-  usePromptToolsFallback: boolean;
+  useParsedToolsFallback: boolean;
 }
 
 async function streamWithRetry(
@@ -154,14 +154,14 @@ async function streamWithRetry(
 ): Promise<StreamResult> {
   let activeMessages = messages;
   let toolUseFailureRetries = 0;
-  let usePromptToolsFallback = supportsTools && (isNativeToolsDisabled(providerId, modelId) || modelSettings.parsedTools);
+  let useParsedToolsFallback = supportsTools && (isNativeToolsDisabled(providerId, modelId) || modelSettings.parsedTools);
   let fullText = '';
   let totalTokens = 0;
   let promptTokens: number | undefined;
   let outputTokens: number | undefined;
 
   while (true) {
-    if (usePromptToolsFallback) {
+    if (useParsedToolsFallback) {
       log('stream', `Skipping native tools for ${providerId}:${modelId} (saved trait)`);
       break;
     }
@@ -257,8 +257,8 @@ async function streamWithRetry(
       log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
       break;
     } catch (error) {
-      if (supportsTools && fullText.length === 0 && !usePromptToolsFallback && isToolsNotSupportedError(error)) {
-        usePromptToolsFallback = true;
+      if (supportsTools && fullText.length === 0 && !useParsedToolsFallback && isToolsNotSupportedError(error)) {
+        useParsedToolsFallback = true;
         setNativeTools(providerId, modelId, false);
         process.stdout.write(`Note: ${modelId} doesn't support native tool calling — saved. Using prompt-based tools now and automatically next time.\n`);
         log('stream', 'Tool calling rejected by provider; falling back to prompt-based tool protocol', serializeError(error));
@@ -293,7 +293,7 @@ async function streamWithRetry(
     }
   }
 
-  return { fullText, totalTokens, promptTokens, outputTokens, usePromptToolsFallback };
+  return { fullText, totalTokens, promptTokens, outputTokens, useParsedToolsFallback };
 }
 
 interface UsageOutcome {
@@ -449,15 +449,15 @@ export async function agentLoop(
     promptTokens = streamed.promptTokens;
     outputTokens = streamed.outputTokens;
 
-    if (streamed.usePromptToolsFallback) {
-      const ptResult = await runPromptToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale, options.readOnly);
-      fullText = ptResult.text.trimEnd();
-      totalTokens = ptResult.totalTokens;
-      promptTokens = ptResult.promptTokens;
-      outputTokens = ptResult.outputTokens;
+    if (streamed.useParsedToolsFallback) {
+      const parsedToolsResult = await runParsedToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale, options.readOnly);
+      fullText = parsedToolsResult.text.trimEnd();
+      totalTokens = parsedToolsResult.totalTokens;
+      promptTokens = parsedToolsResult.promptTokens;
+      outputTokens = parsedToolsResult.outputTokens;
     }
 
-    if (providerId === FAKE_NATIVE_PROVIDER_ID && !streamed.usePromptToolsFallback) {
+    if (providerId === FAKE_NATIVE_PROVIDER_ID && !streamed.useParsedToolsFallback) {
       assertFakeFixtureComplete();
     }
 
@@ -469,7 +469,7 @@ export async function agentLoop(
       return finishResult(fullText);
     }
     const isDeadModel = isModelNotFoundError(error) && providerId === 'nvidia';
-    if (isDeadModel) invalidateDeadModel(providerId, modelId);
+    if (isDeadModel) retireDeadModel(providerId, modelId);
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);
     log('stream', 'streamText error details', serializeError(error));
     const errMsg = toDetailedErrorMessage(error);

@@ -3,12 +3,12 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-// model-store resolves its store dir from $FREECODE_STORE. Both are pointed at temp dirs
+// model-data resolves its store dir from $FREECODE_STORE. Both are pointed at temp dirs
 // and the module is dynamically imported after the env vars are set, so tests never touch
 // the committed `.freecode/`. DB is initialized via initStore() against a temp file each
 // test, then torn down via resetStore() so the next test gets a fresh cache+client.
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-let store: typeof import('../../src/providers/model-store.js');
+let store: typeof import('../../src/providers/model-data.js');
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 let db: typeof import('../../src/providers/db.js');
 let tempStore = '';
@@ -17,7 +17,7 @@ const previousStore = process.env.FREECODE_STORE;
 beforeEach(async () => {
   tempStore = mkdtempSync(join(tmpdir(), 'freecode-store-'));
   process.env.FREECODE_STORE = tempStore;
-  store = await import('../../src/providers/model-store.js');
+  store = await import('../../src/providers/model-data.js');
   db = await import('../../src/providers/db.js');
   await db.initStore();
 });
@@ -29,7 +29,7 @@ afterEach(async () => {
   try { rmSync(tempStore, { recursive: true, force: true }); } catch { /* OS will clean up */ }
 });
 
-describe('model-store: upsert/get', () => {
+describe('model-data: upsert/get', () => {
   it('returns undefined for an unknown key', () => {
     expect(store.getModel('groq:nope')).toBeUndefined();
   });
@@ -45,7 +45,7 @@ describe('model-store: upsert/get', () => {
   });
 });
 
-describe('model-store: favorites round-trip', () => {
+describe('model-data: favorites round-trip', () => {
   it('has no favorites by default', () => {
     expect(store.getFavorites().size).toBe(0);
   });
@@ -60,7 +60,7 @@ describe('model-store: favorites round-trip', () => {
   });
 });
 
-describe('model-store: nativeTools round-trip', () => {
+describe('model-data: nativeTools round-trip', () => {
   it('reports native tools as enabled by default', () => {
     expect(store.isNativeToolsDisabled('openai', 'gpt-4o')).toBe(false);
     expect(store.getNoNativeToolsKeys().size).toBe(0);
@@ -78,7 +78,7 @@ describe('model-store: nativeTools round-trip', () => {
   });
 });
 
-describe('model-store: settings round-trip', () => {
+describe('model-data: settings round-trip', () => {
   it('returns empty object for unknown key', () => {
     expect(store.getModelSettings('groq:nope')).toEqual({});
   });
@@ -112,7 +112,7 @@ describe('model-store: settings round-trip', () => {
   });
 });
 
-describe('model-store: appendEvalRun', () => {
+describe('model-data: appendEvalRun', () => {
   const fakeSummary = {
     timestamp: '2026-06-11T12:00:00.000Z',
     taskId: 'HumanEval/0',
@@ -174,7 +174,7 @@ describe('model-store: appendEvalRun', () => {
   });
 });
 
-describe('model-store: appendEvalRun with custom evalType', () => {
+describe('model-data: appendEvalRun with custom evalType', () => {
   const customSummary = {
     timestamp: '2026-06-11T12:00:00.000Z',
     taskId: '001-hello-world',
@@ -200,7 +200,7 @@ describe('model-store: appendEvalRun with custom evalType', () => {
   });
 });
 
-describe('model-store: getHumanEvalResults', () => {
+describe('model-data: getHumanEvalResults', () => {
   it('returns empty object when no evals exist', () => {
     expect(store.getHumanEvalResults('groq:llama-3.1-8b')).toEqual({});
   });

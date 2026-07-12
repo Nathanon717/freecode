@@ -30,13 +30,13 @@ type ConfirmToolCall = (
   preview: ToolCallPreview,
 ) => Promise<boolean | ToolCallConfirmation>;
 
-createTools(confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, promptTools?: boolean, readOnly?: boolean): { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { ...; }
+createTools(confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, parsedTools?: boolean, readOnly?: boolean): { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { ...; }
 
 allTools: { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { create: AnyCoreTool; edit: AnyCoreTool; shell_exec: AnyCoreTool; read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; }
 
 readFileTool: CoreTool<ZodObject<{ path: ZodString; offset: ZodOptional<ZodNumber>; limit: ZodOptional<ZodNumber>; }, "strip", ZodTypeAny, { ...; }, { ...; }>, string> & { ...; }
 
-createTool: CoreTool<ZodObject<{ path: ZodString; content: ZodString; }, "strip", ZodTypeAny, { path: string; content: string; }, { path: string; content: string; }>, string> & { ...; }
+createFileTool: CoreTool<ZodObject<{ path: ZodString; content: ZodString; }, "strip", ZodTypeAny, { path: string; content: string; }, { path: string; content: string; }>, string> & { ...; }
 
 editTool: CoreTool<ZodObject<{ path: ZodString; old_text: ZodString; new_text: ZodString; }, "strip", ZodTypeAny, { path: string; old_text: string; new_text: string; }, { ...; }>, string> & { ...; }
 
@@ -53,7 +53,7 @@ listDirTool: CoreTool<ZodObject<{ path: ZodOptional<ZodString>; }, "strip", ZodT
 | Key | Tool | Source |
 |-----|------|--------|
 | `read` | `readFileTool` | `./read` |
-| `create` | `createTool` | `./create` |
+| `create` | `createFileTool` | `./create` |
 | `edit` | `editTool` | `./edit` |
 | `grep` | `grepTool` | `./grep` |
 | `shell_exec` | `shellTool` | `./shell` |
@@ -64,8 +64,8 @@ listDirTool: CoreTool<ZodObject<{ path: ZodOptional<ZodString>; }, "strip", ZodT
 The effective order is:
 
 1. `withRationale` when `loadConfig().toolRationale` is true. It adds a required `rationale` string to the Zod schema and strips it before calling the real tool.
-2. `withConfirmation`. It calls the mode-supplied approval callback and returns a denial string to the model when rejected or no callback exists. For `read`/`grep`/`list_dir` (the read-only tool set) it runs the real tool *before* the callback and reuses that result on approval instead of re-running it — safe only because those three have no side effect beyond reading. Immediately after precomputing (or, for `create`, immediately from `args.content` without executing early — writing is not safe pre-confirmation), it writes the grey/dim content preview via `writeToolResultPreview` from `cli/transcript-renderer.ts` — the same call the post-execution path uses, so it must go through the transcript stream at header-write time, not through the approval UI after `teardownBottomUI` (that ordering silently drops output outside the active scroll region — verified live via a PTY session). `edit`/`shell_exec` never precompute or preview early. When the preview was actually written and the call is approved, `withLogging`'s post-execution result write is suppressed via a shared `PreviewState` box so the same content doesn't print twice; on denial the preview stays but the denial message still prints normally.
-3. `withLogging`. Delegates all transcript output to the shared orchestration API in `cli/transcript-renderer.ts`. It first `await`s `awaitToolRenderGate()` (`agent/tool-render-gate.ts`) so that on the native `fullStream` path the header waits until the stream consumer has flushed this step's preamble text (a no-op on non-streaming paths); then calls `writeToolCallHeader(...)` (lead-in + optional rationale + call line) before tool execution, then `writeToolStepResult(name, result)` after execution completes or `writeToolStepResult(name, { kind: 'error', error })` on failure. The edit-context computation (diff context lines from disk) remains here because it requires `fs`/`cwd` and must happen before the tool runs. Also appends JSON trace events to `FREECODE_TRACE_JSON` when set.
+2. `withConfirmation`. It calls the mode-supplied approval callback and returns a denial string to the model when rejected or no callback exists. For `read`/`grep`/`list_dir` (the read-only tool set) it runs the real tool *before* the callback and reuses that result on approval instead of re-running it — safe only because those three have no side effect beyond reading. Immediately after precomputing (or, for `create`, immediately from `args.content` without executing early — writing is not safe pre-confirmation), it writes the grey/dim content preview via `writeToolResultPreview` from `cli/transcript-renderer.ts` — the same call the post-execution path uses, so it must go through the transcript stream at header-write time, not through the approval UI after `teardownBottomUI` (that ordering silently drops output outside the active scroll region — verified live via a PTY session). `edit`/`shell_exec` never precompute or preview early. When the preview was actually written and the call is approved, `withToolRendering`'s post-execution result write is suppressed via a shared `PreviewState` box so the same content doesn't print twice; on denial the preview stays but the denial message still prints normally.
+3. `withToolRendering`. Delegates all transcript output to the shared orchestration API in `cli/transcript-renderer.ts`. It first `await`s `awaitToolRenderGate()` (`agent/tool-render-gate.ts`) so that on the native `fullStream` path the header waits until the stream consumer has flushed this step's preamble text (a no-op on non-streaming paths); then calls `writeToolCallHeader(...)` (lead-in + optional rationale + call line) before tool execution, then `writeToolStepResult(name, result)` after execution completes or `writeToolStepResult(name, { kind: 'error', error })` on failure. The edit-context computation (diff context lines from disk) remains here because it requires `fs`/`cwd` and must happen before the tool runs. Also appends JSON trace events to `FREECODE_TRACE_JSON` when set.
 4. `withSerializedExecution`. It chains tool calls through one promise queue.
 
 ## Trace Events

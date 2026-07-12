@@ -2,9 +2,9 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { writeFile, mkdir } from 'fs/promises';
 import { dirname } from 'path';
-import { resolveProjectPath, resolveWritableProjectPath } from '../context.js';
+import { resolveProjectPath, resolveWritableProjectPath } from '../workspace.js';
 
-export const createTool = tool({
+export const createFileTool = tool({
   description: 'Create a new file at the given path. Fails if the file already exists. Use edit for existing files.',
   parameters: z.object({
     path: z.string().describe('Relative path from project root'),

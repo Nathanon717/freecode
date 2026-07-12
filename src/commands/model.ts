@@ -1,11 +1,11 @@
 import chalk from 'chalk';
 import type { Interface } from 'readline';
 import { loadConfig, resolveApiKey, saveDefaultModel } from '../config/index.js';
-import { getFavorites, setFavorite, getNoNativeToolsKeys, getModel } from '../providers/model-store.js';
+import { getFavorites, setFavorite, getNoNativeToolsKeys, getModel } from '../providers/model-data.js';
 import { ensureStoreReady } from '../providers/db.js';
-import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/registry.js';
-import { markModelSelected } from '../providers/model-cache.js';
-import { clearModelNewFlag } from '../providers/registry.js';
+import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/provider-registry.js';
+import { markModelSelected } from '../providers/model-list-cache.js';
+import { clearModelNewFlag } from '../providers/provider-registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
 import { countWrappedLines } from '../cli/raw-picker.js';
 import { loadEvalDotsData, type EvalDotsData } from '../eval/history.js';
@@ -22,7 +22,7 @@ import {
   buildScreen,
   buildModelDetailScreen,
 } from '../cli/model-screen.js';
-import { isBackspaceKey } from '../util/keys.js';
+import { isBackspaceKey } from '../util/keyboard.js';
 import { hasExactTokenizer } from '../tokenizers/count.js';
 
 // Re-exported so existing importers (and tests) keep a stable surface.

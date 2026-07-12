@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { readFile, readdir } from 'fs/promises';
 import { join, dirname, basename } from 'path';
-import { markFileRead, resolveExistingProjectPath, resolveProjectPath } from '../context.js';
+import { markFileRead, resolveExistingProjectPath, resolveProjectPath } from '../workspace.js';
 
 const DEFAULT_LIMIT = 2000;
 

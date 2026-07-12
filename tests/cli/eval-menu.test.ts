@@ -49,7 +49,7 @@ vi.mock('../../src/eval/humaneval-data.js', () => ({
   humanEvalDatasetPath: vi.fn(() => '/data.gz'),
 }));
 
-vi.mock('../../src/providers/model-store.js', () => ({ getHumanEvalResults: vi.fn(() => ({})) }));
+vi.mock('../../src/providers/model-data.js', () => ({ getHumanEvalResults: vi.fn(() => ({})) }));
 vi.mock('../../src/providers/db.js', () => ({ ensureStoreReady: vi.fn(() => Promise.resolve()) }));
 const mockAccent = Object.assign((s: string) => s, { bold: (s: string) => s, black: (s: string) => s });
 vi.mock('../../src/cli/banner.js', () => ({ redrawBanner: vi.fn(), getBannerColor: () => mockAccent, getBannerColorRGB: () => [170, 232, 255] as [number, number, number] }));

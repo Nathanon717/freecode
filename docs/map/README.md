@@ -31,10 +31,9 @@ Format: filename (linecount)
 
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
-  - [`context.ts`](agent/context.md) (72) — Agent Tool Context
+  - [`conversation.ts`](agent/conversation.md) (23) — Session Controller
   - [`loop.ts`](agent/loop.md) (501) — Agent Loop
-  - [`prompt-tools.ts`](agent/prompt-tools.md) (247) — Prompt-Based Tool Harness
-  - [`session-controller.ts`](agent/session-controller.md) (23) — Session Controller
+  - [`parsed-tools.ts`](agent/parsed-tools.md) (247) — Parsed-Tools Harness
   - [`system-prompt.ts`](agent/system-prompt.md) (31) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
 - `src/agent/tools/`
@@ -45,6 +44,8 @@ Format: filename (linecount)
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (87) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
+- `src/agent/`
+  - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/`
   - [`action-menu.ts`](cli/action-menu.md) (53) — Inline Action Sub-menu
   - [`banner.ts`](cli/banner.md) (123) — Startup Banner
@@ -99,18 +100,18 @@ Format: filename (linecount)
   - [`db.ts`](providers/db.md) (499) — SQLite Store (libSQL/Turso)
   - [`fake.ts`](providers/fake.md) (424) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
-  - [`model-cache.ts`](providers/model-cache.md) (105) — Model Cache
+  - [`model-data.ts`](providers/model-data.md) (220) — Unified Model Store
+  - [`model-list-cache.ts`](providers/model-list-cache.md) (105) — Model List Cache
   - [`model-quirks.ts`](providers/model-quirks.md) (38) — Per-Model Static Quirks
-  - [`model-settings-registry.ts`](providers/model-settings-registry.md) (14) — Model Settings Registry
-  - [`model-store.ts`](providers/model-store.md) (220) — Unified Model Store
+  - [`model-settings-accessor.ts`](providers/model-settings-accessor.md) (14) — Model Settings Accessor
   - [`openai-daily-spend.ts`](providers/openai-daily-spend.md) (181) — OpenAI Daily Spend Footer
   - [`pricing-verifier.ts`](providers/pricing-verifier.md) (123) — Dual-Source Pricing Verifier
+  - [`provider-catalog.ts`](providers/provider-catalog.md) (311) — Provider Catalog
+  - [`provider-registry.ts`](providers/provider-registry.md) (397) — Provider Registry
 - `src/providers/quota/`
   - [`cache.ts`](providers/quota/cache.md) (39) — Quota Cache
   - [`headers.ts`](providers/quota/headers.md) (370) — Provider Rate-Limit Header Parsing
 - `src/providers/`
-  - [`registry-data.ts`](providers/registry-data.md) (311) — Provider Registry Data
-  - [`registry.ts`](providers/registry.md) (397) — Provider Registry
   - [`types.ts`](providers/types.md) (54) — Type Definitions
 - `src/tokenizers/backends/`
   - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) (36) — HF Fast-Tokenizer (tokenizer.json) Backend
@@ -125,7 +126,7 @@ Format: filename (linecount)
 - `src/util/`
   - [`errors.ts`](util/errors.md) (236) — Shared Error Utilities
   - [`guards.ts`](util/guards.md) (4) — Type Guard Utilities
-  - [`keys.ts`](util/keys.md) (5) — Raw-Key Helpers
+  - [`keyboard.ts`](util/keyboard.md) (5) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) (39) — LCS Line Diff
   - [`screen-buffer.ts`](util/screen-buffer.md) (115) — Screen Buffer
   - [`text-encoding.ts`](util/text-encoding.md) (24) — Text Encoding Helpers
@@ -135,4 +136,4 @@ Format: filename (linecount)
 
 Runtime starts in [index.md](index.md), enters [cli/session-runner.md](cli/session-runner.md), dispatches slash commands through [cli/command-dispatcher.md](cli/command-dispatcher.md), and sends normal turns to [agent/loop.md](agent/loop.md).
 
-Provider selection lives in [providers/registry.md](providers/registry.md). Tool wrappers live under [agent/tools/](agent/tools/index.md).
+Provider selection lives in [providers/provider-registry.md](providers/provider-registry.md). Tool wrappers live under [agent/tools/](agent/tools/index.md).

@@ -11,7 +11,7 @@ import { renderMarkdown } from "../cli/markdown-renderer.js";
 import { log, logError } from "../logger.js";
 import { isUserAbortError } from "../util/errors.js";
 
-const PROMPT_TOOLS_ADDENDUM = `
+const PARSED_TOOLS_ADDENDUM = `
 
 ## Prompt-Based Tool Protocol
 
@@ -45,8 +45,8 @@ The result will be provided before you continue. You may then call another tool 
 **shell_exec** — Execute a shell command.
   args: { "command": string, "timeout_ms"?: number, "confirmDestructive"?: boolean }`;
 
-export function buildPromptToolsSystemPrompt(base: string): string {
-  return base + PROMPT_TOOLS_ADDENDUM;
+export function buildParsedToolsSystemPrompt(base: string): string {
+  return base + PARSED_TOOLS_ADDENDUM;
 }
 
 interface ParsedToolCall {
@@ -82,7 +82,7 @@ export function parseToolCalls(text: string): ParsedToolCall[] {
       }
     } catch (err) {
       logError(
-        "prompt-tools",
+        "parsed-tools",
         `Malformed JSON in <tool_call> block (offset ${match.index})`,
         err,
       );
@@ -91,7 +91,7 @@ export function parseToolCalls(text: string): ParsedToolCall[] {
   return calls;
 }
 
-export interface PromptToolsResult {
+export interface ParsedToolsResult {
   text: string;
   totalTokens: number;
   promptTokens?: number;
@@ -101,7 +101,7 @@ export interface PromptToolsResult {
 /**
  * Execute a batch of text-protocol tool calls through the wrapped tools and
  * return the `<tool_result>` blocks to feed back to the model. Shared by the
- * prompt-tools loop and the fake-LLM loop in loop.ts. Rethrows user aborts;
+ * parsed-tools loop and the fake-LLM loop in loop.ts. Rethrows user aborts;
  * other tool errors become error results for the model.
  */
 export async function executeToolCalls(
@@ -143,15 +143,15 @@ export async function executeToolCalls(
   return resultParts;
 }
 
-export async function runPromptToolsLoop(
+export async function runParsedToolsLoop(
   messages: CoreMessage[],
   systemPrompt: string,
   model: LanguageModel,
   confirmToolCall?: ConfirmToolCall,
   toolRationale?: boolean,
   readOnly?: boolean,
-): Promise<PromptToolsResult> {
-  const augSystem = buildPromptToolsSystemPrompt(systemPrompt);
+): Promise<ParsedToolsResult> {
+  const augSystem = buildParsedToolsSystemPrompt(systemPrompt);
   const tools = createTools(confirmToolCall, toolRationale, true, readOnly);
   let activeMessages: CoreMessage[] = [...messages];
 
@@ -165,7 +165,7 @@ export async function runPromptToolsLoop(
 
   for (let step = 0; step < 10; step++) {
     log(
-      "prompt-tools",
+      "parsed-tools",
       `Step ${step + 1}: calling model (${activeMessages.length} messages)`,
     );
 
@@ -207,7 +207,7 @@ export async function runPromptToolsLoop(
       }
       notifyTranscriptChunk(stepText || "\n");
       accText += stepText;
-      log("prompt-tools", `Step ${step + 1}: no tool calls, done`);
+      log("parsed-tools", `Step ${step + 1}: no tool calls, done`);
       endTranscriptStep(false);
       break;
     }
@@ -220,7 +220,7 @@ export async function runPromptToolsLoop(
     }
 
     log(
-      "prompt-tools",
+      "parsed-tools",
       `Step ${step + 1}: ${calls.length} tool call(s): ${calls.map((c) => c.name).join(", ")}`,
     );
 

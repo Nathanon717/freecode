@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
-import { resolveExistingProjectPath } from '../context.js';
+import { resolveExistingProjectPath } from '../workspace.js';
 
 export const listDirTool = tool({
   description: 'List files in a directory. Use this to explore project structure.',

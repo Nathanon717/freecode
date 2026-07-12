@@ -9,7 +9,7 @@ import {
   resolveProjectPath,
   resolveExistingProjectPath,
   resolveWritableProjectPath,
-} from '../../src/agent/context.js';
+} from '../../src/agent/workspace.js';
 
 let tempRoot = '';
 const previousCwdRoot = process.cwd();

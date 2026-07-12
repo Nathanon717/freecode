@@ -1,7 +1,7 @@
 import type { LanguageModel } from "ai";
 import type { ModelConfig, ProviderConfig } from "./types.js";
-import { PROVIDER_REGISTRY } from "./registry-data.js";
-import { getDeadIds, getProviderCache, markModelDead, updateProviderCache } from "./model-cache.js";
+import { PROVIDER_REGISTRY } from "./provider-catalog.js";
+import { getDeadIds, getProviderCache, recordDeadModel, updateProviderCache } from "./model-list-cache.js";
 import { createOpenAICompatProvider } from "./adapters/openai-compat.js";
 import { createAnthropicProvider } from "./adapters/anthropic.js";
 import { resolveApiKey } from "../config/index.js";
@@ -304,8 +304,8 @@ export function clearModelNewFlag(providerId: string, modelId: string): void {
   if (model) delete model.isNew;
 }
 
-export function invalidateDeadModel(providerId: string, modelId: string): void {
-  markModelDead(providerId, modelId);
+export function retireDeadModel(providerId: string, modelId: string): void {
+  recordDeadModel(providerId, modelId);
   const entry = PROVIDER_REGISTRY.find((p) => p.id === providerId);
   if (entry) entry.models = entry.models.filter((m) => m.id !== modelId);
 }

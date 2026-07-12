@@ -4,7 +4,7 @@ import { join, dirname, resolve } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
 import { log, logError } from '../logger.js';
-import type { ModelEntry, EvalRunSummary } from './model-store.js';
+import type { ModelEntry, EvalRunSummary } from './model-data.js';
 import { setDbConfigCache, clearDbConfigCache, registerConfigPersist, type DbConfigData } from './db-config-cache.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
@@ -37,10 +37,10 @@ function readDbConfig(): { syncUrl?: string; authToken?: string } {
   }
 }
 
-type ModelStore = Record<string, ModelEntry>;
+type ModelDataMap = Record<string, ModelEntry>;
 
 let client: Client | null = null;
-let cache: ModelStore | null = null;
+let cache: ModelDataMap | null = null;
 
 // libSQL replica sidecars. A recovery wipe MUST remove `-info` (sync metadata) or a
 // WalConflict survives the re-pull; verified real dir has no `-meta`. See db.md.
@@ -124,7 +124,7 @@ async function createSchema(c: Client): Promise<void> {
   `);
 }
 
-async function loadFromDb(c: Client): Promise<ModelStore> {
+async function loadFromDb(c: Client): Promise<ModelDataMap> {
   const [modelsRes, evalsRes] = await Promise.all([
     c.execute(
       'SELECT key, provider, model_id, display_name, native_tools, context_window, is_favorite, settings, rate_limits FROM models'
@@ -134,7 +134,7 @@ async function loadFromDb(c: Client): Promise<ModelStore> {
     ),
   ]);
 
-  const store: ModelStore = {};
+  const store: ModelDataMap = {};
 
   for (const row of modelsRes.rows) {
     const key = row['key'] as string;
@@ -483,11 +483,11 @@ export async function resetStore(): Promise<void> {
   if (process.platform === 'win32') await new Promise(r => setTimeout(r, 100));
 }
 
-export function getCache(): ModelStore | null {
+export function getModelData(): ModelDataMap | null {
   return cache;
 }
 
-export function setCache(store: ModelStore): void {
+export function setModelData(store: ModelDataMap): void {
   cache = store;
 }
 

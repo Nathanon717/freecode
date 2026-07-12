@@ -4,7 +4,7 @@ import { tmpdir } from 'os';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { agentLoop } from '../../src/agent/loop.js';
 import { resetFakeModelState } from '../../src/providers/fake.js';
-import { setModelSetting } from '../../src/providers/model-store.js';
+import { setModelSetting } from '../../src/providers/model-data.js';
 import { UserAbortError } from '../../src/util/errors.js';
 
 const previousFake = process.env.FREECODE_FAKE_LLM;

@@ -29,7 +29,7 @@ The data is tiny (~55KB `models.json`, ~2.8MB total incl. transcripts), so:
 
 - **Reads stay synchronous**, served from an **in-memory cache** loaded once during the
   already-async startup path (after an initial `await client.sync()` + full table load). This keeps
-  every current `model-store.ts` signature intact — `getFavorites(): Set`,
+  every current `model-data.ts` signature intact — `getFavorites(): Set`,
   `getHumanEvalResults(): Record`, `getNoNativeToolsKeys(): Set`, etc. — so the Ink render paths in
   `model.ts` and the scenario menu need **no async refactor**.
 - **Writes update the in-memory cache synchronously** (preserving read-your-writes), then persist
@@ -39,7 +39,7 @@ The data is tiny (~55KB `models.json`, ~2.8MB total incl. transcripts), so:
   already async contexts; leave the per-response-turn hot path (`saveObservedRateLimits`)
   best-effort. Bounded, documented, not blocking.
 
-Only `load()`/`save()` internals of `model-store.ts` change; the public API surface is preserved.
+Only `load()`/`save()` internals of `model-data.ts` change; the public API surface is preserved.
 
 ## Schema (lightly normalized — data is small)
 
@@ -85,7 +85,7 @@ CREATE INDEX idx_eval_runs_lookup ON eval_runs(model_key, eval_type, task_id, ti
 ```
 
 This unifies BOTH legacy stores (`eval-dots.ts`/`playground/eval/results` and
-`model-store.ts`/`.freecode/evals`) onto one `eval_runs` table, collapsing the dual-write.
+`model-data.ts`/`.freecode/evals`) onto one `eval_runs` table, collapsing the dual-write.
 
 ## Phases
 
@@ -100,11 +100,11 @@ note - if u get the 500 max line count thing, ignore it untill ur ready to delet
   `CREATE TABLE IF NOT EXISTS`), `syncUrl`/`authToken` read from config (absent → pure local
   `file:` mode, no sync), an `initStore()` called in startup that `await`s initial sync + load, and
   the in-memory cache.
-- Rewrite `model-store.ts` `load()`/`save()` internals to read/write the cache backed by `db.ts`.
+- Rewrite `model-data.ts` `load()`/`save()` internals to read/write the cache backed by `db.ts`.
   **All exported signatures unchanged.** Legacy JSON seed helpers stay (still read config for
   first-run favorites/traits/settings seeding).
 - `.gitignore`: add `.freecode/freecode.db*`.
-- Tests: `model-store.test.ts` and new `db.test.ts` both call `initStore()` against temp `file:`
+- Tests: `model-data.test.ts` and new `db.test.ts` both call `initStore()` against temp `file:`
   DBs. `resetStore()` drains in-flight writes before close; temp dir cleanup is best-effort (Windows
   WAL file handles linger briefly — `rmSync` is wrapped try-catch, OS cleans up). 488 tests pass.
 - **Notes:** `resetStore()` is async (exported for test teardown). `persistAsync` tracks in-flight
@@ -131,15 +131,15 @@ note - if u get the 500 max line count thing, ignore it untill ur ready to delet
 ### Phase 3 — Collapse the dual-write & retire eval-dots JSON ✅ COMPLETE
 - `scenario-menu.ts`: dropped the `appendEvalHistory` call; all scenario-eval writes now go through
   `appendEvalRun` (DB path). `appendEvalHistory` fully removed from `eval-runner.ts`.
-- `eval-dots.ts` `loadEvalHistory()` now reads from the in-memory DB cache (via `getCache()` from
+- `eval-dots.ts` `loadEvalHistory()` now reads from the in-memory DB cache (via `getModelData()` from
   `db.ts`) when available; falls back to `playground/eval/results/*.json` when cache is null
   (e.g. early in process startup or in tests that don't call `initStore()`).
 - `EvalRunSummary` extended with `warnings`, `scenarioHash`, `totalTokens`, `checks`. `db.ts`
   `loadFromDb` SELECT and `persistAsync` INSERT both extended to handle these fields.
 - `.gitignore` updated; tracked artifact files untracked with `git rm --cached -r` (note: also
   untracked `.run/` and `work/` subdirs beyond the spec, since they were churning in git status).
-- Local `EvalCheck` interface added to `model-store.ts` (structurally identical to `EvalCheckResult`)
-  to avoid a circular import between `model-store.ts` and `eval-dots.ts`.
+- Local `EvalCheck` interface added to `model-data.ts` (structurally identical to `EvalCheckResult`)
+  to avoid a circular import between `model-data.ts` and `eval-dots.ts`.
 - `loadEvalHistory()` normalizes `model: modelKey || 'default'` to match the `getEvalStatus`
   `model || 'default'` normalization (avoids grey dots on no-model runs).
 - **Verified:** 495/495 tests green, build clean, docs:generate clean.
@@ -152,7 +152,7 @@ note - if u get the 500 max line count thing, ignore it untill ur ready to delet
 - Background `.sync()` on startup + after eval-run appends (already wired in `initStore` + `persistAsync`).
 - `saveTranscriptAsync` added to `db.ts`: new runs write `eval_runs` + `eval_transcripts` to the DB so transcript content syncs cross-device.
 - Gitignored + `git rm --cached`: `.freecode/models.json`, `.freecode/evals/`, `.freecode/model-cache.json`. Local JSON files remain as write-through fallback.
-- Docs: `db.md` and `model-store.md` updated; map page `docs/map/commands/db.md` added; `docs:generate` clean.
+- Docs: `db.md` and `model-data.md` updated; map page `docs/map/commands/db.md` added; `docs:generate` clean.
 - **Verify (cross-device):** configure Turso credentials on both machines, run an eval on machine A, confirm machine B sees the run on next startup via Turso sync.
 - **Verified:** 496/496 tests green, build clean, docs:generate clean.
 

@@ -63,7 +63,7 @@ vi.mock('../../src/config/index.js', () => ({
   writeConfigFile: vi.fn(),
 }));
 
-vi.mock('../../src/providers/model-store.js', () => ({
+vi.mock('../../src/providers/model-data.js', () => ({
   getModelSettings: vi.fn().mockReturnValue({ toolRationale: true }),
   setModelSetting: vi.fn(),
   isNativeToolsDisabled: vi.fn().mockReturnValue(false),
@@ -73,7 +73,7 @@ vi.mock('../../src/providers/model-store.js', () => ({
 
 import { runConfigCommand } from '../../src/commands/config.js';
 import { updateGlobalConfig, writeConfigFile } from '../../src/config/index.js';
-import { setModelSetting, isNativeToolsDisabled } from '../../src/providers/model-store.js';
+import { setModelSetting, isNativeToolsDisabled } from '../../src/providers/model-data.js';
 
 const fakeRl = { pause: vi.fn(), resume: vi.fn() } as unknown as Interface;
 

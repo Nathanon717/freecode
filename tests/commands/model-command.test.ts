@@ -45,7 +45,7 @@ vi.mock('../../src/config/index.js', () => ({
   saveDefaultModel: vi.fn(),
 }));
 
-vi.mock('../../src/providers/model-store.js', () => ({
+vi.mock('../../src/providers/model-data.js', () => ({
   getFavorites: vi.fn().mockReturnValue(new Set<string>()),
   setFavorite: vi.fn(),
   getNoNativeToolsKeys: vi.fn().mockReturnValue(new Set<string>()),
@@ -54,7 +54,7 @@ vi.mock('../../src/providers/model-store.js', () => ({
   setModelSetting: vi.fn(),
 }));
 
-vi.mock('../../src/providers/registry.js', () => ({
+vi.mock('../../src/providers/provider-registry.js', () => ({
   PROVIDER_REGISTRY: [
     {
       id: 'openai',
@@ -72,7 +72,7 @@ vi.mock('../../src/providers/registry.js', () => ({
   clearModelNewFlag: vi.fn(),
 }));
 
-vi.mock('../../src/providers/model-cache.js', () => ({
+vi.mock('../../src/providers/model-list-cache.js', () => ({
   markModelSelected: vi.fn(),
 }));
 
@@ -93,9 +93,9 @@ vi.mock('../../src/cli/eval-dots.js', () => ({
 
 import { runModelCommand } from '../../src/commands/model.js';
 import { saveDefaultModel, resolveApiKey } from '../../src/config/index.js';
-import { setFavorite, getNoNativeToolsKeys } from '../../src/providers/model-store.js';
-import { markModelSelected } from '../../src/providers/model-cache.js';
-import { clearModelNewFlag } from '../../src/providers/registry.js';
+import { setFavorite, getNoNativeToolsKeys } from '../../src/providers/model-data.js';
+import { markModelSelected } from '../../src/providers/model-list-cache.js';
+import { clearModelNewFlag } from '../../src/providers/provider-registry.js';
 import { getOpenAIVerifiedRates } from '../../src/providers/pricing-verifier.js';
 
 const fakeRl = { pause: vi.fn(), resume: vi.fn() } as unknown as Interface;

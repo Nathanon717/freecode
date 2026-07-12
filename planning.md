@@ -1,6 +1,6 @@
 # Free-Only LLM Mocking Plan
 
-**Goal / done state:** every real model execution path (AI SDK native `streamText()`, OpenAI Responses, prompt-tools fallback) has a free fake-LLM scenario, and the expensive provider-backed eval workflows are converted to fake `tests/scenarios/`. When `Still To Do` is empty, the plan is shippable and this file can be archived or deleted.
+**Goal / done state:** every real model execution path (AI SDK native `streamText()`, OpenAI Responses, parsed-tools fallback) has a free fake-LLM scenario, and the expensive provider-backed eval workflows are converted to fake `tests/scenarios/`. When `Still To Do` is empty, the plan is shippable and this file can be archived or deleted.
 
 ---
 
@@ -55,10 +55,10 @@ Maintenance instructions:
 ## Still To Do
 
 - **OpenAI Responses path.** Add a fake Responses transport returning realistic Responses-style JSON (`output_text`, `output`, `function_call`, `function_call_output`, usage), routed by a fake model and gated to fake mode. Ships with a scenario, a `responses` `executionPath` trace, fixture matching for Responses-supplied/omitted tools, and unit tests.
-- **Prompt-tools fallback path.** Add a scripted prompt-tools fake mode that emits `<tool_call>...</tool_call>` blocks, supports tool-call JSON split across chunks, reinjects `<tool_result>` messages, and produces a final text response. Ships with a scenario, a prompt-tools `executionPath` trace, fixture matching for prompt-tool-supplied/omitted tools, and unit tests.
+- **Parsed-tools fallback path.** Add a scripted parsed-tools fake mode that emits `<tool_call>...</tool_call>` blocks, supports tool-call JSON split across chunks, reinjects `<tool_result>` messages, and produces a final text response. Ships with a scenario, a parsed-tools `executionPath` trace, fixture matching for parsed-tool-supplied/omitted tools, and unit tests.
 - **Errors, usage metadata, and streaming behavior.** Add fake responses for controlled errors, no-text responses, usage-after-stream, usage failure, and malformed/missing usage; plus deterministic streaming (incremental chunks, partial text then error, TTY rendering while text streams). Ships with assertions and unit tests.
 - **Failure-mode scenarios.** Add free failure-mode scenarios: bad model selection, unknown provider, missing keys for real providers, context overflow, no-tool and native-tool-rejection behavior, malformed tool calls, unknown tools, invalid tool arguments, repeated tool loops, stream abort, and stream failure after partial output.
-- **Convert eval workflows to fake scenarios** (the payoff). Duplicate the expensive provider-backed eval workflows into fake `tests/scenarios/`: simple text, approved tool call, denied tool call, multi-tool file creation, read-edit-write, grep workflow, shell approval, malformed tool retry, unknown tool retry, prompt-tools fallback, context overflow, partial stream error, session resume, and TTY streaming.
+- **Convert eval workflows to fake scenarios** (the payoff). Duplicate the expensive provider-backed eval workflows into fake `tests/scenarios/`: simple text, approved tool call, denied tool call, multi-tool file creation, read-edit-write, grep workflow, shell approval, malformed tool retry, unknown tool retry, parsed-tools fallback, context overflow, partial stream error, session resume, and TTY streaming.
 
 ## Out-of-scope candidates (decide keep/cut before adding back)
 

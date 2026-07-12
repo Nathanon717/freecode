@@ -1,7 +1,7 @@
 import type { AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';
 import { dispatchCommand, type ModelListMode } from './command-dispatcher.js';
-import type { SessionController } from '../agent/session-controller.js';
+import type { Conversation } from '../agent/conversation.js';
 
 export interface CliSessionMode {
   readInput(this: void): Promise<string | null>;
@@ -25,7 +25,7 @@ export interface CliSessionMode {
 
 interface CliSessionRunnerOptions {
   projectRoot: string;
-  session: SessionController;
+  session: Conversation;
   getSelectedModel(this: void): string;
   setSelectedModel(this: void, model: string): void;
   mode: CliSessionMode;

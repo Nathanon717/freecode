@@ -1,5 +1,5 @@
 import { readFileTool } from "./read.js";
-import { createTool } from "./create.js";
+import { createFileTool } from "./create.js";
 import { editTool } from "./edit.js";
 import { grepTool } from "./grep.js";
 import { shellTool } from "./shell.js";
@@ -76,10 +76,10 @@ function appendToolTrace(event: ToolTraceEvent): void {
   }
 }
 
-function withLogging(
+function withToolRendering(
   name: string,
   t: AnyCoreTool,
-  promptTools = false,
+  parsedTools = false,
   previewState?: PreviewState,
 ): AnyCoreTool {
   if (!t.execute) return t;
@@ -100,7 +100,7 @@ function withLogging(
         name,
         displayArgs,
         rationale: typeof rationale === "string" ? rationale : undefined,
-        promptTools,
+        parsedTools,
       });
 
       const editContextBefore: string[] = [];
@@ -344,11 +344,11 @@ function wrap(
   useRationale: boolean,
   queueExecution: QueuedToolExecution,
   confirmToolCall?: ConfirmToolCall,
-  promptTools = false,
+  parsedTools = false,
 ): AnyCoreTool {
   const previewState: PreviewState = { suppressed: false };
   return withSerializedExecution(
-    withLogging(
+    withToolRendering(
       name,
       withConfirmation(
         name,
@@ -356,7 +356,7 @@ function wrap(
         confirmToolCall,
         previewState,
       ),
-      promptTools,
+      parsedTools,
       previewState,
     ),
     queueExecution,
@@ -366,7 +366,7 @@ function wrap(
 export function createTools(
   confirmToolCall?: ConfirmToolCall,
   toolRationale?: boolean,
-  promptTools = false,
+  parsedTools = false,
   readOnly = false,
 ) {
   const useRationale = toolRationale ?? loadConfig().toolRationale;
@@ -378,7 +378,7 @@ export function createTools(
       useRationale,
       queueExecution,
       confirmToolCall,
-      promptTools,
+      parsedTools,
     ),
     grep: wrap(
       "grep",
@@ -386,7 +386,7 @@ export function createTools(
       useRationale,
       queueExecution,
       confirmToolCall,
-      promptTools,
+      parsedTools,
     ),
     list_dir: wrap(
       "list_dir",
@@ -394,7 +394,7 @@ export function createTools(
       useRationale,
       queueExecution,
       confirmToolCall,
-      promptTools,
+      parsedTools,
     ),
   };
   if (readOnly) return readOnlyTools;
@@ -402,11 +402,11 @@ export function createTools(
     ...readOnlyTools,
     create: wrap(
       "create",
-      createTool,
+      createFileTool,
       useRationale,
       queueExecution,
       confirmToolCall,
-      promptTools,
+      parsedTools,
     ),
     edit: wrap(
       "edit",
@@ -414,7 +414,7 @@ export function createTools(
       useRationale,
       queueExecution,
       confirmToolCall,
-      promptTools,
+      parsedTools,
     ),
     shell_exec: wrap(
       "shell_exec",
@@ -422,11 +422,11 @@ export function createTools(
       useRationale,
       queueExecution,
       confirmToolCall,
-      promptTools,
+      parsedTools,
     ),
   };
 }
 
 export const allTools = createTools();
 
-export { readFileTool, createTool, editTool, grepTool, shellTool, listDirTool };
+export { readFileTool, createFileTool, editTool, grepTool, shellTool, listDirTool };

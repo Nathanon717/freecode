@@ -22,8 +22,8 @@ injectSystemIntoFirstUserMessage(messages: Record<string, unknown>[]): Record<st
 ## Key Neighbors
 
 - [adapters/openai-compat.md](adapters/openai-compat.md): sole consumer; applies these predicates inside its custom fetch wrapper.
-- [model-store.md](model-store.md): runtime-learned per-model traits (e.g. `nativeTools`); complements the static checks here.
+- [model-data.md](model-data.md): runtime-learned per-model traits (e.g. `nativeTools`); complements the static checks here.
 
 ## Update Triggers
 
-Add a predicate here whenever a model subset needs different request-body handling than the rest of its provider. Do not add runtime-learned traits here — those belong in `model-store.ts`.
+Add a predicate here whenever a model subset needs different request-body handling than the rest of its provider. Do not add runtime-learned traits here — those belong in `model-data.ts`.

@@ -20,7 +20,7 @@ releaseToolRenderGate(): void
 
 - Correlates by order, not id: the AI SDK (v3.4) passes no tool-call id to `execute`. Because `execute` runs are serialized (`tools/index.ts` `withSerializedExecution`) and `fullStream` emits `tool-call` parts in the same order, a plain counting semaphore pairs the Nth `execute` with the Nth part. Permits granted before their `execute` arrives are banked (parallel calls emit all parts up front).
 - `beginToolRenderGate()` / `endToolRenderGate()` — arm/disarm around one native `fullStream` consumption; `end` releases anything still waiting. Only `loop.ts` `streamWithRetry` arms it.
-- `awaitToolRenderGate()` — called by `withLogging.execute` before the header; a no-op when unarmed (prompt-tools, fake-direct, `/renderer`) or when a permit is banked. Has a safety timeout so a lost release can never hang the agent.
+- `awaitToolRenderGate()` — called by `withToolRendering.execute` before the header; a no-op when unarmed (parsed-tools, fake-direct, `/renderer`) or when a permit is banked. Has a safety timeout so a lost release can never hang the agent.
 - `releaseToolRenderGate()` — called by the consumer on each `tool-call` part, after flushing that step's pending text.
 
 ## Read When
@@ -31,5 +31,5 @@ releaseToolRenderGate(): void
 ## Key Neighbors
 
 - [`loop.ts`](loop.md) — arms the gate and releases it from the `fullStream` consumer.
-- [`tools/index.ts`](tools/index.md) — `withLogging.execute` awaits the gate before the header.
+- [`tools/index.ts`](tools/index.md) — `withToolRendering.execute` awaits the gate before the header.
 - [`../cli/transcript-renderer.md`](../cli/transcript-renderer.md) — the header/preview/divider writers being ordered.

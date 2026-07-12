@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isBackspaceKey } from '../../src/util/keys.js';
+import { isBackspaceKey } from '../../src/util/keyboard.js';
 
 describe('isBackspaceKey', () => {
   it.each(['\x7f', '\x08'])('treats %j as backspace', (key) => {

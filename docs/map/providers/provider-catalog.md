@@ -1,4 +1,4 @@
-# src/providers/registry-data.ts - Provider Registry Data
+# src/providers/provider-catalog.ts - Provider Catalog
 
 **Role:** Static data file containing the `PROVIDER_REGISTRY` array — the catalog of all known cloud providers with their IDs, names, base URLs, API key env vars, blocklists, and static model lists. No logic; pure configuration.
 
@@ -17,7 +17,7 @@ PROVIDER_REGISTRY: ProviderConfig[]
 
 ## Key Neighbors
 
-- [registry.md](registry.md): imports and re-exports `PROVIDER_REGISTRY`; owns all init logic and `resolveModel`.
+- [provider-registry.md](provider-registry.md): imports and re-exports `PROVIDER_REGISTRY`; owns all init logic and `resolveModel`.
 - [types.md](types.md): `ProviderConfig` type consumed here.
 
 ## Update Triggers

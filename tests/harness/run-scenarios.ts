@@ -5,7 +5,7 @@ import { spawnSync, spawn } from 'child_process';
 import { tmpdir, availableParallelism } from 'os';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
-import { PROVIDER_REGISTRY } from '../../src/providers/registry.js';
+import { PROVIDER_REGISTRY } from '../../src/providers/provider-registry.js';
 import { readTextFile } from '../../src/util/text-encoding.js';
 import { assertScenarioExpectations } from './assertions/index.js';
 import type { FakeLlmTraceEvent, ScenarioExpectations, ToolTraceEvent } from './assertions/index.js';

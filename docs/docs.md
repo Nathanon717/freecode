@@ -24,7 +24,7 @@ Generated references are owned by `scripts/generate-docs.ts`.
 
 Current generated sections:
 
-- `docs/providers.md`: provider registry table from `src/providers/registry.ts`.
+- `docs/providers.md`: provider registry table from `src/providers/provider-registry.ts`.
 - `docs/commands.md`: npm scripts from `package.json` and slash commands from `src/cli/slash-commands.ts`.
 - `docs/scenarios.md`: scenario index from `tests/scenarios/*.scenario.json`.
 - `docs/map/**/*.md`: the `## Exports` block on every map page, extracted from each source file's TypeScript signatures by `scripts/map-exports.ts`.
@@ -42,7 +42,7 @@ Then review the generated diff. If the generated output is wrong, fix the source
 
 Use these ownership rules:
 
-- Provider facts belong in `src/providers/registry.ts`.
+- Provider facts belong in `src/providers/provider-registry.ts`.
 - Slash command names and descriptions belong in `src/cli/slash-commands.ts`.
 - Npm script facts belong in `package.json`.
 - Scenario names, descriptions, and workspaces belong in `tests/scenarios/*.scenario.json`.
@@ -64,7 +64,7 @@ The map checker in `scripts/check-map.ts` enforces these structural rules:
 
 ## Examples
 
-- Adding a provider: update `src/providers/registry.ts`, config wiring if needed, then run `npm run docs:generate`.
+- Adding a provider: update `src/providers/provider-registry.ts`, config wiring if needed, then run `npm run docs:generate`.
 - Adding a slash command: update `src/cli/slash-commands.ts`, command dispatch behavior, a scenario if user-visible, then run `npm run docs:generate`.
 - Adding a scenario: add `tests/scenarios/*.scenario.json`, then run `npm run docs:generate`.
 - Changing verification policy: update `AGENTS.md` and affected npm scripts.

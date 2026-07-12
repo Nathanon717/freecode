@@ -95,7 +95,7 @@ describe('db: synced-replica sync recovery', () => {
     // The diverged replica's sidecars were wiped — the conflict can't survive the re-pull.
     expect(existsSync(infoPath)).toBe(false);
     // Recovered cleanly: an empty cache, not a degraded/crashed init.
-    expect(db.getCache()).toEqual({});
+    expect(db.getModelData()).toEqual({});
   });
 
   it('transient network error → keeps the local replica, runs offline (never wiped, never reopened)', async () => {
@@ -108,6 +108,6 @@ describe('db: synced-replica sync recovery', () => {
     expect(createdClients).toBe(1);
     // The replica and its sync metadata are preserved for the next online run.
     expect(existsSync(infoPath)).toBe(true);
-    expect(db.getCache()).toEqual({});
+    expect(db.getModelData()).toEqual({});
   });
 });

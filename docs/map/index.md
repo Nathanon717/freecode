@@ -1,6 +1,6 @@
 # src/index.ts - CLI Entry Point
 
-**Role:** Thin executable entry point. It parses process flags, initializes config/provider probes, creates a `SessionController`, and delegates the REPL/script loop to `src/cli/*`.
+**Role:** Thin executable entry point. It parses process flags, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -18,7 +18,7 @@ _No exported symbols._
 
 1. Enables diagnostic logging when `-log` is present.
 2. Validates arguments (`--model`/`--script` presence, `--script` file readability) **before** importing the runtime graph or opening the DB, so bad invocations exit in milliseconds. The runtime graph pulls the `ai` SDK (~4s cold) and libSQL (~1s); only `child_process`/`fs`/`chalk`/`logger` are statically imported, everything else is loaded via dynamic `import()` after validation passes.
-3. Dynamically imports the runtime graph (screen buffer, banner, session modes, session controller/runner, config, db), then creates a process-wide readline interface, sets `projectRoot` to `process.cwd()`, and constructs the `SessionController`.
+3. Dynamically imports the runtime graph (screen buffer, banner, session modes, conversation/runner, config, db), then creates a process-wide readline interface, sets `projectRoot` to `process.cwd()`, and constructs the `Conversation`.
 4. Calls `initStore()` to initialize the libSQL DB client and in-memory model cache.
 4a. In interactive TTY mode, fires `getSelectableModels()` in the background (model lists + pricing) so `/model` opens instantly. Suppressed by `FREECODE_NO_PREFETCH=1` (TTY test harness).
 5. Loads config and seeds the selected model from `FREECODE_MODEL`, `config.defaultModel`, or `--model <provider:model>`.
@@ -44,7 +44,7 @@ _No exported symbols._
 - [cli/session-runner.md](cli/session-runner.md): owns the shared REPL/script loop.
 - [cli/session-modes.md](cli/session-modes.md): creates interactive and scripted session modes.
 - [cli/command-dispatcher.md](cli/command-dispatcher.md): handles slash commands.
-- [providers/registry.md](providers/registry.md): used for startup probe and provider tests.
+- [providers/provider-registry.md](providers/provider-registry.md): used for startup probe and provider tests.
 - [providers/db.md](providers/db.md): `initStore()` called here at startup.
 
 ## Update Triggers

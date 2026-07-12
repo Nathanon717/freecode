@@ -73,7 +73,7 @@ runFakeModel(call: FakeModelCall): Promise<FakeModelResult>
 
 - Changing fake LLM fixture format or matching rules.
 - Debugging `llmFixture` scenario failures.
-- Extending fake coverage into prompt-tools or Responses-style paths.
+- Extending fake coverage into parsed-tools or Responses-style paths.
 
 ## Execution Paths
 
@@ -92,7 +92,7 @@ Two fake execution paths share the same fixture format and trace mechanism:
 
 ## Key Neighbors
 
-- [registry.md](registry.md): gates `mock:*` model resolution and blocks real providers in fake mode.
+- [provider-registry.md](provider-registry.md): gates `mock:*` model resolution and blocks real providers in fake mode.
 - [agent/loop.md](../agent/loop.md): calls `runFakeModel()` after building the real system prompt and tool list.
 
 ## Update Triggers

@@ -40,7 +40,7 @@ if provider is OpenAI:
   estimate OpenAI turn cost from exact Responses usage
 else if provider is mock:
   run ordered fake fixture steps after building the real system prompt/tool list
-  execute scripted fake tool calls via executeToolCalls() from prompt-tools.ts
+  execute scripted fake tool calls via executeToolCalls() from parsed-tools.ts
   feed tool results back as user messages until the fixture emits final text
 else if provider is Anthropic:
   begin usage capture
@@ -74,22 +74,22 @@ return AgentLoopResult
 - `streamWithRetry` drives display from the ordered `fullStream` (not the text-only `textStream`) so a step's preamble can never render after the tool call it precedes. Because the AI SDK invokes a tool's `execute` (which draws the header) before that preamble reaches the consumer, the `tool-render-gate.ts` semaphore holds `execute` until the consumer processes that call's `tool-call` part and flushes the pending text. See [tool-render-gate.md](tool-render-gate.md).
 - Tool approval is delegated to the supplied `confirmToolCall`.
 - Tool wrappers serialize execution so concurrent tool calls do not mutate files in parallel.
-- If the provider rejects tool use at runtime (`isToolsNotSupportedError`), the loop automatically retries via `runPromptToolsLoop` from `prompt-tools.ts`, which uses a text-based `<tool_call>` protocol instead of native function calling. The rejection is persisted via `setNativeTools(provider, modelId, false)` (model-store) so the fallback is used automatically next time; the startup read uses `isNativeToolsDisabled`. The user can also manually enable this path by setting `parsedTools: true` in per-model settings (via `/config` → Model tab); both routes check `modelSettings.parsedTools || isNativeToolsDisabled(...)` at the top of `streamWithRetry`.
+- If the provider rejects tool use at runtime (`isToolsNotSupportedError`), the loop automatically retries via `runParsedToolsLoop` from `parsed-tools.ts`, which uses a text-based `<tool_call>` protocol instead of native function calling. The rejection is persisted via `setNativeTools(provider, modelId, false)` (model-data) so the fallback is used automatically next time; the startup read uses `isNativeToolsDisabled`. The user can also manually enable this path by setting `parsedTools: true` in per-model settings (via `/config` → Model tab); both routes check `modelSettings.parsedTools || isNativeToolsDisabled(...)` at the top of `streamWithRetry`.
 
 ## Internal Helpers
 
-- `runFakeLlm(providerId, modelId, ...)` — handles the entire `FAKE_PROVIDER_ID` path including transcript step management. Delegates tool execution to `executeToolCalls` from `prompt-tools.ts` (shared with the text-based fallback path). Returns `AgentLoopResult` directly, so `agentLoop` returns immediately after calling it.
+- `runFakeLlm(providerId, modelId, ...)` — handles the entire `FAKE_PROVIDER_ID` path including transcript step management. Delegates tool execution to `executeToolCalls` from `parsed-tools.ts` (shared with the text-based fallback path). Returns `AgentLoopResult` directly, so `agentLoop` returns immediately after calling it.
 - `streamWithRetry(languageModel, supportsTools, ...)` — runs the `while(true)` streaming loop for all non-OpenAI, non-fake providers. Handles the three retry cases (tool-not-supported fallback, provider-rejected malformed call, no-such-tool, invalid-args) and returns a `StreamResult` with the accumulated text and token counts. Throws on non-retriable errors, which propagate to `agentLoop`'s catch.
 - `finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens)` — ends any active provider usage capture (Anthropic SSE headers, OpenAI-compat raw headers), fetches verified pricing, estimates turn cost, and reads the most recent rate-limit snapshot. Shared by both the success path and the catch path so partial cost/quota metadata survives stream failures. The OpenAI Responses cost estimate (previously inline) runs through this helper when `providerId === 'openai'`.
 
 ## Key Neighbors
 
-- [providers/registry.md](../providers/registry.md): resolves provider/model.
+- [providers/provider-registry.md](../providers/provider-registry.md): resolves provider/model.
 - [system-prompt.md](system-prompt.md): builds the prompt.
 - [tools/index.md](tools/index.md): creates tool wrappers.
 - [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md) and [providers/adapters/anthropic.md](../providers/adapters/anthropic.md): capture provider metadata and usage details.
 - [providers/fake.md](../providers/fake.md): fake fixture runner for free agent-loop verification.
-- [providers/model-store.md](../providers/model-store.md): `isNativeToolsDisabled`/`setNativeTools` for the native-tools fallback trait.
+- [providers/model-data.md](../providers/model-data.md): `isNativeToolsDisabled`/`setNativeTools` for the native-tools fallback trait.
 - [tool-render-gate.md](tool-render-gate.md): orders streamed text before tool-call headers on the native `fullStream` path.
 
 ## Error Handling

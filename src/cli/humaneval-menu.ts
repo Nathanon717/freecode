@@ -13,7 +13,7 @@ import { resetEvalWorkDir, startEvalScenario } from '../eval/runner.js';
 import { printEvalHeader, printEvalSummary } from './eval-screen.js';
 import { statusCircle } from './eval-dots.js';
 import { InlineActionMenu } from './action-menu.js';
-import { appendEvalRun } from '../providers/model-store.js';
+import { appendEvalRun } from '../providers/model-data.js';
 import { buildSystemPrompt } from '../agent/system-prompt.js';
 import type { HumanEvalProblem, HumanEvalResultMap } from '../eval/humaneval-data.js';
 

@@ -1,4 +1,4 @@
-import type { ObservedRateLimitBucket } from '../model-store.js';
+import type { ObservedRateLimitBucket } from '../model-data.js';
 
 /**
  * Pure parser for Groq rate-limit response headers.

@@ -1,6 +1,6 @@
 import type { CoreMessage } from 'ai';
 
-export class SessionController {
+export class Conversation {
   readonly projectRoot: string;
   messages: CoreMessage[] = [];
 

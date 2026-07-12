@@ -63,7 +63,7 @@ by the separate live-counter task on top of this engine.
   `src/agent/token-count.ts`'s current implementation is deleted in Phase 1; nothing from it
   survives past that phase.
 - **No footer wiring; the `ctx` slot is ripped out.** This task does not feed any count into the
-  footer. Phase 1 deletes `SessionController.getContextTokenCount()`, its two callers
+  footer. Phase 1 deletes `Conversation.getContextTokenCount()`, its two callers
   (`session-runner.ts`'s `readInput(...)` argument and `resetBottomPromptState` in
   `session-modes.ts`), and the `ctx` display in `footer-status.ts` (`lastTokenCount`,
   `setTokenCount`, the `"{n} ctx"` render, and the related footer-layout branches/tests). The eval
@@ -76,7 +76,7 @@ by the separate live-counter task on top of this engine.
   Download pattern mirrors `src/eval/humaneval-data.ts`'s `ensureX()`/injectable-`downloadFn`
   shape (recent precedent: "humaneval dataset now auto downloads when missing").
 - **Family resolution is regex-on-model-ID, not a static per-model field.** Most providers in
-  `registry-data.ts` are `modelsSource: "live"` (model lists fetched at runtime from
+  `provider-catalog.ts` are `modelsSource: "live"` (model lists fetched at runtime from
   Groq/OpenRouter/SiliconFlow/Mistral/etc.), so there is no fixed list of model IDs to hang a
   static field off of. Follow the existing `src/providers/model-quirks.ts` pattern: one named
   predicate/lookup per family, matched against whatever model ID string is active
@@ -89,7 +89,7 @@ by the separate live-counter task on top of this engine.
 - **Out of scope:** `providers/anthropic-cost.ts`, `providers/quota/headers.ts`,
   `providers/openai-daily-spend.ts` — these already get exact numbers from real provider API
   responses/headers, not from this estimator. Don't touch them. Also out of scope:
-  `providers/model-cache.ts`, `providers/model-store.ts`, `providers/db.ts` (unrelated
+  `providers/model-list-cache.ts`, `providers/model-data.ts`, `providers/db.ts` (unrelated
   persistence, only the `getStoreDir()` helper is reused).
 - **Dependency names are not final until verified.** Re-check current npm package name, version,
   and maintenance status at the start of each phase that adds one — this space shifts. Candidates
@@ -301,7 +301,7 @@ reached for genuinely unmapped models. The single code change was to `scripts/ve
   identical in shape to the HF path already exercised by `count.test.ts`. Forcing a filename-conditional
   mock into `count.test.ts` for it would violate `docs/unit-tests.md`'s anti-bloat rule for no new
   coverage. (Judgment call, documented rather than silently skipped.)
-- The `mistral:` provider is **not** flagged `paid` in `registry-data.ts` (only `openai`/`anthropic`
+- The `mistral:` provider is **not** flagged `paid` in `provider-catalog.ts` (only `openai`/`anthropic`
   are), so the script's paid-provider filter does not drop it — the Tekken branch alone was enough
   to surface the API models.
 - Note for the live-counter task: whether to visually distinguish exact vs. estimated counts (e.g.

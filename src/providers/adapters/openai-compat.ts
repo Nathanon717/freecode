@@ -3,7 +3,7 @@ import type { ProviderConfig } from '../types.js';
 import { loadConfig, resolveApiKey } from '../../config/index.js';
 import { isRecord } from '../../util/guards.js';
 import { extractOpenAICompatRateLimitBuckets, type RateLimitSnapshot } from '../quota/headers.js';
-import { saveObservedRateLimits } from '../model-store.js';
+import { saveObservedRateLimits } from '../model-data.js';
 import { mistralJsonToSse, normalizeOpenAICompatToolCallResponse } from './openai-compat-sse.js';
 import { HeaderSnapshotStore, UsageCaptureStore } from './adapter-usage-capture.js';
 import { fetchWithRetry, formatOpenAICompatHttpError } from './adapter-http-retry.js';

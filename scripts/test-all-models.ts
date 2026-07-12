@@ -72,7 +72,7 @@ async function main(): Promise<void> {
   // provider module evaluates (see comment above).
   const { getSelectableModels } = await import('../src/commands/model.js');
   const { modelPreference } = await import('../src/cli/model-screen.js');
-  const { resolveModel, PROVIDER_REGISTRY } = await import('../src/providers/registry.js');
+  const { resolveModel, PROVIDER_REGISTRY } = await import('../src/providers/provider-registry.js');
   const { streamText } = await import('ai');
 
   // Free models only: skip providers flagged `paid: true` in the registry

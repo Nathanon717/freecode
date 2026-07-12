@@ -23,7 +23,7 @@ vi.mock('../../src/config/index.js', () => ({
   resolveModelSettings: vi.fn().mockReturnValue({ showProviderUsage: false }),
 }));
 
-vi.mock('../../src/providers/registry.js', () => ({
+vi.mock('../../src/providers/provider-registry.js', () => ({
   PROVIDER_REGISTRY: mockProviderRegistry,
 }));
 

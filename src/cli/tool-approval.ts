@@ -5,7 +5,7 @@ import type {
   ToolCallPreview,
 } from "../agent/tools/index.js";
 import { UserAbortError } from "../util/errors.js";
-import { isBackspaceKey } from "../util/keys.js";
+import { isBackspaceKey } from "../util/keyboard.js";
 import {
   getLastReservedRows,
   getRows,

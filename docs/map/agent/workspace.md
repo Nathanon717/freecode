@@ -1,4 +1,4 @@
-# src/agent/context.ts - Agent Tool Context
+# src/agent/workspace.ts - Agent Tool Context
 
 **Role:** Provides the current project root and per-root file read tracking to tool modules that are created outside a single request scope.
 

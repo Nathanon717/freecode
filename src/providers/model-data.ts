@@ -1,8 +1,8 @@
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import type { OverridableSettings } from './types.js';
-import { getCache, setCache, saveTranscriptAsync, persistModelRowAsync } from './db.js';
-import { registerModelSettings } from './model-settings-registry.js';
+import { getModelData, setModelData, saveTranscriptAsync, persistModelRowAsync } from './db.js';
+import { registerModelSettings } from './model-settings-accessor.js';
 
 interface EvalCheck { name: string; kind: string; pass?: boolean; message?: string; value?: string | number; note?: string; }
 
@@ -55,11 +55,11 @@ export function getStoreDir(): string {
 }
 
 function load(): Record<string, ModelEntry> {
-  return getCache() ?? {};
+  return getModelData() ?? {};
 }
 
 function save(store: Record<string, ModelEntry>, changedKeys?: string[]): void {
-  setCache(store);
+  setModelData(store);
   if (changedKeys) {
     for (const key of changedKeys) {
       const entry = store[key];

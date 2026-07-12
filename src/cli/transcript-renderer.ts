@@ -66,7 +66,7 @@ export function formatToolCallLine(
   );
 }
 
-export function formatPromptToolCallLine(
+export function formatParsedToolCallLine(
   name: string,
   args: Record<string, unknown>,
 ): string {
@@ -314,7 +314,7 @@ export function writeTranscriptStepDivider(
 // Higher-level tool-step orchestration API
 // ---------------------------------------------------------------------------
 // Sits on top of the low-level format helpers and state machine above.
-// Both the live agent path (tools/index.ts withLogging) and the /renderer demo
+// Both the live agent path (tools/index.ts withToolRendering) and the /renderer demo
 // (commands/renderer.ts) call these functions so orchestration logic lives once.
 
 /** A fully-decided tool result, ready to render as a preview block. */
@@ -336,8 +336,8 @@ export interface ToolStep {
   name: string;
   displayArgs: Record<string, unknown>;
   rationale?: string;
-  /** true → use formatPromptToolCallLine (the "~" prefix) */
-  promptTools?: boolean;
+  /** true → use formatParsedToolCallLine (the "~" prefix) */
+  parsedTools?: boolean;
   result: ToolStepResult;
 }
 
@@ -353,7 +353,7 @@ export interface RenderedStep {
  * separately via writeToolStepResult after execution completes.
  */
 export function writeToolCallHeader(
-  step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "promptTools">,
+  step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "parsedTools">,
   opts?: TranscriptRuntimeOptions,
 ): void {
   const runtimeOpts = opts ?? getTranscriptRuntimeOptions();
@@ -362,8 +362,8 @@ export function writeToolCallHeader(
   if (typeof step.rationale === "string") {
     stream.write(formatRationaleLine(step.rationale) + "\n");
   }
-  const callLine = step.promptTools
-    ? formatPromptToolCallLine(step.name, step.displayArgs)
+  const callLine = step.parsedTools
+    ? formatParsedToolCallLine(step.name, step.displayArgs)
     : formatToolCallLine(step.name, step.displayArgs);
   stream.write(callLine + "\n");
 }

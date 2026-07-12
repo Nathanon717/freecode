@@ -2,13 +2,13 @@ import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
-import { buildPromptToolsSystemPrompt, parseToolCalls, runPromptToolsLoop } from '../../src/agent/prompt-tools.js';
+import { buildParsedToolsSystemPrompt, parseToolCalls, runParsedToolsLoop } from '../../src/agent/parsed-tools.js';
 import { createFakeNativeLanguageModel, resetFakeModelState } from '../../src/providers/fake.js';
-import { setProjectRoot } from '../../src/agent/context.js';
+import { setProjectRoot } from '../../src/agent/workspace.js';
 
 describe('prompt-based tool prompt', () => {
   it('documents grep include glob with the actual tool argument name', () => {
-    const prompt = buildPromptToolsSystemPrompt('base');
+    const prompt = buildParsedToolsSystemPrompt('base');
 
     expect(prompt).toContain('"include"?: string');
     expect(prompt).not.toContain('file_glob');
@@ -53,13 +53,13 @@ describe('parseToolCalls', () => {
   });
 });
 
-describe('runPromptToolsLoop', () => {
+describe('runParsedToolsLoop', () => {
   const previousScript = process.env.FREECODE_FAKE_LLM_SCRIPT;
   let tempRoot = '';
   let stdoutSpy: MockInstance;
 
   beforeEach(() => {
-    tempRoot = mkdtempSync(join(tmpdir(), 'freecode-prompt-tools-'));
+    tempRoot = mkdtempSync(join(tmpdir(), 'freecode-parsed-tools-'));
     resetFakeModelState();
     delete process.env.FREECODE_FAKE_LLM_TRACE;
     setProjectRoot(tempRoot);
@@ -99,7 +99,7 @@ describe('runPromptToolsLoop', () => {
     });
 
     const model = createFakeNativeLanguageModel('gpt-freecode-test', { toolRationale: false, parallelTools: false });
-    const result = await runPromptToolsLoop(
+    const result = await runParsedToolsLoop(
       [{ role: 'user', content: 'write pt.txt' }],
       'base system prompt',
       model,
@@ -124,7 +124,7 @@ describe('runPromptToolsLoop', () => {
     });
 
     const model = createFakeNativeLanguageModel('gpt-freecode-test', { toolRationale: false, parallelTools: false });
-    const result = await runPromptToolsLoop(
+    const result = await runParsedToolsLoop(
       [{ role: 'user', content: 'go' }],
       'base',
       model,

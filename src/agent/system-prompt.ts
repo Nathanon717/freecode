@@ -1,6 +1,6 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { projectRoot } from './context.js';
+import { projectRoot } from './workspace.js';
 import { readTextFile } from '../util/text-encoding.js';
 
 export function buildSystemPrompt(loadAgentsMd = false): string {

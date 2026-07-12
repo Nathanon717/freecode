@@ -5,7 +5,7 @@ import { resolveApiKey, resolveModelSettings } from '../config/index.js';
 import { ensureStoreReady } from '../providers/db.js';
 import { toErrorMessage } from '../util/errors.js';
 import { log } from '../logger.js';
-import { PROVIDER_REGISTRY } from '../providers/registry.js';
+import { PROVIDER_REGISTRY } from '../providers/provider-registry.js';
 import {
   addAnthropicSessionCost,
   describeCostEstimate,
@@ -16,7 +16,7 @@ import {
 import { formatCapturedProviderUsages } from '../providers/adapters/openai-compat.js';
 import { redrawBanner } from './banner.js';
 import { showHelp } from './slash-commands.js';
-import type { SessionController } from '../agent/session-controller.js';
+import type { Conversation } from '../agent/conversation.js';
 import {
   writeResultPlaceholder,
   makePartialResultUpdater,
@@ -28,7 +28,7 @@ export type ModelListMode = 'current-only' | 'full';
 
 export interface CommandRuntime {
   projectRoot: string;
-  session: SessionController;
+  session: Conversation;
   getSelectedModel(): string;
   setSelectedModel(model: string): void;
   confirmToolCall: ConfirmToolCall;

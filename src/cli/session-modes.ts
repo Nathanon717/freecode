@@ -49,7 +49,7 @@ import {
   parseScriptedToolChoice,
 } from "./tool-approval.js";
 import { runRawKeySession } from "./raw-picker.js";
-import { isBackspaceKey } from "../util/keys.js";
+import { isBackspaceKey } from "../util/keyboard.js";
 
 function resetBottomPromptState(): void {
   setInputBuffer("");

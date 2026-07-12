@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PROVIDER_REGISTRY, getProvider, initDynamicProviders, resolveModel, clearModelNewFlag, invalidateDeadModel } from '../../src/providers/registry.js';
+import { PROVIDER_REGISTRY, getProvider, initDynamicProviders, resolveModel, clearModelNewFlag, retireDeadModel } from '../../src/providers/provider-registry.js';
 
 // Set the given env vars (undefined deletes), run fn, then restore originals.
 // Collapses the save/try/finally/restore boilerplate that every env-sensitive test needs.
@@ -177,13 +177,13 @@ describe('Provider Registry', () => {
     });
   });
 
-  describe('invalidateDeadModel', () => {
+  describe('retireDeadModel', () => {
     it('removes a model from the provider model list', () => {
       const provider = PROVIDER_REGISTRY.find(p => p.modelsSource !== 'live' && p.models.length > 0)!;
       const savedModels = [...provider.models];
       const targetId = provider.models[0].id;
       try {
-        invalidateDeadModel(provider.id, targetId);
+        retireDeadModel(provider.id, targetId);
         expect(provider.models.find(m => m.id === targetId)).toBeUndefined();
       } finally {
         provider.models = savedModels;
@@ -191,7 +191,7 @@ describe('Provider Registry', () => {
     });
 
     it('is a no-op for an unknown provider', () => {
-      expect(() => invalidateDeadModel('no-such-provider', 'any-model')).not.toThrow();
+      expect(() => retireDeadModel('no-such-provider', 'any-model')).not.toThrow();
     });
   });
 
@@ -273,7 +273,7 @@ describe('initDynamicProviders live fetching', () => {
   let getDeadIdsMock: ReturnType<typeof vi.fn>;
   let getProviderCacheMock: ReturnType<typeof vi.fn>;
   let updateProviderCacheMock: ReturnType<typeof vi.fn>;
-  let markModelDeadMock: ReturnType<typeof vi.fn>;
+  let recordDeadModelMock: ReturnType<typeof vi.fn>;
 
   function makeFetch(patterns: Record<string, unknown>) {
     return vi.fn((url: string) => {
@@ -289,18 +289,18 @@ describe('initDynamicProviders live fetching', () => {
     getDeadIdsMock = vi.fn().mockReturnValue([]);
     getProviderCacheMock = vi.fn().mockReturnValue(null);
     updateProviderCacheMock = vi.fn().mockReturnValue({ newIds: [], removedIds: [] });
-    markModelDeadMock = vi.fn();
-    vi.doMock('../../src/providers/model-cache.js', () => ({
+    recordDeadModelMock = vi.fn();
+    vi.doMock('../../src/providers/model-list-cache.js', () => ({
       getDeadIds: getDeadIdsMock,
       getProviderCache: getProviderCacheMock,
       updateProviderCache: updateProviderCacheMock,
-      markModelDead: markModelDeadMock,
+      recordDeadModel: recordDeadModelMock,
     }));
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    vi.doUnmock('../../src/providers/model-cache.js');
+    vi.doUnmock('../../src/providers/model-list-cache.js');
     for (const k of [
       'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY',
       'SILICONFLOW_API_KEY', 'NVIDIA_API_KEY', 'LLM7_API_KEY', 'COHERE_API_KEY',
@@ -320,7 +320,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
@@ -336,7 +336,7 @@ describe('initDynamicProviders live fetching', () => {
     vi.stubGlobal('fetch', makeFetch({
       'opencode.ai': [{ id: 'array-model-free', name: 'Array Model' }],
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
@@ -347,7 +347,7 @@ describe('initDynamicProviders live fetching', () => {
     vi.stubGlobal('fetch', makeFetch({
       'opencode.ai': { data: [{ id: 'ctx-model-free', name: 'Ctx', context_length: 8192 }] },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
@@ -364,7 +364,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const or = PROVIDER_REGISTRY.find((p) => p.id === 'openrouter')!;
@@ -375,7 +375,7 @@ describe('initDynamicProviders live fetching', () => {
   it('openrouter is skipped when no API key is set', async () => {
     const fetchMock = makeFetch({});
     vi.stubGlobal('fetch', fetchMock);
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const or = PROVIDER_REGISTRY.find((p) => p.id === 'openrouter')!;
@@ -394,7 +394,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const anth = PROVIDER_REGISTRY.find((p) => p.id === 'anthropic')!;
@@ -413,7 +413,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
@@ -434,7 +434,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
@@ -454,7 +454,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
@@ -472,7 +472,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
@@ -490,7 +490,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const openai = PROVIDER_REGISTRY.find((p) => p.id === 'openai')!;
@@ -509,7 +509,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const llm7 = PROVIDER_REGISTRY.find((p) => p.id === 'llm7')!;
@@ -532,7 +532,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
@@ -554,7 +554,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
@@ -566,7 +566,7 @@ describe('initDynamicProviders live fetching', () => {
     vi.stubGlobal('fetch', makeFetch({
       'opencode.ai': {}, // object without data → data ?? [] → []
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
@@ -578,7 +578,7 @@ describe('initDynamicProviders live fetching', () => {
     vi.stubGlobal('fetch', makeFetch({
       'api.groq.com': [{ id: 'direct-array-model', name: 'Array Model' }],
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
@@ -590,7 +590,7 @@ describe('initDynamicProviders live fetching', () => {
     vi.stubGlobal('fetch', makeFetch({
       'api.groq.com': {}, // object without data → data ?? [] → []
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
@@ -604,7 +604,7 @@ describe('initDynamicProviders live fetching', () => {
         : null,
     );
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network failure')));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
@@ -618,7 +618,7 @@ describe('initDynamicProviders live fetching', () => {
         : null,
     );
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
@@ -637,7 +637,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
@@ -656,7 +656,7 @@ describe('initDynamicProviders live fetching', () => {
         ],
       },
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const zen = PROVIDER_REGISTRY.find((p) => p.id === 'zen')!;
@@ -670,7 +670,7 @@ describe('initDynamicProviders live fetching', () => {
       if (url.includes('opencode.ai')) fetchCount++;
       return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
     }));
-    const { initDynamicProviders } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders } = await import('../../src/providers/provider-registry.js');
     // Simulate startup warm (e.g. from getSelectableModels) racing the user opening /model.
     const p1 = initDynamicProviders();
     const p2 = initDynamicProviders();
@@ -684,7 +684,7 @@ describe('initDynamicProviders live fetching', () => {
       calledUrls.push(url);
       return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [{ id: 'model-free', name: 'M' }] }) });
     }));
-    const { initDynamicProviders } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
     const zenCallsAfterFirst = calledUrls.filter((u) => u.includes('opencode.ai')).length;
     await initDynamicProviders();
@@ -704,7 +704,7 @@ describe('initDynamicProviders live fetching', () => {
       if (url.includes('api.anthropic.com')) return Promise.resolve({ ok: false, status: 503 });
       return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const anth = PROVIDER_REGISTRY.find((p) => p.id === 'anthropic')!;
@@ -722,7 +722,7 @@ describe('initDynamicProviders live fetching', () => {
       if (url.includes('api.groq.com')) return Promise.resolve({ ok: false, status: 403 });
       return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
     }));
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;
@@ -733,7 +733,7 @@ describe('initDynamicProviders live fetching', () => {
     // All provider env vars unset; only zen (defaultApiKey) will attempt init
     const fetchMock = makeFetch({});
     vi.stubGlobal('fetch', fetchMock);
-    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/registry.js');
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
     await initDynamicProviders();
 
     const groq = PROVIDER_REGISTRY.find((p) => p.id === 'groq')!;

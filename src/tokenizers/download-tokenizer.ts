@@ -1,7 +1,7 @@
 import { createWriteStream, existsSync, mkdirSync, renameSync, rmSync, statSync } from 'fs';
 import { dirname, join } from 'path';
 import https from 'https';
-import { getStoreDir } from '../providers/model-store.js';
+import { getStoreDir } from '../providers/model-data.js';
 import type { TokenizerFamily } from './model-family.js';
 
 // HF's `resolve/main/<file>` endpoints redirect to a CDN, and which status code

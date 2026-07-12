@@ -33,6 +33,6 @@ runEvalScenarios(chosen: CustomEval[], model: string): Promise<void>
 - Sets `FREECODE_TRANSCRIPT_STREAM=stdout` so the captured eval run replays the same transcript formatter used by normal tool logging.
 - After each successful run, archives `work/` and `EvalRunResult` to `{scenarioDir}/.artifacts/{modelSlug}/` (gitignored) so the check script can be re-run without re-running the LLM. Stores `checks: EvalCheckResult[]` in the per-model results JSON so the detail view works across sessions (grandfathering pre-run-hash-split entries via the legacy full hash).
 - Dynamically imports each scenario's `eval/check.ts` to score the result and prints a pass/fail report; summarizes structured model API errors (`code`, `type`, `param`, `failed_generation`, `tool_use_failed` diagnosis).
-- After each eval subprocess exits, re-reads `model-cache.json` to detect dead models written by the subprocess (e.g. nvidia 404); if dead, calls `invalidateDeadModel` to sync the main-process registry and skips saving the result to the DB.
+- After each eval subprocess exits, re-reads `model-cache.json` to detect dead models written by the subprocess (e.g. nvidia 404); if dead, calls `retireDeadModel` to sync the main-process registry and skips saving the result to the DB.
 
 The menu lifecycle (bottom-UI teardown/restore, raw-mode reset) is owned by `cli/menu-shell.ts` via `cli/eval-menu.ts`, not this file.

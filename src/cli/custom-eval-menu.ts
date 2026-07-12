@@ -40,9 +40,9 @@ import {
   printEvalSummary,
 } from "./eval-screen.js";
 import { InlineActionMenu } from "./action-menu.js";
-import { appendEvalRun } from "../providers/model-store.js";
-import { getDeadIds } from "../providers/model-cache.js";
-import { invalidateDeadModel } from "../providers/registry.js";
+import { appendEvalRun } from "../providers/model-data.js";
+import { getDeadIds } from "../providers/model-list-cache.js";
+import { retireDeadModel } from "../providers/provider-registry.js";
 import { buildSystemPrompt } from "../agent/system-prompt.js";
 
 // Builds the "Custom" eval tab: the evals/custom scenario list with status
@@ -204,7 +204,7 @@ export async function runEvalScenarios(
         const deadProviderId = (model || "").slice(0, deadColonIdx);
         const deadModelId = (model || "").slice(deadColonIdx + 1);
         if (getDeadIds(deadProviderId).includes(deadModelId)) {
-          invalidateDeadModel(deadProviderId, deadModelId);
+          retireDeadModel(deadProviderId, deadModelId);
           incomplete++;
           continue;
         }

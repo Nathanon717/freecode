@@ -28,7 +28,7 @@ resolveModelSettings(selectedModel: string): Required<OverridableSettings>
 
 ## Export notes
 
-- `readRawConfig`: reads one JSON config file without merging (used by model-store for legacy migration).
+- `readRawConfig`: reads one JSON config file without merging (used by model-data for legacy migration).
 - `writeConfigFile`: writes JSON config and clears the in-memory cache so the next `loadConfig()` re-reads disk.
 - `resolveModelSettings`: applies model > provider > global priority cascade.
 
@@ -83,8 +83,8 @@ The first `loadConfig()` call caches the merged object. `writeConfigFile()` rese
 
 ## DB Sync for Global and Provider Settings
 
-Global config settings (all syncable scalars in `Config`) and `providerOverrides` are now synced cross-device via the `config` DB table. On `loadConfig()`, the DB cache ([providers/db-config-cache.md](../providers/db-config-cache.md)) is merged after `config.json` but before `.freecoderc`, so DB wins over the global file and `.freecoderc` wins over everything. On every `writeConfigFile()` call to the global path, syncable fields are extracted (whitelisted — no API keys), the in-memory cache is updated synchronously, and a fire-and-forget DB write is dispatched via `persistDbConfig`. Model-level settings are unaffected (still owned by model-store).
+Global config settings (all syncable scalars in `Config`) and `providerOverrides` are now synced cross-device via the `config` DB table. On `loadConfig()`, the DB cache ([providers/db-config-cache.md](../providers/db-config-cache.md)) is merged after `config.json` but before `.freecoderc`, so DB wins over the global file and `.freecoderc` wins over everything. On every `writeConfigFile()` call to the global path, syncable fields are extracted (whitelisted — no API keys), the in-memory cache is updated synchronously, and a fire-and-forget DB write is dispatched via `persistDbConfig`. Model-level settings are unaffected (still owned by model-data).
 
 ## Favorites and Model Settings Moved Out
 
-Favorites and per-model setting overrides are no longer stored here. The old `loadFavorites`/`saveFavorites` helpers and `Config.modelOverrides` field were removed; both now live in the git-tracked model store ([providers/model-store.md](../providers/model-store.md)). `getConfigPaths`/`readRawConfig` are still used by the store to read legacy values once during migration. `resolveModelSettings` reads model-level settings via `getModelSettings` from [providers/model-settings-registry.md](../providers/model-settings-registry.md) (not directly from `model-store.ts`) and falls back to `providerOverrides` then global config.
+Favorites and per-model setting overrides are no longer stored here. The old `loadFavorites`/`saveFavorites` helpers and `Config.modelOverrides` field were removed; both now live in the git-tracked model store ([providers/model-data.md](../providers/model-data.md)). `getConfigPaths`/`readRawConfig` are still used by the store to read legacy values once during migration. `resolveModelSettings` reads model-level settings via `getModelSettings` from [providers/model-settings-accessor.md](../providers/model-settings-accessor.md) (not directly from `model-data.ts`) and falls back to `providerOverrides` then global config.

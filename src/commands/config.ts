@@ -3,7 +3,7 @@ import type { Interface } from 'readline';
 import { getBannerColor } from '../cli/banner.js';
 import { getConfigPaths, loadConfig, readRawConfig, resolveModelSettings, updateGlobalConfig, writeConfigFile } from '../config/index.js';
 import type { Config, OverridableSettings } from '../providers/types.js';
-import { getModelSettings, setModelSetting, isNativeToolsDisabled } from '../providers/model-store.js';
+import { getModelSettings, setModelSetting, isNativeToolsDisabled } from '../providers/model-data.js';
 import { countWrappedLines } from '../cli/raw-picker.js';
 import { ensureStoreReady } from '../providers/db.js';
 import { runMenuShell } from '../cli/menu-shell.js';

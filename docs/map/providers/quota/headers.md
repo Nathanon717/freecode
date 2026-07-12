@@ -92,7 +92,7 @@ extractAnthropicRateLimitBuckets(base: GroqRateLimitHeaders, extended: Anthropic
 
 ## Key Neighbors
 
-- [providers/registry.md](../registry.md): static model limits.
+- [providers/provider-registry.md](../provider-registry.md): static model limits.
 - [providers/adapters/openai-compat.md](../adapters/openai-compat.md): captured OpenAI-compatible headers.
 - [providers/adapters/anthropic.md](../adapters/anthropic.md): captured Anthropic headers.
 - [agent/loop.md](../../agent/loop.md): attaches quota metadata to turn results.

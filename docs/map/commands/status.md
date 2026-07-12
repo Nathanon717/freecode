@@ -19,7 +19,7 @@ runStatusCommand(): void
 
 ## Key Neighbors
 
-- [providers/registry.md](../providers/registry.md): `PROVIDER_REGISTRY` for provider list.
+- [providers/provider-registry.md](../providers/provider-registry.md): `PROVIDER_REGISTRY` for provider list.
 - [config/index.md](../config/index.md): `loadConfig()` for config-file API keys.
 - [providers/db.md](../providers/db.md): `getDbSyncConfig()` for DB sync URL.
 - [cli/slash-commands.md](../cli/slash-commands.md): `/status` is registered here.

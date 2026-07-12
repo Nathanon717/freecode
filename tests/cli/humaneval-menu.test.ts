@@ -69,7 +69,7 @@ vi.mock('../../src/cli/terminal-ui.js', () => ({
   teardownBottomUI: vi.fn(),
 }));
 
-vi.mock('../../src/providers/model-store.js', () => ({
+vi.mock('../../src/providers/model-data.js', () => ({
   appendEvalRun: vi.fn(),
 }));
 
@@ -91,7 +91,7 @@ import {
   runHumanEvalProblems,
 } from '../../src/cli/humaneval-menu.js';
 import type { HumanEvalProblem } from '../../src/eval/humaneval-data.js';
-import { appendEvalRun } from '../../src/providers/model-store.js';
+import { appendEvalRun } from '../../src/providers/model-data.js';
 import { printEvalSummary } from '../../src/cli/eval-screen.js';
 
 // Mirrors the HUMANEVAL_RUNS_DIR constant from src/cli/humaneval-menu.ts

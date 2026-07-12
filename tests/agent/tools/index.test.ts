@@ -5,7 +5,7 @@ import { tmpdir } from 'os';
 // Imported statically (not via per-test `await import`) so the one-time cold TS-transform
 // of this heavy module graph runs during collection, not against the per-test timeout.
 import { createTools } from '../../../src/agent/tools/index.js';
-import { setProjectRoot } from '../../../src/agent/context.js';
+import { setProjectRoot } from '../../../src/agent/workspace.js';
 
 describe('tool confirmation', () => {
   it('executes an approved tool call', async () => {

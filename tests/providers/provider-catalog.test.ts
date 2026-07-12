@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PROVIDER_REGISTRY } from '../../src/providers/registry-data.js';
+import { PROVIDER_REGISTRY } from '../../src/providers/provider-catalog.js';
 
 describe('PROVIDER_REGISTRY data', () => {
   it('contains both openai-compat and anthropic types', () => {

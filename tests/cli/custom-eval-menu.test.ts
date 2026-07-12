@@ -55,16 +55,16 @@ vi.mock('../../src/cli/terminal-ui.js', () => ({
   setRetryBanner: vi.fn(),
 }));
 
-vi.mock('../../src/providers/model-store.js', () => ({
+vi.mock('../../src/providers/model-data.js', () => ({
   appendEvalRun: vi.fn(),
 }));
 
-vi.mock('../../src/providers/model-cache.js', () => ({
+vi.mock('../../src/providers/model-list-cache.js', () => ({
   getDeadIds: vi.fn(() => mocks.deadIds),
 }));
 
-vi.mock('../../src/providers/registry.js', () => ({
-  invalidateDeadModel: vi.fn(),
+vi.mock('../../src/providers/provider-registry.js', () => ({
+  retireDeadModel: vi.fn(),
 }));
 
 vi.mock('../../src/agent/system-prompt.js', () => ({
@@ -77,8 +77,8 @@ import { buildCustomEvalTab, runEvalScenarios } from '../../src/cli/custom-eval-
 import type { CustomEval } from '../../src/eval/custom.js';
 import { CUSTOM_EVAL_DIR } from '../../src/eval/custom.js';
 import { VIEWPORT_SIZE } from '../../src/cli/list-menu.js';
-import { appendEvalRun } from '../../src/providers/model-store.js';
-import { invalidateDeadModel } from '../../src/providers/registry.js';
+import { appendEvalRun } from '../../src/providers/model-data.js';
+import { retireDeadModel } from '../../src/providers/provider-registry.js';
 import { printEvalSummary } from '../../src/cli/eval-screen.js';
 import type { EvalReport } from '../../src/eval/runner.js';
 import type { EvalHistoryEntry } from '../../src/eval/history.js';
@@ -307,7 +307,7 @@ describe('runEvalScenarios', () => {
     mocks.deadIds = ['gpt-4o'];
     captureLog();
     await runEvalScenarios([{ id: ID_A, firstLine: 'Fix' }], 'openai:gpt-4o');
-    expect(vi.mocked(invalidateDeadModel)).toHaveBeenCalledWith('openai', 'gpt-4o');
+    expect(vi.mocked(retireDeadModel)).toHaveBeenCalledWith('openai', 'gpt-4o');
     expect(vi.mocked(appendEvalRun)).not.toHaveBeenCalled();
   });
 

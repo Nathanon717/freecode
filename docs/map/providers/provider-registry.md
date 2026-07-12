@@ -1,4 +1,4 @@
-# src/providers/registry.ts - Provider Registry
+# src/providers/provider-registry.ts - Provider Registry
 
 **Role:** Catalog of known cloud providers and their models. Source of provider IDs, display names, base URLs, API key env vars, tool support flags, model IDs, static model limits, and live-fetch init logic.
 
@@ -14,7 +14,7 @@ getProvider(id: string): ProviderConfig | undefined
 
 clearModelNewFlag(providerId: string, modelId: string): void
 
-invalidateDeadModel(providerId: string, modelId: string): void
+retireDeadModel(providerId: string, modelId: string): void
 
 interface ResolvedModel {
   model: LanguageModel;
@@ -42,7 +42,7 @@ For the generated provider table, see [providers.md](../../providers.md).
 - Anthropic has `type: "anthropic"` and `paid: true`; routing uses the native Anthropic adapter instead of the OpenAI-compatible adapter.
 - Cloudflare Workers AI uses a `baseUrl` templated from `process.env.CLOUDFLARE_ACCOUNT_ID` at module load time; requires both `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_KEY` env vars.
 - Ollama is not in `PROVIDER_REGISTRY`; `createOllamaProvider()` lives in [adapters/openai-compat.md](adapters/openai-compat.md).
-- Providers with `modelsSource: 'live'` have their model list fetched from the provider's `/v1/models` API at runtime via `initDynamicProviders()`. Most live providers start empty and use the cache from `model-cache.ts` on fetch failure; Zen keeps a curated current-free seed list for offline/default picker availability. All live fetches are gated on `resolveApiKey(provider)`, so env vars, default keys, and config-file keys enable discovery; if no key is configured, the fetch is skipped entirely.
+- Providers with `modelsSource: 'live'` have their model list fetched from the provider's `/v1/models` API at runtime via `initDynamicProviders()`. Most live providers start empty and use the cache from `model-list-cache.ts` on fetch failure; Zen keeps a curated current-free seed list for offline/default picker availability. All live fetches are gated on `resolveApiKey(provider)`, so env vars, default keys, and config-file keys enable discovery; if no key is configured, the fetch is skipped entirely.
 - `initDynamicProviders()` is memoized via a module-level `initPromise`: all callers share the same underlying `Promise.all`. `getSelectableModels()` is called in the background at interactive startup (suppressed by `FREECODE_NO_PREFETCH=1` in the TTY test harness), so a later `/model` open awaits an already-in-flight or completed fetch rather than starting a new one.
 - `mock:*` models are virtual and are not listed in `PROVIDER_REGISTRY`. `resolveModel()` only accepts them when `FREECODE_FAKE_LLM=1`, and fake mode rejects real provider resolution plus live model discovery.
 - After fetching, live-provider model lists are deduplicated by `displayName`: when multiple IDs resolve to the same name (aliases), the versioned ID (date-stamped or semver) is kept and aliases are dropped.

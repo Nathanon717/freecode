@@ -11,7 +11,7 @@
 - `src/cli/eval-screen.ts` — `printEvalHeader`, `printEvalSummary` (shared header/summary rendering)
 - `src/cli/terminal-ui.ts` — `setActiveModelFromString`
 - `src/cli/eval-dots.ts` — `statusCircle` (colored dot renderer) reused for picker dots
-- `src/providers/model-store.ts` — `appendEvalRun` (records each run to `.freecode/`)
+- `src/providers/model-data.ts` — `appendEvalRun` (records each run to `.freecode/`)
 - `evals/humaneval/.runs/` — per-problem work dirs (not tracked in git; gitignored under `evals/*`)
 - `tests/scenarios/tty-humaneval-fake.scenario.json` — end-to-end fake-LLM TTY test; uses `tests/scenarios/humaneval-mini.jsonl.gz` as bundled single-problem dataset via `HUMANEVAL_DATA` env var
 

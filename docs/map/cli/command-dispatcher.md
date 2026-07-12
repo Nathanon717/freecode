@@ -12,7 +12,7 @@ type ModelListMode = 'current-only' | 'full';
 
 interface CommandRuntime {
   projectRoot: string;
-  session: SessionController;
+  session: Conversation;
   getSelectedModel(): string;
   setSelectedModel(model: string): void;
   confirmToolCall: ConfirmToolCall;
@@ -53,7 +53,7 @@ dispatchCommand(input: string, runtime: CommandRuntime): Promise<CommandDispatch
 
 Non-command input is handled by `sendToAgent()`:
 
-1. Append user input to `SessionController.messages`.
+1. Append user input to `Conversation.messages`.
 2. Run `beforeAgentCall`.
 3. If `FREECODE_RESULT_JSON` is set, write a placeholder entry with provider/model info (tokens=0) so the footer reflects the correct model immediately.
 4. Call `agentLoop(messages, projectRoot, selectedModel, { confirmToolCall, onPartialResult })`. `onPartialResult` updates the placeholder entry with quota headers as soon as the first API response arrives.

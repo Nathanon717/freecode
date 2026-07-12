@@ -3,14 +3,14 @@ import { writeFile, rm, mkdir, mkdtemp } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { readFileTool } from '../../../src/agent/tools/read.js';
-import { createTool } from '../../../src/agent/tools/create.js';
-import { setProjectRoot } from '../../../src/agent/context.js';
+import { createFileTool } from '../../../src/agent/tools/create.js';
+import { setProjectRoot } from '../../../src/agent/workspace.js';
 
 const TEST_DIR = join(process.cwd(), 'tests', 'temp');
 
 describe('tool integration: create', () => {
   it('writes a new file successfully', async () => {
-    const result = await createTool.execute({
+    const result = await createFileTool.execute({
       path: 'tests/temp/test-write.txt',
       content: 'hello world',
     });
@@ -22,7 +22,7 @@ describe('tool integration: create', () => {
     await mkdir(TEST_DIR, { recursive: true }).catch(() => {});
     await writeFile(join(TEST_DIR, 'test-write.txt'), 'existing content');
 
-    const result = await createTool.execute({
+    const result = await createFileTool.execute({
       path: 'tests/temp/test-write.txt',
       content: 'updated content',
     });
@@ -33,7 +33,7 @@ describe('tool integration: create', () => {
   });
 
   it('rejects paths outside the project root', async () => {
-    const result = await createTool.execute({
+    const result = await createFileTool.execute({
       path: '../outside-freecode.txt',
       content: 'outside',
     });
@@ -55,7 +55,7 @@ describe('tool integration: create', () => {
 
     setProjectRoot(root);
     try {
-      const result = await createTool.execute({
+      const result = await createFileTool.execute({
         path: 'outside-link/escaped.txt',
         content: 'outside',
       });

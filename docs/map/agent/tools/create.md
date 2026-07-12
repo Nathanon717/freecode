@@ -6,7 +6,7 @@
 ## Exports
 
 ```typescript
-createTool: CoreTool<z.ZodObject<{ path: z.ZodString; content: z.ZodString; }, 'strip', z.ZodTypeAny, { path: string; content: string; }, { path: string; content: string; }>, string> & { execute: (args: { path: string; content: string; }, options: { abortSignal?: AbortSignal; }) => PromiseLike<string>; }
+createFileTool: CoreTool<z.ZodObject<{ path: z.ZodString; content: z.ZodString; }, 'strip', z.ZodTypeAny, { path: string; content: string; }, { path: string; content: string; }>, string> & { execute: (args: { path: string; content: string; }, options: { abortSignal?: AbortSignal; }) => PromiseLike<string>; }
 ```
 <!-- END GENERATED EXPORTS -->
 

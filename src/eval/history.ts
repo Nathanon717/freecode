@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { getCache } from '../providers/db.js';
+import { getModelData } from '../providers/db.js';
 import {
   CUSTOM_EVAL_DIR,
   discoverCustomEvals,
@@ -39,7 +39,7 @@ export interface EvalDotsData {
 }
 
 export function loadEvalHistory(): EvalHistoryEntry[] {
-  const cache = getCache();
+  const cache = getModelData();
   if (!cache) return [];
   const all: EvalHistoryEntry[] = [];
   for (const [modelKey, entry] of Object.entries(cache)) {

@@ -8,7 +8,7 @@
 ```typescript
 export * from './types.js'
 
-export * from './registry.js'
+export * from './provider-registry.js'
 ```
 <!-- END GENERATED EXPORTS -->
 

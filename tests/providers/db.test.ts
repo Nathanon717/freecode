@@ -33,19 +33,19 @@ afterEach(async () => {
 });
 
 describe('db: lifecycle', () => {
-  it('getCache() returns null before initStore()', () => {
-    expect(db.getCache()).toBeNull();
+  it('getModelData() returns null before initStore()', () => {
+    expect(db.getModelData()).toBeNull();
   });
 
   it('initStore() initialises an empty cache for a fresh DB', async () => {
     await db.initStore();
-    expect(db.getCache()).toEqual({});
+    expect(db.getModelData()).toEqual({});
   });
 
   it('resetStore() clears the cache back to null', async () => {
     await db.initStore();
     await db.resetStore();
-    expect(db.getCache()).toBeNull();
+    expect(db.getModelData()).toBeNull();
     await db.initStore(); // re-init so afterEach cleanup works
   });
 
@@ -53,7 +53,7 @@ describe('db: lifecycle', () => {
     await db.initStore();
     await db.resetStore();
     await db.initStore();
-    expect(db.getCache()).toEqual({});
+    expect(db.getModelData()).toEqual({});
   });
 
   it('initStore() degrades gracefully when the DB is unusable (never rejects, never poisons later opens)', async () => {
@@ -63,28 +63,28 @@ describe('db: lifecycle', () => {
     mkdirSync(join(tempStore, 'freecode.db'), { recursive: true });
 
     await expect(db.initStore()).resolves.toBeUndefined();
-    expect(db.getCache()).toEqual({});
+    expect(db.getModelData()).toEqual({});
 
     // The memoized promise is not poisoned — a second open also resolves.
     await expect(db.initStore()).resolves.toBeUndefined();
-    expect(db.getCache()).toEqual({});
+    expect(db.getModelData()).toEqual({});
   });
 });
 
 describe('db: cache operations', () => {
-  it('setCache() updates the in-memory cache synchronously', async () => {
+  it('setModelData() updates the in-memory cache synchronously', async () => {
     await db.initStore();
-    db.setCache({ 'groq:llama': { provider: 'groq', modelId: 'llama' } });
-    expect(db.getCache()).toMatchObject({
+    db.setModelData({ 'groq:llama': { provider: 'groq', modelId: 'llama' } });
+    expect(db.getModelData()).toMatchObject({
       'groq:llama': { provider: 'groq', modelId: 'llama' },
     });
   });
 
-  it('setCache() replaces the entire cache', async () => {
+  it('setModelData() replaces the entire cache', async () => {
     await db.initStore();
-    db.setCache({ 'groq:a': { provider: 'groq', modelId: 'a' } });
-    db.setCache({ 'groq:b': { provider: 'groq', modelId: 'b' } });
-    const cache = db.getCache()!;
+    db.setModelData({ 'groq:a': { provider: 'groq', modelId: 'a' } });
+    db.setModelData({ 'groq:b': { provider: 'groq', modelId: 'b' } });
+    const cache = db.getModelData()!;
     expect(cache['groq:b']).toBeDefined();
     expect(cache['groq:a']).toBeUndefined();
   });
@@ -94,14 +94,14 @@ describe('db: DB persistence round-trip', () => {
   it('persistModelRowAsync() makes a model row visible after reinitialising from the same DB', async () => {
     await db.initStore();
     const entry = { provider: 'groq', modelId: 'llama', isFavorite: true };
-    db.setCache({ 'groq:llama': entry });
+    db.setModelData({ 'groq:llama': entry });
     db.persistModelRowAsync('groq:llama', entry);
 
     // resetStore() drains all pending fire-and-forget writes before closing.
     await db.resetStore();
     await db.initStore();
 
-    const cache = db.getCache();
+    const cache = db.getModelData();
     expect(cache?.['groq:llama']).toMatchObject({
       provider: 'groq',
       modelId: 'llama',
@@ -112,7 +112,7 @@ describe('db: DB persistence round-trip', () => {
   it('eval runs are persisted via saveTranscriptAsync and re-loaded on reinit', async () => {
     await db.initStore();
     const modelEntry = { provider: 'groq', modelId: 'llama' };
-    db.setCache({ 'groq:llama': modelEntry });
+    db.setModelData({ 'groq:llama': modelEntry });
     db.persistModelRowAsync('groq:llama', modelEntry);
 
     const summary = {
@@ -130,7 +130,7 @@ describe('db: DB persistence round-trip', () => {
     await db.resetStore();
     await db.initStore();
 
-    const run = db.getCache()?.['groq:llama']?.evals?.['humaneval']?.[0];
+    const run = db.getModelData()?.['groq:llama']?.evals?.['humaneval']?.[0];
     expect(run).toBeDefined();
     expect(run?.taskId).toBe('HumanEval/0');
     expect(run?.pass).toBe(true);
@@ -140,7 +140,7 @@ describe('db: DB persistence round-trip', () => {
   it('two runs with identical timestamps are both persisted (no silent drop)', async () => {
     await db.initStore();
     const modelEntry = { provider: 'groq', modelId: 'llama' };
-    db.setCache({ 'groq:llama': modelEntry });
+    db.setModelData({ 'groq:llama': modelEntry });
     db.persistModelRowAsync('groq:llama', modelEntry);
 
     const sharedTimestamp = '2026-06-19T10:00:00.000Z';
@@ -157,7 +157,7 @@ describe('db: DB persistence round-trip', () => {
     await db.resetStore();
     await db.initStore();
 
-    const runs = db.getCache()?.['groq:llama']?.evals?.['humaneval'];
+    const runs = db.getModelData()?.['groq:llama']?.evals?.['humaneval'];
     expect(runs).toHaveLength(2);
   });
 });
@@ -349,7 +349,7 @@ describe('db: tokenless run over a sync replica', () => {
     // genuine guard: without the fix, the plain client opens it and loads the row.)
     await db.initStore();
     const entry = { provider: 'groq', modelId: 'llama' };
-    db.setCache({ 'groq:llama': entry });
+    db.setModelData({ 'groq:llama': entry });
     db.persistModelRowAsync('groq:llama', entry);
     await db.resetStore(); // drains the write, closes the client
 
@@ -366,7 +366,7 @@ describe('db: tokenless run over a sync replica', () => {
 
     // Declined: the persisted `groq:llama` row is NOT loaded — the cache is empty.
     // Without the fix, the plain client would open the file and load it.
-    expect(db.getCache()).toEqual({});
+    expect(db.getModelData()).toEqual({});
     // The client was never opened — raw execution reports it's not initialized.
     await expect(db.executeRawForTesting('SELECT 1', [])).rejects.toThrow('DB not initialized');
     // The replica and its sync metadata are byte-for-byte intact (not opened, not wiped).

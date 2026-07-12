@@ -2,7 +2,7 @@
 
 ## Supported Providers
 
-This table is generated from `src/providers/registry.ts`. Run `npm run docs:generate` after provider registry changes.
+This table is generated from `src/providers/provider-registry.ts`. Run `npm run docs:generate` after provider registry changes.
 
 <!-- BEGIN GENERATED PROVIDERS -->
 | Order | Provider | ID | Type | API key env var | Tools | Paid | Models |
@@ -30,7 +30,7 @@ Use `/keys` inside the freecode REPL to check which provider API keys are config
 
 ## Adding a New Provider
 
-1. Add provider config to `src/providers/registry.ts` with:
+1. Add provider config to `src/providers/provider-registry.ts` with:
    - `id`, `name`, `type` (`openai-compat` or `anthropic`)
    - `baseUrl` for OpenAI-compatible providers, `apiKeyEnvVar` for all providers
    - `models` array with `id`, `displayName`, optional `contextWindow` and `limits`

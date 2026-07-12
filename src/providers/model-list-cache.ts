@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { getStoreDir } from './model-store.js';
+import { getStoreDir } from './model-data.js';
 import { logError } from '../logger.js';
 
 export interface RawCachedModel {
@@ -93,7 +93,7 @@ export function getDeadIds(providerId: string): string[] {
   return load()[providerId]?.deadIds ?? [];
 }
 
-export function markModelDead(providerId: string, modelId: string): void {
+export function recordDeadModel(providerId: string, modelId: string): void {
   const cache = load();
   const entry = cache[providerId];
   if (!entry) return;

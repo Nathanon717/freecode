@@ -1,6 +1,6 @@
 # src/providers/db.ts - SQLite Store (libSQL/Turso)
 
-**Role:** Owns the libSQL client, schema bootstrap, in-memory model-store cache, startup import trigger, and async transcript persistence. Called once at startup via `initStore()`; all subsequent model-store reads are served from the cache (no per-call file I/O when initialized).
+**Role:** Owns the libSQL client, schema bootstrap, in-memory model-data cache, startup import trigger, and async transcript persistence. Called once at startup via `initStore()`; all subsequent model-data reads are served from the cache (no per-call file I/O when initialized).
 
 All four phases of the eval/model store migration are complete. See `docs/plans/eval-db-migration-plan.md`.
 
@@ -30,9 +30,9 @@ drainPendingWrites(): Promise<void>
 
 resetStore(): Promise<void>
 
-getCache(): ModelStore | null
+getModelData(): ModelDataMap | null
 
-setCache(store: ModelStore): void
+setModelData(store: ModelDataMap): void
 
 executeRawForTesting(sql: string, args: InValue[]): Promise<void>
 ```
@@ -64,19 +64,19 @@ Tokenless-replica decline (`isSyncReplica`): sync tokens reach `readDbConfig` on
 
 ## Read/Write Architecture
 
-- **Reads:** `load()` in model-store returns `getCache()` when initialized, else returns `{}`.
-- **Writes:** `save(store, changedKeys?)` in model-store calls `setCache()` to update the in-memory cache synchronously, then calls `persistModelRowAsync(key, entry)` for each changed key — one `c.execute()` per row. `appendEvalRun` additionally calls `saveTranscriptAsync()` to persist transcript content to `eval_runs`/`eval_transcripts`, and persists the model row (via `save(store, [key])`) so the FK parent exists; `saveTranscriptAsync` also self-insures the parent row (INSERT OR IGNORE on `models`) to stay order-independent of the model-row write.
+- **Reads:** `load()` in model-data returns `getModelData()` when initialized, else returns `{}`.
+- **Writes:** `save(store, changedKeys?)` in model-data calls `setModelData()` to update the in-memory cache synchronously, then calls `persistModelRowAsync(key, entry)` for each changed key — one `c.execute()` per row. `appendEvalRun` additionally calls `saveTranscriptAsync()` to persist transcript content to `eval_runs`/`eval_transcripts`, and persists the model row (via `save(store, [key])`) so the FK parent exists; `saveTranscriptAsync` also self-insures the parent row (INSERT OR IGNORE on `models`) to stay order-independent of the model-row write.
 - **Durability:** DB writes are fire-and-forget. The DB (synced via Turso) is the cross-device source of truth.
 
 ## Read When
 
 - Troubleshooting startup DB errors or the libSQL client configuration.
 - Extending the schema (new table or column).
-- Understanding why model-store reads hit cache vs. JSON.
+- Understanding why model-data reads hit cache vs. JSON.
 
 ## Key Neighbors
 
-- [providers/model-store.md](model-store.md): sole caller of `getCache`/`setCache`.
+- [providers/model-data.md](model-data.md): sole caller of `getModelData`/`setModelData`.
 - [index.md](../index.md): calls `initStore()` once at startup.
 - `docs/plans/eval-db-migration-plan.md`: full migration plan and phase breakdown.
 

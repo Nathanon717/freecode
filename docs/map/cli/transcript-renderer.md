@@ -1,6 +1,6 @@
 # src/cli/transcript-renderer.ts - Agent Transcript Formatting
 
-**Role:** Shared formatting and normalisation for all visible agent transcript output. The state machine here is the single authority for turn layout — every path through `agentLoop` and `runPromptToolsLoop` delegates spacing decisions to these functions so that model-specific differences in whitespace are absorbed here and can never leak into the displayed transcript.
+**Role:** Shared formatting and normalisation for all visible agent transcript output. The state machine here is the single authority for turn layout — every path through `agentLoop` and `runParsedToolsLoop` delegates spacing decisions to these functions so that model-specific differences in whitespace are absorbed here and can never leak into the displayed transcript.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -30,7 +30,7 @@ formatRationaleLine(rationale: string): string
 
 formatToolCallLine(name: string, args: Record<string, unknown>): string
 
-formatPromptToolCallLine(name: string, args: Record<string, unknown>): string
+formatParsedToolCallLine(name: string, args: Record<string, unknown>): string
 
 formatToolErrorLine(name: string, err: unknown): string
 
@@ -72,8 +72,8 @@ interface ToolStep {
   name: string;
   displayArgs: Record<string, unknown>;
   rationale?: string;
-  /** true → use formatPromptToolCallLine (the "~" prefix) */
-  promptTools?: boolean;
+  /** true → use formatParsedToolCallLine (the "~" prefix) */
+  parsedTools?: boolean;
   result: ToolStepResult;
 }
 
@@ -82,7 +82,7 @@ interface RenderedStep {
   tools?: ToolStep[];
 }
 
-writeToolCallHeader(step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "promptTools">, opts?: TranscriptRuntimeOptions | undefined): void
+writeToolCallHeader(step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "parsedTools">, opts?: TranscriptRuntimeOptions | undefined): void
 
 writeToolResultPreview(name: string, result: { kind: "text"; result: unknown; } | { kind: "create-content"; content: string; } | { kind: "edit-diff"; path: string; oldText: string; newText: string; contextBefore: string[]; contextAfter: string[]; lineIndent: string; }, opts?: TranscriptRuntimeOptions | undefined): boolean
 
@@ -98,10 +98,10 @@ renderTurn(steps: RenderedStep[], opts?: TranscriptRuntimeOptions | undefined): 
 
 - `DiffEntry` — re-exported from `util/line-diff.ts`; `equal | remove | add` diff entry type.
 - `formatEditFileDiff()` — smart diff renderer; red/green for changed lines, dim for file context.
-- `formatPromptToolCallLine()` — like `formatToolCallLine` but prefixes `~ `.
+- `formatParsedToolCallLine()` — like `formatToolCallLine` but prefixes `~ `.
 - `formatTranscriptStepDivider(options?)` — returns the raw divider string (no newlines); uses the target stream's column width when `options` is provided.
 - `writeTranscriptStepDivider()` — legacy; kept for backward compatibility.
-- Higher-level API (`writeToolCallHeader`, `writeToolStepResult`, `renderToolStep`, `renderTurn`) — sit on top of the format helpers and state machine so that both the live agent path (`tools/index.ts withLogging`) and the `/renderer` demo (`commands/renderer.ts`) share one implementation. `writeToolCallHeader` is called BEFORE tool execution; `writeToolStepResult` is called AFTER.
+- Higher-level API (`writeToolCallHeader`, `writeToolStepResult`, `renderToolStep`, `renderTurn`) — sit on top of the format helpers and state machine so that both the live agent path (`tools/index.ts withToolRendering`) and the `/renderer` demo (`commands/renderer.ts`) share one implementation. `writeToolCallHeader` is called BEFORE tool execution; `writeToolStepResult` is called AFTER.
 
 ## Desired Turn Layout
 
@@ -126,7 +126,7 @@ The module maintains a single `_step` state object. All callers drive it with th
 
 - `beginTranscriptTurn(opts?)` — open a turn; writes opening divider + blank line. Idempotent (no-op if already open).
 - `notifyTranscriptChunk(chunk)` — call each time a chunk of model response text is written to stdout; updates `hasText` / `textEndsWithNewline`.
-- `writeTranscriptToolLeadIn(opts?)` — call from `withLogging` in `tools/index.ts` immediately before writing the tool call line. Inserts the correct blank-line separator (blank after response text, blank between parallel tool calls).
+- `writeTranscriptToolLeadIn(opts?)` — call from `withToolRendering` in `tools/index.ts` immediately before writing the tool call line. Inserts the correct blank-line separator (blank after response text, blank between parallel tool calls).
 - `endTranscriptStep(hasMore, opts?)` — close the current step. `hasMore=true` writes the combined close+open divider for the next step; `hasMore=false` writes only the final closing divider. No-op when no turn is open.
 
 ## Read When

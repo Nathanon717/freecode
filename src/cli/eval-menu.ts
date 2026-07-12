@@ -26,7 +26,7 @@ import {
   loadHumanEvalProblems,
   type HumanEvalProblem,
 } from '../eval/humaneval-data.js';
-import { getHumanEvalResults } from '../providers/model-store.js';
+import { getHumanEvalResults } from '../providers/model-data.js';
 import { ensureStoreReady } from '../providers/db.js';
 import { existsSync } from 'fs';
 

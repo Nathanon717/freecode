@@ -10,7 +10,7 @@ import {
 } from '../quota/headers.js';
 import { log } from '../../logger.js';
 import type { AnthropicTokenUsage } from '../anthropic-cost.js';
-import { saveObservedRateLimits } from '../model-store.js';
+import { saveObservedRateLimits } from '../model-data.js';
 import { HeaderSnapshotStore, UsageCaptureStore } from './adapter-usage-capture.js';
 
 const headerStore = new HeaderSnapshotStore();

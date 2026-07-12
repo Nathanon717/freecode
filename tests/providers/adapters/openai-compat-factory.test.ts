@@ -18,7 +18,7 @@ vi.mock('../../../src/config/index.js', () => ({
   resolveApiKey: vi.fn(() => 'test-key'),
 }));
 
-vi.mock('../../../src/providers/model-store.js', () => ({
+vi.mock('../../../src/providers/model-data.js', () => ({
   saveObservedRateLimits: vi.fn(),
 }));
 
@@ -31,7 +31,7 @@ vi.mock('../../../src/providers/adapters/adapter-http-retry.js', () => ({
 
 import { createOpenAI } from '@ai-sdk/openai';
 import { fetchWithRetry, formatOpenAICompatHttpError } from '../../../src/providers/adapters/adapter-http-retry.js';
-import { saveObservedRateLimits } from '../../../src/providers/model-store.js';
+import { saveObservedRateLimits } from '../../../src/providers/model-data.js';
 import {
   createOpenAICompatProvider,
   createOllamaProvider,

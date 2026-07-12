@@ -1,4 +1,4 @@
-# src/agent/prompt-tools.ts - Prompt-Based Tool Harness
+# src/agent/parsed-tools.ts - Parsed-Tools Harness
 
 **Role:** Fallback agentic loop for models that reject native function calling. Augments the system prompt with a text-based `<tool_call>` protocol and drives a ReAct-style loop by injecting tool results as user messages.
 
@@ -6,11 +6,11 @@
 ## Exports
 
 ```typescript
-buildPromptToolsSystemPrompt(base: string): string
+buildParsedToolsSystemPrompt(base: string): string
 
 parseToolCalls(text: string): ParsedToolCall[]
 
-interface PromptToolsResult {
+interface ParsedToolsResult {
   text: string;
   totalTokens: number;
   promptTokens?: number;
@@ -19,21 +19,21 @@ interface PromptToolsResult {
 
 executeToolCalls(tools: { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { create: AnyCoreTool; edit: AnyCoreTool; shell_exec: AnyCoreTool; read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; }, calls: readonly { ...; }[], idPrefix: string, messages: CoreMessage[]): Promise<...>
 
-runPromptToolsLoop(messages: CoreMessage[], systemPrompt: string, model: LanguageModelV1, confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, readOnly?: boolean | undefined): Promise<...>
+runParsedToolsLoop(messages: CoreMessage[], systemPrompt: string, model: LanguageModelV1, confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, readOnly?: boolean | undefined): Promise<...>
 ```
 <!-- END GENERATED EXPORTS -->
 
 ## Read When
 
-- Understanding the prompt-tools fallback path.
+- Understanding the parsed-tools fallback path.
 - Changing how tool calls are formatted or parsed in text-only mode.
 - Debugging tool execution when the model doesn't support native function calling.
 
 ## How It Works
 
-`executeToolCalls` iterates a list of parsed tool calls against a `createTools` map: unknown tools become error strings (fed back to the model), known tools delegate to their wrapped `execute`. This helper is used by both `runPromptToolsLoop` (text-based protocol) and `runFakeLlm` in `loop.ts` (fake fixture tool execution).
+`executeToolCalls` iterates a list of parsed tool calls against a `createTools` map: unknown tools become error strings (fed back to the model), known tools delegate to their wrapped `execute`. This helper is used by both `runParsedToolsLoop` (text-based protocol) and `runFakeLlm` in `loop.ts` (fake fixture tool execution).
 
-`runPromptToolsLoop`:
+`runParsedToolsLoop`:
 1. Appends a tool-calling protocol section to the system prompt.
 2. Calls `streamText` (no native tools) and buffers the full response.
 3. Parses `<tool_call>{"name":"...","args":{...}}</tool_call>` blocks.
@@ -44,7 +44,7 @@ The embedded tool reference must mirror the actual tool schemas; for example `gr
 
 ## Key Neighbors
 
-- [loop.md](loop.md): invokes `runPromptToolsLoop` when `isToolsNotSupportedError` fires.
+- [loop.md](loop.md): invokes `runParsedToolsLoop` when `isToolsNotSupportedError` fires.
 - [tools/index.md](tools/index.md): `createTools` provides the wrapped executors.
 - [util/errors.md](../util/errors.md): `isToolsNotSupportedError` triggers the fallback.
 

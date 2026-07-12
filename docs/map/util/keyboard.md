@@ -1,4 +1,4 @@
-# src/util/keys.ts - Raw-Key Helpers
+# src/util/keyboard.ts - Raw-Key Helpers
 
 **Purpose:** Shared raw-terminal-key detection used by the interactive input handlers.
 

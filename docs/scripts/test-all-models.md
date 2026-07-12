@@ -14,7 +14,7 @@ Requires the same API keys the app itself uses (env vars, Doppler, or `~/.config
 
 The set of models tested comes from `getSelectableModels()` ([src/commands/model.ts](../map/commands/model.md)) — the same function the in-app `/model` picker and the startup prefetch call. This script does not reimplement or hand-copy that filtering; it imports and calls the real function, so the list is always exactly what the picker would show.
 
-On top of that list, the script drops any provider flagged `paid: true` in `PROVIDER_REGISTRY` ([src/providers/registry-data.ts](../map/providers/registry.md)) — currently `openai` and `anthropic` — so it only spends against free-tier providers. This is an explicit additional filter layered on top of `getSelectableModels()`'s output, not a change to the picker's own logic.
+On top of that list, the script drops any provider flagged `paid: true` in `PROVIDER_REGISTRY` ([src/providers/provider-catalog.ts](../map/providers/provider-catalog.md)) — currently `openai` and `anthropic` — so it only spends against free-tier providers. This is an explicit additional filter layered on top of `getSelectableModels()`'s output, not a change to the picker's own logic.
 
 ## Per-model call
 

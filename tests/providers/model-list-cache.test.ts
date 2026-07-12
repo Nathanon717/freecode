@@ -11,7 +11,7 @@ vi.mock('os', () => ({
   homedir: vi.fn(() => '/home/testuser'),
 }));
 
-describe('model-cache', () => {
+describe('model-list-cache', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -22,7 +22,7 @@ describe('model-cache', () => {
       const { existsSync } = await import('fs');
       vi.mocked(existsSync).mockReturnValue(false);
 
-      const { updateProviderCache } = await import('../../src/providers/model-cache.js');
+      const { updateProviderCache } = await import('../../src/providers/model-list-cache.js');
       const result = updateProviderCache('groq', [
         { id: 'llama-3.3-70b', displayName: 'Llama 3.3 70B' },
         { id: 'llama-3.1-8b', displayName: 'Llama 3.1 8B' },
@@ -36,7 +36,7 @@ describe('model-cache', () => {
       const { existsSync, writeFileSync } = await import('fs');
       vi.mocked(existsSync).mockReturnValue(false);
 
-      const { updateProviderCache } = await import('../../src/providers/model-cache.js');
+      const { updateProviderCache } = await import('../../src/providers/model-list-cache.js');
       updateProviderCache('groq', [{ id: 'llama-3.3-70b', displayName: 'Llama 3.3 70B' }]);
 
       expect(vi.mocked(writeFileSync)).toHaveBeenCalled();
@@ -56,7 +56,7 @@ describe('model-cache', () => {
         },
       }));
 
-      const { updateProviderCache } = await import('../../src/providers/model-cache.js');
+      const { updateProviderCache } = await import('../../src/providers/model-list-cache.js');
       const result = updateProviderCache('groq', [
         { id: 'llama-3.3-70b', displayName: 'Llama 3.3 70B' },
         { id: 'llama-4-scout', displayName: 'Llama 4 Scout' },
@@ -81,7 +81,7 @@ describe('model-cache', () => {
         },
       }));
 
-      const { updateProviderCache } = await import('../../src/providers/model-cache.js');
+      const { updateProviderCache } = await import('../../src/providers/model-list-cache.js');
       const result = updateProviderCache('groq', [
         { id: 'llama-3.3-70b', displayName: 'Llama 3.3 70B' },
       ]);
@@ -102,7 +102,7 @@ describe('model-cache', () => {
         },
       }));
 
-      const { updateProviderCache } = await import('../../src/providers/model-cache.js');
+      const { updateProviderCache } = await import('../../src/providers/model-list-cache.js');
       const result = updateProviderCache('groq', [
         { id: 'llama-3.3-70b', displayName: 'Llama 3.3 70B' },
       ]);
@@ -127,7 +127,7 @@ describe('model-cache', () => {
         },
       }));
 
-      const { updateProviderCache } = await import('../../src/providers/model-cache.js');
+      const { updateProviderCache } = await import('../../src/providers/model-list-cache.js');
       const result = updateProviderCache('groq', [
         { id: 'llama-3.3-70b', displayName: 'Llama 3.3 70B' },
         { id: 'llama-4-scout', displayName: 'Llama 4 Scout' },

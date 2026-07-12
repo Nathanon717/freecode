@@ -24,7 +24,7 @@ Three tabs, navigated by pressing Up from the first setting row to reach the tab
 |-----|-------|-----------|
 | Global | All providers/models | `config.json` top-level keys |
 | Provider | Current provider | `config.json` `providerOverrides[providerId]` |
-| Model | Current `provider:model` | `.freecode/models.json` `settings` (sparse) via `model-store` |
+| Model | Current `provider:model` | `.freecode/models.json` `settings` (sparse) via `model-data` |
 
 Provider and Model tabs are only available when `currentModel` contains a colon. If no model is selected, only Global is shown and no tab chrome is drawn.
 
@@ -52,7 +52,7 @@ Provider/Model tabs cycle: `inherit → true → false → inherit` (Right) or `
 
 - Global: writes `config[key] = value` to `globalPath`.
 - Provider: writes/deletes `config.providerOverrides[providerId][key]` via `readRawConfig` + `writeConfigFile`. Removes empty records.
-- Model: calls `setModelSetting(currentModel, key, value)` from `model-store`; writes to `.freecode/models.json` `settings` (sparse). Setting a field to `undefined` removes it from the sparse object; the `{}` sentinel prevents re-seeding from the legacy `modelOverrides` field.
+- Model: calls `setModelSetting(currentModel, key, value)` from `model-data`; writes to `.freecode/models.json` `settings` (sparse). Setting a field to `undefined` removes it from the sparse object; the `{}` sentinel prevents re-seeding from the legacy `modelOverrides` field.
 
 ## Terminal Behavior
 

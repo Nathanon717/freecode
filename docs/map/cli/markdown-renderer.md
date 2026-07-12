@@ -21,7 +21,7 @@ createMarkdownStreamRenderer(): MarkdownStreamRenderer
 
 ## Export notes
 
-- `renderMarkdown(text)` — renders a complete string; use for OpenAI and prompt-tools paths where the full text is available at once.
+- `renderMarkdown(text)` — renders a complete string; use for OpenAI and parsed-tools paths where the full text is available at once.
 - `createMarkdownStreamRenderer()` — stateful line-buffered streaming renderer; call `.push(chunk)` per incoming chunk (returns ready rendered lines), then `.flush()` at end of stream to emit any remaining partial line. Preserves live token-by-token output.
 
 ## What is rendered
@@ -36,7 +36,7 @@ createMarkdownStreamRenderer(): MarkdownStreamRenderer
 ## Key neighbours
 
 - Called from `agent/loop.ts` (streaming path uses `createMarkdownStreamRenderer`; OpenAI path uses `renderMarkdown`).
-- Called from `agent/prompt-tools.ts` (uses `renderMarkdown`).
+- Called from `agent/parsed-tools.ts` (uses `renderMarkdown`).
 
 ## Update triggers
 

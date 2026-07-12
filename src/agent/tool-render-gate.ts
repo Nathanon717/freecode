@@ -1,5 +1,5 @@
 // Rendezvous between the native `fullStream` consumer (agent/loop.ts) and a tool's
-// `execute` (agent/tools/index.ts withLogging).
+// `execute` (agent/tools/index.ts withToolRendering).
 //
 // The AI SDK invokes a tool's `execute` as soon as it assembles the tool call —
 // empirically before the pre-tool "preamble" text-delta reaches the stream
@@ -18,7 +18,7 @@
 // A permit granted before its `execute` arrives is banked (parallel tool calls in
 // one step emit all their parts up front); an `execute` that arrives first waits.
 //
-// The gate is a no-op unless a native stream has armed it, so the prompt-tools
+// The gate is a no-op unless a native stream has armed it, so the parsed-tools
 // loop, the fake-direct loop, and the /renderer demo — which render tool steps
 // synchronously and never emit a `tool-call` part — are unaffected.
 

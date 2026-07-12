@@ -51,7 +51,7 @@ describe('transcript renderer', () => {
     expect(stripAnsi(output)).toBe('─'.repeat(expectedWidth) + '\n\n');
   });
 
-  it('format functions return content without trailing newlines so withLogging controls spacing', () => {
+  it('format functions return content without trailing newlines so withToolRendering controls spacing', () => {
     const preview = formatToolResultPreview('line1\nline2', { maxResultLines: Infinity });
     expect(preview.endsWith('\n')).toBe(false);
 

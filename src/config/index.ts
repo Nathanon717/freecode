@@ -3,7 +3,7 @@ import { join, dirname } from 'path';
 import { homedir } from 'os';
 import type { Config, OverridableSettings, ProviderConfig } from '../providers/types.js';
 import { log, logError } from '../logger.js';
-import { getModelSettings } from '../providers/model-settings-registry.js';
+import { getModelSettings } from '../providers/model-settings-accessor.js';
 import {
   getDbConfigCache,
   setDbConfigCache,

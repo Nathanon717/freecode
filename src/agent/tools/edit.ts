@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { readFile, writeFile } from 'fs/promises';
-import { hasFileBeenRead, resolveExistingProjectPath } from '../context.js';
+import { hasFileBeenRead, resolveExistingProjectPath } from '../workspace.js';
 
 function normalizeToolText(text: string): string {
   return text.replace(/\\n/g, '\n').replace(/\\t/g, '\t');

@@ -23,7 +23,7 @@ all orchestration now goes through the shared `renderTurn` / `renderToolStep` / 
 |---------|---------------|
 | Tool call only (`read`, `list_dir`, `shell_exec`) | `text` |
 | Rationale + tool call (`grep`) | `text` with `rationale` set |
-| Prompt-tool call | `text` with `promptTools: true` |
+| Parsed-tool call | `text` with `parsedTools: true` |
 | `create` (content preview) | `create-content` |
 | `edit` (colored diff) | `edit-diff` |
 | Response + tool call | `RenderedStep.text` + tool |

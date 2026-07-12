@@ -1,4 +1,4 @@
-# src/providers/model-store.ts - Unified Model Store
+# src/providers/model-data.ts - Unified Model Store
 
 **Role:** Public API layer for all per-model data: favorites, native-tools state, per-model settings, eval run records, and observed rate limits. Keyed by `"provider:modelId"`. All public function signatures are synchronous; reads hit the `db.ts` in-memory cache and writes update the cache then fire-and-forget persist to the DB.
 
@@ -76,8 +76,8 @@ saveObservedRateLimits(provider: string, modelId: string, buckets: Record<string
 
 ## Key Neighbors
 
-- [providers/db.md](db.md): owns the libSQL client and in-memory cache; `load()` reads `getCache()`; `save()` calls `setCache()` and `persistModelRowAsync()` per changed key.
-- [providers/model-settings-registry.md](model-settings-registry.md): at module load time, `model-store.ts` registers `getModelSettings` into this registry so `config/index.ts` can call it without a direct import.
+- [providers/db.md](db.md): owns the libSQL client and in-memory cache; `load()` reads `getModelData()`; `save()` calls `setModelData()` and `persistModelRowAsync()` per changed key.
+- [providers/model-settings-accessor.md](model-settings-accessor.md): at module load time, `model-data.ts` registers `getModelSettings` into this accessor so `config/index.ts` can call it without a direct import.
 - [commands/model.md](../commands/model.md): picker reads `getFavorites`/`getNoNativeToolsKeys` and toggles `setFavorite`.
 - [commands/config.md](../commands/config.md): model tab reads `getModelSettings` and writes `setModelSetting`.
 - [agent/loop.md](../agent/loop.md): reads `isNativeToolsDisabled` at startup and calls `setNativeTools(.., false)` when a provider rejects native tool calling.

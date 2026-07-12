@@ -5,7 +5,7 @@ import { promisify } from 'util';
 import { resolve } from 'path';
 import { stat } from 'fs/promises';
 import { rgPath } from '@vscode/ripgrep';
-import { resolveExistingProjectPath } from '../context.js';
+import { resolveExistingProjectPath } from '../workspace.js';
 
 const execFileAsync = promisify(execFile);
 

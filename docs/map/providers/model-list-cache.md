@@ -1,4 +1,4 @@
-# src/providers/model-cache.ts - Model Cache
+# src/providers/model-list-cache.ts - Model List Cache
 
 **Role:** Persists the most recent successful model-list fetch for each live provider to `<packageRoot>/.freecode/model-cache.json` (or `$FREECODE_STORE/model-cache.json`). Provides fallback data when a live fetch fails, tracks which model IDs are newly appeared (for "new" badge display), and clears that flag when a model is selected.
 
@@ -25,7 +25,7 @@ markModelSelected(providerId: string, modelId: string): void
 
 getDeadIds(providerId: string): string[]
 
-markModelDead(providerId: string, modelId: string): void
+recordDeadModel(providerId: string, modelId: string): void
 ```
 <!-- END GENERATED EXPORTS -->
 
@@ -50,9 +50,9 @@ markModelDead(providerId: string, modelId: string): void
 
 ## Key Neighbors
 
-- [registry.md](registry.md): calls `updateProviderCache` on each successful fetch and `getProviderCache` as fallback.
+- [provider-registry.md](provider-registry.md): calls `updateProviderCache` on each successful fetch and `getProviderCache` as fallback.
 - [../commands/model.md](../../map/commands/model.md): calls `markModelSelected` on selection; reads `removedIds` to render removed-model rows.
-- [model-store.md](model-store.md): supplies `getStoreDir()` for the cache file path.
+- [model-data.md](model-data.md): supplies `getStoreDir()` for the cache file path.
 
 ## Update Triggers
 
