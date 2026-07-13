@@ -1,0 +1,69 @@
+{
+  "name": "tty-tool-autobracket",
+  "description": "Typing ( after a valid tool name auto-inserts the closing ) with the cursor between them; typing ) types over the auto-inserted close; a non-tool name does not auto-close",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type tool name",
+        "send": "read",
+        "screenContains": [
+          "> read"
+        ]
+      },
+      {
+        "name": "open paren auto-closes",
+        "send": "(",
+        "screenContains": [
+          "> read()"
+        ]
+      },
+      {
+        "name": "type args between parens",
+        "send": "path=x",
+        "screenContains": [
+          "> read(path=x)"
+        ]
+      },
+      {
+        "name": "close paren types over the auto-inserted one",
+        "send": ")",
+        "screenContains": [
+          "> read(path=x)"
+        ],
+        "screenAbsent": [
+          "read(path=x))"
+        ]
+      },
+      {
+        "name": "clear the buffer",
+        "send": "\u001b",
+        "screenContains": [
+          "> / for commands"
+        ]
+      },
+      {
+        "name": "non-tool name does not auto-close",
+        "send": "notatool",
+        "screenContains": [
+          "> notatool"
+        ]
+      },
+      {
+        "name": "open paren stays a lone bracket",
+        "send": "(",
+        "screenContains": [
+          "> notatool("
+        ],
+        "screenAbsent": [
+          "notatool()"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

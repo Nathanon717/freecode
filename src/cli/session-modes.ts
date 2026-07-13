@@ -9,12 +9,14 @@ import type {
 } from "../agent/tools/index.js";
 import { loadConfig } from "../config/index.js";
 import { getCommandCompletion, getFilteredCommands } from "./slash-commands.js";
+import { toolNameBeforeCursor } from "./tool-invocation.js";
 import { runEvalMenu } from "./eval-menu.js";
 import type { CliSessionMode } from "./session-runner.js";
 import {
   backspaceAtCursor,
   deleteAtCursor,
   drawBottomUI,
+  getCursorPos,
   getInputBuffer,
   insertAtCursor,
   moveCursorDown,
@@ -55,6 +57,24 @@ function resetBottomPromptState(): void {
   setInputBuffer("");
   setInlineCompletion(null);
   setSuggestions(getFilteredCommands(""));
+}
+
+// Inserts printable input, with two editor conveniences for tool calls:
+//  - typing `(` right after a valid tool name auto-closes to `()` with the
+//    cursor between the parens (only when a real tool name precedes it);
+//  - typing `)` when the cursor already sits on a `)` types over it rather than
+//    inserting a duplicate (so the auto-inserted close is skipped naturally).
+function handlePrintable(printable: string): void {
+  if (printable === "(" && toolNameBeforeCursor(getInputBuffer(), getCursorPos())) {
+    insertAtCursor("()");
+    moveCursorLeft();
+    return;
+  }
+  if (printable === ")" && getInputBuffer()[getCursorPos()] === ")") {
+    moveCursorRight();
+    return;
+  }
+  insertAtCursor(printable);
 }
 
 let _lastAppliedModel = "";
@@ -207,7 +227,7 @@ async function readLineWithAutocomplete(
 
       const printable = [...data].filter((c) => c >= " ").join("");
       if (printable) {
-        insertAtCursor(printable);
+        handlePrintable(printable);
         refresh();
       }
     },

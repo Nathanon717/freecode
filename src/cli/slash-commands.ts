@@ -12,6 +12,7 @@ export const SLASH_COMMANDS: SlashCommandInfo[] = [
   { command: '/help', description: 'Show this help' },
   { command: '/status', description: 'Show API key status, DB sync, and Doppler' },
   { command: '/model', description: 'Show or set model' },
+  { command: '/tools', description: 'List callable tools' },
   { command: '/renderer', description: 'Show a hardcoded demo transcript through the live renderer' },
 ];
 

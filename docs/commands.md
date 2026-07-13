@@ -39,6 +39,7 @@ This table is generated from `src/cli/slash-commands.ts`.
 | `/help` | Show this help |
 | `/status` | Show API key status, DB sync, and Doppler |
 | `/model` | Show or set model |
+| `/tools` | List callable tools |
 | `/renderer` | Show a hardcoded demo transcript through the live renderer |
 <!-- END GENERATED SLASH COMMANDS -->
 

@@ -18,6 +18,8 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `slash-model-list.scenario.json` | `slash-model-list` | repo | /models aliases /model with no arg and prints current model without crashing |
 | `slash-stray-confirmation.scenario.json` | `slash-stray-confirmation` | repo | Sending 'y' with no pending tool call is silently skipped rather than forwarded to the agent |
 | `startup-help-exit.scenario.json` | `startup-help-exit` | repo | Boot the CLI, print help, exit cleanly |
+| `tool-invoke-list-dir.scenario.json` | `tool-invoke-list-dir` | repo | Typing list_dir(path=.) invokes the tool directly through the real wrapped executor instead of sending the text to the agent |
+| `tools-list.scenario.json` | `tools-list` | repo | /tools lists every callable tool with its signature and description |
 | `tty-all-commands-shown.scenario.json` | `tty-all-commands-shown` | repo | Typing / shows all slash commands in the suggestion list |
 | `tty-autocomplete.scenario.json` | `tty-autocomplete` | repo | Interactive TUI: slash command suggestions, prefix filtering, tab completion, and submit reset, verified against the rendered screen |
 | `tty-backspace.scenario.json` | `tty-backspace` | repo | Backspace key removes the last character from the input buffer; repeated backspaces restore the empty-prompt hint |
@@ -40,4 +42,5 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-prefix-multi-match.scenario.json` | `tty-prefix-multi-match` | repo | Typing /c shows /clear as the inline completion and /config as a suggestion; unrelated commands are absent |
 | `tty-slash-backspace-restore.scenario.json` | `tty-slash-backspace-restore` | repo | After /help output fills the scroll region, typing / shows the suggestion overlay; backspace restores the help output exactly. The cycle repeats correctly a second time. |
 | `tty-tool-approval-preview.scenario.json` | `tty-tool-approval-preview` | repo | Interactive tool approval UI shows a dim, indented content preview for list_dir before the user confirms |
+| `tty-tool-autobracket.scenario.json` | `tty-tool-autobracket` | repo | Typing ( after a valid tool name auto-inserts the closing ) with the cursor between them; typing ) types over the auto-inserted close; a non-tool name does not auto-close |
 <!-- END GENERATED SCENARIOS -->

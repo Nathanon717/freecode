@@ -16,6 +16,7 @@ import {
 import { formatCapturedProviderUsages } from '../providers/adapters/openai-compat.js';
 import { redrawBanner } from './banner.js';
 import { showHelp } from './slash-commands.js';
+import { parseToolInvocation } from './tool-invocation.js';
 import type { Conversation } from '../agent/conversation.js';
 import {
   writeResultPlaceholder,
@@ -207,6 +208,12 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
     return 'continue';
   }
 
+  if (normalized === '/tools') {
+    const { printToolsList } = await import('./tool-runner.js');
+    printToolsList();
+    return 'continue';
+  }
+
   if (normalized === '/clear') {
     runtime.session.clearMessages();
     resetAnthropicSessionCost();
@@ -220,6 +227,13 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
   if (trimmed.startsWith('/')) {
     const name = trimmed.split(' ')[0];
     console.log(chalk.red(`No command: ${name}`));
+    return 'continue';
+  }
+
+  const invocation = parseToolInvocation(trimmed);
+  if (invocation) {
+    const { executeToolInvocation } = await import('./tool-runner.js');
+    await executeToolInvocation(invocation.name, invocation.args, runtime.confirmToolCall);
     return 'continue';
   }
 

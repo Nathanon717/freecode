@@ -17,6 +17,7 @@ createScriptedMode(scriptPath: string, projectRoot: string, rl: Interface): CliS
 - Uses raw stdin for prompt input via `runRawKeySession` (from `cli/raw-picker.ts`), which owns the listener snapshot/restore and raw-mode lifecycle. This prevents readline from echoing typed characters into `process.stdout` and contaminating the screen-buffer epoch used by the suggestion overlay restore.
 - Supports Ctrl+C exit, Enter (`\r`) submit, Tab completion, Backspace, Delete, Escape clear, printable character input, and Ctrl+letter shortcuts for footer toggles (Ctrl+A = Ask, Ctrl+R = Read-only).
 - Ctrl+J (`\n`) inserts a newline, enabling multi-line input. Arrow keys (Left/Right/Up/Down), Home, and End move the cursor within the buffer; Delete removes the character at the cursor.
+- Printable input goes through `handlePrintable`: typing `(` right after a valid tool name (see `cli/tool-invocation.ts`) auto-closes to `()` with the cursor between; typing `)` on top of a `)` types over it.
 - Shows inline command completion plus filtered suggestions from `slash-commands.ts`. Inline completion is suppressed for multi-line buffers.
 - Starts an OpenAI-only preflight input-cost controller while editing, debounced from input changes and stopped on submit/cancel/teardown.
 - Refreshes cached OpenAI daily spend snapshots for the footer when the bottom UI is active and the selected model is OpenAI.

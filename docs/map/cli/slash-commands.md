@@ -28,8 +28,9 @@ showHelp(): void
 /config
 /eval
 /help
-/keys
+/status
 /model
+/tools
 /renderer
 ```
 

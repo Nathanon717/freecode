@@ -1,0 +1,16 @@
+{
+  "name": "tool-invoke-list-dir",
+  "description": "Typing list_dir(path=.) invokes the tool directly through the real wrapped executor instead of sending the text to the agent",
+  "env": {
+    "FREECODE_TRANSCRIPT_STREAM": "stdout",
+    "FREECODE_AUTO_CONFIRM": "1"
+  },
+  "turns": [
+    { "input": "list_dir(path=.)" }
+  ],
+  "expect": {
+    "stdoutContains": ["list_dir", "package.json"],
+    "stdoutAbsent": ["No command", "Error:"],
+    "exitCode": 0
+  }
+}

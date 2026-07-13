@@ -12,6 +12,7 @@ import {
   visualRowsForLine,
   cursorToVisualPos,
 } from './input-buffer.js';
+import { toolNameHighlightRanges, styleToolNames } from './tool-invocation.js';
 
 export {
   setQuotaSnapshot,
@@ -24,6 +25,7 @@ export {
 } from './footer-status.js';
 export {
   getInputBuffer,
+  getCursorPos,
   setInputBuffer,
   insertAtCursor,
   backspaceAtCursor,
@@ -51,6 +53,13 @@ let suggestionOverlayRows = 0;
 let suggestionOverlayStartRow = 0;
 let suggestionOverlayRestoreLines: string[] = [];
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
+// Last footer bytes written to the terminal. The 1 s refresh timer compares the
+// freshly-composed footer against this and writes nothing when they are identical,
+// so an idle prompt emits no periodic output. Any output byte makes terminals like
+// Termux snap the viewport back to the bottom, which fights the user scrolling up
+// to read scrollback. Event-driven redraws (setup/teardown/resize) always repaint
+// and refresh this value; only the timer skips.
+let lastFooterOutput: string | null = null;
 
 function rows(): number { return process.stdout.rows || 24; }
 function cols(): number { return process.stdout.columns || 80; }
@@ -165,7 +174,10 @@ export function composeFooterOutput(): string {
 // Draws the two footer rows (r-1 blank, r status line). Saves and restores the cursor position.
 export function drawFooter() {
   const output = composeFooterOutput();
-  if (output) process.stdout.write(output);
+  if (output) {
+    lastFooterOutput = output;
+    process.stdout.write(output);
+  }
 }
 
 function restoreSuggestionOverlaySequence(startRow: number, rowCount: number, width: number): string {
@@ -260,6 +272,7 @@ function drawInputArea() {
   for (let i = 0; i < inputLines.length; i++) {
     const logicalPrefix = i === 0 ? getBannerColor()('> ') : '  ';
     const lineContent = inputLines[i];
+    const highlightRanges = toolNameHighlightRanges(lineContent);
     const rowsThisLine = Math.floor(lineContent.length / effW) + 1;
     const isLastLogicalLine = i === inputLines.length - 1;
 
@@ -275,7 +288,7 @@ function drawInputArea() {
           logicalLineCount === 1 && isLastLogicalLine && vi === rowsThisLine - 1
             ? getInlineCompletionSuffix(getInputBuffer(), lastInlineCompletion)
             : '';
-        output += moveToSequence(inputRowCurrent, 1) + prefix + chunk + (inlineSuffix ? chalk.gray(inlineSuffix) : '');
+        output += moveToSequence(inputRowCurrent, 1) + prefix + styleToolNames(chunk, vi * effW, highlightRanges) + (inlineSuffix ? chalk.gray(inlineSuffix) : '');
       }
       visualRowOffset++;
     }
@@ -313,15 +326,21 @@ export function setupFooterUI() {
   footerRowCount = 2;
   lastReservedRows = 2;
   refreshTimer = setInterval(() => {
-    if (footerActive) {
-      const prevFooterRowCount = footerRowCount;
-      drawFooter();
-      // Only redraw the input area if the footer row count changed (affects reserved rows).
-      // Unconditional redraws park the cursor at the bottom, causing Termux to snap the viewport.
-      // Skip input redraw when suspended (e.g. raw picker open) — footer-only updates are safe
-      // because composeFooterOutput uses save/restore cursor.
-      if (!footerTimerSuspended && inputUIActive && footerRowCount !== prevFooterRowCount) drawInputArea();
-    }
+    if (!footerActive) return;
+    const prevFooterRowCount = footerRowCount;
+    const output = composeFooterOutput();
+    // Skip the write when the footer is byte-identical to what is already on screen.
+    // When idle (no retry banner / quota / spend), the footer text is static, so this
+    // makes an idle prompt emit no periodic output — otherwise every tick would write
+    // (even with save/restore cursor) and terminals like Termux snap the viewport back
+    // to the bottom, fighting the user scrolling up to read scrollback.
+    if (!output || output === lastFooterOutput) return;
+    lastFooterOutput = output;
+    process.stdout.write(output);
+    // Only redraw the input area if the footer row count changed (affects reserved rows).
+    // Unconditional redraws park the cursor at the bottom, causing Termux to snap the viewport.
+    // Skip input redraw when suspended (e.g. raw picker open).
+    if (!footerTimerSuspended && inputUIActive && footerRowCount !== prevFooterRowCount) drawInputArea();
   }, 1000);
   setScrollRegion(1, rows() - 2);
   drawFooter();
@@ -376,7 +395,9 @@ export function teardownBottomUI() {
   lastReservedRows = footerRowCount;
   // Repaint the footer in the same write so the toggle bar (a footer row) clears at
   // the same instant as the input bar, rather than lingering until the next timer tick.
-  output += composeFooterOutput();
+  const footerOutput = composeFooterOutput();
+  output += footerOutput;
+  if (footerOutput) lastFooterOutput = footerOutput;
   process.stdout.write(output);
 }
 
@@ -398,6 +419,7 @@ export function teardownFooterUI() {
   output += moveToSequence(r - footerRowCount, 1);
   process.stdout.write(output);
   footerRowCount = 2;
+  lastFooterOutput = null;
 }
 
 // Clears and redraws the input area after a prompt is submitted.
@@ -443,6 +465,10 @@ process.stdout.on('resize', () => {
     // Invalidate stale overlay state — all absolute row positions changed.
     suggestionOverlayRows = 0;
     suggestionOverlayRestoreLines = [];
+
+    // The screen is about to be cleared and redrawn; force the footer repaint below
+    // rather than let the cached-output skip suppress it.
+    lastFooterOutput = null;
 
     // Reset geometry so drawFooter/drawInputArea recompute from new dimensions.
     footerRowCount = 2;

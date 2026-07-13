@@ -1,0 +1,17 @@
+{
+  "name": "tools-list",
+  "description": "/tools lists every callable tool with its signature and description",
+  "turns": [
+    { "input": "/tools" }
+  ],
+  "expect": {
+    "stdoutContains": [
+      "Available tools",
+      "read(path, [offset], [limit])",
+      "grep(pattern, [path], [include])",
+      "shell_exec(command, [timeout_ms], [confirmDestructive])"
+    ],
+    "stdoutAbsent": ["No command", "Error:"],
+    "exitCode": 0
+  }
+}

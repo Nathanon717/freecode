@@ -18,6 +18,7 @@ export {
 
 export {
   getInputBuffer,
+  getCursorPos,
   setInputBuffer,
   insertAtCursor,
   backspaceAtCursor,
@@ -78,11 +79,15 @@ setOnResizeCallback(cb: (() => void) | null): void
 
 ## Layout
 
-Uses an ANSI scroll-region to pin the footer/input UI to the bottom rows while normal output scrolls above it. Footer is 2 rows normally, 3 when content overflows at narrow widths (only while the input UI is inactive); the input UI adds top/bottom bars plus the current input line count on top of the footer. Slash-command suggestions draw as an overlay that snapshots the scroll-region's screen content to repaint on close; the overlay epoch starts at the first `setupInputUI` call so pre-UI output (startup banner) is excluded from repaints. A `cursorPos` index tracks the insertion point in the flat buffer; `cursorLineCol()` derives (line, col) from it at draw time.
+Uses an ANSI scroll-region to pin the footer/input UI to the bottom rows while normal output scrolls above it. Footer is 2 rows normally, 3 when content overflows at narrow widths (only while the input UI is inactive); the input UI adds top/bottom bars plus the current input line count on top of the footer. Slash-command suggestions draw as an overlay that snapshots the scroll-region's screen content to repaint on close; the overlay epoch starts at the first `setupInputUI` call so pre-UI output (startup banner) is excluded from repaints. A `cursorPos` index tracks the insertion point in the flat buffer; `cursorLineCol()` derives (line, col) from it at draw time. A valid leading tool name followed by `(` is tinted pastel via `styleToolNames`/`toolNameHighlightRanges` from `cli/tool-invocation.ts`, applied per visual chunk so ANSI bytes never disturb the width-based wrap math.
 
 ## Quota Display
 
 `setQuotaSnapshot()` accepts Groq rate-limit headers. The UI estimates refill over time using the reset durations and refreshes once per second while active.
+
+## Idle-write suppression
+
+The 1 s refresh timer caches the last footer bytes written (`lastFooterOutput`) and skips the write whenever the freshly-composed footer is byte-identical. When idle (no retry banner / quota / spend) the footer text is static, so an idle prompt emits no periodic output — any output byte makes terminals like Termux snap the viewport back to the bottom, fighting a user who scrolled up to read scrollback. Event-driven redraws (`drawFooter`, teardown, resize) always repaint and refresh the cache; only the timer skips. This does not affect snap-back during active generation, where streaming output legitimately writes. If Groq quota is displayed its estimate changes each second, so writes (and snap-back) continue while it is shown.
 
 ## Resize
 

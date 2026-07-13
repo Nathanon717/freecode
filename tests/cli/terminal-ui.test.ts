@@ -12,6 +12,7 @@ import {
   composeFooterOutput,
   drawFooter,
   drawBottomUI,
+  setActiveModelFromString,
   setupFooterUI,
   setupInputUI,
   setupBottomUI,
@@ -178,12 +179,25 @@ describe('setupFooterUI', () => {
     expect(isFooterUIActive()).toBe(true);
   });
 
-  it('starts a 1-second refresh timer', () => {
+  it('refresh timer skips the write when the footer content is unchanged', () => {
     vi.useFakeTimers();
     setupFooterUI();
     writeSpy.mockClear();
     vi.advanceTimersByTime(1000);
-    // Timer fires once; footer draw should have written to stdout.
+    // The idle footer is byte-identical each tick, so the timer must emit nothing —
+    // any output byte makes terminals like Termux snap the viewport back to the bottom,
+    // fighting a user scrolling up to read scrollback.
+    expect(writeSpy).not.toHaveBeenCalled();
+  });
+
+  it('refresh timer writes when the footer content changes', () => {
+    vi.useFakeTimers();
+    setupFooterUI();
+    writeSpy.mockClear();
+    // A distinctive model string guarantees the composed footer differs from the
+    // last-written bytes regardless of state left by other tests.
+    setActiveModelFromString('provider:refresh-timer-changed');
+    vi.advanceTimersByTime(1000);
     expect(writeSpy).toHaveBeenCalled();
   });
 });

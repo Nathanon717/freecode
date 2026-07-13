@@ -49,7 +49,7 @@ Format: filename (linecount)
 - `src/cli/`
   - [`action-menu.ts`](cli/action-menu.md) (53) — Inline Action Sub-menu
   - [`banner.ts`](cli/banner.md) (123) — Startup Banner
-  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (229) — Command Dispatcher
+  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (243) — Command Dispatcher
   - [`custom-eval-menu.ts`](cli/custom-eval-menu.md) (363) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval-dots.md) (28) — Eval Status Circle Renderers
   - [`eval-menu.ts`](cli/eval-menu.md) (125) — Unified Eval Menu
@@ -62,13 +62,15 @@ Format: filename (linecount)
   - [`menu-shell.ts`](cli/menu-shell.md) (47) — Menu Lifecycle Chrome
   - [`model-screen.ts`](cli/model-screen.md) (204) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/raw-picker.md) (240) — Shared Raw-Mode Picker
-  - [`session-modes.ts`](cli/session-modes.md) (422) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (442) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
-  - [`slash-commands.ts`](cli/slash-commands.md) (64) — Slash Commands
+  - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
-  - [`terminal-ui.ts`](cli/terminal-ui.md) (473) — Bottom Terminal UI
+  - [`terminal-ui.ts`](cli/terminal-ui.md) (499) — Bottom Terminal UI
   - [`toggles.ts`](cli/toggles.md) (96) — Footer Toggle State
   - [`tool-approval.ts`](cli/tool-approval.md) (311) — Tool Approval Prompts
+  - [`tool-invocation.ts`](cli/tool-invocation.md) (169) — Hand-Typed Tool Call Parsing
+  - [`tool-runner.ts`](cli/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
   - [`transcript-renderer.ts`](cli/transcript-renderer.md) (457) — Agent Transcript Formatting
 - `src/commands/`
   - [`config.ts`](commands/config.md) (345) — Interactive Config Editor
