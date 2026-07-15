@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import chalk from "chalk";
 import {
   renderMarkdown,
   createMarkdownStreamRenderer,
@@ -173,6 +174,49 @@ describe("renderMarkdown", () => {
     const input = "| A |\n| --- |\n| 1 |";
     const out = stripCode(renderMarkdown(input));
     expect(out).toBe(["┌───┐", "│ A │", "├───┤", "│ 1 │", "└───┘"].join("\n"));
+  });
+
+  describe("wrapping styled prose to avoid background bleed", () => {
+    let origCols: number | undefined;
+    let origLevel: number;
+    beforeEach(() => {
+      origCols = process.stdout.columns;
+      Object.defineProperty(process.stdout, "columns", {
+        value: 10,
+        configurable: true,
+      });
+      // Force chalk to emit color so inline-code spans carry a real background
+      // (chalk otherwise no-ops when the test process has no color support).
+      origLevel = chalk.level;
+      chalk.level = 3;
+    });
+    afterEach(() => {
+      Object.defineProperty(process.stdout, "columns", {
+        value: origCols,
+        configurable: true,
+      });
+      chalk.level = origLevel;
+    });
+
+    it("hard-breaks an inline-code span that straddles the wrap column", () => {
+      // "aaa `bbbbbbbb`" — the backtick span crosses column 10, so the grey bg
+      // must be closed before the physical wrap and reopened after.
+      const out = renderMarkdown("aaa `bbbbbbbb`");
+      const lines = out.split("\n");
+      expect(lines.length).toBe(2);
+      // The break happens at column 10; the first physical line ends with a
+      // background reset so no grey bleeds into its (nonexistent) tail.
+      expect(lines[0].endsWith("\x1b[0m")).toBe(true);
+      // The background is reopened on the second line.
+      expect(lines[1]).toContain("48;2;51;51;51");
+      // Visible text is preserved exactly once wrapping/ANSI are stripped.
+      expect(stripAnsi(out).replace("\n", "")).toBe("aaa bbbbbbbb");
+    });
+
+    it("leaves unstyled prose for the terminal to soft-wrap (no hard break)", () => {
+      const out = renderMarkdown("aaaa aaaa aaaa aaaa");
+      expect(out.includes("\n")).toBe(false);
+    });
   });
 });
 

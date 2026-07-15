@@ -8,9 +8,95 @@ const CODE_BLOCK_H_PAD = 2;
 // separated by spaces (e.g. `---`, `***`, `_ _ _`).
 const HR_RE = /^ {0,3}([-*_])(?: *\1){2,} *$/;
 
+function termWidth(): number {
+  return process.stdout.columns || 80;
+}
+
 function renderHorizontalRule(): string {
-  const width = process.stdout.columns || 80;
-  return chalk.white("─".repeat(width));
+  return chalk.white("─".repeat(termWidth()));
+}
+
+type SgrGroup = "weight" | "italic" | "underline" | "fg" | "bg";
+
+// Classify one SGR escape (`\x1b[…m`) by which style group it opens or closes.
+// Only the groups `renderInline` can emit (weight/italic/fg/bg) need to be
+// tracked, but the fuller ranges are cheap and keep this robust.
+function classifySgr(seq: string): {
+  openGroup?: SgrGroup;
+  closeGroup?: SgrGroup;
+  resetAll?: boolean;
+} {
+  const first = parseInt(seq.slice(2, -1).split(";")[0] || "0", 10);
+  if (first === 0) return { resetAll: true };
+  if (first === 1 || first === 2) return { openGroup: "weight" };
+  if (first === 22) return { closeGroup: "weight" };
+  if (first === 3) return { openGroup: "italic" };
+  if (first === 23) return { closeGroup: "italic" };
+  if (first === 4) return { openGroup: "underline" };
+  if (first === 24) return { closeGroup: "underline" };
+  if (first === 39) return { closeGroup: "fg" };
+  if (first === 49) return { closeGroup: "bg" };
+  if ((first >= 30 && first <= 38) || (first >= 90 && first <= 97))
+    return { openGroup: "fg" };
+  if ((first >= 40 && first <= 48) || (first >= 100 && first <= 107))
+    return { openGroup: "bg" };
+  return {};
+}
+
+// Wrap a styled prose line to `width` visible columns. Terminals fill the rest
+// of a physical row with the active background when a line soft-wraps while a
+// background (or any style) is still open — the grey inline-code bleed. We defuse
+// it by breaking the line ourselves at the wrap column: close the open styles,
+// emit a real newline, then reopen them on the next line. Lines with no style
+// open at the boundary are left for the terminal to soft-wrap (so ordinary prose
+// still reflows on resize); only a span that straddles the wrap is hard-broken.
+const SGR_STICKY = /\x1b\[[0-9;]*m/y;
+function wrapStyled(s: string, width: number): string {
+  if (width <= 0 || !s) return s;
+  let out = "";
+  let col = 0;
+  const open: { group: SgrGroup; seq: string }[] = [];
+  let i = 0;
+  while (i < s.length) {
+    SGR_STICKY.lastIndex = i;
+    const m = SGR_STICKY.exec(s);
+    if (m) {
+      const seq = m[0];
+      out += seq;
+      const c = classifySgr(seq);
+      if (c.resetAll) open.length = 0;
+      else if (c.openGroup) open.push({ group: c.openGroup, seq });
+      else if (c.closeGroup) {
+        for (let k = open.length - 1; k >= 0; k--) {
+          if (open[k].group === c.closeGroup) {
+            open.splice(k, 1);
+            break;
+          }
+        }
+      }
+      i += seq.length;
+      continue;
+    }
+    if (col === width) {
+      // Hard-break only when a style straddles the boundary; otherwise let the
+      // terminal wrap, but still reset our column tracker to stay aligned.
+      if (open.length > 0) {
+        out += "\x1b[0m\n" + open.map((o) => o.seq).join("");
+      }
+      col = 0;
+    }
+    const ch = String.fromCodePoint(s.codePointAt(i)!);
+    out += ch;
+    col += 1;
+    i += ch.length;
+  }
+  return out;
+}
+
+// Render a prose line's inline markup and wrap it to the terminal width so
+// background spans don't bleed grey across a soft-wrap.
+function renderProse(line: string): string {
+  return wrapStyled(renderInline(line), termWidth());
 }
 
 function renderInline(text: string): string {
@@ -221,7 +307,7 @@ function makeLineProcessor(): {
           return null;
         }
         // Not a table after all — emit the buffered header, then process this line.
-        const header = renderInline(tableLines[0]);
+        const header = renderProse(tableLines[0]);
         tableLines = [];
         return joinResults(header, process(line));
       }
@@ -247,7 +333,7 @@ function makeLineProcessor(): {
       tableConfirmed = false;
       return null;
     }
-    return renderInline(line);
+    return renderProse(line);
   }
 
   function flush(): string | null {
@@ -258,7 +344,7 @@ function makeLineProcessor(): {
     if (tableLines.length > 0) {
       // Confirmed table flushes as a table; a lone tentative header is just text.
       if (tableConfirmed) return flushTable();
-      const header = renderInline(tableLines[0]);
+      const header = renderProse(tableLines[0]);
       tableLines = [];
       return header;
     }

@@ -58,7 +58,7 @@ Format: filename (linecount)
   - [`humaneval-menu.ts`](cli/humaneval-menu.md) (324) — HumanEval Tab + Run Loop
   - [`input-buffer.ts`](cli/input-buffer.md) (115) — Input Buffer State
   - [`list-menu.ts`](cli/list-menu.md) (367) — Shared Tabbed List Menu
-  - [`markdown-renderer.ts`](cli/markdown-renderer.md) (359) — Markdown Renderer
+  - [`markdown-renderer.ts`](cli/markdown-renderer.md) (445) — Markdown Renderer
   - [`menu-shell.ts`](cli/menu-shell.md) (47) — Menu Lifecycle Chrome
   - [`model-screen.ts`](cli/model-screen.md) (204) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/raw-picker.md) (240) — Shared Raw-Mode Picker
