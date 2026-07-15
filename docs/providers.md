@@ -2,7 +2,7 @@
 
 ## Supported Providers
 
-This table is generated from `src/providers/provider-registry.ts`. Run `npm run docs:generate` after provider registry changes.
+This table is generated from `src/providers/provider-registry.ts`. Model lists for live-fetch providers come from the committed snapshot `src/providers/model-snapshot.json` (generation never hits the network, so the table is deterministic across machines). Run `npm run docs:generate` after provider registry changes, and `npm run docs:refresh-models` to pull current model lists from the provider APIs into the snapshot.
 
 <!-- BEGIN GENERATED PROVIDERS -->
 | Order | Provider | ID | Type | API key env var | Tools | Paid | Models |

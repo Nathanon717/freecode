@@ -24,7 +24,7 @@ Generated references are owned by `scripts/docgen/generate-docs.ts`.
 
 Current generated sections:
 
-- `docs/providers.md`: provider registry table from `src/providers/provider-registry.ts`.
+- `docs/providers.md`: provider registry table from `src/providers/provider-registry.ts`; model lists for live-fetch providers come from the committed snapshot `src/providers/model-snapshot.json` (refresh it with `npm run docs:refresh-models`, never a live fetch during generation).
 - `docs/commands.md`: npm scripts from `package.json` and slash commands from `src/cli/slash-commands.ts`.
 - `docs/scenarios.md`: scenario index from `tests/scenarios/*.scenario.json`.
 - `docs/map/**/*.md`: the `## Exports` block on every map page, extracted from each source file's TypeScript signatures by `scripts/docgen/map-exports.ts`.
@@ -42,7 +42,7 @@ Then review the generated diff. If the generated output is wrong, fix the source
 
 Use these ownership rules:
 
-- Provider facts belong in `src/providers/provider-registry.ts`.
+- Provider facts belong in `src/providers/provider-registry.ts`; the model lists for live-fetch providers belong in the committed snapshot `src/providers/model-snapshot.json`, refreshed with `npm run docs:refresh-models`.
 - Slash command names and descriptions belong in `src/cli/slash-commands.ts`.
 - Npm script facts belong in `package.json`.
 - Scenario names, descriptions, and workspaces belong in `tests/scenarios/*.scenario.json`.

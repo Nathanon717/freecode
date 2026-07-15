@@ -13,6 +13,7 @@ This table is generated from `package.json`.
 | `npm run coverage` | `vitest run --coverage` |
 | `npm run dev` | `tsx src/index.ts` |
 | `npm run docs:generate` | `tsx scripts/docgen/sync-docs.ts` |
+| `npm run docs:refresh-models` | `tsx scripts/docgen/refresh-models.ts` |
 | `npm run lint` | `eslint src tests scripts --cache` |
 | `npm run lint:fix` | `eslint src tests scripts --cache --fix` |
 | `npm run postinstall` | `node scripts/install/ensure-pty.cjs && node scripts/install/ensure-link.cjs` |

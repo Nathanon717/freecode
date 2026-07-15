@@ -2,7 +2,7 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, join, relative } from 'path';
 import { fileURLToPath } from 'url';
-import { PROVIDER_REGISTRY, initDynamicProviders } from '../../src/providers/provider-registry.js';
+import { PROVIDER_REGISTRY } from '../../src/providers/provider-registry.js';
 import { SLASH_COMMANDS } from '../../src/cli/slash-commands.js';
 import { readJsonFile } from '../../src/util/text-encoding.js';
 import {
@@ -26,8 +26,6 @@ interface ScenarioDoc {
   description: string;
   workspace?: string;
 }
-
-type CanonicalModelGroups = Record<string, string[]>;
 
 function readProjectFile(path: string): string {
   return readFileSync(join(ROOT, path), 'utf-8');
@@ -76,55 +74,26 @@ function formatModels(models: typeof PROVIDER_REGISTRY[number]['models']): strin
     .join('<br>');
 }
 
-function parseExistingProviderModelCells(content: string): Map<string, string> {
+// Model lists for live-fetch providers are captured in a committed snapshot so
+// docs generation stays deterministic and machine-independent. Fetching live
+// here would make the output depend on which API keys happen to be set and on
+// each machine's model-cache. Refresh the snapshot deliberately with
+// `npm run docs:refresh-models`.
+function snapshotModelCells(): Map<string, string> {
   const cells = new Map<string, string>();
-  for (const line of content.split('\n')) {
-    if (!line.startsWith('|') || line.includes('---')) continue;
-    const columns = line.split('|').slice(1, -1).map(column => column.trim());
-    if (columns.length < 8) continue;
-    const id = columns[2].match(/^`([^`]+)`$/)?.[1];
-    if (!id) continue;
-    cells.set(id, columns[7]);
-  }
-  return cells;
-}
-
-function canonicalModelCells(): Map<string, string> {
-  const cells = new Map<string, string>();
-  const path = join(ROOT, 'canonical-models.json');
+  const path = join(ROOT, 'src/providers/model-snapshot.json');
   if (!existsSync(path)) return cells;
 
-  const groups = JSON.parse(readFileSync(path, 'utf-8')) as CanonicalModelGroups;
-  const byProvider = new Map<string, string[]>();
-  for (const entries of Object.values(groups)) {
-    for (const entry of entries) {
-      const colonIdx = entry.indexOf(':');
-      if (colonIdx === -1) continue;
-      const providerId = entry.slice(0, colonIdx);
-      const modelId = entry.slice(colonIdx + 1);
-      const models = byProvider.get(providerId) ?? [];
-      models.push(modelId);
-      byProvider.set(providerId, models);
-    }
+  const snapshot = JSON.parse(readFileSync(path, 'utf-8')) as Record<string, string[]>;
+  for (const [providerId, models] of Object.entries(snapshot)) {
+    const ids = [...new Set(models)].sort((a, b) => a.localeCompare(b));
+    cells.set(providerId, ids.map(id => `\`${id}\``).join('<br>'));
   }
-
-  for (const [providerId, models] of byProvider) {
-    const provider = PROVIDER_REGISTRY.find(p => p.id === providerId);
-    const exactBlocklist = new Set(provider?.modelIdExactBlocklist ?? []);
-    const blocklist = provider?.modelIdBlocklist ?? [];
-    const filtered = [...new Set(models)]
-      .filter(id => !exactBlocklist.has(id))
-      .filter(id => !blocklist.some(blocked => id.includes(blocked)))
-      .sort((a, b) => a.localeCompare(b));
-    cells.set(providerId, filtered.map(id => `\`${id}\``).join('<br>'));
-  }
-
   return cells;
 }
 
-function providerReference(content: string): string {
-  const existingModelCells = parseExistingProviderModelCells(content);
-  const canonicalCells = canonicalModelCells();
+function providerReference(): string {
+  const snapshotCells = snapshotModelCells();
   const rows = PROVIDER_REGISTRY.map((provider, index) => [
     String(index + 1),
     provider.name,
@@ -135,7 +104,7 @@ function providerReference(content: string): string {
     provider.paid ? 'Yes' : 'No',
     provider.models.length > 0
       ? formatModels(provider.models)
-      : existingModelCells.get(provider.id) || canonicalCells.get(provider.id) || '',
+      : snapshotCells.get(provider.id) || '',
   ]);
 
   return markdownTable(
@@ -216,7 +185,7 @@ function updateFile(path: string, update: (content: string) => string): boolean 
 }
 
 const updates: Array<[string, (content: string) => string]> = [
-  ['docs/providers.md', content => replaceGeneratedSection(content, 'PROVIDERS', providerReference(content))],
+  ['docs/providers.md', content => replaceGeneratedSection(content, 'PROVIDERS', providerReference())],
   ['docs/commands.md', content => {
     const base = content || '# Commands\n\nReference docs for npm scripts and slash commands.\n';
     return replaceGeneratedSection(
@@ -261,8 +230,6 @@ updates.push(['docs/map/README.md', content => {
   }
   return content.replace(/## Structure\n\n```text\n[\s\S]*?\n```/, `## Structure\n\n${block}`);
 }]);
-
-await initDynamicProviders();
 
 const changed = updates
   .map(([path, update]) => ({ path, changed: updateFile(path, update) }))
