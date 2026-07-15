@@ -21,6 +21,10 @@ __pycache__/
 *.d.ts.map
 poe-cookies.json
 
+# diagnostic script run-output (regenerated on demand)
+scripts/diagnostics/model-availability-results.txt
+scripts/diagnostics/local-tokenizer-results.txt
+
 # local DB (synced via Turso — not committed to git)
 .freecode/freecode.db
 .freecode/freecode.db-shm

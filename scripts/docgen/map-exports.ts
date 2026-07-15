@@ -4,7 +4,7 @@ import { dirname, join, relative } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '..');
+const ROOT = join(__dirname, '..', '..');
 const SRC_ROOT = join(ROOT, 'src');
 
 let cachedProgram: ts.Program | null = null;

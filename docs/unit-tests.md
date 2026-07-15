@@ -18,13 +18,13 @@ it.each([['user', 'hello', 7], ['user', null, 5]])(
 
 ## Exempting a file from the mirrored-test rule
 
-Every `src/**/*.ts` file must have a matching `tests/**/*.test.ts` with at least one real `it`/`test`/`describe`, enforced by `scripts/check-tests.ts`. A file opts out with an inline marker **and a mandatory reason**:
+Every `src/**/*.ts` file must have a matching `tests/**/*.test.ts` with at least one real `it`/`test`/`describe`, enforced by `scripts/checks/check-tests.ts`. A file opts out with an inline marker **and a mandatory reason**:
 
 ```ts
 // check-tests: no-test — pure type declarations; erased at compile time, no runtime behavior to test
 ```
 
-A marker with no reason is a hard build failure. The exemption list is kept out of the normal `npm test` output; audit it on demand with `npx tsx scripts/check-tests.ts --list-exempt`. The exemption is deliberately narrow — **default to writing the test.** A file qualifies only if *both* are true:
+A marker with no reason is a hard build failure. The exemption list is kept out of the normal `npm test` output; audit it on demand with `npx tsx scripts/checks/check-tests.ts --list-exempt`. The exemption is deliberately narrow — **default to writing the test.** A file qualifies only if *both* are true:
 
 1. **It has no runtime behavior of its own to observe.** Nothing in it can compute a wrong answer, throw, or return the wrong shape at runtime.
 2. **Any test you could write would restate the source, not check it** — asserting the language/compiler works rather than catching a regression a caller would notice.

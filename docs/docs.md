@@ -20,14 +20,14 @@ Use `cmd /c npm.cmd ...` if PowerShell blocks npm scripts or `bash.exe` cannot l
 
 ## Generated References
 
-Generated references are owned by `scripts/generate-docs.ts`.
+Generated references are owned by `scripts/docgen/generate-docs.ts`.
 
 Current generated sections:
 
 - `docs/providers.md`: provider registry table from `src/providers/provider-registry.ts`.
 - `docs/commands.md`: npm scripts from `package.json` and slash commands from `src/cli/slash-commands.ts`.
 - `docs/scenarios.md`: scenario index from `tests/scenarios/*.scenario.json`.
-- `docs/map/**/*.md`: the `## Exports` block on every map page, extracted from each source file's TypeScript signatures by `scripts/map-exports.ts`.
+- `docs/map/**/*.md`: the `## Exports` block on every map page, extracted from each source file's TypeScript signatures by `scripts/docgen/map-exports.ts`.
 - `docs/map/README.md`: the structure tree / nav links, generated from the source tree and each page's H1.
 
 When changing any source of truth, run:
@@ -55,7 +55,7 @@ Generated docs should report facts. Human-written docs should explain how to use
 
 Each page's `## Exports` block and the README structure tree are generated facts — see "Generated References" above. Hand-written prose (Role, Read When, Export notes, Behavior, Update Triggers, etc.) carries the intent the signatures cannot.
 
-The map checker in `scripts/check-map.ts` enforces these structural rules:
+The map checker in `scripts/checks/check-map.ts` enforces these structural rules:
 
 - every `src/**/*.ts` file has a matching `docs/map/**/*.md` page;
 - every map page, except `docs/map/README.md`, points to an existing source file;

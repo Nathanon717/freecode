@@ -1,6 +1,6 @@
 # File Length Guidelines
 
-Source files under `src/` are limited to **500 lines**. The limit is enforced by `scripts/check-line-limits.ts`, which runs as part of `npm test` via `docs:generate`.
+Source files under `src/` are limited to **500 lines**. The limit is enforced by `scripts/checks/check-line-limits.ts`, which runs as part of `npm test` via `docs:generate`.
 
 When a file exceeds 500 lines the check prints:
 

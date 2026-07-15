@@ -1,7 +1,7 @@
 /**
  * Single source of truth for the test pipeline sections.
  *
- * Both `scripts/test.ts` (silent-on-success pass/fail) and `scripts/time.ts`
+ * Both `scripts/pipeline/test.ts` (silent-on-success pass/fail) and `scripts/pipeline/time.ts`
  * (instrumented timing report) iterate this same list, so the two front-ends
  * can never drift in which sections run, in what order, or with what command.
  *

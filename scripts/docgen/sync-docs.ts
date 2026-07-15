@@ -26,7 +26,7 @@ function runRequired(args: string[]): void {
   }
 }
 
-const generateArgs = ['--import', 'tsx', 'scripts/generate-docs.ts'];
+const generateArgs = ['--import', 'tsx', 'scripts/docgen/generate-docs.ts'];
 const check = run([...generateArgs, '--check'], 'pipe');
 
 if (check.status === 0) {
@@ -39,6 +39,6 @@ if (check.status === 0) {
   process.exit(check.status);
 }
 
-runRequired(['--import', 'tsx', 'scripts/check-map.ts']);
-runRequired(['--import', 'tsx', 'scripts/check-line-limits.ts']);
-runRequired(['--import', 'tsx', 'scripts/check-tests.ts']);
+runRequired(['--import', 'tsx', 'scripts/checks/check-map.ts']);
+runRequired(['--import', 'tsx', 'scripts/checks/check-line-limits.ts']);
+runRequired(['--import', 'tsx', 'scripts/checks/check-tests.ts']);

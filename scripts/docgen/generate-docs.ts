@@ -2,9 +2,9 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, join, relative } from 'path';
 import { fileURLToPath } from 'url';
-import { PROVIDER_REGISTRY, initDynamicProviders } from '../src/providers/provider-registry.js';
-import { SLASH_COMMANDS } from '../src/cli/slash-commands.js';
-import { readJsonFile } from '../src/util/text-encoding.js';
+import { PROVIDER_REGISTRY, initDynamicProviders } from '../../src/providers/provider-registry.js';
+import { SLASH_COMMANDS } from '../../src/cli/slash-commands.js';
+import { readJsonFile } from '../../src/util/text-encoding.js';
 import {
   listSourceFiles,
   mapPageForSource,
@@ -17,7 +17,7 @@ import {
 } from './map-exports.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '..');
+const ROOT = join(__dirname, '..', '..');
 const CHECK = process.argv.includes('--check');
 
 interface ScenarioDoc {

@@ -1,6 +1,6 @@
 # Test Pipeline Timing
 
-`npm run time` runs the same sections as `npm test` with per-section instrumentation so the slowest point is visible after a single run. The section list is shared with `npm test` (both read `scripts/pipeline.ts`), so the two can never drift in what runs or in what order.
+`npm run time` runs the same sections as `npm test` with per-section instrumentation so the slowest point is visible after a single run. The section list is shared with `npm test` (both read `scripts/pipeline/pipeline.ts`), so the two can never drift in what runs or in what order.
 
 ## Depth follows scope
 
@@ -81,7 +81,7 @@ Scoping to a section adds its children; adding a filter adds the deepest level. 
 
 ## Implementation
 
-`scripts/pipeline.ts` is the shared source of truth: an ordered list of sections (`{ key, label, cmd, args }`) plus the shared `useShell` flag and PTY exclude list. `scripts/test.ts` runs each section verbatim, silent on success. `scripts/time.ts` iterates the same list, timing each with `Date.now()` bookends, and swaps in instrumentation when a single section is scoped.
+`scripts/pipeline/pipeline.ts` is the shared source of truth: an ordered list of sections (`{ key, label, cmd, args }`) plus the shared `useShell` flag and PTY exclude list. `scripts/pipeline/test.ts` runs each section verbatim, silent on success. `scripts/pipeline/time.ts` iterates the same list, timing each with `Date.now()` bookends, and swaps in instrumentation when a single section is scoped.
 
 Vitest is run with `--reporter=json --outputFile=<tmp>` to capture per-file timing data; using both `--reporter=json` and `--reporter=dot` simultaneously triggers a vitest 4.x crash, so the JSON reporter is used alone and a compact per-file summary is printed instead.
 

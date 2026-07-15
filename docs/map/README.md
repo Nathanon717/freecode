@@ -11,9 +11,9 @@ The map is maintained incrementally:
 3. After edits, run `npm run docs:generate` and inspect `git diff --name-only`.
 4. Update only the hand-written prose on map pages whose purpose, ownership, dependencies, or read/use guidance changed.
 
-The `## Exports` block on each page and the structure tree below are **generated** from source by `scripts/map-exports.ts` — do not hand-edit content between the `BEGIN/END GENERATED` markers. Refreshing signatures and adding/removing files in the tree is handled by `npm run docs:generate`; you only write the surrounding intent.
+The `## Exports` block on each page and the structure tree below are **generated** from source by `scripts/docgen/map-exports.ts` — do not hand-edit content between the `BEGIN/END GENERATED` markers. Refreshing signatures and adding/removing files in the tree is handled by `npm run docs:generate`; you only write the surrounding intent.
 
-`npm run docs:generate` checks generated reference docs first. If they are current, it leaves them untouched; if they are stale, it regenerates them (including every page's exports block and this file's structure tree). It then runs `scripts/check-map.ts`, which checks that every `src/**/*.ts` file has a matching map page, that map pages still point to existing source files, and that each page keeps its generated blocks.
+`npm run docs:generate` checks generated reference docs first. If they are current, it leaves them untouched; if they are stale, it regenerates them (including every page's exports block and this file's structure tree). It then runs `scripts/checks/check-map.ts`, which checks that every `src/**/*.ts` file has a matching map page, that map pages still point to existing source files, and that each page keeps its generated blocks.
 
 Map pages should be short and operational. Prefer:
 

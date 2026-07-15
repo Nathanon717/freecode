@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /**
  * Timed pipeline. The full run executes the identical sections that `npm test`
- * runs (shared from scripts/pipeline.ts — no drift in what runs or how), timing
+ * runs (shared from scripts/pipeline/pipeline.ts — no drift in what runs or how), timing
  * each one. Scoping to a single section drills deeper.
  *
  * Depth follows scope: the wider the scope, the shallower the breakdown.
@@ -29,7 +29,7 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { SECTIONS, PTY_EXCLUDES, useShell, type PipelineSection } from './pipeline.js';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

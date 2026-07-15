@@ -54,16 +54,16 @@
  * lowest free quotas. Scale it with `--repeat N` for a heavier probe.
  *
  * Usage:
- *   npx tsx scripts/verify-local-tokenizers.ts                      # all live free providers
- *   npx tsx scripts/verify-local-tokenizers.ts --dry-run            # local exact counts only, no API calls
- *   npx tsx scripts/verify-local-tokenizers.ts --repeat 4           # 4x larger sample
- *   npx tsx scripts/verify-local-tokenizers.ts --model gpt-oss-20b  # only models matching this substring
+ *   npx tsx scripts/diagnostics/verify-local-tokenizers.ts                     # all live free providers
+ *   npx tsx scripts/diagnostics/verify-local-tokenizers.ts--dry-run            # local exact counts only, no API calls
+ *   npx tsx scripts/diagnostics/verify-local-tokenizers.ts--repeat 4           # 4x larger sample
+ *   npx tsx scripts/diagnostics/verify-local-tokenizers.ts--model gpt-oss-20b  # only models matching this substring
  */
 import { writeFileSync } from 'fs';
 import { spawnSync } from 'child_process';
 import { join } from 'path';
 import type { CoreMessage } from 'ai';
-import type { TokenizerEncoder } from '../src/tokenizers/count.js';
+import type { TokenizerEncoder } from '../../src/tokenizers/count.js';
 
 // Mirrors src/index.ts's tryInjectDoppler(). Must run before any src module is
 // imported, since some provider config reads env vars at module-evaluation time.
@@ -145,15 +145,15 @@ async function main(): Promise<void> {
 
   // Dynamic imports so doppler-injected env vars are in place before any
   // provider module evaluates (see comment above).
-  const { getSelectableModels } = await import('../src/commands/model.js');
-  const { modelPreference } = await import('../src/cli/model-screen.js');
-  const { resolveModel, PROVIDER_REGISTRY } = await import('../src/providers/provider-registry.js');
-  const { hasExactTokenizer } = await import('../src/tokenizers/count.js');
-  const { resolveTokenizerFamily, GPT_OSS_FAMILY, HF_TOKENIZER_REPO, MISTRAL_TEKKEN_FAMILY, MISTRAL_TEKKEN_REPO, TEKKEN_FILENAME } = await import('../src/tokenizers/model-family.js');
-  const { loadBpeJsonEncoder } = await import('../src/tokenizers/backends/bpe-json.js');
-  const { loadTekkenEncoder } = await import('../src/tokenizers/backends/tekken.js');
-  const { getGptOssEncoder } = await import('../src/tokenizers/backends/tiktoken.js');
-  const { ensureTokenizerFile } = await import('../src/tokenizers/download-tokenizer.js');
+  const { getSelectableModels } = await import('../../src/commands/model.js');
+  const { modelPreference } = await import('../../src/cli/model-screen.js');
+  const { resolveModel, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
+  const { hasExactTokenizer } = await import('../../src/tokenizers/count.js');
+  const { resolveTokenizerFamily, GPT_OSS_FAMILY, HF_TOKENIZER_REPO, MISTRAL_TEKKEN_FAMILY, MISTRAL_TEKKEN_REPO, TEKKEN_FILENAME } = await import('../../src/tokenizers/model-family.js');
+  const { loadBpeJsonEncoder } = await import('../../src/tokenizers/backends/bpe-json.js');
+  const { loadTekkenEncoder } = await import('../../src/tokenizers/backends/tekken.js');
+  const { getGptOssEncoder } = await import('../../src/tokenizers/backends/tiktoken.js');
+  const { ensureTokenizerFile } = await import('../../src/tokenizers/download-tokenizer.js');
   const { generateText } = await import('ai');
 
   // Load the exact encoder for a family, or THROW. No fallback path: gpt-oss is

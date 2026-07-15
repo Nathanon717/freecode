@@ -8,7 +8,7 @@ const { spawnSync } = require('child_process');
 const { existsSync } = require('fs');
 const path = require('path');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', '..');
 const PTY_DIR = path.join(ROOT, 'node_modules', 'node-pty');
 
 if (!existsSync(PTY_DIR)) process.exit(0); // not installed yet

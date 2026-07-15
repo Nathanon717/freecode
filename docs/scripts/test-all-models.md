@@ -1,11 +1,11 @@
 # Model Availability Smoke Test
 
-`scripts/test-all-models.ts` sends the single message `"hi"` to every free model in the registry, one HTTP call each, and records which ones responded successfully.
+`scripts/diagnostics/test-all-models.ts` sends the single message `"hi"` to every free model in the registry, one HTTP call each, and records which ones responded successfully.
 
 ## Usage
 
 ```
-npx tsx scripts/test-all-models.ts
+npx tsx scripts/diagnostics/test-all-models.ts
 ```
 
 Requires the same API keys the app itself uses (env vars, Doppler, or `~/.config/freecode/config.json`) — it calls `tryInjectDoppler()` on startup exactly like `src/index.ts` does, so a plain `npx tsx` invocation picks up Doppler secrets automatically when the `doppler` CLI is linked.
@@ -34,7 +34,7 @@ While a model is in flight, a TTY prints `[n/N] provider:model — <elapsed>s`, 
 
 ## Output
 
-Results are written once, at the end of the run, to `scripts/model-availability-results.txt`:
+Results are written once, at the end of the run, to `scripts/diagnostics/model-availability-results.txt`:
 
 ```
 <succeeded>/<total> models succeeded

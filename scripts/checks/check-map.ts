@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '..');
+const ROOT = join(__dirname, '..', '..');
 const SRC_ROOT = join(ROOT, 'src');
 const MAP_ROOT = join(ROOT, 'docs', 'map');
 const MAP_NAV = join(MAP_ROOT, 'README.md');
