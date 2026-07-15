@@ -53,7 +53,7 @@ Format: filename (linecount)
   - [`custom-eval-menu.ts`](cli/custom-eval-menu.md) (363) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval-dots.md) (28) — Eval Status Circle Renderers
   - [`eval-menu.ts`](cli/eval-menu.md) (125) — Unified Eval Menu
-  - [`eval-screen.ts`](cli/eval-screen.md) (162) — Eval Screen Renderers
+  - [`eval-screen.ts`](cli/eval-screen.md) (164) — Eval Screen Renderers
   - [`footer-status.ts`](cli/footer-status.md) (209) — Footer Status State and Formatters
   - [`humaneval-menu.ts`](cli/humaneval-menu.md) (324) — HumanEval Tab + Run Loop
   - [`input-buffer.ts`](cli/input-buffer.md) (115) — Input Buffer State
@@ -71,7 +71,7 @@ Format: filename (linecount)
   - [`tool-approval.ts`](cli/tool-approval.md) (311) — Tool Approval Prompts
   - [`tool-invocation.ts`](cli/tool-invocation.md) (334) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
-  - [`transcript-renderer.ts`](cli/transcript-renderer.md) (457) — Agent Transcript Formatting
+  - [`transcript-renderer.ts`](cli/transcript-renderer.md) (462) — Agent Transcript Formatting
 - `src/commands/`
   - [`config.ts`](commands/config.md) (345) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (298) — Interactive Model Picker

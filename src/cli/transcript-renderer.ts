@@ -170,6 +170,18 @@ export function formatTranscriptStepDivider(options?: TranscriptRuntimeOptions):
   return getBannerColor()("─".repeat(width));
 }
 
+/**
+ * Write the complete step separator block — the single authority for divider
+ * spacing. The separator is two full-width lines with NO blank line above or
+ * below, so content abuts it directly on both sides. Every site that emits a
+ * divider (between-step close, between-turn flush) routes through here so the
+ * separator's look and surrounding whitespace live in exactly one place.
+ */
+export function writeStepSeparator(options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions()): void {
+  const divider = formatTranscriptStepDivider(options);
+  getTranscriptStream(options).write(divider + "\n" + divider + "\n");
+}
+
 // ---------------------------------------------------------------------------
 // Turn / step state machine
 // ---------------------------------------------------------------------------
@@ -178,17 +190,18 @@ export function formatTranscriptStepDivider(options?: TranscriptRuntimeOptions):
 // tracks what has been written so it can insert the correct blank lines.
 //
 // Desired layout (per step):
-//   ---
-//
+//   ===   (two divider lines, no blank line above or below)
+//   ===
 //   [response text]          (optional)
 //
 //   [rationale]              (optional; goes directly above the tool call)
 //   [tool call + result]     (optional)
+//   ===
+//   ===
 //
-//   ---
-//
-// Between consecutive steps the divider is shared (close of step N = open of
-// step N+1), so there are no back-to-back dividers.
+// The two-line separator is shared between consecutive steps (close of step N =
+// open of step N+1). Its whitespace is owned entirely by writeStepSeparator, so
+// content abuts the separator directly on both sides.
 
 interface _StepState {
   open: boolean;
@@ -217,7 +230,7 @@ export function beginTranscriptTurn(options: TranscriptRuntimeOptions = getTrans
   _resetStepContent();
   if (_pendingDivider) {
     _pendingDivider = false;
-    getTranscriptStream(options).write(formatTranscriptStepDivider(options) + "\n\n");
+    writeStepSeparator(options);
   }
 }
 
@@ -259,14 +272,12 @@ export function writeTranscriptToolLeadIn(options: TranscriptRuntimeOptions = ge
  */
 export function endTranscriptStep(hasMore: boolean, options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions()): void {
   if (!_step.open) return;
-  const stream = getTranscriptStream(options);
-  stream.write("\n"); // blank line before divider
   if (hasMore) {
-    stream.write(formatTranscriptStepDivider(options) + "\n\n"); // close + open next
+    writeStepSeparator(options); // close current step + open next
     _resetStepContent(); // keep _step.open = true for next step
   } else {
-    // Defer the closing divider — it becomes the separator for the next turn.
-    // If no next turn starts, the divider is never written (no trailing divider on last turn).
+    // Defer the closing separator — it becomes the separator for the next turn.
+    // If no next turn starts, it is never written (no trailing separator on last turn).
     _pendingDivider = true;
     _step.open = false;
     _resetStepContent();
@@ -302,12 +313,6 @@ export function getTranscriptStream(
 ): NodeJS.WritableStream {
   if (options.stream === "null") return nullStream;
   return options.stream === "stdout" ? process.stdout : process.stderr;
-}
-
-export function writeTranscriptStepDivider(
-  options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions(),
-): void {
-  getTranscriptStream(options).write(formatTranscriptStepDivider(options) + "\n\n");
 }
 
 // ---------------------------------------------------------------------------

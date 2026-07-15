@@ -12,6 +12,7 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 - After changing any file in `/src/`, make sure to check its corresponding map page and consider if you need to update it.
 - Never prefix Bash commands with `cd <dir> &&` when already in that directory — it triggers a permission prompt on the `cd` even if the actual command is allowed.
 - Never justify dead code by calling it a "fallback" - remove it.
+- Keep commit messages terse.
 
 ## Enviornment
 

@@ -29,7 +29,9 @@
       "WebSearch",
       "Bash(npm view *)",
       "Read(//root/**)",
-      "Bash(npm.cmd run *)"
+      "Bash(npm.cmd run *)",
+      "Bash(git -C C:/stuff/dev/freecode status --short)",
+      "Bash(git -C C:/stuff/dev/freecode diff --stat)"
     ]
   }
 }

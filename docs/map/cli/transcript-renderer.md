@@ -40,6 +40,8 @@ formatEditFileDiff(_path: string, oldText: string, newText: string, contextBefor
 
 formatTranscriptStepDivider(options?: TranscriptRuntimeOptions | undefined): string
 
+writeStepSeparator(options?: TranscriptRuntimeOptions): void
+
 beginTranscriptTurn(options?: TranscriptRuntimeOptions): void
 
 notifyTranscriptChunk(chunk: string): void
@@ -51,8 +53,6 @@ endTranscriptStep(hasMore: boolean, options?: TranscriptRuntimeOptions): void
 getTranscriptRuntimeOptions(env?: ProcessEnv): TranscriptRuntimeOptions
 
 getTranscriptStream(options?: TranscriptRuntimeOptions): WritableStream
-
-writeTranscriptStepDivider(options?: TranscriptRuntimeOptions): void
 
 type ToolStepResult =
   | { kind: "text"; result: unknown }
@@ -99,35 +99,35 @@ renderTurn(steps: RenderedStep[], opts?: TranscriptRuntimeOptions | undefined): 
 - `DiffEntry` — re-exported from `util/line-diff.ts`; `equal | remove | add` diff entry type.
 - `formatEditFileDiff()` — smart diff renderer; red/green for changed lines, dim for file context.
 - `formatParsedToolCallLine()` — like `formatToolCallLine` but prefixes `~ `.
-- `formatTranscriptStepDivider(options?)` — returns the raw divider string (no newlines); uses the target stream's column width when `options` is provided.
-- `writeTranscriptStepDivider()` — legacy; kept for backward compatibility.
+- `formatTranscriptStepDivider(options?)` — returns one raw divider line (no newlines); uses the target stream's column width when `options` is provided.
+- `writeStepSeparator(options?)` — single authority for divider spacing: writes two full-width divider lines with NO blank line above or below, so content abuts the separator on both sides. Every divider-emitting site (`beginTranscriptTurn` deferred flush, `endTranscriptStep` close) routes through it.
 - Higher-level API (`writeToolCallHeader`, `writeToolStepResult`, `renderToolStep`, `renderTurn`) — sit on top of the format helpers and state machine so that both the live agent path (`tools/index.ts withToolRendering`) and the `/renderer` demo (`commands/renderer.ts`) share one implementation. `writeToolCallHeader` is called BEFORE tool execution; `writeToolStepResult` is called AFTER.
 
 ## Desired Turn Layout
 
-Each step is framed by a pair of `───` dividers; consecutive steps share one (close of step N = open of step N+1). Inside a step, a blank line separates the divider from content on both sides. Rationale sits directly above its tool call (no blank between); response text and a following tool call are separated by one blank line.
+Each step is framed by a two-line `───` separator; consecutive steps share one (close of step N = open of step N+1). The separator has NO blank line above or below — content abuts it directly on both sides (spacing owned entirely by `writeStepSeparator`). Rationale sits directly above its tool call (no blank between); response text and a following tool call are separated by one blank line.
 
-Single step (response + tool call) and multi-step (shared divider):
+Single step (response + tool call) and multi-step (shared separator):
 ```
 ───              ───
-
+───              ───
 response text    [step N]
 
 tool_call(args)  ───
-  result preview
+  result preview  ───
                  [step N+1]
 ───
-                 ───
+───
 ```
 
 ## Turn State Machine
 
 The module maintains a single `_step` state object. All callers drive it with these functions:
 
-- `beginTranscriptTurn(opts?)` — open a turn; writes opening divider + blank line. Idempotent (no-op if already open).
+- `beginTranscriptTurn(opts?)` — open a turn; flushes the deferred separator from the previous turn (via `writeStepSeparator`) if one is pending. Idempotent (no-op if already open).
 - `notifyTranscriptChunk(chunk)` — call each time a chunk of model response text is written to stdout; updates `hasText` / `textEndsWithNewline`.
 - `writeTranscriptToolLeadIn(opts?)` — call from `withToolRendering` in `tools/index.ts` immediately before writing the tool call line. Inserts the correct blank-line separator (blank after response text, blank between parallel tool calls).
-- `endTranscriptStep(hasMore, opts?)` — close the current step. `hasMore=true` writes the combined close+open divider for the next step; `hasMore=false` writes only the final closing divider. No-op when no turn is open.
+- `endTranscriptStep(hasMore, opts?)` — close the current step. `hasMore=true` writes the combined close+open separator (via `writeStepSeparator`) for the next step; `hasMore=false` defers the closing separator (`_pendingDivider`) so it is only emitted if a next turn begins. No-op when no turn is open.
 
 ## Read When
 

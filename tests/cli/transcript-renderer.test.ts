@@ -9,7 +9,7 @@ import {
   formatToolErrorLine,
   formatToolResultPreview,
   getTranscriptRuntimeOptions,
-  writeTranscriptStepDivider,
+  writeStepSeparator,
 } from '../../src/cli/transcript-renderer.js';
 import { computeLineDiff } from '../../src/util/line-diff.js';
 
@@ -35,7 +35,7 @@ describe('transcript renderer', () => {
       .toBe('─'.repeat(expectedWidth));
   });
 
-  it('step divider writes divider followed by two newlines for blank-line spacing', () => {
+  it('step separator writes two divider lines with no surrounding blank lines', () => {
     const expectedWidth = process.stdout.columns || TRANSCRIPT_DIVIDER_WIDTH;
     const chunks: string[] = [];
     const spy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
@@ -43,12 +43,13 @@ describe('transcript renderer', () => {
       return true;
     });
     try {
-      writeTranscriptStepDivider({ stream: 'stdout', maxResultLines: 30 });
+      writeStepSeparator({ stream: 'stdout', maxResultLines: 30 });
     } finally {
       spy.mockRestore();
     }
     const output = chunks.join('');
-    expect(stripAnsi(output)).toBe('─'.repeat(expectedWidth) + '\n\n');
+    const line = '─'.repeat(expectedWidth);
+    expect(stripAnsi(output)).toBe(line + '\n' + line + '\n');
   });
 
   it('format functions return content without trailing newlines so withToolRendering controls spacing', () => {
