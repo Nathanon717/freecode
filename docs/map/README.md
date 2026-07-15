@@ -56,20 +56,20 @@ Format: filename (linecount)
   - [`eval-screen.ts`](cli/eval-screen.md) (162) — Eval Screen Renderers
   - [`footer-status.ts`](cli/footer-status.md) (209) — Footer Status State and Formatters
   - [`humaneval-menu.ts`](cli/humaneval-menu.md) (324) — HumanEval Tab + Run Loop
-  - [`input-buffer.ts`](cli/input-buffer.md) (109) — Input Buffer State
+  - [`input-buffer.ts`](cli/input-buffer.md) (115) — Input Buffer State
   - [`list-menu.ts`](cli/list-menu.md) (367) — Shared Tabbed List Menu
   - [`markdown-renderer.ts`](cli/markdown-renderer.md) (359) — Markdown Renderer
   - [`menu-shell.ts`](cli/menu-shell.md) (47) — Menu Lifecycle Chrome
   - [`model-screen.ts`](cli/model-screen.md) (204) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/raw-picker.md) (240) — Shared Raw-Mode Picker
-  - [`session-modes.ts`](cli/session-modes.md) (442) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (471) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
-  - [`terminal-ui.ts`](cli/terminal-ui.md) (499) — Bottom Terminal UI
+  - [`terminal-ui.ts`](cli/terminal-ui.md) (500) — Bottom Terminal UI
   - [`toggles.ts`](cli/toggles.md) (96) — Footer Toggle State
   - [`tool-approval.ts`](cli/tool-approval.md) (311) — Tool Approval Prompts
-  - [`tool-invocation.ts`](cli/tool-invocation.md) (169) — Hand-Typed Tool Call Parsing
+  - [`tool-invocation.ts`](cli/tool-invocation.md) (334) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
   - [`transcript-renderer.ts`](cli/transcript-renderer.md) (457) — Agent Transcript Formatting
 - `src/commands/`

@@ -33,7 +33,9 @@ vi.mock('../../src/cli/terminal-ui.js', async (importOriginal) => {
   return {
     // Keep real input-buffer functions — key-handler tests verify real buffer state.
     getInputBuffer: mod.getInputBuffer,
+    getCursorPos: mod.getCursorPos,
     setInputBuffer: mod.setInputBuffer,
+    setCursorPos: mod.setCursorPos,
     insertAtCursor: mod.insertAtCursor,
     backspaceAtCursor: mod.backspaceAtCursor,
     deleteAtCursor: mod.deleteAtCursor,
@@ -700,6 +702,14 @@ describe('createInteractiveMode — detailed', () => {
       expect(await p).toBe('/help');
     });
 
+    it('\\r strips autofilled-but-untouched tool args before submitting', async () => {
+      const p = startReadInput();
+      setInputBuffer('read'); // cursor at end; '(' then expands the skeleton
+      for (const k of ['(', 'x', '.', 't', 's']) capturedRawSession.onKey?.(k);
+      capturedRawSession.onKey?.('\r');
+      expect(await p).toBe('read(path="x.ts")');
+    });
+
     it('\\r clears the buffer after submission', async () => {
       const p = startReadInput();
       setInputBuffer('bye');
@@ -740,6 +750,13 @@ describe('createInteractiveMode — detailed', () => {
       ['Escape on an empty buffer is a no-op', '', ['\x1b'], ''],
       ['printable characters are inserted', '', ['h', 'i', '!'], 'hi!'],
       ['non-printable control chars below 0x20 are filtered out', '', ['\x02'], ''],
+      // Hand-typed tool calls: `(` after a tool name autofills the skeleton,
+      // Tab cycles value slots, Backspace at an emptied slot steps back.
+      ['( after a tool name autofills the argument skeleton', 'read', ['('], 'read(path="", offset=, limit=)'],
+      ['Tab lands typing in the next value slot', 'read', ['(', '\t', '5'], 'read(path="", offset=5, limit=)'],
+      ['Backspace at an emptied slot steps back instead of eating the skeleton', 'read', ['(', '\t', '5', '\t', '\x7f', '0'], 'read(path="", offset=50, limit=)'],
+      ['Backspace at the first empty slot is blocked', 'read', ['(', '\x7f'], 'read(path="", offset=, limit=)'],
+      ['( after a non-tool name inserts a lone bracket', 'notatool', ['('], 'notatool('],
     ] as const)('%s', (_label, initial, keys, expected) => {
       expect(pressKeys(initial, [...keys])).toBe(expected);
     });

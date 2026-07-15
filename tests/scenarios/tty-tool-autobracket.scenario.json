@@ -1,6 +1,6 @@
 {
   "name": "tty-tool-autobracket",
-  "description": "Typing ( after a valid tool name auto-inserts the closing ) with the cursor between them; typing ) types over the auto-inserted close; a non-tool name does not auto-close",
+  "description": "Typing ( after a valid tool name autofills the full argument skeleton with quotes; typing ) at the closing paren types over it; a non-tool name does not autofill",
   "tty": {
     "cols": 80,
     "rows": 24,
@@ -14,27 +14,44 @@
         ]
       },
       {
-        "name": "open paren auto-closes",
+        "name": "open paren autofills the argument skeleton",
         "send": "(",
         "screenContains": [
-          "> read()"
-        ]
-      },
-      {
-        "name": "type args between parens",
-        "send": "path=x",
-        "screenContains": [
-          "> read(path=x)"
-        ]
-      },
-      {
-        "name": "close paren types over the auto-inserted one",
-        "send": ")",
-        "screenContains": [
-          "> read(path=x)"
+          "> read(path=\"\", offset=, limit=)"
         ],
         "screenAbsent": [
-          "read(path=x))"
+          "read()"
+        ]
+      },
+      {
+        "name": "type into the first (path) value slot",
+        "send": "x.ts",
+        "screenContains": [
+          "> read(path=\"x.ts\", offset=, limit=)"
+        ]
+      },
+      {
+        "name": "tab from path to the offset slot",
+        "send": "\t",
+        "screenContains": [
+          "> read(path=\"x.ts\", offset=, limit=)"
+        ]
+      },
+      {
+        "name": "tab from offset to the last (limit) slot",
+        "send": "\t",
+        "screenContains": [
+          "> read(path=\"x.ts\", offset=, limit=)"
+        ]
+      },
+      {
+        "name": "close paren at the last slot types over the autofilled )",
+        "send": ")",
+        "screenContains": [
+          "> read(path=\"x.ts\", offset=, limit=)"
+        ],
+        "screenAbsent": [
+          "limit=))"
         ]
       },
       {
@@ -45,7 +62,7 @@
         ]
       },
       {
-        "name": "non-tool name does not auto-close",
+        "name": "non-tool name does not autofill",
         "send": "notatool",
         "screenContains": [
           "> notatool"
@@ -58,7 +75,8 @@
           "> notatool("
         ],
         "screenAbsent": [
-          "notatool()"
+          "notatool()",
+          "notatool(path"
         ]
       }
     ],

@@ -8,3 +8,4 @@
 - [03-07-2026.md](03-07-2026.md) — No shared text-encoding layer; BOM and duplicated backspace-check bugs kept recurring
 - [05-07-2026.md](05-07-2026.md) — Tokenizer families silently using fallback estimate due to 0-byte cache files from missed 307 redirects
 - [11-07-2026.md](11-07-2026.md) — Pre-tool preamble rendered after the tool call; fixed by driving the transcript from the ordered `fullStream` + a tool-render rendezvous gate
+- [14-07-2026.md](14-07-2026.md) — ⚠️ **OPEN** — terminal resize corrupts the screen (banner reset + mangled footer/input bar). Full catch-up handoff; plan decided (Option B: harden the bottom-UI redraw in place, keep native scrollback). Ink/full-ownership rejected

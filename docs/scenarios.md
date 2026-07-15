@@ -42,5 +42,6 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-prefix-multi-match.scenario.json` | `tty-prefix-multi-match` | repo | Typing /c shows /clear as the inline completion and /config as a suggestion; unrelated commands are absent |
 | `tty-slash-backspace-restore.scenario.json` | `tty-slash-backspace-restore` | repo | After /help output fills the scroll region, typing / shows the suggestion overlay; backspace restores the help output exactly. The cycle repeats correctly a second time. |
 | `tty-tool-approval-preview.scenario.json` | `tty-tool-approval-preview` | repo | Interactive tool approval UI shows a dim, indented content preview for list_dir before the user confirms |
-| `tty-tool-autobracket.scenario.json` | `tty-tool-autobracket` | repo | Typing ( after a valid tool name auto-inserts the closing ) with the cursor between them; typing ) types over the auto-inserted close; a non-tool name does not auto-close |
+| `tty-tool-autobracket.scenario.json` | `tty-tool-autobracket` | repo | Typing ( after a valid tool name autofills the full argument skeleton with quotes; typing ) at the closing paren types over it; a non-tool name does not autofill |
+| `tty-tool-tabstops.scenario.json` | `tty-tool-tabstops` | repo | Tab cycles forward through autofilled tool-call value slots; Backspace at an emptied slot steps back to the previous slot instead of eating the skeleton |
 <!-- END GENERATED SCENARIOS -->

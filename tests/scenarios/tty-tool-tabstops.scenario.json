@@ -1,0 +1,66 @@
+{
+  "name": "tty-tool-tabstops",
+  "description": "Tab cycles forward through autofilled tool-call value slots; Backspace at an emptied slot steps back to the previous slot instead of eating the skeleton",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type tool name",
+        "send": "read",
+        "screenContains": [
+          "> read"
+        ]
+      },
+      {
+        "name": "open paren autofills the read skeleton",
+        "send": "(",
+        "screenContains": [
+          "> read(path=\"\", offset=, limit=)"
+        ]
+      },
+      {
+        "name": "tab from path to the offset slot",
+        "send": "\t",
+        "screenContains": [
+          "> read(path=\"\", offset=, limit=)"
+        ]
+      },
+      {
+        "name": "typing lands in offset (path stays empty)",
+        "send": "5",
+        "screenContains": [
+          "> read(path=\"\", offset=5, limit=)"
+        ]
+      },
+      {
+        "name": "tab to the empty limit slot",
+        "send": "\t",
+        "screenContains": [
+          "> read(path=\"\", offset=5, limit=)"
+        ]
+      },
+      {
+        "name": "backspace at empty limit steps back to offset",
+        "send": "\u007f",
+        "screenContains": [
+          "> read(path=\"\", offset=5, limit=)"
+        ]
+      },
+      {
+        "name": "typing appends to offset, proving the jump not a delete",
+        "send": "0",
+        "screenContains": [
+          "> read(path=\"\", offset=50, limit=)"
+        ],
+        "screenAbsent": [
+          "offset=5,"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

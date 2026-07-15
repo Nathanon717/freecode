@@ -30,6 +30,12 @@ export function deleteAtCursor(): void {
 export function moveCursorLeft(): void { if (cursorPos > 0) cursorPos--; }
 export function moveCursorRight(): void { if (cursorPos < lastInputBuf.length) cursorPos++; }
 
+// Places the caret at an absolute buffer offset, clamped into range. Used by the
+// hand-typed tool-call tabstop navigation (Tab / Backspace between value slots).
+export function setCursorPos(pos: number): void {
+  cursorPos = Math.max(0, Math.min(pos, lastInputBuf.length));
+}
+
 export function moveCursorHome(): void {
   const before = lastInputBuf.slice(0, cursorPos);
   cursorPos = before.lastIndexOf('\n') + 1;

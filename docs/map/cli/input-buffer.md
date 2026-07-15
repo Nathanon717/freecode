@@ -22,6 +22,8 @@ moveCursorLeft(): void
 
 moveCursorRight(): void
 
+setCursorPos(pos: number): void
+
 moveCursorHome(): void
 
 moveCursorEnd(): void
@@ -41,6 +43,7 @@ cursorToVisualPos(buf: string, cursor: number, w: number): { visualRow: number; 
 - `getInputBuffer()` — current flat buffer string (newlines embedded for multi-line).
 - `getCursorPos()` — current cursor index within the flat buffer.
 - `setInputBuffer(input)` — replaces buffer and moves cursor to end.
+- `setCursorPos(pos)` — places the caret at a clamped absolute offset; used by tool-call tabstop navigation in `session-modes.ts`.
 - `visualRowsForLine` / `cursorToVisualPos` — used by `terminal-ui.ts` to convert buffer positions to screen coordinates.
 
 ## Read when

@@ -7,6 +7,10 @@ import {
   styleToolNames,
   parseToolInvocation,
   parseToolArgs,
+  buildToolCallSkeleton,
+  nextToolFieldCaret,
+  toolFieldBackspace,
+  stripEmptyToolArgs,
 } from '../../src/cli/tool-invocation.js';
 
 describe('isToolName', () => {
@@ -121,5 +125,94 @@ describe('parseToolArgs', () => {
   it('returns an empty object for empty args', () => {
     expect(parseToolArgs('')).toEqual({});
     expect(parseToolArgs('   ')).toEqual({});
+  });
+
+  it('keeps commas and = inside a quoted value together (single walker)', () => {
+    expect(parseToolArgs('pattern="a=b,c", path=src')).toEqual({
+      pattern: 'a=b,c',
+      path: 'src',
+    });
+  });
+});
+
+describe('buildToolCallSkeleton', () => {
+  it('autofills every param — quotes for strings, bare otherwise — caret in the first slot', () => {
+    expect(buildToolCallSkeleton('read')).toEqual({
+      text: '(path="", offset=, limit=)',
+      caret: 7, // between the quotes of path=""
+    });
+    expect(buildToolCallSkeleton('list_dir')).toEqual({ text: '(path="")', caret: 7 });
+    expect(buildToolCallSkeleton('shell_exec')).toEqual({
+      text: '(command="", timeout_ms=, confirmDestructive=)',
+      caret: 10,
+    });
+  });
+});
+
+describe('nextToolFieldCaret', () => {
+  const buf = 'read(path="", offset=, limit=)';
+
+  it('cycles forward through value slots, wrapping past the last', () => {
+    expect(nextToolFieldCaret(buf, 11)).toBe(21); // path -> offset
+    expect(nextToolFieldCaret(buf, 21)).toBe(29); // offset -> limit
+    expect(nextToolFieldCaret(buf, 29)).toBe(11); // limit -> wraps to path
+  });
+
+  it('jumps to the first slot when the caret is outside any slot', () => {
+    expect(nextToolFieldCaret(buf, 2)).toBe(11); // caret still in the tool name
+  });
+
+  it('returns null for non-tool-call buffers and empty arg lists', () => {
+    expect(nextToolFieldCaret('hello world', 3)).toBeNull();
+    expect(nextToolFieldCaret('read()', 5)).toBeNull();
+  });
+});
+
+describe('toolFieldBackspace', () => {
+  const buf = 'read(path="", offset=, limit=)';
+
+  it('steps back to the previous slot at an emptied value slot', () => {
+    expect(toolFieldBackspace(buf, 21)).toBe(11); // empty offset -> path
+    expect(toolFieldBackspace(buf, 29)).toBe(21); // empty limit -> offset
+  });
+
+  it('blocks (preserves the skeleton) at the first empty slot', () => {
+    expect(toolFieldBackspace(buf, 11)).toBe('block');
+  });
+
+  it('lands at the end of the previous filled value', () => {
+    const filled = 'read(path="x.ts", offset=, limit=)';
+    const closingQuote = filled.indexOf('"', filled.indexOf('"') + 1); // 15
+    const emptyOffset = filled.indexOf('offset=') + 'offset='.length; // 25
+    expect(toolFieldBackspace(filled, emptyOffset)).toBe(closingQuote);
+  });
+
+  it('falls through to a normal delete elsewhere', () => {
+    const filled = 'read(path="x.ts", offset=, limit=)';
+    expect(toolFieldBackspace(filled, 12)).toBeNull(); // mid path value
+    expect(toolFieldBackspace('hello', 3)).toBeNull(); // not a tool call
+  });
+});
+
+describe('stripEmptyToolArgs', () => {
+  it('drops autofilled-but-untouched args on submit', () => {
+    expect(stripEmptyToolArgs('read(path="src/x.ts", offset=, limit=)')).toBe(
+      'read(path="src/x.ts")',
+    );
+    expect(stripEmptyToolArgs('read(path="a", offset=5, limit=)')).toBe(
+      'read(path="a", offset=5)',
+    );
+    expect(stripEmptyToolArgs('read(path="", offset=, limit=)')).toBe('read()');
+  });
+
+  it('keeps a quoted value that itself contains = and , ', () => {
+    expect(
+      stripEmptyToolArgs('grep(pattern="a=b,c", path="", include="")'),
+    ).toBe('grep(pattern="a=b,c")');
+  });
+
+  it('leaves non-tool input and already-clean calls untouched', () => {
+    expect(stripEmptyToolArgs('just a message')).toBe('just a message');
+    expect(stripEmptyToolArgs('read(path=src/index.ts)')).toBe('read(path=src/index.ts)');
   });
 });

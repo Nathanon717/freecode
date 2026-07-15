@@ -29,6 +29,7 @@ export {
   moveCursorEnd,
   moveCursorUp,
   moveCursorDown,
+  setCursorPos,
   visualRowsForLine,
   cursorToVisualPos,
 } from './input-buffer.js'

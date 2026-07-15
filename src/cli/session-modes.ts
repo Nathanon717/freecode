@@ -9,7 +9,13 @@ import type {
 } from "../agent/tools/index.js";
 import { loadConfig } from "../config/index.js";
 import { getCommandCompletion, getFilteredCommands } from "./slash-commands.js";
-import { toolNameBeforeCursor } from "./tool-invocation.js";
+import {
+  buildToolCallSkeleton,
+  nextToolFieldCaret,
+  stripEmptyToolArgs,
+  toolFieldBackspace,
+  toolNameBeforeCursor,
+} from "./tool-invocation.js";
 import { runEvalMenu } from "./eval-menu.js";
 import type { CliSessionMode } from "./session-runner.js";
 import {
@@ -28,6 +34,7 @@ import {
   parkCursorAboveBottomUI,
   parkCursorInScrollRegion,
   resetSubmittedInputArea,
+  setCursorPos,
   setInputBuffer,
   setInlineCompletion,
   setActiveModel,
@@ -60,15 +67,21 @@ function resetBottomPromptState(): void {
 }
 
 // Inserts printable input, with two editor conveniences for tool calls:
-//  - typing `(` right after a valid tool name auto-closes to `()` with the
-//    cursor between the parens (only when a real tool name precedes it);
+//  - typing `(` right after a valid tool name autofills the full argument
+//    skeleton (`read(path="", offset=, limit=)`) with the caret in the first
+//    value slot; Tab/Backspace then move between slots (see readLineWith...);
 //  - typing `)` when the cursor already sits on a `)` types over it rather than
-//    inserting a duplicate (so the auto-inserted close is skipped naturally).
+//    inserting a duplicate (so the autofilled close is skipped naturally).
 function handlePrintable(printable: string): void {
-  if (printable === "(" && toolNameBeforeCursor(getInputBuffer(), getCursorPos())) {
-    insertAtCursor("()");
-    moveCursorLeft();
-    return;
+  if (printable === "(") {
+    const toolName = toolNameBeforeCursor(getInputBuffer(), getCursorPos());
+    if (toolName) {
+      const { text, caret } = buildToolCallSkeleton(toolName);
+      const at = getCursorPos();
+      insertAtCursor(text);
+      setCursorPos(at + caret);
+      return;
+    }
   }
   if (printable === ")" && getInputBuffer()[getCursorPos()] === ")") {
     moveCursorRight();
@@ -166,7 +179,7 @@ async function readLineWithAutocomplete(
       }
 
       if (data === "\r") {
-        const submitted = completedInput();
+        const submitted = stripEmptyToolArgs(completedInput());
         setInputBuffer("");
         setInlineCompletion(null);
         setSuggestions([]);
@@ -189,6 +202,13 @@ async function readLineWithAutocomplete(
       }
 
       if (data === "\t") {
+        // Inside a hand-typed tool call, Tab cycles between argument value slots.
+        const fieldCaret = nextToolFieldCaret(getInputBuffer(), getCursorPos());
+        if (fieldCaret !== null) {
+          setCursorPos(fieldCaret);
+          refresh();
+          return;
+        }
         const completion = getCommandCompletion(getInputBuffer());
         if (completion) {
           setInputBuffer(completion);
@@ -198,6 +218,15 @@ async function readLineWithAutocomplete(
       }
 
       if (isBackspaceKey(data)) {
+        // At an emptied tool-call value slot, Backspace steps to the previous
+        // slot instead of eating the autofilled `=`/`""` skeleton.
+        const back = toolFieldBackspace(getInputBuffer(), getCursorPos());
+        if (back === "block") return;
+        if (typeof back === "number") {
+          setCursorPos(back);
+          refresh();
+          return;
+        }
         if (getInputBuffer().length > 0) {
           backspaceAtCursor();
           refresh();
