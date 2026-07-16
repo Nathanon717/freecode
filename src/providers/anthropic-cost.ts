@@ -1,9 +1,5 @@
 import chalk from 'chalk';
 import type { PricingConfidence, VerifiedRates } from './pricing-verifier.js';
-import { toErrorMessage } from '../util/errors.js';
-
-export const ANTHROPIC_PRICING_URL = 'https://platform.claude.com/docs/en/about-claude/pricing';
-export const ANTHROPIC_USAGE_COST_URL = 'https://docs.anthropic.com/en/api/data-usage-cost-api';
 
 export type AnthropicPricingSource = 'live' | 'fallback';
 
@@ -67,21 +63,6 @@ export interface CostEstimate {
   confidence?: PricingConfidence;
 }
 
-const FALLBACK_PRICING_FETCHED_AT = '2026-05-19T00:00:00.000Z';
-
-const FALLBACK_MODELS: Record<string, AnthropicModelPricing> = {
-  'claude-opus-4-7': pricing('Claude Opus 4.7', 5, 25),
-  'claude-opus-4-6': pricing('Claude Opus 4.6', 5, 25),
-  'claude-opus-4-5': pricing('Claude Opus 4.5', 5, 25),
-  'claude-opus-4-1': pricing('Claude Opus 4.1', 15, 75),
-  'claude-opus-4': pricing('Claude Opus 4', 15, 75),
-  'claude-sonnet-4-6': pricing('Claude Sonnet 4.6', 3, 15),
-  'claude-sonnet-4-5': pricing('Claude Sonnet 4.5', 3, 15),
-  'claude-sonnet-4': pricing('Claude Sonnet 4', 3, 15),
-  'claude-haiku-4-5': pricing('Claude Haiku 4.5', 1, 5),
-  'claude-haiku-3-5': pricing('Claude Haiku 3.5', 0.8, 4),
-};
-
 export function createSessionCostTracker() {
   let total = 0;
   return {
@@ -94,23 +75,10 @@ export function createSessionCostTracker() {
   };
 }
 
-let pricingPromise: Promise<AnthropicPricingTable> | null = null;
 const _anthropicTracker = createSessionCostTracker();
-
-function pricing(modelName: string, inputPerMillion: number, outputPerMillion: number): AnthropicModelPricing {
-  return {
-    modelName,
-    inputPerMillion,
-    outputPerMillion,
-    cacheWrite5mPerMillion: inputPerMillion * 1.25,
-    cacheWrite1hPerMillion: inputPerMillion * 2,
-    cacheReadPerMillion: inputPerMillion * 0.1,
-  };
-}
 
 export function resetAnthropicSessionCost(): void { _anthropicTracker.reset(); }
 export function addAnthropicSessionCost(estimate: CostEstimate | null | undefined): number { return _anthropicTracker.add(estimate); }
-export function getAnthropicSessionCost(): number { return _anthropicTracker.get(); }
 
 export function formatUsdCeil(usd: number | null | undefined): string {
   if (usd === null || usd === undefined || !Number.isFinite(usd)) return 'cost unavailable';
@@ -177,16 +145,6 @@ function formatTokenCount(tokens: number): string {
   return Math.ceil(tokens).toLocaleString('en-US');
 }
 
-function fallbackPricingTable(reason?: string): AnthropicPricingTable {
-  return {
-    source: 'fallback',
-    sourceUrl: ANTHROPIC_PRICING_URL,
-    fetchedAt: FALLBACK_PRICING_FETCHED_AT,
-    updatedAt: reason,
-    models: FALLBACK_MODELS,
-  };
-}
-
 function normalizeModelKey(value: string): string {
   return value
     .toLowerCase()
@@ -201,60 +159,6 @@ export function modelPricingKey(modelId: string): string {
   const match = normalized.match(/claude-(opus|sonnet|haiku)-(\d)-(\d)/);
   if (match) return `claude-${match[1]}-${match[2]}-${match[3]}`;
   return normalized;
-}
-
-function dollars(value: string): number {
-  return Number(value.replace(/[$,\s]/g, ''));
-}
-
-export function parseAnthropicPricingHtml(html: string, fetchedAt = new Date().toISOString()): AnthropicPricingTable {
-  const text = html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/\s+/g, ' ');
-
-  const rowPattern = /(Claude\s+(?:Opus|Sonnet|Haiku)\s+\d(?:\.\d)?)(?:\s+\([^)]*\))?\s*\$([\d.]+)\s*\/\s*MTok\s*\$([\d.]+)\s*\/\s*MTok\s*\$([\d.]+)\s*\/\s*MTok\s*\$([\d.]+)\s*\/\s*MTok\s*\$([\d.]+)\s*\/\s*MTok/gi;
-  const models: Record<string, AnthropicModelPricing> = {};
-  let match: RegExpExecArray | null;
-
-  while ((match = rowPattern.exec(text)) !== null) {
-    const modelName = match[1].replace(/\s+/g, ' ').trim();
-    models[normalizeModelKey(modelName)] = {
-      modelName,
-      inputPerMillion: dollars(match[2]),
-      cacheWrite5mPerMillion: dollars(match[3]),
-      cacheWrite1hPerMillion: dollars(match[4]),
-      cacheReadPerMillion: dollars(match[5]),
-      outputPerMillion: dollars(match[6]),
-    };
-  }
-
-  if (Object.keys(models).length === 0) {
-    throw new Error('No Anthropic model pricing rows found');
-  }
-
-  return {
-    source: 'live',
-    sourceUrl: ANTHROPIC_PRICING_URL,
-    fetchedAt,
-    models,
-  };
-}
-
-export async function getAnthropicPricing(): Promise<AnthropicPricingTable> {
-  pricingPromise ??= (async () => {
-    try {
-      const response = await fetch(ANTHROPIC_PRICING_URL);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return parseAnthropicPricingHtml(await response.text());
-    } catch (error) {
-      return fallbackPricingTable(`live fetch failed: ${toErrorMessage(error)}`);
-    }
-  })();
-  return pricingPromise;
 }
 
 function pricingSourceLabel(estimate: CostEstimate): string {

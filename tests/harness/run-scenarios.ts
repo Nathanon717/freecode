@@ -30,7 +30,6 @@ interface Scenario {
   description: string;
   workspace?: 'repo' | 'temp';
   config?: Record<string, unknown>;
-  filesBefore?: Array<{ path: string; content: string }>;
   flags?: string[];
   model?: string;
   llmFixture?: string;
@@ -243,13 +242,6 @@ if (nonTtyScenarios.length > 0) {
     mkdirSync(tmpHome, { recursive: true });
     mkdirSync(tmpStore, { recursive: true });
     if (scenario.workspace === 'temp') mkdirSync(tmpWorkspace, { recursive: true });
-    if (scenario.filesBefore?.length) {
-      for (const f of scenario.filesBefore) {
-        const fullPath = join(tmpWorkspace, f.path);
-        mkdirSync(dirname(fullPath), { recursive: true });
-        writeFileSync(fullPath, f.content, 'utf-8');
-      }
-    }
 
     const inputLines = scenario.turns.map(t => t.input).join('\n');
     const inputFile = join(tmpHome, 'input.txt');

@@ -1,15 +1,11 @@
 # src/providers/anthropic-cost.ts - Anthropic Cost Estimates
 
-**Role:** Estimates Anthropic API cost from captured usage metadata and verified pricing rates. The primary production path uses `estimateAnthropicCostVerified` (fed by `pricing-verifier.ts`); `estimateAnthropicCost` with an `AnthropicPricingTable` is retained for tests and the legacy HTML-scraper path.
+**Role:** Estimates Anthropic API cost from captured usage metadata and verified pricing rates. The production path uses `estimateAnthropicCostVerified` (fed by `pricing-verifier.ts`), which delegates to `estimateAnthropicCost` with a one-model `AnthropicPricingTable`.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-ANTHROPIC_PRICING_URL: 'https://platform.claude.com/docs/en/about-claude/pricing'
-
-ANTHROPIC_USAGE_COST_URL: 'https://docs.anthropic.com/en/api/data-usage-cost-api'
-
 type AnthropicPricingSource = 'live' | 'fallback';
 
 interface AnthropicTokenUsage {
@@ -78,8 +74,6 @@ resetAnthropicSessionCost(): void
 
 addAnthropicSessionCost(estimate: CostEstimate | null | undefined): number
 
-getAnthropicSessionCost(): number
-
 formatUsdCeil(usd: number | null | undefined): string
 
 describeCostEstimate(estimate: CostEstimate | null | undefined, opts?: { colored?: boolean | undefined; } | undefined): string
@@ -87,10 +81,6 @@ describeCostEstimate(estimate: CostEstimate | null | undefined, opts?: { colored
 describeCostEstimateBreakdown(estimate: CostEstimate | null | undefined): string | null
 
 modelPricingKey(modelId: string): string
-
-parseAnthropicPricingHtml(html: string, fetchedAt?: string): AnthropicPricingTable
-
-getAnthropicPricing(): Promise<AnthropicPricingTable>
 
 estimateAnthropicCostVerified(modelId: string, usage: AnthropicTokenUsage | null | undefined, rates: VerifiedRates): CostEstimate
 
@@ -101,8 +91,6 @@ estimateAnthropicCost(modelId: string, usage: AnthropicTokenUsage | null | undef
 ## Pricing Source
 
 The production path calls `estimateAnthropicCostVerified` with a `VerifiedRates` object from `pricing-verifier.ts`. Cache tiers (5m write, 1h write, cache read) are derived from the verified input price using standard Anthropic multipliers (1.25×, 2×, 0.1×).
-
-`getAnthropicPricing()` (legacy) fetches the Anthropic pricing HTML page and falls back to a bundled table if parsing fails.
 
 ## Cost Calculation
 

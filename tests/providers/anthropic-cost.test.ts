@@ -4,7 +4,6 @@ import {
   describeCostEstimateBreakdown,
   estimateAnthropicCost,
   formatUsdCeil,
-  parseAnthropicPricingHtml,
   type AnthropicPricingTable,
   type AnthropicTokenUsage,
 } from '../../src/providers/anthropic-cost.js';
@@ -45,27 +44,7 @@ function table(): AnthropicPricingTable {
 }
 
 describe('Anthropic pricing and cost estimates', () => {
-  it('parses model pricing rows from Anthropic pricing snippets', () => {
-    const parsed = parseAnthropicPricingHtml(`
-      Model Base Input Tokens 5m Cache Writes 1h Cache Writes Cache Hits & Refreshes Output Tokens
-      Claude Sonnet 4.6$3 / MTok$3.75 / MTok$6 / MTok$0.30 / MTok$15 / MTok
-      Claude Haiku 4.5$1 / MTok$1.25 / MTok$2 / MTok$0.10 / MTok$5 / MTok
-    `);
-
-    expect(parsed.source).toBe('live');
-    expect(parsed.models['claude-sonnet-4-6']).toMatchObject({
-      inputPerMillion: 3,
-      cacheWrite5mPerMillion: 3.75,
-      cacheWrite1hPerMillion: 6,
-      cacheReadPerMillion: 0.3,
-      outputPerMillion: 15,
-    });
-    expect(parsed.models['claude-haiku-4-5']?.outputPerMillion).toBe(5);
-  });
-
-  it('marks malformed pricing as unavailable instead of estimating zero', () => {
-    expect(() => parseAnthropicPricingHtml('no table here')).toThrow(/No Anthropic model pricing rows/);
-
+  it('marks unknown models as unavailable instead of estimating zero', () => {
     const estimate = estimateAnthropicCost('claude-unknown', usage({ inputTokens: 1000 }), table());
 
     expect(estimate.usd).toBeNull();

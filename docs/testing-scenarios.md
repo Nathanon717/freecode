@@ -90,7 +90,6 @@ Any scenario that drives the agent loop pairs a `mock:*` model with an `llmFixtu
 - `description`: Human-readable purpose of the scenario.
 - `config`: Optional temporary `config.json` contents written under the scenario's isolated `FREECODE_HOME`.
 - `workspace`: Use `"temp"` for file-writing or project-mutating scenarios. Omit it or use `"repo"` for structural CLI checks.
-- `filesBefore`: Optional seed files written before the CLI runs. Use with `workspace: "temp"` for edit/preservation scenarios.
 - `flags`: Optional CLI flags inserted before `--script`.
 - `model`: Optional model preference passed as `--model <value>`.
 - `llmFixture`: Fake LLM script path, relative to `tests/scenarios/`. Required for any scenario that drives the agent loop; pair it with a `mock:*` model. Without a fixture, the loop is hard-blocked (`FREECODE_NO_LLM=1`).

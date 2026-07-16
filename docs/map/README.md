@@ -98,7 +98,7 @@ Format: filename (linecount)
   - [`openai-compat-sse.ts`](providers/adapters/openai-compat-sse.md) (142) — OpenAI-Compatible SSE Transforms
   - [`openai-compat.ts`](providers/adapters/openai-compat.md) (231) — OpenAI-Compatible Adapter
 - `src/providers/`
-  - [`anthropic-cost.ts`](providers/anthropic-cost.md) (377) — Anthropic Cost Estimates
+  - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
   - [`db-config-cache.ts`](providers/db-config-cache.md) (54) — DB Config Cache
   - [`db.ts`](providers/db.md) (499) — SQLite Store (libSQL/Turso)
   - [`fake.ts`](providers/fake.md) (424) — Fake LLM Fixtures
