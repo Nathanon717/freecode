@@ -62,12 +62,12 @@ Format: filename (linecount)
   - [`menu-shell.ts`](cli/menu-shell.md) (47) — Menu Lifecycle Chrome
   - [`model-screen.ts`](cli/model-screen.md) (204) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/raw-picker.md) (240) — Shared Raw-Mode Picker
-  - [`session-modes.ts`](cli/session-modes.md) (471) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (455) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
   - [`terminal-ui.ts`](cli/terminal-ui.md) (500) — Bottom Terminal UI
-  - [`toggles.ts`](cli/toggles.md) (96) — Footer Toggle State
+  - [`toggles.ts`](cli/toggles.md) (100) — Footer Toggle State
   - [`tool-approval.ts`](cli/tool-approval.md) (311) — Tool Approval Prompts
   - [`tool-invocation.ts`](cli/tool-invocation.md) (334) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing

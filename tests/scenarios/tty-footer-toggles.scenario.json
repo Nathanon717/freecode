@@ -1,33 +1,51 @@
 {
   "name": "tty-footer-toggles",
-  "description": "Footer toggle bar shows A and R toggles at startup with ctrl+ prefix; Ctrl+A and Ctrl+R cycle the toggles without corrupting the input area",
+  "description": "Footer toggle bar shows S, A and R toggles at startup with ctrl+ prefix; Ctrl+S shows and hides the toggle names; Ctrl+A and Ctrl+R cycle the toggles without corrupting the input area",
   "tty": {
     "cols": 80,
     "rows": 24,
     "readyText": "for commands",
     "steps": [
       {
-        "name": "toggle bar appears in footer at startup",
+        "name": "toggle bar appears in footer at startup with names hidden",
         "screenContains": [
-          "ctrl+",
+          "ctrl+ S A R",
           "> / for commands"
         ]
       },
       {
-        "name": "Ctrl+A cycles Ask toggle and briefly shows hint labels",
+        "name": "Ctrl+S shows the toggle names",
+        "send": "\u0013",
+        "quietMs": 200,
+        "screenContains": [
+          "ctrl+ Show toggle names Auto-run tools Read-only",
+          "> / for commands"
+        ]
+      },
+      {
+        "name": "Ctrl+S again hides the toggle names",
+        "send": "\u0013",
+        "quietMs": 200,
+        "screenContains": [
+          "ctrl+ S A R",
+          "> / for commands"
+        ]
+      },
+      {
+        "name": "Ctrl+A cycles the auto-run toggle; names stay hidden",
         "send": "\u0001",
         "quietMs": 200,
         "screenContains": [
-          "ctrl+",
+          "ctrl+ S A R",
           "> / for commands"
         ]
       },
       {
-        "name": "Ctrl+R cycles Read toggle; input area stays intact",
+        "name": "Ctrl+R cycles the read-only toggle; input area stays intact",
         "send": "\u0012",
         "quietMs": 200,
         "screenContains": [
-          "ctrl+",
+          "ctrl+ S A R",
           "> / for commands"
         ]
       },

@@ -23,8 +23,8 @@ createScriptedMode(scriptPath: string, projectRoot: string, rl: Interface): CliS
 - Refreshes cached OpenAI daily spend snapshots for the footer when the bottom UI is active and the selected model is OpenAI.
 - Tears down the bottom UI during command dispatch, agent output, and tool approval prompts. The config editor and model picker manage their own teardown/restore via `cli/menu-shell.ts`; the dispatcher's `runConfig`/`runModelMenu` are now thin calls that pass an `onRestore` closure (session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`) into `runConfigCommand`/`runModelCommand` for the shell to fire after `setupBottomUI`.
 - `/model` without an argument opens `runModelCommand()` so interactive users can pick from configured provider models and detected Ollama models.
-- Tool approval uses a two-item Approve/Deny menu; denial can include user feedback to the agent. The Ask toggle (`getAskMode()` from `cli/toggles.ts`) controls whether approval is required at runtime; the initial state is seeded from `config.toolConfirmation`. The approval prompts, the tool-call-limit prompt, and the scripted-choice parser live in `cli/tool-approval.ts`; both modes import them.
-- The Read toggle (`isReadOnly()` from `cli/toggles.ts`) is passed as `getReadOnly` on the mode object. When on, only `read`, `grep`, and `list_dir` are offered to the model (write/edit/shell are omitted from `createTools`).
+- Tool approval uses a two-item Approve/Deny menu; denial can include user feedback to the agent. The Auto-run tools toggle (`getAskMode()` from `cli/toggles.ts`) controls whether approval is required at runtime; the initial state is seeded from `config.toolConfirmation`. The approval prompts, the tool-call-limit prompt, and the scripted-choice parser live in `cli/tool-approval.ts`; both modes import them.
+- The Read-only toggle (`isReadOnly()` from `cli/toggles.ts`) is passed as `getReadOnly` on the mode object. When on, only `read`, `grep`, and `list_dir` are offered to the model (write/edit/shell are omitted from `createTools`).
 
 ## Scripted Mode
 

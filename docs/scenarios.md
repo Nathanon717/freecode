@@ -32,7 +32,7 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-escape-clears.scenario.json` | `tty-escape-clears` | repo | Escape key clears the input buffer and hides the suggestion list, restoring the empty-prompt hint |
 | `tty-eval-menu.scenario.json` | `tty-eval-menu` | repo | Submitting /eval opens the standalone eval picker showing available scenarios; pressing Esc closes it and restores the input prompt |
 | `tty-eval-then-config-picker.scenario.json` | `tty-eval-then-config-picker` | repo | After a fake eval completes, another raw picker can still receive input and Ctrl-C exits cleanly |
-| `tty-footer-toggles.scenario.json` | `tty-footer-toggles` | repo | Footer toggle bar shows A and R toggles at startup with ctrl+ prefix; Ctrl+A and Ctrl+R cycle the toggles without corrupting the input area |
+| `tty-footer-toggles.scenario.json` | `tty-footer-toggles` | repo | Footer toggle bar shows S, A and R toggles at startup with ctrl+ prefix; Ctrl+S shows and hides the toggle names; Ctrl+A and Ctrl+R cycle the toggles without corrupting the input area |
 | `tty-fuzzy-completion.scenario.json` | `tty-fuzzy-completion` | repo | Fuzzy query /ss matches /status; Tab expands the buffer to /status, Enter submits and shows the status output |
 | `tty-help-output.scenario.json` | `tty-help-output` | repo | Submitting /help renders the command list in the scroll region while the input prompt remains pinned at the bottom; slash suggestion overlay opens and restores cleanly over the output |
 | `tty-humaneval-fake.scenario.json` | `tty-humaneval-fake` | repo | Fake LLM completes HumanEval/0 — verifies data-load, agent, Python-check pipeline end-to-end |

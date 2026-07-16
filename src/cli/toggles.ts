@@ -1,12 +1,6 @@
 import chalk from 'chalk';
 import { getBannerColorRGB } from './banner.js';
 
-let ctrlHintActive = false;
-
-export function setCtrlHint(active: boolean): void {
-  ctrlHintActive = active;
-}
-
 export type AskMode = 'ask' | 'auto';
 
 interface ToggleState {
@@ -19,37 +13,51 @@ interface Toggle {
   index: number;
 }
 
-const _ask: Toggle = {
-  char: 'A',
+const _showNames: Toggle = {
+  char: 'S',
   states: [
-    { label: 'ask' },
-    { label: 'auto' },
-  ],
-  index: 0,
-};
-
-const _read: Toggle = {
-  char: 'R',
-  states: [
-    { label: 'read' },
+    { label: 'show toggle names' },
     { label: 'off' },
   ],
   index: 1,
 };
 
-const ALL_TOGGLES: Toggle[] = [_ask, _read];
+// On = tools run without confirmation, i.e. AskMode 'auto'.
+const _autoRun: Toggle = {
+  char: 'A',
+  states: [
+    { label: 'auto-run tools' },
+    { label: 'off' },
+  ],
+  index: 1,
+};
 
-// Seed Ask toggle from persisted config (called once at startup).
+const _read: Toggle = {
+  char: 'R',
+  states: [
+    { label: 'read-only' },
+    { label: 'off' },
+  ],
+  index: 1,
+};
+
+const ALL_TOGGLES: Toggle[] = [_showNames, _autoRun, _read];
+
+// Seed the auto-run toggle from persisted config (called once at startup).
 export function initAskMode(mode: AskMode): void {
-  _ask.index = mode === 'auto' ? 1 : 0;
+  _autoRun.index = mode === 'auto' ? 0 : 1;
 }
 
 export function getAskMode(): AskMode {
-  return _ask.states[_ask.index].label as AskMode;
+  return _autoRun.index === 0 ? 'auto' : 'ask';
 }
 
 export function isReadOnly(): boolean {
   return _read.index === 0;
+}
+
+export function areToggleNamesShown(): boolean {
+  return _showNames.index === 0;
 }
 
 // Advance a toggle by its display character (case-insensitive).
@@ -68,28 +76,24 @@ function hintRest(t: Toggle): string {
 function renderToggle(t: Toggle): string {
   const [r, g, b] = getBannerColorRGB();
   const isOn = t.index === 0;
-  if (ctrlHintActive) {
-    const rest = hintRest(t);
-    const charPart = isOn ? chalk.bgRgb(r, g, b).black(t.char) : chalk.rgb(r, g, b)(t.char);
-    return charPart + chalk.rgb(128, 128, 128)(rest);
-  }
-  if (isOn) return chalk.bgRgb(r, g, b).black(t.char);
-  return chalk.rgb(r, g, b)(t.char);
+  const charPart = isOn ? chalk.bgRgb(r, g, b).black(t.char) : chalk.rgb(r, g, b)(t.char);
+  if (!areToggleNamesShown()) return charPart;
+  return charPart + chalk.rgb(128, 128, 128)(hintRest(t));
 }
 
 // Renders the toggle bar string (ANSI included, visible length = toggleBarWidth()).
 export function composeToggleBar(): string {
   const prefix = chalk.gray('ctrl+ ');
-  return prefix + ALL_TOGGLES.map(renderToggle).join('  ');
+  return prefix + ALL_TOGGLES.map(renderToggle).join(' ');
 }
 
 // Visible (non-ANSI) character count of the toggle bar.
 export function toggleBarWidth(): number {
   const prefixLen = 'ctrl+ '.length;
-  const hintExtraLen = ctrlHintActive
+  const hintExtraLen = areToggleNamesShown()
     ? ALL_TOGGLES.reduce((s, t) => s + hintRest(t).length, 0)
     : 0;
   const toggleChars = ALL_TOGGLES.length; // one char each
-  const sepLen = (ALL_TOGGLES.length - 1) * 2;
+  const sepLen = ALL_TOGGLES.length - 1;
   return prefixLen + toggleChars + hintExtraLen + sepLen;
 }

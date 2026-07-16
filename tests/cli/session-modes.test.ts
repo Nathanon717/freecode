@@ -128,7 +128,6 @@ vi.mock('../../src/cli/toggles.js', () => ({
   isReadOnly: vi.fn(() => false),
   getAskMode: vi.fn((): 'ask' | 'auto' => 'auto'),
   cycleByChar: vi.fn(() => false),
-  setCtrlHint: vi.fn(),
   initAskMode: vi.fn(),
 }));
 
@@ -170,7 +169,7 @@ import { runConfigCommand } from '../../src/commands/config.js';
 import { runModelCommand } from '../../src/commands/model.js';
 import { runEvalMenu as evalMenuFn } from '../../src/cli/eval-menu.js';
 import { askQuestion, confirmToolCallInteractive, askContinueAfterLimit } from '../../src/cli/tool-approval.js';
-import { isReadOnly, getAskMode, cycleByChar, setCtrlHint } from '../../src/cli/toggles.js';
+import { isReadOnly, getAskMode, cycleByChar } from '../../src/cli/toggles.js';
 import { getCommandCompletion, getFilteredCommands } from '../../src/cli/slash-commands.js';
 import { runRawKeySession } from '../../src/cli/raw-picker.js';
 
@@ -763,43 +762,20 @@ describe('createInteractiveMode — detailed', () => {
 
     // --- Ctrl+letter toggles ---
 
-    it('Ctrl+letter that matches a toggle shows the ctrl hint', () => {
+    it('Ctrl+letter that matches a toggle cycles it', () => {
       vi.mocked(cycleByChar).mockReturnValueOnce(true);
       void startReadInput();
       capturedRawSession.onKey?.('\x01'); // Ctrl+A
-      expect(setCtrlHint).toHaveBeenCalledWith(true);
+      expect(cycleByChar).toHaveBeenCalledWith('A');
+      expect(getInputBuffer()).toBe('');
       capturedRawSession.resolve?.('');
     });
 
-    it('Ctrl+letter with no matching toggle does not show the hint', () => {
+    it('Ctrl+letter with no matching toggle leaves the buffer untouched', () => {
       vi.mocked(cycleByChar).mockReturnValue(false);
       void startReadInput();
       capturedRawSession.onKey?.('\x01'); // Ctrl+A, charCode 1 — not printable (< 0x20)
-      expect(setCtrlHint).not.toHaveBeenCalledWith(true);
       expect(getInputBuffer()).toBe(''); // \x01 filtered out (not >= ' ')
-      capturedRawSession.resolve?.('');
-    });
-
-    it('hint timer callback clears the hint after 5 seconds', () => {
-      vi.useFakeTimers();
-      vi.mocked(cycleByChar).mockReturnValueOnce(true);
-      void startReadInput();
-      capturedRawSession.onKey?.('\x01'); // Ctrl+A — sets timer
-      expect(setCtrlHint).toHaveBeenCalledWith(true);
-      vi.advanceTimersByTime(5000);       // fire the fallback timer
-      expect(setCtrlHint).toHaveBeenCalledWith(false);
-      vi.useRealTimers();
-      capturedRawSession.resolve?.('');
-    });
-
-    it('pressing a second toggle key while hint is active replaces the existing timer', () => {
-      vi.useFakeTimers();
-      vi.mocked(cycleByChar).mockReturnValue(true);
-      void startReadInput();
-      capturedRawSession.onKey?.('\x01'); // Ctrl+A — sets timer
-      capturedRawSession.onKey?.('\x01'); // Ctrl+A again — clears old timer, sets new one
-      expect(setCtrlHint).toHaveBeenCalledTimes(2);
-      vi.useRealTimers();
       capturedRawSession.resolve?.('');
     });
 
