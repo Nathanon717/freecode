@@ -3,7 +3,7 @@ import type { Interface } from 'readline';
 
 // ── Module mocks ─────────────────────────────────────────────────────────────
 
-vi.mock('../../src/cli/terminal-ui.js', () => ({
+vi.mock('../../src/cli/bottom-ui.js', () => ({
   isBottomUIActive: vi.fn().mockReturnValue(true),
   setupBottomUI: vi.fn(),
   teardownBottomUI: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('../../src/cli/raw-picker.js', () => ({
 }));
 
 import { runMenuShell } from '../../src/cli/menu-shell.js';
-import { isBottomUIActive, setupBottomUI, teardownBottomUI } from '../../src/cli/terminal-ui.js';
+import { isBottomUIActive, setupBottomUI, teardownBottomUI } from '../../src/cli/bottom-ui.js';
 import { resetStdinConsoleMode, resetTerminalPrivateModes } from '../../src/cli/raw-picker.js';
 
 const rlPause = vi.fn();

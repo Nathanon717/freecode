@@ -64,7 +64,8 @@ async function main() {
   const { createInteractiveMode, createScriptedMode } = await import('./cli/session-modes.js');
   const { Conversation } = await import('./agent/conversation.js');
   const { runCliSession } = await import('./cli/session-runner.js');
-  const { setupFooterUI, setRetryBanner, setQuotaSnapshot } = await import('./cli/terminal-ui.js');
+  const { setupFooterUI } = await import('./cli/bottom-ui.js');
+  const { setRetryBanner, setQuotaSnapshot } = await import('./cli/footer-status.js');
   const { registerQuotaUpdateSink } = await import('./providers/adapters/openai-compat.js');
   const { registerRetryBannerSink } = await import('./providers/adapters/adapter-http-retry.js');
   const { createStdoutRetrySink } = await import('./cli/stdout-retry-sink.js');

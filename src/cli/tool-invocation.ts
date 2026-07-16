@@ -1,7 +1,7 @@
 // Pure parsing/highlighting for hand-typed tool calls (`name(arg=val, ...)`).
 //
 // Kept free of any `ai`-SDK import so it is safe to load on the early
-// interactive boot path (terminal-ui imports the highlighter). The actual
+// interactive boot path (bottom-ui imports the highlighter). The actual
 // execution + `/tools` listing live in tool-runner.ts, which pulls in the tool
 // registry and is only imported lazily from the command dispatcher.
 

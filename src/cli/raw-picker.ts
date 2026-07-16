@@ -1,5 +1,5 @@
 import type { Interface } from 'readline';
-import { composeFooterOutput, drawFooter, getLastReservedRows, getRows, resumeFooterTimer, setOnResizeCallback, suspendFooterTimer } from './terminal-ui.js';
+import { composeFooterOutput, drawFooter, getLastReservedRows, getRows, resumeFooterTimer, setOnResizeCallback, suspendFooterTimer } from './bottom-ui.js';
 
 // Counts the actual terminal rows a set of rendered lines occupies, accounting
 // for soft-wrapping at the current terminal width. Use this as `countLines` in
@@ -212,7 +212,7 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
   suspendFooterTimer();
   process.stdout.write('\x1b[?25l');
 
-  // After a resize the terminal-ui handler clears the screen and redraws the
+  // After a resize the bottom-ui handler clears the screen and redraws the
   // banner; register a callback so pinned pickers repaint on top of that.
   if (opts.pinToTop) setOnResizeCallback(() => { rowCount = 0; redraw(); });
 

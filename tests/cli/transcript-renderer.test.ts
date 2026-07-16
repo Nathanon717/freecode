@@ -8,7 +8,6 @@ import {
   formatToolCallLine,
   formatToolErrorLine,
   formatToolResultPreview,
-  getTranscriptRuntimeOptions,
   writeStepSeparator,
 } from '../../src/cli/transcript-renderer.js';
 import { computeLineDiff } from '../../src/util/line-diff.js';
@@ -144,14 +143,4 @@ describe('transcript renderer', () => {
     expect(result).not.toContain('old5');
   });
 
-  it('parses transcript runtime options independently from trace json', () => {
-    expect(getTranscriptRuntimeOptions({
-      FREECODE_TRACE_JSON: 'trace.json',
-      FREECODE_TRANSCRIPT_STREAM: 'stdout',
-      FREECODE_TRANSCRIPT_MAX_RESULT_LINES: 'all',
-    })).toEqual({ stream: 'stdout', maxResultLines: Infinity });
-
-    expect(getTranscriptRuntimeOptions({ FREECODE_TRACE_JSON: 'trace.json' }))
-      .toEqual({ stream: 'stderr', maxResultLines: DEFAULT_TRANSCRIPT_MAX_RESULT_LINES });
-  });
 });

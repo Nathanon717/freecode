@@ -27,45 +27,33 @@ const capturedRawSession = vi.hoisted(() => ({
 // Mocks — order matters: hoisted vars must be declared before the mock that uses them.
 // ---------------------------------------------------------------------------
 
-vi.mock('../../src/cli/terminal-ui.js', async (importOriginal) => {
+// input-buffer is deliberately left real — key-handler tests verify real buffer state.
+vi.mock('../../src/cli/bottom-ui.js', () => ({
+  // Stub all IO / drawing side-effects.
+  drawBottomUI: vi.fn(),
+  setupBottomUI: vi.fn(),
+  teardownBottomUI: vi.fn(),
+  teardownFooterUI: vi.fn(),
+  setupInputUI: vi.fn(),
+  resetSubmittedInputArea: vi.fn(),
+  parkCursorAboveBottomUI: vi.fn(),
+  parkCursorInScrollRegion: vi.fn(),
+  setInlineCompletion: vi.fn(),
+  setSuggestions: vi.fn(),
+  isBottomUIActive: vi.fn(() => false),
+  isFooterUIActive: vi.fn(() => false),
+  getRows: vi.fn(() => 24),
+  getLastReservedRows: vi.fn(() => 2),
+}));
+
+vi.mock('../../src/cli/footer-status.js', async (importOriginal) => ({
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-  const mod = await importOriginal<typeof import('../../src/cli/terminal-ui.js')>();
-  return {
-    // Keep real input-buffer functions — key-handler tests verify real buffer state.
-    getInputBuffer: mod.getInputBuffer,
-    getCursorPos: mod.getCursorPos,
-    setInputBuffer: mod.setInputBuffer,
-    setCursorPos: mod.setCursorPos,
-    insertAtCursor: mod.insertAtCursor,
-    backspaceAtCursor: mod.backspaceAtCursor,
-    deleteAtCursor: mod.deleteAtCursor,
-    moveCursorLeft: mod.moveCursorLeft,
-    moveCursorRight: mod.moveCursorRight,
-    moveCursorUp: mod.moveCursorUp,
-    moveCursorDown: mod.moveCursorDown,
-    moveCursorHome: mod.moveCursorHome,
-    moveCursorEnd: mod.moveCursorEnd,
-    // Stub all IO / drawing side-effects.
-    drawBottomUI: vi.fn(),
-    setupBottomUI: vi.fn(),
-    teardownBottomUI: vi.fn(),
-    teardownFooterUI: vi.fn(),
-    setupInputUI: vi.fn(),
-    resetSubmittedInputArea: vi.fn(),
-    parkCursorAboveBottomUI: vi.fn(),
-    parkCursorInScrollRegion: vi.fn(),
-    setActiveModel: vi.fn(),
-    setActiveModelFromString: vi.fn(),
-    setQuotaSnapshot: vi.fn(),
-    setOpenAIDailySpend: vi.fn(),
-    setInlineCompletion: vi.fn(),
-    setSuggestions: vi.fn(),
-    isBottomUIActive: vi.fn(() => false),
-    isFooterUIActive: vi.fn(() => false),
-    getRows: vi.fn(() => 24),
-    getLastReservedRows: vi.fn(() => 2),
-  };
-});
+  ...(await importOriginal<typeof import('../../src/cli/footer-status.js')>()),
+  setActiveModel: vi.fn(),
+  setActiveModelFromString: vi.fn(),
+  setQuotaSnapshot: vi.fn(),
+  setOpenAIDailySpend: vi.fn(),
+}));
 
 vi.mock('../../src/config/index.js', () => ({
   loadConfig: vi.fn(() => ({ toolConfirmation: 'auto' as const })),
@@ -154,16 +142,17 @@ vi.mock('../../src/cli/tool-approval.js', async (importOriginal) => {
 // ---------------------------------------------------------------------------
 import {
   drawBottomUI,
-  getInputBuffer,
   parkCursorAboveBottomUI,
-  setActiveModel,
-  setActiveModelFromString,
-  setInputBuffer,
-  setQuotaSnapshot,
   setupBottomUI,
   teardownBottomUI,
   teardownFooterUI,
-} from '../../src/cli/terminal-ui.js';
+} from '../../src/cli/bottom-ui.js';
+import { getInputBuffer, setInputBuffer } from '../../src/cli/input-buffer.js';
+import {
+  setActiveModel,
+  setActiveModelFromString,
+  setQuotaSnapshot,
+} from '../../src/cli/footer-status.js';
 import { loadCachedQuota, saveQuotaToCache } from '../../src/providers/quota/cache.js';
 import { runConfigCommand } from '../../src/commands/config.js';
 import { runModelCommand } from '../../src/commands/model.js';

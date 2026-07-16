@@ -1,0 +1,41 @@
+{
+  "name": "tty-tool-approval-preview-fits",
+  "description": "A pending-approval preview too long for the terminal is trimmed from the bottom, so the model's preamble and the tool call line it is approving stay on screen",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "tty-tool-approval-preview-fits.llm.json",
+  "tty": {
+    "cols": 80,
+    "rows": 20,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type prompt",
+        "send": "Read the changelog",
+        "screenContains": ["> Read the changelog"]
+      },
+      {
+        "name": "submit - preamble, call line and preview head all survive a 60-line result",
+        "send": "\r",
+        "waitFor": "LINE-001",
+        "screenContains": [
+          "PREAMBLE-FIRST-LINE",
+          "PREAMBLE-LAST-LINE",
+          "read(tests/scenarios/long-preview.fixture.txt)",
+          "LINE-001",
+          "more lines",
+          "Enter to confirm · Esc to deny"
+        ],
+        "screenAbsent": ["LINE-060"]
+      },
+      {
+        "name": "approve - Enter confirms",
+        "send": "\r",
+        "waitFor": "Done reading.",
+        "screenContains": ["Done reading."]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

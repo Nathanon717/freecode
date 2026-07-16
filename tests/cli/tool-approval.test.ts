@@ -4,14 +4,13 @@ import {
   askQuestion,
   askContinueAfterLimit,
   confirmToolCallInteractive,
+  getApprovalPreviewRowBudget,
   parseScriptedToolChoice,
   formatScriptedToolMenu,
 } from '../../src/cli/tool-approval.js';
 import { UserAbortError } from '../../src/util/errors.js';
-import type { ToolCallConfirmation } from '../../src/agent/tools/index.js';
 import {
   type FakeStdin,
-  box,
   flush,
   installProcessStreams,
   type ProcessStreamFixture,
@@ -21,7 +20,7 @@ import {
 // fast instead of after the 15s global default.
 vi.setConfig({ testTimeout: 2000 });
 
-vi.mock('../../src/cli/terminal-ui.js', () => ({
+vi.mock('../../src/cli/bottom-ui.js', () => ({
   isBottomUIActive: vi.fn(() => false),
   isFooterUIActive: vi.fn(() => false),
   teardownBottomUI: vi.fn(),
@@ -37,7 +36,7 @@ import {
   teardownBottomUI,
   setupBottomUI,
   setupInputUI,
-} from '../../src/cli/terminal-ui.js';
+} from '../../src/cli/bottom-ui.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -58,7 +57,7 @@ function ttyRl(): Interface {
 
 const preview = { name: 'read', args: { path: 'foo.ts' } };
 
-// Installs process streams + a stdout spy and primes the terminal-ui flags.
+// Installs process streams + a stdout spy and primes the bottom-ui flags.
 function setupStreams(opts: { tty: boolean; footer: boolean }) {
   const streams = installProcessStreams({ tty: opts.tty });
   const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -235,19 +234,14 @@ describe('confirmToolCallInteractive (non-TTY)', () => {
     consoleSpy.mockRestore();
   });
 
-  it('returns { approved: false, message } for "deny" then message', async () => {
-    const result = await confirmToolCallInteractive(makeRl(['deny', 'do it differently']), preview);
-    expect(result).toEqual({ approved: false, message: 'do it differently' });
+  it('returns { approved: false } for "deny", with no follow-up prompt', async () => {
+    const result = await confirmToolCallInteractive(makeRl(['deny']), preview);
+    expect(result).toEqual({ approved: false });
   });
 
   it.each([['n'], ['no'], ['d']])('returns approved:false for alias "%s"', async (answer) => {
-    const result = await confirmToolCallInteractive(makeRl([answer, 'some message']), preview);
-    expect(result).toEqual({ approved: false, message: 'some message' });
-  });
-
-  it('trims whitespace from the denial message', async () => {
-    const result = await confirmToolCallInteractive(makeRl(['deny', '  trimmed  ']), preview);
-    expect(result).toEqual({ approved: false, message: 'trimmed' });
+    const result = await confirmToolCallInteractive(makeRl([answer]), preview);
+    expect(result).toEqual({ approved: false });
   });
 
   it('calls teardownBottomUI', async () => {
@@ -257,10 +251,10 @@ describe('confirmToolCallInteractive (non-TTY)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// confirmToolCallInteractive — TTY, non-absolute menu (isFooterUIActive=false)
+// confirmToolCallInteractive — TTY, inline hint (isFooterUIActive=false)
 // ---------------------------------------------------------------------------
 
-describe('confirmToolCallInteractive (TTY, non-absolute menu)', () => {
+describe('confirmToolCallInteractive (TTY, inline hint)', () => {
   let stdin: FakeStdin;
   let streams: ProcessStreamFixture;
   let writeSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, 'write'>>;
@@ -268,43 +262,43 @@ describe('confirmToolCallInteractive (TTY, non-absolute menu)', () => {
   beforeEach(() => { ({ stdin, streams, writeSpy } = setupStreams({ tty: true, footer: false })); });
   afterEach(() => { streams.restore(); writeSpy.mockRestore(); resetUIFlags(); });
 
-  // Keys that leave (or return) selection on Approve, then Enter confirms.
-  it.each([
-    ['Enter (\\r) with default approve selection', ['\r']],
-    ['Enter (\\n)', ['\n']],
-    ['"a" keeps approve selected', ['a', '\r']],
-    ['"A" uppercase keeps approve selected', ['A', '\r']],
-    ['"k" moves selection back to approve', ['j', 'k', '\r']],
-    ['up arrow (\\x1b[A) moves selection to approve', ['\x1b[B', '\x1b[A', '\r']],
-  ])('%s → approved:true', async (_label, keys) => {
+  it.each([['\r'], ['\n']])('Enter (%j) confirms', async (key) => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
-    for (const k of keys) stdin.emit('data', k);
+    stdin.emit('data', key);
     await expect(promise).resolves.toEqual({ approved: true });
   });
 
-  it('throws UserAbortError on Escape', async () => {
+  it('draws the hint telling the user which keys act', async () => {
+    const promise = confirmToolCallInteractive(ttyRl(), preview);
+    stdin.emit('data', '\r');
+    await promise;
+    const allOutput = writeSpy.mock.calls.map(c => c[0]).join('');
+    expect(allOutput.replace(/\x1b\[[0-9;]*m/g, '')).toContain('Enter to confirm · Esc to deny');
+  });
+
+  it('unwinds the turn on Escape so the user lands back at the input bar', async () => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\x1b');
     await expect(promise).rejects.toThrow(UserAbortError);
   });
 
-  // Selector key moves to Deny; Enter opens the message prompt; message is typed then submitted.
-  it.each([
-    ['"j" moves to deny', 'j', ['a', 'b'], 'ab'],
-    ['"d" moves to deny', 'd', ['x'], 'x'],
-    ['"D" uppercase moves to deny', 'D', ['m'], 'm'],
-    ['down arrow (\\x1b[B) moves to deny', '\x1b[B', ['z'], 'z'],
-  ])('%s, Enter opens message prompt', async (_label, selector, msgKeys, message) => {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', selector);
-    stdin.emit('data', '\r');
-    await flush();
-    for (const k of msgKeys) stdin.emit('data', k);
-    stdin.emit('data', '\r');
-    await expect(promise).resolves.toEqual({ approved: false, message });
-  });
+  // The old menu bound these to selection movement; there is no selection now, so
+  // they must not confirm, deny, or otherwise settle the prompt.
+  it.each([['a'], ['d'], ['j'], ['k'], ['\x1b[A'], ['\x1b[B'], ['x']])(
+    'ignores %j, leaving the prompt pending',
+    async (key) => {
+      const promise = confirmToolCallInteractive(ttyRl(), preview);
+      let settled = false;
+      void promise.then(() => { settled = true; }, () => { settled = true; });
+      stdin.emit('data', key);
+      await flush();
+      expect(settled).toBe(false);
+      stdin.emit('data', '\r'); // settle so the test doesn't leak a pending session
+      await expect(promise).resolves.toEqual({ approved: true });
+    },
+  );
 
-  it('calls process.exit on Ctrl-C in menu', () => {
+  it('calls process.exit on Ctrl-C at the prompt', () => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
       throw new Error('exit-called');
     }));
@@ -314,22 +308,13 @@ describe('confirmToolCallInteractive (TTY, non-absolute menu)', () => {
     exitSpy.mockRestore();
     promise.catch(() => {});
   });
-
-  it('writes to stdout during draw and redraw', async () => {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', 'j');  // redraw → deny
-    stdin.emit('data', 'k');  // redraw → back to approve (stays resolvable)
-    stdin.emit('data', '\r'); // confirm approve so the promise settles
-    await promise;
-    expect(writeSpy).toHaveBeenCalled();
-  });
 });
 
 // ---------------------------------------------------------------------------
-// confirmToolCallInteractive — TTY, absolute menu (isFooterUIActive=true)
+// confirmToolCallInteractive — TTY, absolute hint (isFooterUIActive=true)
 // ---------------------------------------------------------------------------
 
-describe('confirmToolCallInteractive (TTY, absolute menu)', () => {
+describe('confirmToolCallInteractive (TTY, absolute hint)', () => {
   let stdin: FakeStdin;
   let streams: ProcessStreamFixture;
   let writeSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, 'write'>>;
@@ -337,29 +322,33 @@ describe('confirmToolCallInteractive (TTY, absolute menu)', () => {
   beforeEach(() => { ({ stdin, streams, writeSpy } = setupStreams({ tty: true, footer: true })); });
   afterEach(() => { streams.restore(); writeSpy.mockRestore(); resetUIFlags(); });
 
-  it('returns approved:true using absolute positioned menu', async () => {
+  it('returns approved:true using the absolute positioned hint', async () => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\r');
     await expect(promise).resolves.toEqual({ approved: true });
-  });
-
-  it('triggers absolute redraw on j/k selection changes', async () => {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', 'j');
-    stdin.emit('data', 'k');
-    stdin.emit('data', '\r');
-    await promise;
     // absolute draw uses ANSI cursor positioning
-    const allOutput = writeSpy.mock.calls.map(c => c[0]).join('');
-    expect(allOutput).toContain('\x1b[');
+    expect(writeSpy.mock.calls.map(c => c[0]).join('')).toContain('\x1b[');
   });
 
-  it('clears absolute rows in finally block', async () => {
+  it('clears the absolute hint row in the finally block', async () => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\r');
     await promise;
     const allOutput = writeSpy.mock.calls.map(c => c[0]).join('');
     expect(allOutput).toContain('\x1b[2K');
+  });
+
+  it('pads clearance only when a preview was already flowed above', async () => {
+    const withPreview = confirmToolCallInteractive(ttyRl(), { ...preview, previewedContent: true });
+    stdin.emit('data', '\r');
+    await withPreview;
+    expect(writeSpy.mock.calls.map(c => c[0]).join('')).toContain('\n\n');
+
+    writeSpy.mockClear();
+    const withoutPreview = confirmToolCallInteractive(ttyRl(), preview);
+    stdin.emit('data', '\r');
+    await withoutPreview;
+    expect(writeSpy.mock.calls.map(c => c[0]).join('')).not.toContain('\n\n');
   });
 
   it('calls setupInputUI in finally when isBottomUIActive=true and isTTY=true', async () => {
@@ -370,7 +359,7 @@ describe('confirmToolCallInteractive (TTY, absolute menu)', () => {
     expect(setupInputUI).toHaveBeenCalled();
   });
 
-  it('throws UserAbortError on Escape with absolute menu', async () => {
+  it('unwinds the turn on Escape with the absolute hint', async () => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\x1b');
     await expect(promise).rejects.toThrow(UserAbortError);
@@ -378,59 +367,38 @@ describe('confirmToolCallInteractive (TTY, absolute menu)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// askQuestionOrEscape TTY paths — via deny→message flow
+// getApprovalPreviewRowBudget
 // ---------------------------------------------------------------------------
 
-describe('askQuestionOrEscape (TTY, via deny flow)', () => {
-  let stdin: FakeStdin;
-  let streams: ProcessStreamFixture;
-  let writeSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, 'write'>>;
+describe('getApprovalPreviewRowBudget', () => {
+  afterEach(() => { resetUIFlags(); });
 
-  beforeEach(() => { ({ stdin, streams, writeSpy } = setupStreams({ tty: true, footer: false })); });
-  afterEach(() => { streams.restore(); writeSpy.mockRestore(); resetUIFlags(); });
-
-  // Selects Deny and lands in message-entry mode. The returned confirm promise
-  // is intentionally still pending (waiting for the denial message), so it is
-  // boxed: returning it bare from an async fn would make `await enterDenyFlow()`
-  // block on it forever. See box()/flush() in raw-session-harness.
-  async function enterDenyFlow(): Promise<{ promise: Promise<ToolCallConfirmation> }> {
-    const promise = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.type('j', '\r');
-    await flush();  // let the menu session close and hand off to message-entry
-    return box(promise);
-  }
-
-  // Each row enters the deny message-entry flow, types a key sequence, and the
-  // resulting denial message reveals how the editor handled it.
-  it.each([
-    ['submits accumulated buffer on \\r', ['h', 'i', '\r'], 'hi'],
-    ['submits buffer on \\n', ['o', 'k', '\n'], 'ok'],
-    ['ignores \\x1b[ escape sequences (arrow keys)', ['\x1b[A', 'z', '\r'], 'z'],
-    ['ignores \\x1bO SS3 sequences', ['\x1bOA', 'q', '\r'], 'q'],
-    ['handles \\x7f backspace (DEL)', ['a', 'b', '\x7f', '\r'], 'a'],
-    ['handles \\x08 backspace (BS)', ['x', '\x08', 'y', '\r'], 'y'],
-    ['backspace on empty buffer is a no-op', ['\x7f', 'q', '\r'], 'q'],
-    ['filters out non-printable characters', ['\x01', 'a', '\r'], 'a'],
-  ])('%s', async (_label, keys, message) => {
-    const { promise } = await enterDenyFlow();
-    for (const k of keys) stdin.emit('data', k);
-    await expect(promise).resolves.toEqual({ approved: false, message });
+  it('returns null when no footer UI is active, leaving the preview unbounded', () => {
+    vi.mocked(isFooterUIActive).mockReturnValue(false);
+    expect(getApprovalPreviewRowBudget({ header: 2, preamble: 0 })).toBeNull();
   });
 
-  it('throws UserAbortError on Escape', async () => {
-    const { promise } = await enterDenyFlow();
-    stdin.emit('data', '\x1b');
-    await expect(promise).rejects.toThrow(UserAbortError);
+  // rows 24 - reserved 2 = 22 rows of scroll region; the hint + its pad claim 3.
+  it('leaves room for the header, the hint and its clearance pad', () => {
+    vi.mocked(isFooterUIActive).mockReturnValue(true);
+    expect(getApprovalPreviewRowBudget({ header: 3, preamble: 0 })).toBe(16);
   });
 
-  it('calls process.exit on Ctrl-C during message entry', async () => {
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
-      throw new Error('exit-called');
-    }));
-    const { promise } = await enterDenyFlow();
-    expect(() => stdin.emit('data', '\x03')).toThrow('exit-called');
-    expect(exitSpy).toHaveBeenCalledWith(0);
-    exitSpy.mockRestore();
-    (promise as unknown as Promise<unknown>).catch(() => {});
+  it('yields further ground to keep the preamble on screen', () => {
+    vi.mocked(isFooterUIActive).mockReturnValue(true);
+    expect(getApprovalPreviewRowBudget({ header: 3, preamble: 5 })).toBe(11);
+  });
+
+  it('stops shrinking at a floor rather than starving the preview for a tall preamble', () => {
+    vi.mocked(isFooterUIActive).mockReturnValue(true);
+    expect(getApprovalPreviewRowBudget({ header: 3, preamble: 400 })).toBe(3);
+  });
+
+  it('sacrifices the floor before the header when the terminal is tiny', () => {
+    vi.mocked(isFooterUIActive).mockReturnValue(true);
+    // A header taller than the scroll region leaves nothing; never go below 1.
+    expect(getApprovalPreviewRowBudget({ header: 40, preamble: 0 })).toBe(1);
+    // Header fits with only 2 rows to spare: the preview gets those 2, not the floor of 3.
+    expect(getApprovalPreviewRowBudget({ header: 17, preamble: 0 })).toBe(2);
   });
 });

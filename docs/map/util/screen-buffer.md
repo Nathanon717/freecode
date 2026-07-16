@@ -32,7 +32,7 @@ getScreenBufferDisplayLinesForOverlay(count: number, _scrollHeight: number): str
 ## Key neighbors
 
 - Called from `src/index.ts` at startup.
-- Read by `src/cli/terminal-ui.ts` when slash-command suggestions temporarily cover transcript rows.
+- Read by `src/cli/bottom-ui.ts` when slash-command suggestions temporarily cover transcript rows.
 - `startOverlayEpoch` is called by `src/cli/banner.ts` after each banner draw.
 
 ## Update triggers

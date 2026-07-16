@@ -76,7 +76,7 @@ parseToolArgs(argsText: string): Record<string, unknown>
 - `buildToolCallSkeleton(name)` — the `(arg=val, ...)` autofill text + caret offset inserted when `(` is typed after a tool name (strings get `key=""`, others `key=`); consumed by [session-modes.md](session-modes.md).
 - `nextToolFieldCaret` / `toolFieldBackspace` — Tab cycles forward through value slots; Backspace at an emptied slot steps back instead of eating the skeleton. Both derive from the single field-slot walker (`FieldSlot` / `toolCallSlots`), which also backs argument parsing — one grammar, no drift on quoted commas/`=`.
 - `stripEmptyToolArgs(input)` — on submit, drops autofilled-but-untouched args (`key=`, `key=""`) so tabbed-past optionals are omitted.
-- `toolNameHighlightRanges(line)` / `styleToolNames(chunk, chunkStart, ranges)` — locate a leading tool name immediately followed by `(` and tint it pastel per rendered chunk; consumed by [terminal-ui.md](terminal-ui.md).
+- `toolNameHighlightRanges(line)` / `styleToolNames(chunk, chunkStart, ranges)` — locate a leading tool name immediately followed by `(` and tint it pastel per rendered chunk; consumed by [bottom-ui.md](bottom-ui.md).
 - `toolNameBeforeCursor(buffer, cursor)` — gates the autofill-on-`(` affordance in [session-modes.md](session-modes.md) to genuine tool calls.
 - `parseToolInvocation(input)` — whole-line `name(args)` → `{name, args}` or null (falls through to the agent). Never throws; args are best-effort.
 - Argument values coerce as: quoted → literal string, else JSON when it parses, else the bare string.
@@ -84,7 +84,7 @@ parseToolArgs(argsText: string): Record<string, unknown>
 ## Key Neighbors
 
 - [tool-runner.md](tool-runner.md) — executes what this parses; owns `/tools` listing.
-- [terminal-ui.md](terminal-ui.md) — highlighter consumer.
+- [bottom-ui.md](bottom-ui.md) — highlighter consumer.
 - [session-modes.md](session-modes.md) — auto-close consumer.
 - [command-dispatcher.md](command-dispatcher.md) — calls `parseToolInvocation` before falling back to the agent.
 

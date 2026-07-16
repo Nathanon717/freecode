@@ -62,11 +62,16 @@ vi.mock('../../src/cli/eval-screen.js', () => ({
   printEvalSummary: vi.fn(),
 }));
 
-vi.mock('../../src/cli/terminal-ui.js', () => ({
-  setActiveModelFromString: vi.fn(),
+vi.mock('../../src/cli/bottom-ui.js', () => ({
   isBottomUIActive: vi.fn().mockReturnValue(false),
   setupBottomUI: vi.fn(),
   teardownBottomUI: vi.fn(),
+}));
+
+vi.mock('../../src/cli/footer-status.js', async (importOriginal) => ({
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+  ...(await importOriginal<typeof import('../../src/cli/footer-status.js')>()),
+  setActiveModelFromString: vi.fn(),
 }));
 
 vi.mock('../../src/providers/model-data.js', () => ({
@@ -452,7 +457,7 @@ describe('runHumanEvalProblems', () => {
     writeSolution();
     captureLog();
 
-    const { setActiveModelFromString } = await import('../../src/cli/terminal-ui.js');
+    const { setActiveModelFromString } = await import('../../src/cli/footer-status.js');
     await runHumanEvalProblems([makeProblem()], '', fakeRl);
 
     expect(vi.mocked(setActiveModelFromString)).toHaveBeenCalledWith('');

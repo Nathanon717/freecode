@@ -19,9 +19,20 @@ import {
 import { runEvalMenu } from "./eval-menu.js";
 import type { CliSessionMode } from "./session-runner.js";
 import {
+  drawBottomUI,
+  parkCursorAboveBottomUI,
+  parkCursorInScrollRegion,
+  resetSubmittedInputArea,
+  setInlineCompletion,
+  setSuggestions,
+  setupBottomUI,
+  setupInputUI,
+  teardownBottomUI,
+  teardownFooterUI,
+} from "./bottom-ui.js";
+import {
   backspaceAtCursor,
   deleteAtCursor,
-  drawBottomUI,
   getCursorPos,
   getInputBuffer,
   insertAtCursor,
@@ -31,22 +42,15 @@ import {
   moveCursorLeft,
   moveCursorRight,
   moveCursorUp,
-  parkCursorAboveBottomUI,
-  parkCursorInScrollRegion,
-  resetSubmittedInputArea,
   setCursorPos,
   setInputBuffer,
-  setInlineCompletion,
+} from "./input-buffer.js";
+import {
   setActiveModel,
   setActiveModelFromString,
   setOpenAIDailySpend,
   setQuotaSnapshot,
-  setSuggestions,
-  setupBottomUI,
-  setupInputUI,
-  teardownBottomUI,
-  teardownFooterUI,
-} from "./terminal-ui.js";
+} from "./footer-status.js";
 import { refreshOpenAIDailySpend } from "../providers/openai-daily-spend.js";
 import { loadCachedQuota, saveQuotaToCache } from "../providers/quota/cache.js";
 import { cycleByChar, getAskMode, initAskMode, isReadOnly } from "./toggles.js";

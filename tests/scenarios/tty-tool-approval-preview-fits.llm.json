@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock",
+        "model": "gpt-freecode-test",
+        "messageCount": 1,
+        "mustContain": ["Read the changelog"],
+        "toolsAvailable": ["read"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": [
+          "PREAMBLE-FIRST-LINE: I need to look at the changelog before answering.\nPREAMBLE-LAST-LINE: reading it now."
+        ],
+        "toolCalls": [
+          { "name": "read", "args": { "path": "tests/scenarios/long-preview.fixture.txt" } }
+        ],
+        "usage": { "promptTokens": 20, "outputTokens": 6, "totalTokens": 26 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "messageCount": 3,
+        "mustContain": ["<tool_result name=\"read\">"]
+      },
+      "response": {
+        "text": "Done reading.",
+        "usage": { "promptTokens": 30, "outputTokens": 4, "totalTokens": 34 }
+      }
+    }
+  ]
+}

@@ -1,27 +1,28 @@
 import chalk from "chalk";
-import { Writable } from "stream";
 import { getBannerColor } from "./banner.js";
 import { computeLineDiff } from "../util/line-diff.js";
+import { fitLinesToRows, terminalColumns, visualRows } from "../util/wrap-rows.js";
+import {
+  DEFAULT_TRANSCRIPT_MAX_RESULT_LINES,
+  TRANSCRIPT_DIVIDER_WIDTH,
+  getTranscriptRuntimeOptions,
+  getTranscriptStream,
+  type TranscriptRenderOptions,
+  type TranscriptRuntimeOptions,
+} from "./transcript-options.js";
 export type { DiffEntry } from "../util/line-diff.js";
-
-export type TranscriptStreamName = "stdout" | "stderr" | "null";
-
-const nullStream = new Writable({
-  write(_, __, cb) {
-    cb();
-  },
-});
-
-export interface TranscriptRenderOptions {
-  maxResultLines?: number;
-}
-
-export interface TranscriptRuntimeOptions extends TranscriptRenderOptions {
-  stream: TranscriptStreamName;
-}
-
-export const DEFAULT_TRANSCRIPT_MAX_RESULT_LINES = 30;
-export const TRANSCRIPT_DIVIDER_WIDTH = 60; // kept for tests; runtime uses terminal width
+// Re-exported so the renderer stays the single import site for transcript output.
+export {
+  DEFAULT_TRANSCRIPT_MAX_RESULT_LINES,
+  TRANSCRIPT_DIVIDER_WIDTH,
+  getTranscriptRuntimeOptions,
+  getTranscriptStream,
+} from "./transcript-options.js";
+export type {
+  TranscriptStreamName,
+  TranscriptRenderOptions,
+  TranscriptRuntimeOptions,
+} from "./transcript-options.js";
 
 export function formatArgs(args: Record<string, unknown>): string {
   return Object.entries(args)
@@ -96,11 +97,15 @@ export function formatToolResultPreview(
   const maxLines =
     options.maxResultLines ?? DEFAULT_TRANSCRIPT_MAX_RESULT_LINES;
   const lines = trimmed.split("\n");
-  const shown = maxLines === Infinity ? lines : lines.slice(0, maxLines);
+  let shown = maxLines === Infinity ? lines : lines.slice(0, maxLines);
+  if (options.maxResultRows !== undefined) {
+    shown = fitLinesToRows(shown, options.maxResultRows, (l) => "  " + l);
+  }
   const indented = shown.map((l) => chalk.dim("  " + l)).join("\n");
 
-  return maxLines !== Infinity && lines.length > maxLines
-    ? indented + chalk.dim(`\n  ... (${lines.length - maxLines} more lines)`)
+  const remaining = lines.length - shown.length;
+  return remaining > 0
+    ? indented + chalk.dim(`\n  ... (${remaining} more lines)`)
     : indented;
 }
 
@@ -208,15 +213,26 @@ interface _StepState {
   hasText: boolean;
   toolCount: number;
   textEndsWithNewline: boolean;
+  /** This step's response text as written, kept so its rendered height is measurable. */
+  text: string;
 }
 
-const _step: _StepState = { open: false, hasText: false, toolCount: 0, textEndsWithNewline: false };
+const _step: _StepState = { open: false, hasText: false, toolCount: 0, textEndsWithNewline: false, text: "" };
 let _pendingDivider = false;
 
 function _resetStepContent(): void {
   _step.hasText = false;
   _step.toolCount = 0;
   _step.textEndsWithNewline = false;
+  _step.text = "";
+}
+
+/** Rows this step's response text occupies on screen, wrap included. */
+function _stepTextRows(cols: number): number {
+  if (!_step.text) return 0;
+  const lines = _step.text.split("\n");
+  if (lines[lines.length - 1] === "") lines.pop(); // trailing newline ends a line, it doesn't add one
+  return lines.reduce((sum, line) => sum + visualRows(line, cols), 0);
 }
 
 /**
@@ -242,26 +258,34 @@ export function notifyTranscriptChunk(chunk: string): void {
   if (!chunk) return;
   _step.hasText = true;
   _step.textEndsWithNewline = chunk.endsWith("\n");
+  _step.text += chunk;
 }
 
 /**
  * Write the separator immediately before a tool call line.
  * Inserts a blank line after response text (if any) and between parallel tool calls.
+ * Returns the rows it advanced the cursor by, so writeToolCallHeader can report
+ * the full header height.
  */
-export function writeTranscriptToolLeadIn(options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions()): void {
+export function writeTranscriptToolLeadIn(options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions()): number {
   const stream = getTranscriptStream(options);
+  let rows = 0;
   if (_step.toolCount === 0) {
     if (_step.hasText) {
       // Blank line between response text and first tool call.
       // If last chunk didn't end with \n, end that line first.
-      stream.write(_step.textEndsWithNewline ? "\n" : "\n\n");
+      const leadIn = _step.textEndsWithNewline ? "\n" : "\n\n";
+      stream.write(leadIn);
+      rows = leadIn.length;
     }
     // No text before first tool call: tool starts right after opening blank line.
   } else {
     // Blank line between parallel tool calls in the same step.
     stream.write("\n");
+    rows = 1;
   }
   _step.toolCount++;
+  return rows;
 }
 
 /**
@@ -282,37 +306,6 @@ export function endTranscriptStep(hasMore: boolean, options: TranscriptRuntimeOp
     _step.open = false;
     _resetStepContent();
   }
-}
-
-function parseMaxResultLines(raw: string | undefined): number {
-  if (!raw) return DEFAULT_TRANSCRIPT_MAX_RESULT_LINES;
-  if (raw.toLowerCase() === "all" || raw.toLowerCase() === "infinity")
-    return Infinity;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) && parsed >= 0
-    ? Math.floor(parsed)
-    : DEFAULT_TRANSCRIPT_MAX_RESULT_LINES;
-}
-
-export function getTranscriptRuntimeOptions(
-  env: NodeJS.ProcessEnv = process.env,
-): TranscriptRuntimeOptions {
-  const raw = env["FREECODE_TRANSCRIPT_STREAM"];
-  const stream: TranscriptStreamName =
-    raw === "stdout" ? "stdout" : raw === "null" ? "null" : "stderr";
-  return {
-    stream,
-    maxResultLines: parseMaxResultLines(
-      env["FREECODE_TRANSCRIPT_MAX_RESULT_LINES"],
-    ),
-  };
-}
-
-export function getTranscriptStream(
-  options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions(),
-): NodeJS.WritableStream {
-  if (options.stream === "null") return nullStream;
-  return options.stream === "stdout" ? process.stdout : process.stderr;
 }
 
 // ---------------------------------------------------------------------------
@@ -346,6 +339,14 @@ export interface ToolStep {
   result: ToolStepResult;
 }
 
+/** Heights of the content a tool result will be written under, in wrapped rows. */
+export interface ToolCallHeaderRows {
+  /** The header itself: lead-in blanks + optional rationale + the call line. */
+  header: number;
+  /** The model's response text directly above the header; 0 when it isn't adjacent. */
+  preamble: number;
+}
+
 /** A single step within a rendered turn: optional text followed by zero or more tool calls. */
 export interface RenderedStep {
   text?: string;
@@ -356,21 +357,34 @@ export interface RenderedStep {
  * Write the lead-in separator, optional rationale line, and tool call line.
  * The live path calls this BEFORE executing the tool; the result is written
  * separately via writeToolStepResult after execution completes.
+ *
+ * Returns the heights, in wrapped terminal rows, of what now sits above the
+ * result. The approval path budgets its preview against these so this header —
+ * and the model's preamble explaining the call — stay on screen; see
+ * agent/tools/index.ts.
  */
 export function writeToolCallHeader(
   step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "parsedTools">,
   opts?: TranscriptRuntimeOptions,
-): void {
+): ToolCallHeaderRows {
   const runtimeOpts = opts ?? getTranscriptRuntimeOptions();
   const stream = getTranscriptStream(runtimeOpts);
-  writeTranscriptToolLeadIn(runtimeOpts);
+  const cols = terminalColumns();
+  // Measure before the lead-in, which bumps toolCount: only the step's first tool
+  // call sits directly under the preamble. For a parallel call after it, the text
+  // is separated by an earlier call and its result, so preserving it is hopeless.
+  const preamble = _step.toolCount === 0 ? _stepTextRows(cols) : 0;
+  let rows = writeTranscriptToolLeadIn(runtimeOpts);
   if (typeof step.rationale === "string") {
-    stream.write(formatRationaleLine(step.rationale) + "\n");
+    const rationaleLine = formatRationaleLine(step.rationale);
+    stream.write(rationaleLine + "\n");
+    rows += visualRows(rationaleLine, cols);
   }
   const callLine = step.parsedTools
     ? formatParsedToolCallLine(step.name, step.displayArgs)
     : formatToolCallLine(step.name, step.displayArgs);
   stream.write(callLine + "\n");
+  return { header: rows + visualRows(callLine, cols), preamble };
 }
 
 /**

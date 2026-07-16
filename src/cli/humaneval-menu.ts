@@ -6,9 +6,7 @@ import type { Interface } from 'readline';
 import chalk from 'chalk';
 import { getBannerColor } from './banner.js';
 import { VIEWPORT_SIZE, clampViewport, type MenuTab } from './list-menu.js';
-import {
-  setActiveModelFromString,
-} from './terminal-ui.js';
+import { setActiveModelFromString } from './footer-status.js';
 import { resetEvalWorkDir, startEvalScenario } from '../eval/runner.js';
 import { printEvalHeader, printEvalSummary } from './eval-screen.js';
 import { statusCircle } from './eval-dots.js';

@@ -26,7 +26,7 @@ vi.mock('../../src/cli/raw-picker.js', () => ({
   resetTerminalPrivateModes: vi.fn(),
 }));
 
-vi.mock('../../src/cli/terminal-ui.js', () => ({
+vi.mock('../../src/cli/bottom-ui.js', () => ({
   isBottomUIActive: vi.fn().mockReturnValue(false),
   setupBottomUI: vi.fn(),
   teardownBottomUI: vi.fn(),

@@ -14,33 +14,6 @@ import {
 } from './input-buffer.js';
 import { toolNameHighlightRanges, styleToolNames } from './tool-invocation.js';
 
-export {
-  setQuotaSnapshot,
-  setActiveModel,
-  setActiveModelFromString,
-  setOpenAIDailySpend,
-  setRetryBanner,
-  composeBottomRightStatus,
-  composeBottomStatusLine,
-} from './footer-status.js';
-export {
-  getInputBuffer,
-  getCursorPos,
-  setInputBuffer,
-  insertAtCursor,
-  backspaceAtCursor,
-  deleteAtCursor,
-  moveCursorLeft,
-  moveCursorRight,
-  moveCursorHome,
-  moveCursorEnd,
-  moveCursorUp,
-  moveCursorDown,
-  setCursorPos,
-  visualRowsForLine,
-  cursorToVisualPos,
-} from './input-buffer.js';
-
 const ESC = '\x1b[';
 
 let footerActive = false;

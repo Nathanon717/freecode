@@ -4,8 +4,8 @@ import type {
   ToolCallConfirmation,
   ToolCallPreview,
 } from "../agent/tools/index.js";
+import type { ToolCallHeaderRows } from "./transcript-renderer.js";
 import { UserAbortError } from "../util/errors.js";
-import { isBackspaceKey } from "../util/keyboard.js";
 import {
   getLastReservedRows,
   getRows,
@@ -14,10 +14,42 @@ import {
   setupBottomUI,
   setupInputUI,
   teardownBottomUI,
-} from "./terminal-ui.js";
+} from "./bottom-ui.js";
 import { runRawKeySession } from "./raw-picker.js";
 
 export type ToolApprovalChoice = "approve" | "deny";
+
+// Rows this module claims below a pending-approval preview: the two blank lines
+// confirmToolCallInteractive pads for clearance, plus the single hint row
+// drawToolApprovalHintAbsolute then draws. Keep in step with those two.
+const APPROVAL_MENU_ROWS = 3;
+
+// Preview rows to keep even when the preamble is too tall to fit alongside them.
+// A 1-line preview tells the user nothing, so past this point stop yielding ground
+// to the preamble and let it scroll instead.
+const MIN_PREVIEW_ROWS = 3;
+
+/**
+ * Rows a pending-approval preview may occupy and still leave the content above it
+ * on screen once this hint draws. The preview flows into the current scroll region
+ * directly under the header, so anything past this budget scrolls the header — and
+ * the call the user is approving — out of view; the caller truncates the preview
+ * instead. Returns null when no footer UI is active: those runs draw no hint and
+ * want the full preview.
+ *
+ * The header is non-negotiable, the preamble is best-effort: a preamble longer than
+ * the screen can never be held, and shrinking the preview to nothing chasing it
+ * helps no one.
+ */
+export function getApprovalPreviewRowBudget(
+  rowsAbove: ToolCallHeaderRows,
+): number | null {
+  if (!isFooterUIActive()) return null;
+  const scrollHeight = getRows() - getLastReservedRows();
+  const forHeader = scrollHeight - rowsAbove.header - APPROVAL_MENU_ROWS;
+  const forPreamble = forHeader - rowsAbove.preamble;
+  return Math.max(1, Math.min(forHeader, Math.max(MIN_PREVIEW_ROWS, forPreamble)));
+}
 
 export function askQuestion(rl: Interface, prompt: string): Promise<string> {
   return new Promise((resolve) => {
@@ -27,31 +59,22 @@ export function askQuestion(rl: Interface, prompt: string): Promise<string> {
   });
 }
 
-function drawToolApprovalMenu(selected: ToolApprovalChoice): void {
-  const approve =
-    selected === "approve" ? chalk.inverse("> Approve") : "  Approve";
-  const deny = selected === "deny" ? chalk.inverse("> Deny") : "  Deny";
-  process.stdout.write(`\r\x1b[2K${approve}\n\r\x1b[2K${deny}`);
+function formatToolApprovalHint(): string {
+  return chalk.dim("Enter to confirm · Esc to deny");
 }
 
-// Draws the tool menu options at absolute terminal rows, above the pinned footer.
-// approveRow = r - reserved - 1, denyRow = r - reserved. No header row here — the
-// tool call header is already flowed into the transcript just above; redrawing it
-// would only duplicate it.
-// Parks the cursor at the selected row so it doesn't drift into the footer.
-function drawToolApprovalMenuAbsolute(
-  selected: ToolApprovalChoice,
-  r: number,
-  reserved: number,
-): void {
-  const approve =
-    selected === "approve" ? chalk.inverse("> Approve") : "  Approve";
-  const deny = selected === "deny" ? chalk.inverse("> Deny") : "  Deny";
-  const cursorRow = selected === "approve" ? r - reserved - 1 : r - reserved;
+function drawToolApprovalHint(): void {
+  process.stdout.write(`\r\x1b[2K${formatToolApprovalHint()}`);
+}
+
+// Draws the hint at an absolute terminal row, above the pinned footer. No header
+// row here — the tool call header is already flowed into the transcript just
+// above; redrawing it would only duplicate it. Parks the cursor on the hint row
+// so it doesn't drift into the footer.
+function drawToolApprovalHintAbsolute(r: number, reserved: number): void {
+  const row = r - reserved;
   process.stdout.write(
-    `\x1b[${r - reserved - 1};1H\x1b[2K${approve}` +
-      `\x1b[${r - reserved};1H\x1b[2K${deny}` +
-      `\x1b[${cursorRow};1H`,
+    `\x1b[${row};1H\x1b[2K${formatToolApprovalHint()}` + `\x1b[${row};1H`,
   );
 }
 
@@ -88,119 +111,29 @@ async function readToolApprovalMenu(
     }
   }
 
-  let selected: ToolApprovalChoice = "approve";
-
-  const useAbsolute = isFooterUIActive();
-  if (useAbsolute) {
-    const r = getRows();
-    const reserved = getLastReservedRows();
-    drawToolApprovalMenuAbsolute(selected, r, reserved);
+  if (isFooterUIActive()) {
+    drawToolApprovalHintAbsolute(getRows(), getLastReservedRows());
   } else {
-    drawToolApprovalMenu(selected);
+    drawToolApprovalHint();
   }
 
   rl.pause();
 
-  function redraw() {
-    if (useAbsolute) {
-      drawToolApprovalMenuAbsolute(selected, getRows(), getLastReservedRows());
-    } else {
-      process.stdout.write("\r\x1b[1A");
-      drawToolApprovalMenu(selected);
-    }
-  }
-
+  // Enter confirms; Escape denies. Escape resolves null, which the caller turns
+  // into a UserAbortError so the turn unwinds and the user lands back at the
+  // input bar to say what they wanted instead. Every other key is ignored — there
+  // is no selection to move.
   const session = runRawKeySession<ToolApprovalChoice | null>({
     onKey(data) {
       if (data === "\r" || data === "\n") {
         process.stdout.write("\n");
-        session.close(selected);
+        session.close("approve");
         return;
       }
 
       if (data === "\x1b") {
         process.stdout.write("\n");
         session.close(null);
-        return;
-      }
-
-      if (data === "\x1b[B" || data === "j") {
-        selected = "deny";
-        redraw();
-        return;
-      }
-
-      if (data === "\x1b[A" || data === "k") {
-        selected = "approve";
-        redraw();
-        return;
-      }
-
-      if (data.toLowerCase() === "a") {
-        selected = "approve";
-        redraw();
-        return;
-      }
-
-      if (data.toLowerCase() === "d") {
-        selected = "deny";
-        redraw();
-      }
-    },
-    onCtrlC() {
-      process.stdin.pause();
-      process.exit(0);
-    },
-    onClose() {
-      process.stdin.pause();
-    },
-  });
-
-  return session.promise;
-}
-
-function askQuestionOrEscape(
-  rl: Interface,
-  prompt: string,
-): Promise<string | null> {
-  if (!process.stdin.isTTY) {
-    return new Promise<string | null>((resolve) => {
-      rl.resume();
-      rl.question(prompt, (answer) => resolve(answer.trim()));
-    });
-  }
-
-  process.stdout.write(prompt);
-  let buffer = "";
-
-  const session = runRawKeySession<string | null>({
-    onKey(data) {
-      if (data === "\r" || data === "\n") {
-        process.stdout.write("\n");
-        session.close(buffer);
-        return;
-      }
-
-      if (data === "\x1b") {
-        process.stdout.write("\n");
-        session.close(null);
-        return;
-      }
-
-      if (data.startsWith("\x1b[") || data.startsWith("\x1bO")) return;
-
-      if (isBackspaceKey(data)) {
-        if (buffer.length > 0) {
-          buffer = buffer.slice(0, -1);
-          process.stdout.write("\r\x1b[2K" + prompt + buffer);
-        }
-        return;
-      }
-
-      const printable = [...data].filter((c) => c >= " ").join("");
-      if (printable) {
-        buffer += printable;
-        process.stdout.write(printable);
       }
     },
     onCtrlC() {
@@ -222,41 +155,29 @@ export async function confirmToolCallInteractive(
   const restoreInputUI = isBottomUIActive();
   teardownBottomUI();
 
-  // The absolute-positioned menu below draws at 2 fixed rows near the bottom of the
-  // terminal (see drawToolApprovalMenuAbsolute). Those rows are only guaranteed to be
+  // The absolute-positioned hint below draws at a fixed row near the bottom of the
+  // terminal (see drawToolApprovalHintAbsolute). That row is only guaranteed to be
   // blank when nothing has been written since the header — but agent/tools/index.ts
   // flows a read-only content preview right after the header for some tools, and once
-  // the scroll region fills, that preview's tail lands exactly on the menu's fixed
-  // rows and gets silently overwritten. Pad blank lines to push it clear first
+  // the scroll region fills, that preview's tail lands exactly on the hint's fixed
+  // row and gets silently overwritten. Pad blank lines to push it clear first
   // (confirmed via a live PTY probe — this is not a hypothetical edge case).
   if (preview.previewedContent && isFooterUIActive()) {
     process.stdout.write("\n\n");
   }
 
   try {
-    while (true) {
-      const choice = await readToolApprovalMenu(rl);
-      if (choice === null) throw new UserAbortError();
-      if (choice === "approve") return { approved: true };
-
-      const message = await askQuestionOrEscape(
-        rl,
-        chalk.yellow("Tell the agent what to do instead: "),
-      );
-      if (message === null) throw new UserAbortError();
-
-      return { approved: false, message };
-    }
+    const choice = await readToolApprovalMenu(rl);
+    // Escape (TTY) resolves null: unwind the turn so the user is returned to the
+    // input bar to redirect the agent there, rather than through a bespoke prompt.
+    if (choice === null) throw new UserAbortError();
+    return { approved: choice === "approve" };
   } finally {
     rl.pause();
-    // Clear the 2 absolute rows (approve, deny) drawn by drawToolApprovalMenuAbsolute
-    // before any scroll that would move them out of reach.
+    // Clear the absolute hint row drawn by drawToolApprovalHintAbsolute before any
+    // scroll that would move it out of reach.
     if (isFooterUIActive()) {
-      const r = getRows();
-      const reserved = getLastReservedRows();
-      process.stdout.write(
-        `\x1b[${r - reserved - 1};1H\x1b[2K` + `\x1b[${r - reserved};1H\x1b[2K`,
-      );
+      process.stdout.write(`\x1b[${getRows() - getLastReservedRows()};1H\x1b[2K`);
     }
     if (restoreInputUI && process.stdin.isTTY) setupInputUI();
   }

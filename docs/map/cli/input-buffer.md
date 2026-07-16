@@ -44,7 +44,7 @@ cursorToVisualPos(buf: string, cursor: number, w: number): { visualRow: number; 
 - `getCursorPos()` — current cursor index within the flat buffer.
 - `setInputBuffer(input)` — replaces buffer and moves cursor to end.
 - `setCursorPos(pos)` — places the caret at a clamped absolute offset; used by tool-call tabstop navigation in `session-modes.ts`.
-- `visualRowsForLine` / `cursorToVisualPos` — used by `terminal-ui.ts` to convert buffer positions to screen coordinates.
+- `visualRowsForLine` / `cursorToVisualPos` — used by `bottom-ui.ts` to convert buffer positions to screen coordinates.
 
 ## Read when
 
@@ -52,5 +52,6 @@ Editing the interactive input area, cursor movement, or visual row/column calcul
 
 ## Key neighbors
 
-- `cli/terminal-ui.ts` — imports from here for rendering; re-exports everything for backwards-compat callers
+- `cli/bottom-ui.ts` — imports from here for rendering
+- `cli/session-modes.ts` — imports the buffer/cursor functions directly for key handling
 - `cli/session-modes.ts` — calls all cursor/buffer mutations in response to keystrokes

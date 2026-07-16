@@ -40,7 +40,7 @@ Format: filename (linecount)
   - [`create.ts`](agent/tools/create.md) (33) — create Tool
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
   - [`grep.ts`](agent/tools/grep.md) (122) — grep Tool
-  - [`index.ts`](agent/tools/index.md) (433) — Tool Registry
+  - [`index.ts`](agent/tools/index.md) (462) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (87) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
@@ -49,29 +49,30 @@ Format: filename (linecount)
 - `src/cli/`
   - [`action-menu.ts`](cli/action-menu.md) (53) — Inline Action Sub-menu
   - [`banner.ts`](cli/banner.md) (123) — Startup Banner
+  - [`bottom-ui.ts`](cli/bottom-ui.md) (473) — Bottom Terminal UI
   - [`command-dispatcher.ts`](cli/command-dispatcher.md) (243) — Command Dispatcher
   - [`custom-eval-menu.ts`](cli/custom-eval-menu.md) (363) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval-dots.md) (28) — Eval Status Circle Renderers
   - [`eval-menu.ts`](cli/eval-menu.md) (125) — Unified Eval Menu
   - [`eval-screen.ts`](cli/eval-screen.md) (164) — Eval Screen Renderers
   - [`footer-status.ts`](cli/footer-status.md) (209) — Footer Status State and Formatters
-  - [`humaneval-menu.ts`](cli/humaneval-menu.md) (324) — HumanEval Tab + Run Loop
+  - [`humaneval-menu.ts`](cli/humaneval-menu.md) (322) — HumanEval Tab + Run Loop
   - [`input-buffer.ts`](cli/input-buffer.md) (115) — Input Buffer State
   - [`list-menu.ts`](cli/list-menu.md) (367) — Shared Tabbed List Menu
   - [`markdown-renderer.ts`](cli/markdown-renderer.md) (445) — Markdown Renderer
   - [`menu-shell.ts`](cli/menu-shell.md) (47) — Menu Lifecycle Chrome
   - [`model-screen.ts`](cli/model-screen.md) (204) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/raw-picker.md) (240) — Shared Raw-Mode Picker
-  - [`session-modes.ts`](cli/session-modes.md) (455) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (459) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
-  - [`terminal-ui.ts`](cli/terminal-ui.md) (500) — Bottom Terminal UI
   - [`toggles.ts`](cli/toggles.md) (100) — Footer Toggle State
-  - [`tool-approval.ts`](cli/tool-approval.md) (311) — Tool Approval Prompts
+  - [`tool-approval.ts`](cli/tool-approval.md) (232) — Tool Approval Prompts
   - [`tool-invocation.ts`](cli/tool-invocation.md) (334) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
-  - [`transcript-renderer.ts`](cli/transcript-renderer.md) (462) — Agent Transcript Formatting
+  - [`transcript-options.ts`](cli/transcript-options.md) (66) — Transcript Stream + Options
+  - [`transcript-renderer.ts`](cli/transcript-renderer.md) (476) — Agent Transcript Formatting
 - `src/commands/`
   - [`config.ts`](commands/config.md) (345) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (298) — Interactive Model Picker
@@ -86,7 +87,7 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (99) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (79) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (203) — Eval Subprocess Runner
-- [`index.ts`](index.md) (175) — CLI Entry Point
+- [`index.ts`](index.md) (176) — CLI Entry Point
 - [`logger.ts`](logger.md) (53) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (120) — Adapter HTTP Retry/Backoff
@@ -132,6 +133,7 @@ Format: filename (linecount)
   - [`line-diff.ts`](util/line-diff.md) (39) — LCS Line Diff
   - [`screen-buffer.ts`](util/screen-buffer.md) (115) — Screen Buffer
   - [`text-encoding.ts`](util/text-encoding.md) (24) — Text Encoding Helpers
+  - [`wrap-rows.ts`](util/wrap-rows.md) (49) — Wrapped-Row Math
 <!-- END GENERATED MAP STRUCTURE -->
 
 ## Main Flow

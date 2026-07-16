@@ -21,7 +21,7 @@ import {
   setActiveModelFromString,
   setQuotaSnapshot,
   setRetryBanner,
-} from "./terminal-ui.js";
+} from "./footer-status.js";
 import { VIEWPORT_SIZE, clampViewport, type MenuTab } from "./list-menu.js";
 import {
   loadEvalConfig,

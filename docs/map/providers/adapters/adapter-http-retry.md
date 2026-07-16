@@ -39,7 +39,7 @@ Fetches with bounded exponential backoff on HTTP 429/503. Honors a `retry-after`
 
 During each wait, `RetryBannerInfo` (with the wait's target time) is pushed to the registered sink, then `null` is pushed when the wait ends. The adapter emits only target times; rendering belongs to the CLI:
 
-- TTY: `src/index.ts` registers `terminal-ui`'s `setRetryBanner`, drawn by the footer's 1s refresh.
+- TTY: `src/index.ts` registers `footer-status`'s `setRetryBanner`, drawn by the footer's 1s refresh.
 - Non-TTY: `src/index.ts` registers the default [stdout retry sink](../../cli/stdout-retry-sink.md).
 - Scripted with `FREECODE_RETRY_STATUS_FILE`: `src/index.ts` registers a writer that serializes the info to that file.
 

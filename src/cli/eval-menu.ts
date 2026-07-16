@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import { runMenuShell } from './menu-shell.js';
 import { runListMenu, type MenuTab } from './list-menu.js';
 import { countWrappedLines } from './raw-picker.js';
-import { drawFooter } from './terminal-ui.js';
+import { drawFooter } from './bottom-ui.js';
 import { redrawBanner } from './banner.js';
 import {
   CUSTOM_EVAL_DIR,

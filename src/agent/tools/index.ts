@@ -19,8 +19,11 @@ import {
   writeToolCallHeader,
   writeToolResultPreview,
   writeToolStepResult,
+  type ToolCallHeaderRows,
   type ToolStepResult,
+  type TranscriptRuntimeOptions,
 } from "../../cli/transcript-renderer.js";
+import { getApprovalPreviewRowBudget } from "../../cli/tool-approval.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyCoreTool = CoreTool<any, any>;
@@ -96,12 +99,13 @@ function withToolRendering(
       // preamble can't print after the call. No-op on non-streaming paths.
       await awaitToolRenderGate();
       const { rationale, ...displayArgs } = args;
-      writeToolCallHeader({
+      const rowsAbove = writeToolCallHeader({
         name,
         displayArgs,
         rationale: typeof rationale === "string" ? rationale : undefined,
         parsedTools,
       });
+      if (previewState) previewState.rowsAbove = rowsAbove;
 
       const editContextBefore: string[] = [];
       const editContextAfter: string[] = [];
@@ -216,6 +220,23 @@ const PRECOMPUTE_BEFORE_CONFIRM = new Set(["read", "grep", "list_dir"]);
 
 interface PreviewState {
   suppressed: boolean;
+  /** Heights of the header (and the preamble above it) withToolRendering just wrote. */
+  rowsAbove: ToolCallHeaderRows;
+}
+
+/**
+ * Cap the pending-approval preview to the rows left between the approval hint and
+ * the content above it, so the call the user is approving — and the model's
+ * preamble explaining it — stay on screen instead of scrolling off behind a long
+ * result. The overflow is only dropped from the transcript; the model still
+ * receives the full result.
+ */
+function withApprovalRowBudget(
+  opts: TranscriptRuntimeOptions,
+  rowsAbove: ToolCallHeaderRows,
+): TranscriptRuntimeOptions {
+  const maxResultRows = getApprovalPreviewRowBudget(rowsAbove);
+  return maxResultRows === null ? opts : { ...opts, maxResultRows };
 }
 
 function withConfirmation(
@@ -241,19 +262,24 @@ function withConfirmation(
       let hasPrecomputed = false;
       let previewedContent = false;
 
+      const previewOpts = withApprovalRowBudget(
+        getTranscriptRuntimeOptions(),
+        previewState?.rowsAbove ?? { header: 0, preamble: 0 },
+      );
+
       if (PRECOMPUTE_BEFORE_CONFIRM.has(name)) {
         precomputedResult = await original(args, opts);
         hasPrecomputed = true;
         previewedContent = writeToolResultPreview(
           name,
           { kind: "text", result: precomputedResult },
-          getTranscriptRuntimeOptions(),
+          previewOpts,
         );
       } else if (name === "create" && typeof args.content === "string") {
         previewedContent = writeToolResultPreview(
           name,
           { kind: "create-content", content: args.content },
-          getTranscriptRuntimeOptions(),
+          previewOpts,
         );
       }
 
@@ -346,7 +372,10 @@ function wrap(
   confirmToolCall?: ConfirmToolCall,
   parsedTools = false,
 ): AnyCoreTool {
-  const previewState: PreviewState = { suppressed: false };
+  const previewState: PreviewState = {
+    suppressed: false,
+    rowsAbove: { header: 0, preamble: 0 },
+  };
   return withSerializedExecution(
     withToolRendering(
       name,

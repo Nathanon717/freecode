@@ -45,6 +45,7 @@ The footer has no token-count slot as of the tokenizer-engine work (`docs/plans/
 
 ## Key neighbors
 
-- `cli/terminal-ui.ts` — imports `layoutFooterRightRows` and `formatEvalRunStatus` for `composeFooterOutput`; re-exports everything for backwards-compat callers
+- `cli/bottom-ui.ts` — imports `layoutFooterRightRows` and `formatEvalRunStatus` for `composeFooterOutput`
+- `cli/session-modes.ts`, `cli/custom-eval-menu.ts`, `cli/humaneval-menu.ts`, `index.ts` — import the status setters directly
 - `providers/openai-daily-spend.ts` — imports `OpenAIDailySpend` type
 - `providers/quota/headers.ts` — imports `RateLimitSnapshot` type

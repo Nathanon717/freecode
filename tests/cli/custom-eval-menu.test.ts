@@ -48,7 +48,9 @@ vi.mock('../../src/cli/eval-screen.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../../src/cli/terminal-ui.js', () => ({
+vi.mock('../../src/cli/footer-status.js', async (importOriginal) => ({
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+  ...(await importOriginal<typeof import('../../src/cli/footer-status.js')>()),
   setActiveModel: vi.fn(),
   setActiveModelFromString: vi.fn(),
   setQuotaSnapshot: vi.fn(),

@@ -1,5 +1,5 @@
 import type { Interface } from 'readline';
-import { isBottomUIActive, setupBottomUI, teardownBottomUI } from './terminal-ui.js';
+import { isBottomUIActive, setupBottomUI, teardownBottomUI } from './bottom-ui.js';
 import { resetStdinConsoleMode, resetTerminalPrivateModes } from './raw-picker.js';
 
 export interface MenuShellOptions<T> {

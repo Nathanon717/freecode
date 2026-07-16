@@ -29,7 +29,7 @@ redrawBanner(): void
 - `getBannerColor`: returns a chalk instance for the current banner pastel color.
 - `getBannerColorRGB`: returns the `[r, g, b]` tuple; used by `toggles.ts` for bg rendering.
 - `redrawBanner`: clears terminal (including scrollback) and redraws banner without advancing the color.
-- `clearAndRedrawBanner`: like `redrawBanner` but preserves scrollback (`\x1b[2J` not `\x1b[3J`); used by the resize handler in `terminal-ui.ts`.
+- `clearAndRedrawBanner`: like `redrawBanner` but preserves scrollback (`\x1b[2J` not `\x1b[3J`); used by the resize handler in `bottom-ui.ts`.
 
 ## Color State
 

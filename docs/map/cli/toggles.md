@@ -1,6 +1,6 @@
 # src/cli/toggles.ts - Footer Toggle State
 
-**Role:** Holds runtime state for the footer toggle bar — Show toggle names (label visibility), Auto-run tools (tool-confirmation), and Read-only mode — and exposes getters, cyclers, and the renderer used by `terminal-ui.ts`.
+**Role:** Holds runtime state for the footer toggle bar — Show toggle names (label visibility), Auto-run tools (tool-confirmation), and Read-only mode — and exposes getters, cyclers, and the renderer used by `bottom-ui.ts`.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -38,6 +38,6 @@ Add an entry to `ALL_TOGGLES` with a unique `char` and a `states` array (`{ labe
 
 ## Key neighbors
 
-- `cli/terminal-ui.ts` — imports `composeToggleBar` / `toggleBarWidth` to draw the secondary footer row
+- `cli/bottom-ui.ts` — imports `composeToggleBar` / `toggleBarWidth` to draw the secondary footer row
 - `cli/session-modes.ts` — imports `cycleByChar`, `getAskMode`, `initAskMode`, `isReadOnly`
 - `cli/session-runner.ts` → `cli/command-dispatcher.ts` → `agent/loop.ts` — `isReadOnly` threads through as `readOnly` in `AgentLoopOptions` to filter tools at creation time

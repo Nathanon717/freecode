@@ -32,4 +32,4 @@ runEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string)
 - `cli/custom-eval-menu.ts` — `buildCustomEvalTab` + `runEvalScenarios` (Custom tab + run loop).
 - `cli/humaneval-menu.ts` — `buildHumanEvalTab` + `runHumanEvalProblems` (HumanEval tab + run loop).
 - `eval/humaneval-data.ts` — `humanEvalDatasetPath` + `loadHumanEvalProblems` (HumanEval dataset helpers).
-- `cli/terminal-ui.ts` — `drawFooter` (redrawn after the full-screen clear at menu→run boundary).
+- `cli/bottom-ui.ts` — `drawFooter` (redrawn after the full-screen clear at menu→run boundary).

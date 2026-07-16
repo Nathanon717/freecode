@@ -8,19 +8,18 @@
 ```typescript
 export type { DiffEntry } from "../util/line-diff.js"
 
-type TranscriptStreamName = "stdout" | "stderr" | "null";
+export {
+  DEFAULT_TRANSCRIPT_MAX_RESULT_LINES,
+  TRANSCRIPT_DIVIDER_WIDTH,
+  getTranscriptRuntimeOptions,
+  getTranscriptStream,
+} from "./transcript-options.js"
 
-interface TranscriptRenderOptions {
-  maxResultLines?: number;
-}
-
-interface TranscriptRuntimeOptions extends TranscriptRenderOptions {
-  stream: TranscriptStreamName;
-}
-
-DEFAULT_TRANSCRIPT_MAX_RESULT_LINES: 30
-
-TRANSCRIPT_DIVIDER_WIDTH: 60
+export type {
+  TranscriptStreamName,
+  TranscriptRenderOptions,
+  TranscriptRuntimeOptions,
+} from "./transcript-options.js"
 
 formatArgs(args: Record<string, unknown>): string
 
@@ -46,13 +45,9 @@ beginTranscriptTurn(options?: TranscriptRuntimeOptions): void
 
 notifyTranscriptChunk(chunk: string): void
 
-writeTranscriptToolLeadIn(options?: TranscriptRuntimeOptions): void
+writeTranscriptToolLeadIn(options?: TranscriptRuntimeOptions): number
 
 endTranscriptStep(hasMore: boolean, options?: TranscriptRuntimeOptions): void
-
-getTranscriptRuntimeOptions(env?: ProcessEnv): TranscriptRuntimeOptions
-
-getTranscriptStream(options?: TranscriptRuntimeOptions): WritableStream
 
 type ToolStepResult =
   | { kind: "text"; result: unknown }
@@ -77,12 +72,19 @@ interface ToolStep {
   result: ToolStepResult;
 }
 
+interface ToolCallHeaderRows {
+  /** The header itself: lead-in blanks + optional rationale + the call line. */
+  header: number;
+  /** The model's response text directly above the header; 0 when it isn't adjacent. */
+  preamble: number;
+}
+
 interface RenderedStep {
   text?: string;
   tools?: ToolStep[];
 }
 
-writeToolCallHeader(step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "parsedTools">, opts?: TranscriptRuntimeOptions | undefined): void
+writeToolCallHeader(step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "parsedTools">, opts?: TranscriptRuntimeOptions | undefined): ToolCallHeaderRows
 
 writeToolResultPreview(name: string, result: { kind: "text"; result: unknown; } | { kind: "create-content"; content: string; } | { kind: "edit-diff"; path: string; oldText: string; newText: string; contextBefore: string[]; contextAfter: string[]; lineIndent: string; }, opts?: TranscriptRuntimeOptions | undefined): boolean
 
@@ -102,6 +104,9 @@ renderTurn(steps: RenderedStep[], opts?: TranscriptRuntimeOptions | undefined): 
 - `formatTranscriptStepDivider(options?)` — returns one raw divider line (no newlines); uses the target stream's column width when `options` is provided.
 - `writeStepSeparator(options?)` — single authority for divider spacing: writes two full-width divider lines with NO blank line above or below, so content abuts the separator on both sides. Every divider-emitting site (`beginTranscriptTurn` deferred flush, `endTranscriptStep` close) routes through it.
 - Higher-level API (`writeToolCallHeader`, `writeToolStepResult`, `renderToolStep`, `renderTurn`) — sit on top of the format helpers and state machine so that both the live agent path (`tools/index.ts withToolRendering`) and the `/renderer` demo (`commands/renderer.ts`) share one implementation. `writeToolCallHeader` is called BEFORE tool execution; `writeToolStepResult` is called AFTER.
+- `writeToolCallHeader` returns `ToolCallHeaderRows` (wrap included) rather than `void`, and `writeTranscriptToolLeadIn` returns its own rows. Only the approval path reads them — it budgets the preview that follows against the real height of what sits above it, which a constant cannot express because the call line, the rationale and the preamble can all wrap. `preamble` is measured before the lead-in bumps `toolCount`, and is 0 for any parallel call after the step's first: only that first call sits directly under the response text.
+- `TranscriptRenderOptions.maxResultRows` — caps the preview at N terminal rows counting wrap, on top of `maxResultLines`; see [transcript-options.md](transcript-options.md) for the type and [tool-approval.md](tool-approval.md) for who sets it. Applies to `formatToolResultPreview` only — the `edit-diff` branch never previews before confirmation, so `formatEditFileDiff` has no row cap.
+- Stream routing and the options types live in [transcript-options.md](transcript-options.md) and are re-exported here; keep importing them from this module.
 
 ## Desired Turn Layout
 
@@ -125,7 +130,7 @@ tool_call(args)  ───
 The module maintains a single `_step` state object. All callers drive it with these functions:
 
 - `beginTranscriptTurn(opts?)` — open a turn; flushes the deferred separator from the previous turn (via `writeStepSeparator`) if one is pending. Idempotent (no-op if already open).
-- `notifyTranscriptChunk(chunk)` — call each time a chunk of model response text is written to stdout; updates `hasText` / `textEndsWithNewline`.
+- `notifyTranscriptChunk(chunk)` — call each time a chunk of model response text is written to stdout; updates `hasText` / `textEndsWithNewline` and accumulates `text`, which exists so the step's preamble height is measurable at header time.
 - `writeTranscriptToolLeadIn(opts?)` — call from `withToolRendering` in `tools/index.ts` immediately before writing the tool call line. Inserts the correct blank-line separator (blank after response text, blank between parallel tool calls).
 - `endTranscriptStep(hasMore, opts?)` — close the current step. `hasMore=true` writes the combined close+open separator (via `writeStepSeparator`) for the next step; `hasMore=false` defers the closing separator (`_pendingDivider`) so it is only emitted if a next turn begins. No-op when no turn is open.
 
@@ -137,6 +142,6 @@ The module maintains a single `_step` state object. All callers drive it with th
 
 ## Runtime Options
 
-`FREECODE_TRANSCRIPT_STREAM=stdout` moves transcript output (tool logs, dividers) to stdout; the default is stderr. `FREECODE_TRANSCRIPT_MAX_RESULT_LINES` controls preview truncation, defaulting to 30 lines and accepting `all` for unbounded previews.
+`FREECODE_TRANSCRIPT_STREAM=stdout` moves transcript output (tool logs, dividers) to stdout; the default is stderr. `FREECODE_TRANSCRIPT_MAX_RESULT_LINES` controls preview truncation, defaulting to 30 lines and accepting `all` for unbounded previews. Neither raises the interactive `maxResultRows` cap: on a short terminal a pending-approval preview is trimmed further regardless, since the alternative is scrolling away the call the user is approving.
 
 `FREECODE_TRACE_JSON` only controls machine-readable trace capture and should not be used to change visible transcript formatting.

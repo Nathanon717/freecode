@@ -1,39 +1,11 @@
-# src/cli/terminal-ui.ts - Bottom Terminal UI
+# src/cli/bottom-ui.ts - Bottom Terminal UI
 
-**Role:** Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and input-area overlay logic; status state lives in `footer-status.ts` and buffer/cursor state lives in `input-buffer.ts`. Re-exports everything from those modules for backwards-compat callers.
+**Role:** Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and input-area overlay logic; status state lives in `footer-status.ts` and buffer/cursor state lives in `input-buffer.ts`. Import those directly — this module does not re-export them.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-export {
-  setQuotaSnapshot,
-  setActiveModel,
-  setActiveModelFromString,
-  setOpenAIDailySpend,
-  setRetryBanner,
-  composeBottomRightStatus,
-  composeBottomStatusLine,
-} from './footer-status.js'
-
-export {
-  getInputBuffer,
-  getCursorPos,
-  setInputBuffer,
-  insertAtCursor,
-  backspaceAtCursor,
-  deleteAtCursor,
-  moveCursorLeft,
-  moveCursorRight,
-  moveCursorHome,
-  moveCursorEnd,
-  moveCursorUp,
-  moveCursorDown,
-  setCursorPos,
-  visualRowsForLine,
-  cursorToVisualPos,
-} from './input-buffer.js'
-
 isBottomUIActive(): boolean
 
 isFooterUIActive(): boolean

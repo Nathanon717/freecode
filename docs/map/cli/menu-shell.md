@@ -41,4 +41,4 @@ Does **not** own: the picker render/key loop (see `raw-picker.ts` / `list-menu.t
 
 - `cli/raw-picker.ts` — provides the raw-mode reset helpers and the picker the body runs.
 - `cli/custom-eval-menu.ts`, `cli/humaneval-menu.ts` — current adopters.
-- `cli/terminal-ui.ts` — `isBottomUIActive` / `teardownBottomUI` / `setupBottomUI`.
+- `cli/bottom-ui.ts` — `isBottomUIActive` / `teardownBottomUI` / `setupBottomUI`.

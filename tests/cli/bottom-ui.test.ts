@@ -12,7 +12,6 @@ import {
   composeFooterOutput,
   drawFooter,
   drawBottomUI,
-  setActiveModelFromString,
   setupFooterUI,
   setupInputUI,
   setupBottomUI,
@@ -21,8 +20,9 @@ import {
   resetSubmittedInputArea,
   parkCursorInScrollRegion,
   parkCursorAboveBottomUI,
-  setInputBuffer,
-} from '../../src/cli/terminal-ui.js';
+} from '../../src/cli/bottom-ui.js';
+import { setActiveModelFromString } from '../../src/cli/footer-status.js';
+import { setInputBuffer } from '../../src/cli/input-buffer.js';
 
 let writeSpy: MockInstance;
 

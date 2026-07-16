@@ -14,13 +14,13 @@
         "screenContains": ["> List docs/scripts"]
       },
       {
-        "name": "submit - tool call preview renders before the approve/deny menu",
+        "name": "submit - tool call preview renders above the confirm hint",
         "send": "\r",
         "waitFor": "test-all-models.md",
-        "screenContains": ["list_dir", "test-all-models.md", "time.md", "Approve", "Deny"]
+        "screenContains": ["list_dir", "test-all-models.md", "time.md", "Enter to confirm · Esc to deny"]
       },
       {
-        "name": "approve - default selection confirms",
+        "name": "approve - Enter confirms",
         "send": "\r",
         "waitFor": "Done listing.",
         "screenContains": ["Done listing."]
