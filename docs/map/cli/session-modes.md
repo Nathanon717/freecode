@@ -8,7 +8,7 @@
 ```typescript
 createInteractiveMode(rl: Interface, projectRoot: string, getSelectedModel: () => string, setSelectedModel: (model: string) => void): CliSessionMode
 
-createScriptedMode(scriptPath: string, projectRoot: string, rl: Interface): CliSessionMode
+createScriptedMode(scriptPath: string): CliSessionMode
 ```
 <!-- END GENERATED EXPORTS -->
 
@@ -23,7 +23,7 @@ createScriptedMode(scriptPath: string, projectRoot: string, rl: Interface): CliS
 - Refreshes cached OpenAI daily spend snapshots for the footer when the bottom UI is active and the selected model is OpenAI.
 - Tears down the bottom UI during command dispatch, agent output, and tool approval prompts. The config editor and model picker manage their own teardown/restore via `cli/menu-shell.ts`; the dispatcher's `runConfig`/`runModelMenu` are now thin calls that pass an `onRestore` closure (session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`) into `runConfigCommand`/`runModelCommand` for the shell to fire after `setupBottomUI`.
 - `/model` without an argument opens `runModelCommand()` so interactive users can pick from configured provider models and detected Ollama models.
-- Tool approval uses a two-item Approve/Deny menu; denial can include user feedback to the agent. The Auto-run tools toggle (`getAskMode()` from `cli/toggles.ts`) controls whether approval is required at runtime; the initial state is seeded from `config.toolConfirmation`. The approval prompts, the tool-call-limit prompt, and the scripted-choice parser live in `cli/tool-approval.ts`; both modes import them.
+- Tool approval uses a two-item Approve/Deny menu; denial can include user feedback to the agent. The Auto-run tools toggle (`getAskMode()` from `cli/toggles.ts`) controls whether approval is required at runtime; the initial state is seeded from `config.toolConfirmation`. The approval prompts and the scripted-choice parser live in `cli/tool-approval.ts`; both modes import them. Interactive mode has no per-turn tool-call cap (the agent loop's `maxSteps` bounds each turn); scripted mode enforces a hard `FREECODE_MAX_TOOL_CALLS` budget by silently denying every call past the cap.
 - The Read-only toggle (`isReadOnly()` from `cli/toggles.ts`) is passed as `getReadOnly` on the mode object. When on, only `read`, `grep`, and `list_dir` are offered to the model (write/edit/shell are omitted from `createTools`).
 
 ## Scripted Mode
@@ -32,4 +32,5 @@ createScriptedMode(scriptPath: string, projectRoot: string, rl: Interface): CliS
 - Tool approval consumes the next line only if it is `y/yes/approve/a` or `n/no/deny/d`.
 - If a denial has a following line, that line is treated as the user's instruction after denial.
 - `/eval` prints the scenario list instead of opening the interactive menu.
+- Under `FREECODE_AUTO_CONFIRM=1` (eval subprocesses) every call is auto-approved until `FREECODE_MAX_TOOL_CALLS` is exceeded, after which calls are silently denied — a hard budget for unattended runs, no prompt (scripted stdin is closed).
 - On EOF, prints `Goodbye!`.

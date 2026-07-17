@@ -126,10 +126,6 @@ vi.mock('../../src/cli/tool-approval.js', async (importOriginal) => {
     // Real: used by scripted-mode tests.
     parseScriptedToolChoice: mod.parseScriptedToolChoice,
     formatScriptedToolMenu: mod.formatScriptedToolMenu,
-    // Spy wrapping real: scripted-mode limit tests exercise rl.question through this.
-    askContinueAfterLimit: vi.fn((rl: Interface, count: number) =>
-      mod.askContinueAfterLimit(rl, count),
-    ),
     // Stub: non-TTY readInput path; tests set per-test values.
     askQuestion: vi.fn(() => Promise.resolve('mocked-answer')),
     // Stub: interactive confirmation; tests control approval decisions.
@@ -157,7 +153,7 @@ import { loadCachedQuota, saveQuotaToCache } from '../../src/providers/quota/cac
 import { runConfigCommand } from '../../src/commands/config.js';
 import { runModelCommand } from '../../src/commands/model.js';
 import { runEvalMenu as evalMenuFn } from '../../src/cli/eval-menu.js';
-import { askQuestion, confirmToolCallInteractive, askContinueAfterLimit } from '../../src/cli/tool-approval.js';
+import { askQuestion, confirmToolCallInteractive } from '../../src/cli/tool-approval.js';
 import { isReadOnly, getAskMode, cycleByChar } from '../../src/cli/toggles.js';
 import { getCommandCompletion, getFilteredCommands } from '../../src/cli/slash-commands.js';
 import { runRawKeySession } from '../../src/cli/raw-picker.js';
@@ -206,7 +202,7 @@ describe('createScriptedMode', () => {
   }
 
   it('reads non-empty lines in order then returns null when exhausted', async () => {
-    const mode = createScriptedMode(writeScript(['hello', '', 'world']), dir, makeRl());
+    const mode = createScriptedMode(writeScript(['hello', '', 'world']));
     expect(await mode.readInput()).toBe('hello');
     expect(await mode.readInput()).toBe('world');
     expect(await mode.readInput()).toBeNull();
@@ -214,18 +210,18 @@ describe('createScriptedMode', () => {
 
   it('decodes a JSON-encoded line as a single multiline message', async () => {
     const multiline = 'line one\nline two\nline three';
-    const mode = createScriptedMode(writeScript([JSON.stringify(multiline)]), dir, makeRl());
+    const mode = createScriptedMode(writeScript([JSON.stringify(multiline)]));
     expect(await mode.readInput()).toBe(multiline);
     expect(await mode.readInput()).toBeNull();
   });
 
   it('approves a tool call when the next scripted line approves', async () => {
-    const mode = createScriptedMode(writeScript(['approve']), dir, makeRl());
+    const mode = createScriptedMode(writeScript(['approve']));
     expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
   });
 
   it('denies and forwards the feedback message when the script denies', async () => {
-    const mode = createScriptedMode(writeScript(['deny', 'do it differently']), dir, makeRl());
+    const mode = createScriptedMode(writeScript(['deny', 'do it differently']));
     expect(await mode.confirmToolCall({ name: 'create', args: {} })).toEqual({
       approved: false,
       message: 'do it differently',
@@ -233,7 +229,7 @@ describe('createScriptedMode', () => {
   });
 
   it('defaults to denial when no scripted choice follows', async () => {
-    const mode = createScriptedMode(writeScript([]), dir, makeRl());
+    const mode = createScriptedMode(writeScript([]));
     expect(await mode.confirmToolCall({ name: 'shell_exec', args: {} })).toEqual({ approved: false });
   });
 
@@ -245,62 +241,51 @@ describe('createScriptedMode', () => {
     ['no', false],
     ['d', false],
   ])('parses scripted choice alias %s', async (alias, approved) => {
-    const mode = createScriptedMode(writeScript([alias]), dir, makeRl());
+    const mode = createScriptedMode(writeScript([alias]));
     const result = await mode.confirmToolCall({ name: 'grep', args: {} });
     expect(result.approved).toBe(approved);
   });
 
   it('auto-approves every call when FREECODE_AUTO_CONFIRM=1', async () => {
     process.env['FREECODE_AUTO_CONFIRM'] = '1';
-    const mode = createScriptedMode(writeScript([]), dir, makeRl());
+    const mode = createScriptedMode(writeScript([]));
     expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
     expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
   });
 
-  it('stops auto-approving when the user declines at the tool-call limit', async () => {
+  it('denies silently once past the tool-call limit', async () => {
     process.env['FREECODE_AUTO_CONFIRM'] = '1';
     process.env['FREECODE_MAX_TOOL_CALLS'] = '2';
-    const rl = makeRl('n'); // decline the "continue?" prompt
-    const mode = createScriptedMode(writeScript([]), dir, rl);
+    const mode = createScriptedMode(writeScript([]));
 
     expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
-    const second = await mode.confirmToolCall({ name: 'read', args: {} });
-    expect(second.approved).toBe(false);
-    expect(second.message).toContain('limit of 2');
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(rl.question).toHaveBeenCalled();
-  });
-
-  it('continues auto-approving when the user accepts at the tool-call limit', async () => {
-    process.env['FREECODE_AUTO_CONFIRM'] = '1';
-    process.env['FREECODE_MAX_TOOL_CALLS'] = '2';
-    const mode = createScriptedMode(writeScript([]), dir, makeRl('')); // empty answer = continue
-
-    await mode.confirmToolCall({ name: 'read', args: {} });
     expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
+    const third = await mode.confirmToolCall({ name: 'read', args: {} });
+    expect(third.approved).toBe(false);
+    expect(third.message).toContain('limit of 2');
   });
 
   it('exposes current-only model listing and skips stray confirmations', () => {
-    const mode = createScriptedMode(writeScript([]), dir, makeRl());
+    const mode = createScriptedMode(writeScript([]));
     expect(mode.modelListMode).toBe('current-only');
     expect(mode.skipStrayConfirmations).toBe(true);
   });
 
   it('runEvalMenu prints that /eval is not available in scripted mode', async () => {
-    const mode = createScriptedMode(writeScript([]), dir, makeRl());
+    const mode = createScriptedMode(writeScript([]));
     await mode.runEvalMenu?.();
     expect(logSpy.mock.calls.flat().join(' ')).toContain('/eval is not available');
   });
 
   it('announces goodbye when input is exhausted', async () => {
-    const mode = createScriptedMode(writeScript([]), dir, makeRl());
+    const mode = createScriptedMode(writeScript([]));
     await mode.onInputExhausted?.();
     expect(logSpy.mock.calls.flat().join(' ')).toContain('Goodbye');
   });
 
   it('skips the Goodbye message when FREECODE_AUTO_CONFIRM=1', async () => {
     process.env['FREECODE_AUTO_CONFIRM'] = '1';
-    const mode = createScriptedMode(writeScript([]), dir, makeRl());
+    const mode = createScriptedMode(writeScript([]));
     await mode.onInputExhausted?.();
     expect(logSpy).not.toHaveBeenCalled();
   });
@@ -461,24 +446,12 @@ describe('createInteractiveMode — detailed', () => {
       },
     );
 
-    it('calls askContinueAfterLimit on the 10th tool call', async () => {
-      vi.mocked(askContinueAfterLimit).mockResolvedValueOnce(true);
+    it('auto-approves without any tool-call limit prompt', async () => {
       const { mode } = makeMode();
-      for (let i = 0; i < 9; i++) {
-        await mode.confirmToolCall({ name: 'read', args: {} });
+      for (let i = 0; i < 25; i++) {
+        const result = await mode.confirmToolCall({ name: 'read', args: {} });
+        expect(result.approved).toBe(true);
       }
-      await mode.confirmToolCall({ name: 'read', args: {} });
-      expect(askContinueAfterLimit).toHaveBeenCalledOnce();
-    });
-
-    it('returns denied when the user declines at the tool-call limit', async () => {
-      vi.mocked(askContinueAfterLimit).mockResolvedValueOnce(false);
-      const { mode } = makeMode();
-      for (let i = 0; i < 9; i++) {
-        await mode.confirmToolCall({ name: 'read', args: {} });
-      }
-      const result = await mode.confirmToolCall({ name: 'read', args: {} });
-      expect(result).toEqual({ approved: false, message: 'Stopped by user after tool call limit.' });
     });
   });
 

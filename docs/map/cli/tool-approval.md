@@ -17,8 +17,6 @@ confirmToolCallInteractive(rl: Interface, preview: ToolCallPreview): Promise<Too
 formatScriptedToolMenu(choice: ToolApprovalChoice): void
 
 parseScriptedToolChoice(input: string | undefined): ToolApprovalChoice | null
-
-askContinueAfterLimit(rl: Interface, count: number): Promise<boolean>
 ```
 <!-- END GENERATED EXPORTS -->
 
@@ -26,7 +24,7 @@ askContinueAfterLimit(rl: Interface, count: number): Promise<boolean>
 
 - `getApprovalPreviewRowBudget(rowsAbove)` — how many terminal rows a pending-approval preview may occupy and still leave the content above it on screen; `null` when no footer UI is active (no hint is drawn, so the preview is unbounded). Lives here because the budget is this module's own geometry: `scrollHeight - header - APPROVAL_MENU_ROWS`, where that constant is the 2-line clearance pad plus the 1 hint row below. **Change the hint's shape and this constant must follow** — nothing checks them against each other, and a wrong value clips the header with no test failure. Called from `agent/tools/index.ts` at preview-write time: by the time `confirmToolCallInteractive` runs, the preview is already on the terminal and it is too late to trim. The header is treated as non-negotiable and `preamble` as best-effort — a preamble taller than the screen can never be held, so the budget stops yielding at `MIN_PREVIEW_ROWS` rather than starve the preview chasing it.
 - `confirmToolCallInteractive` — Enter confirms; Escape throws `UserAbortError`, unwinding the turn so the user is returned to the input bar to redirect the agent there. There is deliberately no denial-feedback prompt and no selection to move: every other key is ignored. The absolute-positioned hint (`drawToolApprovalHintAbsolute`) draws no header row — the tool call header is already flowed into the transcript by `agent/tools/index.ts` just above. When `preview.previewedContent` is true (a read-only tool preview was also flowed there) and the hint is absolute-positioned (`isFooterUIActive()`), pads 2 blank lines before drawing — otherwise the hint's fixed bottom row can silently overwrite the tail of that preview once the scroll region fills. See the `Wrapper Stack` section of `agent/tools/index.md` for the full mechanism.
-- `parseScriptedToolChoice` — accepts `y/yes/approve/a` (approve) or `n/no/deny/d` (deny); returns `null` for anything else. Scripted mode keeps its own deny-with-message flow (`ToolCallConfirmation.message`), which the interactive UI no longer offers; the field is still used by the tool-call-limit and read-only denials in `cli/session-modes.ts`.
+- `parseScriptedToolChoice` — accepts `y/yes/approve/a` (approve) or `n/no/deny/d` (deny); returns `null` for anything else. Scripted mode keeps its own deny-with-message flow (`ToolCallConfirmation.message`), which the interactive UI no longer offers; the field is still used by the read-only and scripted tool-call-cap denials in `cli/session-modes.ts`.
 
 ## Responsibilities
 

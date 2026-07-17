@@ -55,7 +55,6 @@ import { refreshOpenAIDailySpend } from "../providers/openai-daily-spend.js";
 import { loadCachedQuota, saveQuotaToCache } from "../providers/quota/cache.js";
 import { cycleByChar, getAskMode, initAskMode, isReadOnly } from "./toggles.js";
 import {
-  askContinueAfterLimit,
   askQuestion,
   confirmToolCallInteractive,
   formatScriptedToolMenu,
@@ -261,8 +260,6 @@ async function readLineWithAutocomplete(
   return rawSession.promise;
 }
 
-const TOOL_CALL_LIMIT = 10;
-
 export function createInteractiveMode(
   rl: Interface,
   projectRoot: string,
@@ -272,22 +269,12 @@ export function createInteractiveMode(
   applyModelStatus(getSelectedModel());
   const config = loadConfig();
   initAskMode(config.toolConfirmation);
-  let toolCallsThisTurn = 0;
 
   const READ_ONLY_TOOLS = new Set(["create", "edit", "shell_exec"]);
 
   async function confirmToolCall(
     preview: ToolCallPreview,
   ): Promise<ToolCallConfirmation> {
-    toolCallsThisTurn++;
-    if (toolCallsThisTurn % TOOL_CALL_LIMIT === 0) {
-      const shouldContinue = await askContinueAfterLimit(rl, toolCallsThisTurn);
-      if (!shouldContinue)
-        return {
-          approved: false,
-          message: "Stopped by user after tool call limit.",
-        };
-    }
     // Mid-turn read-only enforcement: deny write tools if Read was toggled on since this turn started.
     if (isReadOnly() && READ_ONLY_TOOLS.has(preview.name)) {
       console.log(chalk.dim(`Read-only mode: denied ${preview.name}`));
@@ -309,7 +296,6 @@ export function createInteractiveMode(
     getReadOnly: isReadOnly,
     modelListMode: "full",
     beforeAgentCall: () => {
-      toolCallsThisTurn = 0;
       if (process.stdin.isTTY) teardownBottomUI();
       resetBottomPromptState();
     },
@@ -369,11 +355,7 @@ export function createInteractiveMode(
   };
 }
 
-export function createScriptedMode(
-  scriptPath: string,
-  projectRoot: string,
-  rl: Interface,
-): CliSessionMode {
+export function createScriptedMode(scriptPath: string): CliSessionMode {
   const lines = readFileSync(scriptPath, "utf-8")
     .split("\n")
     .map((line) => line.trimEnd())
@@ -401,19 +383,22 @@ export function createScriptedMode(
       const line = lines[lineIdx++];
       return Promise.resolve(line);
     },
-    confirmToolCall: async (_preview) => {
+    // Not `async` (the body has nothing to await, which require-await forbids);
+    // returns the confirmation wrapped in a resolved Promise instead.
+    confirmToolCall: (_preview): Promise<ToolCallConfirmation> => {
       if (autoConfirm) {
         autoCallCount++;
-        if (autoCallCount % maxToolCalls === 0) {
-          const shouldContinue = await askContinueAfterLimit(rl, autoCallCount);
-          if (!shouldContinue)
-            return {
-              approved: false,
-              message: `Stopped after tool call limit of ${maxToolCalls}.`,
-            };
+        // Hard cap for unattended runs: once past the budget, deny every further
+        // call so the agent (already bounded by the loop's maxSteps) winds down
+        // rather than running unbounded. No prompt — scripted stdin is closed.
+        if (autoCallCount > maxToolCalls) {
+          return Promise.resolve({
+            approved: false,
+            message: `Stopped after tool call limit of ${maxToolCalls}.`,
+          });
         }
         process.stderr.write(chalk.dim("Auto-approved.\n"));
-        return { approved: true };
+        return Promise.resolve({ approved: true });
       }
 
       const choice = parseScriptedToolChoice(lines[lineIdx]);
@@ -423,7 +408,7 @@ export function createScriptedMode(
         formatScriptedToolMenu(choice);
         console.log(chalk.dim(`Scripted selection: ${rawChoice}`));
 
-        if (choice === "approve") return { approved: true };
+        if (choice === "approve") return Promise.resolve({ approved: true });
 
         const message = lines[lineIdx] ?? "";
         if (message) {
@@ -434,14 +419,14 @@ export function createScriptedMode(
         } else {
           console.log(chalk.yellow("Tell the agent what to do instead:"));
         }
-        return { approved: false, message };
+        return Promise.resolve({ approved: false, message });
       }
 
       formatScriptedToolMenu("deny");
       console.log(
         chalk.dim("No scripted approval provided; denying tool call."),
       );
-      return { approved: false };
+      return Promise.resolve({ approved: false });
     },
     modelListMode: "current-only",
     skipStrayConfirmations: true,

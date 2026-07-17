@@ -112,7 +112,7 @@ async function main() {
 
     let mode;
     try {
-      mode = createScriptedMode(scriptPath, projectRoot, rl);
+      mode = createScriptedMode(scriptPath);
     } catch {
       console.error(`Error reading script file: ${scriptPath}`);
       process.exitCode = 1;

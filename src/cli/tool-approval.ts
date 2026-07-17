@@ -11,7 +11,6 @@ import {
   getRows,
   isBottomUIActive,
   isFooterUIActive,
-  setupBottomUI,
   setupInputUI,
   teardownBottomUI,
 } from "./bottom-ui.js";
@@ -209,23 +208,4 @@ export function parseScriptedToolChoice(
     return "deny";
   }
   return null;
-}
-
-export async function askContinueAfterLimit(
-  rl: Interface,
-  count: number,
-): Promise<boolean> {
-  const restoreBottomUI = isBottomUIActive();
-  teardownBottomUI();
-  rl.resume();
-  try {
-    const answer = await askQuestion(
-      rl,
-      chalk.yellow(`\n${count} tool calls used this turn. Continue? [Y/n] `),
-    );
-    return answer.trim().toLowerCase() !== "n";
-  } finally {
-    rl.pause();
-    if (restoreBottomUI && process.stdin.isTTY) setupBottomUI();
-  }
 }

@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Interface } from 'readline';
 import {
   askQuestion,
-  askContinueAfterLimit,
   confirmToolCallInteractive,
   getApprovalPreviewRowBudget,
   parseScriptedToolChoice,
@@ -24,7 +23,6 @@ vi.mock('../../src/cli/bottom-ui.js', () => ({
   isBottomUIActive: vi.fn(() => false),
   isFooterUIActive: vi.fn(() => false),
   teardownBottomUI: vi.fn(),
-  setupBottomUI: vi.fn(),
   setupInputUI: vi.fn(),
   getRows: vi.fn(() => 24),
   getLastReservedRows: vi.fn(() => 2),
@@ -34,7 +32,6 @@ import {
   isBottomUIActive,
   isFooterUIActive,
   teardownBottomUI,
-  setupBottomUI,
   setupInputUI,
 } from '../../src/cli/bottom-ui.js';
 
@@ -155,53 +152,6 @@ describe('formatScriptedToolMenu', () => {
     const combined = lines.join('\n').replace(/\x1b\[[0-9;]*m/g, '');
     expect(combined).toContain('Approve');
     expect(combined).toContain('> Deny');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// askContinueAfterLimit
-// ---------------------------------------------------------------------------
-
-describe('askContinueAfterLimit', () => {
-  let writeSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, 'write'>>;
-
-  beforeEach(() => {
-    writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
-    vi.mocked(teardownBottomUI).mockClear();
-    vi.mocked(setupBottomUI).mockClear();
-    vi.mocked(isBottomUIActive).mockReturnValue(false);
-  });
-
-  afterEach(() => {
-    writeSpy.mockRestore();
-  });
-
-  it('returns true when answer is "y"', async () => {
-    await expect(askContinueAfterLimit(makeRl(['y']), 5)).resolves.toBe(true);
-  });
-
-  it('returns true for empty answer', async () => {
-    await expect(askContinueAfterLimit(makeRl(['']), 5)).resolves.toBe(true);
-  });
-
-  it('returns false when answer is "n"', async () => {
-    await expect(askContinueAfterLimit(makeRl(['n']), 3)).resolves.toBe(false);
-  });
-
-  it('calls teardownBottomUI', async () => {
-    await askContinueAfterLimit(makeRl(['y']), 1);
-    expect(teardownBottomUI).toHaveBeenCalled();
-  });
-
-  it('calls setupBottomUI in finally when isBottomUIActive=true and isTTY=true', async () => {
-    vi.mocked(isBottomUIActive).mockReturnValue(true);
-    const streams = installProcessStreams({ tty: true });
-    try {
-      await askContinueAfterLimit(makeRl(['y']), 1);
-      expect(setupBottomUI).toHaveBeenCalled();
-    } finally {
-      streams.restore();
-    }
   });
 });
 

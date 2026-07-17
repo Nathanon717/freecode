@@ -2,7 +2,7 @@
 
 # Freecode Agent Guide
 
-Freecode is a TypeScript CLI coding agent with provider routing, an interactive REPL, and scenario verification.
+Freecode is a TypeScript CLI coding agent with provider routing, an interactive REPL, and evaluation scenarios.
 
 This file is intentionally short. Keep detailed reference material in `docs/` and link to it from here.
 
@@ -39,5 +39,6 @@ See `docs/pty-session.md` on how to drive a live, real freecode TUI (lets you ve
 - Use `docs/map/README.md` for source navigation.
 - Use `docs/providers.md` for provider setup, registry facts, and provider testing.
 - After fixing a bug, make a new, short file in `docs/bug log/`.
+- Verification should succeed BEFORE docs are updated, not after.
 
 After code changes, inspect `git diff --name-only` and update only map pages for changed files whose purpose, ownership, exports, dependencies, or read/use guidance changed.
