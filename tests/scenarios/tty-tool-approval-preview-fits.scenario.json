@@ -28,10 +28,11 @@
         "screenAbsent": ["LINE-060"]
       },
       {
-        "name": "approve - Enter confirms",
+        "name": "approve - Enter confirms and the controls line is gone",
         "send": "\r",
         "waitFor": "Done reading.",
-        "screenContains": ["Done reading."]
+        "screenContains": ["Done reading."],
+        "screenAbsent": ["Enter to confirm · Esc to deny"]
       }
     ],
     "exit": "\u0003",

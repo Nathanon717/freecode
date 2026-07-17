@@ -68,7 +68,7 @@ Format: filename (linecount)
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
   - [`toggles.ts`](cli/toggles.md) (100) — Footer Toggle State
-  - [`tool-approval.ts`](cli/tool-approval.md) (212) — Tool Approval Prompts
+  - [`tool-approval.ts`](cli/tool-approval.md) (217) — Tool Approval Prompts
   - [`tool-invocation.ts`](cli/tool-invocation.md) (334) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
   - [`transcript-options.ts`](cli/transcript-options.md) (66) — Transcript Stream + Options
@@ -131,7 +131,7 @@ Format: filename (linecount)
   - [`guards.ts`](util/guards.md) (4) — Type Guard Utilities
   - [`keyboard.ts`](util/keyboard.md) (5) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) (39) — LCS Line Diff
-  - [`screen-buffer.ts`](util/screen-buffer.md) (92) — Screen Buffer
+  - [`screen-buffer.ts`](util/screen-buffer.md) (95) — Screen Buffer
   - [`text-encoding.ts`](util/text-encoding.md) (24) — Text Encoding Helpers
   - [`wrap-rows.ts`](util/wrap-rows.md) (49) — Wrapped-Row Math
 <!-- END GENERATED MAP STRUCTURE -->

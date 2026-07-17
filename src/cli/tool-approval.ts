@@ -121,17 +121,18 @@ async function readToolApprovalMenu(
   // Enter confirms; Escape denies. Escape resolves null, which the caller turns
   // into a UserAbortError so the turn unwinds and the user lands back at the
   // input bar to say what they wanted instead. Every other key is ignored — there
-  // is no selection to move.
+  // is no selection to move. No newline is written on settle: that would scroll
+  // the absolute hint (drawn on the scroll region's bottom margin) up into the
+  // transcript before the finally block can erase it. The finally clear does the
+  // erasing so the controls line never persists past the decision.
   const session = runRawKeySession<ToolApprovalChoice | null>({
     onKey(data) {
       if (data === "\r" || data === "\n") {
-        process.stdout.write("\n");
         session.close("approve");
         return;
       }
 
       if (data === "\x1b") {
-        process.stdout.write("\n");
         session.close(null);
       }
     },
@@ -173,10 +174,14 @@ export async function confirmToolCallInteractive(
     return { approved: choice === "approve" };
   } finally {
     rl.pause();
-    // Clear the absolute hint row drawn by drawToolApprovalHintAbsolute before any
-    // scroll that would move it out of reach.
+    // Erase the confirm hint so it never persists in the transcript past the
+    // decision. Footer runs draw it absolute on the scroll region's bottom margin,
+    // so clear that exact row; inline runs leave the cursor parked on the hint line,
+    // so a carriage-return + clear-line wipes it in place.
     if (isFooterUIActive()) {
       process.stdout.write(`\x1b[${getRows() - getLastReservedRows()};1H\x1b[2K`);
+    } else if (process.stdin.isTTY) {
+      process.stdout.write("\r\x1b[2K");
     }
     if (restoreInputUI && process.stdin.isTTY) setupInputUI();
   }

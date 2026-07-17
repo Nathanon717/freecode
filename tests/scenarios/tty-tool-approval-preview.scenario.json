@@ -20,10 +20,11 @@
         "screenContains": ["list_dir", "test-all-models.md", "time.md", "Enter to confirm · Esc to deny"]
       },
       {
-        "name": "approve - Enter confirms",
+        "name": "approve - Enter confirms and the controls line is gone",
         "send": "\r",
         "waitFor": "Done listing.",
-        "screenContains": ["Done listing."]
+        "screenContains": ["Done listing."],
+        "screenAbsent": ["Enter to confirm · Esc to deny"]
       }
     ],
     "exit": "\u0003",

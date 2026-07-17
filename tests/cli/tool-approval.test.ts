@@ -226,6 +226,17 @@ describe('confirmToolCallInteractive (TTY, inline hint)', () => {
     expect(allOutput.replace(/\x1b\[[0-9;]*m/g, '')).toContain('Enter to confirm · Esc to deny');
   });
 
+  it('erases the hint line in place on confirm so it never persists in the transcript', async () => {
+    const promise = confirmToolCallInteractive(ttyRl(), preview);
+    stdin.emit('data', '\r');
+    await promise;
+    const allOutput = writeSpy.mock.calls.map(c => c[0]).join('');
+    // Carriage-return + clear-line wipes the hint where the cursor is parked.
+    expect(allOutput).toContain('\r\x1b[2K');
+    // A bare newline would instead scroll the hint down into the transcript.
+    expect(allOutput).not.toContain('\n');
+  });
+
   it('unwinds the turn on Escape so the user lands back at the input bar', async () => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\x1b');
@@ -285,7 +296,16 @@ describe('confirmToolCallInteractive (TTY, absolute hint)', () => {
     stdin.emit('data', '\r');
     await promise;
     const allOutput = writeSpy.mock.calls.map(c => c[0]).join('');
-    expect(allOutput).toContain('\x1b[2K');
+    // Clears the exact scroll-region bottom row the absolute hint was drawn on.
+    expect(allOutput).toContain(`\x1b[${24 - 2};1H\x1b[2K`);
+  });
+
+  it('writes no bare newline on confirm, so the hint is never scrolled into the transcript', async () => {
+    const promise = confirmToolCallInteractive(ttyRl(), preview);
+    stdin.emit('data', '\r');
+    await promise;
+    const allOutput = writeSpy.mock.calls.map(c => c[0]).join('');
+    expect(allOutput).not.toContain('\n');
   });
 
   it('pads clearance only when a preview was already flowed above', async () => {
