@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { readFile, readdir } from 'fs/promises';
 import { join, dirname, basename } from 'path';
 import { markFileRead, resolveExistingProjectPath, resolveProjectPath } from '../workspace.js';
+import { withLineNumbers } from '../../util/line-numbers.js';
 
 const DEFAULT_LIMIT = 2000;
 
@@ -73,7 +74,7 @@ export const readFileTool = tool({
     const lastLine = start + sliced.length;
     const hasMore = lastLine < totalLines;
 
-    let output = sliced.map((line, i) => `${start + i + 1}: ${line}`).join('\n');
+    let output = withLineNumbers(offset, sliced).join('\n');
 
     if (hasMore) {
       output += `\n\n(Showing lines ${offset}-${lastLine} of ${totalLines}. Use offset=${lastLine + 1} to continue.)`;

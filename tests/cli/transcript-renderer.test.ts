@@ -3,6 +3,7 @@ import {
   DEFAULT_TRANSCRIPT_MAX_RESULT_LINES,
   TRANSCRIPT_DIVIDER_WIDTH,
   formatArgs,
+  formatCreatedFileContent,
   formatEditFileDiff,
   formatTranscriptStepDivider,
   formatToolCallLine,
@@ -11,6 +12,7 @@ import {
   writeStepSeparator,
 } from '../../src/cli/transcript-renderer.js';
 import { computeLineDiff } from '../../src/util/line-diff.js';
+import { withLineNumbers } from '../../src/util/line-numbers.js';
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 
@@ -88,25 +90,57 @@ describe('transcript renderer', () => {
     expect(preview).toContain('Showing lines 1-1 of 5');
   });
 
-  it('formats edit diff with - and + prefixed lines', () => {
+  it('formats edit diff with - and + prefixed lines under a line-number gutter', () => {
     const result = stripAnsi(formatEditFileDiff('foo.ts', 'old\n', 'new\n'));
-    expect(result).toContain('  -old');
-    expect(result).toContain('  +new');
+    expect(result).toContain('  1: -old');
+    expect(result).toContain('  1: +new');
   });
 
   it('prepends lineIndent to diff lines when agent strips leading whitespace', () => {
     const result = stripAnsi(formatEditFileDiff('foo.ts', 'old\n', 'new\n', [], [], {}, '    '));
-    expect(result).toBe('  -    old\n  +    new');
+    expect(result).toBe('  1: -    old\n  1: +    new');
   });
 
-  it('shows context lines before and after the changed lines', () => {
+  it('shows context lines before and after the changed lines with new-file numbers', () => {
     const result = stripAnsi(formatEditFileDiff('foo.ts', 'old\n', 'new\n', ['ctx1', 'ctx2'], ['ctx3', 'ctx4']));
-    expect(result).toBe('   ctx1\n   ctx2\n  -old\n  +new\n   ctx3\n   ctx4');
+    expect(result).toBe('  1:  ctx1\n  2:  ctx2\n  3: -old\n  3: +new\n  4:  ctx3\n  5:  ctx4');
+  });
+
+  it('numbers from startLine, keeping old-file numbers on removed lines', () => {
+    const result = stripAnsi(
+      formatEditFileDiff('foo.ts', 'a\nb\n', 'x\n', [], [], {}, '', 10),
+    );
+    // removals take old-file numbers (10, 11); the addition takes the new-file number (10)
+    expect(result).toBe('  10: -a\n  11: -b\n  10: +x');
+  });
+
+  it('right-aligns the gutter so colons line up across digit widths', () => {
+    const old = Array.from({ length: 3 }, (_, i) => `line${i}`).join('\n');
+    const result = stripAnsi(
+      formatEditFileDiff('foo.ts', old, 'z', [], [], { maxResultLines: Infinity }, '', 9),
+    );
+    // lines 9, 10, 11 removed → gutter padded to width 2, colons aligned
+    expect(result).toBe('   9: -line0\n  10: -line1\n  11: -line2\n   9: +z');
   });
 
   it('omits context when arrays are empty', () => {
     const result = stripAnsi(formatEditFileDiff('foo.ts', 'a\nb\n', 'c\n'));
-    expect(result).toBe('  -a\n  -b\n  +c');
+    expect(result).toBe('  1: -a\n  2: -b\n  1: +c');
+  });
+
+  it('right-aligns read/create line numbers so colons align across digit widths', () => {
+    const numbered = withLineNumbers(9, ['a', 'b', 'c']);
+    expect(numbered).toEqual([' 9: a', '10: b', '11: c']);
+  });
+
+  it('formats created file content with a line-number gutter starting at 1', () => {
+    const preview = stripAnsi(formatCreatedFileContent('first\nsecond\nthird', { maxResultLines: Infinity }));
+    expect(preview).toBe('  1: first\n  2: second\n  3: third');
+  });
+
+  it('drops the trailing newline so create previews carry no blank final gutter', () => {
+    const preview = stripAnsi(formatCreatedFileContent('only\n', { maxResultLines: Infinity }));
+    expect(preview).toBe('  1: only');
   });
 
   it('computes LCS-based line diff correctly', () => {
@@ -128,7 +162,7 @@ describe('transcript renderer', () => {
     const newText = 'header\nnew_line\nfooter\n';
     const result = stripAnsi(formatEditFileDiff('f.py', oldText, newText, [], [], { maxResultLines: Infinity }));
     // equal lines appear once with space prefix (not duplicated as -/+)
-    expect(result).toBe('   header\n  -old_line\n  +new_line\n   footer');
+    expect(result).toBe('  1:  header\n  2: -old_line\n  2: +new_line\n  3:  footer');
     // equal lines should not appear with - or + prefix
     expect(result).not.toContain('-header');
     expect(result).not.toContain('+header');
@@ -140,6 +174,16 @@ describe('transcript renderer', () => {
     const old = Array.from({ length: 20 }, (_, i) => `old${i}`).join('\n');
     const result = stripAnsi(formatEditFileDiff('foo.ts', old, 'new', [], [], { maxResultLines: 5 }));
     expect(result).toContain('... (');
+    expect(result).not.toContain('old5');
+  });
+
+  it('trims the diff to maxResultRows so the header stays on screen during approval', () => {
+    const old = Array.from({ length: 10 }, (_, i) => `old${i}`).join('\n');
+    // 10 removed lines + 1 added line = 11 rendered rows; a 4-row budget keeps 3
+    // (one row reserved for the "more lines" note) and reports the rest.
+    const result = stripAnsi(formatEditFileDiff('foo.ts', old, 'new', [], [], { maxResultRows: 4 }));
+    expect(result.split('\n')[0]).toContain('-old0');
+    expect(result).toContain('... (8 more lines)');
     expect(result).not.toContain('old5');
   });
 

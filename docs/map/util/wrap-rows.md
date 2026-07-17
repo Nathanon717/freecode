@@ -10,14 +10,14 @@ terminalColumns(): number
 
 visualRows(line: string, cols: number): number
 
-fitLinesToRows(lines: string[], maxRows: number, render: (line: string) => string): string[]
+fitLinesToRows<T>(lines: T[], maxRows: number, render: (line: T) => string): T[]
 ```
 <!-- END GENERATED EXPORTS -->
 
 ## Export notes
 
 - `visualRows` / `fitLinesToRows` — exist because logical lines are not rows: one long line wraps to several. Any budget expressed in logical lines silently overflows on long content, which is the whole bug these prevent.
-- `fitLinesToRows(lines, maxRows, render)` — `render` maps a line to the text actually written (indent, colour) so the wrap math measures what lands on screen. Reserves one row for the caller's own "… (N more lines)" note, and always keeps at least one line so a single over-long line still shows its head.
+- `fitLinesToRows(lines, maxRows, render)` — generic over the line element (`T`), so callers can fit either plain strings (the read/create/text preview) or richer entry objects (the edit diff's `{ text, type, num }` rows) as long as `render` maps one to the text actually written (indent, colour). The wrap math then measures what lands on screen. Reserves one row for the caller's own "… (N more lines)" note, and always keeps at least one line so a single over-long line still shows its head.
 
 ## Read when
 

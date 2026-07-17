@@ -10,8 +10,12 @@ import { isUserAbortError, toErrorMessage } from "../../util/errors.js";
 import { z } from "zod";
 import type { CoreTool } from "ai";
 import { existsSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
 import { awaitToolRenderGate } from "../tool-render-gate.js";
+import {
+  computeEditDiffContext,
+  editDiffResult,
+  type EditDiffContext,
+} from "./edit-diff-context.js";
 import {
   filterArgs,
   formatArgs,
@@ -105,78 +109,23 @@ function withToolRendering(
       });
       if (previewState) previewState.rowsAbove = rowsAbove;
 
-      const editContextBefore: string[] = [];
-      const editContextAfter: string[] = [];
-      let editLineIndent = "";
-      if (
-        name === "edit" &&
-        typeof args.path === "string" &&
-        typeof args.old_text === "string"
-      ) {
-        try {
-          const filePath = join(process.cwd(), args.path);
-          if (existsSync(filePath)) {
-            const content = readFileSync(filePath, "utf-8").replace(
-              /\r\n/g,
-              "\n",
-            );
-            const normalizedOld = args.old_text
-              .replace(/\\n/g, "\n")
-              .replace(/\\t/g, "\t")
-              .replace(/\r\n/g, "\n");
-            const idx = content.indexOf(normalizedOld);
-            if (idx !== -1) {
-              const beforeParts = content.slice(0, idx).split("\n");
-              const partialLineStart = beforeParts.pop() ?? "";
-              if (/^\s+$/.test(partialLineStart))
-                editLineIndent = partialLineStart;
-              const maxCtx = loadConfig().diffContextLines;
-              for (
-                let i = beforeParts.length - 1;
-                i >= 0 && editContextBefore.length < maxCtx;
-                i--
-              ) {
-                if (/^\s*$/.test(beforeParts[i])) break;
-                editContextBefore.unshift(beforeParts[i]);
-              }
-              const afterParts = content
-                .slice(idx + normalizedOld.length)
-                .split("\n");
-              afterParts.shift();
-              for (
-                let i = 0;
-                i < afterParts.length && editContextAfter.length < maxCtx;
-                i++
-              ) {
-                if (/^\s*$/.test(afterParts[i])) break;
-                editContextAfter.push(afterParts[i]);
-              }
-            }
-          }
-        } catch {
-          /* gracefully degrade to no context */
-        }
+      // Read the surrounding-file context for an edit up front so both the
+      // pending-approval preview (withConfirmation, via previewState) and the
+      // post-execution diff render from the same single disk read.
+      let editContext: EditDiffContext | undefined;
+      if (name === "edit") {
+        editContext = computeEditDiffContext(args.path, args.old_text);
+        if (previewState) previewState.editContext = editContext;
       }
 
       try {
         const result = await original(args, opts);
         appendToolTrace({ tool: name, args: displayArgs, result });
+        const editDiff =
+          name === "edit" ? editDiffResult(args, editContext) : null;
         let stepResult: ToolStepResult;
-        if (
-          name === "edit" &&
-          typeof args.path === "string" &&
-          typeof args.old_text === "string" &&
-          typeof args.new_text === "string"
-        ) {
-          stepResult = {
-            kind: "edit-diff",
-            path: args.path,
-            oldText: args.old_text,
-            newText: args.new_text,
-            contextBefore: editContextBefore,
-            contextAfter: editContextAfter,
-            lineIndent: editLineIndent,
-          };
+        if (editDiff) {
+          stepResult = editDiff;
         } else if (
           name === "create" &&
           typeof args.content === "string" &&
@@ -220,6 +169,11 @@ interface PreviewState {
   suppressed: boolean;
   /** Heights of the header (and the preamble above it) withToolRendering just wrote. */
   rowsAbove: ToolCallHeaderRows;
+  /**
+   * Diff context withToolRendering read from disk for the current edit call, so
+   * withConfirmation can render the pending-approval preview without a second read.
+   */
+  editContext?: EditDiffContext;
 }
 
 /**
@@ -279,6 +233,13 @@ function withConfirmation(
           { kind: "create-content", content: args.content },
           previewOpts,
         );
+      } else if (name === "edit") {
+        // Project the diff the edit would apply, from the context withToolRendering
+        // already read from disk — writing is not safe to run pre-confirmation.
+        const editDiff = editDiffResult(args, previewState?.editContext);
+        if (editDiff) {
+          previewedContent = writeToolResultPreview(name, editDiff, previewOpts);
+        }
       }
 
       const confirmation = await confirmToolCall({

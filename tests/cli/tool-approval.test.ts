@@ -24,6 +24,10 @@ vi.mock('../../src/cli/bottom-ui.js', () => ({
   isFooterUIActive: vi.fn(() => false),
   teardownBottomUI: vi.fn(),
   setupInputUI: vi.fn(),
+  drawFooter: vi.fn(),
+  suspendFooterTimer: vi.fn(),
+  resumeFooterTimer: vi.fn(),
+  parkCursorInScrollRegion: vi.fn(),
   getRows: vi.fn(() => 24),
   getLastReservedRows: vi.fn(() => 2),
 }));
@@ -33,6 +37,10 @@ import {
   isFooterUIActive,
   teardownBottomUI,
   setupInputUI,
+  drawFooter,
+  suspendFooterTimer,
+  resumeFooterTimer,
+  parkCursorInScrollRegion,
 } from '../../src/cli/bottom-ui.js';
 
 // ---------------------------------------------------------------------------
@@ -62,6 +70,10 @@ function setupStreams(opts: { tty: boolean; footer: boolean }) {
   vi.mocked(isBottomUIActive).mockReturnValue(false);
   vi.mocked(teardownBottomUI).mockClear();
   vi.mocked(setupInputUI).mockClear();
+  vi.mocked(drawFooter).mockClear();
+  vi.mocked(suspendFooterTimer).mockClear();
+  vi.mocked(resumeFooterTimer).mockClear();
+  vi.mocked(parkCursorInScrollRegion).mockClear();
   return { streams, stdin: streams.stdin, writeSpy };
 }
 
@@ -291,13 +303,35 @@ describe('confirmToolCallInteractive (TTY, absolute hint)', () => {
     expect(writeSpy.mock.calls.map(c => c[0]).join('')).toContain('\x1b[');
   });
 
-  it('clears the absolute hint row in the finally block', async () => {
+  it('freezes the footer timer while the prompt is up and repaints the footer on settle', async () => {
+    const promise = confirmToolCallInteractive(ttyRl(), preview);
+    stdin.emit('data', '\r');
+    await promise;
+    // The scroll region is left pinned; the footer rows are blanked for the hint
+    // and the frozen timer can't clobber it, then the footer is repainted.
+    expect(suspendFooterTimer).toHaveBeenCalled();
+    expect(resumeFooterTimer).toHaveBeenCalled();
+    expect(drawFooter).toHaveBeenCalled();
+  });
+
+  it('draws the hint on the literal last terminal row and clears it on settle', async () => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\r');
     await promise;
     const allOutput = writeSpy.mock.calls.map(c => c[0]).join('');
-    // Clears the exact scroll-region bottom row the absolute hint was drawn on.
-    expect(allOutput).toContain(`\x1b[${24 - 2};1H\x1b[2K`);
+    // Hint drawn on row 24 (getRows), and cleared there in the finally.
+    expect(allOutput).toContain(`\x1b[24;1H\x1b[2K`);
+  });
+
+  it('blanks the footer rows so a non-empty footer is hidden behind the hint', async () => {
+    // getLastReservedRows()=2, so the footer occupies rows 23-24. Row 24 gets the
+    // hint; row 23 must be cleared or a non-empty footer would still show through.
+    // (The mock footer is empty, so this escape is the only evidence of blanking.)
+    const promise = confirmToolCallInteractive(ttyRl(), preview);
+    stdin.emit('data', '\r');
+    await promise;
+    const allOutput = writeSpy.mock.calls.map(c => c[0]).join('');
+    expect(allOutput).toContain(`\x1b[23;1H\x1b[2K`);
   });
 
   it('writes no bare newline on confirm, so the hint is never scrolled into the transcript', async () => {
@@ -308,25 +342,24 @@ describe('confirmToolCallInteractive (TTY, absolute hint)', () => {
     expect(allOutput).not.toContain('\n');
   });
 
-  it('pads clearance only when a preview was already flowed above', async () => {
-    const withPreview = confirmToolCallInteractive(ttyRl(), { ...preview, previewedContent: true });
+  it('parks the cursor back in the scroll region on settle when the input UI was not up', async () => {
+    // Mid-agent-turn: input UI is down (isBottomUIActive=false), so after the
+    // footer is rebuilt the cursor must be re-parked at the scroll region bottom
+    // or continued transcript output lands off-region and is clobbered.
+    const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\r');
-    await withPreview;
-    expect(writeSpy.mock.calls.map(c => c[0]).join('')).toContain('\n\n');
-
-    writeSpy.mockClear();
-    const withoutPreview = confirmToolCallInteractive(ttyRl(), preview);
-    stdin.emit('data', '\r');
-    await withoutPreview;
-    expect(writeSpy.mock.calls.map(c => c[0]).join('')).not.toContain('\n\n');
+    await promise;
+    expect(parkCursorInScrollRegion).toHaveBeenCalled();
+    expect(setupInputUI).not.toHaveBeenCalled();
   });
 
-  it('calls setupInputUI in finally when isBottomUIActive=true and isTTY=true', async () => {
+  it('restores the input UI (not a bare scroll-region park) when it was up', async () => {
     vi.mocked(isBottomUIActive).mockReturnValue(true);
     const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\r');
     await promise;
     expect(setupInputUI).toHaveBeenCalled();
+    expect(parkCursorInScrollRegion).not.toHaveBeenCalled();
   });
 
   it('unwinds the turn on Escape with the absolute hint', async () => {

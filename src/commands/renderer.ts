@@ -29,21 +29,23 @@ export function runRendererDemo(): void {
   );
 
   // ── Turn 1: read ──────────────────────────────────────────────────────
-  // Result shown as dimmed indented lines.
-  sectionLabel('read → result preview shown as dimmed lines');
+  // read bakes a right-aligned line-number gutter into its result (see
+  // agent/tools/read.ts). The multi-digit slice shows the colons staying aligned
+  // — the same gutter create and edit render below.
+  sectionLabel('read → line-numbered result preview (gutter colons aligned)');
   renderTurn([{
     tools: [{
       name: 'read',
-      displayArgs: { path: 'src/index.ts' },
+      displayArgs: { path: 'src/index.ts', offset: 8 },
       result: {
         kind: 'text',
         result: [
-          "#!/usr/bin/env node",
-          "import { runSession } from './cli/session-runner.js';",
-          "import { loadConfig } from './config/index.js';",
-          "",
-          "const config = loadConfig();",
-          "await runSession(config);",
+          " 8: #!/usr/bin/env node",
+          " 9: import { runSession } from './cli/session-runner.js';",
+          "10: import { loadConfig } from './config/index.js';",
+          "11: ",
+          "12: const config = loadConfig();",
+          "13: await runSession(config);",
         ].join("\n"),
       },
     }],
@@ -145,6 +147,7 @@ export function runRendererDemo(): void {
         contextBefore: ["  { command: '/help', description: 'Show this help' },"],
         contextAfter: ["  { command: '/renderer', description: 'Show renderer demo' },"],
         lineIndent: '',
+        startLine: 8,
       },
     }],
   }], DEMO_OPTS);

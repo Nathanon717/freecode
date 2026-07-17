@@ -35,7 +35,9 @@ formatToolErrorLine(name: string, err: unknown): string
 
 formatToolResultPreview(result: unknown, options?: TranscriptRenderOptions): string
 
-formatEditFileDiff(_path: string, oldText: string, newText: string, contextBefore?: string[], contextAfter?: string[], options?: TranscriptRenderOptions, lineIndent?: string): string
+formatCreatedFileContent(content: string, options?: TranscriptRenderOptions): string
+
+formatEditFileDiff(_path: string, oldText: string, newText: string, contextBefore?: string[], contextAfter?: string[], options?: TranscriptRenderOptions, lineIndent?: string, startLine?: number): string
 
 formatTranscriptStepDivider(options?: TranscriptRuntimeOptions | undefined): string
 
@@ -60,6 +62,8 @@ type ToolStepResult =
       contextBefore: string[];
       contextAfter: string[];
       lineIndent: string;
+      /** 1-based file line number of the first rendered line (context or diff). */
+      startLine: number;
     }
   | { kind: "error"; error: unknown };
 
@@ -86,7 +90,7 @@ interface RenderedStep {
 
 writeToolCallHeader(step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "parsedTools">, opts?: TranscriptRuntimeOptions | undefined): ToolCallHeaderRows
 
-writeToolResultPreview(name: string, result: { kind: "text"; result: unknown; } | { kind: "create-content"; content: string; } | { kind: "edit-diff"; path: string; oldText: string; newText: string; contextBefore: string[]; contextAfter: string[]; lineIndent: string; }, opts?: TranscriptRuntimeOptions | undefined): boolean
+writeToolResultPreview(name: string, result: { kind: "text"; result: unknown; } | { kind: "create-content"; content: string; } | { kind: "edit-diff"; path: string; oldText: string; newText: string; contextBefore: string[]; contextAfter: string[]; lineIndent: string; startLine: number; }, opts?: TranscriptRuntimeOptions | undefined): boolean
 
 writeToolStepResult(name: string, result: ToolStepResult, opts?: TranscriptRuntimeOptions | undefined): void
 
@@ -99,13 +103,14 @@ renderTurn(steps: RenderedStep[], opts?: TranscriptRuntimeOptions | undefined): 
 ## Export notes
 
 - `DiffEntry` — re-exported from `util/line-diff.ts`; `equal | remove | add` diff entry type.
-- `formatEditFileDiff()` — smart diff renderer; red/green for changed lines, dim for file context.
+- `formatEditFileDiff()` — smart diff renderer; red/green for changed lines, dim for file context. Prefixes every line with a dim right-aligned line-number gutter (removed lines keep old-file numbers, everything else new-file numbers), starting at `startLine`; same gutter format as `read`/`create` (via [util/line-numbers.md](../util/line-numbers.md)).
+- `formatCreatedFileContent()` — create-file preview; numbers content from line 1 with the shared gutter, then dims/truncates like `formatToolResultPreview`.
 - `formatParsedToolCallLine()` — like `formatToolCallLine` but prefixes `~ `.
 - `formatTranscriptStepDivider(options?)` — returns one raw divider line (no newlines); uses the target stream's column width when `options` is provided.
 - `writeStepSeparator(options?)` — single authority for divider spacing: writes two full-width divider lines with NO blank line above or below, so content abuts the separator on both sides. Every divider-emitting site (`beginTranscriptTurn` deferred flush, `endTranscriptStep` close) routes through it.
 - Higher-level API (`writeToolCallHeader`, `writeToolStepResult`, `renderToolStep`, `renderTurn`) — sit on top of the format helpers and state machine so that both the live agent path (`tools/index.ts withToolRendering`) and the `/renderer` demo (`commands/renderer.ts`) share one implementation. `writeToolCallHeader` is called BEFORE tool execution; `writeToolStepResult` is called AFTER.
 - `writeToolCallHeader` returns `ToolCallHeaderRows` (wrap included) rather than `void`, and `writeTranscriptToolLeadIn` returns its own rows. Only the approval path reads them — it budgets the preview that follows against the real height of what sits above it, which a constant cannot express because the call line, the rationale and the preamble can all wrap. `preamble` is measured before the lead-in bumps `toolCount`, and is 0 for any parallel call after the step's first: only that first call sits directly under the response text.
-- `TranscriptRenderOptions.maxResultRows` — caps the preview at N terminal rows counting wrap, on top of `maxResultLines`; see [transcript-options.md](transcript-options.md) for the type and [tool-approval.md](tool-approval.md) for who sets it. Applies to `formatToolResultPreview` only — the `edit-diff` branch never previews before confirmation, so `formatEditFileDiff` has no row cap.
+- `TranscriptRenderOptions.maxResultRows` — caps the preview at N terminal rows counting wrap, on top of `maxResultLines`; see [transcript-options.md](transcript-options.md) for the type and [tool-approval.md](tool-approval.md) for who sets it. Honoured by both `formatToolResultPreview` and `formatEditFileDiff`: `edit` (like `create`) previews its diff before confirmation, so the diff must also fit the approval row budget or a long change would scroll the call line the user is approving off-screen. Both trim via `fitLinesToRows`, measuring the rendered (gutter + colour) width, and report the dropped count in a "… (N more lines)" footer.
 - Stream routing and the options types live in [transcript-options.md](transcript-options.md) and are re-exported here; keep importing them from this module.
 
 ## Desired Turn Layout

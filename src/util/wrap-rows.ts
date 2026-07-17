@@ -29,14 +29,14 @@ export function visualRows(line: string, cols: number): number {
  * math measures what lands on screen. Always keeps at least one line, so a
  * single over-long line still shows its head.
  */
-export function fitLinesToRows(
-  lines: string[],
+export function fitLinesToRows<T>(
+  lines: T[],
   maxRows: number,
-  render: (line: string) => string,
-): string[] {
+  render: (line: T) => string,
+): T[] {
   const cols = terminalColumns();
   const budget = Math.max(1, maxRows - 1);
-  const fitted: string[] = [];
+  const fitted: T[] = [];
   let used = 0;
   for (const line of lines) {
     const rows = visualRows(render(line), cols);

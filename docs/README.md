@@ -12,7 +12,7 @@ Use this directory as the project handbook. Generated reference pages report fac
 - [Writing unit tests](unit-tests.md): behavior-first testing rules to prevent test-file bloat. Read before writing unit tests.
 - [Test pipeline timing](scripts/time.md): per-section timing tool to identify pipeline bottlenecks.
 - [Model availability smoke test](scripts/test-all-models.md): sends "hi" to every free model to check which ones currently respond.
-- [Guidelines](guidelines/file-length.md): file length limits and extraction guidance.
+- [Line limit](line-limit.md): the 500-line hard limit and extraction guidance.
 - [Codebase map](map/README.md): agent-oriented source navigation.
 - [PTY session](pty-session.md): drive the live TUI from the shell, exactly as a human would.
   <!-- BEGIN GENERATED PTY QUICKSTART REF -->

@@ -1,0 +1,37 @@
+﻿{
+  "name": "tty-tool-approval-preview-edit",
+  "description": "Interactive tool approval UI shows the pending edit's diff (removed/added lines under a gutter) before the user confirms, just like create",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "tty-tool-approval-preview-edit.llm.json",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type prompt",
+        "send": "Rename the first line",
+        "screenContains": ["> Rename the first line"]
+      },
+      {
+        "name": "submit - the diff preview renders above the confirm hint",
+        "send": "\r",
+        "waitFor": "LINE-XYZ-REPLACED",
+        "screenContains": [
+          "edit(tests/scenarios/long-preview.fixture.txt)",
+          "-LINE-001: changelog entry text for this line",
+          "+LINE-XYZ-REPLACED: changelog entry text for this line",
+          "Enter to confirm · Esc to deny"
+        ]
+      },
+      {
+        "name": "deny - Esc unwinds the turn and the controls line is gone",
+        "send": "\u001b",
+        "screenAbsent": ["Enter to confirm · Esc to deny"]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

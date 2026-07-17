@@ -7,20 +7,26 @@ import type {
 import type { ToolCallHeaderRows } from "./transcript-renderer.js";
 import { UserAbortError } from "../util/errors.js";
 import {
+  drawFooter,
   getLastReservedRows,
   getRows,
   isBottomUIActive,
   isFooterUIActive,
+  parkCursorInScrollRegion,
+  resumeFooterTimer,
   setupInputUI,
+  suspendFooterTimer,
   teardownBottomUI,
 } from "./bottom-ui.js";
 import { runRawKeySession } from "./raw-picker.js";
 
 export type ToolApprovalChoice = "approve" | "deny";
 
-// Rows this module claims below a pending-approval preview: the two blank lines
-// confirmToolCallInteractive pads for clearance, plus the single hint row
-// drawToolApprovalHintAbsolute then draws. Keep in step with those two.
+// Rows this module reserves below a pending-approval preview so the header the
+// user is approving stays on screen once the hint draws. Deliberately kept at 3
+// (matching the historical footer-plus-hint layout) even though the hint now
+// draws on the terminal's last row instead: it is over-conservative, not wrong,
+// and the header never scrolls off.
 const APPROVAL_MENU_ROWS = 3;
 
 // Preview rows to keep even when the preamble is too tall to fit alongside them.
@@ -66,19 +72,25 @@ function drawToolApprovalHint(): void {
   process.stdout.write(`\r\x1b[2K${formatToolApprovalHint()}`);
 }
 
-// Draws the hint at an absolute terminal row, above the pinned footer. No header
-// row here — the tool call header is already flowed into the transcript just
-// above; redrawing it would only duplicate it. Parks the cursor on the hint row
-// so it doesn't drift into the footer.
-function drawToolApprovalHintAbsolute(r: number, reserved: number): void {
-  const row = r - reserved;
-  process.stdout.write(
-    `\x1b[${row};1H\x1b[2K${formatToolApprovalHint()}` + `\x1b[${row};1H`,
-  );
+// Blanks the pinned footer rows and draws the hint on the terminal's literal
+// last row, so during the prompt the hint owns the bottom of the screen with no
+// footer beneath it. No header row here — the tool call header is already flowed
+// into the transcript just above; redrawing it would only duplicate it. The
+// scroll region is left untouched (still reserving these rows); drawFooter in the
+// finally repaints the footer. Parks the cursor on the hint row so it doesn't
+// drift elsewhere.
+function drawToolApprovalHintAbsolute(lastRow: number, footerRows: number): void {
+  let out = "";
+  for (let r = lastRow - footerRows + 1; r < lastRow; r++) {
+    out += `\x1b[${r};1H\x1b[2K`;
+  }
+  out += `\x1b[${lastRow};1H\x1b[2K${formatToolApprovalHint()}` + `\x1b[${lastRow};1H`;
+  process.stdout.write(out);
 }
 
 async function readToolApprovalMenu(
   rl: Interface,
+  useAbsoluteHint: boolean,
 ): Promise<ToolApprovalChoice | null> {
   if (!process.stdin.isTTY) {
     rl.resume();
@@ -110,7 +122,11 @@ async function readToolApprovalMenu(
     }
   }
 
-  if (isFooterUIActive()) {
+  if (useAbsoluteHint) {
+    // Freeze the footer refresh timer so its 1 s tick can't repaint the footer
+    // rows we are about to blank (quota/spend/retry updates would otherwise
+    // clobber the hint on the last row). Resumed in the caller's finally.
+    suspendFooterTimer();
     drawToolApprovalHintAbsolute(getRows(), getLastReservedRows());
   } else {
     drawToolApprovalHint();
@@ -122,17 +138,30 @@ async function readToolApprovalMenu(
   // into a UserAbortError so the turn unwinds and the user lands back at the
   // input bar to say what they wanted instead. Every other key is ignored — there
   // is no selection to move. No newline is written on settle: that would scroll
-  // the absolute hint (drawn on the scroll region's bottom margin) up into the
+  // the absolute hint (drawn on the terminal's bottom row) up into the
   // transcript before the finally block can erase it. The finally clear does the
   // erasing so the controls line never persists past the decision.
+  // Move the cursor off the bottom row before the raw session returns to cooked
+  // mode. On Windows, conpty echoes the buffered Enter CR as \r\n when raw mode
+  // is released; if the cursor is still parked on the hint row (where
+  // drawToolApprovalHintAbsolute left it) that newline scrolls the hint up one
+  // row, so the finally block's clear lands on the wrong row and the controls
+  // line survives. Parking at the top makes the echoed newline scroll nothing.
+  // Inert on Linux (no CR echo) and on the inline path.
+  const parkOffMargin = (): void => {
+    if (useAbsoluteHint) process.stdout.write("\x1b[1;1H");
+  };
+
   const session = runRawKeySession<ToolApprovalChoice | null>({
     onKey(data) {
       if (data === "\r" || data === "\n") {
+        parkOffMargin();
         session.close("approve");
         return;
       }
 
       if (data === "\x1b") {
+        parkOffMargin();
         session.close(null);
       }
     },
@@ -150,24 +179,18 @@ async function readToolApprovalMenu(
 
 export async function confirmToolCallInteractive(
   rl: Interface,
-  preview: ToolCallPreview,
+  _preview: ToolCallPreview,
 ): Promise<ToolCallConfirmation> {
   const restoreInputUI = isBottomUIActive();
+  // Footer runs blank the footer rows (keeping the scroll region pinned) so the
+  // hint owns the terminal's literal last row with no status bar beneath it; the
+  // footer is repainted in the finally. Tearing the input UI down first frees
+  // those reserved rows so the footer sits on its own 2 rows.
+  const useAbsoluteHint = isFooterUIActive();
   teardownBottomUI();
 
-  // The absolute-positioned hint below draws at a fixed row near the bottom of the
-  // terminal (see drawToolApprovalHintAbsolute). That row is only guaranteed to be
-  // blank when nothing has been written since the header — but agent/tools/index.ts
-  // flows a read-only content preview right after the header for some tools, and once
-  // the scroll region fills, that preview's tail lands exactly on the hint's fixed
-  // row and gets silently overwritten. Pad blank lines to push it clear first
-  // (confirmed via a live PTY probe — this is not a hypothetical edge case).
-  if (preview.previewedContent && isFooterUIActive()) {
-    process.stdout.write("\n\n");
-  }
-
   try {
-    const choice = await readToolApprovalMenu(rl);
+    const choice = await readToolApprovalMenu(rl, useAbsoluteHint);
     // Escape (TTY) resolves null: unwind the turn so the user is returned to the
     // input bar to redirect the agent there, rather than through a bespoke prompt.
     if (choice === null) throw new UserAbortError();
@@ -175,15 +198,26 @@ export async function confirmToolCallInteractive(
   } finally {
     rl.pause();
     // Erase the confirm hint so it never persists in the transcript past the
-    // decision. Footer runs draw it absolute on the scroll region's bottom margin,
-    // so clear that exact row; inline runs leave the cursor parked on the hint line,
-    // so a carriage-return + clear-line wipes it in place.
-    if (isFooterUIActive()) {
-      process.stdout.write(`\x1b[${getRows() - getLastReservedRows()};1H\x1b[2K`);
+    // decision. Footer runs draw it absolute on the terminal's last row: resume
+    // the timer, repaint the footer (which clears the blanked rows and the hint),
+    // and re-park the cursor. Inline runs leave the cursor parked on the hint
+    // line, so a carriage-return + clear-line wipes it in place.
+    if (useAbsoluteHint) {
+      process.stdout.write(`\x1b[${getRows()};1H\x1b[2K`);
+      resumeFooterTimer();
+      drawFooter();
+      // When the input UI was also up, restoring it parks the cursor at the typing
+      // position; otherwise (mid-agent-turn) park at the scroll region's bottom so
+      // continued transcript output flows from there rather than over the footer.
+      if (restoreInputUI) {
+        setupInputUI();
+      } else {
+        parkCursorInScrollRegion();
+      }
     } else if (process.stdin.isTTY) {
       process.stdout.write("\r\x1b[2K");
+      if (restoreInputUI) setupInputUI();
     }
-    if (restoreInputUI && process.stdin.isTTY) setupInputUI();
   }
 }
 

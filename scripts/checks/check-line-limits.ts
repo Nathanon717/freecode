@@ -45,7 +45,7 @@ if (failures.length > 0) {
   console.error(
     `The following file(s) exceed the maximum line limit of ${MAX_LINES}:\n` +
       `${failures.map((f) => `  ${f}`).join("\n")}` +
-      `\nPlease consider refactoring these files to reduce their line count.`,
+      `\nThis is a hard limit. Read docs/line-limit.md.`,
   );
   process.exit(1);
 }

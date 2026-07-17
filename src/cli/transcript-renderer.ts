@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import { getBannerColor } from "./banner.js";
 import { computeLineDiff } from "../util/line-diff.js";
+import { withLineNumbers } from "../util/line-numbers.js";
 import { fitLinesToRows, terminalColumns, visualRows } from "../util/wrap-rows.js";
 import {
   DEFAULT_TRANSCRIPT_MAX_RESULT_LINES,
@@ -83,37 +84,41 @@ export function formatToolErrorLine(name: string, err: unknown): string {
 
 const END_OF_FILE_SUFFIX = /\n\n\(End of file — total \d+ lines\.\)$/;
 
-export function formatToolResultPreview(
-  result: unknown,
-  options: TranscriptRenderOptions = {},
-): string {
-  const raw =
-    typeof result === "string"
-      ? result
-      : (JSON.stringify(result, null, 2) ?? "");
-  const trimmed = raw.trimEnd().replace(END_OF_FILE_SUFFIX, "");
-  if (!trimmed) return "";
-
-  const maxLines =
-    options.maxResultLines ?? DEFAULT_TRANSCRIPT_MAX_RESULT_LINES;
-  const lines = trimmed.split("\n");
+/** Dim, indent, and truncate preview lines — the shared 2-space indent + truncation footer. */
+function renderDimmedLines(lines: string[], options: TranscriptRenderOptions): string {
+  const maxLines = options.maxResultLines ?? DEFAULT_TRANSCRIPT_MAX_RESULT_LINES;
   let shown = maxLines === Infinity ? lines : lines.slice(0, maxLines);
   if (options.maxResultRows !== undefined) {
     shown = fitLinesToRows(shown, options.maxResultRows, (l) => "  " + l);
   }
   const indented = shown.map((l) => chalk.dim("  " + l)).join("\n");
-
   const remaining = lines.length - shown.length;
   return remaining > 0
     ? indented + chalk.dim(`\n  ... (${remaining} more lines)`)
     : indented;
 }
 
+export function formatToolResultPreview(
+  result: unknown,
+  options: TranscriptRenderOptions = {},
+): string {
+  const raw = typeof result === "string" ? result : (JSON.stringify(result, null, 2) ?? "");
+  const trimmed = raw.trimEnd().replace(END_OF_FILE_SUFFIX, "");
+  return trimmed ? renderDimmedLines(trimmed.split("\n"), options) : "";
+}
+
+/** Create-file preview: the read tool's line-number gutter from line 1, so create and read read alike. */
+export function formatCreatedFileContent(
+  content: string,
+  options: TranscriptRenderOptions = {},
+): string {
+  const body = content.endsWith("\n") ? content.slice(0, -1) : content;
+  return renderDimmedLines(withLineNumbers(1, body.split("\n")), options);
+}
+
 function splitDiffLines(text: string): string[] {
   const lines = text.split("\n");
-  if (lines.length > 0 && lines[lines.length - 1] === "")
-    return lines.slice(0, -1);
-  return lines;
+  return lines.length > 0 && lines[lines.length - 1] === "" ? lines.slice(0, -1) : lines;
 }
 
 export function formatEditFileDiff(
@@ -124,46 +129,47 @@ export function formatEditFileDiff(
   contextAfter: string[] = [],
   options: TranscriptRenderOptions = {},
   lineIndent: string = "",
+  startLine: number = 1,
 ): string {
-  const oldLines = splitDiffLines(oldText);
-  const newLines = splitDiffLines(newText);
-  const diff = computeLineDiff(oldLines, newLines);
+  const diff = computeLineDiff(splitDiffLines(oldText), splitDiffLines(newText));
+  type LineType = "context" | "remove" | "add" | "equal";
+  // Gutter number: old-file line for removals, new-file line otherwise. Two
+  // counters walk in lockstep so removed lines keep their old-file number.
+  const lines: { text: string; type: LineType; num: number }[] = [];
+  let oldNo = startLine;
+  let newNo = startLine;
+  for (const l of contextBefore) { lines.push({ text: " " + l, type: "context", num: newNo }); oldNo++; newNo++; }
+  for (const e of diff) {
+    if (e.type === "remove") lines.push({ text: "-" + lineIndent + e.text, type: "remove", num: oldNo++ });
+    else if (e.type === "add") lines.push({ text: "+" + lineIndent + e.text, type: "add", num: newNo++ });
+    else { lines.push({ text: " " + lineIndent + e.text, type: "equal", num: newNo }); oldNo++; newNo++; }
+  }
+  for (const l of contextAfter) { lines.push({ text: " " + l, type: "context", num: newNo }); oldNo++; newNo++; }
 
-  type LineEntry = {
-    text: string;
-    type: "context" | "remove" | "add" | "equal";
+  const maxLines = options.maxResultLines ?? DEFAULT_TRANSCRIPT_MAX_RESULT_LINES;
+  let shown = maxLines === Infinity ? lines : lines.slice(0, maxLines);
+  // Gutter width from the line-count slice; the 1-2 col variance a later row-fit
+  // could shave off doesn't change wrap math, so compute it once up front.
+  const width = shown.reduce((w, e) => Math.max(w, String(e.num).length), 1);
+  const renderEntry = ({ text, type, num }: (typeof lines)[number]): string => {
+    const gutter = chalk.dim(`${String(num).padStart(width)}: `);
+    const colored =
+      type === "remove" ? chalk.red(text)
+      : type === "add" ? chalk.green(text)
+      : type === "equal" ? chalk.magentaBright(text)
+      : chalk.dim(text);
+    return "  " + gutter + colored;
   };
-  const lines: LineEntry[] = [
-    ...contextBefore.map((l) => ({ text: " " + l, type: "context" as const })),
-    ...diff.map((e) => ({
-      text:
-        (e.type === "remove" ? "-" : e.type === "add" ? "+" : " ") +
-        lineIndent +
-        e.text,
-      type: e.type,
-    })),
-    ...contextAfter.map((l) => ({ text: " " + l, type: "context" as const })),
-  ];
+  // On the approval path the diff must also fit a wrapped-row budget, so the
+  // header the user is approving stays on screen; measure what actually lands.
+  if (options.maxResultRows !== undefined) {
+    shown = fitLinesToRows(shown, options.maxResultRows, renderEntry);
+  }
+  const formatted = shown.map(renderEntry).join("\n");
 
-  const maxLines =
-    options.maxResultLines ?? DEFAULT_TRANSCRIPT_MAX_RESULT_LINES;
-  const shown = maxLines === Infinity ? lines : lines.slice(0, maxLines);
-  const formatted = shown
-    .map(({ text, type }) => {
-      const colored =
-        type === "remove"
-          ? chalk.red(text)
-          : type === "add"
-            ? chalk.green(text)
-            : type === "equal"
-              ? chalk.magentaBright(text)
-              : chalk.dim(text);
-      return "  " + colored;
-    })
-    .join("\n");
-
-  return maxLines !== Infinity && lines.length > maxLines
-    ? formatted + chalk.dim(`\n  ... (${lines.length - maxLines} more lines)`)
+  const remaining = lines.length - shown.length;
+  return remaining > 0
+    ? formatted + chalk.dim(`\n  ... (${remaining} more lines)`)
     : formatted;
 }
 
@@ -327,6 +333,8 @@ export type ToolStepResult =
       contextBefore: string[];
       contextAfter: string[];
       lineIndent: string;
+      /** 1-based file line number of the first rendered line (context or diff). */
+      startLine: number;
     }
   | { kind: "error"; error: unknown };
 
@@ -410,9 +418,10 @@ export function writeToolResultPreview(
       result.contextAfter,
       runtimeOpts,
       result.lineIndent,
+      result.startLine,
     );
   } else if (result.kind === "create-content") {
-    preview = formatToolResultPreview(result.content, runtimeOpts);
+    preview = formatCreatedFileContent(result.content, runtimeOpts);
   } else {
     preview = formatToolResultPreview(result.result, runtimeOpts);
   }

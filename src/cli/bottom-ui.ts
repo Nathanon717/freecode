@@ -301,6 +301,11 @@ export function setupFooterUI() {
   lastReservedRows = 2;
   refreshTimer = setInterval(() => {
     if (!footerActive) return;
+    // While suspended (raw picker or tool-approval prompt open) the footer is
+    // managed manually and something else may own the footer rows — e.g. the
+    // approval hint draws on the last row. Writing the composed footer here would
+    // clobber it, so emit nothing until resumed.
+    if (footerTimerSuspended) return;
     const prevFooterRowCount = footerRowCount;
     const output = composeFooterOutput();
     // Skip the write when the footer is byte-identical to what is already on screen.
@@ -313,8 +318,7 @@ export function setupFooterUI() {
     process.stdout.write(output);
     // Only redraw the input area if the footer row count changed (affects reserved rows).
     // Unconditional redraws park the cursor at the bottom, causing Termux to snap the viewport.
-    // Skip input redraw when suspended (e.g. raw picker open).
-    if (!footerTimerSuspended && inputUIActive && footerRowCount !== prevFooterRowCount) drawInputArea();
+    if (inputUIActive && footerRowCount !== prevFooterRowCount) drawInputArea();
   }, 1000);
   setScrollRegion(1, rows() - 2);
   drawFooter();

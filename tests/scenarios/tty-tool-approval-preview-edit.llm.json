@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock",
+        "model": "gpt-freecode-test",
+        "messageCount": 1,
+        "mustContain": ["Rename the first line"],
+        "toolsAvailable": ["edit"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["I'll rename the first line."],
+        "toolCalls": [
+          {
+            "name": "edit",
+            "args": {
+              "path": "tests/scenarios/long-preview.fixture.txt",
+              "old_text": "LINE-001: changelog entry text for this line",
+              "new_text": "LINE-XYZ-REPLACED: changelog entry text for this line"
+            }
+          }
+        ],
+        "usage": { "promptTokens": 20, "outputTokens": 6, "totalTokens": 26 }
+      }
+    }
+  ]
+}

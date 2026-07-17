@@ -23,7 +23,7 @@ readFileTool: CoreTool<z.ZodObject<{ path: z.ZodString; offset: z.ZodOptional<z.
 - Resolves through `resolveProjectPath()`, rejecting absolute paths and `..` escapes outside the project root.
 - Reads using UTF-8.
 - Marks the relative path as read after a successful filesystem read so `edit` may edit it later.
-- Output lines are prefixed with their 1-indexed line number: `N: <content>`.
+- Output lines are prefixed with a right-aligned 1-indexed line-number gutter (`N: <content>`, colons aligned across the block) via `withLineNumbers` in [util/line-numbers.md](../../util/line-numbers.md) — the same gutter format the create/edit previews render.
 - Appends a pagination footer:
   - If more lines remain: `(Showing lines M-N of T. Use offset=N+1 to continue.)`
   - If at end of file: `(End of file — total T lines.)`

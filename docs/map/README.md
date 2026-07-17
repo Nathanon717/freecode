@@ -38,18 +38,19 @@ Format: filename (linecount)
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
 - `src/agent/tools/`
   - [`create.ts`](agent/tools/create.md) (33) — create Tool
+  - [`edit-diff-context.ts`](agent/tools/edit-diff-context.md) (103) — Edit Diff Context
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
   - [`grep.ts`](agent/tools/grep.md) (122) — grep Tool
-  - [`index.ts`](agent/tools/index.md) (458) — Tool Registry
+  - [`index.ts`](agent/tools/index.md) (419) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
-  - [`read.ts`](agent/tools/read.md) (87) — read Tool
+  - [`read.ts`](agent/tools/read.md) (88) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
 - `src/agent/`
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/`
   - [`action-menu.ts`](cli/action-menu.md) (53) — Inline Action Sub-menu
   - [`banner.ts`](cli/banner.md) (123) — Startup Banner
-  - [`bottom-ui.ts`](cli/bottom-ui.md) (473) — Bottom Terminal UI
+  - [`bottom-ui.ts`](cli/bottom-ui.md) (477) — Bottom Terminal UI
   - [`command-dispatcher.ts`](cli/command-dispatcher.md) (243) — Command Dispatcher
   - [`custom-eval-menu.ts`](cli/custom-eval-menu.md) (361) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval-dots.md) (28) — Eval Status Circle Renderers
@@ -68,15 +69,15 @@ Format: filename (linecount)
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
   - [`toggles.ts`](cli/toggles.md) (100) — Footer Toggle State
-  - [`tool-approval.ts`](cli/tool-approval.md) (217) — Tool Approval Prompts
+  - [`tool-approval.ts`](cli/tool-approval.md) (251) — Tool Approval Prompts
   - [`tool-invocation.ts`](cli/tool-invocation.md) (334) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
   - [`transcript-options.ts`](cli/transcript-options.md) (66) — Transcript Stream + Options
-  - [`transcript-renderer.ts`](cli/transcript-renderer.md) (476) — Agent Transcript Formatting
+  - [`transcript-renderer.ts`](cli/transcript-renderer.md) (485) — Agent Transcript Formatting
 - `src/commands/`
   - [`config.ts`](commands/config.md) (345) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (298) — Interactive Model Picker
-  - [`renderer.ts`](commands/renderer.md) (249) — Renderer Demo Command
+  - [`renderer.ts`](commands/renderer.md) (252) — Renderer Demo Command
   - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`
   - [`index.ts`](config/index.md) (219) — Configuration Loader
@@ -131,6 +132,7 @@ Format: filename (linecount)
   - [`guards.ts`](util/guards.md) (4) — Type Guard Utilities
   - [`keyboard.ts`](util/keyboard.md) (5) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) (39) — LCS Line Diff
+  - [`line-numbers.ts`](util/line-numbers.md) (14) — Line-Number Gutter
   - [`screen-buffer.ts`](util/screen-buffer.md) (95) — Screen Buffer
   - [`text-encoding.ts`](util/text-encoding.md) (24) — Text Encoding Helpers
   - [`wrap-rows.ts`](util/wrap-rows.md) (49) — Wrapped-Row Math
