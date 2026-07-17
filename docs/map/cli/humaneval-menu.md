@@ -27,8 +27,6 @@ buildHumanEvalTab<R>(problems: HumanEvalProblem[], results: HumanEvalResultMap, 
 
 makeRetryPrompter(retryStatusFile: string, ask: (message: string) => Promise<boolean>, onDecline: () => void): () => void
 
-printHumanEvalList(problems: HumanEvalProblem[]): void
-
 runHumanEvalProblems(chosen: HumanEvalProblem[], model: string, rl: Interface): Promise<void>
 ```
 <!-- END GENERATED EXPORTS -->
@@ -36,4 +34,3 @@ runHumanEvalProblems(chosen: HumanEvalProblem[], model: string, rl: Interface): 
 ## Export notes
 
 - `makeRetryPrompter` builds the rate-limit retry poll callback used by `runHumanEvalProblems` (installed on a 500ms `setInterval`). It owns the `promptingUser`/`lastSeenTargetMs` guard state and takes injectable `ask`/`onDecline` callbacks; exported so the poll branches can be unit-tested directly without driving the whole run loop.
-- `printHumanEvalList` is exported but not called by production paths (non-TTY `/eval` lists only the Custom scenarios); it remains for potential future use or scripting.

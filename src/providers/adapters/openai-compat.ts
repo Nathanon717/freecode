@@ -66,11 +66,6 @@ export function formatCapturedProviderUsages(usages: CapturedProviderUsage[] | n
   return JSON.stringify(usages.length === 1 ? payload[0] : payload, null, 2);
 }
 
-/** Return the static extra headers for a provider (e.g. OpenRouter HTTP-Referer). */
-export function getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined {
-  return providerQuirks[providerId]?.staticHeaders;
-}
-
 function usageFromPayload(providerId: string, payload: unknown, source: 'json' | 'sse'): CapturedProviderUsage | null {
   if (!isRecord(payload)) return null;
   const usage = isRecord(payload.usage) ? payload.usage : null;

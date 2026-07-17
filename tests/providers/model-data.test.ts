@@ -29,19 +29,9 @@ afterEach(async () => {
   try { rmSync(tempStore, { recursive: true, force: true }); } catch { /* OS will clean up */ }
 });
 
-describe('model-data: upsert/get', () => {
+describe('model-data: get', () => {
   it('returns undefined for an unknown key', () => {
     expect(store.getModel('groq:nope')).toBeUndefined();
-  });
-
-  it('upserts and reads back an entry, merging on re-upsert', () => {
-    store.upsertModel({ provider: 'groq', modelId: 'llama-3.1-8b', displayName: 'LLaMA' });
-    expect(store.getModel('groq:llama-3.1-8b')?.displayName).toBe('LLaMA');
-
-    store.upsertModel({ provider: 'groq', modelId: 'llama-3.1-8b', contextWindow: 131072 });
-    const entry = store.getModel('groq:llama-3.1-8b');
-    expect(entry?.displayName).toBe('LLaMA');
-    expect(entry?.contextWindow).toBe(131072);
   });
 });
 

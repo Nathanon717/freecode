@@ -1,6 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import {
-  getOpenAICompatProviderHeaders,
   formatCapturedProviderUsages,
   registerQuotaUpdateSink,
   setParallelToolsDisabled,
@@ -32,13 +31,13 @@ describe('Router Logic', () => {
 
   describe('OpenRouter headers', () => {
     it('should include required headers', () => {
-      const headers = getOpenAICompatProviderHeaders('openrouter');
+      const headers = providerQuirks['openrouter']?.staticHeaders;
       expect(headers?.['HTTP-Referer']).toBe('https://freecode.local');
       expect(headers?.['X-Title']).toBe('freecode');
     });
 
     it('should not add OpenRouter headers to other providers', () => {
-      expect(getOpenAICompatProviderHeaders('groq')).toBeUndefined();
+      expect(providerQuirks['groq']?.staticHeaders).toBeUndefined();
     });
   });
 

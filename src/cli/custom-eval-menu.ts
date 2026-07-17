@@ -7,12 +7,10 @@ import {
 } from "../eval/custom.js";
 import { readTextFile } from "../util/text-encoding.js";
 import {
-  getEvalStatus,
   getLatestEvalEntry,
   type EvalHistoryEntry,
   type ScenarioHashes,
 } from "../eval/history.js";
-export { getEvalStatus };
 export type { ScenarioHashes };
 import type { CustomEval } from "../eval/custom.js";
 

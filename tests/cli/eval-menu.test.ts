@@ -39,7 +39,6 @@ vi.mock('../../src/cli/humaneval-menu.js', () => ({
     id: 'humaneval', label: 'HumanEval', count: () => problems.length,
     renderBody: () => ({ lines: [], selectedLineIdx: 0 }),
   })),
-  printHumanEvalList: vi.fn(),
   runHumanEvalProblems: vi.fn(() => Promise.resolve()),
 }));
 

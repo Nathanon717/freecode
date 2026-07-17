@@ -6,8 +6,6 @@
 ## Exports
 
 ```typescript
-getEvalStatus: (scenarioId: string, runHash: string, model: string, history: EvalHistoryEntry[], legacyFullHash?: string | undefined) => EvalStatus
-
 ScenarioHashes: any
 
 buildCustomEvalTab<R>(scenarios: CustomEval[], evalHistory: EvalHistoryEntry[], scenarioHashes: Map<string, ScenarioHashes>, getSelectedModel: () => string, choose: (scenarios: CustomEval[]) => R): MenuTab<...>

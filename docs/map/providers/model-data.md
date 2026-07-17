@@ -50,8 +50,6 @@ getStoreDir(): string
 
 getModel(key: string): ModelEntry | undefined
 
-upsertModel(entry: ModelEntry): void
-
 getFavorites(): Set<string>
 
 setFavorite(key: string, isFavorite: boolean): void

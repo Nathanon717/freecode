@@ -62,8 +62,6 @@ interface ToolTraceEvent {
   error?: string;
 }
 
-export { formatArgs, filterArgs } from "../../cli/transcript-renderer.js";
-
 function appendToolTrace(event: ToolTraceEvent): void {
   const tracePath = process.env.FREECODE_TRACE_JSON;
   if (!tracePath) return;
@@ -455,7 +453,5 @@ export function createTools(
     ),
   };
 }
-
-export const allTools = createTools();
 
 export { readFileTool, createFileTool, editTool, grepTool, shellTool, listDirTool };

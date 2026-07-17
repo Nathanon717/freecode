@@ -92,7 +92,6 @@ vi.mock('../../src/cli/banner.js', () => ({
 import {
   buildHumanEvalTab,
   makeRetryPrompter,
-  printHumanEvalList,
   runHumanEvalProblems,
 } from '../../src/cli/humaneval-menu.js';
 import type { HumanEvalProblem } from '../../src/eval/humaneval-data.js';
@@ -241,31 +240,6 @@ describe('buildHumanEvalTab', () => {
   });
 });
 
-// ── printHumanEvalList ────────────────────────────────────────────────────────
-
-describe('printHumanEvalList', () => {
-  it('prints each problem task_id and entry_point', () => {
-    const problems = [
-      makeProblem({ task_id: 'HumanEval/0', entry_point: 'has_close_elements' }),
-      makeProblem({ task_id: 'HumanEval/1', entry_point: 'separate_paren_groups' }),
-    ];
-    const logged = captureLog();
-    printHumanEvalList(problems);
-    const joined = logged.join('\n');
-    expect(joined).toContain('HumanEval/0');
-    expect(joined).toContain('has_close_elements');
-    expect(joined).toContain('HumanEval/1');
-    expect(joined).toContain('separate_paren_groups');
-    vi.restoreAllMocks();
-  });
-
-  it('prints header', () => {
-    const logged = captureLog();
-    printHumanEvalList([]);
-    expect(logged.some(l => l.includes('HumanEval'))).toBe(true);
-    vi.restoreAllMocks();
-  });
-});
 
 // ── runHumanEvalProblems / runOneProblem ──────────────────────────────────────
 

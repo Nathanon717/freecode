@@ -71,7 +71,6 @@ import {
   dispatchCommand,
   type CommandRuntime,
 } from '../../src/cli/command-dispatcher.js';
-import { formatQuotaReset } from '../../src/cli/footer-status.js';
 import { agentLoop } from '../../src/agent/loop.js';
 import { addAnthropicSessionCost, describeCostEstimateBreakdown, resetAnthropicSessionCost } from '../../src/providers/anthropic-cost.js';
 import { formatCapturedProviderUsages } from '../../src/providers/adapters/openai-compat.js';
@@ -142,40 +141,6 @@ afterEach(() => {
   delete process.env['FREECODE_RESULT_JSON'];
 });
 
-// ---------------------------------------------------------------------------
-// formatQuotaReset
-// ---------------------------------------------------------------------------
-
-describe('formatQuotaReset', () => {
-  it('returns ? when both ms and raw are null', () => {
-    expect(formatQuotaReset(null, null)).toBe('?');
-  });
-
-  // Raw string takes precedence and is returned verbatim, regardless of ms.
-  it.each([
-    [259_200, '4m19.2s', '4m19.2s'],
-    [5_130, '5.13s', '5.13s'],
-    [300, '300ms', '300ms'],
-    [null, 'garbage', 'garbage'],
-  ])('returns raw string %p / %p verbatim', (ms, raw, expected) => {
-    expect(formatQuotaReset(ms, raw)).toBe(expected);
-  });
-
-  // Falls back to formatting ms when raw is null or whitespace-only.
-  it.each([
-    [259_200, null, '4m19s'],
-    [3_600_000, null, '1h'],
-    [3_660_000, null, '1h1m'],
-    [3_661_000, null, '1h1m1s'],
-    [60_000, null, '1m'],
-    [65_000, null, '1m5s'],
-    [5_000, null, '5s'],
-    [0, null, '0s'],
-    [5_000, '   ', '5s'],
-  ])('formats %p ms as %p', (ms, raw, expected) => {
-    expect(formatQuotaReset(ms, raw)).toBe(expected);
-  });
-});
 
 // ---------------------------------------------------------------------------
 // dispatchCommand — return value (shared invariant across all inputs)

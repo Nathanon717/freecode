@@ -30,8 +30,6 @@ import { getHumanEvalResults } from '../providers/model-data.js';
 import { ensureStoreReady } from '../providers/db.js';
 import { existsSync } from 'fs';
 
-export type EvalTabId = 'custom' | 'humaneval';
-
 // What the unified eval menu resolves with: a tagged choice dispatched to the
 // matching run loop, or null when the user cancels.
 type EvalChoice =

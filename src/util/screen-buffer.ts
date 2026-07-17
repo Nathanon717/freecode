@@ -1,12 +1,10 @@
 const MAX_LINES = 150;
-const lineBuffer: string[] = [];
-const displayLineBuffer: string[] = [];
 const displayLineBufferStyled: string[] = [];
 let installed = false;
-// Index into displayLineBuffer marking the start of the current scroll-region
-// epoch.  Lines before this index were written before the input UI's scroll
-// region was established (e.g. the startup banner) and must not be used to
-// repaint overlay rows.
+// Index into displayLineBufferStyled marking the start of the current
+// scroll-region epoch.  Lines before this index were written before the input
+// UI's scroll region was established (e.g. the startup banner) and must not be
+// used to repaint overlay rows.
 let epochStart = 0;
 
 export function stripAnsi(str: string): string {
@@ -23,15 +21,15 @@ function hasFullScreenErase(str: string): boolean {
   return /\x1b\[[0-3]?J/.test(str);
 }
 
-function pushDisplayLines(clean: string, styled: string): void {
-  const lines = clean.split('\n');
+function pushDisplayLines(styled: string): void {
   const styledLines = styled.split('\n');
-  const count = clean.endsWith('\n') ? lines.length - 1 : lines.length;
+  // Trailing-newline test on the ANSI-stripped text: a write may place an escape
+  // sequence after its final \n, which would make styled not end in \n even
+  // though it logically has a trailing blank line.
+  const count = stripAnsi(styled).endsWith('\n') ? styledLines.length - 1 : styledLines.length;
   for (let i = 0; i < count; i++) {
-    displayLineBuffer.push(lines[i]?.trimEnd() ?? '');
     displayLineBufferStyled.push(styledLines[i]?.trimEnd() ?? '');
-    if (displayLineBuffer.length > MAX_LINES) {
-      displayLineBuffer.shift();
+    if (displayLineBufferStyled.length > MAX_LINES) {
       displayLineBufferStyled.shift();
       if (epochStart > 0) epochStart--;
     }
@@ -50,39 +48,21 @@ export function installScreenBuffer(): void {
       if (hasFullScreenErase(chunk)) {
         // A full-screen / scrollback erase wipes everything currently on
         // screen, so nothing buffered can still sit behind a suggestion
-        // overlay. Drop the buffers and reset the epoch; the banner a redraw
+        // overlay. Drop the buffer and reset the epoch; the banner a redraw
         // prints next becomes the new pre-epoch chrome once the caller
         // re-marks the epoch via startOverlayEpoch(). Without this, a redrawn
         // banner would be resurrected into overlay repaints as stale content.
-        lineBuffer.length = 0;
-        displayLineBuffer.length = 0;
         displayLineBufferStyled.length = 0;
         epochStart = 0;
       }
       if (!hasCursorOrScreenControl(chunk)) {
-        const clean = stripAnsi(chunk).replace(/\r/g, '');
         const styled = chunk.replace(/\r/g, '');
-        pushDisplayLines(clean, styled);
-        for (const line of clean.split('\n')) {
-          const trimmed = line.trimEnd();
-          if (trimmed && (lineBuffer.length === 0 || lineBuffer[lineBuffer.length - 1] !== trimmed)) {
-            lineBuffer.push(trimmed);
-            if (lineBuffer.length > MAX_LINES) lineBuffer.shift();
-          }
-        }
+        pushDisplayLines(styled);
       }
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
     return (original as any)(chunk, ...args);
   };
-}
-
-export function getScreenBuffer(): string {
-  return lineBuffer.join('\n');
-}
-
-export function getScreenBufferDisplayLines(count: number): string[] {
-  return displayLineBuffer.slice(Math.max(0, displayLineBuffer.length - count));
 }
 
 // Records the current write position as the start of the scroll-region epoch.
@@ -94,7 +74,7 @@ export function getScreenBufferDisplayLines(count: number): string[] {
 // call it from per-turn input reinit that isn't preceded by a screen clear, or
 // it would discard transcript lines the user can still see.
 export function startOverlayEpoch(): void {
-  epochStart = displayLineBuffer.length;
+  epochStart = displayLineBufferStyled.length;
 }
 
 // Returns the lines that should repaint the n overlay rows when a suggestion

@@ -290,14 +290,6 @@ async function runOneProblem(problem: HumanEvalProblem, model: string, rl?: Inte
   return { status: 'fail', userCancelled };
 }
 
-// Non-TTY listing of the HumanEval problems.
-export function printHumanEvalList(problems: HumanEvalProblem[]): void {
-  console.log(chalk.bold('HumanEval problems\n'));
-  for (const p of problems) {
-    console.log(`  ${chalk.cyan(p.task_id)}  ${chalk.dim(p.entry_point)}`);
-  }
-}
-
 // Runs the chosen HumanEval problems and prints a summary when more than one ran.
 export async function runHumanEvalProblems(
   chosen: HumanEvalProblem[],

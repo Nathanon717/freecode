@@ -91,10 +91,6 @@ export function isFakeLlmMode(): boolean {
   return process.env.FREECODE_FAKE_LLM === '1';
 }
 
-export function isFakeModelPreference(modelPreference: string): boolean {
-  return modelPreference.startsWith(FAKE_MODEL_PREFIX);
-}
-
 export function isFakeNativeModelPreference(modelPreference: string): boolean {
   return modelPreference.startsWith(FAKE_NATIVE_MODEL_PREFIX);
 }

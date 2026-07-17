@@ -80,13 +80,6 @@ export function getModel(key: string): ModelEntry | undefined {
   return load()[key];
 }
 
-export function upsertModel(entry: ModelEntry): void {
-  const store = load();
-  const key = `${entry.provider}:${entry.modelId}`;
-  store[key] = { ...store[key], ...entry };
-  save(store, [key]);
-}
-
 export function getFavorites(): Set<string> {
   const store = load();
   const favs = new Set<string>();

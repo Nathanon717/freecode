@@ -6,8 +6,6 @@
 ## Exports
 
 ```typescript
-type EvalTabId = 'custom' | 'humaneval';
-
 runEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string): Promise<void>
 ```
 <!-- END GENERATED EXPORTS -->

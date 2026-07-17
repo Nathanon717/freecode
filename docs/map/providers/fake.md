@@ -46,8 +46,6 @@ interface FakeToolCall {
 
 isFakeLlmMode(): boolean
 
-isFakeModelPreference(modelPreference: string): boolean
-
 isFakeNativeModelPreference(modelPreference: string): boolean
 
 createPlaceholderFakeLanguageModel(): LanguageModelV1

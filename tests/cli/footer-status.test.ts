@@ -6,8 +6,6 @@ import {
   setRetryBanner,
   formatEvalRunStatus,
   layoutFooterRightRows,
-  composeBottomStatusLine,
-  composeBottomRightStatus,
 } from '../../src/cli/footer-status.js';
 
 function resetState() {
@@ -79,35 +77,7 @@ describe('layoutFooterRightRows', () => {
   });
 });
 
-describe('composeBottomStatusLine', () => {
-  it('returns a string of width-1 characters (reserves one char for left gutter)', () => {
-    setActiveModel('p', 'm');
-    const line = composeBottomStatusLine(30);
-    expect(line.length).toBe(29);
-  });
-
-  it('returns empty string for width 1', () => {
-    const line = composeBottomStatusLine(1);
-    expect(line.length).toBe(0);
-  });
-
-  it('right-aligns the quota status', () => {
-    const now = new Date('2026-05-18T12:00:00.000Z');
-    vi.useFakeTimers();
-    vi.setSystemTime(now);
-
-    setQuotaSnapshot([
-      { label: 'R', remaining: 974, limit: 1000, resetMs: 2_205_000 },
-      { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
-    ]);
-
-    expect(composeBottomStatusLine(123, now.getTime())).toBe(
-      '                                                                       R  974/1000 full 36m45s | T 12000/12000 full 0s    '
-    );
-  });
-});
-
-describe('composeBottomRightStatus', () => {
+describe('layoutFooterRightRows single-row', () => {
   it('keeps model visible when quota status is too wide', () => {
     const now = new Date('2026-05-18T12:00:00.000Z');
     vi.useFakeTimers();
@@ -119,7 +89,7 @@ describe('composeBottomRightStatus', () => {
       { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
     ]);
 
-    const status = composeBottomRightStatus(62, now.getTime());
+    const status = layoutFooterRightRows(62, 1, now.getTime())[0];
 
     expect(status).toContain('groq:llama-3.3-70b-versatile');
     expect(status).not.toContain('R  985/1000');
@@ -135,13 +105,13 @@ describe('composeBottomRightStatus', () => {
       { label: 'R', remaining: 9, limit: 1000, resetMs: 2_000 },
       { label: 'T', remaining: 89, limit: 12000, resetMs: 0 },
     ]);
-    const lowValues = composeBottomRightStatus(80, now.getTime());
+    const lowValues = layoutFooterRightRows(80, 1, now.getTime())[0];
 
     setQuotaSnapshot([
       { label: 'R', remaining: 986, limit: 1000, resetMs: 1_188_000 },
       { label: 'T', remaining: 12000, limit: 12000, resetMs: 0 },
     ]);
-    const highValues = composeBottomRightStatus(80, now.getTime());
+    const highValues = layoutFooterRightRows(80, 1, now.getTime())[0];
 
     for (const label of ['/1000 full', '| T', '/12000 full', '|']) {
       expect(highValues.indexOf(label)).toBe(lowValues.indexOf(label));
@@ -156,7 +126,7 @@ describe('composeBottomRightStatus', () => {
       updatedAt: Date.now(),
     });
 
-    const status = composeBottomRightStatus(80);
+    const status = layoutFooterRightRows(80, 1)[0];
 
     expect(status).toContain('OpenAI today $1.23');
   });
@@ -167,14 +137,14 @@ describe('composeBottomRightStatus', () => {
       warning: 'OPENAI_ADMIN_KEY missing',
       updatedAt: Date.now(),
     });
-    expect(composeBottomRightStatus(80)).toContain('OpenAI spend off: OPENAI_ADMIN_KEY missing');
+    expect(layoutFooterRightRows(80, 1)[0]).toContain('OpenAI spend off: OPENAI_ADMIN_KEY missing');
 
     setOpenAIDailySpend({
       state: 'unavailable',
       warning: 'OpenAI costs HTTP 401',
       updatedAt: Date.now(),
     });
-    expect(composeBottomRightStatus(80)).toContain('OpenAI spend failed: OpenAI costs HTTP 401');
+    expect(layoutFooterRightRows(80, 1)[0]).toContain('OpenAI spend failed: OpenAI costs HTTP 401');
   });
 
   it('drops OpenAI daily spend before dropping model', () => {
@@ -186,7 +156,7 @@ describe('composeBottomRightStatus', () => {
       updatedAt: Date.now(),
     });
 
-    const status = composeBottomRightStatus(44);
+    const status = layoutFooterRightRows(44, 1)[0];
 
     expect(status).toContain('openai:gpt-5.4-nano-2026-03-17');
     expect(status).not.toContain('OpenAI today $1.23');

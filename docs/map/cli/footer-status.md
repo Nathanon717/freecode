@@ -6,8 +6,6 @@
 ## Exports
 
 ```typescript
-formatQuotaReset(ms: number | null, raw: string | null): string
-
 setQuotaSnapshot(quota: RateLimitSnapshot | null): void
 
 setActiveModel(providerId: string, modelId: string): void
@@ -21,10 +19,6 @@ setRetryBanner(info: { name: string; label: string; targetMs: number; } | null):
 formatEvalRunStatus(now?: number): string
 
 layoutFooterRightRows(width: number, rowBudget: number, now?: number): string[]
-
-composeBottomRightStatus(width: number, now?: number): string
-
-composeBottomStatusLine(width: number, now?: number): string
 ```
 <!-- END GENERATED EXPORTS -->
 
@@ -32,8 +26,6 @@ composeBottomStatusLine(width: number, now?: number): string
 
 - `formatEvalRunStatus` — returns the retry-banner string for the footer left side.
 - `layoutFooterRightRows` — lays out right-side footer content into 1–3 rows; `result[0]` is the bottom row.
-- `composeBottomRightStatus` — single-row right status string.
-- `composeBottomStatusLine` — right-aligned full-width status line.
 
 ## Read when
 

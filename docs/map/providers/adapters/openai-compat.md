@@ -29,8 +29,6 @@ endProviderUsageCapture(providerId: string): Promise<CapturedProviderUsage[]>
 
 formatCapturedProviderUsages(usages: CapturedProviderUsage[] | null | undefined): string | null
 
-getOpenAICompatProviderHeaders(providerId: string): Record<string, string> | undefined
-
 createOpenAICompatProvider(providerConfig: ProviderConfig): OpenAIProvider
 
 createOllamaProvider(): OpenAIProvider

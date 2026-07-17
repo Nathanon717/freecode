@@ -40,7 +40,7 @@ Format: filename (linecount)
   - [`create.ts`](agent/tools/create.md) (33) — create Tool
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
   - [`grep.ts`](agent/tools/grep.md) (122) — grep Tool
-  - [`index.ts`](agent/tools/index.md) (462) — Tool Registry
+  - [`index.ts`](agent/tools/index.md) (458) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (87) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
@@ -51,12 +51,12 @@ Format: filename (linecount)
   - [`banner.ts`](cli/banner.md) (123) — Startup Banner
   - [`bottom-ui.ts`](cli/bottom-ui.md) (473) — Bottom Terminal UI
   - [`command-dispatcher.ts`](cli/command-dispatcher.md) (243) — Command Dispatcher
-  - [`custom-eval-menu.ts`](cli/custom-eval-menu.md) (363) — Custom Eval Tab + Run Loop
+  - [`custom-eval-menu.ts`](cli/custom-eval-menu.md) (361) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval-dots.md) (28) — Eval Status Circle Renderers
-  - [`eval-menu.ts`](cli/eval-menu.md) (125) — Unified Eval Menu
+  - [`eval-menu.ts`](cli/eval-menu.md) (123) — Unified Eval Menu
   - [`eval-screen.ts`](cli/eval-screen.md) (164) — Eval Screen Renderers
-  - [`footer-status.ts`](cli/footer-status.md) (209) — Footer Status State and Formatters
-  - [`humaneval-menu.ts`](cli/humaneval-menu.md) (322) — HumanEval Tab + Run Loop
+  - [`footer-status.ts`](cli/footer-status.md) (181) — Footer Status State and Formatters
+  - [`humaneval-menu.ts`](cli/humaneval-menu.md) (314) — HumanEval Tab + Run Loop
   - [`input-buffer.ts`](cli/input-buffer.md) (115) — Input Buffer State
   - [`list-menu.ts`](cli/list-menu.md) (367) — Shared Tabbed List Menu
   - [`markdown-renderer.ts`](cli/markdown-renderer.md) (445) — Markdown Renderer
@@ -96,14 +96,14 @@ Format: filename (linecount)
   - [`openai-compat-quirks.ts`](providers/adapters/openai-compat-quirks.md) (54) — OpenAI-Compatible Provider Quirk Profiles
   - [`openai-compat-request.ts`](providers/adapters/openai-compat-request.md) (35) — OpenAI-Compatible Request Transforms
   - [`openai-compat-sse.ts`](providers/adapters/openai-compat-sse.md) (142) — OpenAI-Compatible SSE Transforms
-  - [`openai-compat.ts`](providers/adapters/openai-compat.md) (231) — OpenAI-Compatible Adapter
+  - [`openai-compat.ts`](providers/adapters/openai-compat.md) (226) — OpenAI-Compatible Adapter
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
   - [`db-config-cache.ts`](providers/db-config-cache.md) (54) — DB Config Cache
   - [`db.ts`](providers/db.md) (499) — SQLite Store (libSQL/Turso)
-  - [`fake.ts`](providers/fake.md) (424) — Fake LLM Fixtures
+  - [`fake.ts`](providers/fake.md) (420) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
-  - [`model-data.ts`](providers/model-data.md) (220) — Unified Model Store
+  - [`model-data.ts`](providers/model-data.md) (213) — Unified Model Store
   - [`model-list-cache.ts`](providers/model-list-cache.md) (105) — Model List Cache
   - [`model-quirks.ts`](providers/model-quirks.md) (38) — Per-Model Static Quirks
   - [`model-settings-accessor.ts`](providers/model-settings-accessor.md) (14) — Model Settings Accessor
@@ -131,7 +131,7 @@ Format: filename (linecount)
   - [`guards.ts`](util/guards.md) (4) — Type Guard Utilities
   - [`keyboard.ts`](util/keyboard.md) (5) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) (39) — LCS Line Diff
-  - [`screen-buffer.ts`](util/screen-buffer.md) (115) — Screen Buffer
+  - [`screen-buffer.ts`](util/screen-buffer.md) (92) — Screen Buffer
   - [`text-encoding.ts`](util/text-encoding.md) (24) — Text Encoding Helpers
   - [`wrap-rows.ts`](util/wrap-rows.md) (49) — Wrapped-Row Math
 <!-- END GENERATED MAP STRUCTURE -->

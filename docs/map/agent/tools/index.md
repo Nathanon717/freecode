@@ -6,8 +6,6 @@
 ## Exports
 
 ```typescript
-export { formatArgs, filterArgs } from "../../cli/transcript-renderer.js"
-
 interface ToolCallPreview {
   name: string;
   args: Record<string, unknown>;
@@ -31,8 +29,6 @@ type ConfirmToolCall = (
 ) => Promise<boolean | ToolCallConfirmation>;
 
 createTools(confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, parsedTools?: boolean, readOnly?: boolean): { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { ...; }
-
-allTools: { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { create: AnyCoreTool; edit: AnyCoreTool; shell_exec: AnyCoreTool; read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; }
 
 readFileTool: CoreTool<ZodObject<{ path: ZodString; offset: ZodOptional<ZodNumber>; limit: ZodOptional<ZodNumber>; }, "strip", ZodTypeAny, { ...; }, { ...; }>, string> & { ...; }
 

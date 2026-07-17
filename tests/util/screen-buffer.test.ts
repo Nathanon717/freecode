@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest';
-import { installScreenBuffer, getScreenBuffer, getScreenBufferDisplayLines, getScreenBufferDisplayLinesForOverlay, startOverlayEpoch } from '../../src/util/screen-buffer.js';
+import { installScreenBuffer, getScreenBufferDisplayLinesForOverlay, startOverlayEpoch } from '../../src/util/screen-buffer.js';
 
 // The buffer hooks process.stdout.write once per module instance. vitest isolates
 // modules per test file, so this file owns its own buffer instance. We write
@@ -16,45 +16,14 @@ describe('screen buffer', () => {
     writeSpy.mockRestore();
   });
 
-  it('records written lines so they can be read back', () => {
-    installScreenBuffer();
-    const token = `sb-basic-${Math.random().toString(36).slice(2)}`;
-    process.stdout.write(`${token}\n`);
-    expect(getScreenBuffer()).toContain(token);
-  });
-
-  it('strips ANSI escape codes before storing', () => {
-    installScreenBuffer();
-    const token = `sb-ansi-${Math.random().toString(36).slice(2)}`;
-    process.stdout.write(`\x1b[32m${token}\x1b[0m\n`);
-    const buffer = getScreenBuffer();
-    expect(buffer).toContain(token);
-    expect(buffer).not.toContain('\x1b[32m');
-  });
-
-  it('collapses consecutive identical lines', () => {
-    installScreenBuffer();
-    const token = `sb-dup-${Math.random().toString(36).slice(2)}`;
-    process.stdout.write(`${token}\n${token}\n${token}\n`);
-    const occurrences = getScreenBuffer().split('\n').filter(l => l === token).length;
-    expect(occurrences).toBe(1);
-  });
-
   it('is idempotent: installing twice does not double-record', () => {
     installScreenBuffer();
     installScreenBuffer();
+    startOverlayEpoch();
     const token = `sb-idem-${Math.random().toString(36).slice(2)}`;
     process.stdout.write(`${token}\n`);
-    const occurrences = getScreenBuffer().split('\n').filter(l => l === token).length;
+    const occurrences = getScreenBufferDisplayLinesForOverlay(19, 19).filter(l => l === token).length;
     expect(occurrences).toBe(1);
-  });
-
-  it('keeps display lines with intentional blanks for overlay repainting', () => {
-    installScreenBuffer();
-    const token = `sb-display-${Math.random().toString(36).slice(2)}`;
-    process.stdout.write(`${token}-a\n\n${token}-b\n`);
-
-    expect(getScreenBufferDisplayLines(3)).toEqual([`${token}-a`, '', `${token}-b`]);
   });
 
   describe('getScreenBufferDisplayLinesForOverlay', () => {
@@ -145,12 +114,13 @@ describe('screen buffer', () => {
 
   it('does not record cursor-addressed UI writes as transcript display lines', () => {
     installScreenBuffer();
+    startOverlayEpoch();
     const token = `sb-ui-${Math.random().toString(36).slice(2)}`;
     process.stdout.write(`${token}-before\n`);
     process.stdout.write(`\x1b[10;1H\x1b[2K${token}-overlay\n`);
 
-    expect(getScreenBuffer()).toContain(`${token}-before`);
-    expect(getScreenBuffer()).not.toContain(`${token}-overlay`);
-    expect(getScreenBufferDisplayLines(1)).toEqual([`${token}-before`]);
+    const lines = getScreenBufferDisplayLinesForOverlay(19, 19).join('|');
+    expect(lines).toContain(`${token}-before`);
+    expect(lines).not.toContain(`${token}-overlay`);
   });
 });

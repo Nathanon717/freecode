@@ -1,23 +1,6 @@
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import type { OpenAIDailySpend } from '../providers/openai-daily-spend.js';
 
-export function formatQuotaReset(ms: number | null, raw: string | null): string {
-  if (raw?.trim()) return raw;
-  if (ms === null) return '?';
-
-  let totalSeconds = Math.floor(ms / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  totalSeconds -= hours * 3600;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds - minutes * 60;
-
-  const parts: string[] = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-  return parts.join('');
-}
-
 let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
 let lastModelStatus = '';
 let lastOpenAIDailySpend: OpenAIDailySpend = { state: 'idle', updatedAt: 0 };
@@ -194,15 +177,4 @@ export function layoutFooterRightRows(width: number, rowBudget: number, now = Da
   }
 
   return [singleRow()];
-}
-
-export function composeBottomRightStatus(width: number, now = Date.now()): string {
-  return layoutFooterRightRows(width, 1, now)[0];
-}
-
-export function composeBottomStatusLine(width: number, now = Date.now()): string {
-  const availableRightWidth = Math.max(0, width - 1);
-  const rightStr = composeBottomRightStatus(availableRightWidth, now);
-  const padding = Math.max(0, width - 1 - rightStr.length);
-  return ' '.repeat(padding) + rightStr;
 }
