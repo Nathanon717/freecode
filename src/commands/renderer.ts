@@ -12,10 +12,6 @@ const DEMO_OPTS: TranscriptRuntimeOptions = {
   maxResultLines: 30,
 };
 
-function sectionLabel(label: string): void {
-  process.stdout.write(chalk.yellow(`\n  ↓ ${label}\n`));
-}
-
 export function runRendererDemo(): void {
   process.stdout.write(
     chalk.bold(
@@ -32,8 +28,10 @@ export function runRendererDemo(): void {
   // read bakes a right-aligned line-number gutter into its result (see
   // agent/tools/read.ts). The multi-digit slice shows the colons staying aligned
   // — the same gutter create and edit render below.
-  sectionLabel('read → line-numbered result preview (gutter colons aligned)');
   renderTurn([{
+    text: renderMarkdown(
+      "Starting from the entrypoint to see how a session is wired up.\n",
+    ),
     tools: [{
       name: 'read',
       displayArgs: { path: 'src/index.ts', offset: 8 },
@@ -53,13 +51,11 @@ export function runRendererDemo(): void {
 
   // ── Turn 2: list_dir ───────────────────────────────────────────────────────
   // Path "." is filtered out — args display as `list_dir()` with no arguments.
-  sectionLabel(
-    'list_dir → "." path filtered out, shows list_dir() with no args',
-  );
   renderTurn([{
     tools: [{
       name: 'list_dir',
       displayArgs: { path: '.' },
+      rationale: 'Listing the repo root to get my bearings.',
       result: {
         kind: 'text',
         result: ["src/", "docs/", "tests/", "package.json", "tsconfig.json"].join("\n"),
@@ -69,7 +65,6 @@ export function runRendererDemo(): void {
 
   // ── Turn 3: grep ───────────────────────────────────────────────────────────
   // Rationale + grep with file:line:content match results.
-  sectionLabel("grep → rationale + call, match lines in dimmed preview");
   renderTurn([{
     tools: [{
       name: 'grep',
@@ -88,11 +83,11 @@ export function runRendererDemo(): void {
 
   // ── Turn 4: shell_exec ─────────────────────────────────────────────────────
   // shell_exec args are not filtered — command string is shown in the call line.
-  sectionLabel("shell_exec → full args shown, stdout/stderr in dimmed preview");
   renderTurn([{
     tools: [{
       name: 'shell_exec',
       displayArgs: { command: 'npm.cmd run build 2>&1 | tail -5' },
+      rationale: 'Confirming the tree still compiles before I change anything.',
       result: {
         kind: 'text',
         result: [
@@ -108,9 +103,6 @@ export function runRendererDemo(): void {
   // ── Turn 5: create ─────────────────────────────────────────────────────
   // Only path is shown in args (content filtered out). Preview shows the
   // written content, not the "Wrote N lines" result string.
-  sectionLabel(
-    'create → only path in args, content as preview',
-  );
   const writeContent = [
     "import chalk from 'chalk';",
     "import { beginTranscriptTurn } from '../cli/transcript-renderer.js';",
@@ -124,6 +116,7 @@ export function runRendererDemo(): void {
     tools: [{
       name: 'create',
       displayArgs: { path: 'src/commands/renderer.ts' },
+      rationale: 'Scaffolding the demo command itself.',
       result: { kind: 'create-content', content: writeContent },
     }],
   }], DEMO_OPTS);
@@ -132,13 +125,11 @@ export function runRendererDemo(): void {
   // Only path shown in args. Result is a colored diff: red for removed lines,
   // green for added lines, magenta for matching/equal lines in context, dim
   // for surrounding context.
-  sectionLabel(
-    'edit → colored diff (red/green/magenta)',
-  );
   renderTurn([{
     tools: [{
       name: 'edit',
       displayArgs: { path: 'src/cli/slash-commands.ts' },
+      rationale: 'Registering /renderer alongside the existing slash commands.',
       result: {
         kind: 'edit-diff',
         path: 'src/cli/slash-commands.ts',
@@ -154,7 +145,6 @@ export function runRendererDemo(): void {
 
   // ── Turn 7: response + tool call ───────────────────────────────────────────
   // Blank line is inserted between response text and tool call by the state machine.
-  sectionLabel("response + tool call (blank line inserted between them)");
   renderTurn([{
     text: renderMarkdown(
       "Let me check the existing slash command list before adding the new entry.\n",
@@ -177,7 +167,6 @@ export function runRendererDemo(): void {
   }], DEMO_OPTS);
 
   // ── Turn 8: multiple tool calls in one step ─────────────────────────────────
-  sectionLabel("multiple tool calls in one step (blank line between each)");
   renderTurn([{
     text: renderMarkdown("I'll read both renderer files in parallel.\n"),
     tools: [
@@ -201,9 +190,10 @@ export function runRendererDemo(): void {
   }], DEMO_OPTS);
 
   // ── Turn 9: tool error ──────────────────────────────────────────────────────
-  sectionLabel("tool error");
   renderTurn([{
-    text: renderMarkdown("Let me try to read a file that does not exist.\n"),
+    text: renderMarkdown(
+      "Now a path that isn't there, so the failure shows up as a tool error.\n",
+    ),
     tools: [{
       name: 'read',
       displayArgs: { path: 'src/missing.ts' },
@@ -217,10 +207,10 @@ export function runRendererDemo(): void {
   // ── Turn 10: markdown showcase ───────────────────────────────────────────────
   // Shows everything an agent might try, including unsupported elements that
   // fall through as plain text.
-  sectionLabel(
-    "markdown response — all formatting types (supported and unsupported)",
-  );
   const markdownDemo = [
+    "Here is every markdown construct a response might contain — anything the",
+    "renderer does not support falls through as plain text.",
+    "",
     "# Heading 1",
     "## Heading 2",
     "###### Heading 6",

@@ -77,7 +77,7 @@ Format: filename (linecount)
 - `src/commands/`
   - [`config.ts`](commands/config.md) (397) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (309) — Interactive Model Picker
-  - [`renderer.ts`](commands/renderer.md) (294) — Renderer Demo Command
+  - [`renderer.ts`](commands/renderer.md) (284) — Renderer Demo Command
   - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`
   - [`index.ts`](config/index.md) (239) — Configuration Loader
