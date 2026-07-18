@@ -41,6 +41,7 @@ interface ModelEntry {
   nativeTools?: boolean;
   contextWindow?: number | null;
   isFavorite?: boolean;
+  removed?: boolean;
   settings?: OverridableSettings;
   evals?: { [evalType: string]: EvalRunSummary[] };
   rateLimits?: ObservedRateLimits;
@@ -53,6 +54,10 @@ getModel(key: string): ModelEntry | undefined
 getFavorites(): Set<string>
 
 setFavorite(key: string, isFavorite: boolean): void
+
+getRemovedKeys(): Set<string>
+
+setRemoved(key: string, removed: boolean): void
 
 setNativeTools(provider: string, modelId: string, value: boolean): void
 

@@ -49,6 +49,8 @@ vi.mock('../../src/providers/model-data.js', () => ({
   getFavorites: vi.fn().mockReturnValue(new Set<string>()),
   setFavorite: vi.fn(),
   getNoNativeToolsKeys: vi.fn().mockReturnValue(new Set<string>()),
+  getRemovedKeys: vi.fn().mockReturnValue(new Set<string>()),
+  setRemoved: vi.fn(),
   getModel: vi.fn().mockReturnValue(undefined),
   getModelSettings: vi.fn().mockReturnValue({}),
   setModelSetting: vi.fn(),
@@ -91,9 +93,9 @@ vi.mock('../../src/cli/eval-dots.js', () => ({
 
 // ── Import after mocks ────────────────────────────────────────────────────────
 
-import { runModelCommand } from '../../src/commands/model.js';
+import { runModelCommand, getSelectableModels } from '../../src/commands/model.js';
 import { saveDefaultModel, resolveApiKey } from '../../src/config/index.js';
-import { setFavorite, getNoNativeToolsKeys } from '../../src/providers/model-data.js';
+import { setFavorite, getNoNativeToolsKeys, getRemovedKeys, setRemoved } from '../../src/providers/model-data.js';
 import { markModelSelected } from '../../src/providers/model-list-cache.js';
 import { clearModelNewFlag } from '../../src/providers/provider-registry.js';
 import { getOpenAIVerifiedRates } from '../../src/providers/pricing-verifier.js';
@@ -111,6 +113,19 @@ async function captureKeys(): Promise<typeof pickerStore.capturedOpts & object> 
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe('getSelectableModels', () => {
+  afterEach(() => {
+    vi.mocked(getRemovedKeys).mockReset().mockReturnValue(new Set());
+  });
+
+  it('filters out models marked removed', async () => {
+    vi.mocked(getRemovedKeys).mockReturnValue(new Set(['openai:gpt-4o']));
+    const models = await getSelectableModels();
+    expect(models.some(m => m.modelId === 'gpt-4o')).toBe(false);
+    expect(models.some(m => m.modelId === 'gpt-3.5-turbo')).toBe(true);
+  });
+});
 
 describe('runModelCommand', () => {
   let originalIsTTY: boolean | undefined;
@@ -351,6 +366,18 @@ describe('runModelCommand', () => {
       const lines = opts.render();
       // Menu closed, back to list
       expect(lines.some(l => l.includes('type to filter'))).toBe(true);
+    });
+
+    it('Remove in action menu calls setRemoved and drops the model from the list', async () => {
+      const opts = await captureKeys();
+      opts.onKey('\r', vi.fn(), vi.fn()); // open action menu
+      opts.onKey('\x1b[B', vi.fn(), vi.fn()); // View
+      opts.onKey('\x1b[B', vi.fn(), vi.fn()); // Edit
+      opts.onKey('\x1b[B', vi.fn(), vi.fn()); // Remove
+      opts.onKey('\r', vi.fn(), vi.fn()); // select Remove
+      expect(setRemoved).toHaveBeenCalledWith('openai:gpt-4o', true);
+      const lines = opts.render();
+      expect(lines.join('\n')).not.toContain('GPT-4o');
     });
   });
 

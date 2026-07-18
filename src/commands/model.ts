@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import type { Interface } from 'readline';
 import { loadConfig, resolveApiKey, saveDefaultModel } from '../config/index.js';
-import { getFavorites, setFavorite, getNoNativeToolsKeys, getModel } from '../providers/model-data.js';
+import { getFavorites, setFavorite, getNoNativeToolsKeys, getModel, getRemovedKeys, setRemoved } from '../providers/model-data.js';
 import { ensureStoreReady } from '../providers/db.js';
 import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/provider-registry.js';
 import { markModelSelected } from '../providers/model-list-cache.js';
@@ -55,7 +55,10 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
     if (stored?.rateLimits) item.rateLimits = stored.rateLimits;
   }
 
-  const pricedItems = items.filter(i => i.providerId === 'anthropic' || i.providerId === 'openai');
+  const removedKeys = getRemovedKeys();
+  const visibleItems = items.filter(item => !removedKeys.has(`${item.providerId}:${item.modelId}`));
+
+  const pricedItems = visibleItems.filter(i => i.providerId === 'anthropic' || i.providerId === 'openai');
   const pricingResults = await Promise.all(pricedItems.map(item =>
     item.providerId === 'anthropic'
       ? getAnthropicVerifiedRates(item.modelId)
@@ -71,7 +74,7 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
     }
   }
 
-  return items;
+  return visibleItems;
 }
 
 type ModelPickResult = { item: ModelMenuItem; saveDefault: boolean } | null;
@@ -125,7 +128,7 @@ async function runModelBody(
   }
   sortItemsAlphabetically(items);
 
-  const actionMenu = new InlineActionMenu(['Select', 'View', 'Edit']);
+  const actionMenu = new InlineActionMenu(['Select', 'View', 'Edit', 'Remove']);
   // Rows list-menu prepends above the body: 1 blank for single-tab, or
   // blank+bar+blank (3) for multi-tab. Reserved so the body doesn't overflow.
   let tabBarRows = 0;
@@ -181,6 +184,14 @@ async function runModelBody(
         onSelect: (option, ctx) => {
           if (option === 'Select') ctx.close({ item: displayItems[ctx.getSelected()], saveDefault: false });
           else if (option === 'View') ctx.enterDetail();
+          else if (option === 'Remove') {
+            const item = displayItems[ctx.getSelected()];
+            const pref = modelPreference(item);
+            setRemoved(pref, true);
+            const idx = items.findIndex(i => modelPreference(i) === pref);
+            if (idx !== -1) items.splice(idx, 1);
+            refreshDisplayItems(ctx);
+          }
           // Edit: stub — the base exits the action menu and redraws.
         },
       },

@@ -42,6 +42,7 @@ export interface ModelEntry {
   nativeTools?: boolean;
   contextWindow?: number | null;
   isFavorite?: boolean;
+  removed?: boolean;
   settings?: OverridableSettings;
   evals?: { [evalType: string]: EvalRunSummary[] };
   rateLimits?: ObservedRateLimits;
@@ -93,6 +94,22 @@ export function setFavorite(key: string, isFavorite: boolean): void {
   const store = load();
   const { provider, modelId } = splitKey(key);
   store[key] = { ...store[key], provider, modelId, isFavorite };
+  save(store, [key]);
+}
+
+export function getRemovedKeys(): Set<string> {
+  const store = load();
+  const removed = new Set<string>();
+  for (const [key, entry] of Object.entries(store)) {
+    if (entry.removed) removed.add(key);
+  }
+  return removed;
+}
+
+export function setRemoved(key: string, removed: boolean): void {
+  const store = load();
+  const { provider, modelId } = splitKey(key);
+  store[key] = { ...store[key], provider, modelId, removed };
   save(store, [key]);
 }
 

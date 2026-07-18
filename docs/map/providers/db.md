@@ -45,7 +45,7 @@ executeRawForTesting(sql: string, args: InValue[]): Promise<void>
 Six tables are created idempotently at `initStore()`. The DDL itself lives in [db-schema.md](db-schema.md); the semantics are:
 
 - **`meta`** — key/value store for DB metadata (legacy; holds `import_done` marker from the one-time migration that has already run).
-- **`models`** — one row per `"provider:modelId"` key; structured columns for all `ModelEntry` scalar fields.
+- **`models`** — one row per `"provider:modelId"` key; structured columns for all `ModelEntry` scalar fields, including `removed` (soft-hide from the model picker; see [commands/model.md](../commands/model.md)).
 - **`eval_runs`** — one row per eval run; UNIQUE on `(model_key, eval_type, task_id, timestamp)` so `INSERT OR IGNORE` / COALESCE upsert is safe. `transcriptRef` is not stored — derived at load time.
 - **`eval_transcripts`** — one row per eval run; populated by the Phase 2 legacy importer and by `saveTranscriptAsync` for new runs. Content (full transcript + scoring) syncs cross-device via Turso.
 - **`llm_calls`** — one row per LLM HTTP call, written by `persistCallLogAsync` from the adapter fetch wrappers. Deliberately has **no FK** to `models`: a call must be loggable for a model that was never persisted, and the log must never fail on a missing parent. Indexed on `(model_key, timestamp)` for the rate-limit inference queries. Row shape and the no-estimation rule live in [call-log.md](call-log.md).

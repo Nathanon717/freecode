@@ -29,9 +29,17 @@ export async function createSchema(c: Client): Promise<void> {
       context_window INTEGER,
       is_favorite    INTEGER DEFAULT 0,
       settings       TEXT,
-      rate_limits    TEXT
+      rate_limits    TEXT,
+      removed        INTEGER DEFAULT 0
     )
   `);
+  // `models` predates the `removed` column; ADD COLUMN would throw "duplicate column"
+  // on a DB that already has it, so guard with table_info before adding.
+  const modelsInfo = await c.execute('PRAGMA table_info(models)');
+  const hasRemoved = modelsInfo.rows.some((row) => row['name'] === 'removed');
+  if (!hasRemoved) {
+    await c.execute('ALTER TABLE models ADD COLUMN removed INTEGER DEFAULT 0');
+  }
   await c.execute(`
     CREATE TABLE IF NOT EXISTS eval_runs (
       id             INTEGER PRIMARY KEY AUTOINCREMENT,

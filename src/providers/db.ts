@@ -73,7 +73,7 @@ function isSyncReplica(url: string): boolean {
 async function loadFromDb(c: Client): Promise<ModelDataMap> {
   const [modelsRes, evalsRes] = await Promise.all([
     c.execute(
-      'SELECT key, provider, model_id, display_name, native_tools, context_window, is_favorite, settings, rate_limits FROM models'
+      'SELECT key, provider, model_id, display_name, native_tools, context_window, is_favorite, settings, rate_limits, removed FROM models'
     ),
     c.execute(
       'SELECT model_key, task_id, eval_type, timestamp, pass, turns, input_tokens, output_tokens, total_tokens, duration_ms, warnings, scenario_hash, checks, error FROM eval_runs ORDER BY timestamp ASC, id ASC'
@@ -92,6 +92,7 @@ async function loadFromDb(c: Client): Promise<ModelDataMap> {
     if (row['native_tools'] !== null) entry.nativeTools = (row['native_tools'] as number) !== 0;
     if (row['context_window'] !== null) entry.contextWindow = row['context_window'] as number;
     entry.isFavorite = (row['is_favorite'] as number) !== 0;
+    entry.removed = (row['removed'] as number) !== 0;
     if (row['settings'] !== null) {
       try { entry.settings = JSON.parse(row['settings'] as string) as ModelEntry['settings']; } catch { /* skip corrupt */ }
     }
@@ -208,8 +209,8 @@ export function persistModelRowAsync(key: string, entry: ModelEntry): void {
       await c.execute({
         sql: `INSERT INTO models
               (key, provider, model_id, display_name, native_tools, context_window,
-               is_favorite, settings, rate_limits)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+               is_favorite, settings, rate_limits, removed)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(key) DO UPDATE SET
                 provider       = excluded.provider,
                 model_id       = excluded.model_id,
@@ -218,7 +219,8 @@ export function persistModelRowAsync(key: string, entry: ModelEntry): void {
                 context_window = excluded.context_window,
                 is_favorite    = excluded.is_favorite,
                 settings       = excluded.settings,
-                rate_limits    = excluded.rate_limits`,
+                rate_limits    = excluded.rate_limits,
+                removed        = excluded.removed`,
         args: [
           key,
           entry.provider,
@@ -229,6 +231,7 @@ export function persistModelRowAsync(key: string, entry: ModelEntry): void {
           entry.isFavorite ? 1 : 0,
           entry.settings ? JSON.stringify(entry.settings) : null,
           entry.rateLimits ? JSON.stringify(entry.rateLimits) : null,
+          entry.removed ? 1 : 0,
         ] as InValue[],
       });
       await c.sync().catch((err) => logError('db', 'sync after model upsert failed', err));

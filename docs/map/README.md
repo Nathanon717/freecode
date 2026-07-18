@@ -76,7 +76,7 @@ Format: filename (linecount)
   - [`transcript-renderer.ts`](cli/transcript-renderer.md) (485) — Agent Transcript Formatting
 - `src/commands/`
   - [`config.ts`](commands/config.md) (397) — Interactive Config Editor
-  - [`model.ts`](commands/model.md) (298) — Interactive Model Picker
+  - [`model.ts`](commands/model.md) (309) — Interactive Model Picker
   - [`renderer.ts`](commands/renderer.md) (294) — Renderer Demo Command
   - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`
@@ -102,11 +102,11 @@ Format: filename (linecount)
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
   - [`call-log.ts`](providers/call-log.md) (53) — Per-Call LLM Log
   - [`db-config-cache.ts`](providers/db-config-cache.md) (55) — DB Config Cache
-  - [`db-schema.ts`](providers/db-schema.md) (79) — Table & Index DDL
-  - [`db.ts`](providers/db.md) (473) — SQLite Store (libSQL/Turso)
+  - [`db-schema.ts`](providers/db-schema.md) (87) — Table & Index DDL
+  - [`db.ts`](providers/db.md) (476) — SQLite Store (libSQL/Turso)
   - [`fake.ts`](providers/fake.md) (420) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
-  - [`model-data.ts`](providers/model-data.md) (213) — Unified Model Store
+  - [`model-data.ts`](providers/model-data.md) (230) — Unified Model Store
   - [`model-list-cache.ts`](providers/model-list-cache.md) (105) — Model List Cache
   - [`model-quirks.ts`](providers/model-quirks.md) (38) — Per-Model Static Quirks
   - [`model-settings-accessor.ts`](providers/model-settings-accessor.md) (14) — Model Settings Accessor
