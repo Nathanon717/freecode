@@ -31,7 +31,7 @@ Format: filename (linecount)
 
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
-  - [`conversation.ts`](agent/conversation.md) (23) — Session Controller
+  - [`conversation.ts`](agent/conversation.md) (31) — Session Controller
   - [`loop.ts`](agent/loop.md) (501) — Agent Loop
   - [`parsed-tools.ts`](agent/parsed-tools.md) (247) — Parsed-Tools Harness
   - [`system-prompt.ts`](agent/system-prompt.md) (31) — System Prompt

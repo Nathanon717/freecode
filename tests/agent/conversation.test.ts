@@ -19,6 +19,18 @@ describe('Conversation', () => {
     ]);
   });
 
+  it('drops empty assistant turns (Mistral rejects content-less assistant messages)', () => {
+    const controller = new Conversation(join(tmpdir(), 'ctrl4'));
+    controller.addUserMessage('hi');
+    controller.addAssistantMessage('');
+    controller.addAssistantMessage('   \n ');
+    controller.addUserMessage('still there?');
+    expect(controller.messages).toEqual([
+      { role: 'user', content: 'hi' },
+      { role: 'user', content: 'still there?' },
+    ]);
+  });
+
   it('clears in-memory messages', () => {
     const controller = new Conversation(join(tmpdir(), 'ctrl3'));
     controller.addUserMessage('hi');
