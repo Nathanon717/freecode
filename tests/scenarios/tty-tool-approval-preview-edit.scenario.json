@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "tty-tool-approval-preview-edit",
   "description": "Interactive tool approval UI shows the pending edit's diff (removed/added lines under a gutter) before the user confirms, just like create",
   "model": "mock:gpt-freecode-test",
