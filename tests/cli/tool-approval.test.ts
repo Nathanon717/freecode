@@ -238,6 +238,61 @@ describe('confirmToolCallInteractive (TTY, inline hint)', () => {
     expect(allOutput.replace(/\x1b\[[0-9;]*m/g, '')).toContain('Enter to confirm · Esc to deny');
   });
 
+  // The token prefix is drawn on a deferred tick (the first count compiles the
+  // tokenizer), so let that timer fire before settling the prompt.
+  const flushTimer = () => new Promise((r) => setTimeout(r, 0));
+
+  it('fills in the exact token count once the deferred count resolves', async () => {
+    const promise = confirmToolCallInteractive(ttyRl(), preview, () => ({ tokens: 512, exact: true }));
+    await flushTimer();
+    stdin.emit('data', '\r');
+    await promise;
+    const plain = writeSpy.mock.calls.map(c => c[0]).join('').replace(/\x1b\[[0-9;]*m/g, '');
+    expect(plain).toContain('+512 tokens · Enter to confirm · Esc to deny');
+    expect(plain).not.toContain('appx');
+  });
+
+  it('cancels the deferred count when the prompt settles first (type-ahead race)', async () => {
+    // Emit Enter before flushing the timer: the key settles the prompt, then the
+    // deferred repaint must NOT fire and leave a stale hint after the finally clear.
+    const promise = confirmToolCallInteractive(ttyRl(), preview, () => ({ tokens: 999, exact: false }));
+    stdin.emit('data', '\r');
+    await promise;
+    await flushTimer(); // a still-scheduled repaint would fire here
+    const plain = writeSpy.mock.calls.map(c => c[0]).join('').replace(/\x1b\[[0-9;]*m/g, '');
+    expect(plain).not.toContain('999');
+    expect(plain).not.toContain('tokens');
+  });
+
+  it('labels the token count "appx" when the estimate is not exact', async () => {
+    const promise = confirmToolCallInteractive(ttyRl(), preview, () => ({ tokens: 300, exact: false }));
+    await flushTimer();
+    stdin.emit('data', '\r');
+    await promise;
+    const plain = writeSpy.mock.calls.map(c => c[0]).join('').replace(/\x1b\[[0-9;]*m/g, '');
+    expect(plain).toContain('+300 tokens appx · Enter to confirm · Esc to deny');
+  });
+
+  it('draws the confirm controls immediately, before the token count resolves', async () => {
+    const promise = confirmToolCallInteractive(ttyRl(), preview, () => ({ tokens: 300, exact: false }));
+    // No timer flush: the deferred count has not run yet, but the controls are up.
+    const plain = writeSpy.mock.calls.map(c => c[0]).join('').replace(/\x1b\[[0-9;]*m/g, '');
+    expect(plain).toContain('Enter to confirm · Esc to deny');
+    expect(plain).not.toContain('tokens');
+    stdin.emit('data', '\r');
+    await promise;
+    await flushTimer(); // drain the deferred paint so it can't leak into the next test
+  });
+
+  it('omits the token prefix entirely when no count thunk is provided', async () => {
+    const promise = confirmToolCallInteractive(ttyRl(), preview);
+    await flushTimer();
+    stdin.emit('data', '\r');
+    await promise;
+    const plain = writeSpy.mock.calls.map(c => c[0]).join('').replace(/\x1b\[[0-9;]*m/g, '');
+    expect(plain).not.toContain('tokens');
+  });
+
   it('erases the hint line in place on confirm so it never persists in the transcript', async () => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\r');
@@ -366,6 +421,15 @@ describe('confirmToolCallInteractive (TTY, absolute hint)', () => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\x1b');
     await expect(promise).rejects.toThrow(UserAbortError);
+  });
+
+  it('includes the token count in the absolute (footer) hint too', async () => {
+    const promise = confirmToolCallInteractive(ttyRl(), preview, () => ({ tokens: 42, exact: true }));
+    await new Promise((r) => setTimeout(r, 0));
+    stdin.emit('data', '\r');
+    await promise;
+    const plain = writeSpy.mock.calls.map(c => c[0]).join('').replace(/\x1b\[[0-9;]*m/g, '');
+    expect(plain).toContain('+42 tokens · Enter to confirm · Esc to deny');
   });
 });
 

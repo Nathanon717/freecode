@@ -3,7 +3,7 @@ import { loadBpeJsonEncoder } from './backends/bpe-json.js';
 import { getGptOssEncoder } from './backends/tiktoken.js';
 import { loadTekkenEncoder } from './backends/tekken.js';
 import { ensureTokenizerFile } from './download-tokenizer.js';
-import { estimateContextTokens } from './fallback-estimate.js';
+import { estimateContextTokens, estimateTextTokens } from './fallback-estimate.js';
 import {
   GPT_OSS_FAMILY,
   HF_TOKENIZER_REPO,
@@ -16,6 +16,14 @@ import {
 
 export interface TokenizerEncoder {
   countMessages(messages: CoreMessage[]): number;
+  /** Token count for a bare string, with no chat/system-prompt overhead. */
+  countText(text: string): number;
+}
+
+export interface TokenCount {
+  tokens: number;
+  /** true when an exact encoder produced the count; false for the generic estimate. */
+  exact: boolean;
 }
 
 // Keyed by family (many model IDs share one family), not by model ID.
@@ -34,6 +42,19 @@ export function countTokens(messages: CoreMessage[], modelId: string): number {
   const family = resolveTokenizerFamily(modelId);
   const encoder = family !== null ? encoderCache.get(family) : undefined;
   return encoder ? encoder.countMessages(messages) : estimateContextTokens(messages);
+}
+
+// Count the tokens a bare string contributes on its own (no chat or
+// system-prompt overhead), using the model's exact encoder when one is loaded
+// and the generic estimate otherwise. `exact` reports which path ran so callers
+// can flag an estimate as approximate. Synchronous, never throws — same hot-path
+// contract as countTokens.
+export function countTextTokens(text: string, modelId: string): TokenCount {
+  const family = resolveTokenizerFamily(modelId);
+  const encoder = family !== null ? encoderCache.get(family) : undefined;
+  return encoder
+    ? { tokens: encoder.countText(text), exact: true }
+    : { tokens: estimateTextTokens(text), exact: false };
 }
 
 // Does an exact tokenizer backend *exist* for this model? Capability check for

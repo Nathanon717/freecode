@@ -48,6 +48,12 @@ export interface ToolCallPreview {
    * see cli/tool-approval.ts.
    */
   previewedContent?: boolean;
+  /**
+   * The exact result string this call will send to the model, set only when the
+   * result was precomputed before confirmation (read/grep/list_dir). The approval
+   * UI runs it through the local tokenizer to show how many tokens approving adds.
+   */
+  resultText?: string;
 }
 
 export interface ToolCallConfirmation {
@@ -213,6 +219,7 @@ function withConfirmation(
       let precomputedResult: unknown;
       let hasPrecomputed = false;
       let previewedContent = false;
+      let resultText: string | undefined;
 
       const previewOpts = withApprovalRowBudget(
         getTranscriptRuntimeOptions(),
@@ -222,6 +229,7 @@ function withConfirmation(
       if (PRECOMPUTE_BEFORE_CONFIRM.has(name)) {
         precomputedResult = await original(args, opts);
         hasPrecomputed = true;
+        if (typeof precomputedResult === "string") resultText = precomputedResult;
         previewedContent = writeToolResultPreview(
           name,
           { kind: "text", result: precomputedResult },
@@ -246,6 +254,7 @@ function withConfirmation(
         name,
         args: displayArgs,
         previewedContent,
+        resultText,
       });
       const approved =
         typeof confirmation === "boolean"

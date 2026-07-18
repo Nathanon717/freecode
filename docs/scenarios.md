@@ -43,7 +43,7 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-slash-backspace-restore.scenario.json` | `tty-slash-backspace-restore` | repo | After /help output fills the scroll region, typing / shows the suggestion overlay; backspace restores the help output exactly. The cycle repeats correctly a second time. |
 | `tty-tool-approval-preview-edit.scenario.json` | `tty-tool-approval-preview-edit` | repo | Interactive tool approval UI shows the pending edit's diff (removed/added lines under a gutter) before the user confirms, just like create |
 | `tty-tool-approval-preview-fits.scenario.json` | `tty-tool-approval-preview-fits` | repo | A pending-approval preview too long for the terminal is trimmed from the bottom, so the model's preamble and the tool call line it is approving stay on screen |
-| `tty-tool-approval-preview.scenario.json` | `tty-tool-approval-preview` | repo | Interactive tool approval UI shows a dim, indented content preview for list_dir before the user confirms |
+| `tty-tool-approval-preview.scenario.json` | `tty-tool-approval-preview` | repo | Interactive tool approval UI shows a dim, indented content preview for list_dir plus the token count approving would add, before the user confirms |
 | `tty-tool-autobracket.scenario.json` | `tty-tool-autobracket` | repo | Typing ( after a valid tool name autofills the full argument skeleton with quotes; typing ) at the closing paren types over it; a non-tool name does not autofill |
 | `tty-tool-tabstops.scenario.json` | `tty-tool-tabstops` | repo | Tab cycles forward through autofilled tool-call value slots; Backspace at an emptied slot steps back to the previous slot instead of eating the skeleton |
 <!-- END GENERATED SCENARIOS -->

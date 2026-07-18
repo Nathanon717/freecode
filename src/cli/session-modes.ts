@@ -62,6 +62,7 @@ import {
 } from "./tool-approval.js";
 import { runRawKeySession } from "./raw-picker.js";
 import { isBackspaceKey } from "../util/keyboard.js";
+import { countTextTokens, preloadTokenizerFor, type TokenCount } from "../tokenizers/count.js";
 
 function resetBottomPromptState(): void {
   setInputBuffer("");
@@ -95,6 +96,15 @@ function handlePrintable(printable: string): void {
 
 let _lastAppliedModel = "";
 
+// Compile this model's exact tokenizer in the background so the approval
+// preview's "+N tokens" count becomes exact rather than an estimate on later
+// calls. Deferred to a timer so the (synchronous, ~1s) compile for a bundled
+// family can't stall the initial render. No-op — and no network — for models
+// with no exact backend (e.g. the mock model), so it never freezes startup.
+function warmTokenizers(model: string): void {
+  setTimeout(() => void preloadTokenizerFor(model), 0);
+}
+
 // Call when the active model changes. Clears stale quota so the footer shows
 // nothing until the new model's API response fills it in.
 function applyModelChange(model: string): void {
@@ -102,11 +112,13 @@ function applyModelChange(model: string): void {
   _lastAppliedModel = model;
   setActiveModelFromString(model);
   setQuotaSnapshot(null);
+  warmTokenizers(model);
 }
 
 function applyModelStatus(model: string): void {
   setActiveModelFromString(model);
   _lastAppliedModel = model;
+  warmTokenizers(model);
   const idx = model.indexOf(":");
   if (idx !== -1) {
     const cached = loadCachedQuota(model.slice(0, idx));
@@ -286,7 +298,17 @@ export function createInteractiveMode(
     if (getAskMode() === "auto") {
       return { approved: true };
     }
-    return confirmToolCallInteractive(rl, preview);
+    // For precomputed read-only tools the result is already known, so show how
+    // many tokens approving will add to the model's context (exact when this
+    // model's tokenizer is loaded, otherwise a labelled estimate). Passed as a
+    // thunk, not a value: the first count compiles the tokenizer (~1s), which
+    // the approval UI defers so the confirm controls still appear instantly.
+    const resultText = preview.resultText;
+    const getTokenCount =
+      resultText !== undefined
+        ? (): TokenCount => countTextTokens(resultText, getSelectedModel())
+        : undefined;
+    return confirmToolCallInteractive(rl, preview, getTokenCount);
   }
 
   return {

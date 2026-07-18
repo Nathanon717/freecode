@@ -1,6 +1,6 @@
 {
   "name": "tty-tool-approval-preview",
-  "description": "Interactive tool approval UI shows a dim, indented content preview for list_dir before the user confirms",
+  "description": "Interactive tool approval UI shows a dim, indented content preview for list_dir plus the token count approving would add, before the user confirms",
   "model": "mock:gpt-freecode-test",
   "llmFixture": "tty-tool-approval-preview.llm.json",
   "tty": {
@@ -14,10 +14,11 @@
         "screenContains": ["> List docs/scripts"]
       },
       {
-        "name": "submit - tool call preview renders above the confirm hint",
+        "name": "submit - tool call preview and its token count render above the confirm hint",
         "send": "\r",
-        "waitFor": "test-all-models.md",
-        "screenContains": ["list_dir", "test-all-models.md", "time.md", "Enter to confirm · Esc to deny"]
+        "waitFor": "tokens appx",
+        "waitForMs": 12000,
+        "screenContains": ["list_dir", "test-all-models.md", "time.md", "tokens appx · Enter to confirm · Esc to deny"]
       },
       {
         "name": "approve - Enter confirms and the controls line is gone",

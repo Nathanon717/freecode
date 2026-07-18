@@ -9,10 +9,10 @@ import type { TokenizerEncoder } from '../count.js';
 // see backends/tekken.ts). Typed as Tiktoken, not `ReturnType<typeof getEncoding>`,
 // so a directly-constructed instance is accepted.
 export function createTiktokenEncoder(encoding: Tiktoken): TokenizerEncoder {
+  const encodeText = (text: string): number => encoding.encode(text, [], []).length;
   return {
-    countMessages(messages: CoreMessage[]): number {
-      return countContextTokens(messages, (text) => encoding.encode(text, [], []).length);
-    },
+    countMessages: (messages: CoreMessage[]) => countContextTokens(messages, encodeText),
+    countText: encodeText,
   };
 }
 

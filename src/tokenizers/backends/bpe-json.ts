@@ -24,12 +24,10 @@ export function loadBpeJsonEncoder(tokenizerJsonPath: string): TokenizerEncoder 
   const json = readJsonFile<object>(tokenizerJsonPath);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- see HfTokenizer note above
   const tokenizer = new Tokenizer(json, {}) as HfTokenizer;
+  const encodeText = (text: string): number =>
+    tokenizer.encode(text, { add_special_tokens: false }).ids.length;
   return {
-    countMessages(messages: CoreMessage[]): number {
-      return countContextTokens(
-        messages,
-        (text) => tokenizer.encode(text, { add_special_tokens: false }).ids.length,
-      );
-    },
+    countMessages: (messages: CoreMessage[]) => countContextTokens(messages, encodeText),
+    countText: encodeText,
   };
 }

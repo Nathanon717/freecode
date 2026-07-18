@@ -2,7 +2,7 @@ import type { CoreMessage } from 'ai';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, it, vi } from 'vitest';
-import { estimateContextTokens } from '../../src/tokenizers/fallback-estimate.js';
+import { estimateContextTokens, estimateTextTokens } from '../../src/tokenizers/fallback-estimate.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const MINI_FIXTURE = resolve(_dirname, 'fixtures', 'mini-tokenizer.json');
@@ -16,7 +16,7 @@ vi.mock('../../src/tokenizers/download-tokenizer.js', () => ({
   ensureTokenizerFile: vi.fn(() => Promise.resolve(MINI_FIXTURE)),
 }));
 
-const { countTokens, preloadTokenizerFor } = await import('../../src/tokenizers/count.js');
+const { countTokens, countTextTokens, preloadTokenizerFor } = await import('../../src/tokenizers/count.js');
 
 describe('countTokens', () => {
   it('falls back to the generic tiktoken estimate when no family is resolved', () => {
@@ -42,6 +42,35 @@ describe('countTokens', () => {
   it('never throws on message content containing a tiktoken special-token string', () => {
     const messages: CoreMessage[] = [{ role: 'user', content: 'pasted: <|endoftext|>' }];
     expect(() => countTokens(messages, 'groq:llama-3.3-70b-versatile')).not.toThrow();
+  });
+});
+
+describe('countTextTokens', () => {
+  it('returns the generic estimate and exact:false when no encoder is loaded', () => {
+    // deepseek-v4 family: no test here ever preloads it, so encoderCache misses.
+    const { tokens, exact } = countTextTokens('hello there', 'openrouter:deepseek/deepseek-v4');
+    expect(exact).toBe(false);
+    expect(tokens).toBe(estimateTextTokens('hello there'));
+  });
+
+  it('counts bare text without chat/system-prompt overhead (unlike countTokens)', () => {
+    // The single-message context count carries per-message + per-request +
+    // system-prompt overhead; the bare-text count must be strictly smaller.
+    const text = 'hello there';
+    expect(countTextTokens(text, 'unknown-model').tokens)
+      .toBeLessThan(countTokens([{ role: 'user', content: text }], 'unknown-model'));
+  });
+
+  it('uses the exact encoder and reports exact:true once the family is preloaded', async () => {
+    await preloadTokenizerFor('groq:openai/gpt-oss-120b');
+    const { tokens, exact } = countTextTokens('hello there', 'groq:openai/gpt-oss-120b');
+    expect(exact).toBe(true);
+    expect(tokens).toBeGreaterThan(0);
+  });
+
+  it('never throws on special-token strings or an unknown model', () => {
+    expect(() => countTextTokens('pasted: <|endoftext|>', 'groq:llama-3.3-70b-versatile')).not.toThrow();
+    expect(() => countTextTokens('', '')).not.toThrow();
   });
 });
 

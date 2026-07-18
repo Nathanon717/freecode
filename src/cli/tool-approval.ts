@@ -5,6 +5,7 @@ import type {
   ToolCallPreview,
 } from "../agent/tools/index.js";
 import type { ToolCallHeaderRows } from "./transcript-renderer.js";
+import type { TokenCount } from "../tokenizers/count.js";
 import { UserAbortError } from "../util/errors.js";
 import {
   drawFooter,
@@ -64,12 +65,21 @@ export function askQuestion(rl: Interface, prompt: string): Promise<string> {
   });
 }
 
-function formatToolApprovalHint(): string {
-  return chalk.dim("Enter to confirm · Esc to deny");
+// Leading "+N tokens" (or "+N tokens appx" on the estimate path) telling the
+// user how much approving this call adds to the model's context. Empty when the
+// caller has no count (non-precomputed tools).
+function formatTokenPrefix(tokenCount?: TokenCount): string {
+  if (!tokenCount) return "";
+  const suffix = tokenCount.exact ? "" : " appx";
+  return chalk.dim(`+${tokenCount.tokens.toLocaleString()} tokens${suffix} · `);
 }
 
-function drawToolApprovalHint(): void {
-  process.stdout.write(`\r\x1b[2K${formatToolApprovalHint()}`);
+function formatToolApprovalHint(tokenCount?: TokenCount): string {
+  return formatTokenPrefix(tokenCount) + chalk.dim("Enter to confirm · Esc to deny");
+}
+
+function drawToolApprovalHint(tokenCount?: TokenCount): void {
+  process.stdout.write(`\r\x1b[2K${formatToolApprovalHint(tokenCount)}`);
 }
 
 // Blanks the pinned footer rows and draws the hint on the terminal's literal
@@ -79,18 +89,23 @@ function drawToolApprovalHint(): void {
 // scroll region is left untouched (still reserving these rows); drawFooter in the
 // finally repaints the footer. Parks the cursor on the hint row so it doesn't
 // drift elsewhere.
-function drawToolApprovalHintAbsolute(lastRow: number, footerRows: number): void {
+function drawToolApprovalHintAbsolute(
+  lastRow: number,
+  footerRows: number,
+  tokenCount?: TokenCount,
+): void {
   let out = "";
   for (let r = lastRow - footerRows + 1; r < lastRow; r++) {
     out += `\x1b[${r};1H\x1b[2K`;
   }
-  out += `\x1b[${lastRow};1H\x1b[2K${formatToolApprovalHint()}` + `\x1b[${lastRow};1H`;
+  out += `\x1b[${lastRow};1H\x1b[2K${formatToolApprovalHint(tokenCount)}` + `\x1b[${lastRow};1H`;
   process.stdout.write(out);
 }
 
 async function readToolApprovalMenu(
   rl: Interface,
   useAbsoluteHint: boolean,
+  getTokenCount?: () => TokenCount,
 ): Promise<ToolApprovalChoice | null> {
   if (!process.stdin.isTTY) {
     rl.resume();
@@ -122,15 +137,37 @@ async function readToolApprovalMenu(
     }
   }
 
+  const paintHint = (tc?: TokenCount): void => {
+    if (useAbsoluteHint) {
+      drawToolApprovalHintAbsolute(getRows(), getLastReservedRows(), tc);
+    } else {
+      drawToolApprovalHint(tc);
+    }
+  };
+
   if (useAbsoluteHint) {
     // Freeze the footer refresh timer so its 1 s tick can't repaint the footer
     // rows we are about to blank (quota/spend/retry updates would otherwise
     // clobber the hint on the last row). Resumed in the caller's finally.
     suspendFooterTimer();
-    drawToolApprovalHintAbsolute(getRows(), getLastReservedRows());
-  } else {
-    drawToolApprovalHint();
   }
+  // Draw the confirm controls immediately, then fill in the "+N tokens" prefix
+  // once the count is computed. The first count compiles the tokenizer (a
+  // one-time ~1 s cost); deferring it to a timer keeps that compile off the
+  // initial paint, so the controls always appear at once and the token figure
+  // pops in a moment later rather than stalling the whole hint. The compile
+  // blocks the loop while it runs, but the hint is already on screen and any
+  // keypress queued during it is handled right after — no lost input.
+  paintHint();
+  const tokenTimer = getTokenCount
+    ? setTimeout(() => {
+        try {
+          paintHint(getTokenCount());
+        } catch {
+          // countTextTokens never throws; keep the plain hint if it somehow does.
+        }
+      }, 0)
+    : undefined;
 
   rl.pause();
 
@@ -174,12 +211,21 @@ async function readToolApprovalMenu(
     },
   });
 
-  return session.promise;
+  const choice = await session.promise;
+  // Cancel any pending deferred repaint before returning: on type-ahead the key
+  // can settle the prompt before the token-count timer fires, and a repaint
+  // after the caller's finally cleared the hint would leave a stale controls
+  // line (and, on the footer path, re-blank the just-repainted footer). The
+  // await resolves in a microtask, before the next timers phase, so this clear
+  // always wins the race.
+  if (tokenTimer !== undefined) clearTimeout(tokenTimer);
+  return choice;
 }
 
 export async function confirmToolCallInteractive(
   rl: Interface,
   _preview: ToolCallPreview,
+  getTokenCount?: () => TokenCount,
 ): Promise<ToolCallConfirmation> {
   const restoreInputUI = isBottomUIActive();
   // Footer runs blank the footer rows (keeping the scroll region pinned) so the
@@ -190,7 +236,7 @@ export async function confirmToolCallInteractive(
   teardownBottomUI();
 
   try {
-    const choice = await readToolApprovalMenu(rl, useAbsoluteHint);
+    const choice = await readToolApprovalMenu(rl, useAbsoluteHint, getTokenCount);
     // Escape (TTY) resolves null: unwind the turn so the user is returned to the
     // input bar to redirect the agent there, rather than through a bespoke prompt.
     if (choice === null) throw new UserAbortError();

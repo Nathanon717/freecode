@@ -41,7 +41,7 @@ Format: filename (linecount)
   - [`edit-diff-context.ts`](agent/tools/edit-diff-context.md) (103) — Edit Diff Context
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
   - [`grep.ts`](agent/tools/grep.md) (122) — grep Tool
-  - [`index.ts`](agent/tools/index.md) (419) — Tool Registry
+  - [`index.ts`](agent/tools/index.md) (428) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (88) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
@@ -64,12 +64,12 @@ Format: filename (linecount)
   - [`menu-shell.ts`](cli/menu-shell.md) (47) — Menu Lifecycle Chrome
   - [`model-screen.ts`](cli/model-screen.md) (204) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/raw-picker.md) (240) — Shared Raw-Mode Picker
-  - [`session-modes.ts`](cli/session-modes.md) (444) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (466) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
   - [`toggles.ts`](cli/toggles.md) (100) — Footer Toggle State
-  - [`tool-approval.ts`](cli/tool-approval.md) (251) — Tool Approval Prompts
+  - [`tool-approval.ts`](cli/tool-approval.md) (297) — Tool Approval Prompts
   - [`tool-invocation.ts`](cli/tool-invocation.md) (334) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
   - [`transcript-options.ts`](cli/transcript-options.md) (66) — Transcript Stream + Options
@@ -118,12 +118,12 @@ Format: filename (linecount)
 - `src/providers/`
   - [`types.ts`](providers/types.md) (54) — Type Definitions
 - `src/tokenizers/backends/`
-  - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) (36) — HF Fast-Tokenizer (tokenizer.json) Backend
+  - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) (34) — HF Fast-Tokenizer (tokenizer.json) Backend
   - [`tekken.ts`](tokenizers/backends/tekken.md) (48) — Mistral Tekken (tekken.json) Backend
   - [`tiktoken.ts`](tokenizers/backends/tiktoken.md) (43) — Tiktoken-Backed Exact Encoders
 - `src/tokenizers/`
   - [`chat-format.ts`](tokenizers/chat-format.md) (42) — Shared Chat-Overhead Formula
-  - [`count.ts`](tokenizers/count.md) (88) — Tokenizer Engine Public Surface
+  - [`count.ts`](tokenizers/count.md) (109) — Tokenizer Engine Public Surface
   - [`download-tokenizer.ts`](tokenizers/download-tokenizer.md) (90) — HF Tokenizer File Cache/Download
   - [`fallback-estimate.ts`](tokenizers/fallback-estimate.md) (30) — Generic Tiktoken Fallback Estimator
   - [`model-family.ts`](tokenizers/model-family.md) (112) — Tokenizer Family Resolver
