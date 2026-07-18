@@ -30,7 +30,7 @@ resolveModelSettings(selectedModel: string): Required<OverridableSettings>
 
 - `readRawConfig`: reads one JSON config file without merging (used by model-data for legacy migration).
 - `writeConfigFile`: writes JSON config and clears the in-memory cache so the next `loadConfig()` re-reads disk.
-- `resolveModelSettings`: applies model > provider > global priority cascade.
+- `resolveModelSettings`: applies model > provider > global priority cascade. The cascade uses `??`, not `||` — `autoApproveTokenBudget` is numeric and `0` is a meaningful value (auto-approve off), so an override of `0` must beat a non-zero parent rather than falling through to it.
 
 ## Defaults
 

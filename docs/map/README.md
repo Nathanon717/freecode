@@ -64,7 +64,7 @@ Format: filename (linecount)
   - [`menu-shell.ts`](cli/menu-shell.md) (47) — Menu Lifecycle Chrome
   - [`model-screen.ts`](cli/model-screen.md) (204) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/raw-picker.md) (240) — Shared Raw-Mode Picker
-  - [`session-modes.ts`](cli/session-modes.md) (466) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (483) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
@@ -75,12 +75,12 @@ Format: filename (linecount)
   - [`transcript-options.ts`](cli/transcript-options.md) (66) — Transcript Stream + Options
   - [`transcript-renderer.ts`](cli/transcript-renderer.md) (485) — Agent Transcript Formatting
 - `src/commands/`
-  - [`config.ts`](commands/config.md) (349) — Interactive Config Editor
+  - [`config.ts`](commands/config.md) (397) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (298) — Interactive Model Picker
   - [`renderer.ts`](commands/renderer.md) (252) — Renderer Demo Command
   - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`
-  - [`index.ts`](config/index.md) (230) — Configuration Loader
+  - [`index.ts`](config/index.md) (239) — Configuration Loader
 - `src/eval/`
   - [`custom.ts`](eval/custom.md) (96) — Custom Eval Discovery and Hashing
   - [`errors.ts`](eval/errors.md) (77) — Eval API Error Parser
@@ -101,7 +101,7 @@ Format: filename (linecount)
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
   - [`call-log.ts`](providers/call-log.md) (53) — Per-Call LLM Log
-  - [`db-config-cache.ts`](providers/db-config-cache.md) (54) — DB Config Cache
+  - [`db-config-cache.ts`](providers/db-config-cache.md) (55) — DB Config Cache
   - [`db-schema.ts`](providers/db-schema.md) (79) — Table & Index DDL
   - [`db.ts`](providers/db.md) (473) — SQLite Store (libSQL/Turso)
   - [`fake.ts`](providers/fake.md) (420) — Fake LLM Fixtures
@@ -118,7 +118,7 @@ Format: filename (linecount)
   - [`cache.ts`](providers/quota/cache.md) (39) — Quota Cache
   - [`headers.ts`](providers/quota/headers.md) (370) — Provider Rate-Limit Header Parsing
 - `src/providers/`
-  - [`types.ts`](providers/types.md) (54) — Type Definitions
+  - [`types.ts`](providers/types.md) (57) — Type Definitions
 - `src/tokenizers/backends/`
   - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) (34) — HF Fast-Tokenizer (tokenizer.json) Backend
   - [`tekken.ts`](tokenizers/backends/tekken.md) (48) — Mistral Tekken (tekken.json) Backend

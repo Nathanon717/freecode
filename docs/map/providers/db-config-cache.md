@@ -16,6 +16,7 @@ type SyncableGlobalConfig = {
   diffContextLines?: number;
   defaultModel?: string;
   loadAgentsMd?: boolean;
+  autoApproveTokenBudget?: number;
 };
 
 interface DbConfigData {

@@ -17,6 +17,7 @@ import { readTextFile } from '../util/text-encoding.js';
 const SYNCABLE_GLOBAL_KEYS: ReadonlyArray<keyof SyncableGlobalConfig> = [
   'toolRationale', 'showProviderUsage', 'parallelTools', 'toolConfirmation',
   'retryMaxWaitSeconds', 'showEvalDots', 'diffContextLines', 'defaultModel', 'loadAgentsMd',
+  'autoApproveTokenBudget',
 ];
 
 registerCacheInvalidator(() => { cachedConfig = null; });
@@ -31,6 +32,7 @@ const DEFAULT_CONFIG: Config = {
   showEvalDots: false,
   diffContextLines: 2,
   loadAgentsMd: false,
+  autoApproveTokenBudget: 0,
 };
 
 function loadJsonFile<T>(path: string): T | null {
@@ -214,6 +216,7 @@ export function resolveModelSettings(selectedModel: string): Required<Overridabl
     showProviderUsage: config.showProviderUsage,
     parallelTools: config.parallelTools,
     loadAgentsMd: config.loadAgentsMd,
+    autoApproveTokenBudget: config.autoApproveTokenBudget,
   };
 
   const providerOver = providerId ? config.providerOverrides?.[providerId] : undefined;
@@ -225,5 +228,11 @@ export function resolveModelSettings(selectedModel: string): Required<Overridabl
     parallelTools: modelSettings.parallelTools ?? providerOver?.parallelTools ?? global.parallelTools,
     loadAgentsMd: modelSettings.loadAgentsMd ?? providerOver?.loadAgentsMd ?? global.loadAgentsMd,
     parsedTools: modelSettings.parsedTools ?? false,
+    // `??` throughout: 0 is a meaningful value here (auto-approve off), so an
+    // override of 0 must beat a non-zero parent rather than falling through.
+    autoApproveTokenBudget:
+      modelSettings.autoApproveTokenBudget
+      ?? providerOver?.autoApproveTokenBudget
+      ?? global.autoApproveTokenBudget,
   };
 }

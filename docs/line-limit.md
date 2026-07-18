@@ -1,12 +1,7 @@
 # Line Limit
 
 Every `.ts` file under `src/` must be **500 lines or fewer**. This is a **hard
-limit**, enforced by `scripts/checks/check-line-limits.ts`, which runs as part
-of `npm test` via `docs:generate`. A file over the limit fails the check and
-blocks the build.
-
-When a file exceeds the limit the check prints the offending file(s) followed by
-`This is a hard limit. Read docs/line-limit.md.`
+limit**, enforced as part of `npm test`.
 
 ## Why
 

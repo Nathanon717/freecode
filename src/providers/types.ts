@@ -36,6 +36,7 @@ export interface OverridableSettings {
   parallelTools?: boolean;
   loadAgentsMd?: boolean;
   parsedTools?: boolean;
+  autoApproveTokenBudget?: number;
 }
 
 export interface Config {
@@ -50,4 +51,6 @@ export interface Config {
   showEvalDots: boolean;
   diffContextLines: number;
   loadAgentsMd: boolean;
+  /** Auto-approve read-only tool calls costing fewer than this many tokens. 0 = off. */
+  autoApproveTokenBudget: number;
 }

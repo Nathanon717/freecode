@@ -324,13 +324,45 @@ describe('runConfigCommand', () => {
       expect(setModelSetting).toHaveBeenCalled();
     });
 
+    // The auto-approve budget is the first numeric setting that is also
+    // provider/model-overridable, so it exercises the numeric override ladder
+    // (inherit → min → … → max, clamped at both ends) rather than the boolean cycle.
+    describe('numeric override — auto-approve budget (row 4)', () => {
+      async function focusBudgetRow() {
+        await openModelTab();
+        for (let i = 0; i < 4; i++) {
+          store.capturedOpts!.onKey('\x1b[B', makeRedraw(), makeClose());
+        }
+      }
+
+      it('right arrow from inherit adopts the minimum (0, shown as off)', async () => {
+        await focusBudgetRow();
+        vi.mocked(setModelSetting).mockClear();
+        store.capturedOpts!.onKey('\x1b[C', makeRedraw(), makeClose());
+        expect(setModelSetting).toHaveBeenCalledWith('openai:gpt-4o', 'autoApproveTokenBudget', 0);
+      });
+
+      it('left arrow from inherit stays at inherit', async () => {
+        await focusBudgetRow();
+        vi.mocked(setModelSetting).mockClear();
+        store.capturedOpts!.onKey('\x1b[D', makeRedraw(), makeClose());
+        expect(setModelSetting).toHaveBeenCalledWith('openai:gpt-4o', 'autoApproveTokenBudget', undefined);
+      });
+
+      it('renders the inherited value rather than a bare number', async () => {
+        await focusBudgetRow();
+        expect(store.capturedOpts!.render().join('\n')).toContain('inherit');
+      });
+    });
+
     it('parsedTools row shows auto-detected label when isNativeToolsDisabled returns true', async () => {
       vi.mocked(isNativeToolsDisabled).mockReturnValue(true);
       await openModelTab();
-      // Navigate down to parsedTools: model tab has 5 rows. Start from the
-      // tab row (selected=-1), so need 5 downs to reach the 5th row (index 4).
-      // (toolRationale, showProviderUsage, parallelTools, loadAgentsMd, parsedTools)
-      for (let i = 0; i < 5; i++) {
+      // Navigate down to parsedTools: model tab has 6 rows. Start from the
+      // tab row (selected=-1), so need 6 downs to reach the 6th row (index 5).
+      // (toolRationale, showProviderUsage, parallelTools, autoApproveTokenBudget,
+      //  loadAgentsMd, parsedTools)
+      for (let i = 0; i < 6; i++) {
         store.capturedOpts!.onKey('\x1b[B', makeRedraw(), makeClose());
       }
       const lines = store.capturedOpts!.render();
@@ -340,7 +372,7 @@ describe('runConfigCommand', () => {
     it('parsedTools row blocks cycling when isNativeToolsDisabled returns true', async () => {
       vi.mocked(isNativeToolsDisabled).mockReturnValue(true);
       await openModelTab();
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 6; i++) {
         store.capturedOpts!.onKey('\x1b[B', makeRedraw(), makeClose());
       }
       vi.mocked(setModelSetting).mockClear();

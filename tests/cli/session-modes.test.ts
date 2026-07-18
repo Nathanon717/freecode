@@ -57,6 +57,7 @@ vi.mock('../../src/cli/footer-status.js', async (importOriginal) => ({
 
 vi.mock('../../src/config/index.js', () => ({
   loadConfig: vi.fn(() => ({ toolConfirmation: 'auto' as const })),
+  resolveModelSettings: vi.fn(() => ({ autoApproveTokenBudget: 0 })),
 }));
 
 vi.mock('../../src/providers/openai-daily-spend.js', () => ({
@@ -157,6 +158,10 @@ import { askQuestion, confirmToolCallInteractive } from '../../src/cli/tool-appr
 import { isReadOnly, getAskMode, cycleByChar } from '../../src/cli/toggles.js';
 import { getCommandCompletion, getFilteredCommands } from '../../src/cli/slash-commands.js';
 import { runRawKeySession } from '../../src/cli/raw-picker.js';
+import { resolveModelSettings } from '../../src/config/index.js';
+// Unmocked on purpose: the budget is compared against the very count this
+// produces, so the boundary test must use the real thing.
+import { countTextTokens } from '../../src/tokenizers/count.js';
 
 // ---------------------------------------------------------------------------
 // Shared helpers.
@@ -349,6 +354,7 @@ describe('createInteractiveMode — detailed', () => {
     vi.mocked(getCommandCompletion).mockReturnValue(null);
     vi.mocked(getFilteredCommands).mockReturnValue([]);
     vi.mocked(confirmToolCallInteractive).mockResolvedValue({ approved: true });
+    vi.mocked(resolveModelSettings).mockReturnValue({ autoApproveTokenBudget: 0 } as never);
     vi.mocked(runConfigCommand).mockImplementation((_rl, _model, onRestore: () => void) => {
       onRestore?.();
       return Promise.resolve();
@@ -445,6 +451,84 @@ describe('createInteractiveMode — detailed', () => {
         expect(result.approved).toBe(true);
       },
     );
+
+    // ---- auto-approve token budget ----
+    // The budget is compared against the same count the approval hint displays,
+    // so these tests run the real tokenizer rather than mocking the count.
+    describe('auto-approve token budget', () => {
+      const setBudget = (autoApproveTokenBudget: number): void => {
+        vi.mocked(resolveModelSettings).mockReturnValue({ autoApproveTokenBudget } as never);
+      };
+
+      beforeEach(() => {
+        vi.mocked(getAskMode).mockReturnValue('ask');
+      });
+
+      it.each(['read', 'grep', 'list_dir'])(
+        'auto-approves %s when its result is under the budget',
+        async (name) => {
+          setBudget(100);
+          const { mode } = makeMode();
+          const result = await mode.confirmToolCall({ name, args: {}, resultText: 'tiny' });
+          expect(result).toEqual({ approved: true });
+          expect(confirmToolCallInteractive).not.toHaveBeenCalled();
+        },
+      );
+
+      it('still prompts when the result is at or above the budget', async () => {
+        setBudget(100);
+        const { mode } = makeMode();
+        await mode.confirmToolCall({ name: 'read', args: {}, resultText: 'word '.repeat(500) });
+        expect(confirmToolCallInteractive).toHaveBeenCalledOnce();
+      });
+
+      // The threshold is strictly "less than", so the only discriminating cases
+      // are budget === count (prompt) and budget === count + 1 (approve).
+      it('is strictly less-than at the boundary', async () => {
+        const resultText = 'some representative tool output';
+        const { tokens } = countTextTokens(resultText, 'groq:boundary');
+
+        setBudget(tokens);
+        const atBudget = makeMode();
+        await atBudget.mode.confirmToolCall({ name: 'read', args: {}, resultText });
+        expect(confirmToolCallInteractive).toHaveBeenCalledOnce();
+
+        vi.mocked(confirmToolCallInteractive).mockClear();
+        setBudget(tokens + 1);
+        const underBudget = makeMode();
+        const result = await underBudget.mode.confirmToolCall({ name: 'read', args: {}, resultText });
+        expect(result).toEqual({ approved: true });
+        expect(confirmToolCallInteractive).not.toHaveBeenCalled();
+      });
+
+      it('is off at 0 — a zero-token result still prompts', async () => {
+        setBudget(0);
+        const { mode } = makeMode();
+        await mode.confirmToolCall({ name: 'read', args: {}, resultText: '' });
+        expect(confirmToolCallInteractive).toHaveBeenCalledOnce();
+      });
+
+      it('never auto-approves create, whatever the budget or size', async () => {
+        setBudget(1000);
+        const { mode } = makeMode();
+        await mode.confirmToolCall({ name: 'create', args: {}, resultText: 'x' });
+        expect(confirmToolCallInteractive).toHaveBeenCalledOnce();
+      });
+
+      it.each(['edit', 'shell_exec'])('never auto-approves %s', async (name) => {
+        setBudget(1000);
+        const { mode } = makeMode();
+        await mode.confirmToolCall({ name, args: {}, resultText: 'x' });
+        expect(confirmToolCallInteractive).toHaveBeenCalledOnce();
+      });
+
+      it('prompts when a budget-approvable tool reports no token count', async () => {
+        setBudget(1000);
+        const { mode } = makeMode();
+        await mode.confirmToolCall({ name: 'read', args: {} });
+        expect(confirmToolCallInteractive).toHaveBeenCalledOnce();
+      });
+    });
 
     it('auto-approves without any tool-call limit prompt', async () => {
       const { mode } = makeMode();

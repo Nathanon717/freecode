@@ -122,10 +122,10 @@ export function getModelSettings(key: string): OverridableSettings {
 
 registerModelSettings(getModelSettings);
 
-export function setModelSetting(key: string, field: keyof OverridableSettings, value: boolean | undefined): void {
+export function setModelSetting(key: string, field: keyof OverridableSettings, value: boolean | number | undefined): void {
   const store = load();
   const { provider, modelId } = splitKey(key);
-  const existing: Record<string, boolean> = { ...(store[key]?.settings as Record<string, boolean> | undefined) };
+  const existing: Record<string, boolean | number> = { ...(store[key]?.settings as Record<string, boolean | number> | undefined) };
   if (value === undefined) {
     delete existing[field];
   } else {

@@ -38,6 +38,7 @@ Provider and Model tabs are only available when `currentModel` contains a colon.
 | `retryMaxWaitSeconds` | Max retry wait | Global only | Max seconds before retrying a rate-limited request. |
 | `diffContextLines` | Diff context | Global only | Context lines shown around each edit diff. |
 | `showEvalDots` | Eval dots | Global only | Show per-scenario eval circles in the model picker. |
+| `autoApproveTokenBudget` | Auto-approve under | Global, Provider, Model | Numeric (0–1000, step 100). Auto-approve `read`/`grep`/`list_dir` calls adding fewer than N tokens. `0` renders dim **off**. The only numeric setting that is also overridable. |
 | `loadAgentsMd` | Load AGENTS.md | Provider, Model | Inject AGENTS.md into the system prompt. Hidden from Global to preserve layout. |
 | `parsedTools` | Parsed tools | Model only | Text `<tool_call>` protocol instead of native function calling. `modelTabOnly`. Auto-detected (native tools rejected) shows **true (auto-detected)** and blocks cycling — can't be turned off. |
 
@@ -47,6 +48,10 @@ Provider and Model tabs are only available when `currentModel` contains a colon.
 
 Global tab cycles: `true ↔ false`.  
 Provider/Model tabs cycle: `inherit → true → false → inherit` (Right) or `inherit → false → true → inherit` (Left). `inherit` means the key is absent from the override record, so the parent level's value applies.
+
+Numeric settings step instead of cycling. Global tab: `cycleNumeric` clamps to `[min, max]`. Provider/Model tabs: `cycleNumericOverride` puts `inherit` one rung below `min`, so Left from `min` clears the override and Right from `inherit` adopts `min`; both ends **clamp** rather than wrap, so a held arrow key can't roll past the max back to `inherit`. Only the current value is rendered (there is no room to show every rung), unlike the boolean cycle which shows all three choices.
+
+`loadOverrideValues` treats a stored value as an override only when its runtime type matches the setting's declared type; anything else reads as `inherit`.
 
 ## Persistence
 

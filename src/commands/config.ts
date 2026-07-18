@@ -26,14 +26,18 @@ interface BoolSetting {
 
 interface NumericSetting {
   type: 'number';
-  key: keyof Config;
+  key: OverridableKey | keyof Config;
   label: string;
   description: string;
   min: number;
   max: number;
   step: number;
   unit: string;
-  globalOnly: true;
+  /** Rendered dim as "off" at this value, instead of as a number. */
+  offAt?: number;
+  globalOnly?: true;
+  modelOnly?: true;
+  modelTabOnly?: true;
 }
 
 type Setting = BoolSetting | NumericSetting;
@@ -45,6 +49,7 @@ const SETTINGS: Setting[] = [
   { type: 'number',  key: 'retryMaxWaitSeconds', label: 'Max retry wait', description: 'Max seconds to wait before retrying a rate-limited request', min: 5, max: 300, step: 5, unit: 's', globalOnly: true },
   { type: 'number',  key: 'diffContextLines',   label: 'Diff context',    description: 'Lines of surrounding context shown above/below each edit diff (stops at blank line)', min: 0, max: 10, step: 1, unit: '', globalOnly: true },
   { type: 'boolean', key: 'showEvalDots',      label: 'Eval dots',        description: 'Show per-scenario eval result circles in the model picker', globalOnly: true },
+  { type: 'number',  key: 'autoApproveTokenBudget', label: 'Auto-approve under', description: 'Auto-approve read/grep/list_dir calls adding fewer than this many tokens (0 = off)', min: 0, max: 1000, step: 100, unit: ' tokens', offAt: 0 },
   { type: 'boolean', key: 'loadAgentsMd',     label: 'Load AGENTS.md',   description: 'Inject AGENTS.md from the working directory into the system prompt', modelOnly: true },
   { type: 'boolean', key: 'parsedTools',      label: 'Parsed tools',     description: 'Use text-based tool protocol instead of native function calling', modelTabOnly: true },
 ];
@@ -74,8 +79,9 @@ function getAvailableTabs(currentModel: string): Tab[] {
 
 // ── Value loading ─────────────────────────────────────────────────────────────
 
-// Global tab: boolean. Provider/Model tabs: boolean | undefined (undefined = inherit from parent).
-type TabValue = boolean | undefined;
+// Global tab: boolean | number. Provider/Model tabs: the same, plus undefined
+// (undefined = inherit from parent).
+type TabValue = boolean | number | undefined;
 
 function loadGlobalValues(): Record<string, boolean | number> {
   const cfg = loadConfig();
@@ -87,11 +93,16 @@ function loadGlobalValues(): Record<string, boolean | number> {
 function loadOverrideValues(tab: Tab, currentModel: string): Record<string, TabValue> {
   const vals: Record<string, TabValue> = {};
 
+  // A setting's stored value only counts as an override when its type matches the
+  // setting's declared type; anything else (including a stale value left by an
+  // earlier shape) reads as inherit.
+  const asOverride = (s: Setting, v: unknown): TabValue =>
+    typeof v === (s.type === 'number' ? 'number' : 'boolean') ? (v as TabValue) : undefined;
+
   if (tab === 'model' && currentModel) {
     const modelSettings = getModelSettings(currentModel);
     for (const s of SETTINGS) {
-      const v = modelSettings[s.key as keyof OverridableSettings];
-      vals[s.key] = typeof v === 'boolean' ? v : undefined;
+      vals[s.key] = asOverride(s, modelSettings[s.key as keyof OverridableSettings]);
     }
     return vals;
   }
@@ -104,8 +115,7 @@ function loadOverrideValues(tab: Tab, currentModel: string): Record<string, TabV
   }
 
   for (const s of SETTINGS) {
-    const v = overrides[s.key];
-    vals[s.key] = typeof v === 'boolean' ? v : undefined;
+    vals[s.key] = asOverride(s, overrides[s.key]);
   }
   return vals;
 }
@@ -114,12 +124,19 @@ function loadOverrideValues(tab: Tab, currentModel: string): Record<string, TabV
 
 const LABEL_W = 20;
 
+// A numeric value's text plus the colour that carries its state: at `offAt` the
+// setting does nothing, so it reads dim "off" rather than a live-looking number.
+function formatNumeric(value: number, s: NumericSetting, bold: boolean): string {
+  if (value === s.offAt) return bold ? chalk.dim.bold('off') : chalk.dim('off');
+  const display = `${value}${s.unit}`;
+  return bold ? getBannerColor().bold(display) : getBannerColor()(display);
+}
+
 function renderGlobalValue(value: boolean | number, selected: boolean, setting: Setting): string {
   if (setting.type === 'number') {
-    const s = setting;
-    const display = `${value}${s.unit}`;
-    if (selected) return `${chalk.dim('←')} ${getBannerColor().bold(display)} ${chalk.dim('→')}`;
-    return getBannerColor()(display);
+    const display = formatNumeric(value as number, setting, selected);
+    if (selected) return `${chalk.dim('←')} ${display} ${chalk.dim('→')}`;
+    return display;
   }
   const v = value as boolean;
   if (selected) {
@@ -133,6 +150,22 @@ function renderGlobalValue(value: boolean | number, selected: boolean, setting: 
 function renderForcedValue(selected: boolean): string {
   if (selected) return chalk.green.bold('true') + ' ' + chalk.dim('(auto-detected, locked)');
   return chalk.green('true') + chalk.dim(' (auto-detected)');
+}
+
+// Numeric override: a single value that is either "inherit" or a concrete number,
+// stepped with ← →. Unlike the boolean cycle there is no room to show every
+// choice at once, so only the current one is rendered.
+function renderNumericOverride(
+  value: TabValue,
+  effectiveValue: number,
+  selected: boolean,
+  s: NumericSetting,
+): string {
+  const inherited = value === undefined;
+  const body = inherited
+    ? chalk.dim(`inherit (${effectiveValue === s.offAt ? 'off' : `${effectiveValue}${s.unit}`})`)
+    : formatNumeric(value as number, s, selected);
+  return selected ? `${chalk.dim('←')} ${body} ${chalk.dim('→')}` : body;
 }
 
 function renderOverrideValue(value: TabValue, effectiveValue: boolean, selected: boolean): string {
@@ -164,9 +197,9 @@ function visibleSettings(tab: Tab): Setting[] {
 
 // Resolved (post-inheritance) values, used to show "inherit (true)" on the
 // provider/model tabs. Recomputed live each render so cross-tab edits show.
-function effectiveValues(currentModel: string): Record<string, boolean> {
+function effectiveValues(currentModel: string): Record<string, boolean | number> {
   const resolved = resolveModelSettings(currentModel || ':');
-  const vals: Record<string, boolean> = {};
+  const vals: Record<string, boolean | number> = {};
   for (const s of SETTINGS) {
     if ('globalOnly' in s && s.globalOnly) continue;
     vals[s.key] = resolved[s.key as keyof typeof resolved];
@@ -192,8 +225,10 @@ function buildSettingRows(tab: Tab, selected: number, currentModel: string): str
       valueStr = renderGlobalValue(values[s.key] as boolean | number, active, s);
     } else if (tab === 'model' && s.key === 'parsedTools' && isParsedToolsForced(currentModel)) {
       valueStr = renderForcedValue(active);
+    } else if (s.type === 'number') {
+      valueStr = renderNumericOverride(values[s.key], effectiveVal as number, active, s);
     } else {
-      valueStr = renderOverrideValue(values[s.key] as TabValue, effectiveVal, active);
+      valueStr = renderOverrideValue(values[s.key], effectiveVal as boolean, active);
     }
 
     const desc = chalk.dim(s.description);
@@ -223,8 +258,8 @@ function saveOverrideSetting(globalPath: string, tab: Tab, currentModel: string,
   if (tab === 'provider' && providerId) {
     // Seed from the merged config, not config.json — overrides synced from other
     // devices live in the DB and may be absent from this device's file.
-    const merged = (loadConfig().providerOverrides ?? {}) as Record<string, Record<string, boolean>>;
-    const overrides: Record<string, Record<string, boolean>> = {};
+    const merged = (loadConfig().providerOverrides ?? {}) as Record<string, Record<string, boolean | number>>;
+    const overrides: Record<string, Record<string, boolean | number>> = {};
     for (const [id, settings] of Object.entries(merged)) overrides[id] = { ...settings };
     if (!overrides[providerId]) overrides[providerId] = {};
     if (value === undefined) {
@@ -253,6 +288,17 @@ function cycleNumeric(current: number, s: NumericSetting, direction: 1 | -1): nu
 // Cycle order (left):  inherit → true → false → inherit
 const CYCLE_RIGHT: TabValue[] = [undefined, false, true];
 const CYCLE_LEFT:  TabValue[] = [undefined, true, false];
+
+// Numeric override ladder: inherit sits one rung below `min`, so ← from `min`
+// clears the override and → from inherit adopts `min`. Both ends clamp rather
+// than wrap — wrapping past the max back to inherit would make a held arrow key
+// silently undo the value the user was stepping toward.
+function cycleNumericOverride(current: TabValue, s: NumericSetting, direction: 1 | -1): TabValue {
+  if (current === undefined) return direction === 1 ? s.min : undefined;
+  const next = (current as number) + direction * s.step;
+  if (next < s.min) return undefined;
+  return Math.min(s.max, next);
+}
 
 function cycleOverride(current: TabValue, direction: 1 | -1): TabValue {
   const seq = direction === 1 ? CYCLE_RIGHT : CYCLE_LEFT;
@@ -295,7 +341,9 @@ function buildConfigTab(tab: Tab, currentModel: string, globalPath: string): Men
           saveGlobalSetting(globalPath, setting.key, newVal);
         } else {
           const values = loadOverrideValues(tab, currentModel);
-          const newVal = cycleOverride(values[setting.key], direction);
+          const newVal = setting.type === 'number'
+            ? cycleNumericOverride(values[setting.key], setting, direction)
+            : cycleOverride(values[setting.key], direction);
           saveOverrideSetting(globalPath, tab, currentModel, setting.key, newVal);
         }
         ctx.redraw();

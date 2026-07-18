@@ -62,7 +62,7 @@ getNoNativeToolsKeys(): Set<string>
 
 getModelSettings(key: string): OverridableSettings
 
-setModelSetting(key: string, field: keyof OverridableSettings, value: boolean | undefined): void
+setModelSetting(key: string, field: keyof OverridableSettings, value: number | boolean | undefined): void
 
 appendEvalRun(key: string, evalType: string, summary: EvalRunSummary, doc: EvalDoc): void
 
