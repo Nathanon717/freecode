@@ -93,15 +93,17 @@ Format: filename (linecount)
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (120) — Adapter HTTP Retry/Backoff
   - [`adapter-usage-capture.ts`](providers/adapters/adapter-usage-capture.md) (52) — Shared Usage/Header Capture
-  - [`anthropic.ts`](providers/adapters/anthropic.md) (205) — Anthropic Adapter
+  - [`anthropic.ts`](providers/adapters/anthropic.md) (238) — Anthropic Adapter
   - [`openai-compat-quirks.ts`](providers/adapters/openai-compat-quirks.md) (54) — OpenAI-Compatible Provider Quirk Profiles
   - [`openai-compat-request.ts`](providers/adapters/openai-compat-request.md) (35) — OpenAI-Compatible Request Transforms
   - [`openai-compat-sse.ts`](providers/adapters/openai-compat-sse.md) (142) — OpenAI-Compatible SSE Transforms
-  - [`openai-compat.ts`](providers/adapters/openai-compat.md) (226) — OpenAI-Compatible Adapter
+  - [`openai-compat.ts`](providers/adapters/openai-compat.md) (254) — OpenAI-Compatible Adapter
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
+  - [`call-log.ts`](providers/call-log.md) (53) — Per-Call LLM Log
   - [`db-config-cache.ts`](providers/db-config-cache.md) (54) — DB Config Cache
-  - [`db.ts`](providers/db.md) (499) — SQLite Store (libSQL/Turso)
+  - [`db-schema.ts`](providers/db-schema.md) (79) — Table & Index DDL
+  - [`db.ts`](providers/db.md) (473) — SQLite Store (libSQL/Turso)
   - [`fake.ts`](providers/fake.md) (420) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
   - [`model-data.ts`](providers/model-data.md) (213) — Unified Model Store

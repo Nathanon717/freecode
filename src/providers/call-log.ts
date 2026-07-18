@@ -1,0 +1,52 @@
+import { isRecord } from '../util/guards.js';
+import { persistCallLogAsync } from './db.js';
+
+/**
+ * One LLM HTTP call. Token fields are populated only from a usage object the
+ * provider actually returned — never estimated, never counted locally. A null
+ * token field means "the provider did not tell us", which is information.
+ */
+export interface LlmCallRow {
+  /** `"provider:modelId"`, matching the `models` table key format. */
+  modelKey: string;
+  /** ISO-8601 UTC. */
+  timestamp: string;
+  /** HTTP status, or null if the request never produced a response. */
+  status?: number | null;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  totalTokens?: number | null;
+  /** Full error text when the call failed. */
+  error?: string | null;
+}
+
+function intOrNull(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : null;
+}
+
+/**
+ * Pull token counts out of a raw provider usage payload. Handles the
+ * OpenAI-compatible shape (`prompt_tokens`/`completion_tokens`/`total_tokens`)
+ * and the Anthropic shape (`input_tokens`/`output_tokens`, no total — summed
+ * only when both halves are present). Anything unrecognised yields all-null.
+ */
+export function tokensFromUsagePayload(usage: unknown): Pick<LlmCallRow, 'inputTokens' | 'outputTokens' | 'totalTokens'> {
+  if (!isRecord(usage)) return { inputTokens: null, outputTokens: null, totalTokens: null };
+
+  const inputTokens = intOrNull(usage['prompt_tokens'] ?? usage['input_tokens']);
+  const outputTokens = intOrNull(usage['completion_tokens'] ?? usage['output_tokens']);
+  const reportedTotal = intOrNull(usage['total_tokens']);
+  const totalTokens = reportedTotal ?? (inputTokens !== null && outputTokens !== null ? inputTokens + outputTokens : null);
+
+  return { inputTokens, outputTokens, totalTokens };
+}
+
+/**
+ * Record one LLM call. Fire-and-forget and never throws — a logging failure
+ * must never break the call it is describing.
+ */
+export function recordLlmCall(row: Omit<LlmCallRow, 'timestamp'> & { timestamp?: string }): void {
+  try {
+    persistCallLogAsync({ ...row, timestamp: row.timestamp ?? new Date().toISOString() });
+  } catch { /* never throws */ }
+}

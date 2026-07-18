@@ -6,6 +6,8 @@ import { fileURLToPath } from 'url';
 import { log, logError } from '../logger.js';
 import type { ModelEntry, EvalRunSummary } from './model-data.js';
 import { setDbConfigCache, clearDbConfigCache, registerConfigPersist, type DbConfigData } from './db-config-cache.js';
+import type { LlmCallRow } from './call-log.js';
+import { createSchema } from './db-schema.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(_dirname, '..', '..');
@@ -66,62 +68,6 @@ export function isReplicaConflict(err: unknown): boolean {
 /** True when the db file at `url` is a libSQL embedded replica (has an `-info` sync-metadata sidecar). See db.md. */
 function isSyncReplica(url: string): boolean {
   return existsSync(url.replace(/^file:/, '') + '-info');
-}
-
-async function createSchema(c: Client): Promise<void> {
-  await c.execute('PRAGMA foreign_keys = ON');
-  await c.execute(`
-    CREATE TABLE IF NOT EXISTS meta (
-      key   TEXT PRIMARY KEY,
-      value TEXT NOT NULL
-    )
-  `);
-  await c.execute(`
-    CREATE TABLE IF NOT EXISTS config (
-      scope TEXT PRIMARY KEY,
-      data  TEXT NOT NULL
-    )
-  `);
-  await c.execute(`
-    CREATE TABLE IF NOT EXISTS models (
-      key            TEXT PRIMARY KEY,
-      provider       TEXT NOT NULL,
-      model_id       TEXT NOT NULL,
-      display_name   TEXT,
-      native_tools   INTEGER,
-      context_window INTEGER,
-      is_favorite    INTEGER DEFAULT 0,
-      settings       TEXT,
-      rate_limits    TEXT
-    )
-  `);
-  await c.execute(`
-    CREATE TABLE IF NOT EXISTS eval_runs (
-      id             INTEGER PRIMARY KEY AUTOINCREMENT,
-      model_key      TEXT NOT NULL REFERENCES models(key),
-      eval_type      TEXT NOT NULL,
-      task_id        TEXT NOT NULL,
-      timestamp      TEXT NOT NULL,
-      pass           INTEGER NOT NULL,
-      warnings       INTEGER,
-      turns          INTEGER,
-      input_tokens   INTEGER,
-      output_tokens  INTEGER,
-      total_tokens   INTEGER,
-      duration_ms    INTEGER,
-      scenario_hash  TEXT,
-      error          TEXT,
-      checks         TEXT
-    )
-  `);
-  await c.execute(`
-    CREATE TABLE IF NOT EXISTS eval_transcripts (
-      run_id      INTEGER PRIMARY KEY REFERENCES eval_runs(id),
-      fail_reason TEXT,
-      transcript  TEXT,
-      scoring     TEXT
-    )
-  `);
 }
 
 async function loadFromDb(c: Client): Promise<ModelDataMap> {
@@ -288,6 +234,34 @@ export function persistModelRowAsync(key: string, entry: ModelEntry): void {
       await c.sync().catch((err) => logError('db', 'sync after model upsert failed', err));
     } catch (err) {
       logError('db', 'Failed to persist model row', err);
+    }
+  });
+}
+
+/** One row per LLM HTTP call. Fire-and-forget; serialized through writeChain. */
+export function persistCallLogAsync(row: LlmCallRow): void {
+  enqueueWrite(async () => {
+    try {
+      await ensureStoreReady();
+      const c = client;
+      if (!c) return;
+      await c.execute({
+        sql: `INSERT INTO llm_calls
+              (model_key, timestamp, status, input_tokens, output_tokens, total_tokens, error)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          row.modelKey,
+          row.timestamp,
+          row.status ?? null,
+          row.inputTokens ?? null,
+          row.outputTokens ?? null,
+          row.totalTokens ?? null,
+          row.error ?? null,
+        ] as InValue[],
+      });
+      await c.sync().catch((err) => logError('db', 'sync after call-log insert failed', err));
+    } catch (err) {
+      logError('db', 'Failed to persist call log row', err);
     }
   });
 }

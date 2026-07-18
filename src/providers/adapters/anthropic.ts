@@ -12,6 +12,7 @@ import { log } from '../../logger.js';
 import type { AnthropicTokenUsage } from '../anthropic-cost.js';
 import { saveObservedRateLimits } from '../model-data.js';
 import { HeaderSnapshotStore, UsageCaptureStore } from './adapter-usage-capture.js';
+import { recordLlmCall } from '../call-log.js';
 
 const headerStore = new HeaderSnapshotStore();
 const usageStore = new UsageCaptureStore<AnthropicTokenUsage>();
@@ -162,9 +163,23 @@ function getInferenceGeo(init: RequestInit | undefined): string | undefined {
   }
 }
 
-function captureAnthropicUsage(providerId: string, response: Response, inferenceGeo?: string): void {
-  usageStore.push(providerId, response.clone().text()
-    .then((body) => parseAnthropicUsageFromSse(body, inferenceGeo)));
+function captureAnthropicUsage(providerId: string, modelKey: string, response: Response, inferenceGeo?: string): void {
+  const parsed = response.clone().text().then((body) => parseAnthropicUsageFromSse(body, inferenceGeo));
+  usageStore.push(providerId, parsed);
+  // Tee the same parse into the call log. `hasRawUsage` false means Anthropic
+  // sent no usage object, so tokens stay null rather than being reported as 0.
+  void parsed.then((usage) => {
+    const tokens = usage?.hasRawUsage
+      ? {
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          totalTokens: usage.inputTokens + usage.outputTokens,
+        }
+      : {};
+    recordLlmCall({ modelKey, status: response.status, ...tokens });
+  }, () => {
+    recordLlmCall({ modelKey, status: response.status });
+  });
 }
 
 export function createAnthropicProvider(providerConfig: ProviderConfig) {
@@ -183,8 +198,26 @@ export function createAnthropicProvider(providerConfig: ProviderConfig) {
       headers.set('Authorization', `Bearer ${apiKey}`);
       fetchInit = { ...init, headers };
     }
-    const response = await globalThis.fetch(input, fetchInit);
-    captureAnthropicUsage(providerConfig.id, response, getInferenceGeo(fetchInit));
+    const modelKey = `${providerConfig.id}:${extractAnthropicModelFromBody(fetchInit?.body) ?? 'unknown'}`;
+
+    let response: Response;
+    try {
+      response = await globalThis.fetch(input, fetchInit);
+    } catch (err) {
+      // Transport failure — no response, so no status and no provider usage.
+      recordLlmCall({ modelKey, error: err instanceof Error ? err.message : String(err) });
+      throw err;
+    }
+
+    if (response.ok) {
+      captureAnthropicUsage(providerConfig.id, modelKey, response, getInferenceGeo(fetchInit));
+    } else {
+      // Error responses carry no usage; log the body as the error text.
+      void response.clone().text().then(
+        (body) => recordLlmCall({ modelKey, status: response.status, error: body }),
+        () => recordLlmCall({ modelKey, status: response.status }),
+      );
+    }
     const base = parseAnthropicRateLimitHeaders(response.headers);
     const extended = parseAnthropicExtendedHeaders(response.headers);
     if (debugQuota) {

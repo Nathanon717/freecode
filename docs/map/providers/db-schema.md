@@ -1,0 +1,24 @@
+# src/providers/db-schema.ts - Table & Index DDL
+
+**Role:** All `CREATE TABLE` / `CREATE INDEX` statements for the libSQL store, plus `PRAGMA foreign_keys = ON`. Extracted from `db.ts` so schema changes are a single-file edit and `db.ts` stays under the line limit. Pure DDL — no client lifecycle, no reads, no writes.
+
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
+
+```typescript
+createSchema(c: Client): Promise<void>
+```
+<!-- END GENERATED EXPORTS -->
+
+## Idempotence
+
+`createSchema` runs on every client open, including after a WalConflict replica wipe re-creates the client. Every statement is therefore `IF NOT EXISTS` and must stay safe to re-execute against a populated database.
+
+## Read When
+
+Adding a table, column, or index. Table-by-table semantics and the read/write architecture live in [db.md](db.md).
+
+## Key Neighbors
+
+- [db.md](db.md): sole caller; owns the client, cache, and all persistence functions.
+- [call-log.md](call-log.md): owns the row shape written to `llm_calls`.

@@ -9,6 +9,7 @@ import { HeaderSnapshotStore, UsageCaptureStore } from './adapter-usage-capture.
 import { fetchWithRetry, formatOpenAICompatHttpError } from './adapter-http-retry.js';
 import { providerQuirks } from './openai-compat-quirks.js';
 import { injectParallelToolCallsFalse } from './openai-compat-request.js';
+import { recordLlmCall, tokensFromUsagePayload } from '../call-log.js';
 
 type QuotaUpdateSink = (snapshot: RateLimitSnapshot) => void;
 let quotaUpdateSink: QuotaUpdateSink | null = null;
@@ -124,8 +125,25 @@ async function parseProviderUsage(providerId: string, response: Response): Promi
   }
 }
 
-function captureProviderUsage(providerId: string, response: Response): void {
-  usageStore.push(providerId, parseProviderUsage(providerId, response));
+function captureProviderUsage(providerId: string, modelKey: string, response: Response): void {
+  const parsed = parseProviderUsage(providerId, response);
+  usageStore.push(providerId, parsed);
+  // Tee the same parse into the call log so tokens come from the provider's own
+  // usage object; a call the provider reported no usage for logs null tokens.
+  void parsed.then((captured) => {
+    recordLlmCall({ modelKey, status: response.status, ...tokensFromUsagePayload(captured?.usage) });
+  }, () => {
+    recordLlmCall({ modelKey, status: response.status });
+  });
+}
+
+/** `"provider:modelId"` for the call log, read from the outgoing request body. */
+function callLogKey(providerId: string, body: RequestInit['body']): string {
+  let modelId: string | undefined;
+  try {
+    modelId = typeof body === 'string' ? (JSON.parse(body) as Record<string, unknown>)['model'] as string : undefined;
+  } catch { /* unknown model */ }
+  return `${providerId}:${modelId ?? 'unknown'}`;
 }
 
 function saveLimitsFromHeaders(providerId: string, headers: Headers, body: RequestInit['body']): void {
@@ -168,20 +186,29 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
       } catch { /* leave body untouched */ }
     }
 
-    let response = await fetchWithRetry(input, patchedInit, {
-      providerName: providerConfig.name,
-      maxWaitMs: loadConfig().retryMaxWaitSeconds * 1000,
-      onRetryableResponse: shouldCapture
-        ? (headers) => {
-            if (!quotaUpdateSink) return;
-            const snap = profile.parseRateLimitSnapshot?.(headers) ?? [];
-            if (snap.length > 0) {
-              headerStore.set(providerConfig.id, snap);
-              quotaUpdateSink(snap);
+    const modelKey = callLogKey(providerConfig.id, patchedInit?.body);
+
+    let response: Response;
+    try {
+      response = await fetchWithRetry(input, patchedInit, {
+        providerName: providerConfig.name,
+        maxWaitMs: loadConfig().retryMaxWaitSeconds * 1000,
+        onRetryableResponse: shouldCapture
+          ? (headers) => {
+              if (!quotaUpdateSink) return;
+              const snap = profile.parseRateLimitSnapshot?.(headers) ?? [];
+              if (snap.length > 0) {
+                headerStore.set(providerConfig.id, snap);
+                quotaUpdateSink(snap);
+              }
             }
-          }
-        : undefined,
-    });
+          : undefined,
+      });
+    } catch (err) {
+      // Transport failure — no response, so no status and no provider usage.
+      recordLlmCall({ modelKey, error: err instanceof Error ? err.message : String(err) });
+      throw err;
+    }
 
     if (shouldCapture) {
       const snapshot = profile.parseRateLimitSnapshot?.(response.headers) ?? [];
@@ -193,6 +220,7 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
 
     const httpError = await formatOpenAICompatHttpError(providerConfig.name, response, profile?.httpErrorHint);
     if (httpError) {
+      recordLlmCall({ modelKey, status: response.status, error: httpError });
       throw Object.assign(new Error(httpError), { statusCode: response.status });
     }
 
@@ -205,7 +233,7 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
     }
 
     response = normalizeOpenAICompatToolCallResponse(response);
-    captureProviderUsage(providerConfig.id, response);
+    captureProviderUsage(providerConfig.id, modelKey, response);
     return response;
   };
 
