@@ -235,7 +235,7 @@ function saveOverrideSetting(globalPath: string, tab: Tab, currentModel: string,
     }
     // Always explicit — an empty map is how a cleared override reaches the DB.
     existing.providerOverrides = overrides;
-    writeConfigFile(globalPath, existing);
+    writeConfigFile(globalPath, existing, true);
   }
 }
 

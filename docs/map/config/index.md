@@ -16,7 +16,7 @@ getConfigPaths(): { globalPath: string; localPath: string; }
 
 readRawConfig(path: string): Partial<Config> | null
 
-writeConfigFile(path: string, data: Partial<Config>): void
+writeConfigFile(path: string, data: Partial<Config>, overridesAuthoritative?: boolean): void
 
 updateGlobalConfig(patch: Record<string, unknown>): void
 

@@ -153,7 +153,12 @@ export function readRawConfig(path: string): Partial<Config> | null {
   return loadJsonFile<Partial<Config>>(path);
 }
 
-export function writeConfigFile(path: string, data: Partial<Config>): void {
+/**
+ * `overridesAuthoritative` marks a write that intends to change providerOverrides
+ * (only the config UI's override editor does). Every other write carries whatever
+ * config.json happened to hold, which may be a stale subset of the DB's copy.
+ */
+export function writeConfigFile(path: string, data: Partial<Config>, overridesAuthoritative = false): void {
   delete (data as Record<string, unknown>)['preferLocal'];
   const dir = dirname(path);
   if (!existsSync(dir)) {
@@ -172,10 +177,13 @@ export function writeConfigFile(path: string, data: Partial<Config>): void {
       if (val !== undefined) (syncableGlobal as Record<string, unknown>)[key] = val;
     }
     const existingCache = getDbConfigCache() ?? { global: null, providerOverrides: null };
-    // Omitting providerOverrides means "untouched" — keep the DB's copy. Only an
-    // explicit (possibly empty) map replaces it, so clearing an override still works.
-    const newProviderOverrides = (data.providerOverrides as Record<string, OverridableSettings>)
-      ?? existingCache.providerOverrides ?? {};
+    // An authoritative write replaces the DB copy outright, so clearing an override
+    // still works. Otherwise the DB wins; the file's copy only promotes when no DB
+    // row exists yet (overrides predating the sync).
+    const fileOverrides = data.providerOverrides;
+    const newProviderOverrides = overridesAuthoritative
+      ? fileOverrides ?? {}
+      : existingCache.providerOverrides ?? fileOverrides ?? {};
     const newGlobal: SyncableGlobalConfig = { ...(existingCache.global ?? {}), ...syncableGlobal };
     const newData = { global: newGlobal, providerOverrides: newProviderOverrides };
     setDbConfigCache(newData);

@@ -118,6 +118,50 @@ describe('Config Module', () => {
       expect(overrides).toEqual({ zen: { loadAgentsMd: true } });
     });
 
+    it('prefers the DB over a stale config.json subset on a global write', async () => {
+      const { existsSync, readFileSync } = await import('fs');
+      vi.mocked(existsSync).mockReturnValue(true);
+      // Stale: groq's override arrived from another device and only lives in the DB.
+      vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
+        providerOverrides: { zen: { loadAgentsMd: true } },
+      }));
+
+      const { setDbConfigCache, registerConfigPersist } = await import('../../src/providers/db-config-cache.js');
+      setDbConfigCache({
+        global: {},
+        providerOverrides: { zen: { loadAgentsMd: true }, groq: { parallelTools: false } },
+      });
+
+      const persisted: Array<[string, unknown]> = [];
+      registerConfigPersist((scope, data) => { persisted.push([scope, data]); });
+
+      const { updateGlobalConfig } = await import('../../src/config/index.js');
+      updateGlobalConfig({ showEvalDots: true });
+
+      const overrides = persisted.filter(([scope]) => scope === 'providerOverrides').pop()?.[1];
+      expect(overrides).toEqual({ zen: { loadAgentsMd: true }, groq: { parallelTools: false } });
+    });
+
+    it('promotes config.json overrides when the DB has no row yet', async () => {
+      const { existsSync, readFileSync } = await import('fs');
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readFileSync).mockReturnValue(JSON.stringify({
+        providerOverrides: { zen: { loadAgentsMd: true } },
+      }));
+
+      const { setDbConfigCache, registerConfigPersist } = await import('../../src/providers/db-config-cache.js');
+      setDbConfigCache({ global: {}, providerOverrides: null });
+
+      const persisted: Array<[string, unknown]> = [];
+      registerConfigPersist((scope, data) => { persisted.push([scope, data]); });
+
+      const { updateGlobalConfig } = await import('../../src/config/index.js');
+      updateGlobalConfig({ showEvalDots: true });
+
+      const overrides = persisted.filter(([scope]) => scope === 'providerOverrides').pop()?.[1];
+      expect(overrides).toEqual({ zen: { loadAgentsMd: true } });
+    });
+
     it('clears overrides when an explicit empty set is written', async () => {
       const { existsSync, readFileSync } = await import('fs');
       vi.mocked(existsSync).mockReturnValue(true);
@@ -130,7 +174,7 @@ describe('Config Module', () => {
       registerConfigPersist((scope, data) => { persisted.push([scope, data]); });
 
       const { writeConfigFile, getConfigPaths } = await import('../../src/config/index.js');
-      writeConfigFile(getConfigPaths().globalPath, { providerOverrides: {} });
+      writeConfigFile(getConfigPaths().globalPath, { providerOverrides: {} }, true);
 
       const overrides = persisted.filter(([scope]) => scope === 'providerOverrides').pop()?.[1];
       expect(overrides).toEqual({});

@@ -21,20 +21,25 @@ its override map from `readRawConfig(globalPath)` — the same stale local file 
 setting one provider's override dropped any *other* provider's override that
 existed only in the DB.
 
-**Fix:**
-- `writeConfigFile` falls back to `existingCache.providerOverrides` when the field
-  is omitted. Omitted now means "untouched"; an explicit map (including `{}`)
-  still replaces.
-- `saveOverrideSetting` seeds from `loadConfig().providerOverrides` (DB-merged,
-  deep-copied so the config cache isn't mutated) and always writes an explicit
-  map rather than `delete`-ing the key.
+**Fix:** `writeConfigFile` takes an `overridesAuthoritative` flag.
+- Authoritative (only `saveOverrideSetting` passes it): `data.providerOverrides`
+  replaces the DB copy outright, so clearing an override still works.
+- Otherwise: `existingCache.providerOverrides ?? fileOverrides ?? {}` — the DB
+  wins, and the file's copy promotes only when no DB row exists yet.
+- `saveOverrideSetting` also seeds from `loadConfig().providerOverrides`
+  (DB-merged, deep-copied so the config cache isn't mutated) and always writes an
+  explicit map rather than `delete`-ing the key.
 
-**Trap avoided:** simply merging `providerOverrides` with the existing DB copy —
-the symmetric-looking fix — would make *turning an override off* impossible.
-Deletion is signalled by the key's absence from the map, so a shallow merge
-resurrects it. Disambiguating omitted-vs-explicit is what keeps both directions
-working, hence the paired tests.
+**Two traps this shape avoids:**
+1. *Merging* `providerOverrides` with the DB copy — the symmetric-looking fix —
+   would make turning an override **off** impossible: deletion is signalled by
+   the key's absence, so a shallow merge resurrects it.
+2. A plain `data.providerOverrides ?? dbCopy` fallback only engages when the
+   field is `undefined`. A **stale subset** in `config.json` (zen set here long
+   ago, groq synced in later) is defined-but-wrong, sails past the `??`, and
+   drops groq. Hence the explicit flag rather than a nullish chain.
 
 **Coverage:** `tests/config/index.test.ts` — a global write preserves DB provider
-overrides (this test failed with `{}` before the fix), and an explicit empty map
-still clears them.
+overrides (failed with `{}` before the fix); a global write prefers the DB over a
+stale `config.json` subset; file overrides promote when the DB row is `null`; an
+authoritative empty map still clears.

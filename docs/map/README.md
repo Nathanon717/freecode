@@ -80,7 +80,7 @@ Format: filename (linecount)
   - [`renderer.ts`](commands/renderer.md) (252) — Renderer Demo Command
   - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`
-  - [`index.ts`](config/index.md) (222) — Configuration Loader
+  - [`index.ts`](config/index.md) (230) — Configuration Loader
 - `src/eval/`
   - [`custom.ts`](eval/custom.md) (96) — Custom Eval Discovery and Hashing
   - [`errors.ts`](eval/errors.md) (77) — Eval API Error Parser
