@@ -36,7 +36,7 @@ describe('transcript renderer', () => {
       .toBe('─'.repeat(expectedWidth));
   });
 
-  it('step separator writes two divider lines with no surrounding blank lines', () => {
+  it('step separator writes a single divider line with one blank line above and below', () => {
     const expectedWidth = process.stdout.columns || TRANSCRIPT_DIVIDER_WIDTH;
     const chunks: string[] = [];
     const spy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
@@ -50,7 +50,7 @@ describe('transcript renderer', () => {
     }
     const output = chunks.join('');
     const line = '─'.repeat(expectedWidth);
-    expect(stripAnsi(output)).toBe(line + '\n' + line + '\n');
+    expect(stripAnsi(output)).toBe('\n' + line + '\n\n');
   });
 
   it('format functions return content without trailing newlines so withToolRendering controls spacing', () => {

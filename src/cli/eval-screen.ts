@@ -17,10 +17,11 @@ export function printEvalHeader(id: string, prompt: string): void {
   console.log(bc(`── ${id} ${'─'.repeat(dashCount)}`));
   console.log(chalk.bold('Prompt:'));
   console.log(chalk.white(prompt));
-  // Two-line separator with no blank below, matching the transcript step
-  // separator (writeStepSeparator) so the response abuts it directly.
+  // Single-line separator with a blank line above and below, matching the
+  // transcript step separator (writeStepSeparator).
+  console.log('');
   console.log(bc('─'.repeat(termWidth)));
-  console.log(bc('─'.repeat(termWidth)));
+  console.log('');
 }
 
 export function printEvalReport(report: EvalReport): void {

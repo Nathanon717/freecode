@@ -107,7 +107,7 @@ renderTurn(steps: RenderedStep[], opts?: TranscriptRuntimeOptions | undefined): 
 - `formatCreatedFileContent()` — create-file preview; numbers content from line 1 with the shared gutter, then dims/truncates like `formatToolResultPreview`.
 - `formatParsedToolCallLine()` — like `formatToolCallLine` but prefixes `~ `.
 - `formatTranscriptStepDivider(options?)` — returns one raw divider line (no newlines); uses the target stream's column width when `options` is provided.
-- `writeStepSeparator(options?)` — single authority for divider spacing: writes two full-width divider lines with NO blank line above or below, so content abuts the separator on both sides. Every divider-emitting site (`beginTranscriptTurn` deferred flush, `endTranscriptStep` close) routes through it.
+- `writeStepSeparator(options?)` — single authority for divider spacing: writes a single full-width divider line with one blank line above and one below, so content is set off from the separator on both sides. Every divider-emitting site (`beginTranscriptTurn` deferred flush, `endTranscriptStep` close) routes through it.
 - Higher-level API (`writeToolCallHeader`, `writeToolStepResult`, `renderToolStep`, `renderTurn`) — sit on top of the format helpers and state machine so that both the live agent path (`tools/index.ts withToolRendering`) and the `/renderer` demo (`commands/renderer.ts`) share one implementation. `writeToolCallHeader` is called BEFORE tool execution; `writeToolStepResult` is called AFTER.
 - `writeToolCallHeader` returns `ToolCallHeaderRows` (wrap included) rather than `void`, and `writeTranscriptToolLeadIn` returns its own rows. Only the approval path reads them — it budgets the preview that follows against the real height of what sits above it, which a constant cannot express because the call line, the rationale and the preamble can all wrap. `preamble` is measured before the lead-in bumps `toolCount`, and is 0 for any parallel call after the step's first: only that first call sits directly under the response text.
 - `TranscriptRenderOptions.maxResultRows` — caps the preview at N terminal rows counting wrap, on top of `maxResultLines`; see [transcript-options.md](transcript-options.md) for the type and [tool-approval.md](tool-approval.md) for who sets it. Honoured by both `formatToolResultPreview` and `formatEditFileDiff`: `edit` (like `create`) previews its diff before confirmation, so the diff must also fit the approval row budget or a long change would scroll the call line the user is approving off-screen. Both trim via `fitLinesToRows`, measuring the rendered (gutter + colour) width, and report the dropped count in a "… (N more lines)" footer.
@@ -115,18 +115,17 @@ renderTurn(steps: RenderedStep[], opts?: TranscriptRuntimeOptions | undefined): 
 
 ## Desired Turn Layout
 
-Each step is framed by a two-line `───` separator; consecutive steps share one (close of step N = open of step N+1). The separator has NO blank line above or below — content abuts it directly on both sides (spacing owned entirely by `writeStepSeparator`). Rationale sits directly above its tool call (no blank between); response text and a following tool call are separated by one blank line.
+Each step is framed by a single-line `───` separator; consecutive steps share one (close of step N = open of step N+1). The separator has one blank line above and one below — content is set off from it on both sides (spacing owned entirely by `writeStepSeparator`). Rationale sits directly above its tool call (no blank between); response text and a following tool call are separated by one blank line.
 
 Single step (response + tool call) and multi-step (shared separator):
 ```
 ───              ───
-───              ───
+
 response text    [step N]
 
 tool_call(args)  ───
-  result preview  ───
+  result preview
                  [step N+1]
-───
 ───
 ```
 

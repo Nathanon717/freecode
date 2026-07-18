@@ -20,7 +20,7 @@ buildEvalDetailScreen(scenario: CustomEval, entry: EvalHistoryEntry | null, mode
 
 ## Export notes
 
-- `printEvalHeader` — prints the labeled `── id ──` bar, "Prompt:", the prompt text, and a two-line prompt→response separator (matching `transcript-renderer.ts` `writeStepSeparator`) to stdout before an eval run; used by `/eval`.
+- `printEvalHeader` — prints the labeled `── id ──` bar, "Prompt:", the prompt text, and a single-line prompt→response separator (matching `transcript-renderer.ts` `writeStepSeparator`) to stdout before an eval run; used by `/eval`.
 - `buildEvalPickerScreen` — controls hint is pinned to the bottom row via `list-menu`'s `controls` field (not rendered inline).
 - `printEvalSummary` — shared by the Custom and HumanEval run loops within `/eval`; called when more than one run executed.
 

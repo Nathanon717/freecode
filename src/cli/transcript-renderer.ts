@@ -183,14 +183,13 @@ export function formatTranscriptStepDivider(options?: TranscriptRuntimeOptions):
 
 /**
  * Write the complete step separator block — the single authority for divider
- * spacing. The separator is two full-width lines with NO blank line above or
- * below, so content abuts it directly on both sides. Every site that emits a
- * divider (between-step close, between-turn flush) routes through here so the
- * separator's look and surrounding whitespace live in exactly one place.
+ * spacing. The separator is a single full-width line with one blank line above
+ * and one below, so content is set off from it on both sides. Every site that
+ * emits a divider (between-step close, between-turn flush) routes through here so
+ * the separator's look and surrounding whitespace live in exactly one place.
  */
 export function writeStepSeparator(options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions()): void {
-  const divider = formatTranscriptStepDivider(options);
-  getTranscriptStream(options).write(divider + "\n" + divider + "\n");
+  getTranscriptStream(options).write("\n" + formatTranscriptStepDivider(options) + "\n\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -201,18 +200,20 @@ export function writeStepSeparator(options: TranscriptRuntimeOptions = getTransc
 // tracks what has been written so it can insert the correct blank lines.
 //
 // Desired layout (per step):
-//   ===   (two divider lines, no blank line above or below)
-//   ===
+//                            (blank line)
+//   ===                      (one divider line)
+//                            (blank line)
 //   [response text]          (optional)
 //
 //   [rationale]              (optional; goes directly above the tool call)
 //   [tool call + result]     (optional)
+//                            (blank line)
 //   ===
-//   ===
+//                            (blank line)
 //
-// The two-line separator is shared between consecutive steps (close of step N =
+// The separator is shared between consecutive steps (close of step N =
 // open of step N+1). Its whitespace is owned entirely by writeStepSeparator, so
-// content abuts the separator directly on both sides.
+// content is set off from the separator by one blank line on both sides.
 
 interface _StepState {
   open: boolean;
