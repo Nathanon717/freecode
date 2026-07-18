@@ -97,4 +97,43 @@ describe('Config Module', () => {
       expect(config.toolRationale).toBe(true);
     });
   });
+
+  describe('provider override persistence', () => {
+    it('preserves DB provider overrides when a global setting is written', async () => {
+      const { existsSync, readFileSync } = await import('fs');
+      // config.json on this device has no providerOverrides — they arrived via DB sync.
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ toolRationale: true }));
+
+      const { setDbConfigCache, registerConfigPersist } = await import('../../src/providers/db-config-cache.js');
+      setDbConfigCache({ global: {}, providerOverrides: { zen: { loadAgentsMd: true } } });
+
+      const persisted: Array<[string, unknown]> = [];
+      registerConfigPersist((scope, data) => { persisted.push([scope, data]); });
+
+      const { updateGlobalConfig } = await import('../../src/config/index.js');
+      updateGlobalConfig({ showEvalDots: true });
+
+      const overrides = persisted.filter(([scope]) => scope === 'providerOverrides').pop()?.[1];
+      expect(overrides).toEqual({ zen: { loadAgentsMd: true } });
+    });
+
+    it('clears overrides when an explicit empty set is written', async () => {
+      const { existsSync, readFileSync } = await import('fs');
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readFileSync).mockReturnValue(JSON.stringify({}));
+
+      const { setDbConfigCache, registerConfigPersist } = await import('../../src/providers/db-config-cache.js');
+      setDbConfigCache({ global: {}, providerOverrides: { zen: { loadAgentsMd: true } } });
+
+      const persisted: Array<[string, unknown]> = [];
+      registerConfigPersist((scope, data) => { persisted.push([scope, data]); });
+
+      const { writeConfigFile, getConfigPaths } = await import('../../src/config/index.js');
+      writeConfigFile(getConfigPaths().globalPath, { providerOverrides: {} });
+
+      const overrides = persisted.filter(([scope]) => scope === 'providerOverrides').pop()?.[1];
+      expect(overrides).toEqual({});
+    });
+  });
 });

@@ -75,12 +75,12 @@ Format: filename (linecount)
   - [`transcript-options.ts`](cli/transcript-options.md) (66) — Transcript Stream + Options
   - [`transcript-renderer.ts`](cli/transcript-renderer.md) (485) — Agent Transcript Formatting
 - `src/commands/`
-  - [`config.ts`](commands/config.md) (345) — Interactive Config Editor
+  - [`config.ts`](commands/config.md) (349) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (298) — Interactive Model Picker
   - [`renderer.ts`](commands/renderer.md) (252) — Renderer Demo Command
   - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`
-  - [`index.ts`](config/index.md) (219) — Configuration Loader
+  - [`index.ts`](config/index.md) (222) — Configuration Loader
 - `src/eval/`
   - [`custom.ts`](eval/custom.md) (96) — Custom Eval Discovery and Hashing
   - [`errors.ts`](eval/errors.md) (77) — Eval API Error Parser

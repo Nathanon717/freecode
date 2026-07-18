@@ -171,8 +171,11 @@ export function writeConfigFile(path: string, data: Partial<Config>): void {
       const val = raw[key];
       if (val !== undefined) (syncableGlobal as Record<string, unknown>)[key] = val;
     }
-    const newProviderOverrides = (data.providerOverrides as Record<string, OverridableSettings>) ?? {};
     const existingCache = getDbConfigCache() ?? { global: null, providerOverrides: null };
+    // Omitting providerOverrides means "untouched" — keep the DB's copy. Only an
+    // explicit (possibly empty) map replaces it, so clearing an override still works.
+    const newProviderOverrides = (data.providerOverrides as Record<string, OverridableSettings>)
+      ?? existingCache.providerOverrides ?? {};
     const newGlobal: SyncableGlobalConfig = { ...(existingCache.global ?? {}), ...syncableGlobal };
     const newData = { global: newGlobal, providerOverrides: newProviderOverrides };
     setDbConfigCache(newData);

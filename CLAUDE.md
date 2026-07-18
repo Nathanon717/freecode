@@ -10,9 +10,7 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 - Before broad source reads, start with `docs/map/README.md` and the relevant map page.
 - After changing any file in `/src/`, make sure to check its corresponding map page and consider if you need to update it.
-- Never prefix Bash commands with `cd <dir> &&` when already in that directory — it triggers a permission prompt on the `cd` even if the actual command is allowed.
 - Never justify dead code by calling it a "fallback" - remove it.
-- Keep commit messages terse.
 
 ## Enviornment
 
@@ -42,3 +40,9 @@ See `docs/pty-session.md` on how to drive a live, real freecode TUI (lets you ve
 - Verification should succeed BEFORE docs are updated, not after.
 
 After code changes, inspect `git diff --name-only` and update only map pages for changed files whose purpose, ownership, exports, dependencies, or read/use guidance changed.
+
+## Git
+
+- Never branch just to commit. If working on main, commit to main.
+- Keep commit messages very short and terse. Use "feat:", "fix:", "refactor:" etc. where applicable.
+- NEVER EVER include a "co-authored by..." sign off line in the commit msg.

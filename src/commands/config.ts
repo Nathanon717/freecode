@@ -221,7 +221,11 @@ function saveOverrideSetting(globalPath: string, tab: Tab, currentModel: string,
   const providerId = getProviderId(currentModel);
 
   if (tab === 'provider' && providerId) {
-    const overrides = (existing.providerOverrides as Record<string, Record<string, boolean>>) ?? {};
+    // Seed from the merged config, not config.json — overrides synced from other
+    // devices live in the DB and may be absent from this device's file.
+    const merged = (loadConfig().providerOverrides ?? {}) as Record<string, Record<string, boolean>>;
+    const overrides: Record<string, Record<string, boolean>> = {};
+    for (const [id, settings] of Object.entries(merged)) overrides[id] = { ...settings };
     if (!overrides[providerId]) overrides[providerId] = {};
     if (value === undefined) {
       delete overrides[providerId][key];
@@ -229,8 +233,8 @@ function saveOverrideSetting(globalPath: string, tab: Tab, currentModel: string,
     } else {
       overrides[providerId][key] = value;
     }
-    if (Object.keys(overrides).length === 0) delete existing.providerOverrides;
-    else existing.providerOverrides = overrides;
+    // Always explicit — an empty map is how a cleared override reaches the DB.
+    existing.providerOverrides = overrides;
     writeConfigFile(globalPath, existing);
   }
 }
