@@ -27,17 +27,46 @@ doppler setup   # select project: freecode, config: dev
 
 Freecode must be launched via `doppler run --` so secrets are injected into the process.
 
-**Windows** — add to `~\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1`:
-```powershell
-function freecode { doppler run -- freecode.cmd @args }
+Always pass `-p freecode -c dev` explicitly. Without them, `doppler run` resolves the
+project from the **current directory** via the scope table in `~/.doppler/.doppler.yaml`,
+so it only works inside the repo (and its subdirectories) — see [Failure mode](#failure-mode-empty-store).
+
+**Windows** — a `.cmd` wrapper on `PATH` covers every shell, including `cmd.exe`, where a
+PowerShell profile function does not exist. Put this in a directory that precedes the npm
+global directory on `PATH` (e.g. `~\bin\freecode.cmd`) so it shadows the npm shim:
+```bat
+@echo off
+doppler run -p freecode -c dev -- node "C:\path\to\freecode\dist\index.js" %*
 ```
+Call `dist\index.js` directly, not `freecode.cmd` — a wrapper that shadows the shim and
+then invokes it by name recurses into itself.
 
 **Linux / macOS** — add to `~/.bashrc` or `~/.zshrc`:
 ```bash
-function freecode() { doppler run -- freecode "$@"; }
+function freecode() { doppler run -p freecode -c dev -- freecode "$@"; }
 ```
 
 That's it. Open a new terminal and `freecode` works with all keys in place.
+
+### Failure mode: empty store
+
+If secrets do not reach the process, freecode starts **without error** and behaves as a
+fresh install: no saved config, no provider overrides, an empty model list. There is no
+warning — the missing values simply read as absent.
+
+The chain: no `FREECODE_DB_SYNC_URL` / `FREECODE_DB_AUTH_TOKEN` → `readDbConfig()` returns
+empty → the tokenless-replica decline in `src/providers/db.ts` refuses to open the existing
+replica (opening it as a plain client would corrupt the sync metadata) → the store degrades
+to an empty in-memory cache. See [map/providers/db.md](map/providers/db.md).
+
+Confirm secrets are actually arriving:
+```sh
+doppler run -p freecode -c dev -- node -e "console.log(!!process.env.FREECODE_DB_SYNC_URL)"
+```
+If this prints `false`, or `doppler run` reports `You must specify a project`, the wrapper
+is not injecting — check which binary your shell resolves (`where freecode` on Windows,
+`type freecode` on Linux/macOS). A shell that resolves straight to the npm shim bypasses
+Doppler entirely.
 
 ## What's in Doppler
 
@@ -72,3 +101,6 @@ doppler secrets get SECRET_NAME --plain
 ```
 
 Do not assume a key is available in `$env:VAR` — it won't be unless the process was launched via `doppler run --`.
+
+`doppler run` without `-p`/`-c` resolves its project from the current directory, so it fails
+outside the repo. Always pin `doppler run -p freecode -c dev -- ...` in scripts and wrappers.
