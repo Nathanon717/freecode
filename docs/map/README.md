@@ -64,7 +64,7 @@ Format: filename (linecount)
   - [`menu-shell.ts`](cli/menu-shell.md) (47) — Menu Lifecycle Chrome
   - [`model-screen.ts`](cli/model-screen.md) (204) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/raw-picker.md) (240) — Shared Raw-Mode Picker
-  - [`session-modes.ts`](cli/session-modes.md) (483) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (484) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink

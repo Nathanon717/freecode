@@ -17,6 +17,7 @@ import {
   toolNameBeforeCursor,
 } from "./tool-invocation.js";
 import { runEvalMenu } from "./eval-menu.js";
+import { getBannerColor } from "./banner.js";
 import type { CliSessionMode } from "./session-runner.js";
 import {
   drawBottomUI,
@@ -139,7 +140,7 @@ async function readLineWithAutocomplete(
   getSelectedModel: () => string,
 ): Promise<string> {
   if (!process.stdin.isTTY) {
-    return askQuestion(rl, chalk.green("> "));
+    return askQuestion(rl, "> ");
   }
 
   setInputBuffer("");
@@ -186,7 +187,7 @@ async function readLineWithAutocomplete(
         parkCursorInScrollRegion();
         const displayLines = submitted.split('\n');
         const displayText = displayLines
-          .map((l, i) => (i === 0 ? chalk.green('> ') : '  ') + l)
+          .map((l, i) => (i === 0 ? getBannerColor()('> ') : '  ') + l)
           .join('\r\n');
         process.stdout.write(displayText + "\r\n");
         rawSession.close(submitted);
