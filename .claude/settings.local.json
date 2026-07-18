@@ -32,7 +32,8 @@
       "Bash(npm.cmd run *)",
       "Bash(git -C C:/stuff/dev/freecode status --short)",
       "Bash(git -C C:/stuff/dev/freecode diff --stat)",
-      "Bash(pty send *)"
+      "Bash(pty send *)",
+      "Bash(python -)"
     ]
   }
 }
