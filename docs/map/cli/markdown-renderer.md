@@ -29,9 +29,23 @@ createMarkdownStreamRenderer(): MarkdownStreamRenderer
 - **Code fences** (`` ``` `` or ```` ```lang ````): content rendered black-on-green background; fence delimiter lines consumed. Language identifier shown as a heading line immediately before the block.
 - **Horizontal rules** (a line of 3+ `-`, `*`, or `_`, optionally space-separated): rendered as a full-width white `─` line spanning `process.stdout.columns`.
 - **Pipe-delimited tables** (a header row, a `| --- | :-: |` delimiter row, then body rows): rendered with box-drawing borders. Columns size to their widest visible cell, the header is bold, and `:` markers in the delimiter row set per-column left/right/center alignment. Cell contents pass through inline rendering. Limitations: the delimiter row must contain a `|` (so bare `---` stays a horizontal rule), and escaped `\|` or pipes inside inline code are not handled.
-- `**bold**`: `chalk.bold`
-- `*italic*`: `chalk.italic`
-- Inline `` `code` `` spans: grey background, passed through untouched (no bold/italic applied inside).
+### Inline markup
+
+Inline constructs are parsed by **`marked`'s inline lexer** (`new Lexer().inlineTokens(line)`), not by hand-rolled regexes. `renderToken` walks the token tree and maps each type to chalk, recursing into `tokens` so nesting composes:
+
+| Token | Rendering |
+| --- | --- |
+| `strong` (`**x**`) | `chalk.bold` |
+| `em` (`*x*` or `_x_`) | `chalk.italic` |
+| `del` (`~~x~~`) | `chalk.strikethrough` |
+| `codespan` (`` `x` ``) | grey background; **leaf** — contents are never styled |
+| `link` | text underlined; href appended dim, unless it equals the text (bare autolink) |
+| `escape` (`\*`) | the unescaped character |
+| anything else | `raw` verbatim — notably `html`, which is deliberately not interpreted |
+
+Because the lexer does the parsing, GFM rules apply for free: intraword underscores (`snake_case`) are not emphasis, unclosed `**` stays literal text, and `&`/`<`/`>` are **not** HTML-escaped (the inline lexer does not escape entities — only marked's HTML *parser* would).
+
+Calling the lexer per-line is safe: the line processor resolves block structure (fences, tables) first and hands `renderInline` whole lines, and inline constructs never span lines here.
 
 ## Prose wrapping (background-bleed fix)
 

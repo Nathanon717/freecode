@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { Lexer, type Token } from "marked";
 
 // Horizontal padding (spaces) added to the left and right of each code block line.
 // Increase this number to add more breathing room inside the grey border.
@@ -99,28 +100,62 @@ function renderProse(line: string): string {
   return wrapStyled(renderInline(line), termWidth());
 }
 
+// Render marked's inline tokens to chalk-styled text. Nesting is handled by
+// recursing into `tokens`, so emphasis inside emphasis and code inside bold
+// both compose correctly. Unknown token types fall back to `raw`, so anything
+// marked understands but we don't style still reaches the screen verbatim.
+function renderTokens(tokens: Token[]): string {
+  return tokens.map(renderToken).join("");
+}
+
+function renderToken(token: Token): string {
+  // `Token` is a union; not every member carries `text`/`tokens`/`href`, so
+  // narrow once to the optional shape the switch below actually reads.
+  const t = token as {
+    type: string;
+    raw: string;
+    text?: string;
+    tokens?: Token[];
+    href?: string;
+  };
+  // `text` tokens are usually leaves, but carry `tokens` when they wrap markup.
+  const inner = (): string =>
+    t.tokens ? renderTokens(t.tokens) : (t.text ?? "");
+
+  switch (t.type) {
+    case "strong":
+      return chalk.bold(inner());
+    case "em":
+      return chalk.italic(inner());
+    case "del":
+      return chalk.strikethrough(inner());
+    case "codespan":
+      // Leaf: never style the contents of a backtick span.
+      return chalk.bgHex("#333333").white(t.text ?? "");
+    case "link": {
+      // Bare autolinks have text === href; showing the URL twice is noise.
+      const label = chalk.underline(inner());
+      return t.text === t.href ? label : label + chalk.dim(` (${t.href})`);
+    }
+    case "escape":
+      // `text` is the unescaped character (`\*` -> `*`).
+      return t.text ?? "";
+    case "br":
+      return "\n";
+    case "text":
+      return inner();
+    default:
+      // Includes `html`, which we deliberately do not interpret.
+      return t.raw;
+  }
+}
+
+// Render one line's inline markup. `marked`'s inline lexer is safe to call
+// per-line because inline constructs never span lines in this renderer — the
+// line processor hands us whole lines, and block structure (fences, tables) is
+// resolved before we get here.
 function renderInline(text: string): string {
-  // Split on bold inline code, then plain inline code, so formatting is never
-  // applied inside backtick spans. Bold inline code (**`x`**) must be matched
-  // first so the inner backtick span isn't consumed by the plain-code branch.
-  const parts = text.split(/(\*\*`[^`]*`\*\*|`[^`]*`)/g);
-  return parts
-    .map((part, i) => {
-      if (i % 2 === 1) {
-        if (part.startsWith("**")) {
-          // Bold inline code: **`code`** — strip ** and backtick from each side.
-          const inner = part.slice(3, -3);
-          return chalk.bold(chalk.bgHex("#333333").white(inner));
-        }
-        // Plain inline code: strip surrounding backticks.
-        const inner = part.slice(1, -1);
-        return chalk.bgHex("#333333").white(inner);
-      }
-      return part
-        .replace(/\*\*([^*\n]+)\*\*/g, (_, c: string) => chalk.bold(c))
-        .replace(/\*([^*\n]+)\*/g, (_, c: string) => chalk.italic(c));
-    })
-    .join("");
+  return renderTokens(new Lexer().inlineTokens(text));
 }
 
 // Visible width of a rendered cell: strip SGR escape codes, then measure length.

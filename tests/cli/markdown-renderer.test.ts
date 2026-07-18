@@ -52,6 +52,72 @@ describe("renderMarkdown", () => {
     expect(stripAnsi(out)).toBe("use **not bold** here");
   });
 
+  // Inline markup is parsed by marked's inline lexer, so these constructs are
+  // handled by the parser rather than hand-rolled regexes.
+  describe("inline constructs from the marked lexer", () => {
+    it("renders _underscore_ emphasis", () => {
+      const out = renderMarkdown("this is _italic_ text");
+      expect(stripAnsi(out)).toBe("this is italic text");
+      expect(out).toContain(chalk.italic("italic"));
+    });
+
+    it("leaves intraword underscores alone (snake_case is not emphasis)", () => {
+      const raw = "call render_inline_tokens now";
+      expect(stripAnsi(renderMarkdown(raw))).toBe(raw);
+    });
+
+    it("renders ~~strikethrough~~", () => {
+      const out = renderMarkdown("this is ~~gone~~ now");
+      expect(stripAnsi(out)).toBe("this is gone now");
+      expect(out).toContain(chalk.strikethrough("gone"));
+    });
+
+    it("nests emphasis inside bold", () => {
+      const out = renderMarkdown("**bold with *nested* inside**");
+      expect(stripAnsi(out)).toBe("bold with nested inside");
+      expect(out).toContain(chalk.italic("nested"));
+    });
+
+    it("keeps a code span unstyled inside bold", () => {
+      const out = renderMarkdown("**`bold code`**");
+      expect(stripAnsi(out)).toBe("bold code");
+      expect(out).toContain(chalk.bgHex("#333333").white("bold code"));
+    });
+
+    it("unescapes backslash-escaped markers", () => {
+      expect(stripAnsi(renderMarkdown("escaped \\*star\\* here"))).toBe(
+        "escaped *star* here",
+      );
+    });
+
+    it("shows the href alongside a titled link", () => {
+      const out = stripAnsi(renderMarkdown("see [docs](https://x.com) now"));
+      expect(out).toBe("see docs (https://x.com) now");
+    });
+
+    it("shows a bare autolink URL only once", () => {
+      expect(stripAnsi(renderMarkdown("see https://x.com now"))).toBe(
+        "see https://x.com now",
+      );
+    });
+
+    it("leaves ampersands and angle brackets unescaped", () => {
+      const raw = "AT&T uses a < b && c > d";
+      expect(stripAnsi(renderMarkdown(raw))).toBe(raw);
+    });
+
+    it("leaves unclosed emphasis markers as literal text", () => {
+      expect(stripAnsi(renderMarkdown("**unclosed bold"))).toBe(
+        "**unclosed bold",
+      );
+    });
+
+    it("passes inline HTML through without interpreting it", () => {
+      const raw = "a <b>tag</b> here";
+      expect(stripAnsi(renderMarkdown(raw))).toBe(raw);
+    });
+  });
+
   it("renders fenced code block with dark background, consuming fence lines", () => {
     const input = "before\n```\nx = 1\n```\nafter";
     const out = renderMarkdown(input);
