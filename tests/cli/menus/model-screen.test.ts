@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterModelItems, buildAllItemLines, type ModelMenuItem } from '../../../src/cli/menus/model-screen.js';
+import { filterModelItems, buildAllItemLines, buildModelDetailScreen, type ModelMenuItem } from '../../../src/cli/menus/model-screen.js';
 
 const makeItem = (overrides: Partial<ModelMenuItem> & Pick<ModelMenuItem, 'providerId' | 'providerName' | 'modelId' | 'displayName'>): ModelMenuItem => ({
   ...overrides,
@@ -169,5 +169,35 @@ describe('buildAllItemLines', () => {
     // When active, name is wrapped in chalk.bgRgb — can only verify content presence
     const { itemLines, selectedLineIdx } = buildAllItemLines([openaiItem], 0, '');
     expect(itemLines[selectedLineIdx]).toContain('GPT-4o');
+  });
+});
+
+describe('buildModelDetailScreen', () => {
+  const labels = ['ID', 'Provider', 'Display', 'Context', 'Native tools', 'Favorite', 'Removed', 'Settings', 'Rate limits'];
+
+  it('shows every stored column even when the item carries no values', () => {
+    const lines = buildModelDetailScreen(openaiItem).join('\n');
+    // every label keeps at least one space before its value, including the
+    // 12-char 'Native tools' that exactly fills the label column
+    for (const label of labels) expect(lines).toMatch(new RegExp(`${label}(\\x1b\\[\\d+m)* `));
+    // context, native tools, settings and rate limits are all unset here
+    expect(lines.match(/—/g)?.length).toBe(4);
+  });
+
+  it('renders stored values when present', () => {
+    const lines = buildModelDetailScreen({
+      ...openaiItem,
+      contextWindow: 128000,
+      nativeTools: false,
+      removed: true,
+      settings: { parallelTools: true, autoApproveTokenBudget: 500 },
+      rateLimits: { buckets: { 'requests-per-minute': { limit: 4000, intervalMs: 60_000 } }, observedAt: new Date().toISOString() },
+    }).join('\n');
+    expect(lines).toContain('128,000');
+    expect(lines).toContain('false');
+    expect(lines).toContain('parallelTools');
+    expect(lines).toContain('500');
+    expect(lines).toContain('4,000');
+    expect(lines).not.toContain('—');
   });
 });

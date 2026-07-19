@@ -64,7 +64,7 @@ Format: filename (linecount)
   - [`action-menu.ts`](cli/menus/action-menu.md) (53) — Inline Action Sub-menu
   - [`list-menu.ts`](cli/menus/list-menu.md) (367) — Shared Tabbed List Menu
   - [`menu-shell.ts`](cli/menus/menu-shell.md) (47) — Menu Lifecycle Chrome
-  - [`model-screen.ts`](cli/menus/model-screen.md) (206) — Model Picker Screen Renderers
+  - [`model-screen.ts`](cli/menus/model-screen.md) (236) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/menus/raw-picker.md) (240) — Shared Raw-Mode Picker
 - `src/cli/render/`
   - [`banner.ts`](cli/render/banner.md) (123) — Startup Banner
@@ -82,7 +82,7 @@ Format: filename (linecount)
   - [`tool-runner.ts`](cli/tools/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
 - `src/commands/`
   - [`config.ts`](commands/config.md) (397) — Interactive Config Editor
-  - [`model.ts`](commands/model.md) (339) — Interactive Model Picker
+  - [`model.ts`](commands/model.md) (342) — Interactive Model Picker
   - [`renderer.ts`](commands/renderer.md) (284) — Renderer Demo Command
   - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`

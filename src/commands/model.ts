@@ -56,6 +56,9 @@ export async function getSelectableModels(includeRemoved = false): Promise<Model
     if (noNativeTools.has(`${item.providerId}:${item.modelId}`)) item.noNativeTools = true;
     const stored = getModel(`${item.providerId}:${item.modelId}`);
     if (stored?.rateLimits) item.rateLimits = stored.rateLimits;
+    if (stored?.contextWindow !== undefined) item.contextWindow = stored.contextWindow;
+    if (stored?.nativeTools !== undefined) item.nativeTools = stored.nativeTools;
+    if (stored?.settings) item.settings = stored.settings;
   }
 
   const removedKeys = getRemovedKeys();

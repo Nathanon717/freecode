@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import type { PricingConfidence } from '../../providers/pricing-verifier.js';
+import type { OverridableSettings } from '../../providers/types.js';
 import { getBannerColor, getBannerColorRGB } from '../render/banner.js';
 
 export interface ModelMenuItem {
@@ -13,6 +14,11 @@ export interface ModelMenuItem {
   exactTokenizer?: boolean;
   isFavorite?: boolean;
   removed?: boolean;
+  // DB-backed columns carried purely so the detail screen can show every stored
+  // value (including the unset ones). `undefined` means "no row / column null".
+  contextWindow?: number | null;
+  nativeTools?: boolean;
+  settings?: OverridableSettings;
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
   evalDots?: string;
   rateLimits?: { buckets: Record<string, { limit: number; intervalMs: number | null }>; observedAt: string };
@@ -158,47 +164,71 @@ export function buildScreen(
   return { lines, newViewStart, selectedScreenIdx };
 }
 
+/** Placeholder for a stored column that is null/unset. */
+const NULL_MARK = chalk.dim('—');
+
+/**
+ * Every `models` column gets a row, null or not, so the screen is a faithful view
+ * of the stored row rather than only its populated half. Derived, non-stored
+ * facts (pricing, tokenizer, eval dots, new) stay conditional. See model-screen.md.
+ */
 export function buildModelDetailScreen(item: ModelMenuItem): string[] {
   const lines: string[] = [];
+  const row = (label: string, value: string): void => {
+    // 13 wide so the longest label ('Native tools', exactly 12) still gets a gap.
+    lines.push(`  ${chalk.bold(label.padEnd(13))}${value}`);
+  };
   lines.push('');
   lines.push(`  ${getBannerColor().bold('Model details')}`);
   lines.push(`  ${chalk.dim('← or Esc back')}`);
   lines.push('');
-  lines.push(`  ${chalk.bold('ID')}          ${getBannerColor()(`${item.providerId}:${item.modelId}`)}`);
-  lines.push(`  ${chalk.bold('Provider')}    ${item.providerName}${item.modelsSource === 'live' ? chalk.dim(' (live)') : chalk.dim(' (static)')}`);
-  lines.push(`  ${chalk.bold('Display')}     ${item.displayName}`);
+  row('ID', getBannerColor()(`${item.providerId}:${item.modelId}`));
+  row('Provider', `${item.providerName}${item.modelsSource === 'live' ? chalk.dim(' (live)') : chalk.dim(' (static)')}`);
+  row('Display', item.displayName || NULL_MARK);
   if (item.pricing) {
     const { input, output, confidence } = item.pricing;
     if (confidence === 'disagree') {
-      lines.push(`  ${chalk.bold('Pricing')}     ${chalk.red('sources disagree')}`);
+      row('Pricing', chalk.red('sources disagree'));
     } else if (input !== null && output !== null) {
       const color = confidence === 'agreed' ? chalk.green : chalk.yellow;
-      lines.push(`  ${chalk.bold('Pricing')}     ${color(`$${input}/$${output}/MTok`)}`);
+      row('Pricing', color(`$${input}/$${output}/MTok`));
     }
   }
+  row('Context', item.contextWindow != null ? item.contextWindow.toLocaleString() : NULL_MARK);
+  row('Native tools', item.nativeTools != null ? String(item.nativeTools) : NULL_MARK);
   if (item.noNativeTools) {
-    lines.push(`  ${chalk.bold('Traits')}      ${chalk.dim('~tools (no native tool use)')}`);
+    row('Traits', chalk.dim('~tools (no native tool use)'));
   }
   if (item.exactTokenizer) {
-    lines.push(`  ${chalk.bold('Tokenizer')}   ${getBannerColor()('◉')} ${chalk.dim('exact')}`);
+    row('Tokenizer', `${getBannerColor()('◉')} ${chalk.dim('exact')}`);
   }
   if (item.evalDots) {
-    lines.push(`  ${chalk.bold('Eval dots')}   ${item.evalDots}`);
+    row('Eval dots', item.evalDots);
   }
-  if (item.rateLimits) {
+  row('Favorite', item.isFavorite ? chalk.yellow('★ yes') : chalk.dim('no'));
+  row('Removed', item.removed ? chalk.yellow('yes') : chalk.dim('no'));
+
+  const settingEntries = Object.entries(item.settings ?? {}).filter(([, v]) => v !== undefined);
+  row('Settings', settingEntries.length === 0 ? NULL_MARK : '');
+  for (const [k, v] of settingEntries) {
+    lines.push(`    ${chalk.dim(k.padEnd(14))} ${String(v)}`);
+  }
+
+  if (!item.rateLimits) {
+    row('Rate limits', NULL_MARK);
+  } else {
     const { buckets, observedAt } = item.rateLimits;
     const s = (Date.now() - Date.parse(observedAt)) / 1000;
     const ago = s < 60 ? `${Math.round(s)}s` : s < 3600 ? `${Math.round(s / 60)}m` : s < 86400 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`;
     const fmtName = (n: string) => n.replace(/-per-(minute|hour|day)$/, (_, u: string) => `/${u[0]}`).replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase());
     const fmtMs = (ms: number | null) => ms === 60_000 ? '/min' : ms === 3_600_000 ? '/hr' : ms === 86_400_000 ? '/day' : ms ? ` (${Math.round(ms / 1000)}s window)` : '';
-    lines.push(`  ${chalk.bold('Rate limits')}  ${chalk.dim(`observed ${ago} ago`)}`);
+    row('Rate limits', chalk.dim(`observed ${ago} ago`));
     for (const [k, b] of Object.entries(buckets)) {
       lines.push(`    ${chalk.dim(fmtName(k).padEnd(14))} ${b.limit.toLocaleString()}${chalk.dim(fmtMs(b.intervalMs))}`);
     }
   }
-  lines.push(`  ${chalk.bold('Favorite')}    ${item.isFavorite ? chalk.yellow('★ yes') : chalk.dim('no')}`);
   if (item.isNew) {
-    lines.push(`  ${chalk.bold('Status')}      ${chalk.yellow('new')}`);
+    row('Status', chalk.yellow('new'));
   }
   lines.push('');
   return lines;
