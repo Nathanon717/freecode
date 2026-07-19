@@ -28,6 +28,8 @@ persistModelRowAsync(key: string, entry: ModelEntry): void
 
 persistModelCatalogAsync(rows: ModelCatalogRow[]): void
 
+deleteModelRows(keys: string[]): Promise<void>
+
 persistCallLogAsync(row: LlmCallRow): void
 
 saveTranscriptAsync(modelKey: string, evalType: string, summary: EvalRunSummary, failReason: string | undefined, transcript: unknown, scoringOutcome: unknown): void
@@ -45,6 +47,8 @@ resetStore(): Promise<void>
 getModelData(): ModelDataMap | null
 
 setModelData(store: ModelDataMap): void
+
+queryRawForTesting(sql: string, args?: InValue[]): Promise<Record<string, unknown>[]>
 
 executeRawForTesting(sql: string, args: InValue[]): Promise<void>
 ```
@@ -80,6 +84,7 @@ Tokenless-replica decline (`isSyncReplica`): sync tokens reach `readDbConfig` on
 - **Reads:** `load()` in model-data returns `getModelData()` when initialized, else returns `{}`.
 - **Writes:** `save(store, changedKeys?)` in model-data calls `setModelData()` to update the in-memory cache synchronously, then calls `persistModelRowAsync(key, entry)` for each changed key — one `c.execute()` per row. `appendEvalRun` additionally calls `saveTranscriptAsync()` to persist transcript content to `eval_runs`/`eval_transcripts`, and persists the model row (via `save(store, [key])`) so the FK parent exists; `saveTranscriptAsync` also self-insures the parent row (INSERT OR IGNORE on `models`) to stay order-independent of the model-row write.
 - **Durability:** DB writes are fire-and-forget. The DB (synced via Turso) is the cross-device source of truth.
+- **Deletes:** `deleteModelRows(keys)` is the one **awaited** write — its caller gates it on a user confirmation and must know it landed. It deletes children explicitly, deepest first (`eval_transcripts` → `eval_runs` → `llm_calls` → `models`), because nothing in the schema cascades: the `REFERENCES` clauses carry no `ON DELETE`, so with `PRAGMA foreign_keys = ON` a bare parent delete is rejected, and `llm_calls` has no FK at all so its rows would just be orphaned. One batch, so a mid-way failure leaves the DB untouched. Adding `ON DELETE CASCADE` is not an option — SQLite cannot ALTER a constraint in, and it still would not reach `llm_calls`.
 
 ## Read When
 

@@ -47,6 +47,8 @@ Format: filename (linecount)
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
 - `src/agent/`
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
+- `src/cli/`
+  - [`blocklist-purge-prompt.ts`](cli/blocklist-purge-prompt.md) (84) — Startup Blocklist Purge Confirmation
 - `src/cli/chrome/`
   - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (477) — Bottom Terminal UI
   - [`footer-status.ts`](cli/chrome/footer-status.md) (181) — Footer Status State and Formatters
@@ -94,7 +96,7 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (99) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (79) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (203) — Eval Subprocess Runner
-- [`index.ts`](index.md) (176) — CLI Entry Point
+- [`index.ts`](index.md) (184) — CLI Entry Point
 - [`logger.ts`](logger.md) (53) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (120) — Adapter HTTP Retry/Backoff
@@ -106,6 +108,7 @@ Format: filename (linecount)
   - [`openai-compat.ts`](providers/adapters/openai-compat.md) (254) — OpenAI-Compatible Adapter
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
+  - [`blocklist-purge.ts`](providers/blocklist-purge.md) (51) — Blocklisted Stored Model Purge
   - [`fake.ts`](providers/fake.md) (420) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
   - [`model-data.ts`](providers/model-data.md) (279) — Unified Model Store
@@ -123,8 +126,10 @@ Format: filename (linecount)
 - `src/store/`
   - [`call-log.ts`](store/call-log.md) (53) — Per-Call LLM Log
   - [`db-config-cache.ts`](store/db-config-cache.md) (55) — DB Config Cache
+  - [`db-load.ts`](store/db-load.md) (88) — DB Row Hydration
   - [`db-schema.ts`](store/db-schema.md) (87) — Table & Index DDL
-  - [`db.ts`](store/db.md) (480) — SQLite Store (libSQL/Turso)
+  - [`db-types.ts`](store/db-types.md) (6) — Shared Store Types
+  - [`db.ts`](store/db.md) (458) — SQLite Store (libSQL/Turso)
   - [`model-list-cache.ts`](store/model-list-cache.md) (107) — Model List Cache
   - [`store-paths.ts`](store/store-paths.md) (50) — Store Location & Sync Credentials
 - `src/tokenizers/backends/`

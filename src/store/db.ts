@@ -4,6 +4,8 @@ import { log, logError } from '../logger.js';
 import type { ModelEntry, EvalRunSummary } from '../providers/model-data.js';
 import { setDbConfigCache, clearDbConfigCache, registerConfigPersist, type DbConfigData } from './db-config-cache.js';
 import type { LlmCallRow } from './call-log.js';
+import { loadFromDb, loadConfigFromDb } from './db-load.js';
+import type { ModelDataMap } from './db-types.js';
 import { createSchema } from './db-schema.js';
 import { getConfigMirrorPath, getDbUrl, getStoreDir, readDbConfig } from './store-paths.js';
 
@@ -15,8 +17,6 @@ export interface ModelCatalogRow {
   displayName: string;
   contextWindow?: number;
 }
-
-type ModelDataMap = Record<string, ModelEntry>;
 
 let client: Client | null = null;
 let cache: ModelDataMap | null = null;
@@ -47,81 +47,6 @@ function isSyncReplica(url: string): boolean {
   return existsSync(url.replace(/^file:/, '') + '-info');
 }
 
-async function loadFromDb(c: Client): Promise<ModelDataMap> {
-  const [modelsRes, evalsRes] = await Promise.all([
-    c.execute(
-      'SELECT key, provider, model_id, display_name, native_tools, context_window, is_favorite, settings, rate_limits, removed FROM models'
-    ),
-    c.execute(
-      'SELECT model_key, task_id, eval_type, timestamp, pass, turns, input_tokens, output_tokens, total_tokens, duration_ms, warnings, scenario_hash, checks, error FROM eval_runs ORDER BY timestamp ASC, id ASC'
-    ),
-  ]);
-
-  const store: ModelDataMap = {};
-
-  for (const row of modelsRes.rows) {
-    const key = row['key'] as string;
-    const entry: ModelEntry = {
-      provider: row['provider'] as string,
-      modelId: row['model_id'] as string,
-    };
-    if (row['display_name'] !== null) entry.displayName = row['display_name'] as string;
-    if (row['native_tools'] !== null) entry.nativeTools = (row['native_tools'] as number) !== 0;
-    if (row['context_window'] !== null) entry.contextWindow = row['context_window'] as number;
-    entry.isFavorite = (row['is_favorite'] as number) !== 0;
-    entry.removed = (row['removed'] as number) !== 0;
-    if (row['settings'] !== null) {
-      try { entry.settings = JSON.parse(row['settings'] as string) as ModelEntry['settings']; } catch { /* skip corrupt */ }
-    }
-    if (row['rate_limits'] !== null) {
-      try { entry.rateLimits = JSON.parse(row['rate_limits'] as string) as ModelEntry['rateLimits']; } catch { /* skip corrupt */ }
-    }
-    store[key] = entry;
-  }
-
-  for (const row of evalsRes.rows) {
-    const key = row['model_key'] as string;
-    const evalType = row['eval_type'] as string;
-    const entry = store[key];
-    if (!entry) continue;
-    const ts = row['timestamp'] as string;
-    const summary: EvalRunSummary = {
-      timestamp: ts,
-      taskId: row['task_id'] as string,
-      pass: (row['pass'] as number) !== 0,
-      turns: row['turns'] as number,
-      tokenUsage: {
-        input: row['input_tokens'] !== null ? (row['input_tokens'] as number) : undefined,
-        output: row['output_tokens'] !== null ? (row['output_tokens'] as number) : undefined,
-      },
-      totalTokens: row['total_tokens'] !== null ? (row['total_tokens'] as number) : undefined,
-      durationMs: row['duration_ms'] as number,
-      error: row['error'] as string | null,
-      warnings: row['warnings'] !== null ? (row['warnings'] as number) !== 0 : undefined,
-      scenarioHash: row['scenario_hash'] !== null ? (row['scenario_hash'] as string) : undefined,
-      checks: row['checks'] !== null ? (() => { try { return JSON.parse(row['checks'] as string) as EvalRunSummary['checks']; } catch { return undefined; } })() : undefined,
-    };
-    if (!entry.evals) entry.evals = {};
-    if (!entry.evals[evalType]) entry.evals[evalType] = [];
-    entry.evals[evalType].push(summary);
-  }
-
-  return store;
-}
-
-async function loadConfigFromDb(c: Client): Promise<DbConfigData> {
-  const res = await c.execute('SELECT scope, data FROM config');
-  const result: DbConfigData = { global: null, providerOverrides: null };
-  for (const row of res.rows) {
-    const scope = row['scope'] as string;
-    try {
-      const parsed = JSON.parse(row['data'] as string) as unknown;
-      if (scope === 'global') result.global = parsed as DbConfigData['global'];
-      else if (scope === 'providerOverrides') result.providerOverrides = parsed as DbConfigData['providerOverrides'];
-    } catch { /* skip corrupt row */ }
-  }
-  return result;
-}
 
 // Tracks in-flight writes so resetStore() can drain them before closing.
 const pendingWrites = new Set<Promise<void>>();
@@ -132,13 +57,16 @@ const pendingWrites = new Set<Promise<void>>();
 // reentrancy/deadlock class seen on embedded-replica libSQL clients.
 let writeChain: Promise<void> = Promise.resolve();
 
-function enqueueWrite(task: () => Promise<void>): void {
+// Returns the queued promise so a caller that must know the write landed (see
+// deleteModelRows) can await its turn on the chain. Fire-and-forget callers ignore it.
+function enqueueWrite(task: () => Promise<void>): Promise<void> {
   // .then(task, task) ensures task runs even if a prior write somehow left the
   // chain in a rejected state (tasks catch internally, so this is defensive only).
   const p: Promise<void> = writeChain.then(task, task);
   pendingWrites.add(p);
   writeChain = p;
   void p.finally(() => pendingWrites.delete(p));
+  return p;
 }
 
 /**
@@ -173,7 +101,7 @@ export function primeConfigCacheFromFile(): void {
  * Persist a single model row. Fire-and-forget; serialized through writeChain.
  */
 export function persistModelRowAsync(key: string, entry: ModelEntry): void {
-  enqueueWrite(async () => {
+  void enqueueWrite(async () => {
     try {
       await ensureStoreReady();
       const c = client;
@@ -222,7 +150,7 @@ export function persistModelRowAsync(key: string, entry: ModelEntry): void {
  */
 export function persistModelCatalogAsync(rows: ModelCatalogRow[]): void {
   if (rows.length === 0) return;
-  enqueueWrite(async () => {
+  void enqueueWrite(async () => {
     try {
       await ensureStoreReady();
       const c = client;
@@ -245,9 +173,51 @@ export function persistModelCatalogAsync(rows: ModelCatalogRow[]): void {
   });
 }
 
+/**
+ * Delete these model keys and every row that hangs off them. Awaited, not
+ * fire-and-forget: the only caller gates it on a user confirmation and must not
+ * continue before the rows are gone.
+ *
+ * The children are deleted explicitly, oldest-descendant first, because nothing in
+ * the schema cascades: `eval_runs.model_key` and `eval_transcripts.run_id` are plain
+ * REFERENCES with no ON DELETE clause, so with `PRAGMA foreign_keys = ON` a parent
+ * delete would be rejected outright, and `llm_calls.model_key` is not a foreign key
+ * at all, so its rows would simply be orphaned. One batch, so a failure part-way
+ * leaves the DB untouched rather than half-deleted.
+ */
+export async function deleteModelRows(keys: string[]): Promise<void> {
+  if (keys.length === 0) return;
+  await ensureStoreReady();
+  await enqueueWrite(async () => {
+    if (cache) {
+      const next = { ...cache };
+      for (const key of keys) delete next[key];
+      cache = next;
+    }
+    const c = client;
+    if (!c) return;
+    const placeholders = keys.map(() => '?').join(', ');
+    const args: InValue[] = keys;
+    try {
+      await c.batch(
+        [
+          { sql: `DELETE FROM eval_transcripts WHERE run_id IN (SELECT id FROM eval_runs WHERE model_key IN (${placeholders}))`, args },
+          { sql: `DELETE FROM eval_runs WHERE model_key IN (${placeholders})`, args },
+          { sql: `DELETE FROM llm_calls WHERE model_key IN (${placeholders})`, args },
+          { sql: `DELETE FROM models WHERE key IN (${placeholders})`, args },
+        ],
+        'write'
+      );
+      await c.sync().catch((err) => logError('db', 'sync after model delete failed', err));
+    } catch (err) {
+      logError('db', 'Failed to delete model rows', err);
+    }
+  });
+}
+
 /** One row per LLM HTTP call. Fire-and-forget; serialized through writeChain. */
 export function persistCallLogAsync(row: LlmCallRow): void {
-  enqueueWrite(async () => {
+  void enqueueWrite(async () => {
     try {
       await ensureStoreReady();
       const c = client;
@@ -274,7 +244,7 @@ export function persistCallLogAsync(row: LlmCallRow): void {
 }
 
 function persistDbConfigRowAsync(scope: string, data: unknown): void {
-  enqueueWrite(async () => {
+  void enqueueWrite(async () => {
     try {
       await ensureStoreReady();
       const c = client;
@@ -299,7 +269,7 @@ export function saveTranscriptAsync(
   transcript: unknown,
   scoringOutcome: unknown,
 ): void {
-  enqueueWrite(async () => {
+  void enqueueWrite(async () => {
     try {
       await ensureStoreReady();
       const c = client;
@@ -470,6 +440,14 @@ export function getModelData(): ModelDataMap | null {
 
 export function setModelData(store: ModelDataMap): void {
   cache = store;
+}
+
+/** For testing only: read rows via raw SQL. Separate from executeRawForTesting, whose
+ * void return is itself asserted on. */
+export async function queryRawForTesting(sql: string, args: InValue[] = []): Promise<Record<string, unknown>[]> {
+  if (!client) throw new Error('DB not initialized');
+  const res = await client.execute({ sql, args });
+  return res.rows;
 }
 
 /** For testing only: execute raw SQL directly against the live client. */

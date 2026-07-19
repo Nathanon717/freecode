@@ -131,6 +131,14 @@ async function main() {
     return;
   }
 
+  // Before any UI is pinned: offer to delete stored models the registry blocklists
+  // now exclude. TTY-only and a no-op when nothing matches, so scripted runs and the
+  // common launch pay nothing beyond the store init an interactive session does anyway.
+  if (process.stdin.isTTY) {
+    const { promptBlocklistPurge } = await import('./cli/blocklist-purge-prompt.js');
+    await promptBlocklistPurge();
+  }
+
   if (process.stdin.isTTY) {
     // Route tool-call transcript to stdout so it appears in the same stream as
     // response text — matching /renderer and the eval subprocess (FREECODE_TRANSCRIPT_STREAM=stdout).

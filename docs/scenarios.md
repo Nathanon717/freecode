@@ -23,6 +23,7 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `tty-all-commands-shown.scenario.json` | `tty-all-commands-shown` | repo | Typing / shows all slash commands in the suggestion list |
 | `tty-autocomplete.scenario.json` | `tty-autocomplete` | repo | Interactive TUI: slash command suggestions, prefix filtering, tab completion, and submit reset, verified against the rendered screen |
 | `tty-backspace.scenario.json` | `tty-backspace` | repo | Backspace key removes the last character from the input buffer; repeated backspaces restore the empty-prompt hint |
+| `tty-blocklist-purge.scenario.json` | `tty-blocklist-purge` | repo | A stored model whose id is on a registry blocklist triggers a startup confirmation naming it; Enter deletes it and models that are not blocklisted are left alone |
 | `tty-clear-redraws.scenario.json` | `tty-clear-redraws` | repo | Submitting /clear clears the whole terminal, redraws the banner, and the cleared message appears in the raw stream |
 | `tty-config-editor.scenario.json` | `tty-config-editor` | repo | Submitting /config opens the interactive settings editor showing all settings; pressing q closes it and restores the input prompt |
 | `tty-config-esc.scenario.json` | `tty-config-esc` | repo | Submitting /config opens the standalone config editor; pressing Esc closes it, erases its screen, and restores the input prompt |

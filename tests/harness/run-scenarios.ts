@@ -10,6 +10,7 @@ import { readTextFile } from '../../src/util/text-encoding.js';
 import { assertScenarioExpectations } from './assertions/index.js';
 import type { FakeLlmTraceEvent, ScenarioExpectations, ToolTraceEvent } from './assertions/index.js';
 import type { TtyScenario } from './pty/run-tty-scenario.js';
+import { seedModels, type SeedModel } from './seed-store.js';
 
 // Env vars to strip from every scenario subprocess so provider API fetches
 // can't make live network requests. Scenarios never call a live LLM.
@@ -37,6 +38,8 @@ interface Scenario {
   expect?: ScenarioExpectations;
   tty?: TtyScenario;
   env?: Record<string, string>;
+  /** Model rows written into the temp store before the CLI starts. TTY scenarios only. */
+  seedModels?: SeedModel[];
   humanEvalDataFixture?: string;
   humanEvalExampleDataFixture?: string;
 }
@@ -155,6 +158,9 @@ if (ttyScenarios.length > 0) {
     mkdirSync(tmpStore, { recursive: true });
     if (scenario.config) {
       writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(scenario.config, null, 2), 'utf-8');
+    }
+    if (scenario.seedModels) {
+      await seedModels(tmpStore, scenario.seedModels);
     }
     const fakeFixturePath = scenario.llmFixture ? join(SCENARIOS_DIR, scenario.llmFixture) : '';
     const fakeEvalResultPath = scenario.llmFixture && scenario.model
