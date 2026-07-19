@@ -2,6 +2,12 @@
 
 **Role:** Test-only fake model runner for free agent-loop verification. It validates ordered JSON fixture steps, emits deterministic text/chunk responses and scripted tool calls, and records fake-model traces for scenario assertions when requested.
 
+**Why it lives in `src/` and ships in `dist/`:** `mock` and `mock-native` are real entries in
+`provider-registry.ts`, resolved at runtime from a model string like `mock:gpt-freecode-test`.
+Scenarios spawn the built binary (`tests/harness/run-scenarios.ts` runs `dist/index.js`), so the
+fake must be present in the build or scenarios lose their model. It is a deliberately fake
+provider, not a test fixture - do not move it to `tests/`.
+
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
