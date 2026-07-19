@@ -8,6 +8,14 @@ All four phases of the eval/model store migration are complete. See `docs/plans/
 ## Exports
 
 ```typescript
+interface ModelCatalogRow {
+  key: string;
+  provider: string;
+  modelId: string;
+  displayName: string;
+  contextWindow?: number;
+}
+
 wipeLocalDb(url: string): void
 
 isReplicaConflict(err: unknown): boolean
@@ -17,6 +25,8 @@ writeConfigMirror(data: DbConfigData): void
 primeConfigCacheFromFile(): void
 
 persistModelRowAsync(key: string, entry: ModelEntry): void
+
+persistModelCatalogAsync(rows: ModelCatalogRow[]): void
 
 persistCallLogAsync(row: LlmCallRow): void
 

@@ -2,6 +2,7 @@ import type { LanguageModel } from "ai";
 import type { ModelConfig, ProviderConfig } from "./types.js";
 import { PROVIDER_REGISTRY } from "./provider-catalog.js";
 import { getDeadIds, getProviderCache, recordDeadModel, updateProviderCache } from "../store/model-list-cache.js";
+import { getProviderCatalog, saveProviderCatalog } from "./model-data.js";
 import { createOpenAICompatProvider } from "./adapters/openai-compat.js";
 import { createAnthropicProvider } from "./adapters/anthropic.js";
 import { resolveApiKey } from "../config/index.js";
@@ -38,6 +39,19 @@ async function _doInit(): Promise<void> {
     ]);
   } catch (err) {
     logError("registry", "Unexpected error during model init", err);
+  }
+  // Static providers never run a live init, so their catalog is written here.
+  // Live ones already wrote theirs; the change check makes the repeat a no-op.
+  for (const provider of PROVIDER_REGISTRY) {
+    if (!resolveApiKey(provider)) continue;
+    saveProviderCatalog(
+      provider.id,
+      provider.models.map((m) => ({
+        modelId: m.id,
+        displayName: m.displayName,
+        ...(m.contextWindow != null ? { contextWindow: m.contextWindow } : {}),
+      })),
+    );
   }
 }
 
@@ -123,14 +137,35 @@ async function runLiveProviderInit(
     const all = await spec.fetchModels();
     const { newIds } = updateProviderCache(providerId, all);
     finish(all, new Set(newIds));
+    // The DB owns the catalog, so it's written from the *selected* list — blocklisted
+    // and dead models never get a row. model-cache.json keeps only the id bookkeeping.
+    saveProviderCatalog(
+      providerId,
+      entry.models.map((m) => ({
+        modelId: m.id,
+        displayName: m.displayName,
+        ...(m.contextWindow != null ? { contextWindow: m.contextWindow } : {}),
+      })),
+    );
   } catch (err) {
     logError(
       "registry",
       `Failed to fetch ${providerId} models, using cache`,
       err,
     );
+    // Offline: names and context windows live in the DB now. selectModels has already
+    // been applied to what's stored, so the catalog goes straight onto the entry;
+    // only the dead-id filter and the cached new-id flags still need applying.
     const cached = getProviderCache(providerId);
-    if (cached) finish(cached.models, new Set(cached.newIds));
+    const newIdSet = new Set(cached?.newIds ?? []);
+    entry.models = getProviderCatalog(providerId)
+      .filter((m) => !deadIdSet.has(m.modelId))
+      .map((m) => ({
+        id: m.modelId,
+        displayName: m.displayName,
+        ...(m.contextWindow != null ? { contextWindow: m.contextWindow } : {}),
+        ...(newIdSet.has(m.modelId) ? { isNew: true } : {}),
+      }));
   }
 }
 

@@ -1,42 +1,19 @@
 import { createClient, type Client, type InValue } from '@libsql/client';
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
-import { join, dirname, resolve } from 'path';
-import { homedir } from 'os';
-import { fileURLToPath } from 'url';
 import { log, logError } from '../logger.js';
 import type { ModelEntry, EvalRunSummary } from '../providers/model-data.js';
 import { setDbConfigCache, clearDbConfigCache, registerConfigPersist, type DbConfigData } from './db-config-cache.js';
 import type { LlmCallRow } from './call-log.js';
 import { createSchema } from './db-schema.js';
+import { getConfigMirrorPath, getDbUrl, getStoreDir, readDbConfig } from './store-paths.js';
 
-const _dirname = dirname(fileURLToPath(import.meta.url));
-const PACKAGE_ROOT = resolve(_dirname, '..', '..');
-
-function getStoreDir(): string {
-  return process.env.FREECODE_STORE ?? join(PACKAGE_ROOT, '.freecode');
-}
-
-function getDbUrl(): string {
-  return `file:${join(getStoreDir(), 'freecode.db')}`;
-}
-
-function readDbConfig(): { syncUrl?: string; authToken?: string } {
-  const syncUrl = process.env.FREECODE_DB_SYNC_URL ?? undefined;
-  const authToken = process.env.FREECODE_DB_AUTH_TOKEN ?? undefined;
-  if (syncUrl && authToken) return { syncUrl, authToken };
-  try {
-    const configDir = process.env.FREECODE_HOME ?? join(homedir(), '.config', 'freecode');
-    const configPath = join(configDir, 'config.json');
-    if (!existsSync(configPath)) return { syncUrl, authToken };
-    const raw = JSON.parse(readFileSync(configPath, 'utf-8')) as Record<string, unknown>;
-    const db = raw['db'] as Record<string, string> | undefined;
-    return {
-      syncUrl: db?.['syncUrl'] ?? syncUrl,
-      authToken: db?.['authToken'] ?? authToken,
-    };
-  } catch {
-    return { syncUrl, authToken };
-  }
+/** One provider-catalog row: the registry's view of a model, no user state. */
+export interface ModelCatalogRow {
+  key: string;
+  provider: string;
+  modelId: string;
+  displayName: string;
+  contextWindow?: number;
 }
 
 type ModelDataMap = Record<string, ModelEntry>;
@@ -164,11 +141,6 @@ function enqueueWrite(task: () => Promise<void>): void {
   void p.finally(() => pendingWrites.delete(p));
 }
 
-/** Path to the config file mirror. */
-function getConfigMirrorPath(): string {
-  return join(getStoreDir(), 'config-cache.json');
-}
-
 /**
  * Synchronously write the DbConfigData to the file mirror.
  * Never throws — missing dir is created; all errors are swallowed.
@@ -237,6 +209,38 @@ export function persistModelRowAsync(key: string, entry: ModelEntry): void {
       await c.sync().catch((err) => logError('db', 'sync after model upsert failed', err));
     } catch (err) {
       logError('db', 'Failed to persist model row', err);
+    }
+  });
+}
+
+/**
+ * Upsert the provider catalog (display name + context window) for many models in
+ * one batch. `persistModelRowAsync` syncs per row, which would mean hundreds of
+ * syncs on startup; this writes every row in a single transaction and syncs once.
+ * Only the two catalog columns are touched — user state on an existing row (favorite,
+ * removed, settings, rate limits, native tools) is left alone by the conflict clause.
+ */
+export function persistModelCatalogAsync(rows: ModelCatalogRow[]): void {
+  if (rows.length === 0) return;
+  enqueueWrite(async () => {
+    try {
+      await ensureStoreReady();
+      const c = client;
+      if (!c) return;
+      await c.batch(
+        rows.map((r) => ({
+          sql: `INSERT INTO models (key, provider, model_id, display_name, context_window)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET
+                  display_name   = excluded.display_name,
+                  context_window = excluded.context_window`,
+          args: [r.key, r.provider, r.modelId, r.displayName, r.contextWindow ?? null] as InValue[],
+        })),
+        'write'
+      );
+      await c.sync().catch((err) => logError('db', 'sync after catalog upsert failed', err));
+    } catch (err) {
+      logError('db', 'Failed to persist model catalog', err);
     }
   });
 }

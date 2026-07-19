@@ -1,6 +1,8 @@
 # src/store/model-list-cache.ts - Model List Cache
 
-**Role:** Persists the most recent successful model-list fetch for each live provider to `<packageRoot>/.freecode/model-cache.json` (or `$FREECODE_STORE/model-cache.json`). Provides fallback data when a live fetch fails, tracks which model IDs are newly appeared (for "new" badge display), and clears that flag when a model is selected.
+**Role:** Tracks the model **ids** each live provider returned on the last successful fetch, in `<packageRoot>/.freecode/model-cache.json` (or `$FREECODE_STORE/model-cache.json`), so the next fetch can be diffed against it: which ids are newly appeared (the "new" badge), which vanished, and which are dead. Clears the new flag when a model is selected.
+
+**Ids only — this is not the catalog.** Display names and context windows live in the `models` table ([db.md](./db.md)), which is the single source for them and syncs across machines. When a live fetch fails, [provider-registry.ts](../providers/provider-registry.md) rebuilds the model list from that table, not from this file; this cache supplies only the new/dead id sets.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -8,8 +10,6 @@
 ```typescript
 interface RawCachedModel {
   id: string;
-  displayName: string;
-  contextWindow?: number;
 }
 
 getProviderCache(providerId: string): ModelCacheEntry | null

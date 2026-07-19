@@ -32,6 +32,7 @@ resolveModel(modelPreference: string): ResolvedModel
 - Adding, removing, or reordering a provider.
 - Changing model IDs, display names, API key env vars, tool support, paid status, or static limits.
 - Debugging router selection where registry order or provider metadata matters.
+- Changing where model display names or context windows come from. Every successful live init writes the provider's final model list to the `models` table via `saveProviderCatalog`, and `_doInit` does the same for static providers afterwards (the change check makes the repeat a no-op). When a fetch fails, the model list is rebuilt from `getProviderCatalog` — the DB, not `model-cache.json`, which holds ids only. Because the write happens after `selectModels`, blocklisted models never reach the DB.
 
 For the generated provider table, see [providers.md](../../providers.md).
 

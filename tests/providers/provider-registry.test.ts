@@ -274,6 +274,8 @@ describe('initDynamicProviders live fetching', () => {
   let getProviderCacheMock: ReturnType<typeof vi.fn>;
   let updateProviderCacheMock: ReturnType<typeof vi.fn>;
   let recordDeadModelMock: ReturnType<typeof vi.fn>;
+  let getProviderCatalogMock: ReturnType<typeof vi.fn>;
+  let saveProviderCatalogMock: ReturnType<typeof vi.fn>;
 
   function makeFetch(patterns: Record<string, unknown>) {
     return vi.fn((url: string) => {
@@ -295,6 +297,14 @@ describe('initDynamicProviders live fetching', () => {
       getProviderCache: getProviderCacheMock,
       updateProviderCache: updateProviderCacheMock,
       recordDeadModel: recordDeadModelMock,
+    }));
+    // The DB owns display names and context windows; the offline path rebuilds the
+    // model list from here, and every live fetch writes back into it.
+    getProviderCatalogMock = vi.fn().mockReturnValue([]);
+    saveProviderCatalogMock = vi.fn();
+    vi.doMock('../../src/providers/model-data.js', () => ({
+      getProviderCatalog: getProviderCatalogMock,
+      saveProviderCatalog: saveProviderCatalogMock,
     }));
   });
 
@@ -598,10 +608,8 @@ describe('initDynamicProviders live fetching', () => {
   });
 
   it('falls back to cached models when fetch fails', async () => {
-    getProviderCacheMock.mockImplementation((id: string) =>
-      id === 'zen'
-        ? { models: [{ id: 'cached-zen-free', displayName: 'Cached Zen' }], newIds: [] }
-        : null,
+    getProviderCatalogMock.mockImplementation((id: string) =>
+      id === 'zen' ? [{ modelId: 'cached-zen-free', displayName: 'Cached Zen' }] : [],
     );
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network failure')));
     const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
@@ -612,10 +620,8 @@ describe('initDynamicProviders live fetching', () => {
   });
 
   it('HTTP error from fetch triggers cache fallback', async () => {
-    getProviderCacheMock.mockImplementation((id: string) =>
-      id === 'zen'
-        ? { models: [{ id: 'fallback-model-free', displayName: 'Fallback' }], newIds: [] }
-        : null,
+    getProviderCatalogMock.mockImplementation((id: string) =>
+      id === 'zen' ? [{ modelId: 'fallback-model-free', displayName: 'Fallback' }] : [],
     );
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
     const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
@@ -695,10 +701,8 @@ describe('initDynamicProviders live fetching', () => {
 
   it('anthropic falls back to cache on HTTP error', async () => {
     process.env.ANTHROPIC_API_KEY = 'test-key';
-    getProviderCacheMock.mockImplementation((id: string) =>
-      id === 'anthropic'
-        ? { models: [{ id: 'claude-cached', displayName: 'Claude Cached' }], newIds: [] }
-        : null,
+    getProviderCatalogMock.mockImplementation((id: string) =>
+      id === 'anthropic' ? [{ modelId: 'claude-cached', displayName: 'Claude Cached' }] : [],
     );
     vi.stubGlobal('fetch', vi.fn((url: string) => {
       if (url.includes('api.anthropic.com')) return Promise.resolve({ ok: false, status: 503 });
@@ -713,10 +717,8 @@ describe('initDynamicProviders live fetching', () => {
 
   it('generic provider falls back to cache on HTTP error', async () => {
     process.env.GROQ_API_KEY = 'test-key';
-    getProviderCacheMock.mockImplementation((id: string) =>
-      id === 'groq'
-        ? { models: [{ id: 'cached-groq', displayName: 'Cached Groq' }], newIds: [] }
-        : null,
+    getProviderCatalogMock.mockImplementation((id: string) =>
+      id === 'groq' ? [{ modelId: 'cached-groq', displayName: 'Cached Groq' }] : [],
     );
     vi.stubGlobal('fetch', vi.fn((url: string) => {
       if (url.includes('api.groq.com')) return Promise.resolve({ ok: false, status: 403 });

@@ -1,7 +1,7 @@
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import type { OverridableSettings } from './types.js';
-import { getModelData, setModelData, saveTranscriptAsync, persistModelRowAsync } from '../store/db.js';
+import { getModelData, setModelData, saveTranscriptAsync, persistModelRowAsync, persistModelCatalogAsync, type ModelCatalogRow } from '../store/db.js';
 import { registerModelSettings } from './model-settings-accessor.js';
 
 interface EvalCheck { name: string; kind: string; pass?: boolean; message?: string; value?: string | number; note?: string; }
@@ -203,6 +203,55 @@ export function getHumanEvalResults(key: string): Record<string, 'pass' | 'fail'
     results[taskId] = run.pass ? 'pass' : 'fail';
   }
   return results;
+}
+
+/** The registry's view of one model, as stored in the catalog columns. */
+export interface CatalogModel {
+  modelId: string;
+  displayName: string;
+  contextWindow?: number;
+}
+
+/**
+ * Write the provider catalog (display name + context window) for one provider into
+ * the store. This is the DB's copy of what the provider says exists; user state on
+ * the same row is untouched. Rows whose catalog values already match are skipped, so
+ * a launch with an unchanged model list writes nothing.
+ *
+ * Callers pass the provider's *final* model list, so blocklisted models never get a
+ * row. Models the provider has stopped offering keep theirs.
+ */
+export function saveProviderCatalog(provider: string, models: CatalogModel[]): void {
+  const store = load();
+  const changed: ModelCatalogRow[] = [];
+  for (const m of models) {
+    const key = `${provider}:${m.modelId}`;
+    const entry = store[key];
+    if (entry?.displayName === m.displayName && (entry.contextWindow ?? undefined) === m.contextWindow) continue;
+    store[key] = { ...entry, provider, modelId: m.modelId, displayName: m.displayName, contextWindow: m.contextWindow ?? null };
+    changed.push({ key, provider, modelId: m.modelId, displayName: m.displayName, contextWindow: m.contextWindow });
+  }
+  if (changed.length === 0) return;
+  setModelData(store);
+  persistModelCatalogAsync(changed);
+}
+
+/**
+ * The stored catalog for one provider. Feeds the registry's offline path: when a
+ * live fetch fails, the model list is rebuilt from here rather than from the
+ * on-disk JSON cache, which tracks only ids.
+ */
+export function getProviderCatalog(provider: string): CatalogModel[] {
+  const models: CatalogModel[] = [];
+  for (const entry of Object.values(load())) {
+    if (entry.provider !== provider || !entry.displayName) continue;
+    models.push({
+      modelId: entry.modelId,
+      displayName: entry.displayName,
+      ...(entry.contextWindow != null ? { contextWindow: entry.contextWindow } : {}),
+    });
+  }
+  return models;
 }
 
 /**

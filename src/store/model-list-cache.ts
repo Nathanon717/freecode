@@ -3,10 +3,12 @@ import { join } from 'path';
 import { getStoreDir } from '../providers/model-data.js';
 import { logError } from '../logger.js';
 
+/**
+ * Ids only. Display names and context windows live in the `models` table — this
+ * cache exists to diff one fetch against the last, so ids are all it needs.
+ */
 export interface RawCachedModel {
   id: string;
-  displayName: string;
-  contextWindow?: number;
 }
 
 interface ModelCacheEntry {
@@ -71,7 +73,7 @@ export function updateProviderCache(providerId: string, models: RawCachedModel[]
 
   cache[providerId] = {
     fetchedAt: new Date().toISOString(),
-    models,
+    models: models.map((m) => ({ id: m.id })),
     newIds: mergedNewIds,
     removedIds,
     deadIds: prev?.deadIds ?? [],

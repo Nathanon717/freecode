@@ -108,13 +108,13 @@ Format: filename (linecount)
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
   - [`fake.ts`](providers/fake.md) (420) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
-  - [`model-data.ts`](providers/model-data.md) (230) — Unified Model Store
+  - [`model-data.ts`](providers/model-data.md) (279) — Unified Model Store
   - [`model-quirks.ts`](providers/model-quirks.md) (38) — Per-Model Static Quirks
   - [`model-settings-accessor.ts`](providers/model-settings-accessor.md) (14) — Model Settings Accessor
   - [`openai-daily-spend.ts`](providers/openai-daily-spend.md) (181) — OpenAI Daily Spend Footer
   - [`pricing-verifier.ts`](providers/pricing-verifier.md) (123) — Dual-Source Pricing Verifier
   - [`provider-catalog.ts`](providers/provider-catalog.md) (311) — Provider Catalog
-  - [`provider-registry.ts`](providers/provider-registry.md) (397) — Provider Registry
+  - [`provider-registry.ts`](providers/provider-registry.md) (432) — Provider Registry
 - `src/providers/quota/`
   - [`cache.ts`](providers/quota/cache.md) (39) — Quota Cache
   - [`headers.ts`](providers/quota/headers.md) (370) — Provider Rate-Limit Header Parsing
@@ -124,8 +124,9 @@ Format: filename (linecount)
   - [`call-log.ts`](store/call-log.md) (53) — Per-Call LLM Log
   - [`db-config-cache.ts`](store/db-config-cache.md) (55) — DB Config Cache
   - [`db-schema.ts`](store/db-schema.md) (87) — Table & Index DDL
-  - [`db.ts`](store/db.md) (476) — SQLite Store (libSQL/Turso)
-  - [`model-list-cache.ts`](store/model-list-cache.md) (105) — Model List Cache
+  - [`db.ts`](store/db.md) (480) — SQLite Store (libSQL/Turso)
+  - [`model-list-cache.ts`](store/model-list-cache.md) (107) — Model List Cache
+  - [`store-paths.ts`](store/store-paths.md) (50) — Store Location & Sync Credentials
 - `src/tokenizers/backends/`
   - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) (34) — HF Fast-Tokenizer (tokenizer.json) Backend
   - [`tekken.ts`](tokenizers/backends/tekken.md) (48) — Mistral Tekken (tekken.json) Backend
