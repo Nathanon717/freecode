@@ -14,9 +14,9 @@ export interface ModelMenuItem {
   exactTokenizer?: boolean;
   isFavorite?: boolean;
   removed?: boolean;
-  // Detail-screen-only fields. `contextWindow` comes from the provider registry
-  // (live fetch or static catalog); the rest are the stored row's own columns.
-  contextWindow?: number;
+  // DB-backed columns carried purely so the detail screen can show every stored
+  // value (including the unset ones). `undefined` means "no row / column null".
+  contextWindow?: number | null;
   nativeTools?: boolean;
   settings?: OverridableSettings;
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
@@ -168,10 +168,9 @@ export function buildScreen(
 const NULL_MARK = chalk.dim('—');
 
 /**
- * Every `models` column gets a row, set or not, so the screen is a faithful view
- * of the stored row rather than only its populated half. Context comes from the
- * registry, not the DB. Derived facts (pricing, tokenizer, eval dots, new) stay
- * conditional. See model-screen.md.
+ * Every `models` column gets a row, null or not, so the screen is a faithful view
+ * of the stored row rather than only its populated half. Derived, non-stored
+ * facts (pricing, tokenizer, eval dots, new) stay conditional. See model-screen.md.
  */
 export function buildModelDetailScreen(item: ModelMenuItem): string[] {
   const lines: string[] = [];

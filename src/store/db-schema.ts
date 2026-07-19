@@ -21,14 +21,16 @@ export async function createSchema(c: Client): Promise<void> {
   `);
   await c.execute(`
     CREATE TABLE IF NOT EXISTS models (
-      key          TEXT PRIMARY KEY,
-      provider     TEXT NOT NULL,
-      model_id     TEXT NOT NULL,
-      native_tools INTEGER,
-      is_favorite  INTEGER DEFAULT 0,
-      settings     TEXT,
-      rate_limits  TEXT,
-      removed      INTEGER DEFAULT 0
+      key            TEXT PRIMARY KEY,
+      provider       TEXT NOT NULL,
+      model_id       TEXT NOT NULL,
+      display_name   TEXT,
+      native_tools   INTEGER,
+      context_window INTEGER,
+      is_favorite    INTEGER DEFAULT 0,
+      settings       TEXT,
+      rate_limits    TEXT,
+      removed        INTEGER DEFAULT 0
     )
   `);
   // `models` predates the `removed` column; ADD COLUMN would throw "duplicate column"
