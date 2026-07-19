@@ -28,7 +28,10 @@ import { hasExactTokenizer } from '../tokenizers/count.js';
 // Re-exported so existing importers (and tests) keep a stable surface.
 export { type ModelMenuItem, filterModelItems, buildAllItemLines } from '../cli/menus/model-screen.js';
 
-export async function getSelectableModels(): Promise<ModelMenuItem[]> {
+// `includeRemoved` keeps user-removed models in the returned list (flagged
+// `removed`) so the picker can show them on its removed tab. Every other caller
+// wants the visible-only default.
+export async function getSelectableModels(includeRemoved = false): Promise<ModelMenuItem[]> {
   await ensureStoreReady();
   await initDynamicProviders();
   const items: ModelMenuItem[] = [];
@@ -56,7 +59,10 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
   }
 
   const removedKeys = getRemovedKeys();
-  const visibleItems = items.filter(item => !removedKeys.has(`${item.providerId}:${item.modelId}`));
+  for (const item of items) {
+    if (removedKeys.has(`${item.providerId}:${item.modelId}`)) item.removed = true;
+  }
+  const visibleItems = items.filter(item => !item.removed);
 
   const pricedItems = visibleItems.filter(i => i.providerId === 'anthropic' || i.providerId === 'openai');
   const pricingResults = await Promise.all(pricedItems.map(item =>
@@ -74,7 +80,7 @@ export async function getSelectableModels(): Promise<ModelMenuItem[]> {
     }
   }
 
-  return visibleItems;
+  return includeRemoved ? items : visibleItems;
 }
 
 type ModelPickResult = { item: ModelMenuItem; saveDefault: boolean } | null;
@@ -107,40 +113,51 @@ async function runModelBody(
   }
 
   console.log(chalk.dim('Loading available models...'));
-  const items = await getSelectableModels();
+  const allItems = await getSelectableModels(true);
+  // Two live arrays: Remove/Restore move an item between them and the tabs,
+  // which read through getters, pick the change up on the next render.
+  const items = allItems.filter(i => !i.removed);
+  const removedItems = allItems.filter(i => i.removed);
 
-  if (items.length === 0) {
+  if (allItems.length === 0) {
     console.log(chalk.red('No configured providers or local models are available.'));
     return false;
   }
 
   if (loadConfig().showEvalDots) {
     const evalData: EvalDotsData = loadEvalDotsData();
-    for (const item of items) {
+    for (const item of allItems) {
       const model = `${item.providerId}:${item.modelId}`;
       item.evalDots = buildEvalDots(model, evalData);
     }
   }
 
   const favorites = getFavorites();
-  for (const item of items) {
+  for (const item of allItems) {
     item.isFavorite = favorites.has(modelPreference(item));
   }
   sortItemsAlphabetically(items);
+  sortItemsAlphabetically(removedItems);
 
   const actionMenu = new InlineActionMenu(['Select', 'View', 'Edit', 'Remove']);
+  // Separate instance: the menu carries its own selection state, and the
+  // removed tab swaps Remove for Restore.
+  const removedActionMenu = new InlineActionMenu(['Select', 'View', 'Edit', 'Restore']);
   // Rows list-menu prepends above the body: 1 blank for single-tab, or
   // blank+bar+blank (3) for multi-tab. Reserved so the body doesn't overflow.
   let tabBarRows = 0;
 
   // Unified tab builder. Provider tabs pass showProviderHeaders=false (tab IS the provider).
-  // The favourites tab passes showProviderHeaders=true to group models by provider name.
+  // The favourites and removed tabs pass showProviderHeaders=true to group models by provider name.
+  // `isRemovedTab` swaps Remove for Restore and drops the fav/default keys, which
+  // are meaningless (and would mutate the wrong array) for a removed model.
   function buildModelTab(
     tabId: string,
     label: string,
     getBaseItems: () => ModelMenuItem[],
     showProviderHeaders: boolean,
     getGlobalItems?: () => ModelMenuItem[],
+    isRemovedTab = false,
   ): MenuTab<ModelPickResult> {
     let filterQuery = '';
     let viewStart = 0;
@@ -172,24 +189,32 @@ async function runModelBody(
       count: () => displayItems.length,
       renderBody: (selected) => {
         const effectiveHeaders = (filterQuery && getGlobalItems) ? true : showProviderHeaders;
-        const { lines, newViewStart, selectedScreenIdx } = buildScreen(displayItems, selected, currentModel, viewStart, filterQuery, tabBarRows, effectiveHeaders);
+        const emptyMessage = isRemovedTab && !filterQuery ? 'No removed models' : undefined;
+        const { lines, newViewStart, selectedScreenIdx } = buildScreen(displayItems, selected, currentModel, viewStart, filterQuery, tabBarRows, effectiveHeaders, emptyMessage);
         viewStart = newViewStart;
         return { lines, selectedLineIdx: selectedScreenIdx };
       },
-      controls: '↑↓ nav · ← fav · → view · Enter menu · Space default · Esc close',
+      controls: isRemovedTab
+        ? '↑↓ nav · → view · Enter menu · Esc close'
+        : '↑↓ nav · ← fav · → view · Enter menu · Space default · Esc close',
       renderDetail: (selected) => buildModelDetailScreen(displayItems[selected]),
       actionMenu: {
-        menu: actionMenu,
+        menu: isRemovedTab ? removedActionMenu : actionMenu,
         actionHint: `  ${chalk.dim('↑/↓ action, Enter select, Esc back')}`,
         onSelect: (option, ctx) => {
           if (option === 'Select') ctx.close({ item: displayItems[ctx.getSelected()], saveDefault: false });
           else if (option === 'View') ctx.enterDetail();
-          else if (option === 'Remove') {
+          else if (option === 'Remove' || option === 'Restore') {
+            const removing = option === 'Remove';
+            const from = removing ? items : removedItems;
+            const to = removing ? removedItems : items;
             const item = displayItems[ctx.getSelected()];
             const pref = modelPreference(item);
-            setRemoved(pref, true);
-            const idx = items.findIndex(i => modelPreference(i) === pref);
-            if (idx !== -1) items.splice(idx, 1);
+            setRemoved(pref, removing);
+            item.removed = removing;
+            const idx = from.findIndex(i => modelPreference(i) === pref);
+            if (idx !== -1) to.push(...from.splice(idx, 1));
+            sortItemsAlphabetically(to);
             refreshDisplayItems(ctx);
           }
           // Edit: stub — the base exits the action menu and redraws.
@@ -205,7 +230,8 @@ async function runModelBody(
         if (key === '\x1b[C' || key === '\r' || key === '\n') return false;
 
         if (key === '\x1b[D') {
-          // ← toggles favorite
+          // ← toggles favorite (not offered for removed models)
+          if (isRemovedTab) return true;
           const item = displayItems[ctx.getSelected()];
           const pref = modelPreference(item);
           if (favorites.has(pref)) favorites.delete(pref);
@@ -225,7 +251,7 @@ async function runModelBody(
             filterQuery += ' ';
             refreshDisplayItems(ctx, displayItems[ctx.getSelected()]);
             ctx.redraw();
-          } else if (displayItems.length > 0) {
+          } else if (displayItems.length > 0 && !isRemovedTab) {
             ctx.close({ item: displayItems[ctx.getSelected()], saveDefault: true });
           }
           return true;
@@ -270,7 +296,11 @@ async function runModelBody(
   const favTab = favorites.size > 0
     ? buildModelTab('favorites', '♥', () => items.filter(i => i.isFavorite), true, () => items)
     : null;
-  const tabs = favTab ? [favTab, ...providerTabs] : providerTabs;
+  // Removed models, grouped by provider like favourites. No global-filter escape:
+  // typing here must never surface non-removed models. Pinned last in the bar.
+  // Always present, so a model removed mid-session has somewhere to land.
+  const removedTab = buildModelTab('removed', '⊘', () => removedItems, true, undefined, true);
+  const tabs = [...(favTab ? [favTab] : []), ...providerTabs, removedTab];
   tabBarRows = tabs.length > 1 ? 3 : 1;
 
   // If the current model is a favourite, open on the favourites tab; otherwise open on its provider tab.

@@ -12,6 +12,7 @@ export interface ModelMenuItem {
   noNativeTools?: boolean;
   exactTokenizer?: boolean;
   isFavorite?: boolean;
+  removed?: boolean;
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
   evalDots?: string;
   rateLimits?: { buckets: Record<string, { limit: number; intervalMs: number | null }>; observedAt: string };
@@ -117,6 +118,7 @@ export function buildScreen(
   filterQuery: string,
   reserveRows = 0,
   showProviderHeaders = true,
+  emptyMessage = 'No models match the current filter',
 ): { lines: string[]; newViewStart: number; selectedScreenIdx: number } {
   const HEADER = 2;
   const CHROME = 3;
@@ -126,7 +128,7 @@ export function buildScreen(
   const { itemLines: rawItemLines, selectedLineIdx } = buildAllItemLines(items, selected, currentModel, showProviderHeaders);
   const itemLines = rawItemLines.length > 0
     ? rawItemLines
-    : [`  ${chalk.dim('No models match the current filter')}`];
+    : [`  ${chalk.dim(emptyMessage)}`];
 
   let newViewStart = viewStart;
   if (selectedLineIdx < newViewStart) newViewStart = Math.max(0, selectedLineIdx - 2);

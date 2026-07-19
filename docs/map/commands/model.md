@@ -8,7 +8,7 @@
 ```typescript
 export { type ModelMenuItem, filterModelItems, buildAllItemLines } from '../cli/menus/model-screen.js'
 
-getSelectableModels(): Promise<ModelMenuItem[]>
+getSelectableModels(includeRemoved?: boolean): Promise<ModelMenuItem[]>
 
 runModelCommand(rl: Interface, currentModel: string, setSelectedModel: (model: string) => void, onRestore?: (() => void) | undefined): Promise<boolean>
 ```
@@ -18,7 +18,7 @@ runModelCommand(rl: Interface, currentModel: string, setSelectedModel: (model: s
 
 - `ModelMenuItem`, `filterModelItems`, and `buildAllItemLines` are re-exported from `cli/menus/model-screen.ts` for a stable import surface.
 
-Built on the shared menu layers ([menu-shell](../cli/menus/menu-shell.md), [list-menu](../cli/menus/list-menu.md); `onRestore` carries the session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`). The picker builds a **`♥` Favourites tab** (leftmost, present when ≥1 favourite exists) plus one tab per provider. Each tab owns its filter query, viewport, and `displayItems`; the favorites set and `actionMenu` are shared in the enclosing scope. `renderBody` wraps `buildScreen` (reserved tab-bar rows, `showProviderHeaders`), `renderDetail` = `buildModelDetailScreen`, `actionMenu` = Select/View/Edit/Remove. Favourites (`←`), filter typing/backspace, and Space-default are handled in `tab.onKey` (ignores stray escape sequences so e.g. Up at the tab row never leaks into the filter), via `ctx.getSelected`/`ctx.setSelected`. Opens on Favourites tab if the current model is a favourite, else its provider tab. Run loop: `runModelBody`.
+Built on the shared menu layers ([menu-shell](../cli/menus/menu-shell.md), [list-menu](../cli/menus/list-menu.md); `onRestore` carries the session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`). The picker builds a **`♥` Favourites tab** (leftmost, present when ≥1 favourite exists), one tab per provider, and a **`⊘` Removed tab** (always present, always last). Each tab owns its filter query, viewport, and `displayItems`; the favorites set and `actionMenu` are shared in the enclosing scope. `renderBody` wraps `buildScreen` (reserved tab-bar rows, `showProviderHeaders`), `renderDetail` = `buildModelDetailScreen`, `actionMenu` = Select/View/Edit/Remove (the Removed tab uses a second `InlineActionMenu` instance with Restore in place of Remove). Favourites (`←`), filter typing/backspace, and Space-default are handled in `tab.onKey` (both `←` and Space-default are gated off on the Removed tab) (ignores stray escape sequences so e.g. Up at the tab row never leaks into the filter), via `ctx.getSelected`/`ctx.setSelected`. Opens on Favourites tab if the current model is a favourite, else its provider tab. Run loop: `runModelBody`.
 
 ## Model Discovery
 
@@ -27,7 +27,7 @@ Built on the shared menu layers ([menu-shell](../cli/menus/menu-shell.md), [list
 1. Calls `initDynamicProviders()` so live provider model lists are current.
 2. Adds every model from configured registry providers with an API key.
 3. Attaches `pricing` to Anthropic and OpenAI models via `getAnthropicVerifiedRates` / `getOpenAIVerifiedRates` (both fetched in parallel). Agreed prices render green, single-source prices render yellow, and source disagreements render as red `sources disagree`.
-4. Filters out any `provider:model` key marked `removed` (`getRemovedKeys()`) before returning — removed models are hidden from every tab. There is currently no UI to un-remove a model (planned: a dedicated Removed tab).
+4. Flags any `provider:model` key marked `removed` (`getRemovedKeys()`) and filters those out before returning. `includeRemoved: true` keeps them in the list (still flagged) — only `runModelBody` passes it, splitting the result into `items` / `removedItems` so the Removed tab has something to show. Pricing is resolved for visible models only, so a just-restored model has no pricing badge until the picker is reopened.
 
 The selected model string is always `providerId:modelId`.
 
@@ -38,8 +38,9 @@ The selected model string is always `providerId:modelId`.
 - Typing searches all providers by display name, model ID, or `provider:model` (filter active → grey tab label, provider headers shown, hint line highlights `filter`). Backspace removes filter characters.
 - Up/Down moves selection; stops at top/bottom (no wrap-around).
 - `←` toggles favorite, keyed by `provider:model`, persisted to `favoriteModels` in global config; shown on the **♥ Favourites tab** (no badge on provider tabs).
+- The **⊘ Removed tab** lists removed models grouped by provider (like Favourites), with no global-filter escape — typing there never surfaces non-removed models. Empty body reads `No removed models`.
 - `→` opens model detail (pricing, traits, eval dots, favorite status). `←`/Esc returns to the list.
-- Enter opens `InlineActionMenu` (from `cli/menus/action-menu.ts`): **Select** (apply for session), **View** (detail screen), **Edit** (stub), **Remove** (sets `removed` on the model row via `setRemoved`, drops it from `items`/`displayItems` in place, no confirmation prompt).
+- Enter opens `InlineActionMenu` (from `cli/menus/action-menu.ts`): **Select** (apply for session), **View** (detail screen), **Edit** (stub), **Remove** / **Restore** (sets `removed` via `setRemoved` and moves the item between the `items` and `removedItems` arrays in place, re-sorting the destination; no confirmation prompt).
 - Space applies the selected `provider:model` as `defaultModel` in global config.
 - Esc closes without changing the model.
 - Ctrl+C exits the process.

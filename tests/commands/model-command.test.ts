@@ -125,6 +125,13 @@ describe('getSelectableModels', () => {
     expect(models.some(m => m.modelId === 'gpt-4o')).toBe(false);
     expect(models.some(m => m.modelId === 'gpt-3.5-turbo')).toBe(true);
   });
+
+  it('keeps removed models, flagged, when includeRemoved is set', async () => {
+    vi.mocked(getRemovedKeys).mockReturnValue(new Set(['openai:gpt-4o']));
+    const models = await getSelectableModels(true);
+    expect(models.find(m => m.modelId === 'gpt-4o')?.removed).toBe(true);
+    expect(models.find(m => m.modelId === 'gpt-3.5-turbo')?.removed).toBeUndefined();
+  });
 });
 
 describe('runModelCommand', () => {
@@ -378,6 +385,46 @@ describe('runModelCommand', () => {
       expect(setRemoved).toHaveBeenCalledWith('openai:gpt-4o', true);
       const lines = opts.render();
       expect(lines.join('\n')).not.toContain('GPT-4o');
+    });
+  });
+
+  describe('removed tab', () => {
+    beforeEach(() => {
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+      vi.mocked(getRemovedKeys).mockReturnValue(new Set(['openai:gpt-4o']));
+    });
+    afterEach(() => {
+      vi.mocked(getRemovedKeys).mockReset().mockReturnValue(new Set());
+    });
+
+    // Tab row focus (Up from item 0), then Right to the last tab, then Down back to items.
+    async function openRemovedTab(): Promise<typeof pickerStore.capturedOpts & object> {
+      const opts = await captureKeys();
+      opts.onKey('\x1b[A', vi.fn(), vi.fn());
+      opts.onKey('\x1b[C', vi.fn(), vi.fn());
+      opts.onKey('\x1b[B', vi.fn(), vi.fn());
+      return opts;
+    }
+
+    it('renders last in the tab bar and lists removed models grouped by provider', async () => {
+      const opts = await openRemovedTab();
+      const lines = opts.render();
+      const bar = lines.find(l => l.includes('⊘'))!;
+      expect(bar.indexOf('⊘')).toBeGreaterThan(bar.indexOf('OpenAI'));
+      const body = lines.join('\n');
+      expect(body).toContain('GPT-4o');
+      expect(body).not.toContain('GPT-3.5 Turbo');
+    });
+
+    it('Restore in the action menu clears the removed flag and moves the model back', async () => {
+      const opts = await openRemovedTab();
+      opts.onKey('\r', vi.fn(), vi.fn()); // open action menu
+      opts.onKey('\x1b[B', vi.fn(), vi.fn()); // View
+      opts.onKey('\x1b[B', vi.fn(), vi.fn()); // Edit
+      opts.onKey('\x1b[B', vi.fn(), vi.fn()); // Restore
+      opts.onKey('\r', vi.fn(), vi.fn()); // select Restore
+      expect(setRemoved).toHaveBeenCalledWith('openai:gpt-4o', false);
+      expect(opts.render().join('\n')).not.toContain('GPT-4o');
     });
   });
 

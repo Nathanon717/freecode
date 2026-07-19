@@ -16,6 +16,7 @@ interface ModelMenuItem {
   noNativeTools?: boolean;
   exactTokenizer?: boolean;
   isFavorite?: boolean;
+  removed?: boolean;
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
   evalDots?: string;
   rateLimits?: { buckets: Record<string, { limit: number; intervalMs: number | null }>; observedAt: string };
@@ -29,7 +30,7 @@ filterModelItems(items: ModelMenuItem[], query: string): ModelMenuItem[]
 
 buildAllItemLines(items: ModelMenuItem[], selected: number, currentModel: string, showProviderHeaders?: boolean): { itemLines: string[]; selectedLineIdx: number; }
 
-buildScreen(items: ModelMenuItem[], selected: number, currentModel: string, viewStart: number, filterQuery: string, reserveRows?: number, showProviderHeaders?: boolean): { lines: string[]; newViewStart: number; selectedScreenIdx: number; }
+buildScreen(items: ModelMenuItem[], selected: number, currentModel: string, viewStart: number, filterQuery: string, reserveRows?: number, showProviderHeaders?: boolean, emptyMessage?: string): { ...; }
 
 buildModelDetailScreen(item: ModelMenuItem): string[]
 ```
@@ -39,7 +40,7 @@ buildModelDetailScreen(item: ModelMenuItem): string[]
 
 - `modelPreference(item)` — returns `${providerId}:${modelId}`.
 - `sortItemsAlphabetically(items)` — sorts in-place, alphabetical by displayName within each provider group.
-- `buildScreen` — sizes the body to the terminal height minus `reserveRows` (caller passes the tab-bar height when the picker is multi-provider so the body never overflows); off-screen rows are flagged with `↑ N more above` / `↓ N more below`.
+- `buildScreen` — sizes the body to the terminal height minus `reserveRows` (caller passes the tab-bar height when the picker is multi-provider so the body never overflows); off-screen rows are flagged with `↑ N more above` / `↓ N more below`. `emptyMessage` overrides the empty-list body text (default `No models match the current filter`; the Removed tab passes `No removed models` when unfiltered).
 - `showProviderHeaders` (default `true`): when `false`, provider name headers are omitted and favorites render in gold; when `true`, provider headers group the list and model names render in the normal accent color.
 
 ## Read when
