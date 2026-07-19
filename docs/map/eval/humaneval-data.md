@@ -5,8 +5,8 @@
 **Read when:** Changing dataset location/format, download/redirect behavior, the example-problem prepend, or the `HUMANEVAL_DATA` / `HUMANEVAL_EXAMPLE_DATA` env overrides (test fixtures).
 
 **Key neighbors:**
-- `src/cli/humaneval-menu.ts` — the tab + run loop that consume the problems and types
-- `src/cli/eval-menu.ts` — calls `humanEvalDatasetPath`/`loadHumanEvalProblems` to populate the tab
+- `src/cli/eval/humaneval-menu.ts` — the tab + run loop that consume the problems and types
+- `src/cli/eval/eval-menu.ts` — calls `humanEvalDatasetPath`/`loadHumanEvalProblems` to populate the tab
 - `src/eval/custom.ts` — the Custom-tab counterpart (scenario discovery)
 - `evals/humaneval/data/` — bundled dataset (`HumanEval.jsonl.gz`, `example_problem.jsonl`); gitignored under `evals/*`
 - `tests/scenarios/humaneval-mini.jsonl.gz`, `tests/scenarios/humaneval-example.jsonl` — fixtures pointed at via env overrides

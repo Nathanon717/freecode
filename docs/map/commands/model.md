@@ -1,12 +1,12 @@
 # src/commands/model.ts - Interactive Model Picker
 
-**Role:** Implements the interactive `/model` picker used by TTY sessions: provider fetch, the per-provider tabs, and the run loop. Pure rendering/data helpers live in [cli/model-screen.ts](../cli/model-screen.md).
+**Role:** Implements the interactive `/model` picker used by TTY sessions: provider fetch, the per-provider tabs, and the run loop. Pure rendering/data helpers live in [cli/menus/model-screen.ts](../cli/menus/model-screen.md).
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-export { type ModelMenuItem, filterModelItems, buildAllItemLines } from '../cli/model-screen.js'
+export { type ModelMenuItem, filterModelItems, buildAllItemLines } from '../cli/menus/model-screen.js'
 
 getSelectableModels(): Promise<ModelMenuItem[]>
 
@@ -16,9 +16,9 @@ runModelCommand(rl: Interface, currentModel: string, setSelectedModel: (model: s
 
 ## Export notes
 
-- `ModelMenuItem`, `filterModelItems`, and `buildAllItemLines` are re-exported from `cli/model-screen.ts` for a stable import surface.
+- `ModelMenuItem`, `filterModelItems`, and `buildAllItemLines` are re-exported from `cli/menus/model-screen.ts` for a stable import surface.
 
-Built on the shared menu layers ([menu-shell](../cli/menu-shell.md), [list-menu](../cli/list-menu.md); `onRestore` carries the session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`). The picker builds a **`♥` Favourites tab** (leftmost, present when ≥1 favourite exists) plus one tab per provider. Each tab owns its filter query, viewport, and `displayItems`; the favorites set and `actionMenu` are shared in the enclosing scope. `renderBody` wraps `buildScreen` (reserved tab-bar rows, `showProviderHeaders`), `renderDetail` = `buildModelDetailScreen`, `actionMenu` = Select/View/Edit/Remove. Favourites (`←`), filter typing/backspace, and Space-default are handled in `tab.onKey` (ignores stray escape sequences so e.g. Up at the tab row never leaks into the filter), via `ctx.getSelected`/`ctx.setSelected`. Opens on Favourites tab if the current model is a favourite, else its provider tab. Run loop: `runModelBody`.
+Built on the shared menu layers ([menu-shell](../cli/menus/menu-shell.md), [list-menu](../cli/menus/list-menu.md); `onRestore` carries the session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`). The picker builds a **`♥` Favourites tab** (leftmost, present when ≥1 favourite exists) plus one tab per provider. Each tab owns its filter query, viewport, and `displayItems`; the favorites set and `actionMenu` are shared in the enclosing scope. `renderBody` wraps `buildScreen` (reserved tab-bar rows, `showProviderHeaders`), `renderDetail` = `buildModelDetailScreen`, `actionMenu` = Select/View/Edit/Remove. Favourites (`←`), filter typing/backspace, and Space-default are handled in `tab.onKey` (ignores stray escape sequences so e.g. Up at the tab row never leaks into the filter), via `ctx.getSelected`/`ctx.setSelected`. Opens on Favourites tab if the current model is a favourite, else its provider tab. Run loop: `runModelBody`.
 
 ## Model Discovery
 
@@ -39,7 +39,7 @@ The selected model string is always `providerId:modelId`.
 - Up/Down moves selection; stops at top/bottom (no wrap-around).
 - `←` toggles favorite, keyed by `provider:model`, persisted to `favoriteModels` in global config; shown on the **♥ Favourites tab** (no badge on provider tabs).
 - `→` opens model detail (pricing, traits, eval dots, favorite status). `←`/Esc returns to the list.
-- Enter opens `InlineActionMenu` (from `cli/action-menu.ts`): **Select** (apply for session), **View** (detail screen), **Edit** (stub), **Remove** (sets `removed` on the model row via `setRemoved`, drops it from `items`/`displayItems` in place, no confirmation prompt).
+- Enter opens `InlineActionMenu` (from `cli/menus/action-menu.ts`): **Select** (apply for session), **View** (detail screen), **Edit** (stub), **Remove** (sets `removed` on the model row via `setRemoved`, drops it from `items`/`displayItems` in place, no confirmation prompt).
 - Space applies the selected `provider:model` as `defaultModel` in global config.
 - Esc closes without changing the model.
 - Ctrl+C exits the process.

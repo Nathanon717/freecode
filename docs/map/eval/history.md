@@ -56,7 +56,7 @@ loadEvalDotsData(): EvalDotsData
 
 - Imports scenario discovery and hashing from [custom.md](custom.md).
 - `EvalCheckResult` shape must stay in sync with `evals/custom/shared/types.ts`.
-- Consumed by `cli/eval-menu.ts`, `cli/eval-screen.ts`, `cli/custom-eval-menu.ts`, and `commands/model.ts`.
+- Consumed by `cli/eval/eval-menu.ts`, `cli/eval/eval-screen.ts`, `cli/eval/custom-eval-menu.ts`, and `commands/model.ts`.
 
 ## Update Triggers
 

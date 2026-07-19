@@ -2,18 +2,18 @@ import chalk from 'chalk';
 import type { Interface } from 'readline';
 import { loadConfig, resolveApiKey, saveDefaultModel } from '../config/index.js';
 import { getFavorites, setFavorite, getNoNativeToolsKeys, getModel, getRemovedKeys, setRemoved } from '../providers/model-data.js';
-import { ensureStoreReady } from '../providers/db.js';
+import { ensureStoreReady } from '../store/db.js';
 import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/provider-registry.js';
-import { markModelSelected } from '../providers/model-list-cache.js';
+import { markModelSelected } from '../store/model-list-cache.js';
 import { clearModelNewFlag } from '../providers/provider-registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
-import { countWrappedLines } from '../cli/raw-picker.js';
+import { countWrappedLines } from '../cli/menus/raw-picker.js';
 import { loadEvalDotsData, type EvalDotsData } from '../eval/history.js';
-import { buildEvalDots } from '../cli/eval-dots.js';
-import { InlineActionMenu } from '../cli/action-menu.js';
-import { runListMenu, type MenuTab, type ListMenuContext } from '../cli/list-menu.js';
-import { runMenuShell } from '../cli/menu-shell.js';
-import { redrawBanner } from '../cli/banner.js';
+import { buildEvalDots } from '../cli/eval/eval-dots.js';
+import { InlineActionMenu } from '../cli/menus/action-menu.js';
+import { runListMenu, type MenuTab, type ListMenuContext } from '../cli/menus/list-menu.js';
+import { runMenuShell } from '../cli/menus/menu-shell.js';
+import { redrawBanner } from '../cli/render/banner.js';
 import {
   type ModelMenuItem,
   modelPreference,
@@ -21,12 +21,12 @@ import {
   filterModelItems,
   buildScreen,
   buildModelDetailScreen,
-} from '../cli/model-screen.js';
+} from '../cli/menus/model-screen.js';
 import { isBackspaceKey } from '../util/keyboard.js';
 import { hasExactTokenizer } from '../tokenizers/count.js';
 
 // Re-exported so existing importers (and tests) keep a stable surface.
-export { type ModelMenuItem, filterModelItems, buildAllItemLines } from '../cli/model-screen.js';
+export { type ModelMenuItem, filterModelItems, buildAllItemLines } from '../cli/menus/model-screen.js';
 
 export async function getSelectableModels(): Promise<ModelMenuItem[]> {
   await ensureStoreReady();

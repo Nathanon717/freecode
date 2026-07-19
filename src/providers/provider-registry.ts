@@ -1,7 +1,7 @@
 import type { LanguageModel } from "ai";
 import type { ModelConfig, ProviderConfig } from "./types.js";
 import { PROVIDER_REGISTRY } from "./provider-catalog.js";
-import { getDeadIds, getProviderCache, recordDeadModel, updateProviderCache } from "./model-list-cache.js";
+import { getDeadIds, getProviderCache, recordDeadModel, updateProviderCache } from "../store/model-list-cache.js";
 import { createOpenAICompatProvider } from "./adapters/openai-compat.js";
 import { createAnthropicProvider } from "./adapters/anthropic.js";
 import { resolveApiKey } from "../config/index.js";

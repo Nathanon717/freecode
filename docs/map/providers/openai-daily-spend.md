@@ -40,5 +40,5 @@ Requires `OPENAI_ADMIN_KEY`; ordinary OpenAI project keys are not used for organ
 
 ## Key Neighbors
 
-- [cli/footer-status.md](../cli/footer-status.md): imports `OpenAIDailySpend` type from this module.
+- [cli/footer-status.md](../cli/chrome/footer-status.md): imports `OpenAIDailySpend` type from this module.
 - [cli/session-modes.md](../cli/session-modes.md): triggers refreshes when the interactive footer is active.

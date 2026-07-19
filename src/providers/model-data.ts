@@ -1,7 +1,7 @@
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import type { OverridableSettings } from './types.js';
-import { getModelData, setModelData, saveTranscriptAsync, persistModelRowAsync } from './db.js';
+import { getModelData, setModelData, saveTranscriptAsync, persistModelRowAsync } from '../store/db.js';
 import { registerModelSettings } from './model-settings-accessor.js';
 
 interface EvalCheck { name: string; kind: string; pass?: boolean; message?: string; value?: string | number; note?: string; }

@@ -12,7 +12,7 @@ withLineNumbers(startLine: number, lines: string[]): string[]
 
 ## Key Facts
 
-- Single source of the gutter format shared by the `read` tool (model-facing output in `agent/tools/read.ts`) and the create/edit previews in `cli/transcript-renderer.ts` (`formatCreatedFileContent`, and the gutter walk in `formatEditFileDiff`).
+- Single source of the gutter format shared by the `read` tool (model-facing output in `agent/tools/read.ts`) and the create/edit previews in `cli/render/transcript-renderer.ts` (`formatCreatedFileContent`, and the gutter walk in `formatEditFileDiff`).
 - Width is the digit count of the largest number in the block, so all three tools render one identical gutter.
 
 ## Read When

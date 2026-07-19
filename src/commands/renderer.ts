@@ -2,8 +2,8 @@ import chalk from "chalk";
 import {
   renderTurn,
   type TranscriptRuntimeOptions,
-} from "../cli/transcript-renderer.js";
-import { renderMarkdown } from "../cli/markdown-renderer.js";
+} from "../cli/render/transcript-renderer.js";
+import { renderMarkdown } from "../cli/render/markdown-renderer.js";
 
 // Route everything to stdout so dividers, rationale, tool lines, and response
 // text all appear in the same stream — giving a coherent visual demo.
@@ -105,7 +105,7 @@ export function runRendererDemo(): void {
   // written content, not the "Wrote N lines" result string.
   const writeContent = [
     "import chalk from 'chalk';",
-    "import { beginTranscriptTurn } from '../cli/transcript-renderer.js';",
+    "import { beginTranscriptTurn } from '../cli/render/transcript-renderer.js';",
     "",
     "export function runRendererDemo(): void {",
     "  beginTranscriptTurn();",

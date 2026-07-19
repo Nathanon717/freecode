@@ -26,8 +26,8 @@ import {
   type ToolCallHeaderRows,
   type ToolStepResult,
   type TranscriptRuntimeOptions,
-} from "../../cli/transcript-renderer.js";
-import { getApprovalPreviewRowBudget } from "../../cli/tool-approval.js";
+} from "../../cli/render/transcript-renderer.js";
+import { getApprovalPreviewRowBudget } from "../../cli/tools/tool-approval.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyCoreTool = CoreTool<any, any>;

@@ -79,7 +79,7 @@ saveObservedRateLimits(provider: string, modelId: string, buckets: Record<string
 
 ## Key Neighbors
 
-- [providers/db.md](db.md): owns the libSQL client and in-memory cache; `load()` reads `getModelData()`; `save()` calls `setModelData()` and `persistModelRowAsync()` per changed key.
+- [providers/db.md](../store/db.md): owns the libSQL client and in-memory cache; `load()` reads `getModelData()`; `save()` calls `setModelData()` and `persistModelRowAsync()` per changed key.
 - [providers/model-settings-accessor.md](model-settings-accessor.md): at module load time, `model-data.ts` registers `getModelSettings` into this accessor so `config/index.ts` can call it without a direct import.
 - [commands/model.md](../commands/model.md): picker reads `getFavorites`/`getNoNativeToolsKeys` and toggles `setFavorite`.
 - [commands/config.md](../commands/config.md): model tab reads `getModelSettings` and writes `setModelSetting`.

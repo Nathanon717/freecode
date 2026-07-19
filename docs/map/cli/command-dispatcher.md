@@ -47,10 +47,10 @@ dispatchCommand(input: string, runtime: CommandRuntime): Promise<CommandDispatch
 | `/help` | Prints slash command help plus CLI flags. |
 | `/eval` | Opens/renders eval scenario menu. |
 | `/keys` | Prints API key status from env/config. |
-| `/tools` | Lazily loads `cli/tool-runner.ts` and prints the callable-tool list. |
+| `/tools` | Lazily loads `cli/tools/tool-runner.ts` and prints the callable-tool list. |
 | `/clear` | Clears in-memory history and Anthropic session cost, redraws banner, and restores screen hooks. |
 
-Before falling back to `sendToAgent()`, non-command input is tried against `parseToolInvocation` (`cli/tool-invocation.ts`); a match runs directly via `cli/tool-runner.ts` (lazily imported) instead of the agent.
+Before falling back to `sendToAgent()`, non-command input is tried against `parseToolInvocation` (`cli/tools/tool-invocation.ts`); a match runs directly via `cli/tools/tool-runner.ts` (lazily imported) instead of the agent.
 
 ## Agent Turns
 

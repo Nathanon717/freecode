@@ -105,7 +105,7 @@ describe('Config Module', () => {
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ toolRationale: true }));
 
-      const { setDbConfigCache, registerConfigPersist } = await import('../../src/providers/db-config-cache.js');
+      const { setDbConfigCache, registerConfigPersist } = await import('../../src/store/db-config-cache.js');
       setDbConfigCache({ global: {}, providerOverrides: { zen: { loadAgentsMd: true } } });
 
       const persisted: Array<[string, unknown]> = [];
@@ -126,7 +126,7 @@ describe('Config Module', () => {
         providerOverrides: { zen: { loadAgentsMd: true } },
       }));
 
-      const { setDbConfigCache, registerConfigPersist } = await import('../../src/providers/db-config-cache.js');
+      const { setDbConfigCache, registerConfigPersist } = await import('../../src/store/db-config-cache.js');
       setDbConfigCache({
         global: {},
         providerOverrides: { zen: { loadAgentsMd: true }, groq: { parallelTools: false } },
@@ -149,7 +149,7 @@ describe('Config Module', () => {
         providerOverrides: { zen: { loadAgentsMd: true } },
       }));
 
-      const { setDbConfigCache, registerConfigPersist } = await import('../../src/providers/db-config-cache.js');
+      const { setDbConfigCache, registerConfigPersist } = await import('../../src/store/db-config-cache.js');
       setDbConfigCache({ global: {}, providerOverrides: null });
 
       const persisted: Array<[string, unknown]> = [];
@@ -167,7 +167,7 @@ describe('Config Module', () => {
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(JSON.stringify({}));
 
-      const { setDbConfigCache, registerConfigPersist } = await import('../../src/providers/db-config-cache.js');
+      const { setDbConfigCache, registerConfigPersist } = await import('../../src/store/db-config-cache.js');
       setDbConfigCache({ global: {}, providerOverrides: { zen: { loadAgentsMd: true } } });
 
       const persisted: Array<[string, unknown]> = [];

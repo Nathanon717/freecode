@@ -55,9 +55,9 @@ fresh install: no saved config, no provider overrides, an empty model list. Ther
 warning — the missing values simply read as absent.
 
 The chain: no `FREECODE_DB_SYNC_URL` / `FREECODE_DB_AUTH_TOKEN` → `readDbConfig()` returns
-empty → the tokenless-replica decline in `src/providers/db.ts` refuses to open the existing
+empty → the tokenless-replica decline in `src/store/db.ts` refuses to open the existing
 replica (opening it as a plain client would corrupt the sync metadata) → the store degrades
-to an empty in-memory cache. See [map/providers/db.md](map/providers/db.md).
+to an empty in-memory cache. See [map/store/db.md](map/store/db.md).
 
 Confirm secrets are actually arriving:
 ```sh

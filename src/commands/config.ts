@@ -1,14 +1,14 @@
 import chalk from 'chalk';
 import type { Interface } from 'readline';
-import { getBannerColor } from '../cli/banner.js';
+import { getBannerColor } from '../cli/render/banner.js';
 import { getConfigPaths, loadConfig, readRawConfig, resolveModelSettings, updateGlobalConfig, writeConfigFile } from '../config/index.js';
 import type { Config, OverridableSettings } from '../providers/types.js';
 import { getModelSettings, setModelSetting, isNativeToolsDisabled } from '../providers/model-data.js';
-import { countWrappedLines } from '../cli/raw-picker.js';
-import { ensureStoreReady } from '../providers/db.js';
-import { runMenuShell } from '../cli/menu-shell.js';
-import { runListMenu, type MenuTab } from '../cli/list-menu.js';
-import { redrawBanner } from '../cli/banner.js';
+import { countWrappedLines } from '../cli/menus/raw-picker.js';
+import { ensureStoreReady } from '../store/db.js';
+import { runMenuShell } from '../cli/menus/menu-shell.js';
+import { runListMenu, type MenuTab } from '../cli/menus/list-menu.js';
+import { redrawBanner } from '../cli/render/banner.js';
 
 // ── Setting definitions ───────────────────────────────────────────────────────
 

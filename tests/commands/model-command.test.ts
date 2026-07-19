@@ -16,7 +16,7 @@ const { pickerStore } = vi.hoisted(() => {
   return { pickerStore };
 });
 
-vi.mock('../../src/cli/raw-picker.js', () => ({
+vi.mock('../../src/cli/menus/raw-picker.js', () => ({
   runRawPicker: vi.fn().mockImplementation((_rl: unknown, opts: unknown) => {
     pickerStore.capturedOpts = opts as typeof pickerStore.capturedOpts;
     return Promise.resolve(pickerStore.resolveReturn);
@@ -26,14 +26,14 @@ vi.mock('../../src/cli/raw-picker.js', () => ({
   resetTerminalPrivateModes: vi.fn(),
 }));
 
-vi.mock('../../src/cli/bottom-ui.js', () => ({
+vi.mock('../../src/cli/chrome/bottom-ui.js', () => ({
   isBottomUIActive: vi.fn().mockReturnValue(false),
   setupBottomUI: vi.fn(),
   teardownBottomUI: vi.fn(),
 }));
 
 const mockAccent = Object.assign((s: string) => s, { bold: (s: string) => s, black: (s: string) => s });
-vi.mock('../../src/cli/banner.js', () => ({
+vi.mock('../../src/cli/render/banner.js', () => ({
   redrawBanner: vi.fn(),
   getBannerColor: () => mockAccent,
   getBannerColorRGB: () => [170, 232, 255] as [number, number, number],
@@ -74,7 +74,7 @@ vi.mock('../../src/providers/provider-registry.js', () => ({
   clearModelNewFlag: vi.fn(),
 }));
 
-vi.mock('../../src/providers/model-list-cache.js', () => ({
+vi.mock('../../src/store/model-list-cache.js', () => ({
   markModelSelected: vi.fn(),
 }));
 
@@ -87,7 +87,7 @@ vi.mock('../../src/eval/history.js', () => ({
   loadEvalDotsData: vi.fn().mockReturnValue({}),
 }));
 
-vi.mock('../../src/cli/eval-dots.js', () => ({
+vi.mock('../../src/cli/eval/eval-dots.js', () => ({
   buildEvalDots: vi.fn().mockReturnValue(''),
 }));
 
@@ -96,7 +96,7 @@ vi.mock('../../src/cli/eval-dots.js', () => ({
 import { runModelCommand, getSelectableModels } from '../../src/commands/model.js';
 import { saveDefaultModel, resolveApiKey } from '../../src/config/index.js';
 import { setFavorite, getNoNativeToolsKeys, getRemovedKeys, setRemoved } from '../../src/providers/model-data.js';
-import { markModelSelected } from '../../src/providers/model-list-cache.js';
+import { markModelSelected } from '../../src/store/model-list-cache.js';
 import { clearModelNewFlag } from '../../src/providers/provider-registry.js';
 import { getOpenAIVerifiedRates } from '../../src/providers/pricing-verifier.js';
 

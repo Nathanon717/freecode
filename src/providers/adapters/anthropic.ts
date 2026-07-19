@@ -12,7 +12,7 @@ import { log } from '../../logger.js';
 import type { AnthropicTokenUsage } from '../anthropic-cost.js';
 import { saveObservedRateLimits } from '../model-data.js';
 import { HeaderSnapshotStore, UsageCaptureStore } from './adapter-usage-capture.js';
-import { recordLlmCall } from '../call-log.js';
+import { recordLlmCall } from '../../store/call-log.js';
 
 const headerStore = new HeaderSnapshotStore();
 const usageStore = new UsageCaptureStore<AnthropicTokenUsage>();

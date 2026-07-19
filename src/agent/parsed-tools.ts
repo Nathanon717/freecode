@@ -6,8 +6,8 @@ import {
   beginTranscriptTurn,
   endTranscriptStep,
   notifyTranscriptChunk,
-} from "../cli/transcript-renderer.js";
-import { renderMarkdown } from "../cli/markdown-renderer.js";
+} from "../cli/render/transcript-renderer.js";
+import { renderMarkdown } from "../cli/render/markdown-renderer.js";
 import { log, logError } from "../logger.js";
 import { isUserAbortError } from "../util/errors.js";
 

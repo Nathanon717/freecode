@@ -15,9 +15,9 @@ import {
   stripEmptyToolArgs,
   toolFieldBackspace,
   toolNameBeforeCursor,
-} from "./tool-invocation.js";
-import { runEvalMenu } from "./eval-menu.js";
-import { getBannerColor } from "./banner.js";
+} from "./tools/tool-invocation.js";
+import { runEvalMenu } from "./eval/eval-menu.js";
+import { getBannerColor } from "./render/banner.js";
 import type { CliSessionMode } from "./session-runner.js";
 import {
   drawBottomUI,
@@ -30,7 +30,7 @@ import {
   setupInputUI,
   teardownBottomUI,
   teardownFooterUI,
-} from "./bottom-ui.js";
+} from "./chrome/bottom-ui.js";
 import {
   backspaceAtCursor,
   deleteAtCursor,
@@ -45,23 +45,23 @@ import {
   moveCursorUp,
   setCursorPos,
   setInputBuffer,
-} from "./input-buffer.js";
+} from "./chrome/input-buffer.js";
 import {
   setActiveModel,
   setActiveModelFromString,
   setOpenAIDailySpend,
   setQuotaSnapshot,
-} from "./footer-status.js";
+} from "./chrome/footer-status.js";
 import { refreshOpenAIDailySpend } from "../providers/openai-daily-spend.js";
 import { loadCachedQuota, saveQuotaToCache } from "../providers/quota/cache.js";
-import { cycleByChar, getAskMode, initAskMode, isReadOnly } from "./toggles.js";
+import { cycleByChar, getAskMode, initAskMode, isReadOnly } from "./chrome/toggles.js";
 import {
   askQuestion,
   confirmToolCallInteractive,
   formatScriptedToolMenu,
   parseScriptedToolChoice,
-} from "./tool-approval.js";
-import { runRawKeySession } from "./raw-picker.js";
+} from "./tools/tool-approval.js";
+import { runRawKeySession } from "./menus/raw-picker.js";
 import { isBackspaceKey } from "../util/keyboard.js";
 import { countTextTokens, preloadTokenizerFor, type TokenCount } from "../tokenizers/count.js";
 

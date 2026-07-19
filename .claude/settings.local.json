@@ -33,7 +33,9 @@
       "Bash(git -C C:/stuff/dev/freecode status --short)",
       "Bash(git -C C:/stuff/dev/freecode diff --stat)",
       "Bash(pty send *)",
-      "Bash(python -)"
+      "Bash(python -)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(echo \"TSC_EXIT=$?\")"
     ]
   }
 }

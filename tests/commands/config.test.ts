@@ -14,7 +14,7 @@ const { store } = vi.hoisted(() => {
   return { store };
 });
 
-vi.mock('../../src/cli/raw-picker.js', () => ({
+vi.mock('../../src/cli/menus/raw-picker.js', () => ({
   runRawPicker: vi.fn().mockImplementation((_rl: unknown, opts: unknown) => {
     store.capturedOpts = opts as typeof store.capturedOpts;
     return Promise.resolve(undefined);
@@ -24,14 +24,14 @@ vi.mock('../../src/cli/raw-picker.js', () => ({
   resetTerminalPrivateModes: vi.fn(),
 }));
 
-vi.mock('../../src/cli/bottom-ui.js', () => ({
+vi.mock('../../src/cli/chrome/bottom-ui.js', () => ({
   isBottomUIActive: vi.fn().mockReturnValue(false),
   setupBottomUI: vi.fn(),
   teardownBottomUI: vi.fn(),
 }));
 
 const mockAccent = Object.assign((s: string) => s, { bold: (s: string) => s, black: (s: string) => s });
-vi.mock('../../src/cli/banner.js', () => ({
+vi.mock('../../src/cli/render/banner.js', () => ({
   redrawBanner: vi.fn(),
   getBannerColor: () => mockAccent,
   getBannerColorRGB: () => [170, 232, 255] as [number, number, number],

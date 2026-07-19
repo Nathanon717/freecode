@@ -14,7 +14,7 @@ vi.mock('fs', () => ({
   writeFileSync: vi.fn(),
 }));
 
-vi.mock('../../src/providers/db.js', () => ({
+vi.mock('../../src/store/db.js', () => ({
   ensureStoreReady: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -40,7 +40,7 @@ vi.mock('../../src/providers/adapters/openai-compat.js', () => ({
 }));
 
 const mockAccent = Object.assign((s: string) => s, { bold: (s: string) => s, black: (s: string) => s });
-vi.mock('../../src/cli/banner.js', () => ({
+vi.mock('../../src/cli/render/banner.js', () => ({
   redrawBanner: vi.fn(),
   getBannerColor: () => mockAccent,
   getBannerColorRGB: () => [170, 232, 255] as [number, number, number],
@@ -74,11 +74,11 @@ import {
 import { agentLoop } from '../../src/agent/loop.js';
 import { addAnthropicSessionCost, describeCostEstimateBreakdown, resetAnthropicSessionCost } from '../../src/providers/anthropic-cost.js';
 import { formatCapturedProviderUsages } from '../../src/providers/adapters/openai-compat.js';
-import { redrawBanner } from '../../src/cli/banner.js';
+import { redrawBanner } from '../../src/cli/render/banner.js';
 import { showHelp } from '../../src/cli/slash-commands.js';
 import { resolveApiKey, resolveModelSettings } from '../../src/config/index.js';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { ensureStoreReady } from '../../src/providers/db.js';
+import { ensureStoreReady } from '../../src/store/db.js';
 import { runStatusCommand } from '../../src/commands/status.js';
 import { runRendererDemo } from '../../src/commands/renderer.js';
 

@@ -25,8 +25,8 @@ fitLinesToRows<T>(lines: T[], maxRows: number, render: (line: T) => string): T[]
 
 ## Key neighbors
 
-- [../cli/transcript-renderer.md](../cli/transcript-renderer.md) — sole consumer; trims the pending-approval preview with these.
-- [../cli/tool-approval.md](../cli/tool-approval.md) — owns the row budget that gets passed in.
+- [../cli/transcript-renderer.md](../cli/render/transcript-renderer.md) — sole consumer; trims the pending-approval preview with these.
+- [../cli/tool-approval.md](../cli/tools/tool-approval.md) — owns the row budget that gets passed in.
 - [screen-buffer.md](screen-buffer.md) — provides `stripAnsi` for the width measurement.
 
 ## Update triggers

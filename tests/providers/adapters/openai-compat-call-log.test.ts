@@ -31,11 +31,11 @@ vi.mock('../../../src/providers/adapters/adapter-http-retry.js', () => ({
   formatOpenAICompatHttpError: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock('../../../src/providers/call-log.js', async (importOriginal) => ({
+vi.mock('../../../src/store/call-log.js', async (importOriginal) => ({
   // tokensFromUsagePayload stays REAL so the token assertions below exercise the
   // actual parse, not a stub that would pass regardless.
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-  ...(await importOriginal<typeof import('../../../src/providers/call-log.js')>()),
+  ...(await importOriginal<typeof import('../../../src/store/call-log.js')>()),
   recordLlmCall: vi.fn(),
 }));
 
@@ -43,7 +43,7 @@ vi.mock('../../../src/providers/call-log.js', async (importOriginal) => ({
 
 import { createOpenAI } from '@ai-sdk/openai';
 import { fetchWithRetry, formatOpenAICompatHttpError } from '../../../src/providers/adapters/adapter-http-retry.js';
-import { recordLlmCall } from '../../../src/providers/call-log.js';
+import { recordLlmCall } from '../../../src/store/call-log.js';
 import { createOpenAICompatProvider } from '../../../src/providers/adapters/openai-compat.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

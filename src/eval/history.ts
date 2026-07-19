@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { getModelData } from '../providers/db.js';
+import { getModelData } from '../store/db.js';
 import {
   CUSTOM_EVAL_DIR,
   discoverCustomEvals,

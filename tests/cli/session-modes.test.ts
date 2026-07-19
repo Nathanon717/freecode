@@ -28,7 +28,7 @@ const capturedRawSession = vi.hoisted(() => ({
 // ---------------------------------------------------------------------------
 
 // input-buffer is deliberately left real — key-handler tests verify real buffer state.
-vi.mock('../../src/cli/bottom-ui.js', () => ({
+vi.mock('../../src/cli/chrome/bottom-ui.js', () => ({
   // Stub all IO / drawing side-effects.
   drawBottomUI: vi.fn(),
   setupBottomUI: vi.fn(),
@@ -46,9 +46,9 @@ vi.mock('../../src/cli/bottom-ui.js', () => ({
   getLastReservedRows: vi.fn(() => 2),
 }));
 
-vi.mock('../../src/cli/footer-status.js', async (importOriginal) => ({
+vi.mock('../../src/cli/chrome/footer-status.js', async (importOriginal) => ({
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-  ...(await importOriginal<typeof import('../../src/cli/footer-status.js')>()),
+  ...(await importOriginal<typeof import('../../src/cli/chrome/footer-status.js')>()),
   setActiveModel: vi.fn(),
   setActiveModelFromString: vi.fn(),
   setQuotaSnapshot: vi.fn(),
@@ -91,11 +91,11 @@ vi.mock('../../src/commands/model.js', () => ({
   ),
 }));
 
-vi.mock('../../src/cli/eval-menu.js', () => ({
+vi.mock('../../src/cli/eval/eval-menu.js', () => ({
   runEvalMenu: vi.fn(() => Promise.resolve()),
 }));
 
-vi.mock('../../src/cli/raw-picker.js', () => ({
+vi.mock('../../src/cli/menus/raw-picker.js', () => ({
   runRawKeySession: vi.fn(
     (handlers: {
       onKey: (d: string) => void;
@@ -113,16 +113,16 @@ vi.mock('../../src/cli/raw-picker.js', () => ({
   ),
 }));
 
-vi.mock('../../src/cli/toggles.js', () => ({
+vi.mock('../../src/cli/chrome/toggles.js', () => ({
   isReadOnly: vi.fn(() => false),
   getAskMode: vi.fn((): 'ask' | 'auto' => 'auto'),
   cycleByChar: vi.fn(() => false),
   initAskMode: vi.fn(),
 }));
 
-vi.mock('../../src/cli/tool-approval.js', async (importOriginal) => {
+vi.mock('../../src/cli/tools/tool-approval.js', async (importOriginal) => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-  const mod = await importOriginal<typeof import('../../src/cli/tool-approval.js')>();
+  const mod = await importOriginal<typeof import('../../src/cli/tools/tool-approval.js')>();
   return {
     // Real: used by scripted-mode tests.
     parseScriptedToolChoice: mod.parseScriptedToolChoice,
@@ -143,21 +143,21 @@ import {
   setupBottomUI,
   teardownBottomUI,
   teardownFooterUI,
-} from '../../src/cli/bottom-ui.js';
-import { getInputBuffer, setInputBuffer } from '../../src/cli/input-buffer.js';
+} from '../../src/cli/chrome/bottom-ui.js';
+import { getInputBuffer, setInputBuffer } from '../../src/cli/chrome/input-buffer.js';
 import {
   setActiveModel,
   setActiveModelFromString,
   setQuotaSnapshot,
-} from '../../src/cli/footer-status.js';
+} from '../../src/cli/chrome/footer-status.js';
 import { loadCachedQuota, saveQuotaToCache } from '../../src/providers/quota/cache.js';
 import { runConfigCommand } from '../../src/commands/config.js';
 import { runModelCommand } from '../../src/commands/model.js';
-import { runEvalMenu as evalMenuFn } from '../../src/cli/eval-menu.js';
-import { askQuestion, confirmToolCallInteractive } from '../../src/cli/tool-approval.js';
-import { isReadOnly, getAskMode, cycleByChar } from '../../src/cli/toggles.js';
+import { runEvalMenu as evalMenuFn } from '../../src/cli/eval/eval-menu.js';
+import { askQuestion, confirmToolCallInteractive } from '../../src/cli/tools/tool-approval.js';
+import { isReadOnly, getAskMode, cycleByChar } from '../../src/cli/chrome/toggles.js';
 import { getCommandCompletion, getFilteredCommands } from '../../src/cli/slash-commands.js';
-import { runRawKeySession } from '../../src/cli/raw-picker.js';
+import { runRawKeySession } from '../../src/cli/menus/raw-picker.js';
 import { resolveModelSettings } from '../../src/config/index.js';
 // Unmocked on purpose: the budget is compared against the very count this
 // produces, so the boundary test must use the real thing.

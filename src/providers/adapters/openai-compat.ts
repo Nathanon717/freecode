@@ -9,7 +9,7 @@ import { HeaderSnapshotStore, UsageCaptureStore } from './adapter-usage-capture.
 import { fetchWithRetry, formatOpenAICompatHttpError } from './adapter-http-retry.js';
 import { providerQuirks } from './openai-compat-quirks.js';
 import { injectParallelToolCallsFalse } from './openai-compat-request.js';
-import { recordLlmCall, tokensFromUsagePayload } from '../call-log.js';
+import { recordLlmCall, tokensFromUsagePayload } from '../../store/call-log.js';
 
 type QuotaUpdateSink = (snapshot: RateLimitSnapshot) => void;
 let quotaUpdateSink: QuotaUpdateSink | null = null;

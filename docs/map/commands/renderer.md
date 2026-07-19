@@ -12,7 +12,7 @@ runRendererDemo(): void
 
 ## Implementation
 
-Each demo turn is expressed as a `renderTurn([...], DEMO_OPTS)` call from `cli/transcript-renderer.ts`.
+Each demo turn is expressed as a `renderTurn([...], DEMO_OPTS)` call from `cli/render/transcript-renderer.ts`.
 Private helpers (`writeTool`, `writeToolWithRationale`, `writeResponse`, `transcriptOut`) have been removed;
 all orchestration now goes through the shared `renderTurn` / `renderToolStep` / `writeToolCallHeader` /
 `writeToolStepResult` API.
@@ -33,8 +33,8 @@ all orchestration now goes through the shared `renderTurn` / `renderToolStep` / 
 
 ## Key neighbors
 
-- `../cli/transcript-renderer.ts` — `renderTurn`, `renderToolStep`, `writeToolCallHeader`, `writeToolStepResult`, and the state machine
-- `../cli/markdown-renderer.ts` — `renderMarkdown`
+- `../cli/render/transcript-renderer.ts` — `renderTurn`, `renderToolStep`, `writeToolCallHeader`, `writeToolStepResult`, and the state machine
+- `../cli/render/markdown-renderer.ts` — `renderMarkdown`
 - `../cli/command-dispatcher.ts` — dispatches `/renderer`
 
 ## Update triggers

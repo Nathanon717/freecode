@@ -32,4 +32,4 @@ releaseToolRenderGate(): void
 
 - [`loop.ts`](loop.md) — arms the gate and releases it from the `fullStream` consumer.
 - [`tools/index.ts`](tools/index.md) — `withToolRendering.execute` awaits the gate before the header.
-- [`../cli/transcript-renderer.md`](../cli/transcript-renderer.md) — the header/preview/divider writers being ordered.
+- [`../cli/transcript-renderer.md`](../cli/render/transcript-renderer.md) — the header/preview/divider writers being ordered.

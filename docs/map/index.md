@@ -45,7 +45,7 @@ _No exported symbols._
 - [cli/session-modes.md](cli/session-modes.md): creates interactive and scripted session modes.
 - [cli/command-dispatcher.md](cli/command-dispatcher.md): handles slash commands.
 - [providers/provider-registry.md](providers/provider-registry.md): used for startup probe and provider tests.
-- [providers/db.md](providers/db.md): `initStore()` called here at startup.
+- [providers/db.md](./store/db.md): `initStore()` called here at startup.
 
 ## Update Triggers
 

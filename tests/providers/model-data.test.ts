@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 let store: typeof import('../../src/providers/model-data.js');
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-let db: typeof import('../../src/providers/db.js');
+let db: typeof import('../../src/store/db.js');
 let tempStore = '';
 const previousStore = process.env.FREECODE_STORE;
 
@@ -18,7 +18,7 @@ beforeEach(async () => {
   tempStore = mkdtempSync(join(tmpdir(), 'freecode-store-'));
   process.env.FREECODE_STORE = tempStore;
   store = await import('../../src/providers/model-data.js');
-  db = await import('../../src/providers/db.js');
+  db = await import('../../src/store/db.js');
   await db.initStore();
 });
 

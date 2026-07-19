@@ -1,6 +1,6 @@
 // check-tests: orphan — tests runRawKeySession, a new export from src/cli/raw-picker.ts
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { runRawKeySession } from '../../src/cli/raw-picker.js';
+import { runRawKeySession } from '../../src/cli/menus/raw-picker.js';
 import { type FakeStdin, installProcessStreams, type ProcessStreamFixture } from './raw-session-harness.js';
 
 // Raw-session tests fail by timing out; cap them low so a wedged session fails

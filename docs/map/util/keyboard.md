@@ -4,7 +4,7 @@
 
 **Read when:** You're handling a raw keypress (`data`/`key` string from stdin in raw mode) and need to recognize backspace, which terminals send as either DEL (`\x7f`) or BS (`\x08`) depending on platform/emulator.
 
-**Key neighbors:** `src/cli/session-modes.ts`, `src/cli/tool-approval.ts`, `src/commands/model.ts`.
+**Key neighbors:** `src/cli/session-modes.ts`, `src/cli/tools/tool-approval.ts`, `src/commands/model.ts`.
 
 **Update triggers:** New raw-key classification needed in two or more source files.
 

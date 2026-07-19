@@ -60,18 +60,18 @@ async function main() {
   // Load heavy modules only after validation passes.
   const { createInterface } = await import('readline');
   const { installScreenBuffer } = await import('./util/screen-buffer.js');
-  const { showBanner } = await import('./cli/banner.js');
+  const { showBanner } = await import('./cli/render/banner.js');
   const { createInteractiveMode, createScriptedMode } = await import('./cli/session-modes.js');
   const { Conversation } = await import('./agent/conversation.js');
   const { runCliSession } = await import('./cli/session-runner.js');
-  const { setupFooterUI } = await import('./cli/bottom-ui.js');
-  const { setRetryBanner, setQuotaSnapshot } = await import('./cli/footer-status.js');
+  const { setupFooterUI } = await import('./cli/chrome/bottom-ui.js');
+  const { setRetryBanner, setQuotaSnapshot } = await import('./cli/chrome/footer-status.js');
   const { registerQuotaUpdateSink } = await import('./providers/adapters/openai-compat.js');
   const { registerRetryBannerSink } = await import('./providers/adapters/adapter-http-retry.js');
   const { createStdoutRetrySink } = await import('./cli/stdout-retry-sink.js');
   const { loadConfig } = await import('./config/index.js');
   const { enableLog } = await import('./logger.js');
-  const { primeConfigCacheFromFile, drainPendingWrites } = await import('./providers/db.js');
+  const { primeConfigCacheFromFile, drainPendingWrites } = await import('./store/db.js');
 
   installScreenBuffer();
 

@@ -32,4 +32,4 @@ editDiffResult(args: Record<string, unknown>, ctx: EditDiffContext | undefined):
 ## Key Neighbors
 
 - [index.md](index.md) — computes the context in `withToolRendering` (stashed in `PreviewState.editContext`) and renders it in `withConfirmation` (pre-approval) and post-execution.
-- [../../cli/transcript-renderer.md](../../cli/transcript-renderer.md) — owns `ToolStepResult` and `formatEditFileDiff`, which draws the result this module builds.
+- [../../cli/transcript-renderer.md](../../cli/render/transcript-renderer.md) — owns `ToolStepResult` and `formatEditFileDiff`, which draws the result this module builds.

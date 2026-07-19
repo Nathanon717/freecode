@@ -15,8 +15,8 @@ computeLineDiff(oldLines: string[], newLines: string[]): DiffEntry[]
 ## Key Facts
 
 - No chalk or rendering logic — pure algorithm.
-- Used by `cli/transcript-renderer.ts` (`formatEditFileDiff`) to render colored file diffs.
-- `DiffEntry` is re-exported from `cli/transcript-renderer.ts` for backward compatibility.
+- Used by `cli/render/transcript-renderer.ts` (`formatEditFileDiff`) to render colored file diffs.
+- `DiffEntry` is re-exported from `cli/render/transcript-renderer.ts` for backward compatibility.
 
 ## Read When
 

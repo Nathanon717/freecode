@@ -146,7 +146,7 @@ async function main(): Promise<void> {
   // Dynamic imports so doppler-injected env vars are in place before any
   // provider module evaluates (see comment above).
   const { getSelectableModels } = await import('../../src/commands/model.js');
-  const { modelPreference } = await import('../../src/cli/model-screen.js');
+  const { modelPreference } = await import('../../src/cli/menus/model-screen.js');
   const { resolveModel, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
   const { hasExactTokenizer } = await import('../../src/tokenizers/count.js');
   const { resolveTokenizerFamily, GPT_OSS_FAMILY, HF_TOKENIZER_REPO, MISTRAL_TEKKEN_FAMILY, MISTRAL_TEKKEN_REPO, TEKKEN_FILENAME } = await import('../../src/tokenizers/model-family.js');

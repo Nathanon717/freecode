@@ -18,9 +18,9 @@ import {
   estimateAnthropicCostVerified,
   type CostEstimate,
 } from '../providers/anthropic-cost.js';
-import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk } from '../cli/transcript-renderer.js';
+import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk } from '../cli/render/transcript-renderer.js';
 import { beginToolRenderGate, endToolRenderGate, releaseToolRenderGate } from './tool-render-gate.js';
-import { createMarkdownStreamRenderer } from '../cli/markdown-renderer.js';
+import { createMarkdownStreamRenderer } from '../cli/render/markdown-renderer.js';
 import { getAnthropicVerifiedRates } from '../providers/pricing-verifier.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
@@ -30,7 +30,7 @@ import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
 import { executeToolCalls, runParsedToolsLoop } from './parsed-tools.js';
 import { isNativeToolsDisabled, setNativeTools } from '../providers/model-data.js';
-import { ensureStoreReady } from '../providers/db.js';
+import { ensureStoreReady } from '../store/db.js';
 import { FAKE_PROVIDER_ID, FAKE_NATIVE_PROVIDER_ID, assertFakeFixtureComplete, createFakeNativeLanguageModel, runFakeModel } from '../providers/fake.js';
 
 let systemPromptLogged = false;

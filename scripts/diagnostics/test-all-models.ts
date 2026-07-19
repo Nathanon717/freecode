@@ -71,7 +71,7 @@ async function main(): Promise<void> {
   // Dynamic imports so the doppler-injected env vars are in place before any
   // provider module evaluates (see comment above).
   const { getSelectableModels } = await import('../../src/commands/model.js');
-  const { modelPreference } = await import('../../src/cli/model-screen.js');
+  const { modelPreference } = await import('../../src/cli/menus/model-screen.js');
   const { resolveModel, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
   const { streamText } = await import('ai');
 

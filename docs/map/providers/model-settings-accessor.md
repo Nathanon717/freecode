@@ -27,7 +27,7 @@ getModelSettings(key: string): OverridableSettings
 
 - [providers/model-data.md](model-data.md): registers its `getModelSettings` implementation here.
 - [config/index.md](../config/index.md): reads `getModelSettings` from here in `resolveModelSettings`.
-- [providers/db-config-cache.md](db-config-cache.md): same registry pattern used for DB config sync.
+- [providers/db-config-cache.md](../store/db-config-cache.md): same registry pattern used for DB config sync.
 
 ## Update Triggers
 

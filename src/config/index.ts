@@ -10,8 +10,8 @@ import {
   persistDbConfig,
   registerCacheInvalidator,
   type SyncableGlobalConfig,
-} from '../providers/db-config-cache.js';
-import { writeConfigMirror } from '../providers/db.js';
+} from '../store/db-config-cache.js';
+import { writeConfigMirror } from '../store/db.js';
 import { readTextFile } from '../util/text-encoding.js';
 
 const SYNCABLE_GLOBAL_KEYS: ReadonlyArray<keyof SyncableGlobalConfig> = [

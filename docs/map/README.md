@@ -47,33 +47,39 @@ Format: filename (linecount)
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
 - `src/agent/`
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
+- `src/cli/chrome/`
+  - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (477) — Bottom Terminal UI
+  - [`footer-status.ts`](cli/chrome/footer-status.md) (181) — Footer Status State and Formatters
+  - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
+  - [`toggles.ts`](cli/chrome/toggles.md) (100) — Footer Toggle State
 - `src/cli/`
-  - [`action-menu.ts`](cli/action-menu.md) (53) — Inline Action Sub-menu
-  - [`banner.ts`](cli/banner.md) (123) — Startup Banner
-  - [`bottom-ui.ts`](cli/bottom-ui.md) (477) — Bottom Terminal UI
   - [`command-dispatcher.ts`](cli/command-dispatcher.md) (243) — Command Dispatcher
-  - [`custom-eval-menu.ts`](cli/custom-eval-menu.md) (361) — Custom Eval Tab + Run Loop
-  - [`eval-dots.ts`](cli/eval-dots.md) (28) — Eval Status Circle Renderers
-  - [`eval-menu.ts`](cli/eval-menu.md) (123) — Unified Eval Menu
-  - [`eval-screen.ts`](cli/eval-screen.md) (165) — Eval Screen Renderers
-  - [`footer-status.ts`](cli/footer-status.md) (181) — Footer Status State and Formatters
-  - [`humaneval-menu.ts`](cli/humaneval-menu.md) (314) — HumanEval Tab + Run Loop
-  - [`input-buffer.ts`](cli/input-buffer.md) (115) — Input Buffer State
-  - [`list-menu.ts`](cli/list-menu.md) (367) — Shared Tabbed List Menu
-  - [`markdown-renderer.ts`](cli/markdown-renderer.md) (480) — Markdown Renderer
-  - [`menu-shell.ts`](cli/menu-shell.md) (47) — Menu Lifecycle Chrome
-  - [`model-screen.ts`](cli/model-screen.md) (204) — Model Picker Screen Renderers
-  - [`raw-picker.ts`](cli/raw-picker.md) (240) — Shared Raw-Mode Picker
+- `src/cli/eval/`
+  - [`custom-eval-menu.ts`](cli/eval/custom-eval-menu.md) (361) — Custom Eval Tab + Run Loop
+  - [`eval-dots.ts`](cli/eval/eval-dots.md) (28) — Eval Status Circle Renderers
+  - [`eval-menu.ts`](cli/eval/eval-menu.md) (123) — Unified Eval Menu
+  - [`eval-screen.ts`](cli/eval/eval-screen.md) (165) — Eval Screen Renderers
+  - [`humaneval-menu.ts`](cli/eval/humaneval-menu.md) (314) — HumanEval Tab + Run Loop
+- `src/cli/menus/`
+  - [`action-menu.ts`](cli/menus/action-menu.md) (53) — Inline Action Sub-menu
+  - [`list-menu.ts`](cli/menus/list-menu.md) (367) — Shared Tabbed List Menu
+  - [`menu-shell.ts`](cli/menus/menu-shell.md) (47) — Menu Lifecycle Chrome
+  - [`model-screen.ts`](cli/menus/model-screen.md) (204) — Model Picker Screen Renderers
+  - [`raw-picker.ts`](cli/menus/raw-picker.md) (240) — Shared Raw-Mode Picker
+- `src/cli/render/`
+  - [`banner.ts`](cli/render/banner.md) (123) — Startup Banner
+  - [`markdown-renderer.ts`](cli/render/markdown-renderer.md) (480) — Markdown Renderer
+  - [`transcript-options.ts`](cli/render/transcript-options.md) (66) — Transcript Stream + Options
+  - [`transcript-renderer.ts`](cli/render/transcript-renderer.md) (486) — Agent Transcript Formatting
+- `src/cli/`
   - [`session-modes.ts`](cli/session-modes.md) (484) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
-  - [`toggles.ts`](cli/toggles.md) (100) — Footer Toggle State
-  - [`tool-approval.ts`](cli/tool-approval.md) (297) — Tool Approval Prompts
-  - [`tool-invocation.ts`](cli/tool-invocation.md) (334) — Hand-Typed Tool Call Parsing
-  - [`tool-runner.ts`](cli/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
-  - [`transcript-options.ts`](cli/transcript-options.md) (66) — Transcript Stream + Options
-  - [`transcript-renderer.ts`](cli/transcript-renderer.md) (486) — Agent Transcript Formatting
+- `src/cli/tools/`
+  - [`tool-approval.ts`](cli/tools/tool-approval.md) (297) — Tool Approval Prompts
+  - [`tool-invocation.ts`](cli/tools/tool-invocation.md) (334) — Hand-Typed Tool Call Parsing
+  - [`tool-runner.ts`](cli/tools/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
 - `src/commands/`
   - [`config.ts`](commands/config.md) (397) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (309) — Interactive Model Picker
@@ -100,14 +106,9 @@ Format: filename (linecount)
   - [`openai-compat.ts`](providers/adapters/openai-compat.md) (254) — OpenAI-Compatible Adapter
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
-  - [`call-log.ts`](providers/call-log.md) (53) — Per-Call LLM Log
-  - [`db-config-cache.ts`](providers/db-config-cache.md) (55) — DB Config Cache
-  - [`db-schema.ts`](providers/db-schema.md) (87) — Table & Index DDL
-  - [`db.ts`](providers/db.md) (476) — SQLite Store (libSQL/Turso)
   - [`fake.ts`](providers/fake.md) (420) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
   - [`model-data.ts`](providers/model-data.md) (230) — Unified Model Store
-  - [`model-list-cache.ts`](providers/model-list-cache.md) (105) — Model List Cache
   - [`model-quirks.ts`](providers/model-quirks.md) (38) — Per-Model Static Quirks
   - [`model-settings-accessor.ts`](providers/model-settings-accessor.md) (14) — Model Settings Accessor
   - [`openai-daily-spend.ts`](providers/openai-daily-spend.md) (181) — OpenAI Daily Spend Footer
@@ -119,6 +120,12 @@ Format: filename (linecount)
   - [`headers.ts`](providers/quota/headers.md) (370) — Provider Rate-Limit Header Parsing
 - `src/providers/`
   - [`types.ts`](providers/types.md) (57) — Type Definitions
+- `src/store/`
+  - [`call-log.ts`](store/call-log.md) (53) — Per-Call LLM Log
+  - [`db-config-cache.ts`](store/db-config-cache.md) (55) — DB Config Cache
+  - [`db-schema.ts`](store/db-schema.md) (87) — Table & Index DDL
+  - [`db.ts`](store/db.md) (476) — SQLite Store (libSQL/Turso)
+  - [`model-list-cache.ts`](store/model-list-cache.md) (105) — Model List Cache
 - `src/tokenizers/backends/`
   - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) (34) — HF Fast-Tokenizer (tokenizer.json) Backend
   - [`tekken.ts`](tokenizers/backends/tekken.md) (48) — Mistral Tekken (tekken.json) Backend

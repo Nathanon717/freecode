@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { loadConfig } from '../config/index.js';
 import { PROVIDER_REGISTRY } from '../providers/provider-registry.js';
-import { getDbSyncConfig } from '../providers/db.js';
+import { getDbSyncConfig } from '../store/db.js';
 
 export function runStatusCommand(): void {
   console.log();

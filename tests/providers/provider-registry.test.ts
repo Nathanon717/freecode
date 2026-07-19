@@ -290,7 +290,7 @@ describe('initDynamicProviders live fetching', () => {
     getProviderCacheMock = vi.fn().mockReturnValue(null);
     updateProviderCacheMock = vi.fn().mockReturnValue({ newIds: [], removedIds: [] });
     recordDeadModelMock = vi.fn();
-    vi.doMock('../../src/providers/model-list-cache.js', () => ({
+    vi.doMock('../../src/store/model-list-cache.js', () => ({
       getDeadIds: getDeadIdsMock,
       getProviderCache: getProviderCacheMock,
       updateProviderCache: updateProviderCacheMock,
@@ -300,7 +300,7 @@ describe('initDynamicProviders live fetching', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    vi.doUnmock('../../src/providers/model-list-cache.js');
+    vi.doUnmock('../../src/store/model-list-cache.js');
     for (const k of [
       'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY',
       'SILICONFLOW_API_KEY', 'NVIDIA_API_KEY', 'LLM7_API_KEY', 'COHERE_API_KEY',

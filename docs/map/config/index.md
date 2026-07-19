@@ -83,7 +83,7 @@ The first `loadConfig()` call caches the merged object. `writeConfigFile()` rese
 
 ## DB Sync for Global and Provider Settings
 
-Global config settings (all syncable scalars in `Config`) and `providerOverrides` are now synced cross-device via the `config` DB table. On `loadConfig()`, the DB cache ([providers/db-config-cache.md](../providers/db-config-cache.md)) is merged after `config.json` but before `.freecoderc`, so DB wins over the global file and `.freecoderc` wins over everything. On every `writeConfigFile()` call to the global path, syncable fields are extracted (whitelisted — no API keys), the in-memory cache is updated synchronously, and a fire-and-forget DB write is dispatched via `persistDbConfig`. Model-level settings are unaffected (still owned by model-data).
+Global config settings (all syncable scalars in `Config`) and `providerOverrides` are now synced cross-device via the `config` DB table. On `loadConfig()`, the DB cache ([providers/db-config-cache.md](../store/db-config-cache.md)) is merged after `config.json` but before `.freecoderc`, so DB wins over the global file and `.freecoderc` wins over everything. On every `writeConfigFile()` call to the global path, syncable fields are extracted (whitelisted — no API keys), the in-memory cache is updated synchronously, and a fire-and-forget DB write is dispatched via `persistDbConfig`. Model-level settings are unaffected (still owned by model-data).
 
 ## Favorites and Model Settings Moved Out
 

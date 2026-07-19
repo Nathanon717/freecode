@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import type { AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';
 import { resolveApiKey, resolveModelSettings } from '../config/index.js';
-import { ensureStoreReady } from '../providers/db.js';
+import { ensureStoreReady } from '../store/db.js';
 import { toErrorMessage } from '../util/errors.js';
 import { log } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/provider-registry.js';
@@ -14,9 +14,9 @@ import {
   resetAnthropicSessionCost,
 } from '../providers/anthropic-cost.js';
 import { formatCapturedProviderUsages } from '../providers/adapters/openai-compat.js';
-import { redrawBanner } from './banner.js';
+import { redrawBanner } from './render/banner.js';
 import { showHelp } from './slash-commands.js';
-import { parseToolInvocation } from './tool-invocation.js';
+import { parseToolInvocation } from './tools/tool-invocation.js';
 import type { Conversation } from '../agent/conversation.js';
 import {
   writeResultPlaceholder,
@@ -209,7 +209,7 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
   }
 
   if (normalized === '/tools') {
-    const { printToolsList } = await import('./tool-runner.js');
+    const { printToolsList } = await import('./tools/tool-runner.js');
     printToolsList();
     return 'continue';
   }
@@ -232,7 +232,7 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
 
   const invocation = parseToolInvocation(trimmed);
   if (invocation) {
-    const { executeToolInvocation } = await import('./tool-runner.js');
+    const { executeToolInvocation } = await import('./tools/tool-runner.js');
     await executeToolInvocation(invocation.name, invocation.args, runtime.confirmToolCall);
     return 'continue';
   }

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { loadConfig } from "../../config/index.js";
-import type { ToolStepResult } from "../../cli/transcript-renderer.js";
+import type { ToolStepResult } from "../../cli/render/transcript-renderer.js";
 
 /** Surrounding-file context an edit diff renders with, computed once from disk. */
 export interface EditDiffContext {
