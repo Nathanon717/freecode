@@ -12,6 +12,7 @@ This table is generated from `tests/scenarios/*.scenario.json`. Run `npm run doc
 | `agent-text-fake.scenario.json` | `agent-text-fake` | temp | Fake LLM fixture enters the agent loop and returns deterministic text without live provider access |
 | `agent-text-native.scenario.json` | `agent-text-native` | temp | Fake LLM fixture exercises the real AI SDK streamText path (native-stream) with a deterministic text response |
 | `agent-tool-native.scenario.json` | `agent-tool-native` | temp | Fake native LLM fixture drives a create tool call through the full multi-step streamText orchestration loop |
+| `blocklist-purge-script-mode.scenario.json` | `blocklist-purge-script-mode` | repo | A scripted (non-TTY) run never offers the blocklist purge and never deletes the seeded blocklisted model — the confirmation is unanswerable without a terminal, so the rows must be left alone |
 | `slash-clear.scenario.json` | `slash-clear` | repo | /clear resets history, clears the screen, and redraws the banner |
 | `slash-config-script-mode.scenario.json` | `slash-config-script-mode` | repo | /config in script mode (no TTY) prints a message that the editor is only available in interactive mode |
 | `slash-keys.scenario.json` | `slash-status` | repo | /status command shows API keys, DB, and Doppler info without crashing |

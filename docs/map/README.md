@@ -48,7 +48,7 @@ Format: filename (linecount)
 - `src/agent/`
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/`
-  - [`blocklist-purge-prompt.ts`](cli/blocklist-purge-prompt.md) (84) — Startup Blocklist Purge Confirmation
+  - [`blocklist-purge-prompt.ts`](cli/blocklist-purge-prompt.md) (82) — Startup Blocklist Purge Confirmation
 - `src/cli/chrome/`
   - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (477) — Bottom Terminal UI
   - [`footer-status.ts`](cli/chrome/footer-status.md) (181) — Footer Status State and Formatters
@@ -96,7 +96,7 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (99) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (79) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (203) — Eval Subprocess Runner
-- [`index.ts`](index.md) (184) — CLI Entry Point
+- [`index.ts`](index.md) (185) — CLI Entry Point
 - [`logger.ts`](logger.md) (53) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (120) — Adapter HTTP Retry/Backoff

@@ -46,7 +46,7 @@ _No exported symbols._
 - [cli/command-dispatcher.md](cli/command-dispatcher.md): handles slash commands.
 - [providers/provider-registry.md](providers/provider-registry.md): used for startup probe and provider tests.
 - [providers/db.md](./store/db.md): `initStore()` called here at startup.
-- [cli/blocklist-purge-prompt.md](cli/blocklist-purge-prompt.md): TTY-only startup confirmation, awaited before the footer UI is set up.
+- [cli/blocklist-purge-prompt.md](cli/blocklist-purge-prompt.md): TTY-only startup confirmation, awaited between `showBanner()` and the footer UI setup. It is the reason the banner paints before the footer block — it opens the DB, so painting after it would blank the terminal for the length of a Turso sync.
 
 ## Update Triggers
 

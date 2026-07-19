@@ -38,7 +38,7 @@ interface Scenario {
   expect?: ScenarioExpectations;
   tty?: TtyScenario;
   env?: Record<string, string>;
-  /** Model rows written into the temp store before the CLI starts. TTY scenarios only. */
+  /** Model rows written into the temp store before the CLI starts. */
   seedModels?: SeedModel[];
   humanEvalDataFixture?: string;
   humanEvalExampleDataFixture?: string;
@@ -248,6 +248,9 @@ if (nonTtyScenarios.length > 0) {
     mkdirSync(tmpHome, { recursive: true });
     mkdirSync(tmpStore, { recursive: true });
     if (scenario.workspace === 'temp') mkdirSync(tmpWorkspace, { recursive: true });
+    if (scenario.seedModels) {
+      await seedModels(tmpStore, scenario.seedModels);
+    }
 
     const inputLines = scenario.turns.map(t => t.input).join('\n');
     const inputFile = join(tmpHome, 'input.txt');

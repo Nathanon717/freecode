@@ -131,9 +131,12 @@ async function main() {
     return;
   }
 
-  // Before any UI is pinned: offer to delete stored models the registry blocklists
-  // now exclude. TTY-only and a no-op when nothing matches, so scripted runs and the
-  // common launch pay nothing beyond the store init an interactive session does anyway.
+  // Banner first: the purge check below opens the DB (and, for a synced user, waits on
+  // a Turso pull), so painting after it would leave a blank terminal for that whole
+  // round-trip on every launch. The purge still runs before the footer UI is pinned so
+  // its raw-key prompt owns the screen with no status bar repainting under it.
+  showBanner();
+
   if (process.stdin.isTTY) {
     const { promptBlocklistPurge } = await import('./cli/blocklist-purge-prompt.js');
     await promptBlocklistPurge();
@@ -147,8 +150,6 @@ async function main() {
     registerRetryBannerSink(setRetryBanner);
     registerQuotaUpdateSink(setQuotaSnapshot);
   }
-
-  showBanner();
 
   // Warm model lists and pricing in background so /model opens instantly.
   if (process.stdin.isTTY && process.env.FREECODE_NO_PREFETCH !== '1') {

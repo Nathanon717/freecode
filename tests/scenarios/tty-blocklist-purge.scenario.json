@@ -1,9 +1,18 @@
 {
   "name": "tty-blocklist-purge",
   "description": "A stored model whose id is on a registry blocklist triggers a startup confirmation naming it; Enter deletes it and models that are not blocklisted are left alone",
+  "_comment": "Depends on shipped config: 'whisper' must stay in the groq modelIdBlocklist in src/providers/provider-catalog.ts, and 'llama-3.3-70b' must match no groq blocklist entry.",
   "seedModels": [
-    { "provider": "groq", "modelId": "whisper-large-v3", "displayName": "Whisper Large v3" },
-    { "provider": "groq", "modelId": "llama-3.3-70b", "displayName": "Llama 3.3 70B" }
+    {
+      "provider": "groq",
+      "modelId": "whisper-large-v3",
+      "displayName": "Whisper Large v3"
+    },
+    {
+      "provider": "groq",
+      "modelId": "llama-3.3-70b",
+      "displayName": "Llama 3.3 70B"
+    }
   ],
   "tty": {
     "cols": 100,
@@ -23,7 +32,7 @@
         ]
       },
       {
-        "name": "Enter — deletes and hands off to the prompt",
+        "name": "Enter \u2014 deletes and hands off to the prompt",
         "send": "\r",
         "waitFor": "Deleted 1 model",
         "screenContains": [

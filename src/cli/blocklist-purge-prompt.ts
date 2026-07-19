@@ -44,9 +44,8 @@ function drawPrompt(models: BlocklistedStoredModel[]): void {
  *
  * Interactive TTY sessions only: the delete is irreversible and the alternative is
  * "quit and edit the blocklist", neither of which a scripted or piped run can answer,
- * so those runs leave the rows alone. Declining is a plain no-op — nothing is recorded,
- * so the prompt returns on the next launch until the rows are deleted or the blocklist
- * entry is removed.
+ * so those runs leave the rows alone. Quitting records nothing, so the prompt returns
+ * on the next launch until the rows are deleted or the blocklist entry is removed.
  *
  * Runs before the footer UI is set up, so it can draw and read keys without contending
  * with the pinned status bar.
@@ -59,10 +58,13 @@ export async function promptBlocklistPurge(): Promise<void> {
 
   drawPrompt(models);
 
-  const session = runRawKeySession<boolean>({
+  // Enter is the only key that resolves. There is deliberately no dismiss key: the
+  // alternative the prompt offers is editing the blocklists, which needs a restart
+  // anyway, so a "continue without deleting" path would just be a third outcome the
+  // hint does not mention. Ctrl-C quits, which is exactly the advertised escape.
+  const session = runRawKeySession<void>({
     onKey(data) {
-      if (data === '\r' || data === '\n') session.close(true);
-      if (data === '\x1b') session.close(false);
+      if (data === '\r' || data === '\n') session.close(undefined);
     },
     onCtrlC() {
       process.stdin.pause();
@@ -73,11 +75,7 @@ export async function promptBlocklistPurge(): Promise<void> {
     },
   });
 
-  const confirmed = await session.promise;
-  if (!confirmed) {
-    console.log(chalk.dim('Kept. The prompt returns next launch.\n'));
-    return;
-  }
+  await session.promise;
   await purgeBlocklistedStoredModels(models);
   console.log(chalk.dim(`Deleted ${models.length} model${models.length === 1 ? '' : 's'}.\n`));
 }
