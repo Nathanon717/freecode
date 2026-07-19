@@ -14,6 +14,8 @@ createSchema(c: Client): Promise<void>
 
 `createSchema` runs on every client open, including after a WalConflict replica wipe re-creates the client. Every statement is therefore `IF NOT EXISTS` and must stay safe to re-execute against a populated database. Adding a column to an existing table needs an explicit `ALTER TABLE ... ADD COLUMN`, guarded by a `PRAGMA table_info` check (bare `ADD COLUMN` throws "duplicate column" on re-run) — see the `models.removed` column for the pattern.
 
+Dropping a column is the reverse: remove it from the `CREATE TABLE` and from every read/write in db.ts. Databases created before the drop keep the column as a vestigial nullable that nothing reads, so no migration is needed. `models` carries only state that exists nowhere else — favourite, removed, native-tools override, settings overrides, observed rate limits. Anything the provider registry already knows (display name, context window) belongs there, not here; it was mirrored into `models` once and never written, and both columns were dropped.
+
 ## Read When
 
 Adding a table, column, or index. Table-by-table semantics and the read/write architecture live in [db.md](./db.md).

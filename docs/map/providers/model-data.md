@@ -37,9 +37,7 @@ interface ObservedRateLimits {
 interface ModelEntry {
   provider: string;
   modelId: string;
-  displayName?: string;
   nativeTools?: boolean;
-  contextWindow?: number | null;
   isFavorite?: boolean;
   removed?: boolean;
   settings?: OverridableSettings;

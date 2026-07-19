@@ -73,7 +73,7 @@ function isSyncReplica(url: string): boolean {
 async function loadFromDb(c: Client): Promise<ModelDataMap> {
   const [modelsRes, evalsRes] = await Promise.all([
     c.execute(
-      'SELECT key, provider, model_id, display_name, native_tools, context_window, is_favorite, settings, rate_limits, removed FROM models'
+      'SELECT key, provider, model_id, native_tools, is_favorite, settings, rate_limits, removed FROM models'
     ),
     c.execute(
       'SELECT model_key, task_id, eval_type, timestamp, pass, turns, input_tokens, output_tokens, total_tokens, duration_ms, warnings, scenario_hash, checks, error FROM eval_runs ORDER BY timestamp ASC, id ASC'
@@ -88,9 +88,7 @@ async function loadFromDb(c: Client): Promise<ModelDataMap> {
       provider: row['provider'] as string,
       modelId: row['model_id'] as string,
     };
-    if (row['display_name'] !== null) entry.displayName = row['display_name'] as string;
     if (row['native_tools'] !== null) entry.nativeTools = (row['native_tools'] as number) !== 0;
-    if (row['context_window'] !== null) entry.contextWindow = row['context_window'] as number;
     entry.isFavorite = (row['is_favorite'] as number) !== 0;
     entry.removed = (row['removed'] as number) !== 0;
     if (row['settings'] !== null) {
@@ -208,26 +206,22 @@ export function persistModelRowAsync(key: string, entry: ModelEntry): void {
       if (!c) return;
       await c.execute({
         sql: `INSERT INTO models
-              (key, provider, model_id, display_name, native_tools, context_window,
+              (key, provider, model_id, native_tools,
                is_favorite, settings, rate_limits, removed)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(key) DO UPDATE SET
-                provider       = excluded.provider,
-                model_id       = excluded.model_id,
-                display_name   = excluded.display_name,
-                native_tools   = excluded.native_tools,
-                context_window = excluded.context_window,
-                is_favorite    = excluded.is_favorite,
-                settings       = excluded.settings,
-                rate_limits    = excluded.rate_limits,
-                removed        = excluded.removed`,
+                provider     = excluded.provider,
+                model_id     = excluded.model_id,
+                native_tools = excluded.native_tools,
+                is_favorite  = excluded.is_favorite,
+                settings     = excluded.settings,
+                rate_limits  = excluded.rate_limits,
+                removed      = excluded.removed`,
         args: [
           key,
           entry.provider,
           entry.modelId,
-          entry.displayName ?? null,
           entry.nativeTools === undefined ? null : (entry.nativeTools ? 1 : 0),
-          entry.contextWindow ?? null,
           entry.isFavorite ? 1 : 0,
           entry.settings ? JSON.stringify(entry.settings) : null,
           entry.rateLimits ? JSON.stringify(entry.rateLimits) : null,

@@ -17,9 +17,9 @@ interface ModelMenuItem {
   exactTokenizer?: boolean;
   isFavorite?: boolean;
   removed?: boolean;
-  // DB-backed columns carried purely so the detail screen can show every stored
-  // value (including the unset ones). `undefined` means "no row / column null".
-  contextWindow?: number | null;
+  // Detail-screen-only fields. `contextWindow` comes from the provider registry
+  // (live fetch or static catalog); the rest are the stored row's own columns.
+  contextWindow?: number;
   nativeTools?: boolean;
   settings?: OverridableSettings;
   pricing?: { input: number | null; output: number | null; confidence: PricingConfidence };
@@ -46,7 +46,7 @@ buildModelDetailScreen(item: ModelMenuItem): string[]
 - `modelPreference(item)` — returns `${providerId}:${modelId}`.
 - `sortItemsAlphabetically(items)` — sorts in-place, alphabetical by displayName within each provider group.
 - `buildScreen` — sizes the body to the terminal height minus `reserveRows` (caller passes the tab-bar height when the picker is multi-provider so the body never overflows); off-screen rows are flagged with `↑ N more above` / `↓ N more below`. `emptyMessage` overrides the empty-list body text (default `No models match the current filter`; the Removed tab passes `No removed models` when unfiltered).
-- `buildModelDetailScreen(item)` — the `View` / `→` detail screen. Every `models` DB column gets a row whether or not it holds a value (`—` when null/unset): ID, Provider, Display, Context, Native tools, Favorite, Removed, Settings, Rate limits. `contextWindow` / `nativeTools` / `settings` exist on `ModelMenuItem` only to feed this screen and are filled from the stored row by `commands/model.ts`. Derived, non-stored facts (Pricing, Tokenizer, Eval dots, Traits, Status) stay conditional.
+- `buildModelDetailScreen(item)` — the `View` / `→` detail screen. Every `models` DB column gets a row whether or not it holds a value (`—` when null/unset): ID, Provider, Display, Context, Native tools, Favorite, Removed, Settings, Rate limits. `nativeTools` / `settings` exist on `ModelMenuItem` only to feed this screen and are filled from the stored row by `commands/model.ts`; `contextWindow` comes from the provider registry (`ModelConfig.contextWindow` — live-fetched where the provider's `/models` returns it, static in the catalog otherwise), so it reads `—` for providers that publish no context size, notably Anthropic. Derived, non-stored facts (Pricing, Tokenizer, Eval dots, Traits, Status) stay conditional.
 - `showProviderHeaders` (default `true`): when `false`, provider name headers are omitted and favorites render in gold; when `true`, provider headers group the list and model names render in the normal accent color.
 
 ## Read when

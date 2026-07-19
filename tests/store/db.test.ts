@@ -93,7 +93,17 @@ describe('db: cache operations', () => {
 describe('db: DB persistence round-trip', () => {
   it('persistModelRowAsync() makes a model row visible after reinitialising from the same DB', async () => {
     await db.initStore();
-    const entry = { provider: 'groq', modelId: 'llama', isFavorite: true };
+    // Every column is set to a distinct value: the upsert binds positionally, so
+    // a column-list/args mismatch would surface here as a shifted field.
+    const entry = {
+      provider: 'groq',
+      modelId: 'llama',
+      isFavorite: true,
+      removed: true,
+      nativeTools: false,
+      settings: { parallelTools: true, autoApproveTokenBudget: 500 },
+      rateLimits: { buckets: { 'requests-per-minute': { limit: 4000, intervalMs: 60_000 } }, observedAt: '2026-06-19T10:00:00.000Z' },
+    };
     db.setModelData({ 'groq:llama': entry });
     db.persistModelRowAsync('groq:llama', entry);
 
@@ -102,11 +112,7 @@ describe('db: DB persistence round-trip', () => {
     await db.initStore();
 
     const cache = db.getModelData();
-    expect(cache?.['groq:llama']).toMatchObject({
-      provider: 'groq',
-      modelId: 'llama',
-      isFavorite: true,
-    });
+    expect(cache?.['groq:llama']).toEqual(entry);
   });
 
   it('eval runs are persisted via saveTranscriptAsync and re-loaded on reinit', async () => {

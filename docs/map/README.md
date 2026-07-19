@@ -64,7 +64,7 @@ Format: filename (linecount)
   - [`action-menu.ts`](cli/menus/action-menu.md) (53) — Inline Action Sub-menu
   - [`list-menu.ts`](cli/menus/list-menu.md) (367) — Shared Tabbed List Menu
   - [`menu-shell.ts`](cli/menus/menu-shell.md) (47) — Menu Lifecycle Chrome
-  - [`model-screen.ts`](cli/menus/model-screen.md) (236) — Model Picker Screen Renderers
+  - [`model-screen.ts`](cli/menus/model-screen.md) (237) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/menus/raw-picker.md) (240) — Shared Raw-Mode Picker
 - `src/cli/render/`
   - [`banner.ts`](cli/render/banner.md) (123) — Startup Banner
@@ -108,7 +108,7 @@ Format: filename (linecount)
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
   - [`fake.ts`](providers/fake.md) (420) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
-  - [`model-data.ts`](providers/model-data.md) (230) — Unified Model Store
+  - [`model-data.ts`](providers/model-data.md) (228) — Unified Model Store
   - [`model-quirks.ts`](providers/model-quirks.md) (38) — Per-Model Static Quirks
   - [`model-settings-accessor.ts`](providers/model-settings-accessor.md) (14) — Model Settings Accessor
   - [`openai-daily-spend.ts`](providers/openai-daily-spend.md) (181) — OpenAI Daily Spend Footer
@@ -123,8 +123,8 @@ Format: filename (linecount)
 - `src/store/`
   - [`call-log.ts`](store/call-log.md) (53) — Per-Call LLM Log
   - [`db-config-cache.ts`](store/db-config-cache.md) (55) — DB Config Cache
-  - [`db-schema.ts`](store/db-schema.md) (87) — Table & Index DDL
-  - [`db.ts`](store/db.md) (476) — SQLite Store (libSQL/Turso)
+  - [`db-schema.ts`](store/db-schema.md) (85) — Table & Index DDL
+  - [`db.ts`](store/db.md) (470) — SQLite Store (libSQL/Turso)
   - [`model-list-cache.ts`](store/model-list-cache.md) (105) — Model List Cache
 - `src/tokenizers/backends/`
   - [`bpe-json.ts`](tokenizers/backends/bpe-json.md) (34) — HF Fast-Tokenizer (tokenizer.json) Backend
