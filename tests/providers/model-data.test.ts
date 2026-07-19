@@ -234,3 +234,70 @@ describe('model-data: getHumanEvalResults', () => {
     expect(store.getHumanEvalResults('groq:llama-3.1-8b')['HumanEval/0']).toBe('pass');
   });
 });
+
+describe('model-data: provider catalog', () => {
+  const llama = { modelId: 'llama-3.1-8b', displayName: 'Llama 3.1 8B', contextWindow: 128000 };
+
+  it('round-trips a provider catalog through the DB', async () => {
+    store.saveProviderCatalog('groq', [llama]);
+    await db.resetStore();
+    await db.initStore();
+    expect(store.getProviderCatalog('groq')).toEqual([llama]);
+  });
+
+  it('keeps catalog values and user state on the same row from clobbering each other', async () => {
+    // persistModelRowAsync writes every column, persistModelCatalogAsync only two.
+    // Both hit this row, so a regression here silently drops one side or the other.
+    store.saveProviderCatalog('groq', [llama]);
+    store.setFavorite('groq:llama-3.1-8b', true);
+    store.setNativeTools('groq', 'llama-3.1-8b', false);
+
+    await db.resetStore();
+    await db.initStore();
+
+    expect(store.getProviderCatalog('groq')).toEqual([llama]);
+    expect(store.getFavorites().has('groq:llama-3.1-8b')).toBe(true);
+    expect(store.isNativeToolsDisabled('groq', 'llama-3.1-8b')).toBe(true);
+  });
+
+  it('a later catalog write does not disturb user state written in between', async () => {
+    store.saveProviderCatalog('groq', [llama]);
+    store.setFavorite('groq:llama-3.1-8b', true);
+    // Provider renamed the model — catalog rewrites, favorite must survive.
+    store.saveProviderCatalog('groq', [{ ...llama, displayName: 'Llama 3.1 8B Instant' }]);
+
+    await db.resetStore();
+    await db.initStore();
+
+    expect(store.getProviderCatalog('groq')[0].displayName).toBe('Llama 3.1 8B Instant');
+    expect(store.getFavorites().has('groq:llama-3.1-8b')).toBe(true);
+  });
+
+  it('scopes the catalog to one provider', () => {
+    store.saveProviderCatalog('groq', [llama]);
+    store.saveProviderCatalog('cerebras', [{ modelId: 'other', displayName: 'Other' }]);
+    expect(store.getProviderCatalog('groq')).toEqual([llama]);
+    expect(store.getProviderCatalog('cerebras')).toEqual([{ modelId: 'other', displayName: 'Other' }]);
+  });
+
+  it('omits contextWindow rather than reporting null when the provider gives none', async () => {
+    store.saveProviderCatalog('groq', [{ modelId: 'no-ctx', displayName: 'No Context' }]);
+    await db.resetStore();
+    await db.initStore();
+    expect(store.getProviderCatalog('groq')).toEqual([{ modelId: 'no-ctx', displayName: 'No Context' }]);
+  });
+
+  it('rewriting an unchanged catalog is a no-op', () => {
+    store.saveProviderCatalog('groq', [llama]);
+    const before = store.getModel('groq:llama-3.1-8b');
+    store.saveProviderCatalog('groq', [llama]);
+    // Change detection skips the write entirely, so the cached entry is untouched.
+    expect(store.getModel('groq:llama-3.1-8b')).toBe(before);
+  });
+
+  it('models a provider has stopped offering keep their row', () => {
+    store.saveProviderCatalog('groq', [llama, { modelId: 'gone', displayName: 'Gone' }]);
+    store.saveProviderCatalog('groq', [llama]);
+    expect(store.getProviderCatalog('groq').map(m => m.modelId).sort()).toEqual(['gone', 'llama-3.1-8b']);
+  });
+});
