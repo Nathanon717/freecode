@@ -26,14 +26,16 @@ purgeBlocklistedStoredModels(models: BlocklistedStoredModel[]): Promise<void>
 ## Export notes
 
 - `findBlocklistedStoredModels()` reads the in-memory store, so callers must have awaited `ensureStoreReady()` first.
-- Only `modelIdBlocklist` (substring) and `modelIdExactBlocklist` are considered. `modelTierBlocklist` matches a tier field that is never stored on the row, so it cannot be re-derived from the DB — do not try to add it here.
-- `purgeBlocklistedStoredModels` is irreversible; the only caller gates it behind a user confirmation.
+- `modelIdBlocklist` (substring), `modelIdExactBlocklist`, and the per-user blocklist are all considered; the user list matches on the whole `provider:modelId` key. Including it is what makes hand-editing `blocklist.json` purge the matching rows on the next launch. `modelTierBlocklist` matches a tier field that is never stored on the row, so it cannot be re-derived from the DB — do not try to add it here.
+- `purgeBlocklistedStoredModels` is irreversible; both callers gate it behind a user confirmation.
 
 ## Key Neighbors
 
 - [store/db.md](../store/db.md): `deleteModelRows` does the FK-ordered delete.
-- [providers/provider-catalog.md](provider-catalog.md): owns the blocklists this reads.
-- [cli/blocklist-purge-prompt.md](../cli/blocklist-purge-prompt.md): the only caller — startup confirmation.
+- [providers/provider-catalog.md](provider-catalog.md): owns the shipped blocklists this reads.
+- [providers/user-blocklist.md](user-blocklist.md): owns the per-user blocklist this also reads.
+- [cli/blocklist-purge-prompt.md](../cli/blocklist-purge-prompt.md): startup confirmation, the whole-store caller.
+- [commands/model.md](../commands/model.md): the picker's Remove Fully action, which purges one already-known model and so skips `findBlocklistedStoredModels`.
 
 ## Update Triggers
 

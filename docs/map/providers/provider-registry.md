@@ -14,6 +14,8 @@ getProvider(id: string): ProviderConfig | undefined
 
 clearModelNewFlag(providerId: string, modelId: string): void
 
+blocklistModelPermanently(providerId: string, modelId: string): void
+
 retireDeadModel(providerId: string, modelId: string): void
 
 interface ResolvedModel {
@@ -48,6 +50,7 @@ For the generated provider table, see [providers.md](../../providers.md).
 - `mock:*` models are virtual and are not listed in `PROVIDER_REGISTRY`. `resolveModel()` only accepts them when `FREECODE_FAKE_LLM=1`, and fake mode rejects real provider resolution plus live model discovery.
 - After fetching, live-provider model lists are deduplicated by `displayName`: when multiple IDs resolve to the same name (aliases), the versioned ID (date-stamped or semver) is kept and aliases are dropped.
 - Live providers can use `modelIdBlocklist` for substring filters and `modelIdExactBlocklist` for exact ID filters before models are displayed. OpenAI uses the exact filter for `chat-latest` so versioned `*-chat-latest` models remain visible.
+- The **user blocklist** ([user-blocklist.md](user-blocklist.md)) is applied separately, at the end of `_doInit` and across *every* provider — not inside the per-provider filters above, which only run for live providers and would let a static provider's model come straight back. It runs before the catalog write, so a permanently removed model never earns a `models` row again. `blocklistModelPermanently()` is the runtime counterpart (persist the key, then strip it from the live registry so the current session stops offering it immediately); it mirrors `retireDeadModel`, but the caller owns deleting the DB rows.
 - Zen filters live and cached results to current free models, including explicit exclusions for retired free-period IDs.
 - `initDynamicProviders` calls `updateProviderCache` on every successful fetch to persist results and detect new/removed models.
 

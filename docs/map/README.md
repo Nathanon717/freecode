@@ -84,7 +84,7 @@ Format: filename (linecount)
   - [`tool-runner.ts`](cli/tools/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
 - `src/commands/`
   - [`config.ts`](commands/config.md) (397) — Interactive Config Editor
-  - [`model.ts`](commands/model.md) (342) — Interactive Model Picker
+  - [`model.ts`](commands/model.md) (389) — Interactive Model Picker
   - [`renderer.ts`](commands/renderer.md) (284) — Renderer Demo Command
   - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`
@@ -108,7 +108,7 @@ Format: filename (linecount)
   - [`openai-compat.ts`](providers/adapters/openai-compat.md) (254) — OpenAI-Compatible Adapter
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
-  - [`blocklist-purge.ts`](providers/blocklist-purge.md) (51) — Blocklisted Stored Model Purge
+  - [`blocklist-purge.ts`](providers/blocklist-purge.md) (61) — Blocklisted Stored Model Purge
   - [`fake.ts`](providers/fake.md) (420) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
   - [`model-data.ts`](providers/model-data.md) (279) — Unified Model Store
@@ -117,12 +117,13 @@ Format: filename (linecount)
   - [`openai-daily-spend.ts`](providers/openai-daily-spend.md) (181) — OpenAI Daily Spend Footer
   - [`pricing-verifier.ts`](providers/pricing-verifier.md) (123) — Dual-Source Pricing Verifier
   - [`provider-catalog.ts`](providers/provider-catalog.md) (311) — Provider Catalog
-  - [`provider-registry.ts`](providers/provider-registry.md) (432) — Provider Registry
+  - [`provider-registry.ts`](providers/provider-registry.md) (457) — Provider Registry
 - `src/providers/quota/`
   - [`cache.ts`](providers/quota/cache.md) (39) — Quota Cache
   - [`headers.ts`](providers/quota/headers.md) (370) — Provider Rate-Limit Header Parsing
 - `src/providers/`
   - [`types.ts`](providers/types.md) (57) — Type Definitions
+  - [`user-blocklist.ts`](providers/user-blocklist.md) (69) — Per-User Model Blocklist
 - `src/store/`
   - [`call-log.ts`](store/call-log.md) (53) — Per-Call LLM Log
   - [`db-config-cache.ts`](store/db-config-cache.md) (55) — DB Config Cache

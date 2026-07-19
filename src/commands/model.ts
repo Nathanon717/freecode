@@ -3,7 +3,8 @@ import type { Interface } from 'readline';
 import { loadConfig, resolveApiKey, saveDefaultModel } from '../config/index.js';
 import { getFavorites, setFavorite, getNoNativeToolsKeys, getModel, getRemovedKeys, setRemoved } from '../providers/model-data.js';
 import { ensureStoreReady } from '../store/db.js';
-import { PROVIDER_REGISTRY, initDynamicProviders } from '../providers/provider-registry.js';
+import { PROVIDER_REGISTRY, initDynamicProviders, blocklistModelPermanently } from '../providers/provider-registry.js';
+import { purgeBlocklistedStoredModels } from '../providers/blocklist-purge.js';
 import { markModelSelected } from '../store/model-list-cache.js';
 import { clearModelNewFlag } from '../providers/provider-registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
@@ -144,8 +145,11 @@ async function runModelBody(
 
   const actionMenu = new InlineActionMenu(['Select', 'View', 'Edit', 'Remove']);
   // Separate instance: the menu carries its own selection state, and the
-  // removed tab swaps Remove for Restore.
-  const removedActionMenu = new InlineActionMenu(['Select', 'View', 'Edit', 'Restore']);
+  // removed tab swaps Remove for Restore and adds Remove Fully.
+  const removedActionMenu = new InlineActionMenu(['Select', 'View', 'Edit', 'Restore', 'Remove Fully']);
+  // Remove Fully is irreversible, so it swaps in this menu rather than acting on the
+  // first Enter. Cancel is first so the destructive option is never the default.
+  const confirmMenu = new InlineActionMenu(['Cancel', 'Delete permanently']);
   // Rows list-menu prepends above the body: 1 blank for single-tab, or
   // blank+bar+blank (3) for multi-tab. Reserved so the body doesn't overflow.
   let tabBarRows = 0;
@@ -165,6 +169,11 @@ async function runModelBody(
     let filterQuery = '';
     let viewStart = 0;
     let displayItems = filterModelItems(getBaseItems(), filterQuery);
+    // Removed tab only: true while the Remove Fully confirmation is showing, which
+    // swaps both the action menu and its hint line. Cleared on every fresh Enter so
+    // an Esc out of the confirmation can't leave the next open stuck in it.
+    let confirming = false;
+    let pendingFullRemoval: ModelMenuItem | null = null;
 
     function refreshDisplayItems(ctx: ListMenuContext<ModelPickResult>, preferred?: ModelMenuItem): void {
       const sourceItems = (filterQuery && getGlobalItems) ? getGlobalItems() : getBaseItems();
@@ -202,11 +211,43 @@ async function runModelBody(
         : '↑↓ nav · ← fav · → view · Enter menu · Space default · Esc close',
       renderDetail: (selected) => buildModelDetailScreen(displayItems[selected]),
       actionMenu: {
-        menu: isRemovedTab ? removedActionMenu : actionMenu,
-        actionHint: `  ${chalk.dim('↑/↓ action, Enter select, Esc back')}`,
+        // Getters, not fixed values: list-menu reads both on every render and key,
+        // so the confirmation can swap itself in without the base knowing about it.
+        get menu(): InlineActionMenu {
+          if (confirming) return confirmMenu;
+          return isRemovedTab ? removedActionMenu : actionMenu;
+        },
+        get actionHint(): string {
+          if (confirming && pendingFullRemoval) {
+            return `  ${chalk.yellow(`Permanently blocklist ${modelPreference(pendingFullRemoval)} and delete its eval history, call log, and saved settings?`)}`;
+          }
+          return `  ${chalk.dim('↑/↓ action, Enter select, Esc back')}`;
+        },
         onSelect: (option, ctx) => {
+          if (confirming) {
+            const item = pendingFullRemoval;
+            confirming = false;
+            pendingFullRemoval = null;
+            if (option === 'Delete permanently' && item) {
+              const pref = modelPreference(item);
+              blocklistModelPermanently(item.providerId, item.modelId);
+              void purgeBlocklistedStoredModels([
+                { key: pref, provider: item.providerId, modelId: item.modelId },
+              ]);
+              const idx = removedItems.findIndex(i => modelPreference(i) === pref);
+              if (idx !== -1) removedItems.splice(idx, 1);
+              refreshDisplayItems(ctx);
+            }
+            return;
+          }
           if (option === 'Select') ctx.close({ item: displayItems[ctx.getSelected()], saveDefault: false });
           else if (option === 'View') ctx.enterDetail();
+          else if (option === 'Remove Fully') {
+            pendingFullRemoval = displayItems[ctx.getSelected()];
+            confirming = true;
+            // Reopens the action menu with confirmMenu now selected by the getter.
+            ctx.openAction();
+          }
           else if (option === 'Remove' || option === 'Restore') {
             const removing = option === 'Remove';
             const from = removing ? items : removedItems;
@@ -229,7 +270,13 @@ async function runModelBody(
         if (displayItems.length === 0 && (key === '\x1b[C' || key === '\r' || key === '\n' || key === '\x1b[D')) {
           return true;
         }
-        // → detail and Enter → action menu are owned by the base; defer to it.
+        // → detail and Enter → action menu are owned by the base; defer to it. Clear
+        // any confirmation state first so the base opens the normal menu — Esc out of
+        // a confirmation leaves `confirming` set and the base never tells us about it.
+        if (key === '\r' || key === '\n') {
+          confirming = false;
+          pendingFullRemoval = null;
+        }
         if (key === '\x1b[C' || key === '\r' || key === '\n') return false;
 
         if (key === '\x1b[D') {

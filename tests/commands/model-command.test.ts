@@ -72,6 +72,11 @@ vi.mock('../../src/providers/provider-registry.js', () => ({
   ],
   initDynamicProviders: vi.fn().mockResolvedValue(undefined),
   clearModelNewFlag: vi.fn(),
+  blocklistModelPermanently: vi.fn(),
+}));
+
+vi.mock('../../src/providers/blocklist-purge.js', () => ({
+  purgeBlocklistedStoredModels: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../src/store/model-list-cache.js', () => ({
@@ -97,7 +102,8 @@ import { runModelCommand, getSelectableModels } from '../../src/commands/model.j
 import { saveDefaultModel, resolveApiKey } from '../../src/config/index.js';
 import { setFavorite, getNoNativeToolsKeys, getRemovedKeys, setRemoved } from '../../src/providers/model-data.js';
 import { markModelSelected } from '../../src/store/model-list-cache.js';
-import { clearModelNewFlag } from '../../src/providers/provider-registry.js';
+import { clearModelNewFlag, blocklistModelPermanently } from '../../src/providers/provider-registry.js';
+import { purgeBlocklistedStoredModels } from '../../src/providers/blocklist-purge.js';
 import { getOpenAIVerifiedRates } from '../../src/providers/pricing-verifier.js';
 
 const fakeRl = { pause: vi.fn(), resume: vi.fn() } as unknown as Interface;
@@ -392,6 +398,10 @@ describe('runModelCommand', () => {
     beforeEach(() => {
       vi.spyOn(console, 'log').mockImplementation(() => {});
       vi.mocked(getRemovedKeys).mockReturnValue(new Set(['openai:gpt-4o']));
+      // Factory-created vi.fn()s survive restoreAllMocks, so the "was not called"
+      // assertions below would otherwise see the previous test's calls.
+      vi.mocked(blocklistModelPermanently).mockClear();
+      vi.mocked(purgeBlocklistedStoredModels).mockClear();
     });
     afterEach(() => {
       vi.mocked(getRemovedKeys).mockReset().mockReturnValue(new Set());
@@ -425,6 +435,69 @@ describe('runModelCommand', () => {
       opts.onKey('\r', vi.fn(), vi.fn()); // select Restore
       expect(setRemoved).toHaveBeenCalledWith('openai:gpt-4o', false);
       expect(opts.render().join('\n')).not.toContain('GPT-4o');
+    });
+
+    // Remove Fully sits below Restore, so it takes one extra Down than Restore does.
+    function selectRemoveFully(opts: typeof pickerStore.capturedOpts & object): void {
+      opts.onKey('\r', vi.fn(), vi.fn()); // open action menu
+      for (let i = 0; i < 4; i++) opts.onKey('\x1b[B', vi.fn(), vi.fn()); // View, Edit, Restore, Remove Fully
+      opts.onKey('\r', vi.fn(), vi.fn()); // select Remove Fully
+    }
+
+    it('offers Remove Fully on the removed tab but not on a provider tab', async () => {
+      const removed = await openRemovedTab();
+      removed.onKey('\r', vi.fn(), vi.fn());
+      expect(removed.render().join('\n')).toContain('Remove Fully');
+
+      const provider = await captureKeys();
+      provider.onKey('\r', vi.fn(), vi.fn());
+      expect(provider.render().join('\n')).not.toContain('Remove Fully');
+    });
+
+    it('Remove Fully asks for confirmation instead of deleting straight away', async () => {
+      const opts = await openRemovedTab();
+      selectRemoveFully(opts);
+
+      const lines = opts.render().join('\n');
+      expect(lines).toContain('Delete permanently');
+      expect(lines).toContain('Cancel');
+      expect(opts.getControls?.()).toContain('openai:gpt-4o');
+      expect(blocklistModelPermanently).not.toHaveBeenCalled();
+      expect(purgeBlocklistedStoredModels).not.toHaveBeenCalled();
+    });
+
+    it('confirming blocklists the model, purges its rows, and drops it from the tab', async () => {
+      const opts = await openRemovedTab();
+      selectRemoveFully(opts);
+      opts.onKey('\x1b[B', vi.fn(), vi.fn()); // Cancel -> Delete permanently
+      opts.onKey('\r', vi.fn(), vi.fn());
+
+      expect(blocklistModelPermanently).toHaveBeenCalledWith('openai', 'gpt-4o');
+      expect(purgeBlocklistedStoredModels).toHaveBeenCalledWith([
+        { key: 'openai:gpt-4o', provider: 'openai', modelId: 'gpt-4o' },
+      ]);
+      expect(opts.render().join('\n')).not.toContain('GPT-4o');
+    });
+
+    it('Cancel is the default choice and leaves the model in place', async () => {
+      const opts = await openRemovedTab();
+      selectRemoveFully(opts);
+      opts.onKey('\r', vi.fn(), vi.fn()); // Cancel is pre-selected
+
+      expect(blocklistModelPermanently).not.toHaveBeenCalled();
+      expect(purgeBlocklistedStoredModels).not.toHaveBeenCalled();
+      expect(opts.render().join('\n')).toContain('GPT-4o');
+    });
+
+    it('Esc out of the confirmation does not leave the next Enter stuck in it', async () => {
+      const opts = await openRemovedTab();
+      selectRemoveFully(opts);
+      opts.onKey('\x1b', vi.fn(), vi.fn()); // abandon the confirmation
+      opts.onKey('\r', vi.fn(), vi.fn()); // reopen the action menu
+
+      const lines = opts.render().join('\n');
+      expect(lines).toContain('Restore');
+      expect(lines).not.toContain('Delete permanently');
     });
   });
 

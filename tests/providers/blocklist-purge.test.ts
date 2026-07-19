@@ -14,8 +14,13 @@ let store: typeof import('../../src/providers/model-data.js');
 let db: typeof import('../../src/store/db.js');
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 let catalog: typeof import('../../src/providers/provider-catalog.js');
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+let userBlocklist: typeof import('../../src/providers/user-blocklist.js');
 let tempStore = '';
 const previousStore = process.env.FREECODE_STORE;
+// Pointed at the temp dir so the developer's real ~/.config/freecode/blocklist.json
+// can never bleed into these assertions.
+const previousHome = process.env.FREECODE_HOME;
 
 // The blocklists under test are real registry config, so the test provider's entry is
 // mutated in place and restored afterwards rather than asserting on shipped values.
@@ -36,7 +41,10 @@ function blocklistFor(providerId: string, substrings: string[], exact: string[])
 beforeEach(async () => {
   tempStore = mkdtempSync(join(tmpdir(), 'freecode-blocklist-'));
   process.env.FREECODE_STORE = tempStore;
+  process.env.FREECODE_HOME = tempStore;
   purge = await import('../../src/providers/blocklist-purge.js');
+  userBlocklist = await import('../../src/providers/user-blocklist.js');
+  userBlocklist.resetUserBlocklistCache();
   store = await import('../../src/providers/model-data.js');
   db = await import('../../src/store/db.js');
   catalog = await import('../../src/providers/provider-catalog.js');
@@ -47,8 +55,11 @@ afterEach(async () => {
   restoreEntry?.();
   restoreEntry = undefined;
   await db.resetStore();
+  userBlocklist.resetUserBlocklistCache();
   if (previousStore === undefined) delete process.env.FREECODE_STORE;
   else process.env.FREECODE_STORE = previousStore;
+  if (previousHome === undefined) delete process.env.FREECODE_HOME;
+  else process.env.FREECODE_HOME = previousHome;
   try { rmSync(tempStore, { recursive: true, force: true }); } catch { /* OS will clean up */ }
 });
 
@@ -93,6 +104,27 @@ describe('blocklist-purge: detection', () => {
       modelId: 'text-embed-3',
       displayName: 'Embed 3',
     });
+  });
+});
+
+describe('blocklist-purge: user blocklist', () => {
+  it('finds a stored model that only the user blocklist excludes', () => {
+    blocklistFor('groq', [], []);
+    store.saveProviderCatalog('groq', [
+      { modelId: 'llama-4', displayName: 'Llama 4' },
+      { modelId: 'unwanted', displayName: 'Unwanted' },
+    ]);
+    userBlocklist.addToUserBlocklist('groq:unwanted');
+
+    expect(purge.findBlocklistedStoredModels().map((m) => m.key)).toEqual(['groq:unwanted']);
+  });
+
+  it('matches the whole provider:modelId key, not the bare model id', () => {
+    blocklistFor('groq', [], []);
+    store.saveProviderCatalog('groq', [{ modelId: 'shared-id', displayName: 'Shared' }]);
+    userBlocklist.addToUserBlocklist('cerebras:shared-id');
+
+    expect(purge.findBlocklistedStoredModels()).toEqual([]);
   });
 });
 

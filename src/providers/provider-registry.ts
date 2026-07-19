@@ -6,6 +6,7 @@ import { getProviderCatalog, saveProviderCatalog } from "./model-data.js";
 import { createOpenAICompatProvider } from "./adapters/openai-compat.js";
 import { createAnthropicProvider } from "./adapters/anthropic.js";
 import { resolveApiKey } from "../config/index.js";
+import { addToUserBlocklist, getUserBlocklist } from "./user-blocklist.js";
 import { logError } from "../logger.js";
 import {
   FAKE_MODEL_PREFIX,
@@ -40,6 +41,19 @@ async function _doInit(): Promise<void> {
   } catch (err) {
     logError("registry", "Unexpected error during model init", err);
   }
+  // Strip the user's own blocklist before any catalog is written, so a permanently
+  // removed model never earns a `models` row again. Done here rather than inside the
+  // per-provider blocklist filters because those only run for live providers, and a
+  // static provider's model would otherwise come straight back from the catalog.
+  const userBlocklist = getUserBlocklist();
+  if (userBlocklist.size > 0) {
+    for (const provider of PROVIDER_REGISTRY) {
+      provider.models = provider.models.filter(
+        (m) => !userBlocklist.has(`${provider.id}:${m.id}`),
+      );
+    }
+  }
+
   // Static providers never run a live init, so their catalog is written here.
   // Live ones already wrote theirs; the change check makes the repeat a no-op.
   for (const provider of PROVIDER_REGISTRY) {
@@ -337,6 +351,17 @@ export function clearModelNewFlag(providerId: string, modelId: string): void {
   if (!provider) return;
   const model = provider.models.find((m) => m.id === modelId);
   if (model) delete model.isNew;
+}
+
+/**
+ * Permanently blocklist a model for this user: persist the key and drop it from the
+ * live registry so the running session stops offering it immediately. `_doInit` applies
+ * the same filter on every later launch. The caller owns deleting the DB rows.
+ */
+export function blocklistModelPermanently(providerId: string, modelId: string): void {
+  addToUserBlocklist(`${providerId}:${modelId}`);
+  const entry = PROVIDER_REGISTRY.find((p) => p.id === providerId);
+  if (entry) entry.models = entry.models.filter((m) => m.id !== modelId);
 }
 
 export function retireDeadModel(providerId: string, modelId: string): void {
