@@ -302,11 +302,12 @@ describe('agentLoop with the mock-native (AI SDK streamText) provider', () => {
       ],
     });
 
+    const steps: number[] = [];
     const result = await agentLoop(
       [{ role: 'user', content: 'create native.txt' }],
       tempRoot,
       'mock-native:gpt-freecode-test',
-      { confirmToolCall: approve },
+      { confirmToolCall: approve, onStepUsage: (info) => void steps.push(info.promptTokens) },
     );
 
     expect(result.text).toBe('Writing now.\nFinished.');
@@ -316,6 +317,11 @@ describe('agentLoop with the mock-native (AI SDK streamText) provider', () => {
     // step-summed total (10 + 20 = 30). Summing here is the footer's old bug:
     // it would report ~step-count× the real context and can exceed the window.
     expect(result.usage.promptTokens).toBe(20);
+    // The mid-turn ctx tick reads `event.usage` from onStepFinish, a DIFFERENT
+    // source than the value above. Pin that it is per-step (10 then 20) and not
+    // the same running total — a summed [10, 30] would make the footer climb
+    // past the real context window while the turn is still going.
+    expect(steps).toEqual([10, 20]);
   });
 
   it('uses prompt-based tools when parsedTools is set on the model', async () => {
