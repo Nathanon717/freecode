@@ -8,6 +8,8 @@
 ```typescript
 setQuotaSnapshot(quota: RateLimitSnapshot | null): void
 
+setContextUsage(usage: { tokens: number; window: number | null; } | null): void
+
 setActiveModel(providerId: string, modelId: string): void
 
 setActiveModelFromString(model: string): void
@@ -25,7 +27,8 @@ layoutFooterRightRows(width: number, rowBudget: number, now?: number): string[]
 ## Export notes
 
 - `formatEvalRunStatus` — returns the retry-banner string for the footer left side.
-- `layoutFooterRightRows` — lays out right-side footer content into 1–3 rows; `result[0]` is the bottom row.
+- `setContextUsage` — sets the live conversation's context size for the `ctx` slot. `tokens` is the **provider-reported prompt (input) tokens of the most recent API call** — which already equals the whole history, since every call resends it — so it is *latest-wins, never summed*. `window` is the model's context window (or `null` when unknown). Pass `null` to blank the slot (never measured, model just changed, or the provider's count is known-unreliable — Anthropic today, whose count omits cache tokens). The only writer is `cli/session-modes.ts`'s `onAgentResult`.
+- `layoutFooterRightRows` — lays out right-side footer content into 1–3 rows; `result[0]` is the bottom row. Primary-row priority is model → ctx → quota (kept longest to shortest); OpenAI spend is secondary and drops first.
 
 ## Read when
 
@@ -33,7 +36,7 @@ Changing what is shown in the footer status area, adding new status fields, or d
 
 ## Note
 
-The footer has no token-count slot as of the tokenizer-engine work (`docs/plans/tokenizer-registry-plan.md` Phase 1): `setTokenCount`/`lastTokenCount` and the `${n} ctx` fallback text were removed along with `agent/token-count.ts`. `layoutFooterRightRows` now lays out quota | model | spend only. A later "live counter" task re-adds a token display on top of `src/tokenizers/count.ts`.
+The `ctx` slot shows **measured** context size — the provider's own `prompt_tokens` for the last call — not a local tokenizer estimate. It is deliberately *not* built on `src/tokenizers/count.ts`: a computed estimate would undercount (it never sees tool schemas or provider-injected content) and, once output/reasoning tokens enter the arithmetic, becomes provider-specific and easy to get silently wrong. The renderer does zero arithmetic beyond `N/M` and shows nothing until a real count arrives, so it can never display a fabricated number. Format is raw integers (`12345/128000 ctx`, or `12345 ctx` when the window is unknown) — no separators, no percentage, no rounding, so tests can pin exact digits. History: this replaces the earlier multi-writer `setTokenCount`/`${n} ctx` slot, whose five callers each fed it a different quantity (local estimate, last-call input, cumulative eval totals) — the eval cumulative-sum path is why the old `ctx` could exceed the context window.
 
 ## Key neighbors
 

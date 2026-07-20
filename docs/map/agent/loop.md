@@ -52,12 +52,13 @@ streamText({
 })
 beginToolRenderGate()                     (tool-render-gate.ts)
 for await part of fullStream:             (ordered: text-delta -> tool-call -> tool-result)
-  text-delta: write to stdout, append to fullText
-  tool-call:  flush pending preamble line, then releaseToolRenderGate()
-  error:      capture and re-throw after the loop (fullStream reports, not throws)
+  text-delta:  write to stdout, append to fullText
+  tool-call:   flush pending preamble line, then releaseToolRenderGate()
+  step-finish: remember this step's own promptTokens (last one = the context size)
+  error:       capture and re-throw after the loop (fullStream reports, not throws)
 endToolRenderGate()
-await usage
-finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens)
+await usage  (promptTokens = last step's, NOT the SDK's step-summed total)
+finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens)   (usage-finalize.ts)
   -> ends Anthropic SSE capture or OpenAI-compat raw capture
   -> fetches verified pricing and estimates turn cost
   -> reads most recent rate-limit headers
@@ -79,8 +80,9 @@ return AgentLoopResult
 ## Internal Helpers
 
 - `runFakeLlm(providerId, modelId, ...)` — handles the entire `FAKE_PROVIDER_ID` path including transcript step management. Delegates tool execution to `executeToolCalls` from `parsed-tools.ts` (shared with the text-based fallback path). Returns `AgentLoopResult` directly, so `agentLoop` returns immediately after calling it.
-- `streamWithRetry(languageModel, supportsTools, ...)` — runs the `while(true)` streaming loop for all non-OpenAI, non-fake providers. Handles the three retry cases (tool-not-supported fallback, provider-rejected malformed call, no-such-tool, invalid-args) and returns a `StreamResult` with the accumulated text and token counts. Throws on non-retriable errors, which propagate to `agentLoop`'s catch.
-- `finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens)` — ends any active provider usage capture (Anthropic SSE headers, OpenAI-compat raw headers), fetches verified pricing, estimates turn cost, and reads the most recent rate-limit snapshot. Shared by both the success path and the catch path so partial cost/quota metadata survives stream failures. The OpenAI Responses cost estimate (previously inline) runs through this helper when `providerId === 'openai'`.
+- `streamWithRetry(languageModel, supportsTools, ...)` — runs the `while(true)` streaming loop for all non-fake providers (OpenAI included — there is no separate OpenAI dispatch path). Handles the three retry cases (tool-not-supported fallback, provider-rejected malformed call, no-such-tool, invalid-args) and returns a `StreamResult` with the accumulated text and token counts. Throws on non-retriable errors, which propagate to `agentLoop`'s catch.
+- **Context-size (`ctx`) token source.** The native `fullStream` consumer records each `step-finish` part's own `promptTokens` and uses the **last** one as the turn's `promptTokens`, *not* `result.usage.promptTokens` — which ai@3.4 returns SUMMED across every step of a multi-step tool turn (`combinedUsage`), so using it would report roughly step-count× the real context and could exceed the window. For a single-step turn the two are identical. This is the number `cli/session-modes.ts` feeds the footer `ctx` slot (except for Anthropic, which it suppresses — its count omits cache tokens); the summing trap is regression-pinned by the multi-step mock-native test in `tests/agent/loop.test.ts` (last step = 20, not 10+20=30). The parsed-tools fallback path is already last-wins (one single-step `streamText` per iteration).
+- `finalizeUsageCapture(...)` now lives in [usage-finalize.md](usage-finalize.md) (extracted at the 500-line limit). `agentLoop` imports it and calls it on both the success and catch paths, feeding the result through `applyUsageOutcome`; for Anthropic it overrides `promptTokens` with the provider's own `inputTokens`.
 
 ## Key Neighbors
 
@@ -91,6 +93,7 @@ return AgentLoopResult
 - [providers/fake.md](../providers/fake.md): fake fixture runner for free agent-loop verification.
 - [providers/model-data.md](../providers/model-data.md): `isNativeToolsDisabled`/`setNativeTools` for the native-tools fallback trait.
 - [tool-render-gate.md](tool-render-gate.md): orders streamed text before tool-call headers on the native `fullStream` path.
+- [usage-finalize.md](usage-finalize.md): ends usage capture and computes cost/quota for each turn.
 
 ## Error Handling
 

@@ -312,6 +312,10 @@ describe('agentLoop with the mock-native (AI SDK streamText) provider', () => {
     expect(result.text).toBe('Writing now.\nFinished.');
     expect(existsSync(join(tempRoot, 'native.txt'))).toBe(true);
     expect(readFileSync(join(tempRoot, 'native.txt'), 'utf-8')).toBe('ok\n');
+    // Context size must be the LAST step's prompt tokens (20), NOT the SDK's
+    // step-summed total (10 + 20 = 30). Summing here is the footer's old bug:
+    // it would report ~step-count× the real context and can exceed the window.
+    expect(result.usage.promptTokens).toBe(20);
   });
 
   it('uses prompt-based tools when parsedTools is set on the model', async () => {

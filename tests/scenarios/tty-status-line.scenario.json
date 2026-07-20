@@ -1,0 +1,32 @@
+{
+  "name": "tty-status-line",
+  "description": "After a turn, the footer status line shows the provider-reported context token count (the last call's prompt tokens), pinned to the exact number the fixture reported",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "tty-status-line.llm.json",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "no ctx count before any turn",
+        "screenAbsent": ["ctx"]
+      },
+      {
+        "name": "type prompt",
+        "send": "Say PONG through the fake model.",
+        "screenContains": ["> Say PONG through the fake model."]
+      },
+      {
+        "name": "submit - footer shows the exact provider-reported prompt tokens",
+        "send": "\r",
+        "waitFor": "4242 ctx",
+        "waitForMs": 12000,
+        "screenContains": ["PONG", "4242 ctx"]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

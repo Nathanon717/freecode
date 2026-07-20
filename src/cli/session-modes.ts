@@ -1,4 +1,3 @@
-import { readFileSync } from "fs";
 import type { Interface } from "readline";
 import chalk from "chalk";
 import { runConfigCommand } from "../commands/config.js";
@@ -49,17 +48,17 @@ import {
 import {
   setActiveModel,
   setActiveModelFromString,
+  setContextUsage,
   setOpenAIDailySpend,
   setQuotaSnapshot,
 } from "./chrome/footer-status.js";
+import { getModel } from "../providers/model-data.js";
 import { refreshOpenAIDailySpend } from "../providers/openai-daily-spend.js";
 import { loadCachedQuota, saveQuotaToCache } from "../providers/quota/cache.js";
 import { cycleByChar, getAskMode, initAskMode, isReadOnly } from "./chrome/toggles.js";
 import {
   askQuestion,
   confirmToolCallInteractive,
-  formatScriptedToolMenu,
-  parseScriptedToolChoice,
 } from "./tools/tool-approval.js";
 import { runRawKeySession } from "./menus/raw-picker.js";
 import { isBackspaceKey } from "../util/keyboard.js";
@@ -113,6 +112,10 @@ function applyModelChange(model: string): void {
   _lastAppliedModel = model;
   setActiveModelFromString(model);
   setQuotaSnapshot(null);
+  // The old ctx belongs to the previous model (different token count for the
+  // same history, different window). Blank it until the next turn measures the
+  // new model, rather than briefly attributing a stale number to it.
+  setContextUsage(null);
   warmTokenizers(model);
 }
 
@@ -359,6 +362,21 @@ export function createInteractiveMode(
       if (result.quota && result.providerId) {
         saveQuotaToCache(result.providerId, result.quota);
       }
+      // Context size = the provider-reported prompt tokens of this turn's last
+      // call (the full history it just sent). Only update when the provider
+      // actually reported a count; a turn that errored before any usage keeps
+      // the last good number rather than blanking or showing a guess.
+      const promptTokens = result.usage?.promptTokens;
+      if (result.providerId === 'anthropic') {
+        // Anthropic reports input_tokens WITHOUT cache_read/cache_creation, so
+        // once prompt caching kicks in the count reads far low (e.g. ~2k at 100k
+        // real). Blank the slot rather than show a confident undercount, until
+        // finalizeUsageCapture (usage-finalize.ts) sums the cache fields.
+        setContextUsage(null);
+      } else if (promptTokens !== undefined) {
+        const entry = getModel(`${result.providerId}:${result.modelId}`);
+        setContextUsage({ tokens: promptTokens, window: entry?.contextWindow ?? null });
+      }
     },
     beforeDispatch: () => {
       if (process.stdin.isTTY) {
@@ -395,89 +413,3 @@ export function createInteractiveMode(
   };
 }
 
-export function createScriptedMode(scriptPath: string): CliSessionMode {
-  const lines = readFileSync(scriptPath, "utf-8")
-    .split("\n")
-    .map((line) => line.trimEnd())
-    .filter((line) => line.length > 0)
-    .map((line) => {
-      if (line.startsWith('"')) {
-        try {
-          return JSON.parse(line) as string;
-        } catch { /* ignore */ }
-      }
-      return line;
-    });
-  let lineIdx = 0;
-
-  const autoConfirm = process.env["FREECODE_AUTO_CONFIRM"] === "1";
-  const maxToolCalls = parseInt(
-    process.env["FREECODE_MAX_TOOL_CALLS"] ?? "10",
-    10,
-  );
-  let autoCallCount = 0;
-
-  return {
-    readInput: (): Promise<string | null> => {
-      if (lineIdx >= lines.length) return Promise.resolve(null);
-      const line = lines[lineIdx++];
-      return Promise.resolve(line);
-    },
-    // Not `async` (the body has nothing to await, which require-await forbids);
-    // returns the confirmation wrapped in a resolved Promise instead.
-    confirmToolCall: (_preview): Promise<ToolCallConfirmation> => {
-      if (autoConfirm) {
-        autoCallCount++;
-        // Hard cap for unattended runs: once past the budget, deny every further
-        // call so the agent (already bounded by the loop's maxSteps) winds down
-        // rather than running unbounded. No prompt — scripted stdin is closed.
-        if (autoCallCount > maxToolCalls) {
-          return Promise.resolve({
-            approved: false,
-            message: `Stopped after tool call limit of ${maxToolCalls}.`,
-          });
-        }
-        process.stderr.write(chalk.dim("Auto-approved.\n"));
-        return Promise.resolve({ approved: true });
-      }
-
-      const choice = parseScriptedToolChoice(lines[lineIdx]);
-      if (choice) {
-        const rawChoice = lines[lineIdx]?.trim() ?? "";
-        lineIdx++;
-        formatScriptedToolMenu(choice);
-        console.log(chalk.dim(`Scripted selection: ${rawChoice}`));
-
-        if (choice === "approve") return Promise.resolve({ approved: true });
-
-        const message = lines[lineIdx] ?? "";
-        if (message) {
-          lineIdx++;
-          console.log(
-            chalk.yellow(`Tell the agent what to do instead: ${message}`),
-          );
-        } else {
-          console.log(chalk.yellow("Tell the agent what to do instead:"));
-        }
-        return Promise.resolve({ approved: false, message });
-      }
-
-      formatScriptedToolMenu("deny");
-      console.log(
-        chalk.dim("No scripted approval provided; denying tool call."),
-      );
-      return Promise.resolve({ approved: false });
-    },
-    modelListMode: "current-only",
-    skipStrayConfirmations: true,
-    runEvalMenu: (): Promise<void> => {
-      console.log(chalk.dim("/eval is not available in scripted mode."));
-      return Promise.resolve();
-    },
-    onInputExhausted: () => {
-      if (!process.env.FREECODE_AUTO_CONFIRM) {
-        console.log(chalk.dim("Goodbye!"));
-      }
-    },
-  };
-}

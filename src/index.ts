@@ -61,7 +61,8 @@ async function main() {
   const { createInterface } = await import('readline');
   const { installScreenBuffer } = await import('./util/screen-buffer.js');
   const { showBanner } = await import('./cli/render/banner.js');
-  const { createInteractiveMode, createScriptedMode } = await import('./cli/session-modes.js');
+  const { createInteractiveMode } = await import('./cli/session-modes.js');
+  const { createScriptedMode } = await import('./cli/scripted-mode.js');
   const { Conversation } = await import('./agent/conversation.js');
   const { runCliSession } = await import('./cli/session-runner.js');
   const { setupFooterUI } = await import('./cli/chrome/bottom-ui.js');

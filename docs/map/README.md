@@ -32,7 +32,7 @@ Format: filename (linecount)
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
   - [`conversation.ts`](agent/conversation.md) (31) — Session Controller
-  - [`loop.ts`](agent/loop.md) (501) — Agent Loop
+  - [`loop.ts`](agent/loop.md) (457) — Agent Loop
   - [`parsed-tools.ts`](agent/parsed-tools.md) (247) — Parsed-Tools Harness
   - [`system-prompt.ts`](agent/system-prompt.md) (31) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
@@ -46,12 +46,13 @@ Format: filename (linecount)
   - [`read.ts`](agent/tools/read.md) (88) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
 - `src/agent/`
+  - [`usage-finalize.ts`](agent/usage-finalize.md) (65) — Turn Usage/Cost/Quota Finalization
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/`
   - [`blocklist-purge-prompt.ts`](cli/blocklist-purge-prompt.md) (82) — Startup Blocklist Purge Confirmation
 - `src/cli/chrome/`
   - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (477) — Bottom Terminal UI
-  - [`footer-status.ts`](cli/chrome/footer-status.md) (181) — Footer Status State and Formatters
+  - [`footer-status.ts`](cli/chrome/footer-status.md) (215) — Footer Status State and Formatters
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
   - [`toggles.ts`](cli/chrome/toggles.md) (100) — Footer Toggle State
 - `src/cli/`
@@ -74,7 +75,8 @@ Format: filename (linecount)
   - [`transcript-options.ts`](cli/render/transcript-options.md) (66) — Transcript Stream + Options
   - [`transcript-renderer.ts`](cli/render/transcript-renderer.md) (486) — Agent Transcript Formatting
 - `src/cli/`
-  - [`session-modes.ts`](cli/session-modes.md) (484) — Session Modes
+  - [`scripted-mode.ts`](cli/scripted-mode.md) (96) — Scripted Session Mode
+  - [`session-modes.ts`](cli/session-modes.md) (416) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
@@ -96,7 +98,7 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (99) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (79) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (203) — Eval Subprocess Runner
-- [`index.ts`](index.md) (185) — CLI Entry Point
+- [`index.ts`](index.md) (186) — CLI Entry Point
 - [`logger.ts`](logger.md) (53) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (120) — Adapter HTTP Retry/Backoff

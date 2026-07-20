@@ -5,23 +5,17 @@ import { buildSystemPrompt } from './system-prompt.js';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
 import {
   beginProviderUsageCapture,
-  endProviderUsageCapture,
   getLastCapturedHeaders,
   type CapturedProviderUsage,
 } from '../providers/adapters/openai-compat.js';
 import {
   beginAnthropicUsageCapture,
-  endAnthropicUsageCapture,
   getLastCapturedAnthropicHeaders,
 } from '../providers/adapters/anthropic.js';
-import {
-  estimateAnthropicCostVerified,
-  type CostEstimate,
-} from '../providers/anthropic-cost.js';
+import { type CostEstimate } from '../providers/anthropic-cost.js';
 import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk } from '../cli/render/transcript-renderer.js';
 import { beginToolRenderGate, endToolRenderGate, releaseToolRenderGate } from './tool-render-gate.js';
 import { createMarkdownStreamRenderer } from '../cli/render/markdown-renderer.js';
-import { getAnthropicVerifiedRates } from '../providers/pricing-verifier.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './workspace.js';
@@ -29,6 +23,7 @@ import { isContextOverflowError, isInvalidToolArgumentsError, isModelNotFoundErr
 import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
 import { executeToolCalls, runParsedToolsLoop } from './parsed-tools.js';
+import { finalizeUsageCapture, type UsageOutcome } from './usage-finalize.js';
 import { isNativeToolsDisabled, setNativeTools } from '../providers/model-data.js';
 import { ensureStoreReady } from '../store/db.js';
 import { FAKE_PROVIDER_ID, FAKE_NATIVE_PROVIDER_ID, assertFakeFixtureComplete, createFakeNativeLanguageModel, runFakeModel } from '../providers/fake.js';
@@ -215,6 +210,12 @@ async function streamWithRetry(
       let chunkCount = 0;
       let streamError: unknown;
       let streamHadError = false;
+      // The AI SDK's final `result.usage.promptTokens` is SUMMED across every
+      // step of a multi-step tool turn (ai@3.4 combinedUsage) — using it as the
+      // context size would multiply it by the step count and blow past the
+      // window. Each `step-finish` part instead carries that step's own usage;
+      // the last one is the real context (the full history the final call sent).
+      let lastStepPromptTokens: number | undefined;
       // Drive display from the ordered fullStream (text-delta → tool-call →
       // tool-result) instead of the text-only textStream, so a step's preamble text
       // can never render after the tool call it precedes. The gate lets each tool's
@@ -233,6 +234,9 @@ async function streamWithRetry(
             // header renders after this step's preamble text, never before it.
             flushPendingPreamble();
             releaseToolRenderGate();
+          } else if (part.type === 'step-finish') {
+            const stepUsage = part.usage as { promptTokens?: number } | undefined;
+            if (stepUsage?.promptTokens !== undefined) lastStepPromptTokens = stepUsage.promptTokens;
           } else if (part.type === 'error') {
             // fullStream reports mid-stream failures as an error part rather than
             // throwing; re-throw after the loop so the retry/catch logic still runs.
@@ -252,7 +256,10 @@ async function streamWithRetry(
       endTranscriptStep(false); // close the final step after text is normalised
       const usage = await typedResult.usage;
       totalTokens = usage?.totalTokens ?? 0;
-      promptTokens = usage?.promptTokens;
+      // Context size = the LAST step's prompt tokens (see lastStepPromptTokens),
+      // not the SDK's step-summed total. Falls back to the aggregate only if no
+      // step-finish was seen; for a single-step turn the two are identical.
+      promptTokens = lastStepPromptTokens ?? usage?.promptTokens;
       outputTokens = usage?.completionTokens ?? usage?.outputTokens;
       log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
       break;
@@ -294,57 +301,6 @@ async function streamWithRetry(
   }
 
   return { fullText, totalTokens, promptTokens, outputTokens, useParsedToolsFallback };
-}
-
-interface UsageOutcome {
-  providerUsage?: CapturedProviderUsage[];
-  costEstimate?: CostEstimate;
-  promptTokens?: number;
-  outputTokens?: number;
-  quota: RateLimitSnapshot | null;
-}
-
-/**
- * End any active usage capture for the provider, estimate turn cost, and read
- * captured rate-limit headers. Shared by the success and error paths of
- * agentLoop so partial cost/quota metadata survives stream failures.
- */
-async function finalizeUsageCapture(
-  providerId: string,
-  modelId: string,
-  promptTokens: number | undefined,
-  outputTokens: number | undefined,
-): Promise<UsageOutcome> {
-  let providerUsage: CapturedProviderUsage[] | undefined;
-  let costEstimate: CostEstimate | undefined;
-  let quota: RateLimitSnapshot | null = null;
-
-  if (providerId === 'anthropic') {
-    const [anthropicUsage, rates] = await Promise.all([
-      endAnthropicUsageCapture(providerId),
-      getAnthropicVerifiedRates(modelId),
-    ]);
-    costEstimate = estimateAnthropicCostVerified(modelId, anthropicUsage, rates);
-    promptTokens = anthropicUsage?.inputTokens ?? promptTokens;
-    outputTokens = anthropicUsage?.outputTokens ?? outputTokens;
-    if (anthropicUsage) {
-      providerUsage = [{ providerId, model: modelId, source: 'sse', usage: anthropicUsage, capturedAt: Date.now() }];
-    }
-    log('stream', 'Anthropic cost estimate', costEstimate);
-  } else {
-    providerUsage = await endProviderUsageCapture(providerId);
-    if (providerUsage.length > 0) {
-      log('stream', 'Provider usage captured', providerUsage);
-    }
-  }
-
-  if (process.env['DEBUG_QUOTA'] !== '0') {
-    quota = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
-    if (quota) log('quota', `Rate limit headers captured`, quota);
-    else log('quota', `No rate limit headers captured for ${providerId}`);
-  }
-
-  return { providerUsage, costEstimate, promptTokens, outputTokens, quota };
 }
 
 export async function agentLoop(

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   setQuotaSnapshot,
   setActiveModel,
+  setContextUsage,
   setOpenAIDailySpend,
   setRetryBanner,
   formatEvalRunStatus,
@@ -12,6 +13,7 @@ function resetState() {
   vi.useRealTimers();
   setQuotaSnapshot(null);
   setActiveModel('', '');
+  setContextUsage(null);
   setOpenAIDailySpend({ state: 'idle', updatedAt: 0 });
   setRetryBanner(null);
 }
@@ -145,6 +147,57 @@ describe('layoutFooterRightRows single-row', () => {
       updatedAt: Date.now(),
     });
     expect(layoutFooterRightRows(80, 1)[0]).toContain('OpenAI spend failed: OpenAI costs HTTP 401');
+  });
+
+  it('shows the exact context tokens and window the provider reported', () => {
+    setActiveModel('openai', 'gpt-4o');
+    setContextUsage({ tokens: 12345, window: 128000 });
+    const status = layoutFooterRightRows(80, 1)[0];
+    // Byte-for-byte: raw integers, no separators, no rounding, no percentage.
+    expect(status).toContain('12345/128000 ctx');
+  });
+
+  it('shows bare token count with no slash when the window is unknown', () => {
+    setActiveModel('openai', 'gpt-4o');
+    setContextUsage({ tokens: 12345, window: null });
+    const status = layoutFooterRightRows(80, 1)[0];
+    expect(status).toContain('12345 ctx');
+    expect(status).not.toContain('/');
+  });
+
+  it('never renders a window of zero as a denominator', () => {
+    setContextUsage({ tokens: 500, window: 0 });
+    const status = layoutFooterRightRows(80, 1)[0];
+    expect(status).toContain('500 ctx');
+    expect(status).not.toContain('500/0');
+  });
+
+  it('shows nothing for context until a count is measured', () => {
+    setActiveModel('openai', 'gpt-4o');
+    // setContextUsage never called (reset to null) — no fabricated estimate.
+    const status = layoutFooterRightRows(80, 1)[0];
+    expect(status).not.toContain('ctx');
+  });
+
+  it('keeps ctx on the primary row but drops it before the model when narrow', () => {
+    setActiveModel('openai', 'gpt-4o');
+    setContextUsage({ tokens: 12345, window: 128000 });
+    // Width fits "openai:gpt-4o" (13) but not "| 12345/128000 ctx".
+    const status = layoutFooterRightRows(20, 1)[0];
+    expect(status).toContain('openai:gpt-4o');
+    expect(status).not.toContain('ctx');
+    expect(status.length).toBeLessThanOrEqual(20);
+  });
+
+  it('drops ctx after quota is already gone but before the model', () => {
+    setActiveModel('openai', 'gpt-4o');
+    setContextUsage({ tokens: 999, window: 128000 });
+    setQuotaSnapshot([{ label: 'R', remaining: 985, limit: 1000, resetMs: 1_287_000 }]);
+    // "openai:gpt-4o | 999/128000 ctx" is exactly 30 chars; quota does not fit.
+    const status = layoutFooterRightRows(30, 1)[0];
+    expect(status).toContain('openai:gpt-4o');
+    expect(status).toContain('999/128000 ctx');
+    expect(status).not.toContain('R  985/1000');
   });
 
   it('drops OpenAI daily spend before dropping model', () => {

@@ -7,11 +7,8 @@ import {
   vi,
   type MockInstance,
 } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
 import type { Interface } from 'readline';
-import { createInteractiveMode, createScriptedMode } from '../../src/cli/session-modes.js';
+import { createInteractiveMode } from '../../src/cli/session-modes.js';
 
 // ---------------------------------------------------------------------------
 // Capture raw-key-session handlers so tests can fire key events directly.
@@ -52,6 +49,7 @@ vi.mock('../../src/cli/chrome/footer-status.js', async (importOriginal) => ({
   setActiveModel: vi.fn(),
   setActiveModelFromString: vi.fn(),
   setQuotaSnapshot: vi.fn(),
+  setContextUsage: vi.fn(),
   setOpenAIDailySpend: vi.fn(),
 }));
 
@@ -149,6 +147,7 @@ import {
   setActiveModel,
   setActiveModelFromString,
   setQuotaSnapshot,
+  setContextUsage,
 } from '../../src/cli/chrome/footer-status.js';
 import { loadCachedQuota, saveQuotaToCache } from '../../src/providers/quota/cache.js';
 import { runConfigCommand } from '../../src/commands/config.js';
@@ -178,123 +177,6 @@ function makeRl(answer = ''): Interface {
 function setTTY(value: boolean | undefined): void {
   Object.defineProperty(process.stdin, 'isTTY', { value, writable: true, configurable: true });
 }
-
-// ---------------------------------------------------------------------------
-// createScriptedMode
-// ---------------------------------------------------------------------------
-
-describe('createScriptedMode', () => {
-  let dir: string;
-  let logSpy: MockInstance;
-
-  beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'freecode-scripted-'));
-    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    rmSync(dir, { recursive: true, force: true });
-    delete process.env['FREECODE_AUTO_CONFIRM'];
-    delete process.env['FREECODE_MAX_TOOL_CALLS'];
-  });
-
-  function writeScript(lines: string[]): string {
-    const path = join(dir, 'script.txt');
-    writeFileSync(path, lines.join('\n'), 'utf-8');
-    return path;
-  }
-
-  it('reads non-empty lines in order then returns null when exhausted', async () => {
-    const mode = createScriptedMode(writeScript(['hello', '', 'world']));
-    expect(await mode.readInput()).toBe('hello');
-    expect(await mode.readInput()).toBe('world');
-    expect(await mode.readInput()).toBeNull();
-  });
-
-  it('decodes a JSON-encoded line as a single multiline message', async () => {
-    const multiline = 'line one\nline two\nline three';
-    const mode = createScriptedMode(writeScript([JSON.stringify(multiline)]));
-    expect(await mode.readInput()).toBe(multiline);
-    expect(await mode.readInput()).toBeNull();
-  });
-
-  it('approves a tool call when the next scripted line approves', async () => {
-    const mode = createScriptedMode(writeScript(['approve']));
-    expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
-  });
-
-  it('denies and forwards the feedback message when the script denies', async () => {
-    const mode = createScriptedMode(writeScript(['deny', 'do it differently']));
-    expect(await mode.confirmToolCall({ name: 'create', args: {} })).toEqual({
-      approved: false,
-      message: 'do it differently',
-    });
-  });
-
-  it('defaults to denial when no scripted choice follows', async () => {
-    const mode = createScriptedMode(writeScript([]));
-    expect(await mode.confirmToolCall({ name: 'shell_exec', args: {} })).toEqual({ approved: false });
-  });
-
-  it.each([
-    ['y', true],
-    ['yes', true],
-    ['a', true],
-    ['n', false],
-    ['no', false],
-    ['d', false],
-  ])('parses scripted choice alias %s', async (alias, approved) => {
-    const mode = createScriptedMode(writeScript([alias]));
-    const result = await mode.confirmToolCall({ name: 'grep', args: {} });
-    expect(result.approved).toBe(approved);
-  });
-
-  it('auto-approves every call when FREECODE_AUTO_CONFIRM=1', async () => {
-    process.env['FREECODE_AUTO_CONFIRM'] = '1';
-    const mode = createScriptedMode(writeScript([]));
-    expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
-    expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
-  });
-
-  it('denies silently once past the tool-call limit', async () => {
-    process.env['FREECODE_AUTO_CONFIRM'] = '1';
-    process.env['FREECODE_MAX_TOOL_CALLS'] = '2';
-    const mode = createScriptedMode(writeScript([]));
-
-    expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
-    expect(await mode.confirmToolCall({ name: 'read', args: {} })).toEqual({ approved: true });
-    const third = await mode.confirmToolCall({ name: 'read', args: {} });
-    expect(third.approved).toBe(false);
-    expect(third.message).toContain('limit of 2');
-  });
-
-  it('exposes current-only model listing and skips stray confirmations', () => {
-    const mode = createScriptedMode(writeScript([]));
-    expect(mode.modelListMode).toBe('current-only');
-    expect(mode.skipStrayConfirmations).toBe(true);
-  });
-
-  it('runEvalMenu prints that /eval is not available in scripted mode', async () => {
-    const mode = createScriptedMode(writeScript([]));
-    await mode.runEvalMenu?.();
-    expect(logSpy.mock.calls.flat().join(' ')).toContain('/eval is not available');
-  });
-
-  it('announces goodbye when input is exhausted', async () => {
-    const mode = createScriptedMode(writeScript([]));
-    await mode.onInputExhausted?.();
-    expect(logSpy.mock.calls.flat().join(' ')).toContain('Goodbye');
-  });
-
-  it('skips the Goodbye message when FREECODE_AUTO_CONFIRM=1', async () => {
-    process.env['FREECODE_AUTO_CONFIRM'] = '1';
-    const mode = createScriptedMode(writeScript([]));
-    await mode.onInputExhausted?.();
-    expect(logSpy).not.toHaveBeenCalled();
-  });
-});
 
 // ---------------------------------------------------------------------------
 // createInteractiveMode — shape check (unchanged from original)
@@ -596,6 +478,46 @@ describe('createInteractiveMode — detailed', () => {
       void mode.onAgentResult!({ providerId: 'anthropic', modelId: 'claude-3', quota: null } as never);
       expect(setActiveModel).toHaveBeenCalledWith('anthropic', 'claude-3');
       expect(saveQuotaToCache).not.toHaveBeenCalled();
+    });
+
+    it('onAgentResult feeds the provider-reported prompt tokens to the ctx slot', () => {
+      const { mode } = makeMode();
+      vi.clearAllMocks();
+      void mode.onAgentResult!({
+        providerId: 'groq',
+        modelId: 'llama-3.3',
+        quota: null,
+        usage: { totalTokens: 4243, promptTokens: 4242, outputTokens: 1 },
+      } as never);
+      // Exactly the reported prompt tokens — no sum, no estimate. Window is null
+      // (unknown model in test store), so the slot will render a bare count.
+      expect(setContextUsage).toHaveBeenCalledWith({ tokens: 4242, window: null });
+    });
+
+    it('onAgentResult blanks the ctx slot for Anthropic (cache-excluded count reads low)', () => {
+      const { mode } = makeMode();
+      vi.clearAllMocks();
+      void mode.onAgentResult!({
+        providerId: 'anthropic',
+        modelId: 'claude-3',
+        quota: null,
+        usage: { totalTokens: 4243, promptTokens: 4242, outputTokens: 1 },
+      } as never);
+      // Even with a reported count, Anthropic is suppressed — input_tokens omits
+      // cache_read/cache_creation, so the number would undercount. Blank, not wrong.
+      expect(setContextUsage).toHaveBeenCalledWith(null);
+    });
+
+    it('onAgentResult leaves the ctx slot untouched when no token count was reported', () => {
+      const { mode } = makeMode();
+      vi.clearAllMocks();
+      void mode.onAgentResult!({
+        providerId: 'groq',
+        modelId: 'llama-3.3',
+        quota: null,
+        usage: { totalTokens: 0 },
+      } as never);
+      expect(setContextUsage).not.toHaveBeenCalled();
     });
 
     it('afterDispatch fires applyModelChange when the model has changed', () => {

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock",
+        "model": "gpt-freecode-test",
+        "mustContain": ["Say PONG"],
+        "systemPromptPresent": true
+      },
+      "response": {
+        "chunks": ["PONG"],
+        "usage": {
+          "promptTokens": 4242,
+          "outputTokens": 1,
+          "totalTokens": 4243
+        }
+      }
+    }
+  ]
+}
