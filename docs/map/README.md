@@ -32,8 +32,8 @@ Format: filename (linecount)
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
   - [`conversation.ts`](agent/conversation.md) (31) — Session Controller
-  - [`loop.ts`](agent/loop.md) (457) — Agent Loop
-  - [`parsed-tools.ts`](agent/parsed-tools.md) (247) — Parsed-Tools Harness
+  - [`loop.ts`](agent/loop.md) (471) — Agent Loop
+  - [`parsed-tools.ts`](agent/parsed-tools.md) (249) — Parsed-Tools Harness
   - [`system-prompt.ts`](agent/system-prompt.md) (31) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
 - `src/agent/tools/`
@@ -56,7 +56,7 @@ Format: filename (linecount)
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
   - [`toggles.ts`](cli/chrome/toggles.md) (100) — Footer Toggle State
 - `src/cli/`
-  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (243) — Command Dispatcher
+  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (245) — Command Dispatcher
 - `src/cli/eval/`
   - [`custom-eval-menu.ts`](cli/eval/custom-eval-menu.md) (361) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval/eval-dots.md) (28) — Eval Status Circle Renderers
@@ -76,8 +76,8 @@ Format: filename (linecount)
   - [`transcript-renderer.ts`](cli/render/transcript-renderer.md) (486) — Agent Transcript Formatting
 - `src/cli/`
   - [`scripted-mode.ts`](cli/scripted-mode.md) (96) — Scripted Session Mode
-  - [`session-modes.ts`](cli/session-modes.md) (416) — Session Modes
-  - [`session-runner.ts`](cli/session-runner.md) (75) — CLI Session Loop
+  - [`session-modes.ts`](cli/session-modes.md) (436) — Session Modes
+  - [`session-runner.ts`](cli/session-runner.md) (77) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
 - `src/cli/tools/`

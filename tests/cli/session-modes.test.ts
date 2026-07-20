@@ -28,6 +28,7 @@ const capturedRawSession = vi.hoisted(() => ({
 vi.mock('../../src/cli/chrome/bottom-ui.js', () => ({
   // Stub all IO / drawing side-effects.
   drawBottomUI: vi.fn(),
+  drawFooter: vi.fn(),
   setupBottomUI: vi.fn(),
   teardownBottomUI: vi.fn(),
   teardownFooterUI: vi.fn(),
@@ -137,6 +138,7 @@ vi.mock('../../src/cli/tools/tool-approval.js', async (importOriginal) => {
 // ---------------------------------------------------------------------------
 import {
   drawBottomUI,
+  drawFooter,
   parkCursorAboveBottomUI,
   setupBottomUI,
   teardownBottomUI,
@@ -518,6 +520,31 @@ describe('createInteractiveMode — detailed', () => {
         usage: { totalTokens: 0 },
       } as never);
       expect(setContextUsage).not.toHaveBeenCalled();
+    });
+
+    it('onStepUsage ticks the ctx slot up mid-turn, repainting on each step', () => {
+      const { mode } = makeMode();
+      vi.clearAllMocks();
+      // A multi-step tool turn resends a longer history each step, so the
+      // reported prompt tokens climb. Each step lands in the footer as it
+      // happens rather than only the last one at end of turn.
+      mode.onStepUsage!({ providerId: 'groq', modelId: 'llama-3.3', promptTokens: 1200 });
+      mode.onStepUsage!({ providerId: 'groq', modelId: 'llama-3.3', promptTokens: 3400 });
+      expect(setContextUsage).toHaveBeenNthCalledWith(1, { tokens: 1200, window: null });
+      expect(setContextUsage).toHaveBeenNthCalledWith(2, { tokens: 3400, window: null });
+      // Repainted per step — the 1 s footer timer would miss any step that
+      // completes inside that second, which is most of them.
+      expect(drawFooter).toHaveBeenCalledTimes(2);
+    });
+
+    it('onStepUsage skips Anthropic rather than blanking on every step', () => {
+      const { mode } = makeMode();
+      vi.clearAllMocks();
+      // The per-step count omits cache_read/cache_creation and would read far
+      // low. Leave the slot to onAgentResult instead of clearing it repeatedly.
+      mode.onStepUsage!({ providerId: 'anthropic', modelId: 'claude-3', promptTokens: 4242 });
+      expect(setContextUsage).not.toHaveBeenCalled();
+      expect(drawFooter).not.toHaveBeenCalled();
     });
 
     it('afterDispatch fires applyModelChange when the model has changed', () => {

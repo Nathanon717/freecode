@@ -22,6 +22,7 @@ interface CommandRuntime {
   beforeAgentCall?(): void | Promise<void>;
   afterAgentCall?(): void | Promise<void>;
   onAgentResult?(result: AgentLoopResult): void | Promise<void>;
+  onStepUsage?(this: void, info: { providerId: string; modelId: string; promptTokens: number }): void;
   beforeScreenClear?(): void | Promise<void>;
   afterScreenClear?(): void | Promise<void>;
   runConfig?(): Promise<void>;

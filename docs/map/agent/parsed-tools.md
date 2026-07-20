@@ -19,7 +19,7 @@ interface ParsedToolsResult {
 
 executeToolCalls(tools: { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { create: AnyCoreTool; edit: AnyCoreTool; shell_exec: AnyCoreTool; read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; }, calls: readonly { ...; }[], idPrefix: string, messages: CoreMessage[]): Promise<...>
 
-runParsedToolsLoop(messages: CoreMessage[], systemPrompt: string, model: LanguageModelV1, confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, readOnly?: boolean | undefined): Promise<...>
+runParsedToolsLoop(messages: CoreMessage[], systemPrompt: string, model: LanguageModelV1, confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, readOnly?: boolean | undefined, onStepUsage?: ((promptTokens: number) => void) | undefined): Promise<...>
 ```
 <!-- END GENERATED EXPORTS -->
 

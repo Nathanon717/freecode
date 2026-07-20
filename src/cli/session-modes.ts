@@ -20,6 +20,7 @@ import { getBannerColor } from "./render/banner.js";
 import type { CliSessionMode } from "./session-runner.js";
 import {
   drawBottomUI,
+  drawFooter,
   parkCursorAboveBottomUI,
   parkCursorInScrollRegion,
   resetSubmittedInputArea,
@@ -117,6 +118,13 @@ function applyModelChange(model: string): void {
   // new model, rather than briefly attributing a stale number to it.
   setContextUsage(null);
   warmTokenizers(model);
+}
+
+// Pushes a provider-reported prompt-token count to the footer, paired with the
+// model's context window when the registry knows it.
+function applyContextUsage(providerId: string, modelId: string, promptTokens: number): void {
+  const entry = getModel(`${providerId}:${modelId}`);
+  setContextUsage({ tokens: promptTokens, window: entry?.contextWindow ?? null });
 }
 
 function applyModelStatus(model: string): void {
@@ -374,9 +382,21 @@ export function createInteractiveMode(
         // finalizeUsageCapture (usage-finalize.ts) sums the cache fields.
         setContextUsage(null);
       } else if (promptTokens !== undefined) {
-        const entry = getModel(`${result.providerId}:${result.modelId}`);
-        setContextUsage({ tokens: promptTokens, window: entry?.contextWindow ?? null });
+        applyContextUsage(result.providerId, result.modelId, promptTokens);
       }
+    },
+    // Per-step tick: a multi-step tool turn resends a longer history each step,
+    // so the context size grows *during* the turn. The footer survives a turn
+    // (teardownBottomUI drops only the input area), so it can be repainted here.
+    onStepUsage: ({ providerId, modelId, promptTokens }) => {
+      // Anthropic's per-step count omits the cache fields and would read far
+      // low; skip rather than blank, leaving onAgentResult's handling in charge.
+      if (providerId === 'anthropic') return;
+      applyContextUsage(providerId, modelId, promptTokens);
+      // Repaint now instead of waiting on the 1 s footer timer: a step that
+      // finishes inside that second would otherwise never show its value, and
+      // the footer would jump straight to the final number as it did before.
+      if (process.stdin.isTTY) drawFooter();
     },
     beforeDispatch: () => {
       if (process.stdin.isTTY) {

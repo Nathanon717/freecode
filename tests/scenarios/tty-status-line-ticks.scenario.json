@@ -1,0 +1,43 @@
+{
+  "name": "tty-status-line-ticks",
+  "description": "The footer ctx count ticks up mid-turn: step 1's prompt tokens are on screen while its tool is still running, then the count rises to step 2's larger history when the turn ends",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "tty-status-line-ticks.llm.json",
+  "config": {
+    "toolConfirmation": "auto"
+  },
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "no ctx count before any turn",
+        "screenAbsent": ["ctx"]
+      },
+      {
+        "name": "type prompt",
+        "send": "Wait a moment",
+        "screenContains": ["> Wait a moment"]
+      },
+      {
+        "name": "submit - step 1's count is on screen while its tool is still running",
+        "send": "\r",
+        "waitFor": "1111 ctx",
+        "waitForMs": 12000,
+        "screenContains": ["1111 ctx"],
+        "screenAbsent": ["5555 ctx", "Done waiting."]
+      },
+      {
+        "name": "tool finishes - the count ticks up to step 2's larger history",
+        "waitFor": "5555 ctx",
+        "waitForMs": 12000,
+        "screenContains": ["Done waiting.", "5555 ctx"],
+        "screenAbsent": ["1111 ctx"]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

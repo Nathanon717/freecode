@@ -34,6 +34,11 @@ interface AgentLoopOptions {
   confirmToolCall?: ConfirmToolCall;
   readOnly?: boolean;
   onPartialResult?: (partial: { providerId: string; modelId: string; quota: RateLimitSnapshot | null }) => void;
+  // Fires at every step boundary with that step's own prompt tokens, so the
+  // footer's context size ticks up while a multi-step tool turn is still
+  // running instead of jumping once at the end. Each step resends a longer
+  // history, so the values climb; the last one equals the turn's final count.
+  onStepUsage?: (info: { providerId: string; modelId: string; promptTokens: number }) => void;
 }
 
 export interface AgentLoopResult {
@@ -89,6 +94,9 @@ async function runFakeLlm(
       totalTokens += generated.usage.totalTokens;
       promptTokens = generated.usage.promptTokens;
       outputTokens = generated.usage.outputTokens;
+      if (promptTokens !== undefined) {
+        options.onStepUsage?.({ providerId, modelId, promptTokens });
+      }
       // runFakeModel already wrote the text to stdout; update renderer state.
       if (generated.text) notifyTranscriptChunk(generated.text);
 
@@ -198,6 +206,12 @@ async function streamWithRetry(
             }
             const stepQuota = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
             if (stepQuota) options.onPartialResult?.({ providerId, modelId, quota: stepQuota });
+            // `event.usage` is this step's own usage (unlike the awaited
+            // `result.usage`, which is summed across steps — see below).
+            const stepPromptTokens = event.usage?.promptTokens;
+            if (stepPromptTokens !== undefined) {
+              options.onStepUsage?.({ providerId, modelId, promptTokens: stepPromptTokens });
+            }
           },
         } : {}),
       });
@@ -406,7 +420,7 @@ export async function agentLoop(
     outputTokens = streamed.outputTokens;
 
     if (streamed.useParsedToolsFallback) {
-      const parsedToolsResult = await runParsedToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale, options.readOnly);
+      const parsedToolsResult = await runParsedToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale, options.readOnly, (t) => options.onStepUsage?.({ providerId, modelId, promptTokens: t }));
       fullText = parsedToolsResult.text.trimEnd();
       totalTokens = parsedToolsResult.totalTokens;
       promptTokens = parsedToolsResult.promptTokens;

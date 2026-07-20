@@ -15,6 +15,7 @@ interface CliSessionMode {
   beforeAgentCall?(this: void): void | Promise<void>;
   afterAgentCall?(this: void): void | Promise<void>;
   onAgentResult?(this: void, result: AgentLoopResult): void | Promise<void>;
+  onStepUsage?(this: void, info: { providerId: string; modelId: string; promptTokens: number }): void;
   beforeScreenClear?(this: void): void | Promise<void>;
   afterScreenClear?(this: void): void | Promise<void>;
   runConfig?(this: void): Promise<void>;

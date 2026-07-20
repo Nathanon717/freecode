@@ -150,6 +150,7 @@ export async function runParsedToolsLoop(
   confirmToolCall?: ConfirmToolCall,
   toolRationale?: boolean,
   readOnly?: boolean,
+  onStepUsage?: (promptTokens: number) => void,
 ): Promise<ParsedToolsResult> {
   const augSystem = buildParsedToolsSystemPrompt(systemPrompt);
   const tools = createTools(confirmToolCall, toolRationale, true, readOnly);
@@ -194,6 +195,7 @@ export async function runParsedToolsLoop(
     totalTokens += usage?.totalTokens ?? 0;
     promptTokens = usage?.promptTokens;
     outputTokens = usage?.completionTokens ?? usage?.outputTokens;
+    if (promptTokens !== undefined) onStepUsage?.(promptTokens);
 
     const calls = parseToolCalls(stepText);
 

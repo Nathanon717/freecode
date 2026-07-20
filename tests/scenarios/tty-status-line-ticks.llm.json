@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock",
+        "model": "gpt-freecode-test",
+        "messageCount": 1,
+        "mustContain": ["Wait a moment"],
+        "toolsAvailable": ["shell_exec"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["I'll wait."],
+        "toolCalls": [
+          { "name": "shell_exec", "args": { "command": "sleep 4" } }
+        ],
+        "usage": { "promptTokens": 1111, "outputTokens": 6, "totalTokens": 1117 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "messageCount": 3,
+        "mustContain": ["<tool_result name=\"shell_exec\">"]
+      },
+      "response": {
+        "text": "Done waiting.",
+        "usage": { "promptTokens": 5555, "outputTokens": 4, "totalTokens": 5559 }
+      }
+    }
+  ]
+}

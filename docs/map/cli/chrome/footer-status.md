@@ -27,7 +27,7 @@ layoutFooterRightRows(width: number, rowBudget: number, now?: number): string[]
 ## Export notes
 
 - `formatEvalRunStatus` — returns the retry-banner string for the footer left side.
-- `setContextUsage` — sets the live conversation's context size for the `ctx` slot. `tokens` is the **provider-reported prompt (input) tokens of the most recent API call** — which already equals the whole history, since every call resends it — so it is *latest-wins, never summed*. `window` is the model's context window (or `null` when unknown). Pass `null` to blank the slot (never measured, model just changed, or the provider's count is known-unreliable — Anthropic today, whose count omits cache tokens). The only writer is `cli/session-modes.ts`'s `onAgentResult`.
+- `setContextUsage` — sets the live conversation's context size for the `ctx` slot. `tokens` is the **provider-reported prompt (input) tokens of the most recent API call** — which already equals the whole history, since every call resends it — so it is *latest-wins, never summed*. `window` is the model's context window (or `null` when unknown). Pass `null` to blank the slot (never measured, model just changed, or the provider's count is known-unreliable — Anthropic today, whose count omits cache tokens). The only writer is `cli/session-modes.ts` — from `onAgentResult` at end of turn and from `onStepUsage` at each step boundary of a multi-step tool turn, so the slot ticks up while the turn runs.
 - `layoutFooterRightRows` — lays out right-side footer content into 1–3 rows; `result[0]` is the bottom row. Primary-row priority is model → ctx → quota (kept longest to shortest); OpenAI spend is secondary and drops first.
 
 ## Read when
