@@ -119,7 +119,7 @@ Format: filename (linecount)
   - [`openai-daily-spend.ts`](providers/openai-daily-spend.md) (181) — OpenAI Daily Spend Footer
   - [`pricing-verifier.ts`](providers/pricing-verifier.md) (123) — Dual-Source Pricing Verifier
   - [`provider-catalog.ts`](providers/provider-catalog.md) (311) — Provider Catalog
-  - [`provider-registry.ts`](providers/provider-registry.md) (457) — Provider Registry
+  - [`provider-registry.ts`](providers/provider-registry.md) (472) — Provider Registry
 - `src/providers/quota/`
   - [`cache.ts`](providers/quota/cache.md) (39) — Quota Cache
   - [`headers.ts`](providers/quota/headers.md) (370) — Provider Rate-Limit Header Parsing

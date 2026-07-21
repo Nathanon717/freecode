@@ -311,6 +311,7 @@ describe('initDynamicProviders live fetching', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.doUnmock('../../src/store/model-list-cache.js');
+    vi.doUnmock('../../src/providers/user-blocklist.js');
     for (const k of [
       'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY',
       'SILICONFLOW_API_KEY', 'NVIDIA_API_KEY', 'LLM7_API_KEY', 'COHERE_API_KEY',
@@ -380,6 +381,62 @@ describe('initDynamicProviders live fetching', () => {
     const or = PROVIDER_REGISTRY.find((p) => p.id === 'openrouter')!;
     expect(or.models).toContainEqual(expect.objectContaining({ id: 'vendor/model-a:free', contextWindow: 4096 }));
     expect(or.models.find((m) => m.id === 'vendor/paid-model')).toBeUndefined();
+  });
+
+  // Regression: openrouter's selectModels only filters `:free`, so without a central
+  // blocklist filter a registry-blocklisted `:free` id kept earning a catalog row on
+  // every launch — the row the purge prompt keeps re-offering to delete.
+  it('openrouter drops registry-blocklisted ids from models and the catalog write', async () => {
+    process.env.OPENROUTER_API_KEY = 'test-key';
+    vi.stubGlobal('fetch', makeFetch({
+      'openrouter.ai': {
+        data: [
+          { id: 'vendor/model-a:free', name: 'Free Model' },
+          { id: 'nvidia/nemotron-3.5-content-safety:free', name: 'Safety' }, // modelIdBlocklist
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
+    await initDynamicProviders();
+
+    const or = PROVIDER_REGISTRY.find((p) => p.id === 'openrouter')!;
+    expect(or.models.map((m) => m.id)).toContain('vendor/model-a:free');
+    expect(or.models.find((m) => m.id === 'nvidia/nemotron-3.5-content-safety:free')).toBeUndefined();
+
+    const orCall = saveProviderCatalogMock.mock.calls.find((c) => c[0] === 'openrouter');
+    expect(orCall).toBeDefined();
+    const savedIds = (orCall![1] as { modelId: string }[]).map((m) => m.modelId);
+    expect(savedIds).not.toContain('nvidia/nemotron-3.5-content-safety:free');
+  });
+
+  // Regression: anthropic's selectModels returns everything and has no registry
+  // blocklist, so a user-blocklisted id came straight back into the catalog on each
+  // launch. finish() now strips the user blocklist before the catalog is written.
+  it('anthropic drops user-blocklisted ids from models and the catalog write', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    vi.doMock('../../src/providers/user-blocklist.js', () => ({
+      getUserBlocklist: () => new Set(['anthropic:claude-opus-4-1-20250805']),
+      addToUserBlocklist: vi.fn(),
+    }));
+    vi.stubGlobal('fetch', makeFetch({
+      'api.anthropic.com': {
+        data: [
+          { id: 'claude-sonnet-4-6', display_name: 'Claude Sonnet 4.6' },
+          { id: 'claude-opus-4-1-20250805', display_name: 'Claude Opus 4.1' }, // user-blocklisted
+        ],
+      },
+    }));
+    const { initDynamicProviders, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
+    await initDynamicProviders();
+
+    const anth = PROVIDER_REGISTRY.find((p) => p.id === 'anthropic')!;
+    expect(anth.models.map((m) => m.id)).toContain('claude-sonnet-4-6');
+    expect(anth.models.find((m) => m.id === 'claude-opus-4-1-20250805')).toBeUndefined();
+
+    const anthCall = saveProviderCatalogMock.mock.calls.find((c) => c[0] === 'anthropic');
+    expect(anthCall).toBeDefined();
+    const savedIds = (anthCall![1] as { modelId: string }[]).map((m) => m.modelId);
+    expect(savedIds).not.toContain('claude-opus-4-1-20250805');
   });
 
   it('openrouter is skipped when no API key is set', async () => {

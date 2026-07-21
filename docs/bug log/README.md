@@ -11,3 +11,4 @@
 - [18-07-2026b.md](18-07-2026b.md) — Every Mistral model 400s mid-session: an empty assistant turn stored in history has neither content nor `tool_calls`
 - [18-07-2026c.md](18-07-2026c.md) — Empty store when launched outside the repo: unpinned `doppler run` resolves its project from cwd, and the wrapper existed only as a PowerShell function
 - [14-07-2026.md](14-07-2026.md) — ✅ **RESOLVED** — terminal resize corrupts the screen (banner reset + mangled footer/input bar). Shipped Option B: resize now reflows the transcript in place (fresh screen redraws the banner responsively); readline's stray resize `>` stripped. See the Resolution section.
+- [21-07-2026.md](21-07-2026.md) — Blocklist-purge prompt returns every launch: live init re-wrote catalog rows for blocklisted models because blocklist filtering wasn't centralized before `saveProviderCatalog`

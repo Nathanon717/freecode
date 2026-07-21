@@ -41,10 +41,11 @@ async function _doInit(): Promise<void> {
   } catch (err) {
     logError("registry", "Unexpected error during model init", err);
   }
-  // Strip the user's own blocklist before any catalog is written, so a permanently
-  // removed model never earns a `models` row again. Done here rather than inside the
-  // per-provider blocklist filters because those only run for live providers, and a
-  // static provider's model would otherwise come straight back from the catalog.
+  // Strip the user's own blocklist from static providers' models before their catalog
+  // is written below, so a permanently removed model never earns a `models` row again.
+  // Live providers already applied both blocklists in runLiveProviderInit's finish()
+  // before writing their catalog; this strip only matters for static providers, whose
+  // catalog is written at the loop below (after this) rather than during init.
   const userBlocklist = getUserBlocklist();
   if (userBlocklist.size > 0) {
     for (const provider of PROVIDER_REGISTRY) {
@@ -140,10 +141,24 @@ async function runLiveProviderInit(
   if (!entry) return;
 
   const deadIdSet = new Set(getDeadIds(providerId));
+  // Blocklists are applied here, centrally, rather than relying on each provider's
+  // selectModels: some (anthropic, openrouter) don't filter at all, so without this
+  // a blocklisted id fetched live would earn a catalog row on every launch — exactly
+  // the row the purge prompt keeps offering to delete. Covers both the registry
+  // blocklist and the user's own, so entry.models (picker) and the catalog agree.
+  const blocklist = entry.modelIdBlocklist ?? [];
+  const exactBlocklist = new Set(entry.modelIdExactBlocklist ?? []);
+  const userBlocklist = getUserBlocklist();
   const finish = (models: ModelConfig[], newIdSet: Set<string>): void => {
     entry.models = spec
       .selectModels(models)
       .filter((m) => !deadIdSet.has(m.id))
+      .filter(
+        (m) =>
+          !exactBlocklist.has(m.id) &&
+          !blocklist.some((b) => m.id.includes(b)) &&
+          !userBlocklist.has(`${providerId}:${m.id}`),
+      )
       .map((m) => ({ ...m, ...(newIdSet.has(m.id) ? { isNew: true } : {}) }));
   };
 
