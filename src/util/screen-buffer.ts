@@ -77,6 +77,45 @@ export function startOverlayEpoch(): void {
   epochStart = displayLineBufferStyled.length;
 }
 
+// Whether any transcript has been printed since the current overlay epoch. False
+// on a fresh/startup screen (only the banner and pre-input chrome are on screen);
+// true once real conversation output exists. The resize handler uses this to tell
+// "the banner is what's showing" (redraw it responsively) from "a transcript is
+// showing" (let the terminal reflow it, don't wipe to the banner).
+export function hasPostEpochContent(): boolean {
+  return displayLineBufferStyled.length > epochStart;
+}
+
+// Returns the last `rowCount` post-epoch transcript lines (styled, ANSI intact),
+// top-padded with blanks when fewer exist. Used to repaint the scroll region on
+// resize when a suggestion overlay was open: the terminal reflows the overlay's
+// cursor-addressed rows into the transcript as stale duplicates, and the buffer
+// holds only the clean transcript (overlay writes carry cursor control and are
+// never buffered), so repainting from it erases them.
+export function getScreenBufferScrollRegionLines(rowCount: number): string[] {
+  const epochLines = displayLineBufferStyled.slice(epochStart);
+  const content = epochLines.slice(Math.max(0, epochLines.length - rowCount));
+  const pad = Math.max(0, rowCount - content.length);
+  return [...Array.from({ length: pad }, () => ''), ...content];
+}
+
+// Builds an ANSI sequence that repaints scroll-region rows 1..rowCount from the
+// clean transcript buffer (see getScreenBufferScrollRegionLines). Autowrap is
+// disabled around the writes so an over-wide reflowed line truncates at `width`
+// rather than wrapping and shifting following rows. Used by the resize handler to
+// scrub stale rows the terminal reflowed in from a cursor-addressed overlay.
+export function composeScrollRegionScrub(rowCount: number, width: number): string {
+  const lines = getScreenBufferScrollRegionLines(rowCount);
+  let out = '\x1b[?7l';
+  for (let i = 0; i < rowCount; i++) {
+    const line = lines[i] ?? '';
+    const visible = stripAnsi(line);
+    const content = visible.length <= width ? line : visible.slice(0, width);
+    out += `\x1b[${i + 1};1H\x1b[2K` + content + (content ? '\x1b[0m' : '');
+  }
+  return out + '\x1b[?7h';
+}
+
 // Returns the lines that should repaint the n overlay rows when a suggestion
 // list closes.  freecode parks the cursor at the bottom of the scroll region
 // before writing output, so each newline scrolls content upward and the

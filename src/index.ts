@@ -80,7 +80,19 @@ async function main() {
   // scripted retry-status-file writer below override this when they apply.
   registerRetryBannerSink(createStdoutRetrySink());
 
+  // freecode renders its own bottom UI and only uses readline for rl.question
+  // (menus/approval). Node's readline installs its own 'resize' listener that
+  // refreshes the line editor even while paused — emitting a stray `> ` prompt and
+  // an `\x1b[0J` erase across the reflowed transcript on every resize. freecode's
+  // own resize handler is already registered (bottom-ui imported above), so diff
+  // the listener set and drop only the one readline just added.
+  const resizeListenersBefore = process.stdout.listeners('resize');
   const rl = createInterface({ input: process.stdin, output: process.stdout });
+  for (const listener of process.stdout.listeners('resize')) {
+    if (!resizeListenersBefore.includes(listener)) {
+      process.stdout.removeListener('resize', listener as () => void);
+    }
+  }
   const projectRoot = process.cwd();
   const session = new Conversation(projectRoot);
   let selectedModel = '';

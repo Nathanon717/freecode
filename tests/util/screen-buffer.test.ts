@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest';
-import { installScreenBuffer, getScreenBufferDisplayLinesForOverlay, startOverlayEpoch } from '../../src/util/screen-buffer.js';
+import { installScreenBuffer, getScreenBufferDisplayLinesForOverlay, getScreenBufferScrollRegionLines, hasPostEpochContent, startOverlayEpoch } from '../../src/util/screen-buffer.js';
 
 // The buffer hooks process.stdout.write once per module instance. vitest isolates
 // modules per test file, so this file owns its own buffer instance. We write
@@ -24,6 +24,31 @@ describe('screen buffer', () => {
     process.stdout.write(`${token}\n`);
     const occurrences = getScreenBufferDisplayLinesForOverlay(19, 19).filter(l => l === token).length;
     expect(occurrences).toBe(1);
+  });
+
+  describe('hasPostEpochContent', () => {
+    it('is false right after the epoch is marked, true once output follows', () => {
+      installScreenBuffer();
+      startOverlayEpoch();
+      expect(hasPostEpochContent()).toBe(false);
+      process.stdout.write(`sb-hpe-${Math.random().toString(36).slice(2)}\n`);
+      expect(hasPostEpochContent()).toBe(true);
+    });
+  });
+
+  describe('getScreenBufferScrollRegionLines', () => {
+    it('returns the last N post-epoch lines, top-padded with blanks', () => {
+      installScreenBuffer();
+      startOverlayEpoch();
+      const a = `sb-srl-a-${Math.random().toString(36).slice(2)}`;
+      const b = `sb-srl-b-${Math.random().toString(36).slice(2)}`;
+      process.stdout.write(`${a}\n${b}\n`);
+      const lines = getScreenBufferScrollRegionLines(5);
+      expect(lines).toHaveLength(5);
+      expect(lines.slice(0, 3)).toEqual(['', '', '']); // top padding
+      expect(lines[3]).toBe(a);
+      expect(lines[4]).toBe(b);
+    });
   });
 
   describe('getScreenBufferDisplayLinesForOverlay', () => {

@@ -16,7 +16,7 @@ Use this directory as the project handbook. Generated reference pages report fac
 - [Codebase map](map/README.md): agent-oriented source navigation.
 - [PTY session](pty-session.md): drive the live TUI from the shell, exactly as a human would.
   <!-- BEGIN GENERATED PTY QUICKSTART REF -->
-For usage only, read lines 1–71.
+For usage only, read lines 1–72.
 <!-- END GENERATED PTY QUICKSTART REF -->
 - [Session logs](sessions/README.md): optional records of substantial feature work.
 - [New device setup](device-setup.md): install Doppler, link the project, and get all API keys + DB sync in one step.

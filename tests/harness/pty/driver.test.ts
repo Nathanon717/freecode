@@ -129,6 +129,31 @@ describe('createPtyDriver', () => {
     expect(found).toBe(true);
   }, 15000);
 
+  it('resize delivers SIGWINCH and resizes the emulator viewport', async () => {
+    // The subprocess echoes its terminal size on start and on every SIGWINCH.
+    const script = [
+      "process.stdout.write('SIZE:'+process.stdout.columns+'x'+process.stdout.rows+'\\n');",
+      "process.stdout.on('resize',()=>process.stdout.write('SIZE:'+process.stdout.columns+'x'+process.stdout.rows+'\\n'));",
+      'setInterval(()=>{}, 60000);',
+    ].join('');
+    driver = createPtyDriver({
+      command: NODE,
+      args: ['-e', script],
+      cwd: __dirname,
+      env: { ...process.env },
+      cols: 80,
+      rows: 24,
+    });
+    expect(await driver.waitForText('SIZE:80x24', 5000)).toBe(true);
+    driver.resize(100, 30);
+    // The app receives a real SIGWINCH with the new dimensions...
+    expect(await driver.waitForText('SIZE:100x30', 5000)).toBe(true);
+    await driver.settle(200);
+    // ...and the emulator viewport widened, so a snapshot exposes the new columns.
+    driver.send('');
+    expect(driver.snapshot().join('\n')).toContain('SIZE:100x30');
+  }, 15000);
+
   it('second kill is safe after process already exited', async () => {
     driver = createPtyDriver({
       command: NODE,

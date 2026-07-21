@@ -185,6 +185,11 @@ async function runServer(id: string, cols: number, rows: number): Promise<void> 
         if (msg.waitFor) await driver.waitForText(msg.waitFor as string, 60_000);
         await driver.settle((msg.quietMs as number) ?? 350);
         respond({ screen: driver.snapshot(), exited: driver.isExited() });
+      } else if (msg.type === 'resize') {
+        if (driver.isExited()) { respond({ error: 'exited', exitCode: driver.exitCode() }); return; }
+        driver.resize(msg.cols as number, msg.rows as number);
+        await driver.settle((msg.quietMs as number) ?? 350);
+        respond({ screen: driver.snapshot(), exited: driver.isExited() });
       } else if (msg.type === 'stop') {
         clearInterval(idleTimer);
         respond({ ok: true });
@@ -316,6 +321,13 @@ async function cmdSend(
   printScreen(res.screen as string[], opts.cols);
 }
 
+async function cmdResize(cols: number, rows: number): Promise<void> {
+  const id = resolveId();
+  const res = await rpc(id, { type: 'resize', cols, rows });
+  if ('error' in res) { console.error('Error:', res.error); process.exit(1); }
+  printScreen(res.screen as string[], cols);
+}
+
 async function cmdScreen(cols: number): Promise<void> {
   const id = resolveId();
   const res = await rpc(id, { type: 'screen' });
@@ -409,6 +421,7 @@ async function main(): Promise<void> {
       return cmdSend(keyStr, { waitFor, quietMs, cols });
     }
     case 'screen': return cmdScreen(cols);
+    case 'resize': return cmdResize(cols, rows);
     case 'stop':   return cmdStop();
     default:
       console.log(
@@ -417,6 +430,7 @@ async function main(): Promise<void> {
         '  pty goto <screen> [--screen] [--cols N] [--rows N]\n' +
         '  pty send <keys> [--wait-for <text>] [--quiet-ms N]\n' +
         '  pty screen\n' +
+        '  pty resize --cols N --rows N\n' +
         '  pty stop\n' +
         '\n' +
         'Key aliases: enter/ent, esc/escape, up, down, left, right, space, tab, backspace/back\n' +

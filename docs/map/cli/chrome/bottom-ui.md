@@ -66,7 +66,12 @@ The 1 s refresh timer caches the last footer bytes written (`lastFooterOutput`) 
 
 ## Resize
 
-Debounces 32 ms, then recomputes the scroll region: invalidates the suggestion overlay, resets footer/input row counts to defaults, redraws the banner at the new width, and re-establishes the region and bottom UI. Input buffer and conversation memory persist across resize.
+Debounces 32 ms, then re-lays-out based on **what is currently showing** (via `hasPostEpochContent` from `screen-buffer.ts`):
+
+- **Fresh/startup — no transcript yet, banner is on screen:** wipe and redraw the banner at the new width (`clearAndRedrawBanner`). Clean and responsive (compact/full swap), with no stale bottom-bar cells left to reflow into duplicates.
+- **A transcript is showing (or a pinned menu owns the screen):** do **not** wipe. Reset the scroll region to full so the footer repositions from the new geometry, then let the terminal reflow the existing transcript itself — whatever was showing stays put at the new width. A pinned picker repaints itself via `setOnResizeCallback`. If a suggestion overlay was open, its cursor-addressed rows reflow into the transcript as stale duplicates, so the scroll region is repainted from the screen buffer (clean transcript only) to scrub them.
+
+Row counts are reset and the scroll region re-established from the new dimensions in both cases. Input buffer and conversation memory persist across resize. Note: `index.ts` strips readline's own `'resize'` listener right after `createInterface`, or it would scribble a stray `> ` and an `\x1b[0J` erase across the reflowed transcript on every resize.
 
 ## Cleanup
 

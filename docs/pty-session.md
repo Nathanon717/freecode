@@ -35,6 +35,7 @@ pty stop
 | `pty goto <screen> [--screen]` | BFS-navigate to a named screen; `--screen` also prints it |
 | `pty send <keys> [--wait-for <text>]` | Write keystrokes, print the screen after output settles |
 | `pty screen` | Snapshot the current screen without sending input |
+| `pty resize --cols N --rows N` | Resize the PTY (real SIGWINCH), print the reflowed screen |
 | `pty stop` | Kill the daemon and clean up |
 
 **Screens for `goto`:** `home`, `models`, `config`, `eval`
@@ -114,6 +115,10 @@ Writes keystrokes to the running session and prints the screen after output sett
 ### `screen`
 
 Snapshot the current screen without sending any input. Useful for confirming state after an async operation completes.
+
+### `resize --cols N --rows N`
+
+Resizes the live PTY (and the emulator viewport) to the given dimensions, delivering a real SIGWINCH to the app exactly as dragging a terminal edge would, then prints the reflowed screen. Use it to verify responsive layout and that a resize preserves whatever was on screen (transcript, menu) rather than resetting it. Both `--cols` and `--rows` default to 80/24 if omitted, so pass the ones you want to change.
 
 ### `stop`
 

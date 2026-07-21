@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { stripAnsi, getScreenBufferDisplayLinesForOverlay, startOverlayEpoch } from '../../util/screen-buffer.js';
+import { stripAnsi, getScreenBufferDisplayLinesForOverlay, composeScrollRegionScrub, hasPostEpochContent, startOverlayEpoch } from '../../util/screen-buffer.js';
 import { getBannerColor, clearAndRedrawBanner } from '../render/banner.js';
 import { composeToggleBar, toggleBarWidth } from './toggles.js';
 import {
@@ -440,12 +440,13 @@ process.stdout.on('resize', () => {
   _resizeDebounce = setTimeout(() => {
     _resizeDebounce = null;
 
-    // Invalidate stale overlay state — all absolute row positions changed.
+    // Invalidate stale overlay state — all absolute row positions changed. Note
+    // whether an overlay was open so the stale rows it left can be scrubbed below.
+    const hadOverlay = suggestionOverlayRows > 0;
     suggestionOverlayRows = 0;
     suggestionOverlayRestoreLines = [];
 
-    // The screen is about to be cleared and redrawn; force the footer repaint below
-    // rather than let the cached-output skip suppress it.
+    // Force the footer repaint below rather than let the cached-output skip suppress it.
     lastFooterOutput = null;
 
     // Reset geometry so drawFooter/drawInputArea recompute from new dimensions.
@@ -453,13 +454,35 @@ process.stdout.on('resize', () => {
     const reserved = inputUIActive ? footerRowCount + 2 + inputLineCount() : footerRowCount;
     lastReservedRows = reserved;
 
-    // Clear visible screen (scrollback preserved) and redraw banner at new width.
-    clearAndRedrawBanner();
+    // Two cases, driven by whether any transcript has been printed:
+    //  - Fresh/startup (no transcript yet): the banner is what's showing. Wipe and
+    //    redraw it at the new width — clean and responsive (compact/full switch),
+    //    with no stale bottom-bar cells left to reflow into duplicates.
+    //  - A transcript is showing: do NOT wipe. Reset the scroll region to full so
+    //    the footer repositions from the new geometry, then let the terminal reflow
+    //    the existing transcript itself. Whatever was showing (transcript, or a
+    //    pinned menu via the callback below) stays put, re-laid-out at the new width.
+    // A pinned menu always owns the whole screen via its callback, so it takes the
+    // reflow path regardless — its repaint clears and redraws the full region.
+    const showingTranscript = hasPostEpochContent() || _onResizeCallback !== null;
+    if (!showingTranscript) {
+      clearAndRedrawBanner();
+      setScrollRegion(1, rows() - reserved);
+      drawBottomUI();
+      return;
+    }
 
-    // Re-establish scroll region before drawing (drawFooter only writes a new
-    // scroll-region sequence when footerRowCount changes, so we must set it here
-    // after clearAndRedrawBanner reset it to full-screen with \x1b[r).
+    resetScrollRegion();
     setScrollRegion(1, rows() - reserved);
+
+    // A suggestion overlay draws over the transcript with cursor-addressed writes,
+    // which the terminal reflows into the scroll region as stale duplicate rows.
+    // Repaint the scroll region from the screen buffer (clean transcript only — the
+    // overlay was never buffered) to erase them. Skipped when a pinned menu owns the
+    // screen: its callback repaints the whole region anyway.
+    if (hadOverlay && !_onResizeCallback) {
+      process.stdout.write(composeScrollRegionScrub(rows() - reserved, cols()));
+    }
 
     drawBottomUI();
 

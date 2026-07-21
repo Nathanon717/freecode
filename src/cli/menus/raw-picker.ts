@@ -212,8 +212,9 @@ export async function runRawPicker<T = void>(rl: Interface, opts: RawPickerOptio
   suspendFooterTimer();
   process.stdout.write('\x1b[?25l');
 
-  // After a resize the bottom-ui handler clears the screen and redraws the
-  // banner; register a callback so pinned pickers repaint on top of that.
+  // On resize the bottom-ui handler re-establishes the scroll region but no
+  // longer wipes the screen, so register a callback that repaints the whole
+  // picker (rowCount = 0 forces it to clear the full region and redraw).
   if (opts.pinToTop) setOnResizeCallback(() => { rowCount = 0; redraw(); });
 
   if (!opts.skipScrollClear && !opts.pinToTop) {

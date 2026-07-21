@@ -51,7 +51,7 @@ Format: filename (linecount)
 - `src/cli/`
   - [`blocklist-purge-prompt.ts`](cli/blocklist-purge-prompt.md) (82) — Startup Blocklist Purge Confirmation
 - `src/cli/chrome/`
-  - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (477) — Bottom Terminal UI
+  - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (500) — Bottom Terminal UI
   - [`footer-status.ts`](cli/chrome/footer-status.md) (215) — Footer Status State and Formatters
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
   - [`toggles.ts`](cli/chrome/toggles.md) (100) — Footer Toggle State
@@ -68,9 +68,9 @@ Format: filename (linecount)
   - [`list-menu.ts`](cli/menus/list-menu.md) (367) — Shared Tabbed List Menu
   - [`menu-shell.ts`](cli/menus/menu-shell.md) (47) — Menu Lifecycle Chrome
   - [`model-screen.ts`](cli/menus/model-screen.md) (236) — Model Picker Screen Renderers
-  - [`raw-picker.ts`](cli/menus/raw-picker.md) (240) — Shared Raw-Mode Picker
+  - [`raw-picker.ts`](cli/menus/raw-picker.md) (241) — Shared Raw-Mode Picker
 - `src/cli/render/`
-  - [`banner.ts`](cli/render/banner.md) (123) — Startup Banner
+  - [`banner.ts`](cli/render/banner.md) (124) — Startup Banner
   - [`markdown-renderer.ts`](cli/render/markdown-renderer.md) (480) — Markdown Renderer
   - [`transcript-options.ts`](cli/render/transcript-options.md) (66) — Transcript Stream + Options
   - [`transcript-renderer.ts`](cli/render/transcript-renderer.md) (486) — Agent Transcript Formatting
@@ -98,7 +98,7 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (99) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (79) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (203) — Eval Subprocess Runner
-- [`index.ts`](index.md) (186) — CLI Entry Point
+- [`index.ts`](index.md) (198) — CLI Entry Point
 - [`logger.ts`](logger.md) (53) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (120) — Adapter HTTP Retry/Backoff
@@ -151,7 +151,7 @@ Format: filename (linecount)
   - [`keyboard.ts`](util/keyboard.md) (5) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) (39) — LCS Line Diff
   - [`line-numbers.ts`](util/line-numbers.md) (14) — Line-Number Gutter
-  - [`screen-buffer.ts`](util/screen-buffer.md) (95) — Screen Buffer
+  - [`screen-buffer.ts`](util/screen-buffer.md) (134) — Screen Buffer
   - [`text-encoding.ts`](util/text-encoding.md) (24) — Text Encoding Helpers
   - [`wrap-rows.ts`](util/wrap-rows.md) (49) — Wrapped-Row Math
 <!-- END GENERATED MAP STRUCTURE -->

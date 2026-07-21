@@ -17,6 +17,8 @@ export interface PtyDriverOptions {
 
 export interface PtyDriver {
   send(data: string): void;
+  /** Resize the PTY and the emulator viewport together, mirroring a real SIGWINCH. */
+  resize(cols: number, rows: number): void;
   raw(): string;
   isExited(): boolean;
   exitCode(): number | null;
@@ -36,12 +38,13 @@ interface PtyProcess {
   onData(cb: (d: string) => void): void;
   onExit(cb: (e: { exitCode: number }) => void): void;
   write(data: string): void;
+  resize(cols: number, rows: number): void;
   kill(): void;
 }
 
 interface XtermLine { translateToString(trim: boolean): string; }
 interface XtermBuffer { baseY: number; length: number; getLine(i: number): XtermLine | null; }
-interface XtermTerminal { write(data: string, cb?: () => void): void; buffer: { active: XtermBuffer }; }
+interface XtermTerminal { write(data: string, cb?: () => void): void; resize(cols: number, rows: number): void; buffer: { active: XtermBuffer }; }
 
 export function createPtyDriver(opts: PtyDriverOptions): PtyDriver {
   // Required lazily so importing this module never crashes when the native
@@ -49,8 +52,8 @@ export function createPtyDriver(opts: PtyDriverOptions): PtyDriver {
   const pty = require('node-pty') as { spawn: (...args: unknown[]) => PtyProcess };
   const { Terminal } = require('@xterm/headless') as { Terminal: new (opts: Record<string, unknown>) => XtermTerminal };
 
-  const cols = opts.cols ?? 80;
-  const rows = opts.rows ?? 24;
+  let cols = opts.cols ?? 80;
+  let rows = opts.rows ?? 24;
   const term: XtermTerminal = new Terminal({ cols, rows, allowProposedApi: true });
 
   const proc: PtyProcess = pty.spawn(opts.command, opts.args, {
@@ -95,6 +98,12 @@ export function createPtyDriver(opts: PtyDriverOptions): PtyDriver {
 
   return {
     send: (data: string) => proc.write(data),
+    resize: (nextCols: number, nextRows: number) => {
+      cols = nextCols;
+      rows = nextRows;
+      term.resize(nextCols, nextRows);
+      proc.resize(nextCols, nextRows);
+    },
     raw: () => raw,
     isExited: () => exited,
     exitCode: () => code,

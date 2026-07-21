@@ -24,7 +24,8 @@ export function clearEntireTerminal() {
   process.stdout.write("\x1b[0m\x1b[r\x1b[H\x1b[2J\x1b[3J\x1b[H");
 }
 
-// Like redrawBanner() but without erasing scrollback — safe to call on resize.
+// Like redrawBanner() but preserves scrollback (`\x1b[2J` not `\x1b[3J`) — safe to
+// call on a resize where the banner is the only thing on screen (no transcript yet).
 export function clearAndRedrawBanner() {
   process.stdout.write("\x1b[0m\x1b[r\x1b[H\x1b[2J\x1b[H");
   const cols = process.stdout.columns ?? 80;
