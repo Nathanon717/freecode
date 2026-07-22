@@ -1,0 +1,45 @@
+{
+  "name": "tty-resize-eval-menu",
+  "description": "A pinned full-screen menu (the /eval picker) repaints itself at the new width on resize via the onResize callback, so the menu chrome and rows stay intact rather than resetting to the banner",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /eval",
+        "send": "/eval",
+        "screenContains": [
+          "> /eval"
+        ]
+      },
+      {
+        "name": "submit — the eval picker opens",
+        "send": "\r",
+        "waitFor": "Esc close",
+        "screenContains": [
+          "Custom",
+          "HumanEval",
+          "cereal-soup"
+        ]
+      },
+      {
+        "name": "widen to 100 cols — the pinned menu repaints at the new width",
+        "resize": { "cols": 100, "rows": 28 },
+        "screenContains": [
+          "Custom",
+          "HumanEval",
+          "cereal-soup",
+          "Esc close"
+        ],
+        "screenAbsent": [
+          ".d888"
+        ],
+        "quietMs": 500
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

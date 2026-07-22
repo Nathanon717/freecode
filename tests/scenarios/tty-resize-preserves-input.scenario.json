@@ -1,0 +1,37 @@
+{
+  "name": "tty-resize-preserves-input",
+  "description": "Typed-but-unsubmitted input survives a resize: the input buffer is redrawn from state at the new width across both a widen and a narrow, so the text is never lost",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type text without submitting",
+        "send": "keep this text",
+        "screenContains": [
+          "> keep this text"
+        ]
+      },
+      {
+        "name": "widen to 110 cols — input text still on the prompt line",
+        "resize": { "cols": 110, "rows": 30 },
+        "screenContains": [
+          "> keep this text"
+        ],
+        "quietMs": 500
+      },
+      {
+        "name": "narrow to 60 cols — input text still on the prompt line",
+        "resize": { "cols": 60, "rows": 20 },
+        "screenContains": [
+          "> keep this text"
+        ],
+        "quietMs": 500
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

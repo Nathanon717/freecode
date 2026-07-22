@@ -51,7 +51,7 @@ Format: filename (linecount)
 - `src/cli/`
   - [`blocklist-purge-prompt.ts`](cli/blocklist-purge-prompt.md) (82) — Startup Blocklist Purge Confirmation
 - `src/cli/chrome/`
-  - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (500) — Bottom Terminal UI
+  - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (498) — Bottom Terminal UI
   - [`footer-status.ts`](cli/chrome/footer-status.md) (215) — Footer Status State and Formatters
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
   - [`toggles.ts`](cli/chrome/toggles.md) (100) — Footer Toggle State
@@ -151,7 +151,7 @@ Format: filename (linecount)
   - [`keyboard.ts`](util/keyboard.md) (5) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) (39) — LCS Line Diff
   - [`line-numbers.ts`](util/line-numbers.md) (14) — Line-Number Gutter
-  - [`screen-buffer.ts`](util/screen-buffer.md) (134) — Screen Buffer
+  - [`screen-buffer.ts`](util/screen-buffer.md) (176) — Screen Buffer
   - [`text-encoding.ts`](util/text-encoding.md) (24) — Text Encoding Helpers
   - [`wrap-rows.ts`](util/wrap-rows.md) (49) — Wrapped-Row Math
 <!-- END GENERATED MAP STRUCTURE -->

@@ -1,0 +1,36 @@
+{
+  "name": "tty-resize-banner-narrow",
+  "description": "On a fresh screen, narrowing below the 82-col boundary redraws the full banner as the compact banner responsively; no leftover full-banner cells and the prompt stays intact",
+  "tty": {
+    "cols": 100,
+    "rows": 30,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "fresh 100 cols shows the full banner",
+        "screenContains": [
+          ".d888",
+          "> / for commands"
+        ],
+        "screenAbsent": [
+          "//    freecode    //"
+        ]
+      },
+      {
+        "name": "narrow to 70 cols — compact banner replaces full, no leftover full-banner art",
+        "resize": { "cols": 70, "rows": 20 },
+        "screenContains": [
+          "//    freecode    //",
+          "> / for commands"
+        ],
+        "screenAbsent": [
+          ".d888"
+        ],
+        "quietMs": 500
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

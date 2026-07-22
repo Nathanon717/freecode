@@ -5,6 +5,11 @@ export interface TtyStep {
   // Keystrokes to send before asserting. Supports raw control chars, e.g.
   // "\t" (tab), "\r" (enter), "" (Ctrl-C).
   send?: string;
+  // Resize the PTY (and emulator viewport) to these dimensions before asserting,
+  // delivering a real SIGWINCH exactly as dragging a terminal edge would. Applied
+  // after `send`, so a step can type then resize. The default settle window covers
+  // the app's 32 ms resize debounce; raise `quietMs` for heavier reflows.
+  resize?: { cols: number; rows: number };
   // Wait until this text appears in the raw stream before asserting.
   waitFor?: string;
   // Override the per-step waitFor budget (ms). Default 8000. Raise this for
@@ -14,6 +19,11 @@ export interface TtyStep {
   // Substrings that must / must not appear on the rendered viewport.
   screenContains?: string[];
   screenAbsent?: string[];
+  // Substrings that must appear an exact number of times on the viewport. Use
+  // this to catch stale duplicates that substring presence/absence can't — e.g.
+  // a resize leaving a second, ghost copy of the input frame ("> " prompt) on
+  // screen, where the correct state has exactly one.
+  screenCounts?: Record<string, number>;
   // Override the per-step quiet-settle window (ms).
   quietMs?: number;
 }
@@ -100,6 +110,7 @@ export async function runTtyScenario(opts: {
       const failsBefore = failures.length;
 
       if (step.send) driver.send(step.send);
+      if (step.resize) driver.resize(step.resize.cols, step.resize.rows);
 
       // Explicit waitFor: required, 8s budget by default (override via waitForMs).
       if (step.waitFor) {
@@ -128,6 +139,12 @@ export async function runTtyScenario(opts: {
       for (const needle of step.screenAbsent ?? []) {
         if (screen.includes(needle)) {
           failures.push(`[${label}] screen unexpectedly contains: ${JSON.stringify(needle)}`);
+        }
+      }
+      for (const [needle, want] of Object.entries(step.screenCounts ?? {})) {
+        const got = needle ? screen.split(needle).length - 1 : 0;
+        if (got !== want) {
+          failures.push(`[${label}] screen has ${got}×${JSON.stringify(needle)}, expected ${want}`);
         }
       }
       phase(label, ts, failsBefore);

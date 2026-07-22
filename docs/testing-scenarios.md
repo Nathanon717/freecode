@@ -262,9 +262,11 @@ Omit `turns`/`expect`; the `tty` block fully describes the run.
 - `steps[]`: Ordered interactions, each evaluated after the screen settles.
   - `name`: Label used in failure messages.
   - `send`: Keystrokes to send. Control chars use JSON escapes: `"\t"` (Tab), `"\r"` (Enter), `"\u0003"` (Ctrl-C). The interactive input handler only acts on control keys when they arrive as a standalone chunk — always send typed text and a control key as **separate steps** (e.g. `{"send": "/model"}` then `{"send": "\r"}`). Bundling them (e.g. `"/model\r"`) silently drops the control character.
+  - `resize`: `{ "cols": N, "rows": N }` — resize the PTY (and emulator viewport) before asserting, delivering a real SIGWINCH exactly as dragging a terminal edge would. Applied **after** `send`, so a step can type then resize. The default settle window covers the app's 32 ms resize debounce; raise `quietMs` for heavier reflows. Used by the `tty-resize-*` scenarios to pin the resize behavior (banner responsiveness, transcript reflow-in-place, input/overlay/menu survival). The stale duplicate-footer block after a transcript-path resize *is* expressible with `screenCounts` (assert the prompt appears exactly once); `tty-resize-preserves-transcript` guards it that way. The stray-`>` accumulation in scrollback is still not viewport-expressible and remains under manual/PTY coverage (see `docs/bug log/14-07-2026.md` and `docs/bug log/22-07-2026.md`).
   - `waitFor`: Optional substring to await in the raw stream before asserting.
   - `waitForMs`: Override the `waitFor` budget (default `8000`). Raise it for heavy steps (e.g. running a real subprocess) that can stall under the CPU contention of many TTY scenarios running in parallel.
   - `screenContains` / `screenAbsent`: Substrings that must / must not appear on the rendered viewport.
+  - `screenCounts`: `{ "<substring>": N }` — each substring must appear exactly `N` times on the viewport. Catches stale duplicates that presence/absence can't, e.g. a resize leaving a second ghost copy of the input frame (`"> / for commands"` should count `1`, not `2`).
   - `quietMs`: Override the per-step settle window (default `350`).
 - `exit`: Keystrokes sent after the last step to end the process. Default `"\u0003"` (Ctrl-C); the CLI has no `/exit` command.
 - `expectExit`: Require the process to exit after `exit`.

@@ -1,0 +1,59 @@
+{
+  "name": "tty-resize-preserves-transcript",
+  "description": "Regression: once a transcript has printed, resizing reflows it in place and never wipes it back to the banner, and leaves exactly one input frame (no stale ghost copy of the prompt from the pre-resize width). Prints /help output, then resizes and asserts the transcript survives, no banner is redrawn over it, and the prompt appears exactly once",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type /help",
+        "send": "/help",
+        "screenContains": [
+          "> /help"
+        ]
+      },
+      {
+        "name": "submit — /help prints its command list into the transcript",
+        "send": "\r",
+        "screenContains": [
+          "Available commands",
+          "/renderer"
+        ]
+      },
+      {
+        "name": "widen to 100 cols — transcript reflows in place, banner is NOT redrawn over it",
+        "resize": { "cols": 100, "rows": 30 },
+        "screenContains": [
+          "Available commands",
+          "/renderer",
+          "> / for commands"
+        ],
+        "screenAbsent": [
+          ".d888",
+          "//    freecode    //"
+        ],
+        "quietMs": 500
+      },
+      {
+        "name": "narrow to 70 cols — transcript still present (bottom line stays visible), still no banner wipe, exactly one input frame (no ghost)",
+        "resize": { "cols": 70, "rows": 22 },
+        "screenContains": [
+          "diagnostic logging",
+          "> / for commands"
+        ],
+        "screenAbsent": [
+          ".d888",
+          "//    freecode    //"
+        ],
+        "screenCounts": {
+          "> / for commands": 1
+        },
+        "quietMs": 500
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

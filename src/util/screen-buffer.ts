@@ -86,26 +86,68 @@ export function hasPostEpochContent(): boolean {
   return displayLineBufferStyled.length > epochStart;
 }
 
-// Returns the last `rowCount` post-epoch transcript lines (styled, ANSI intact),
-// top-padded with blanks when fewer exist. Used to repaint the scroll region on
-// resize when a suggestion overlay was open: the terminal reflows the overlay's
-// cursor-addressed rows into the transcript as stale duplicates, and the buffer
-// holds only the clean transcript (overlay writes carry cursor control and are
-// never buffered), so repainting from it erases them.
-export function getScreenBufferScrollRegionLines(rowCount: number): string[] {
+// Splits a styled line into display rows of at most `width` visible cells,
+// carrying the open SGR codes across each break so colors survive the wrap (and
+// closing them at the row end so no style bleeds into the cleared tail). A line
+// that already fits returns as a single row.
+const SGR_SEQ = /\x1b\[[0-9;]*m/y;
+export function wrapStyledToRows(styled: string, width: number): string[] {
+  if (width <= 0 || stripAnsi(styled).length <= width) return [styled];
+  const rows: string[] = [];
+  const open: string[] = [];
+  let cur = '';
+  let col = 0;
+  let i = 0;
+  while (i < styled.length) {
+    SGR_SEQ.lastIndex = i;
+    const m = SGR_SEQ.exec(styled);
+    if (m) {
+      const seq = m[0];
+      cur += seq;
+      if (seq === '\x1b[0m' || seq === '\x1b[m') open.length = 0;
+      else open.push(seq);
+      i += seq.length;
+      continue;
+    }
+    if (col === width) {
+      rows.push(cur + (open.length ? '\x1b[0m' : ''));
+      cur = open.join('');
+      col = 0;
+    }
+    const ch = String.fromCodePoint(styled.codePointAt(i)!);
+    cur += ch;
+    col += 1;
+    i += ch.length;
+  }
+  rows.push(cur + (open.length ? '\x1b[0m' : ''));
+  return rows;
+}
+
+// Returns the last `rowCount` post-epoch transcript display lines (styled, ANSI
+// intact), top-padded with blanks when fewer exist. When `width` is given, over-
+// wide logical lines are wrapped into multiple display rows first, so the result
+// is exactly what those rows occupy on screen. Used to repaint the scroll region
+// on resize: the terminal reflows cursor-addressed chrome (the input frame, and a
+// suggestion overlay) into the transcript as stale duplicates, and the buffer
+// holds only the clean transcript, so repainting from it erases them.
+export function getScreenBufferScrollRegionLines(rowCount: number, width?: number): string[] {
   const epochLines = displayLineBufferStyled.slice(epochStart);
-  const content = epochLines.slice(Math.max(0, epochLines.length - rowCount));
+  const display = width
+    ? epochLines.flatMap(l => wrapStyledToRows(l, width))
+    : epochLines;
+  const content = display.slice(Math.max(0, display.length - rowCount));
   const pad = Math.max(0, rowCount - content.length);
   return [...Array.from({ length: pad }, () => ''), ...content];
 }
 
 // Builds an ANSI sequence that repaints scroll-region rows 1..rowCount from the
-// clean transcript buffer (see getScreenBufferScrollRegionLines). Autowrap is
-// disabled around the writes so an over-wide reflowed line truncates at `width`
-// rather than wrapping and shifting following rows. Used by the resize handler to
-// scrub stale rows the terminal reflowed in from a cursor-addressed overlay.
+// clean transcript buffer (see getScreenBufferScrollRegionLines), wrapped to
+// `width`. Autowrap is disabled around the writes so each pre-wrapped row lands on
+// exactly one physical row without the terminal re-wrapping and shifting the rows
+// below. Used by the resize handler to scrub stale rows the terminal reflowed in
+// from the cursor-addressed input frame or a suggestion overlay.
 export function composeScrollRegionScrub(rowCount: number, width: number): string {
-  const lines = getScreenBufferScrollRegionLines(rowCount);
+  const lines = getScreenBufferScrollRegionLines(rowCount, width);
   let out = '\x1b[?7l';
   for (let i = 0; i < rowCount; i++) {
     const line = lines[i] ?? '';

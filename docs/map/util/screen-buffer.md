@@ -14,7 +14,9 @@ startOverlayEpoch(): void
 
 hasPostEpochContent(): boolean
 
-getScreenBufferScrollRegionLines(rowCount: number): string[]
+wrapStyledToRows(styled: string, width: number): string[]
+
+getScreenBufferScrollRegionLines(rowCount: number, width?: number | undefined): string[]
 
 composeScrollRegionScrub(rowCount: number, width: number): string
 

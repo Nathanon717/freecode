@@ -1,0 +1,33 @@
+{
+  "name": "tty-resize-overlay",
+  "description": "Resizing while the slash-command suggestion overlay is open reflows cleanly: the overlay is invalidated and repainted at the new width, the input prompt stays intact, and stale overlay rows are not left in the transcript",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type / to open the suggestion overlay",
+        "send": "/",
+        "screenContains": [
+          "/clear",
+          "/config",
+          "/renderer"
+        ]
+      },
+      {
+        "name": "widen to 100 cols — overlay repaints at new width, prompt intact",
+        "resize": { "cols": 100, "rows": 28 },
+        "screenContains": [
+          "/clear",
+          "/config",
+          "> /"
+        ],
+        "quietMs": 500
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi, type MockInstance } from 'vitest';
-import { installScreenBuffer, getScreenBufferDisplayLinesForOverlay, getScreenBufferScrollRegionLines, hasPostEpochContent, startOverlayEpoch } from '../../src/util/screen-buffer.js';
+import { installScreenBuffer, getScreenBufferDisplayLinesForOverlay, getScreenBufferScrollRegionLines, hasPostEpochContent, startOverlayEpoch, wrapStyledToRows, stripAnsi } from '../../src/util/screen-buffer.js';
 
 // The buffer hooks process.stdout.write once per module instance. vitest isolates
 // modules per test file, so this file owns its own buffer instance. We write
@@ -48,6 +48,40 @@ describe('screen buffer', () => {
       expect(lines.slice(0, 3)).toEqual(['', '', '']); // top padding
       expect(lines[3]).toBe(a);
       expect(lines[4]).toBe(b);
+    });
+
+    it('wraps over-wide lines into multiple display rows when width is given', () => {
+      installScreenBuffer();
+      startOverlayEpoch();
+      const long = 'x'.repeat(25); // wider than the width below
+      process.stdout.write(`${long}\n`);
+      const lines = getScreenBufferScrollRegionLines(4, 10);
+      // The 25-char line occupies ceil(25/10) = 3 display rows; row 0 stays blank.
+      expect(lines).toHaveLength(4);
+      expect(lines[0]).toBe('');
+      expect(lines.slice(1).map(stripAnsi)).toEqual(['xxxxxxxxxx', 'xxxxxxxxxx', 'xxxxx']);
+    });
+  });
+
+  describe('wrapStyledToRows', () => {
+    it('returns the line unchanged when it already fits', () => {
+      expect(wrapStyledToRows('hello', 10)).toEqual(['hello']);
+    });
+
+    it('splits at visible-width boundaries, not counting ANSI bytes', () => {
+      const rows = wrapStyledToRows('abcdefghij', 4);
+      expect(rows.map(stripAnsi)).toEqual(['abcd', 'efgh', 'ij']);
+    });
+
+    it('carries an open color across the wrap and closes it at each row end', () => {
+      // A red span that straddles the boundary must reopen red on the next row so
+      // the color survives, and close it at the row end so it does not bleed.
+      const red = '\x1b[31m';
+      const rows = wrapStyledToRows(`${red}abcdef\x1b[0m`, 4);
+      expect(rows.map(stripAnsi)).toEqual(['abcd', 'ef']);
+      expect(rows[0]).toContain(red);
+      expect(rows[0].endsWith('\x1b[0m')).toBe(true);
+      expect(rows[1]).toContain(red); // reopened on the continuation row
     });
   });
 

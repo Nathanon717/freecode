@@ -440,9 +440,7 @@ process.stdout.on('resize', () => {
   _resizeDebounce = setTimeout(() => {
     _resizeDebounce = null;
 
-    // Invalidate stale overlay state — all absolute row positions changed. Note
-    // whether an overlay was open so the stale rows it left can be scrubbed below.
-    const hadOverlay = suggestionOverlayRows > 0;
+    // Invalidate stale overlay state — all absolute row positions changed.
     suggestionOverlayRows = 0;
     suggestionOverlayRestoreLines = [];
 
@@ -458,12 +456,11 @@ process.stdout.on('resize', () => {
     //  - Fresh/startup (no transcript yet): the banner is what's showing. Wipe and
     //    redraw it at the new width — clean and responsive (compact/full switch),
     //    with no stale bottom-bar cells left to reflow into duplicates.
-    //  - A transcript is showing: do NOT wipe. Reset the scroll region to full so
-    //    the footer repositions from the new geometry, then let the terminal reflow
-    //    the existing transcript itself. Whatever was showing (transcript, or a
-    //    pinned menu via the callback below) stays put, re-laid-out at the new width.
-    // A pinned menu always owns the whole screen via its callback, so it takes the
-    // reflow path regardless — its repaint clears and redraws the full region.
+    //  - A transcript is showing: do NOT wipe to the banner. Reset the scroll
+    //    region to full so the footer repositions from the new geometry, then
+    //    repaint the transcript from the buffer (below) so it re-lays-out cleanly
+    //    at the new width. A pinned menu (callback) owns the whole screen and
+    //    repaints itself instead.
     const showingTranscript = hasPostEpochContent() || _onResizeCallback !== null;
     if (!showingTranscript) {
       clearAndRedrawBanner();
@@ -475,12 +472,13 @@ process.stdout.on('resize', () => {
     resetScrollRegion();
     setScrollRegion(1, rows() - reserved);
 
-    // A suggestion overlay draws over the transcript with cursor-addressed writes,
-    // which the terminal reflows into the scroll region as stale duplicate rows.
-    // Repaint the scroll region from the screen buffer (clean transcript only — the
-    // overlay was never buffered) to erase them. Skipped when a pinned menu owns the
-    // screen: its callback repaints the whole region anyway.
-    if (hadOverlay && !_onResizeCallback) {
+    // The terminal's own SIGWINCH reflow leaves stale duplicate rows in the scroll
+    // region: the cursor-addressed input frame (and any suggestion overlay) reflow
+    // in as wrapped ghost copies of the old bottom UI. Neither is in the buffer, so
+    // clearing the scroll region and repainting it from the clean transcript buffer
+    // (wrapped to the new width) erases the ghosts without truncating transcript
+    // lines. Skipped when a pinned menu owns the screen: its callback repaints all.
+    if (_onResizeCallback === null) {
       process.stdout.write(composeScrollRegionScrub(rows() - reserved, cols()));
     }
 

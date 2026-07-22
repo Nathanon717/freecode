@@ -1,0 +1,36 @@
+{
+  "name": "tty-resize-banner-widen",
+  "description": "On a fresh screen (banner only, no transcript), widening past the 82-col boundary redraws the compact banner as the full banner responsively; the prompt stays intact",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "fresh 80 cols shows the compact banner",
+        "screenContains": [
+          "//    freecode    //",
+          "> / for commands"
+        ],
+        "screenAbsent": [
+          ".d888"
+        ]
+      },
+      {
+        "name": "widen to 100 cols — full banner replaces compact, no leftover compact banner",
+        "resize": { "cols": 100, "rows": 30 },
+        "screenContains": [
+          ".d888",
+          "> / for commands"
+        ],
+        "screenAbsent": [
+          "//    freecode    //"
+        ],
+        "quietMs": 500
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}
