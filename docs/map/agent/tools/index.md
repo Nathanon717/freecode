@@ -34,7 +34,7 @@ type ConfirmToolCall = (
   preview: ToolCallPreview,
 ) => Promise<boolean | ToolCallConfirmation>;
 
-createTools(confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, parsedTools?: boolean, readOnly?: boolean): { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { ...; }
+createTools(confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, parsedTools?: boolean, readOnly?: boolean, spawnAgent?: SpawnAgentFn | undefined): { ...; } | { ...; }
 
 readFileTool: CoreTool<ZodObject<{ path: ZodString; offset: ZodOptional<ZodNumber>; limit: ZodOptional<ZodNumber>; }, "strip", ZodTypeAny, { ...; }, { ...; }>, string> & { ...; }
 

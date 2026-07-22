@@ -1,0 +1,22 @@
+{
+  "name": "spawn-agent-native",
+  "description": "The production sub-agent path: a mock-native parent runs through the real streamText orchestration loop, calls spawn_agent, and the explore sub-agent runs its own streamText turn loop (list_dir then a findings report) — draining fullStream silently and returning only the final report. Proves runNativeSubAgent nests through the same shared fixture queue as the parent, with only spawn_agent visible in the parent's tool trace.",
+  "workspace": "temp",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "spawn-agent-native.llm.json",
+  "turns": [
+    { "input": "Find where config is loaded." }
+  ],
+  "expect": {
+    "stdoutContains": [
+      "The explore agent found config is loaded in src/config/index.ts.",
+      "loadConfig — src/config/index.ts:1 [V]"
+    ],
+    "stdoutAbsent": ["FREECODE_NO_LLM=1", "No API key configured", "Real provider access is blocked", "Unknown tool", "unknown agent type", "Scanning the tree"],
+    "exitCode": 0,
+    "toolTrace": {
+      "sequence": ["spawn_agent"],
+      "maxCalls": 1
+    }
+  }
+}

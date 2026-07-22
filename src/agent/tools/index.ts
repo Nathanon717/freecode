@@ -4,6 +4,7 @@ import { editTool } from "./edit.js";
 import { grepTool } from "./grep.js";
 import { shellTool } from "./shell.js";
 import { listDirTool } from "./list-dir.js";
+import { makeSpawnAgentTool, type SpawnAgentFn } from "./spawn-agent.js";
 import { logError } from "../../logger.js";
 import { loadConfig } from "../../config/index.js";
 import { isUserAbortError, toErrorMessage } from "../../util/errors.js";
@@ -339,23 +340,25 @@ function wrap(
   queueExecution: QueuedToolExecution,
   confirmToolCall?: ConfirmToolCall,
   parsedTools = false,
+  requiresConfirmation = true,
 ): AnyCoreTool {
   const previewState: PreviewState = {
     suppressed: false,
     rowsAbove: { header: 0, preamble: 0 },
   };
-  return withSerializedExecution(
-    withToolRendering(
-      name,
-      withConfirmation(
+  // spawn_agent runs a read-only sub-agent, so it skips confirmation (like the
+  // read-only tools) but still renders and serialises. It also skips the rationale
+  // wrapper so the model need not supply one to delegate.
+  const confirmed = requiresConfirmation
+    ? withConfirmation(
         name,
         useRationale ? withRationale(t) : t,
         confirmToolCall,
         previewState,
-      ),
-      parsedTools,
-      previewState,
-    ),
+      )
+    : t;
+  return withSerializedExecution(
+    withToolRendering(name, confirmed, parsedTools, previewState),
     queueExecution,
   );
 }
@@ -365,9 +368,26 @@ export function createTools(
   toolRationale?: boolean,
   parsedTools = false,
   readOnly = false,
+  spawnAgent?: SpawnAgentFn,
 ) {
   const useRationale = toolRationale ?? loadConfig().toolRationale;
   const queueExecution = createToolExecutionQueue();
+  // spawn_agent is only available when the caller injects a model-bound runner
+  // (agent/loop.ts). The hand-typed and parsed-tools paths pass none, so it is
+  // simply absent there rather than erroring at call time.
+  const spawnAgentTool: Record<string, AnyCoreTool> = spawnAgent
+    ? {
+        spawn_agent: wrap(
+          "spawn_agent",
+          makeSpawnAgentTool(spawnAgent),
+          useRationale,
+          queueExecution,
+          confirmToolCall,
+          parsedTools,
+          false,
+        ),
+      }
+    : {};
   const readOnlyTools = {
     read: wrap(
       "read",
@@ -394,9 +414,10 @@ export function createTools(
       parsedTools,
     ),
   };
-  if (readOnly) return readOnlyTools;
+  if (readOnly) return { ...readOnlyTools, ...spawnAgentTool };
   return {
     ...readOnlyTools,
+    ...spawnAgentTool,
     create: wrap(
       "create",
       createFileTool,

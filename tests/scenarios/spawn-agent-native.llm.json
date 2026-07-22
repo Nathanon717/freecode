@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "model": "mock-native:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock-native",
+        "toolsAvailable": ["spawn_agent"],
+        "mustContain": ["where config is loaded"],
+        "systemPromptPresent": true,
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "I'll delegate this to the explore agent.",
+        "toolCalls": [
+          { "name": "spawn_agent", "args": { "agentType": "explore", "prompt": "Find where config is loaded and report the file." } }
+        ],
+        "usage": { "promptTokens": 22, "outputTokens": 7, "totalTokens": 29 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "provider": "mock-native",
+        "toolsAvailable": ["read", "grep", "list_dir"],
+        "systemPromptPresent": true,
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "Scanning the tree.",
+        "toolCalls": [{ "name": "list_dir", "args": { "path": "." } }],
+        "usage": { "promptTokens": 15, "outputTokens": 4, "totalTokens": 19 }
+      }
+    },
+    {
+      "match": {
+        "turn": 3,
+        "provider": "mock-native",
+        "toolsAvailable": ["read"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "loadConfig — src/config/index.ts:1 [V]",
+        "usage": { "promptTokens": 30, "outputTokens": 9, "totalTokens": 39 }
+      }
+    },
+    {
+      "match": {
+        "turn": 4,
+        "provider": "mock-native",
+        "toolsAvailable": ["spawn_agent"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "The explore agent found config is loaded in src/config/index.ts.",
+        "usage": { "promptTokens": 44, "outputTokens": 12, "totalTokens": 56 }
+      }
+    }
+  ]
+}

@@ -32,19 +32,24 @@ Format: filename (linecount)
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
   - [`conversation.ts`](agent/conversation.md) (31) — Session Controller
-  - [`loop.ts`](agent/loop.md) (471) — Agent Loop
+  - [`loop.ts`](agent/loop.md) (481) — Agent Loop
   - [`parsed-tools.ts`](agent/parsed-tools.md) (249) — Parsed-Tools Harness
-  - [`system-prompt.ts`](agent/system-prompt.md) (31) — System Prompt
+- `src/agent/subagents/`
+  - [`registry.ts`](agent/subagents/registry.md) (56) — Sub-Agent Registry
+  - [`run-subagent.ts`](agent/subagents/run-subagent.md) (158) — Sub-Agent Runner
+- `src/agent/`
+  - [`system-prompt.ts`](agent/system-prompt.md) (32) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
 - `src/agent/tools/`
   - [`create.ts`](agent/tools/create.md) (33) — create Tool
   - [`edit-diff-context.ts`](agent/tools/edit-diff-context.md) (103) — Edit Diff Context
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
   - [`grep.ts`](agent/tools/grep.md) (122) — grep Tool
-  - [`index.ts`](agent/tools/index.md) (428) — Tool Registry
+  - [`index.ts`](agent/tools/index.md) (449) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (88) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
+  - [`spawn-agent.ts`](agent/tools/spawn-agent.md) (38) — spawn_agent Tool
 - `src/agent/`
   - [`usage-finalize.ts`](agent/usage-finalize.md) (65) — Turn Usage/Cost/Quota Finalization
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context

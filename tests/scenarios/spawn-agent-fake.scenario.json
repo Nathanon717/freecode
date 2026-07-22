@@ -1,0 +1,19 @@
+{
+  "name": "spawn-agent-fake",
+  "description": "The main agent delegates a read-only investigation to the explore sub-agent via spawn_agent. The sub-agent runs its own turn loop (list_dir then a findings report) through the SAME fake fixture queue and returns a compact result the parent relays. From the parent's tool trace only one call (spawn_agent) is visible — the sub-agent's read-only tool calls are invisible, which is the context-minimisation win.",
+  "workspace": "temp",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "spawn-agent-fake.llm.json",
+  "turns": [
+    { "input": "Find where config is loaded." }
+  ],
+  "expect": {
+    "stdoutContains": ["The explore agent found config is loaded in src/config/index.ts."],
+    "stdoutAbsent": ["FREECODE_NO_LLM=1", "No API key configured", "Real provider access is blocked", "Unknown tool", "unknown agent type"],
+    "exitCode": 0,
+    "toolTrace": {
+      "sequence": ["spawn_agent"],
+      "maxCalls": 1
+    }
+  }
+}

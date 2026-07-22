@@ -23,6 +23,7 @@ import { isContextOverflowError, isInvalidToolArgumentsError, isModelNotFoundErr
 import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
 import { executeToolCalls, runParsedToolsLoop } from './parsed-tools.js';
+import { runSubAgent } from './subagents/run-subagent.js';
 import { finalizeUsageCapture, type UsageOutcome } from './usage-finalize.js';
 import { isNativeToolsDisabled, setNativeTools } from '../providers/model-data.js';
 import { ensureStoreReady } from '../store/db.js';
@@ -62,7 +63,15 @@ async function runFakeLlm(
   options: AgentLoopOptions,
   modelSettings: ModelSettings,
 ): Promise<AgentLoopResult> {
-  const tools = supportsTools ? createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly) : undefined;
+  const spawnAgent = (agentType: string, prompt: string): Promise<string> =>
+    runSubAgent(agentType, prompt, {
+      kind: 'fake',
+      providerId,
+      modelId,
+      toolRationale: modelSettings.toolRationale,
+      parallelTools: modelSettings.parallelTools,
+    });
+  const tools = supportsTools ? createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly, spawnAgent) : undefined;
   const toolNames = tools ? Object.keys(tools) : [];
   let activeMessages = messages;
   let fullText = '';
@@ -194,7 +203,8 @@ async function streamWithRetry(
         system: systemPrompt,
         messages: activeMessages,
         ...(supportsTools ? {
-          tools: createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly),
+          tools: createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly, (agentType, prompt) =>
+            runSubAgent(agentType, prompt, { kind: 'native', model: languageModel })),
           maxSteps: 10,
           onStepFinish: (event) => {
             // Intermediate steps (tool-calls finish reason) get a combined
