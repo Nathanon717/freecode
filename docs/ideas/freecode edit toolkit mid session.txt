@@ -1,0 +1,3 @@
+freecode edit toolkit mid session:
+
+the initial system prompt only lists tools enabled then the first message was sent. if toolkit changed mid session, then append what changed to the start of the next user message. 
