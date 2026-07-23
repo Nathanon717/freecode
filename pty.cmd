@@ -1,2 +1,2 @@
 @echo off
-npm.cmd run pty:session -- %*
+npm.cmd run pty -- %*

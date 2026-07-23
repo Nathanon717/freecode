@@ -153,7 +153,7 @@ function runScenariosDeep(filter?: string): Section {
   const env: Record<string, string> = { SCENARIO_TIMING_JSON: jsonOut };
 
   if (filter) {
-    // `npm run verify:scenarios -- --only=<name>` narrows to one scenario;
+    // `npm run test:scenarios -- --only=<name>` narrows to one scenario;
     // TTY_TIMING makes the TTY harness print one timing line per phase.
     args.push('--', `--only=${filter}`);
     env.TTY_TIMING = '1';

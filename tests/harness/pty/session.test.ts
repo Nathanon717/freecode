@@ -5,7 +5,7 @@
  *
  * These tests exercise the full TCP daemon + RPC round-trip: start → screen →
  * send → stop. They are skipped automatically when dist/index.js is absent (i.e.
- * freecode hasn't been built yet). Run `npm run build` first, then `npm run unit`.
+ * freecode hasn't been built yet). Run `npm run build` first, then `npm run pty:test`.
  *
  * Tests run sequentially and share a single session — each test depends on the
  * previous one having left the session in the expected state.

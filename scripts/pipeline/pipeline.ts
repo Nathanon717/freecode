@@ -17,7 +17,7 @@ export const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 export const useShell = process.platform === 'win32';
 
 // PTY harness tests require a real PTY, so they are excluded from the normal
-// unit run and live behind `npm run test:pty`.
+// unit run and live behind `npm run pty:test`.
 export const PTY_EXCLUDES = [
   '--exclude', 'tests/harness/pty/driver.test.ts',
   '--exclude', 'tests/harness/pty/session.test.ts',
@@ -37,7 +37,7 @@ export const SECTIONS: PipelineSection[] = [
   { key: 'build', label: 'build', cmd: npm, args: ['run', 'build'] },
   { key: 'lint', label: 'lint', cmd: npm, args: ['run', 'lint'] },
   { key: 'docs', label: 'docs', cmd: npm, args: ['run', 'docs:generate'] },
-  { key: 'scenarios', label: 'scenarios', cmd: npm, args: ['run', 'verify:scenarios'] },
+  { key: 'scenarios', label: 'scenarios', cmd: npm, args: ['run', 'test:scenarios'] },
   {
     key: 'unit',
     label: 'unit tests',

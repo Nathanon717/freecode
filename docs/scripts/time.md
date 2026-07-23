@@ -43,15 +43,15 @@ If a step fails in full-suite mode it bails early and still prints the report so
 | `build` | `npm run build` | none |
 | `lint` | `npm run lint` | none |
 | `docs` | `npm run docs:generate` | none |
-| `scenarios` | `npm run verify:scenarios` | per-scenario wall-clock |
-| `scenarios <name>` | `npm run verify:scenarios -- --only=<name>` | per-scenario **+ per-phase** (TTY) |
+| `scenarios` | `npm run test:scenarios` | per-scenario wall-clock |
+| `scenarios <name>` | `npm run test:scenarios -- --only=<name>` | per-scenario **+ per-phase** (TTY) |
 | `unit` | vitest (JSON reporter) | per-file wall-clock; per-test duration for tests ≥ 1s |
 | `unit <pattern>` | vitest, filtered to matching files | per-file **+ every test** (no ≥ 1s gate) |
 
 Sub-breakdowns are free measurement data — they never change which tests run, their order, or their concurrency:
 
 - **Unit:** vitest's JSON reporter exposes `startTime`/`endTime` per file and `duration` per assertion.
-- **Scenarios:** `npm run verify:scenarios` is invoked byte-for-byte as `npm test` invokes it, plus the `SCENARIO_TIMING_JSON` env var, which makes the runner write each scenario's wall-clock duration to a JSON file. Because scenarios run concurrently, per-scenario times overlap and sum to more than the `scenarios` parent wall-clock.
+- **Scenarios:** `npm run test:scenarios` is invoked byte-for-byte as `npm test` invokes it, plus the `SCENARIO_TIMING_JSON` env var, which makes the runner write each scenario's wall-clock duration to a JSON file. Because scenarios run concurrently, per-scenario times overlap and sum to more than the `scenarios` parent wall-clock.
 - **Per-phase (single scenario):** when you filter to one scenario, `time.ts` additionally sets `TTY_TIMING=1`, which makes the TTY harness record one timing per phase (startup, each step, exit) and return them through the timing JSON. `time.ts` nests these as chronological children of the scenario and reconciles the leftover wall clock into a `harness startup + teardown` sibling, so the children sum to the section total. `TTY_TIMING` is an internal mechanism — `time.ts` sets it for you; you do not type it.
 
 `build`, `lint`, and `docs` run as a single process, so their times are wall-clock totals with no further split.
@@ -85,4 +85,4 @@ Scoping to a section adds its children; adding a filter adds the deepest level. 
 
 Vitest is run with `--reporter=json --outputFile=<tmp>` to capture per-file timing data; using both `--reporter=json` and `--reporter=dot` simultaneously triggers a vitest 4.x crash, so the JSON reporter is used alone and a compact per-file summary is printed instead.
 
-For scenarios, `time.ts` sets `SCENARIO_TIMING_JSON=<tmp>` (and, when filtered, `TTY_TIMING=1` plus `--only=<name>`) when invoking `npm run verify:scenarios`. `tests/harness/run-scenarios.ts` honors `SCENARIO_TIMING_JSON` by recording each scenario's wall-clock duration and writing `{ scenarios: [{ name, type, ms, ok, phases? }] }` to that path on exit (`phases` present only for TTY scenarios under `TTY_TIMING`). Both vars are purely additive — when unset (i.e. under plain `npm test`) the runner behaves exactly as before.
+For scenarios, `time.ts` sets `SCENARIO_TIMING_JSON=<tmp>` (and, when filtered, `TTY_TIMING=1` plus `--only=<name>`) when invoking `npm run test:scenarios`. `tests/harness/run-scenarios.ts` honors `SCENARIO_TIMING_JSON` by recording each scenario's wall-clock duration and writing `{ scenarios: [{ name, type, ms, ok, phases? }] }` to that path on exit (`phases` present only for TTY scenarios under `TTY_TIMING`). Both vars are purely additive — when unset (i.e. under plain `npm test`) the runner behaves exactly as before.

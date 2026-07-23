@@ -9,7 +9,7 @@ Scenario tests live in `tests/scenarios/*.scenario.json` and run through `tests/
 
 ```powershell
 npm test              # build + docs check + all scenarios including TTY + unit tests (no PTY)
-npm run test:pty      # PTY driver + session manager vitest unit tests (require a PTY)
+npm run pty:test      # PTY driver + session manager vitest unit tests (require a PTY)
 ```
 
 `npm test` is the normal post-change safety check. Scenarios never call a live LLM — fake LLM fixtures cover the agent loop deterministically, and every other scenario runs with the loop hard-blocked (`FREECODE_NO_LLM=1`) and provider keys stripped from its environment.
@@ -24,7 +24,7 @@ Two vitest test files exercise the PTY harness itself rather than freecode's UI:
 Run them with:
 
 ```powershell
-npm run test:pty
+npm run pty:test
 ```
 
 Or as part of the full test suite (excluding PTY tests):
@@ -273,13 +273,13 @@ Omit `turns`/`expect`; the `tty` block fully describes the run.
 - `exitCode`: Expected exit code when it exits.
 - `mask`: Optional regex strings stripped from the screen before substring checks, for volatile content (e.g. token counts).
 
-Use `npm run pty:session` to drive the live CLI interactively and print the rendered screen after each step — the fastest way to visually verify a UI change without writing a full scenario file:
+Use `npm run pty` to drive the live CLI interactively and print the rendered screen after each step — the fastest way to visually verify a UI change without writing a full scenario file:
 
 ```bash
-ID=$(npm run pty:session -- start 2>&1 | grep SESSION_ID | cut -d= -f2)
-printf '/model' | npm run pty:session -- send "$ID" -   # type command
-printf '\r'     | npm run pty:session -- send "$ID" -   # submit
-npm run pty:session -- stop "$ID"
+ID=$(npm run pty -- start 2>&1 | grep SESSION_ID | cut -d= -f2)
+printf '/model' | npm run pty -- send "$ID" -   # type command
+printf '\r'     | npm run pty -- send "$ID" -   # submit
+npm run pty -- stop "$ID"
 ```
 
 See `docs/pty-session.md` for the full reference, control character table, and common patterns.
