@@ -18,7 +18,7 @@
           {
             "name": "edit",
             "args": {
-              "path": "tests/scenarios/long-preview.fixture.txt",
+              "path": "tests/e2e/long-preview.fixture.txt",
               "old_text": "LINE-001: changelog entry text for this line",
               "new_text": "LINE-XYZ-REPLACED: changelog entry text for this line"
             }

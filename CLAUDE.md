@@ -19,12 +19,12 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 ## Verification
 
-- For any change touching `src/`, run `npm.cmd test` before reporting completion. Build, docs, and scenario failures are blockers. Never end your turn 
-- `npm test` runs build + `docs:generate` + all scenarios including TTY + all unit tests except PTY. Scenarios never call a live LLM.
-- If a user-visible behavior changes, ensure it has scenario coverage in `tests/scenarios/` or docs coverage, as appropriate.
+- For any change touching `src/`, run `npm.cmd test` before reporting completion. Build, docs, and e2e failures are blockers. Never end your turn 
+- `npm test` runs build + `docs:generate` + all e2e tests including TTY + all unit tests except PTY. E2e tests never call a live LLM.
+- If a user-visible behavior changes, ensure it has e2e coverage in `tests/e2e/` or docs coverage, as appropriate.
 - If generated reference sources change, update the source of truth first, then run `npm.cmd run docs:generate`. It checks generated docs first; if they are already current, it stops without rewriting them, and if they are stale, it regenerates them. Do not hand-edit generated sections.
 
-Command details live in `docs/commands.md`. Scenario details live in `docs/scenarios.md` and `docs/testing-scenarios.md`.
+Command details live in `docs/commands.md`. E2e details live in `docs/e2e.md` and `docs/testing-e2e.md`.
 
 ## Interactive Freecode Sessions
 

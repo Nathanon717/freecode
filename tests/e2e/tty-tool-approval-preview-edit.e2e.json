@@ -18,7 +18,7 @@
         "send": "\r",
         "waitFor": "LINE-XYZ-REPLACED",
         "screenContains": [
-          "edit(tests/scenarios/long-preview.fixture.txt)",
+          "edit(tests/e2e/long-preview.fixture.txt)",
           "-LINE-001: changelog entry text for this line",
           "+LINE-XYZ-REPLACED: changelog entry text for this line",
           "Enter to confirm · Esc to deny"

@@ -17,7 +17,7 @@
           "PREAMBLE-FIRST-LINE: I need to look at the changelog before answering.\nPREAMBLE-LAST-LINE: reading it now."
         ],
         "toolCalls": [
-          { "name": "read", "args": { "path": "tests/scenarios/long-preview.fixture.txt" } }
+          { "name": "read", "args": { "path": "tests/e2e/long-preview.fixture.txt" } }
         ],
         "usage": { "promptTokens": 20, "outputTokens": 6, "totalTokens": 26 }
       }

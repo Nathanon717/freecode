@@ -83,7 +83,7 @@ Follow the same phase discipline as the engine plan: after each phase mark it `â
   `getSelectedModel()`. This restores a (better, real-tokenizer) number in the footer without the
   keystroke path yet.
 - Wire `preloadTokenizerFor(getSelectedModel())` into `applyModelChange`.
-- Map/docs: update the footer-status / terminal-ui map pages and any scenario asserting footer
+- Map/docs: update the footer-status / terminal-ui map pages and any e2e test asserting footer
   contents. Ends `npm.cmd test` green.
 
 ### Phase 2 â€” Live draft counting
@@ -96,12 +96,12 @@ Follow the same phase discipline as the engine plan: after each phase mark it `â
   paste a large block, switch models across two families and confirm the count re-bases without
   stalling or throwing, and confirm the fallback path (brand-new/unmapped family) still shows a
   number.
-- Scenario coverage for the live counter if feasible in the TTY scenario harness; otherwise document
+- E2e coverage for the live counter if feasible in the TTY e2e harness; otherwise document
   the behavior in the terminal-ui docs and note the pty verification. Ends `npm.cmd test` green.
 
 ### Phase 3 â€” Label + marker polish
 
 - Resolve the label and exact-vs-estimated marker decisions with the user; apply.
-- Update `docs/scenarios.md` / terminal-ui docs if the footer format string changed; re-run
+- Update `docs/e2e.md` / terminal-ui docs if the footer format string changed; re-run
   `npm.cmd run docs:generate`.
 - Final `npm.cmd test` green, `git diff --name-only` reviewed for map pages needing updates.

@@ -8,11 +8,11 @@ import {
   assertFakeLlmTrace,
   assertFiles,
   assertOutput,
-  assertScenarioExpectations,
+  assertE2eExpectations,
   assertToolTrace,
 } from './assertions/index.js';
 
-describe('scenario expectation assertions', () => {
+describe('e2e expectation assertions', () => {
   it('checks required and forbidden output text', () => {
     expect(assertOutput({
       stdoutContains: ['hello', 'missing'],
@@ -48,7 +48,7 @@ describe('scenario expectation assertions', () => {
     ]);
   });
 
-  it('checks exact file content relative to the scenario workspace', () => {
+  it('checks exact file content relative to the e2e test workspace', () => {
     const workspace = mkdtempSync(join(tmpdir(), 'freecode-assertions-'));
     try {
       writeFileSync(join(workspace, 'hello.txt'), 'hello\n', 'utf-8');
@@ -135,8 +135,8 @@ describe('scenario expectation assertions', () => {
     ]);
   });
 
-  it('combines all assertion types for the scenario runner', () => {
-    expect(assertScenarioExpectations({
+  it('combines all assertion types for the e2e runner', () => {
+    expect(assertE2eExpectations({
       expect: {
         exitCode: 0,
         stdoutContains: ['ok'],

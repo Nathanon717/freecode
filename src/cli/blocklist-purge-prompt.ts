@@ -1,4 +1,4 @@
-// check-tests: no-test — raw-key TTY prompt with no pure logic; covered end-to-end by the tty-blocklist-purge scenario
+// check-tests: no-test — raw-key TTY prompt with no pure logic; covered end-to-end by the tty-blocklist-purge e2e test
 import chalk from 'chalk';
 import { ensureStoreReady } from '../store/db.js';
 import {

@@ -13,7 +13,7 @@
 - `src/cli/eval/eval-dots.ts` — `statusCircle` (colored dot renderer) reused for picker dots
 - `src/providers/model-data.ts` — `appendEvalRun` (records each run to `.freecode/`)
 - `evals/humaneval/.runs/` — per-problem work dirs (not tracked in git; gitignored under `evals/*`)
-- `tests/scenarios/tty-humaneval-fake.scenario.json` — end-to-end fake-LLM TTY test; uses `tests/scenarios/humaneval-mini.jsonl.gz` as bundled single-problem dataset via `HUMANEVAL_DATA` env var
+- `tests/e2e/tty-humaneval-fake.e2e.json` — end-to-end fake-LLM TTY test; uses `tests/e2e/humaneval-mini.jsonl.gz` as bundled single-problem dataset via `HUMANEVAL_DATA` env var
 
 **Result persistence:** Each run is stored in `.freecode/models.json` (summary) and `.freecode/evals/humaneval/{provider}-{modelId}/{timestamp}.json` (full transcript + scoring). The `transcript` field is an array of turn objects, each with `systemPrompt`, `userMessage`, `tokenUsage: { input?, output? }`, and `toolCalls`. For humaneval (single-turn evals) the array always has exactly one entry.
 

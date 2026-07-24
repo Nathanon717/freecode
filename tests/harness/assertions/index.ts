@@ -3,19 +3,19 @@ import { assertFakeLlmTrace } from './fake-llm-trace.js';
 import { assertFiles } from './files.js';
 import { assertOutput } from './output.js';
 import { assertToolTrace } from './tool-trace.js';
-import type { FakeLlmTraceEvent, ScenarioExpectations, ToolTraceEvent } from './types.js';
+import type { FakeLlmTraceEvent, E2eExpectations, ToolTraceEvent } from './types.js';
 
 export type {
   FakeLlmTraceEvent,
   FakeLlmTraceExpectation,
   FileExpectation,
-  ScenarioExpectations,
+  E2eExpectations,
   ToolTraceEvent,
   ToolTraceExpectation,
 } from './types.js';
 
-export function assertScenarioExpectations(input: {
-  expect: ScenarioExpectations;
+export function assertE2eExpectations(input: {
+  expect: E2eExpectations;
   stdout: string;
   stderr: string;
   exitCode: number;

@@ -1,18 +1,18 @@
-# Scenario Authoring
+# E2E Test Authoring
 
-Scenario tests live in `tests/scenarios/*.scenario.json` and run through `tests/harness/run-scenarios.ts`. There are two execution modes:
+E2e tests live in `tests/e2e/*.e2e.json` and run through `tests/harness/run-e2e.ts`. There are two execution modes:
 
 - **Script mode** (default): the harness runs `node dist/index.js --script <temp-file>`, covering the real scripted interactive path. stdin is a pipe, so the bottom-pinned terminal UI does not activate.
-- **TTY screen mode** (`tty` block present): the harness spawns the built CLI through a pseudo-terminal, renders its output with a headless VT emulator, and asserts against the rendered screen. This exercises the full interactive TUI — raw-mode input, autocomplete, scroll regions, the pinned status line — which script mode cannot reach. See [TTY screen scenarios](#tty-screen-scenarios).
+- **TTY screen mode** (`tty` block present): the harness spawns the built CLI through a pseudo-terminal, renders its output with a headless VT emulator, and asserts against the rendered screen. This exercises the full interactive TUI — raw-mode input, autocomplete, scroll regions, the pinned status line — which script mode cannot reach. See [TTY screen e2e tests](#tty-screen-e2e-tests).
 
 ## Commands
 
 ```powershell
-npm test              # build + docs check + all scenarios including TTY + unit tests (no PTY)
+npm test              # build + docs check + all e2e tests including TTY + unit tests (no PTY)
 npm run pty:test      # PTY driver + session manager vitest unit tests (require a PTY)
 ```
 
-`npm test` is the normal post-change safety check. Scenarios never call a live LLM — fake LLM fixtures cover the agent loop deterministically, and every other scenario runs with the loop hard-blocked (`FREECODE_NO_LLM=1`) and provider keys stripped from its environment.
+`npm test` is the normal post-change safety check. E2e tests never call a live LLM — fake LLM fixtures cover the agent loop deterministically, and every other e2e test runs with the loop hard-blocked (`FREECODE_NO_LLM=1`) and provider keys stripped from its environment.
 
 ## PTY unit tests
 
@@ -37,11 +37,11 @@ npm test
 
 Inside the CLI, run `/eval` to list evals, see the checks each one performs, and select one or many evals to run sequentially. `/eval` accepts numbers, names, comma/space-separated selections, and numeric ranges such as `1-3`.
 
-For the generated scenario inventory, see [scenarios.md](scenarios.md).
+For the generated e2e test inventory, see [e2e.md](e2e.md).
 
 ## Basic Shape
 
-Any scenario that drives the agent loop pairs a `mock:*` model with an `llmFixture` (fake fixture — see [Fake LLM Fixtures](#fake-llm-fixtures) below); scenarios never reach a live provider.
+Any e2e test that drives the agent loop pairs a `mock:*` model with an `llmFixture` (fake fixture — see [Fake LLM Fixtures](#fake-llm-fixtures) below); e2e tests never reach a live provider.
 
 ```json
 {
@@ -87,12 +87,12 @@ Any scenario that drives the agent loop pairs a `mock:*` model with an `llmFixtu
 ## Fields
 
 - `name`: Stable kebab-case identifier shown in harness output.
-- `description`: Human-readable purpose of the scenario.
-- `config`: Optional temporary `config.json` contents written under the scenario's isolated `FREECODE_HOME`.
-- `workspace`: Use `"temp"` for file-writing or project-mutating scenarios. Omit it or use `"repo"` for structural CLI checks.
+- `description`: Human-readable purpose of the e2e test.
+- `config`: Optional temporary `config.json` contents written under the e2e test's isolated `FREECODE_HOME`.
+- `workspace`: Use `"temp"` for file-writing or project-mutating e2e tests. Omit it or use `"repo"` for structural CLI checks.
 - `flags`: Optional CLI flags inserted before `--script`.
 - `model`: Optional model preference passed as `--model <value>`.
-- `llmFixture`: Fake LLM script path, relative to `tests/scenarios/`. Required for any scenario that drives the agent loop; pair it with a `mock:*` model. Without a fixture, the loop is hard-blocked (`FREECODE_NO_LLM=1`).
+- `llmFixture`: Fake LLM script path, relative to `tests/e2e/`. Required for any e2e test that drives the agent loop; pair it with a `mock:*` model. Without a fixture, the loop is hard-blocked (`FREECODE_NO_LLM=1`).
 - `turns`: Input lines sent to script mode. Script mode exits cleanly after the final turn.
 - `y`/`yes` and `n`/`no` turns are consumed as tool-call confirmations when the agent requests a tool. If the next turn is not an approval answer, the tool call is denied and the turn remains available as normal user input.
 - Approval turns are skipped if there is no pending tool request, so a failed provider call does not accidentally turn `y` into a user prompt.
@@ -102,7 +102,7 @@ Any scenario that drives the agent loop pairs a `mock:*` model with an `llmFixtu
 - `stdoutContains`: Substrings expected in combined stdout + stderr.
 - `stdoutAbsent`: Substrings that must not appear in combined stdout + stderr.
 - `exitCode`: Expected process exit code.
-- `files`: File assertions relative to the scenario workspace.
+- `files`: File assertions relative to the e2e test workspace.
 - `files[].contentExact`: Exact file content. On mismatch, the harness prints the actual content.
 - `toolTrace.maxCalls`: Maximum allowed tool calls.
 - `toolTrace.sequence`: Exact tool call sequence.
@@ -114,7 +114,7 @@ Any scenario that drives the agent loop pairs a `mock:*` model with an `llmFixtu
 
 ## Fake LLM Fixtures
 
-Fake LLM fixtures let a scenario enter the real agent loop without provider keys, network access, or paid usage. The harness sets `FREECODE_FAKE_LLM=1`, strips real provider API keys, passes the fixture through `FREECODE_FAKE_LLM_SCRIPT`, and does not set `FREECODE_NO_LLM=1` for that process. TTY scenarios may also set `llmFixture`; the interactive process receives the same fake-model environment so flows such as `/eval` can run in CI without live providers.
+Fake LLM fixtures let an e2e test enter the real agent loop without provider keys, network access, or paid usage. The harness sets `FREECODE_FAKE_LLM=1`, strips real provider API keys, passes the fixture through `FREECODE_FAKE_LLM_SCRIPT`, and does not set `FREECODE_NO_LLM=1` for that process. TTY e2e tests may also set `llmFixture`; the interactive process receives the same fake-model environment so flows such as `/eval` can run in CI without live providers.
 
 Use this mode for free verification of prompt construction, model routing, deterministic assistant text, and tool-call orchestration. The current fake runner supports ordered text/chunk responses, scripted `toolCalls`, usage metadata, strict unused-step checks, execution-setting matchers, and fake model traces. Prompt-tool fallback scripting and OpenAI Responses-style fake transports are still separate future work.
 
@@ -153,7 +153,7 @@ Use this mode for free verification of prompt construction, model routing, deter
 }
 ```
 
-Fixture files are JSON and live next to scenarios:
+Fixture files are JSON and live next to e2e tests:
 
 ```json
 {
@@ -220,17 +220,17 @@ Tool-driving fixtures use the same ordered steps. A step may emit `toolCalls`; t
 
 Fake mode is intentionally strict:
 
-- Scenarios with `llmFixture` must use a `mock:*` model.
+- E2e tests with `llmFixture` must use a `mock:*` model.
 - `mock:*` models are rejected unless `FREECODE_FAKE_LLM=1`.
 - Real providers are rejected while `FREECODE_FAKE_LLM=1`.
 - Live model discovery is rejected while `FREECODE_FAKE_LLM=1`.
 - Fixture steps are consumed in order; an unexpected prompt, model, missing tool, or exhausted fixture produces an explicit error.
 - Unless `allowUnusedSteps` is true, all fixture steps must be consumed by the time the fake model returns a final no-tool response.
-- `fakeLlmTrace` assertions read the trace written by `FREECODE_FAKE_LLM_TRACE`, so fake scenarios can verify model call count, routing, execution path, input message count, prompt-facing text, available tools, tool settings, emitted text, emitted tool calls, and usage metadata.
+- `fakeLlmTrace` assertions read the trace written by `FREECODE_FAKE_LLM_TRACE`, so fake e2e tests can verify model call count, routing, execution path, input message count, prompt-facing text, available tools, tool settings, emitted text, emitted tool calls, and usage metadata.
 
-## TTY screen scenarios
+## TTY screen e2e tests
 
-A scenario with a top-level `tty` block is driven through a real pseudo-terminal instead of script mode, and its assertions run against the *rendered screen* (what a human would see), not raw stdout. Use this for interactive UI behavior: autocomplete, suggestion lists, the pinned input/status line, menus, and screen redraws. Nothing is reconstructed — the escape sequences the CLI emits are applied by a VT emulator (`@xterm/headless`) over a PTY (`node-pty`).
+An e2e test with a top-level `tty` block is driven through a real pseudo-terminal instead of script mode, and its assertions run against the *rendered screen* (what a human would see), not raw stdout. Use this for interactive UI behavior: autocomplete, suggestion lists, the pinned input/status line, menus, and screen redraws. Nothing is reconstructed — the escape sequences the CLI emits are applied by a VT emulator (`@xterm/headless`) over a PTY (`node-pty`).
 
 Omit `turns`/`expect`; the `tty` block fully describes the run.
 
@@ -262,9 +262,9 @@ Omit `turns`/`expect`; the `tty` block fully describes the run.
 - `steps[]`: Ordered interactions, each evaluated after the screen settles.
   - `name`: Label used in failure messages.
   - `send`: Keystrokes to send. Control chars use JSON escapes: `"\t"` (Tab), `"\r"` (Enter), `"\u0003"` (Ctrl-C). The interactive input handler only acts on control keys when they arrive as a standalone chunk — always send typed text and a control key as **separate steps** (e.g. `{"send": "/model"}` then `{"send": "\r"}`). Bundling them (e.g. `"/model\r"`) silently drops the control character.
-  - `resize`: `{ "cols": N, "rows": N }` — resize the PTY (and emulator viewport) before asserting, delivering a real SIGWINCH exactly as dragging a terminal edge would. Applied **after** `send`, so a step can type then resize. The default settle window covers the app's 32 ms resize debounce; raise `quietMs` for heavier reflows. Used by the `tty-resize-*` scenarios to pin the resize behavior (banner responsiveness, transcript reflow-in-place, input/overlay/menu survival). The stale duplicate-footer block after a transcript-path resize *is* expressible with `screenCounts` (assert the prompt appears exactly once); `tty-resize-preserves-transcript` guards it that way. The stray-`>` accumulation in scrollback is still not viewport-expressible and remains under manual/PTY coverage (see `docs/bug log/14-07-2026.md` and `docs/bug log/22-07-2026.md`).
+  - `resize`: `{ "cols": N, "rows": N }` — resize the PTY (and emulator viewport) before asserting, delivering a real SIGWINCH exactly as dragging a terminal edge would. Applied **after** `send`, so a step can type then resize. The default settle window covers the app's 32 ms resize debounce; raise `quietMs` for heavier reflows. Used by the `tty-resize-*` e2e tests to pin the resize behavior (banner responsiveness, transcript reflow-in-place, input/overlay/menu survival). The stale duplicate-footer block after a transcript-path resize *is* expressible with `screenCounts` (assert the prompt appears exactly once); `tty-resize-preserves-transcript` guards it that way. The stray-`>` accumulation in scrollback is still not viewport-expressible and remains under manual/PTY coverage (see `docs/bug log/14-07-2026.md` and `docs/bug log/22-07-2026.md`).
   - `waitFor`: Optional substring to await in the raw stream before asserting.
-  - `waitForMs`: Override the `waitFor` budget (default `8000`). Raise it for heavy steps (e.g. running a real subprocess) that can stall under the CPU contention of many TTY scenarios running in parallel.
+  - `waitForMs`: Override the `waitFor` budget (default `8000`). Raise it for heavy steps (e.g. running a real subprocess) that can stall under the CPU contention of many TTY e2e tests running in parallel.
   - `screenContains` / `screenAbsent`: Substrings that must / must not appear on the rendered viewport.
   - `screenCounts`: `{ "<substring>": N }` — each substring must appear exactly `N` times on the viewport. Catches stale duplicates that presence/absence can't, e.g. a resize leaving a second ghost copy of the input frame (`"> / for commands"` should count `1`, not `2`).
   - `quietMs`: Override the per-step settle window (default `350`).
@@ -273,7 +273,7 @@ Omit `turns`/`expect`; the `tty` block fully describes the run.
 - `exitCode`: Expected exit code when it exits.
 - `mask`: Optional regex strings stripped from the screen before substring checks, for volatile content (e.g. token counts).
 
-Use `npm run pty` to drive the live CLI interactively and print the rendered screen after each step — the fastest way to visually verify a UI change without writing a full scenario file:
+Use `npm run pty` to drive the live CLI interactively and print the rendered screen after each step — the fastest way to visually verify a UI change without writing a full e2e file:
 
 ```bash
 ID=$(npm run pty -- start 2>&1 | grep SESSION_ID | cut -d= -f2)
@@ -284,22 +284,22 @@ npm run pty -- stop "$ID"
 
 See `docs/pty-session.md` for the full reference, control character table, and common patterns.
 
-Run `npx tsx tests/harness/pty/demo.ts` for a fixed startup-through-`/clear` walkthrough. The harness driver lives in `tests/harness/pty/driver.ts` and the scenario runner in `tests/harness/pty/run-tty-scenario.ts`.
+Run `npx tsx tests/harness/pty/demo.ts` for a fixed startup-through-`/clear` walkthrough. The harness driver lives in `tests/harness/pty/driver.ts` and the e2e test runner in `tests/harness/pty/run-tty-e2e.ts`.
 
 ### Per-step timing
 
-Per-phase timing for a single TTY scenario is part of the unified timing tool — drill in with:
+Per-phase timing for a single TTY e2e test is part of the unified timing tool — drill in with:
 
 ```
-npm run time -- scenario tty-autocomplete
+npm run time -- e2e tty-autocomplete
 ```
 
-That sets `TTY_TIMING=1` internally and narrows the run to the one scenario, so the harness records one timing per phase (startup → each step → exit) and `time.ts` nests them as children of the scenario in the timing report — no separate raw output. See [time.md](scripts/time.md) for the full timing model (depth follows scope). `TTY_TIMING` itself is an internal mechanism, not a knob you type.
+That sets `TTY_TIMING=1` internally and narrows the run to the one e2e test, so the harness records one timing per phase (startup → each step → exit) and `time.ts` nests them as children of the e2e test in the timing report — no separate raw output. See [time.md](scripts/time.md) for the full timing model (depth follows scope). `TTY_TIMING` itself is an internal mechanism, not a knob you type.
 
-The phases appear as a chronological timeline under the scenario, and the leftover wall clock (Node spawn, harness boot, teardown) is reconciled into a sibling `harness startup + teardown` line so the children sum to the section total:
+The phases appear as a chronological timeline under the e2e test, and the leftover wall clock (Node spawn, harness boot, teardown) is reconciled into a sibling `harness startup + teardown` line so the children sum to the section total:
 
 ```
-✓ scenarios                                              21.01s
+✓ e2e                                                     21.01s
   ✓ tty-humaneval-fake                                   15.13s
     ✓ startup                                            4.05s
     ✓ run HumanEval/0                                    8.76s
@@ -309,17 +309,17 @@ The phases appear as a chronological timeline under the scenario, and the leftov
 ```
 
 What the phases cover:
-- `startup` — spawn → `readyText` appears in the raw stream, plus the mandatory 400 ms post-ready silence-settle (~2–3 s per scenario, dominated by Node.js startup and DB init).
+- `startup` — spawn → `readyText` appears in the raw stream, plus the mandatory 400 ms post-ready silence-settle (~2–3 s per e2e test, dominated by Node.js startup and DB init).
 - each step (labeled by the step's `name`) — the `send` plus its wait/settle. Steps without an explicit `waitFor` probe their first `screenContains` needle for 150 ms; a hit cuts the settle to 100 ms, a miss falls through to the full `quietMs` settle. Text rendered via cursor-positioning escapes (not raw text) always misses.
 - `exit` — the exit keystroke through process teardown.
 
 A phase is marked failed (`✗`) if any assertion in that phase failed.
 
-**Where time typically goes in slow scenarios:**
+**Where time typically goes in slow e2e tests:**
 
 | Cost | Cause |
 |---|---|
-| ~2–3 s fixed per scenario | Node.js spawn + app boot + 400 ms post-ready settle |
+| ~2–3 s fixed per e2e test | Node.js spawn + app boot + 400 ms post-ready settle |
 | ~500–700 ms per fastCheck-miss step | 150 ms probe timeout + settle overrun |
 | settle overrun (e.g. cfg=500 ms → actual=1 073 ms) | UI keeps emitting after `send`; silence timer resets |
 | 7–10 s for humaneval / eval steps | Python subprocess or fake-LLM agent turn; use `waitFor` + `waitForMs` |
@@ -330,5 +330,5 @@ A phase is marked failed (`✗`) if any assertion in that phase failed.
 - Fixture output is deterministic, so exact text, file, and tool-trace assertions are all reliable — assert on whatever most precisely pins the behavior under test.
 - Use exact file assertions for deterministic artifacts.
 - Use tool trace assertions to catch inefficient behavior, but avoid overfitting unless the workflow truly requires a specific sequence.
-- Include only the tool approval turns you expect the scenario to need. Extra unexpected tool calls will be denied unless followed by another `y`/`yes`.
-- Keep each scenario focused on one user-visible behavior.
+- Include only the tool approval turns you expect the e2e test to need. Extra unexpected tool calls will be denied unless followed by another `y`/`yes`.
+- Keep each e2e test focused on one user-visible behavior.

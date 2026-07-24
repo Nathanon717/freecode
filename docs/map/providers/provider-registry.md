@@ -59,7 +59,7 @@ For the generated provider table, see [providers.md](../../providers.md).
 - [adapters/openai-compat.md](adapters/openai-compat.md) and [adapters/anthropic.md](adapters/anthropic.md): provider factories consumed by `resolveModel()`.
 - [config/index.md](../config/index.md): maps provider IDs to config/env keys.
 - [providers.md](../../providers.md): generated reference output.
-- [fake.md](fake.md): fake LLM fixture runner used by scenario verification.
+- [fake.md](fake.md): fake LLM fixture runner used by e2e verification.
 
 ## Update Triggers
 

@@ -6,23 +6,23 @@ import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';
 
 // Guard against a recurring authoring trap: escape sequences like `` (ESC)
-// or `` (Ctrl-C) in scenario `send`/`exit` values can get collapsed into
+// or `` (Ctrl-C) in e2e `send`/`exit` values can get collapsed into
 // raw control BYTES when a file is authored through a JSON transport that
 // unescapes them. A raw control byte inside a JSON string literal is illegal,
 // so JSON.parse later throws the cryptic "Bad control character in string
 // literal" with no filename — see docs/bug log. The fix is always to keep the
 // literal 6-char text `` on disk. This test catches the mangled form
 // early, names the file + line, and tells you what to do.
-const SCENARIOS_DIR = dirname(fileURLToPath(import.meta.url));
+const E2E_DIR = dirname(fileURLToPath(import.meta.url));
 
 // Control bytes that are legal whitespace inside a JSON document.
 const ALLOWED = new Set([0x09 /* tab */, 0x0a /* LF */, 0x0d /* CR */]);
 
-const scenarioFiles = readdirSync(SCENARIOS_DIR).filter(f => f.endsWith('.json'));
+const e2eJsonFiles = readdirSync(E2E_DIR).filter(f => f.endsWith('.json'));
 
-describe('scenario JSON files contain no raw control bytes', () => {
-  it.each(scenarioFiles)('%s has only escaped control characters', (file) => {
-    const buf = readFileSync(join(SCENARIOS_DIR, file));
+describe('e2e JSON files contain no raw control bytes', () => {
+  it.each(e2eJsonFiles)('%s has only escaped control characters', (file) => {
+    const buf = readFileSync(join(E2E_DIR, file));
     const offenders: string[] = [];
     let line = 1;
     for (let i = 0; i < buf.length; i++) {

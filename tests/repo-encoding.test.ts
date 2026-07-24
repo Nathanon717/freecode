@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { hasBom } from '../src/util/text-encoding.js';
 
 // A leading UTF-8 BOM has bitten this codebase before (silently breaks
-// JSON.parse on config/eval/scenario files, and can slip into a .ts source
+// JSON.parse on config/eval/e2e files, and can slip into a .ts source
 // file from an editor without any visible symptom). There is never a
 // legitimate reason for one here, so this scans every tracked text file
 // repo-wide rather than one directory at a time — see

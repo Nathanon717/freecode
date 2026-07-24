@@ -3,7 +3,7 @@
 Freecode keeps documentation current by splitting docs into two kinds:
 
 - LLM-Agent-written docs for intent, workflows, tradeoffs, and troubleshooting.
-- Generated reference docs for facts already defined in code or scenario files.
+- Generated reference docs for facts already defined in code or e2e test files.
 
 Do not hand-edit content between `BEGIN GENERATED` and `END GENERATED` markers. Change the source of truth, then run the docs generator.
 
@@ -26,7 +26,7 @@ Current generated sections:
 
 - `docs/providers.md`: provider registry table from `src/providers/provider-registry.ts`; model lists for live-fetch providers come from the committed snapshot `src/providers/model-snapshot.json` (refresh it with `npm run docs:refresh-models`, never a live fetch during generation).
 - `docs/commands.md`: npm scripts from `package.json` and slash commands from `src/cli/slash-commands.ts`.
-- `docs/scenarios.md`: scenario index from `tests/scenarios/*.scenario.json`.
+- `docs/e2e.md`: e2e test index from `tests/e2e/*.e2e.json`.
 - `docs/map/**/*.md`: the `## Exports` block on every map page, extracted from each source file's TypeScript signatures by `scripts/docgen/map-exports.ts`.
 - `docs/map/README.md`: the structure tree / nav links, generated from the source tree and each page's H1.
 
@@ -45,7 +45,7 @@ Use these ownership rules:
 - Provider facts belong in `src/providers/provider-registry.ts`; the model lists for live-fetch providers belong in the committed snapshot `src/providers/model-snapshot.json`, refreshed with `npm run docs:refresh-models`.
 - Slash command names and descriptions belong in `src/cli/slash-commands.ts`.
 - Npm script facts belong in `package.json`.
-- Scenario names, descriptions, and workspaces belong in `tests/scenarios/*.scenario.json`.
+- E2e test names, descriptions, and workspaces belong in `tests/e2e/*.e2e.json`.
 
 Generated docs should report facts. Human-written docs should explain how to use those facts.
 
@@ -65,8 +65,8 @@ The map checker in `scripts/checks/check-map.ts` enforces these structural rules
 ## Examples
 
 - Adding a provider: update `src/providers/provider-registry.ts`, config wiring if needed, then run `npm run docs:generate`.
-- Adding a slash command: update `src/cli/slash-commands.ts`, command dispatch behavior, a scenario if user-visible, then run `npm run docs:generate`.
-- Adding a scenario: add `tests/scenarios/*.scenario.json`, then run `npm run docs:generate`.
+- Adding a slash command: update `src/cli/slash-commands.ts`, command dispatch behavior, an e2e test if user-visible, then run `npm run docs:generate`.
+- Adding an e2e test: add `tests/e2e/*.e2e.json`, then run `npm run docs:generate`.
 - Changing verification policy: update `AGENTS.md` and affected npm scripts.
 
 ## Review Checklist
@@ -74,5 +74,5 @@ The map checker in `scripts/checks/check-map.ts` enforces these structural rules
 Before reporting a docs-related or user-visible change complete:
 
 - Run `npm run docs:generate`.
-- Run `npm test` for changes that touch `src/` or scenario behavior.
+- Run `npm test` for changes that touch `src/` or e2e behavior.
 - Confirm generated sections were not hand-edited.

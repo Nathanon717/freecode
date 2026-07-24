@@ -100,7 +100,7 @@ by the separate live-counter task on top of this engine.
 
 After finishing a phase: mark it `✅ COMPLETE`, strip implementation details that later phases
 won't need, add a short **Notes** entry for anything that changed from the plan, and run
-`npm.cmd test` (build + docs:generate + scenarios + unit tests) before moving on. Each phase must
+`npm.cmd test` (build + docs:generate + e2e + unit tests) before moving on. Each phase must
 leave `npm.cmd test` green.
 
 ## Phases

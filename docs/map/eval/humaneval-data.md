@@ -9,7 +9,7 @@
 - `src/cli/eval/eval-menu.ts` — calls `humanEvalDatasetPath`/`loadHumanEvalProblems` to populate the tab
 - `src/eval/custom.ts` — the Custom-tab counterpart (scenario discovery)
 - `evals/humaneval/data/` — bundled dataset (`HumanEval.jsonl.gz`, `example_problem.jsonl`); gitignored under `evals/*`
-- `tests/scenarios/humaneval-mini.jsonl.gz`, `tests/scenarios/humaneval-example.jsonl` — fixtures pointed at via env overrides
+- `tests/e2e/humaneval-mini.jsonl.gz`, `tests/e2e/humaneval-example.jsonl` — fixtures pointed at via env overrides
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

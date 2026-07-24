@@ -23,7 +23,7 @@ _No exported symbols._
 4. Calls `initStore()` to initialize the libSQL DB client and in-memory model cache.
 4a. In interactive TTY mode, fires `getSelectableModels()` in the background (model lists + pricing) so `/model` opens instantly. Suppressed by `FREECODE_NO_PREFETCH=1` (TTY test harness).
 5. Loads config and seeds the selected model from `FREECODE_MODEL`, `config.defaultModel`, or `--model <provider:model>`.
-6. Routes to script mode or interactive mode. Ollama is probed lazily within each path (via `route()`) rather than unconditionally on startup — this avoids a network round-trip in scripted/scenario mode.
+6. Routes to script mode or interactive mode. Ollama is probed lazily within each path (via `route()`) rather than unconditionally on startup — this avoids a network round-trip in scripted/e2e mode.
 
 ## Modes
 
@@ -32,7 +32,7 @@ _No exported symbols._
 | Scripted CLI | `--script <file>` | Creates a session and runs `runCliSession()` with `createScriptedMode()`. |
 | Interactive CLI | default | Shows banner, performs a startup route probe, sets up bottom UI on TTY, and runs `runCliSession()` with `createInteractiveMode()`. |
 | Logging | `-log` | Enables stderr logging before other startup work. |
-| Model override | `--model <provider:model>` | Overrides env/config selection for the current process, including scripted scenarios. |
+| Model override | `--model <provider:model>` | Overrides env/config selection for the current process, including scripted e2e runs. |
 
 ## State Ownership
 

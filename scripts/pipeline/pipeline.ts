@@ -7,7 +7,7 @@
  *
  * `test.ts` runs each section's command verbatim. `time.ts` runs the same
  * commands but swaps in instrumentation for the sections that support a
- * sub-breakdown (unit → vitest JSON reporter; scenarios → SCENARIO_TIMING_JSON).
+ * sub-breakdown (unit → vitest JSON reporter; e2e → E2E_TIMING_JSON).
  */
 
 export const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -37,7 +37,7 @@ export const SECTIONS: PipelineSection[] = [
   { key: 'build', label: 'build', cmd: npm, args: ['run', 'build'] },
   { key: 'lint', label: 'lint', cmd: npm, args: ['run', 'lint'] },
   { key: 'docs', label: 'docs', cmd: npm, args: ['run', 'docs:generate'] },
-  { key: 'scenarios', label: 'scenarios', cmd: npm, args: ['run', 'test:scenarios'] },
+  { key: 'e2e', label: 'e2e', cmd: npm, args: ['run', 'test:e2e'] },
   {
     key: 'unit',
     label: 'unit tests',

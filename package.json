@@ -14,7 +14,7 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "tsx scripts/pipeline/test.ts",
-    "test:scenarios": "tsx tests/harness/run-scenarios.ts --no-build",
+    "test:e2e": "tsx tests/harness/run-e2e.ts --no-build",
     "time": "tsx scripts/pipeline/time.ts",
     "coverage": "vitest run --coverage",
     "test-all-models": "tsx scripts/diagnostics/test-all-models.ts",

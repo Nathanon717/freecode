@@ -30,8 +30,8 @@ runSubAgent(agentType: string, prompt: string, ctx: SubAgentContext): Promise<st
 
 ## Execution paths (must stay parallel)
 
-- `native` — real/fake-native providers: the AI SDK drives the multi-step tool loop; the stream is drained silently for its text. Coverage: `tests/scenarios/spawn-agent-native` (mock-native → real `streamText`).
-- `fake` — scenario tests only: a manual ReAct loop that calls `runFakeModel`, which shares the module-global `consumedSteps` counter with the parent, so a nested fake call consumes from the *same* flat fixture queue. Coverage: `tests/scenarios/spawn-agent-fake`.
+- `native` — real/fake-native providers: the AI SDK drives the multi-step tool loop; the stream is drained silently for its text. Coverage: `tests/e2e/spawn-agent-native` (mock-native → real `streamText`).
+- `fake` — e2e tests only: a manual ReAct loop that calls `runFakeModel`, which shares the module-global `consumedSteps` counter with the parent, so a nested fake call consumes from the *same* flat fixture queue. Coverage: `tests/e2e/spawn-agent-fake`.
 
 Both paths return **only the final step's text** (the segment after the last tool call), so inter-step narration is discarded and the caller receives findings, not chatter — keep them symmetric.
 

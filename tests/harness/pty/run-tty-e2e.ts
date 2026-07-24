@@ -14,7 +14,7 @@ export interface TtyStep {
   waitFor?: string;
   // Override the per-step waitFor budget (ms). Default 8000. Raise this for
   // heavy steps (e.g. running a real subprocess) that can stall under the
-  // CPU contention of many TTY scenarios running in parallel.
+  // CPU contention of many TTY e2e tests running in parallel.
   waitForMs?: number;
   // Substrings that must / must not appear on the rendered viewport.
   screenContains?: string[];
@@ -28,7 +28,7 @@ export interface TtyStep {
   quietMs?: number;
 }
 
-export interface TtyScenario {
+export interface TtyE2eTest {
   cols?: number;
   rows?: number;
   // Text that signals the interactive prompt is live before the first step.
@@ -55,7 +55,7 @@ export interface TtyRunResult {
   transcript: string;
   finalScreen: string;
   // Per-phase wall-clock timings (startup → each step → exit). Populated only
-  // when TTY_TIMING is set; consumed by `npm run time -- scenarios <name>` to
+  // when TTY_TIMING is set; consumed by `npm run time -- e2e <name>` to
   // render a per-phase breakdown. Pure measurement — affects nothing else.
   phases: TtyPhase[];
 }
@@ -69,9 +69,9 @@ function applyMask(text: string, mask?: string[]): string {
 
 const TTY_TIMING = !!process.env.TTY_TIMING;
 
-export async function runTtyScenario(opts: {
-  scenarioName: string;
-  tty: TtyScenario;
+export async function runTtyE2eTest(opts: {
+  testName: string;
+  tty: TtyE2eTest;
   entry: string;
   cwd: string;
   env: NodeJS.ProcessEnv;

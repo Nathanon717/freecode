@@ -6,17 +6,17 @@
  *
  * Depth follows scope: the wider the scope, the shallower the breakdown.
  *   - full run   → section totals only (coarse; find the slow section)
- *   - one section → per-file (unit) / per-scenario (scenarios) breakdown
- *   - one section + filter → deepest view (per-test, or per-phase for a scenario)
+ *   - one section → per-file (unit) / per-test (e2e) breakdown
+ *   - one section + filter → deepest view (per-test, or per-phase for an e2e test)
  *
  * Usage:
- *   npm run time                     → full suite (build→lint→docs→scenarios→unit)
+ *   npm run time                     → full suite (build→lint→docs→e2e→unit)
  *   npm run time -- test             → same
  *   npm run time -- build            → just build
  *   npm run time -- lint             → just lint
  *   npm run time -- docs             → just docs
- *   npm run time -- scenarios        → scenarios, per-scenario breakdown
- *   npm run time -- scenarios <name> → one scenario, per-phase breakdown
+ *   npm run time -- e2e              → e2e tests, per-test breakdown
+ *   npm run time -- e2e <name>       → one e2e test, per-phase breakdown
  *   npm run time -- unit             → unit tests, per-file breakdown
  *   npm run time -- unit <pattern>   → matching unit files, per-test breakdown
  *   npm run time -- help             → this help
@@ -44,8 +44,8 @@ Usage: npm run time -- [scope] [filter]
 Scopes:
   (none) | test       full suite, section totals only
   build | lint | docs  single section, wall-clock total
-  scenarios | scenario per-scenario breakdown
-  scenarios <name>     one scenario, per-phase breakdown
+  e2e                  per-e2e-test breakdown
+  e2e <name>           one e2e test, per-phase breakdown
   unit                 per-file unit breakdown (sorted slowest-first)
   unit <pattern>       matching unit files, per-test breakdown
   help                 this message
@@ -140,20 +140,20 @@ function runSection(section: PipelineSection): Section {
 }
 
 interface PhaseTiming { label: string; ms: number; ok: boolean; }
-interface ScenarioTiming { name: string; type: string; ms: number; ok: boolean; phases?: PhaseTiming[]; }
+interface E2eTiming { name: string; type: string; ms: number; ok: boolean; phases?: PhaseTiming[]; }
 
-// Scenarios scoped on their own: per-scenario breakdown. With a filter, scope
-// to that one scenario and surface the per-phase TTY timing (TTY_TIMING is set
+// E2e tests scoped on their own: per-test breakdown. With a filter, scope
+// to that one e2e test and surface the per-phase TTY timing (TTY_TIMING is set
 // internally here — it is not a user-facing knob).
-function runScenariosDeep(filter?: string): Section {
-  console.log(chalk.bold.blue('\n▶  Scenarios'));
-  const section = SECTIONS.find(s => s.key === 'scenarios')!;
-  const jsonOut = join(tmpdir(), `scenario-timing-${Date.now()}.json`);
+function runE2eDeep(filter?: string): Section {
+  console.log(chalk.bold.blue('\n▶  E2e'));
+  const section = SECTIONS.find(s => s.key === 'e2e')!;
+  const jsonOut = join(tmpdir(), `e2e-timing-${Date.now()}.json`);
   const args = [...section.args];
-  const env: Record<string, string> = { SCENARIO_TIMING_JSON: jsonOut };
+  const env: Record<string, string> = { E2E_TIMING_JSON: jsonOut };
 
   if (filter) {
-    // `npm run test:scenarios -- --only=<name>` narrows to one scenario;
+    // `npm run test:e2e -- --only=<name>` narrows to one e2e test;
     // TTY_TIMING makes the TTY harness print one timing line per phase.
     args.push('--', `--only=${filter}`);
     env.TTY_TIMING = '1';
@@ -164,9 +164,9 @@ function runScenariosDeep(filter?: string): Section {
   const kids: Section[] = [];
   if (existsSync(jsonOut)) {
     try {
-      const data = JSON.parse(readFileSync(jsonOut, 'utf-8')) as { scenarios: ScenarioTiming[] };
-      for (const s of data.scenarios) {
-        // When scoped to one scenario, nest its per-phase timings (startup →
+      const data = JSON.parse(readFileSync(jsonOut, 'utf-8')) as { tests: E2eTiming[] };
+      for (const s of data.tests) {
+        // When scoped to one e2e test, nest its per-phase timings (startup →
         // each step → exit) as children, kept in chronological order so the
         // breakdown reads as a timeline rather than slowest-first.
         const phases = filter && s.phases?.length
@@ -176,19 +176,19 @@ function runScenariosDeep(filter?: string): Section {
       }
       kids.sort((a, b) => b.ms - a.ms);
       try { unlinkSync(jsonOut); } catch { /* ignore */ }
-    } catch { /* JSON parse failed; no per-scenario breakdown */ }
+    } catch { /* JSON parse failed; no per-test breakdown */ }
   }
 
   // The section's wall clock (r.ms) covers harness boot + teardown on top of the
-  // measured scenario(s). Surface that gap explicitly so the children add up to
-  // the parent total. Only when scoped to one scenario — a full run measures
-  // scenarios in parallel, where the gap is meaningless.
+  // measured e2e test(s). Surface that gap explicitly so the children add up to
+  // the parent total. Only when scoped to one e2e test — a full run measures
+  // e2e tests in parallel, where the gap is meaningless.
   if (filter && kids.length > 0) {
     const overhead = r.ms - kids.reduce((a, k) => a + k.ms, 0);
     if (overhead > 0) kids.push({ label: 'harness startup + teardown', ms: overhead, ok: true });
   }
 
-  return { label: 'scenarios', ms: r.ms, ok: r.ok, children: kids.length > 0 ? kids : undefined };
+  return { label: 'e2e', ms: r.ms, ok: r.ok, children: kids.length > 0 ? kids : undefined };
 }
 
 interface VitestAssertionResult {
@@ -301,8 +301,7 @@ function runUnitDeep(filter?: string): Section {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-const raw = process.argv[2] ?? 'test';
-const scope = raw === 'scenario' ? 'scenarios' : raw;
+const scope = process.argv[2] ?? 'test';
 const filter = process.argv[3];
 
 if (scope === 'help' || scope === '--help' || scope === '-h') {
@@ -329,14 +328,14 @@ switch (scope) {
   case 'docs':
     sections.push(runSection(SECTIONS.find(s => s.key === scope)!));
     break;
-  case 'scenarios': sections.push(runScenariosDeep(filter)); break;
-  case 'unit':      sections.push(runUnitDeep(filter));      break;
+  case 'e2e':  sections.push(runE2eDeep(filter));  break;
+  case 'unit': sections.push(runUnitDeep(filter)); break;
   default:
     console.error(`Unknown scope: ${scope}\n`);
     console.error(HELP);
     process.exit(1);
 }
 
-const skipSlowest = scope === 'unit' || (scope === 'scenarios' && !filter);
+const skipSlowest = scope === 'unit' || (scope === 'e2e' && !filter);
 printReport(sections, skipSlowest);
 if (sections.some(s => !s.ok)) process.exit(1);

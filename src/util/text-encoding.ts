@@ -7,7 +7,7 @@ export function stripBom(text: string): string {
   return text.charCodeAt(0) === 0xFEFF ? text.slice(BOM.length) : text;
 }
 
-/** Reads a text file as UTF-8 with any leading BOM stripped. Use this instead of bare `readFileSync(path, 'utf-8')` for any file that may have been authored or edited outside this codebase (config, prompts, downloaded datasets, recorded scenarios). */
+/** Reads a text file as UTF-8 with any leading BOM stripped. Use this instead of bare `readFileSync(path, 'utf-8')` for any file that may have been authored or edited outside this codebase (config, prompts, downloaded datasets, recorded e2e fixtures). */
 export function readTextFile(path: string): string {
   return stripBom(readFileSync(path, 'utf-8'));
 }

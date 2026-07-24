@@ -102,7 +102,7 @@ async function runNativeSubAgent(
   return text.trim();
 }
 
-// Fake-direct provider (scenario tests): a manual ReAct loop that consumes from
+// Fake-direct provider (e2e tests): a manual ReAct loop that consumes from
 // the SAME flat fixture queue as the parent (runFakeModel shares consumedSteps),
 // so parent step N emits spawn_agent, the sub-agent consumes N+1…, parent resumes.
 async function runFakeSubAgent(

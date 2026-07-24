@@ -20,7 +20,7 @@
         "screenContains": [
           "PREAMBLE-FIRST-LINE",
           "PREAMBLE-LAST-LINE",
-          "read(tests/scenarios/long-preview.fixture.txt)",
+          "read(tests/e2e/long-preview.fixture.txt)",
           "LINE-001",
           "more lines",
           "Enter to confirm · Esc to deny"

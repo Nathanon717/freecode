@@ -22,7 +22,7 @@ This table is generated from `package.json`.
 | `npm run start` | `node dist/index.js` |
 | `npm run test` | `tsx scripts/pipeline/test.ts` |
 | `npm run test-all-models` | `tsx scripts/diagnostics/test-all-models.ts` |
-| `npm run test:scenarios` | `tsx tests/harness/run-scenarios.ts --no-build` |
+| `npm run test:e2e` | `tsx tests/harness/run-e2e.ts --no-build` |
 | `npm run time` | `tsx scripts/pipeline/time.ts` |
 <!-- END GENERATED NPM SCRIPTS -->
 

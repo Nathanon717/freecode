@@ -59,8 +59,8 @@ import {
 } from '../../src/eval/humaneval-data.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
-const FIXTURE_GZ = resolve(_dirname, '..', 'scenarios', 'humaneval-mini.jsonl.gz');
-const FIXTURE_EXAMPLE = resolve(_dirname, '..', 'scenarios', 'humaneval-example.jsonl');
+const FIXTURE_GZ = resolve(_dirname, '..', 'e2e', 'humaneval-mini.jsonl.gz');
+const FIXTURE_EXAMPLE = resolve(_dirname, '..', 'e2e', 'humaneval-example.jsonl');
 
 // ── humanEvalDatasetPath ──────────────────────────────────────────────────────
 

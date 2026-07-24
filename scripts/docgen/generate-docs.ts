@@ -20,7 +20,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
 const CHECK = process.argv.includes('--check');
 
-interface ScenarioDoc {
+interface E2eDoc {
   file: string;
   name: string;
   description: string;
@@ -144,28 +144,28 @@ function slashCommandReference(): string {
   );
 }
 
-function readScenarios(): ScenarioDoc[] {
-  const scenariosDir = join(ROOT, 'tests', 'scenarios');
-  return readdirSync(scenariosDir)
-    .filter(file => file.endsWith('.scenario.json'))
+function readE2eTests(): E2eDoc[] {
+  const e2eDir = join(ROOT, 'tests', 'e2e');
+  return readdirSync(e2eDir)
+    .filter(file => file.endsWith('.e2e.json'))
     .sort()
     .map(file => {
-      const scenario = readJsonFile<ScenarioDoc>(join(scenariosDir, file));
+      const e2eTest = readJsonFile<E2eDoc>(join(e2eDir, file));
       return {
         file,
-        name: scenario.name,
-        description: scenario.description,
-        workspace: scenario.workspace ?? 'repo',
+        name: e2eTest.name,
+        description: e2eTest.description,
+        workspace: e2eTest.workspace ?? 'repo',
       };
     });
 }
 
-function scenarioReference(): string {
-  const rows = readScenarios().map(scenario => [
-    `\`${scenario.file}\``,
-    `\`${scenario.name}\``,
-    scenario.workspace ?? 'repo',
-    scenario.description,
+function e2eReference(): string {
+  const rows = readE2eTests().map(e2eTest => [
+    `\`${e2eTest.file}\``,
+    `\`${e2eTest.name}\``,
+    e2eTest.workspace ?? 'repo',
+    e2eTest.description,
   ]);
 
   return markdownTable(['File', 'Name', 'Workspace', 'Description'], rows);
@@ -194,16 +194,16 @@ const updates: Array<[string, (content: string) => string]> = [
       slashCommandReference(),
     );
   }],
-  ['docs/scenarios.md', content => {
+  ['docs/e2e.md', content => {
     const base = content || [
-      '# Scenarios',
+      '# E2e Tests',
       '',
-      'Reference docs for verification and eval scenarios.',
+      'Reference docs for e2e tests.',
       '',
-      'This table is generated from `tests/scenarios/*.scenario.json`.',
+      'This table is generated from `tests/e2e/*.e2e.json`.',
       '',
     ].join('\n');
-    return replaceGeneratedSection(base, 'SCENARIOS', scenarioReference());
+    return replaceGeneratedSection(base, 'E2E', e2eReference());
   }],
   ['docs/README.md', content =>
     replaceGeneratedSection(content, 'PTY QUICKSTART REF', ptyQuickstartRef())],

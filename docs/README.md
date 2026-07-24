@@ -7,8 +7,8 @@ Use this directory as the project handbook. Generated reference pages report fac
 - [Documentation maintenance](docs.md): source-of-truth rules for generated and human-written docs.
 - [Commands](commands.md): generated npm script and slash command reference.
 - [Providers](providers.md): generated provider registry plus provider setup notes.
-- [Scenarios](scenarios.md): generated inventory of verification and eval scenarios.
-- [Scenario authoring](testing-scenarios.md): how to write and maintain scenario tests.
+- [E2e tests](e2e.md): generated inventory of e2e tests.
+- [E2e test authoring](testing-e2e.md): how to write and maintain e2e tests.
 - [Writing unit tests](unit-tests.md): behavior-first testing rules to prevent test-file bloat. Read before writing unit tests.
 - [Test pipeline timing](scripts/time.md): per-section timing tool to identify pipeline bottlenecks.
 - [Model availability smoke test](scripts/test-all-models.md): sends "hi" to every free model to check which ones currently respond.

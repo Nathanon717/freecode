@@ -38,7 +38,7 @@ export interface FakeLlmTraceExpectation {
   calls?: FakeLlmTraceCallExpectation[];
 }
 
-export interface ScenarioExpectations {
+export interface E2eExpectations {
   stdoutContains?: string[];
   stdoutAbsent?: string[];
   /**

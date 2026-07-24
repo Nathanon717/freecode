@@ -7,26 +7,26 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { PROVIDER_REGISTRY } from '../../src/providers/provider-registry.js';
 import { readTextFile } from '../../src/util/text-encoding.js';
-import { assertScenarioExpectations } from './assertions/index.js';
-import type { FakeLlmTraceEvent, ScenarioExpectations, ToolTraceEvent } from './assertions/index.js';
-import type { TtyScenario } from './pty/run-tty-scenario.js';
+import { assertE2eExpectations } from './assertions/index.js';
+import type { FakeLlmTraceEvent, E2eExpectations, ToolTraceEvent } from './assertions/index.js';
+import type { TtyE2eTest } from './pty/run-tty-e2e.js';
 import { seedModels, type SeedModel } from './seed-store.js';
 
-// Env vars to strip from every scenario subprocess so provider API fetches
-// can't make live network requests. Scenarios never call a live LLM.
+// Env vars to strip from every e2e test subprocess so provider API fetches
+// can't make live network requests. E2e tests never call a live LLM.
 const PROVIDER_API_KEY_VARS = new Set(PROVIDER_REGISTRY.map(p => p.apiKeyEnvVar));
 
-// Base env with all provider API keys removed, used for every scenario subprocess.
+// Base env with all provider API keys removed, used for every e2e test subprocess.
 const safeBaseEnv = Object.fromEntries(
   Object.entries(process.env).filter(([k]) => !PROVIDER_API_KEY_VARS.has(k)),
 );
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
-const SCENARIOS_DIR = join(__dirname, '..', 'scenarios');
+const E2E_DIR = join(__dirname, '..', 'e2e');
 const DIST_ENTRY = join(ROOT, 'dist', 'index.js');
 
-interface Scenario {
+interface E2eTest {
   name: string;
   description: string;
   workspace?: 'repo' | 'temp';
@@ -35,8 +35,8 @@ interface Scenario {
   model?: string;
   llmFixture?: string;
   turns?: Array<{ input: string }>;
-  expect?: ScenarioExpectations;
-  tty?: TtyScenario;
+  expect?: E2eExpectations;
+  tty?: TtyE2eTest;
   env?: Record<string, string>;
   /** Model rows written into the temp store before the CLI starts. */
   seedModels?: SeedModel[];
@@ -44,14 +44,14 @@ interface Scenario {
   humanEvalExampleDataFixture?: string;
 }
 
-// Each scenario spawns its own freecode CLI process (and some spawn Python for
+// Each e2e test spawns its own freecode CLI process (and some spawn Python for
 // grading). Running all of them at once with Promise.all oversubscribes the CPU
 // — on a constrained box that starves process startup and the agent loop, so
 // even the 30s readyText budget and the per-step waitFor budgets blow, failing
-// scenarios that are perfectly correct. Cap concurrency so each process gets a
-// fair share. Override with SCENARIO_CONCURRENCY.
-const SCENARIO_CONCURRENCY = (() => {
-  const fromEnv = Number(process.env.SCENARIO_CONCURRENCY);
+// e2e tests that are perfectly correct. Cap concurrency so each process gets a
+// fair share. Override with E2E_CONCURRENCY.
+const E2E_CONCURRENCY = (() => {
+  const fromEnv = Number(process.env.E2E_CONCURRENCY);
   if (Number.isFinite(fromEnv) && fromEnv >= 1) return Math.floor(fromEnv);
   return Math.max(2, Math.floor(availableParallelism() / 2));
 })();
@@ -90,14 +90,14 @@ const onlyTty = args.includes('--only-tty');
 const noBuild = args.includes('--no-build');
 const showDetails = args.includes('--details');
 const onlyArg = args.find(arg => arg.startsWith('--only='));
-const onlyScenario = onlyArg?.slice('--only='.length);
+const onlyE2eTest = onlyArg?.slice('--only='.length);
 
-// When set, per-scenario wall-clock timings are written to this path as JSON
+// When set, per-e2e-test wall-clock timings are written to this path as JSON
 // after the run. This only emits measurement data — it does not change which
-// scenarios run, their order, or concurrency. Used by `npm run time`.
-const timingJsonPath = process.env.SCENARIO_TIMING_JSON;
+// e2e tests run, their order, or concurrency. Used by `npm run time`.
+const timingJsonPath = process.env.E2E_TIMING_JSON;
 type PhaseTiming = { label: string; ms: number; ok: boolean };
-const scenarioTimings: Array<{ name: string; type: 'tty' | 'verify'; ms: number; ok: boolean; phases?: PhaseTiming[] }> = [];
+const e2eTimings: Array<{ name: string; type: 'tty' | 'verify'; ms: number; ok: boolean; phases?: PhaseTiming[] }> = [];
 
 if (!noBuild) {
   console.log(chalk.dim('Building...'));
@@ -109,19 +109,19 @@ if (!noBuild) {
   console.log('');
 }
 
-const scenarioFiles = readdirSync(SCENARIOS_DIR)
-  .filter(f => f.endsWith('.scenario.json'))
+const e2eFiles = readdirSync(E2E_DIR)
+  .filter(f => f.endsWith('.e2e.json'))
   .sort();
 
-const scenarios = scenarioFiles.map(file => {
-  const raw = readTextFile(join(SCENARIOS_DIR, file));
+const e2eTests = e2eFiles.map(file => {
+  const raw = readTextFile(join(E2E_DIR, file));
   try {
-    return { file, scenario: JSON.parse(raw) as Scenario };
+    return { file, test: JSON.parse(raw) as E2eTest };
   } catch (err) {
     // A raw control byte (e.g. an ESC from a mangled `` escape) makes
     // JSON.parse throw without naming the file. Surface the file so the fix is
-    // obvious; the scenario-json-bytes unit test guards against this earlier.
-    console.error(chalk.red(`Failed to parse scenario file ${file}: ${err instanceof Error ? err.message : String(err)}`));
+    // obvious; the e2e-json-bytes unit test guards against this earlier.
+    console.error(chalk.red(`Failed to parse e2e test file ${file}: ${err instanceof Error ? err.message : String(err)}`));
     process.exit(1);
   }
 });
@@ -129,42 +129,42 @@ const scenarios = scenarioFiles.map(file => {
 let passed = 0;
 let failed = 0;
 
-const runnableScenarios = scenarios.filter(({ scenario }) => {
-  if (skipTty && scenario.tty) return false;
-  if (onlyTty && !scenario.tty) return false;
+const runnableE2eTests = e2eTests.filter(({ test }) => {
+  if (skipTty && test.tty) return false;
+  if (onlyTty && !test.tty) return false;
   return true;
 });
 
-// Run TTY scenarios in parallel — each spawns its own isolated PTY process.
-const ttyScenarios = runnableScenarios.filter(({ file, scenario }) => {
-  if (onlyScenario && scenario.name !== onlyScenario && file !== onlyScenario && file !== `${onlyScenario}.scenario.json`) return false;
-  return !!scenario.tty;
+// Run TTY e2e tests in parallel — each spawns its own isolated PTY process.
+const ttyE2eTests = runnableE2eTests.filter(({ file, test }) => {
+  if (onlyE2eTest && test.name !== onlyE2eTest && file !== onlyE2eTest && file !== `${onlyE2eTest}.e2e.json`) return false;
+  return !!test.tty;
 });
 
-if (ttyScenarios.length > 0) {
-  const { runTtyScenario } = await import('./pty/run-tty-scenario.js');
+if (ttyE2eTests.length > 0) {
+  const { runTtyE2eTest } = await import('./pty/run-tty-e2e.js');
 
-  const ttyResults = await mapWithConcurrency(ttyScenarios, SCENARIO_CONCURRENCY, async ({ scenario }) => {
+  const ttyResults = await mapWithConcurrency(ttyE2eTests, E2E_CONCURRENCY, async ({ test }) => {
     const t0 = Date.now();
     if (showDetails) {
-      console.log(`\n  ${chalk.cyan('RUN')}   ${chalk.cyan(scenario.name)}`);
-      console.log(`        ${chalk.dim(scenario.description || '(no description)')}`);
-      console.log(`        type: ${chalk.yellow('TTY screen verification')} | steps: ${chalk.magenta(String(scenario.tty!.steps.length))}`);
+      console.log(`\n  ${chalk.cyan('RUN')}   ${chalk.cyan(test.name)}`);
+      console.log(`        ${chalk.dim(test.description || '(no description)')}`);
+      console.log(`        type: ${chalk.yellow('TTY screen verification')} | steps: ${chalk.magenta(String(test.tty!.steps.length))}`);
     }
 
-    const tmpHome = join(tmpdir(), `freecode-tty-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    const tmpStore = join(tmpdir(), `freecode-tty-store-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const tmpHome = join(tmpdir(), `freecode-tty-${test.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const tmpStore = join(tmpdir(), `freecode-tty-store-${test.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(tmpHome, { recursive: true });
     mkdirSync(tmpStore, { recursive: true });
-    if (scenario.config) {
-      writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(scenario.config, null, 2), 'utf-8');
+    if (test.config) {
+      writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(test.config, null, 2), 'utf-8');
     }
-    if (scenario.seedModels) {
-      await seedModels(tmpStore, scenario.seedModels);
+    if (test.seedModels) {
+      await seedModels(tmpStore, test.seedModels);
     }
-    const fakeFixturePath = scenario.llmFixture ? join(SCENARIOS_DIR, scenario.llmFixture) : '';
-    const fakeEvalResultPath = scenario.llmFixture && scenario.model
-      ? join(ROOT, 'evals', 'custom', 'results', `${scenario.model.replace(/[:/]/g, '--')}.json`)
+    const fakeFixturePath = test.llmFixture ? join(E2E_DIR, test.llmFixture) : '';
+    const fakeEvalResultPath = test.llmFixture && test.model
+      ? join(ROOT, 'evals', 'custom', 'results', `${test.model.replace(/[:/]/g, '--')}.json`)
       : '';
     const previousFakeEvalResult = fakeEvalResultPath && existsSync(fakeEvalResultPath)
       ? readFileSync(fakeEvalResultPath, 'utf-8')
@@ -174,9 +174,9 @@ if (ttyScenarios.length > 0) {
     let ttyScreen = '';
     let ttyPhases: PhaseTiming[] = [];
     try {
-      const result = await runTtyScenario({
-        scenarioName: scenario.name,
-        tty: scenario.tty!,
+      const result = await runTtyE2eTest({
+        testName: test.name,
+        tty: test.tty!,
         entry: DIST_ENTRY,
         cwd: ROOT,
         env: {
@@ -190,13 +190,13 @@ if (ttyScenarios.length > 0) {
           DOPPLER_PROJECT: '1',
           FREECODE_DB_SYNC_URL: '',
           FREECODE_DB_AUTH_TOKEN: '',
-          // Suppress startup model prefetch so TTY scenarios don't fire live network calls.
+          // Suppress startup model prefetch so TTY e2e tests don't fire live network calls.
           FREECODE_NO_PREFETCH: '1',
-          ...(scenario.model ? { FREECODE_MODEL: scenario.model } : {}),
-          ...(scenario.llmFixture ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath } : {}),
-          ...(scenario.humanEvalDataFixture ? { HUMANEVAL_DATA: join(SCENARIOS_DIR, scenario.humanEvalDataFixture) } : {}),
-          ...(scenario.humanEvalExampleDataFixture ? { HUMANEVAL_EXAMPLE_DATA: join(SCENARIOS_DIR, scenario.humanEvalExampleDataFixture) } : {}),
-          ...(scenario.env ?? {}),
+          ...(test.model ? { FREECODE_MODEL: test.model } : {}),
+          ...(test.llmFixture ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath } : {}),
+          ...(test.humanEvalDataFixture ? { HUMANEVAL_DATA: join(E2E_DIR, test.humanEvalDataFixture) } : {}),
+          ...(test.humanEvalExampleDataFixture ? { HUMANEVAL_EXAMPLE_DATA: join(E2E_DIR, test.humanEvalExampleDataFixture) } : {}),
+          ...(test.env ?? {}),
         },
       });
       ttyFailures = result.failures;
@@ -214,11 +214,11 @@ if (ttyScenarios.length > 0) {
     }
     try { rmSync(tmpHome, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpHome:', err); }
     try { rmSync(tmpStore, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpStore:', err); }
-    return { name: scenario.name, failures: ttyFailures, screen: ttyScreen, ms: Date.now() - t0, phases: ttyPhases };
+    return { name: test.name, failures: ttyFailures, screen: ttyScreen, ms: Date.now() - t0, phases: ttyPhases };
   });
 
   for (const { name, failures, screen, ms, phases } of ttyResults) {
-    scenarioTimings.push({ name, type: 'tty', ms, ok: failures.length === 0, phases: phases.length ? phases : undefined });
+    e2eTimings.push({ name, type: 'tty', ms, ok: failures.length === 0, phases: phases.length ? phases : undefined });
     if (failures.length === 0) {
       passed++;
     } else {
@@ -234,37 +234,37 @@ if (ttyScenarios.length > 0) {
   }
 }
 
-const nonTtyScenarios = runnableScenarios.filter(({ file, scenario }) => {
-  if (onlyScenario && scenario.name !== onlyScenario && file !== onlyScenario && file !== `${onlyScenario}.scenario.json`) return false;
-  return !scenario.tty;
+const nonTtyE2eTests = runnableE2eTests.filter(({ file, test }) => {
+  if (onlyE2eTest && test.name !== onlyE2eTest && file !== onlyE2eTest && file !== `${onlyE2eTest}.e2e.json`) return false;
+  return !test.tty;
 });
 
-if (nonTtyScenarios.length > 0) {
-  const nonTtyResults = await mapWithConcurrency(nonTtyScenarios, SCENARIO_CONCURRENCY, async ({ scenario }) => {
+if (nonTtyE2eTests.length > 0) {
+  const nonTtyResults = await mapWithConcurrency(nonTtyE2eTests, E2E_CONCURRENCY, async ({ test }) => {
     const t0 = Date.now();
     const tmpHome = join(tmpdir(), `freecode-verify-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    const tmpStore = join(tmpdir(), `freecode-store-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    const tmpWorkspace = join(tmpdir(), `freecode-workspace-${scenario.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const tmpStore = join(tmpdir(), `freecode-store-${test.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const tmpWorkspace = join(tmpdir(), `freecode-workspace-${test.name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(tmpHome, { recursive: true });
     mkdirSync(tmpStore, { recursive: true });
-    if (scenario.workspace === 'temp') mkdirSync(tmpWorkspace, { recursive: true });
-    if (scenario.seedModels) {
-      await seedModels(tmpStore, scenario.seedModels);
+    if (test.workspace === 'temp') mkdirSync(tmpWorkspace, { recursive: true });
+    if (test.seedModels) {
+      await seedModels(tmpStore, test.seedModels);
     }
 
-    const inputLines = scenario.turns.map(t => t.input).join('\n');
+    const inputLines = test.turns.map(t => t.input).join('\n');
     const inputFile = join(tmpHome, 'input.txt');
     writeFileSync(inputFile, inputLines, 'utf-8');
     const traceFile = join(tmpHome, 'trace.json');
     const fakeTraceFile = join(tmpHome, 'fake-llm-trace.json');
-    const fakeFixturePath = scenario.llmFixture ? join(SCENARIOS_DIR, scenario.llmFixture) : '';
-    if (scenario.config) {
-      writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(scenario.config, null, 2), 'utf-8');
+    const fakeFixturePath = test.llmFixture ? join(E2E_DIR, test.llmFixture) : '';
+    if (test.config) {
+      writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(test.config, null, 2), 'utf-8');
     }
 
     const cliArgs: string[] = [DIST_ENTRY];
-    if (scenario.flags) cliArgs.push(...scenario.flags);
-    if (scenario.model) { cliArgs.push('--model'); cliArgs.push(scenario.model); }
+    if (test.flags) cliArgs.push(...test.flags);
+    if (test.model) { cliArgs.push('--model'); cliArgs.push(test.model); }
     cliArgs.push('--script', inputFile);
 
     let stdout = '';
@@ -276,7 +276,7 @@ if (nonTtyScenarios.length > 0) {
     try {
       const result = await new Promise<{ stdout: string; stderr: string; exitCode: number }>((resolve) => {
         const child = spawn(process.execPath, cliArgs, {
-          cwd: scenario.workspace === 'temp' ? tmpWorkspace : ROOT,
+          cwd: test.workspace === 'temp' ? tmpWorkspace : ROOT,
           env: {
             ...safeBaseEnv,
             FREECODE_HOME: tmpHome,
@@ -286,11 +286,11 @@ if (nonTtyScenarios.length > 0) {
             DOPPLER_PROJECT: '1',
             FREECODE_DB_SYNC_URL: '',
             FREECODE_DB_AUTH_TOKEN: '',
-            ...(scenario.llmFixture
+            ...(test.llmFixture
               ? { FREECODE_FAKE_LLM: '1', FREECODE_FAKE_LLM_SCRIPT: fakeFixturePath, FREECODE_FAKE_LLM_TRACE: fakeTraceFile }
               : { FREECODE_NO_LLM: '1' }),
-            ...(scenario.expect.toolTrace ? { FREECODE_TRACE_JSON: traceFile } : {}),
-            ...(scenario.env ?? {}),
+            ...(test.expect.toolTrace ? { FREECODE_TRACE_JSON: traceFile } : {}),
+            ...(test.env ?? {}),
           },
         });
         let out = '';
@@ -315,41 +315,41 @@ if (nonTtyScenarios.length > 0) {
       exitCode = 1;
     }
 
-    const workspaceRoot = scenario.workspace === 'temp' ? tmpWorkspace : ROOT;
-    const failures = assertScenarioExpectations({
-      expect: scenario.expect,
+    const workspaceRoot = test.workspace === 'temp' ? tmpWorkspace : ROOT;
+    const failures = assertE2eExpectations({
+      expect: test.expect,
       stdout,
       stderr,
       exitCode,
       trace,
       fakeLlmTrace,
       workspaceRoot,
-      workspace: scenario.workspace ?? 'repo',
+      workspace: test.workspace ?? 'repo',
     });
 
     try { rmSync(tmpHome, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpHome:', err); }
     try { rmSync(tmpStore, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpStore:', err); }
-    if (scenario.workspace === 'temp') {
+    if (test.workspace === 'temp') {
       try { rmSync(tmpWorkspace, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpWorkspace:', err); }
     }
 
-    return { scenario, failures, stdout, stderr, exitCode, trace, fakeLlmTrace, ms: Date.now() - t0 };
+    return { test, failures, stdout, stderr, exitCode, trace, fakeLlmTrace, ms: Date.now() - t0 };
   });
 
-  for (const { scenario, failures, stdout, stderr, exitCode, trace, fakeLlmTrace, ms } of nonTtyResults) {
-    scenarioTimings.push({ name: scenario.name, type: 'verify', ms, ok: failures.length === 0 });
+  for (const { test, failures, stdout, stderr, exitCode, trace, fakeLlmTrace, ms } of nonTtyResults) {
+    e2eTimings.push({ name: test.name, type: 'verify', ms, ok: failures.length === 0 });
     if (showDetails) {
       const checks: string[] = [];
-      if (scenario.expect.exitCode !== undefined) checks.push(`exitCode=${scenario.expect.exitCode}`);
-      if (scenario.expect.stdoutContains?.length) checks.push(`stdoutContains=${scenario.expect.stdoutContains.length}`);
-      if (scenario.expect.stdoutAbsent?.length) checks.push(`stdoutAbsent=${scenario.expect.stdoutAbsent.length}`);
-      if (scenario.expect.stdoutOrder?.length) checks.push(`stdoutOrder=${scenario.expect.stdoutOrder.length}`);
-      if (scenario.expect.files?.length) checks.push(`files=${scenario.expect.files.length}`);
-      if (scenario.expect.toolTrace) checks.push('toolTrace');
-      if (scenario.expect.fakeLlmTrace) checks.push('fakeLlmTrace');
-      console.log(`\n  ${chalk.cyan('RUN')}   ${chalk.cyan(scenario.name)}`);
-      console.log(`        ${chalk.dim(scenario.description || '(no description)')}`);
-      console.log(`        type: ${chalk.yellow('scenario verification')} | workspace: ${chalk.magenta(scenario.workspace ?? 'repo')}`);
+      if (test.expect.exitCode !== undefined) checks.push(`exitCode=${test.expect.exitCode}`);
+      if (test.expect.stdoutContains?.length) checks.push(`stdoutContains=${test.expect.stdoutContains.length}`);
+      if (test.expect.stdoutAbsent?.length) checks.push(`stdoutAbsent=${test.expect.stdoutAbsent.length}`);
+      if (test.expect.stdoutOrder?.length) checks.push(`stdoutOrder=${test.expect.stdoutOrder.length}`);
+      if (test.expect.files?.length) checks.push(`files=${test.expect.files.length}`);
+      if (test.expect.toolTrace) checks.push('toolTrace');
+      if (test.expect.fakeLlmTrace) checks.push('fakeLlmTrace');
+      console.log(`\n  ${chalk.cyan('RUN')}   ${chalk.cyan(test.name)}`);
+      console.log(`        ${chalk.dim(test.description || '(no description)')}`);
+      console.log(`        type: ${chalk.yellow('e2e verification')} | workspace: ${chalk.magenta(test.workspace ?? 'repo')}`);
       console.log(`        checks: ${checks.length > 0 ? checks.join(', ') : chalk.dim('(none)')}`);
     }
 
@@ -357,20 +357,20 @@ if (nonTtyScenarios.length > 0) {
       if (showDetails) {
         const calls = trace.map(event => event.tool);
         console.log(`        exitCode: ${chalk.green(String(exitCode))}`);
-        if (scenario.expect.files?.length) {
-          console.log(`        file checks: ${scenario.expect.files.map(f => f.path).join(', ')}`);
+        if (test.expect.files?.length) {
+          console.log(`        file checks: ${test.expect.files.map(f => f.path).join(', ')}`);
         }
-        if (scenario.expect.toolTrace) {
+        if (test.expect.toolTrace) {
           console.log(`        tools: ${calls.join(' -> ') || '(none)'}`);
         }
-        if (scenario.expect.fakeLlmTrace) {
+        if (test.expect.fakeLlmTrace) {
           console.log(`        fake LLM calls: ${fakeLlmTrace.length}`);
         }
         printCapturedOutput(stdout, stderr);
       }
       passed++;
     } else {
-      console.log(`  ${chalk.red('FAIL')}  ${chalk.cyan(scenario.name)}`);
+      console.log(`  ${chalk.red('FAIL')}  ${chalk.cyan(test.name)}`);
       for (const f of failures) console.log(`          ${chalk.red(f)}`);
       if (showDetails || process.env.VERBOSE) {
         printCapturedOutput(stdout, stderr);
@@ -382,10 +382,10 @@ if (nonTtyScenarios.length > 0) {
 
 if (timingJsonPath) {
   try {
-    scenarioTimings.sort((a, b) => b.ms - a.ms);
-    writeFileSync(timingJsonPath, JSON.stringify({ scenarios: scenarioTimings }, null, 2), 'utf-8');
+    e2eTimings.sort((a, b) => b.ms - a.ms);
+    writeFileSync(timingJsonPath, JSON.stringify({ tests: e2eTimings }, null, 2), 'utf-8');
   } catch (err) {
-    console.error('[timing] failed to write scenario timings:', err);
+    console.error('[timing] failed to write e2e test timings:', err);
   }
 }
 
