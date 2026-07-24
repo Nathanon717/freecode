@@ -34,7 +34,7 @@ function runSession(args: string[]): SessionResult {
   const result = spawnSync(process.execPath, [TSX, SESSION_SCRIPT, ...args], {
     cwd: ROOT,
     encoding: 'utf8',
-    timeout: 35_000,
+    timeout: 50_000,
     env: { ...process.env, MSYS_NO_PATHCONV: '1', FORCE_COLOR: '0' },
   });
   return {
@@ -53,7 +53,7 @@ describe.skipIf(!hasDist)('PTY session manager', () => {
     const { stdout, exitCode } = runSession(['start', '--screen']);
     expect(exitCode, 'start exited non-zero').toBe(0);
     expect(stdout).toContain('for commands');
-  }, 35000);
+  }, 55000);
 
   it('screen returns the current rendered screen without altering state', () => {
     const { stdout, exitCode } = runSession(['screen']);

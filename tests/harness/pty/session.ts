@@ -291,7 +291,10 @@ async function cmdStart(cols: number, rows: number, showScreen = false, mobile =
   }).unref();
 
   const flag = flagPath(id);
-  const deadline = Date.now() + 20_000;
+  // The daemon's own startup (waitForText + settle + the up-to-40-iteration
+  // input-liveness probe below) can legitimately take longer than this poll
+  // used to allow, especially under CPU contention — give it real headroom.
+  const deadline = Date.now() + 40_000;
   while (Date.now() < deadline) {
     if (existsSync(flag)) break;
     await sleep(100);

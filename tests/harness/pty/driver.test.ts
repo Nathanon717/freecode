@@ -129,7 +129,13 @@ describe('createPtyDriver', () => {
     expect(found).toBe(true);
   }, 15000);
 
-  it('resize delivers SIGWINCH and resizes the emulator viewport', async () => {
+  // Skipped on win32: under nested ConPTY (this harness's PTY hosting a child
+  // whose own stdout is itself ConPTY-backed), Windows never delivers a
+  // console resize notification to the grandchild — confirmed directly
+  // against node-pty's resize(), independent of useConptyDll. Real interactive
+  // sessions aren't nested this way and don't hit it; see driver.ts's own
+  // resize() comment for the useConptyDll context.
+  it.skipIf(process.platform === 'win32')('resize delivers SIGWINCH and resizes the emulator viewport', async () => {
     // The subprocess echoes its terminal size on start and on every SIGWINCH.
     const script = [
       "process.stdout.write('SIZE:'+process.stdout.columns+'x'+process.stdout.rows+'\\n');",
