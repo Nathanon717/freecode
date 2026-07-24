@@ -50,6 +50,8 @@ describe('TOOL_PARAMS matches the real tool schemas', () => {
   }
   const defOf = (schema: z.ZodTypeAny): ZodDef['_def'] => (schema as ZodDef)._def;
 
+  // ZodEnum counts as a string param: its values are strings, so the skeleton must
+  // autofill quotes for them exactly as it does for a free-form ZodString.
   function isStringParam(schema: z.ZodTypeAny): boolean {
     let s = schema;
     let def = defOf(s);
@@ -60,7 +62,7 @@ describe('TOOL_PARAMS matches the real tool schemas', () => {
       s = def.innerType;
       def = defOf(s);
     }
-    return def?.typeName === 'ZodString';
+    return def?.typeName === 'ZodString' || def?.typeName === 'ZodEnum';
   }
 
   for (const name of TOOL_NAMES) {
@@ -80,7 +82,7 @@ describe('printToolsList', () => {
     const out = logged.join('\n');
     expect(out).toContain('Available tools');
     expect(out).toContain('read(path, [offset], [limit])');
-    expect(out).toContain('grep(pattern, [path], [include])');
+    expect(out).toContain('grep(pattern, [path], [include], [output_mode], [case_insensitive], [context_lines], [multiline], [head_limit])');
     expect(out).toContain('list_dir([path])');
     expect(out).toContain('shell_exec(command, [timeout_ms], [confirmDestructive])');
   });

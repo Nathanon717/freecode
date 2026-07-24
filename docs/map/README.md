@@ -44,7 +44,7 @@ Format: filename (linecount)
   - [`create.ts`](agent/tools/create.md) (33) — create Tool
   - [`edit-diff-context.ts`](agent/tools/edit-diff-context.md) (103) — Edit Diff Context
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
-  - [`grep.ts`](agent/tools/grep.md) (142) — grep Tool
+  - [`grep.ts`](agent/tools/grep.md) (324) — grep Tool
   - [`index.ts`](agent/tools/index.md) (449) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (88) — read Tool
@@ -87,7 +87,7 @@ Format: filename (linecount)
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
 - `src/cli/tools/`
   - [`tool-approval.ts`](cli/tools/tool-approval.md) (297) — Tool Approval Prompts
-  - [`tool-invocation.ts`](cli/tools/tool-invocation.md) (334) — Hand-Typed Tool Call Parsing
+  - [`tool-invocation.ts`](cli/tools/tool-invocation.md) (339) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tools/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
 - `src/commands/`
   - [`config.ts`](commands/config.md) (397) — Interactive Config Editor

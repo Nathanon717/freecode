@@ -8,7 +8,7 @@
     "stdoutContains": [
       "Available tools",
       "read(path, [offset], [limit])",
-      "grep(pattern, [path], [include])",
+      "grep(pattern, [path], [include], [output_mode], [case_insensitive], [context_lines], [multiline], [head_limit])",
       "shell_exec(command, [timeout_ms], [confirmDestructive])"
     ],
     "stdoutAbsent": ["No command", "Error:"],

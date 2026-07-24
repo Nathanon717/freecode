@@ -40,7 +40,7 @@ The result will be provided before you continue. You may then call another tool 
   args: { "path": string, "old_text": string, "new_text": string }
 
 **grep** — Regex-search file contents.
-  args: { "pattern": string, "path"?: string, "include"?: string }
+  args: { "pattern": string, "path"?: string, "include"?: string, "output_mode"?: "content" | "files_with_matches" | "count", "case_insensitive"?: boolean, "context_lines"?: number, "multiline"?: boolean, "head_limit"?: number }
 
 **shell_exec** — Execute a shell command.
   args: { "command": string, "timeout_ms"?: number, "confirmDestructive"?: boolean }`;

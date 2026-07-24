@@ -42,7 +42,7 @@ createFileTool: CoreTool<ZodObject<{ path: ZodString; content: ZodString; }, "st
 
 editTool: CoreTool<ZodObject<{ path: ZodString; old_text: ZodString; new_text: ZodString; }, "strip", ZodTypeAny, { path: string; old_text: string; new_text: string; }, { ...; }>, string> & { ...; }
 
-grepTool: CoreTool<ZodObject<{ pattern: ZodString; path: ZodOptional<ZodString>; include: ZodOptional<ZodString>; }, "strip", ZodTypeAny, { ...; }, { ...; }>, string> & { ...; }
+grepTool: CoreTool<ZodObject<{ pattern: ZodString; path: ZodOptional<ZodString>; include: ZodOptional<ZodString>; output_mode: ZodOptional<ZodEnum<["content", "files_with_matches", "count"]>>; case_insensitive: ZodOptional<...>; context_lines: ZodOptional<...>; multiline: ZodOptional<...>; head_limit: ZodOptional<...>; }, "st...
 
 shellTool: CoreTool<ZodObject<{ command: ZodString; timeout_ms: ZodOptional<ZodNumber>; confirmDestructive: ZodOptional<ZodBoolean>; }, "strip", ZodTypeAny, { ...; }, { ...; }>, string> & { ...; }
 

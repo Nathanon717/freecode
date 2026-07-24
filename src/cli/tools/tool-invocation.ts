@@ -46,6 +46,11 @@ export const TOOL_PARAMS: Record<ToolName, readonly ToolParam[]> = {
     { name: 'pattern', quoted: true },
     { name: 'path', quoted: true },
     { name: 'include', quoted: true },
+    { name: 'output_mode', quoted: true },
+    { name: 'case_insensitive', quoted: false },
+    { name: 'context_lines', quoted: false },
+    { name: 'multiline', quoted: false },
+    { name: 'head_limit', quoted: false },
   ],
   list_dir: [{ name: 'path', quoted: true }],
   create: [
