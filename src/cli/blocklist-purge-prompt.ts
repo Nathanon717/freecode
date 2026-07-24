@@ -76,6 +76,14 @@ export async function promptBlocklistPurge(): Promise<void> {
   });
 
   await session.promise;
-  await purgeBlocklistedStoredModels(models);
-  console.log(chalk.dim(`Deleted ${models.length} model${models.length === 1 ? '' : 's'}.\n`));
+  const durable = await purgeBlocklistedStoredModels(models);
+  if (durable) {
+    console.log(chalk.dim(`Deleted ${models.length} model${models.length === 1 ? '' : 's'}.\n`));
+  } else {
+    console.log(
+      chalk.yellow(
+        `Could not reach the sync server; ${models.length} model${models.length === 1 ? '' : 's'} will be deleted on the next launch.\n`,
+      ),
+    );
+  }
 }

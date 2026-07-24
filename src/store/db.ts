@@ -176,7 +176,7 @@ export function persistModelCatalogAsync(rows: ModelCatalogRow[]): void {
 /**
  * Delete these model keys and every row that hangs off them. Awaited, not
  * fire-and-forget: the only caller gates it on a user confirmation and must not
- * continue before the rows are gone.
+ * continue before the rows are gone. Returns `true` when the delete is durable.
  *
  * The children are deleted explicitly, oldest-descendant first, because nothing in
  * the schema cascades: `eval_runs.model_key` and `eval_transcripts.run_id` are plain
@@ -184,35 +184,62 @@ export function persistModelCatalogAsync(rows: ModelCatalogRow[]): void {
  * delete would be rejected outright, and `llm_calls.model_key` is not a foreign key
  * at all, so its rows would simply be orphaned. One batch, so a failure part-way
  * leaves the DB untouched rather than half-deleted.
+ *
+ * Durability on a synced replica: the delete is written **straight to the primary**
+ * via a throwaway remote client, then pulled local — NOT applied to the local replica
+ * and pushed on `sync()`. A local-replica delete is an un-pushed WAL frame, and the
+ * catalog upserts every launch keep advancing the remote, so that frame perpetually
+ * loses the push race and is discarded by the next launch's WalConflict wipe-and-
+ * re-pull — the deleted row comes back from the primary and the blocklist-purge prompt
+ * recurs forever (a model the provider no longer serves can never be re-filtered away,
+ * so it loops indefinitely). Writing to the primary sidesteps the race entirely. See db.md.
  */
-export async function deleteModelRows(keys: string[]): Promise<void> {
-  if (keys.length === 0) return;
+export async function deleteModelRows(keys: string[]): Promise<boolean> {
+  if (keys.length === 0) return true;
   await ensureStoreReady();
+  let durable = true;
   await enqueueWrite(async () => {
+    const placeholders = keys.map(() => '?').join(', ');
+    const args: InValue[] = keys;
+    const stmts = [
+      { sql: `DELETE FROM eval_transcripts WHERE run_id IN (SELECT id FROM eval_runs WHERE model_key IN (${placeholders}))`, args },
+      { sql: `DELETE FROM eval_runs WHERE model_key IN (${placeholders})`, args },
+      { sql: `DELETE FROM llm_calls WHERE model_key IN (${placeholders})`, args },
+      { sql: `DELETE FROM models WHERE key IN (${placeholders})`, args },
+    ];
+
+    const { syncUrl, authToken } = readDbConfig();
+    if (syncUrl && authToken) {
+      // Synced: delete on the primary so it can't be conflict-wiped, then pull it local.
+      const remote = createClient({ url: syncUrl, authToken });
+      try {
+        await remote.batch(stmts, 'write');
+        if (client) await client.sync().catch((err) => logError('db', 'sync after primary delete failed', err));
+      } catch (err) {
+        logError('db', 'Failed to delete model rows on primary', err);
+        durable = false;
+      } finally {
+        remote.close();
+      }
+    } else if (client) {
+      // Local-only store (no sync configured): a plain local delete is already durable.
+      try {
+        await client.batch(stmts, 'write');
+      } catch (err) {
+        logError('db', 'Failed to delete model rows', err);
+        durable = false;
+      }
+    }
+
+    // Reflect the delete in the in-memory cache so the running session stops offering
+    // the rows even if the durable write failed (it will be retried next launch).
     if (cache) {
       const next = { ...cache };
       for (const key of keys) delete next[key];
       cache = next;
     }
-    const c = client;
-    if (!c) return;
-    const placeholders = keys.map(() => '?').join(', ');
-    const args: InValue[] = keys;
-    try {
-      await c.batch(
-        [
-          { sql: `DELETE FROM eval_transcripts WHERE run_id IN (SELECT id FROM eval_runs WHERE model_key IN (${placeholders}))`, args },
-          { sql: `DELETE FROM eval_runs WHERE model_key IN (${placeholders})`, args },
-          { sql: `DELETE FROM llm_calls WHERE model_key IN (${placeholders})`, args },
-          { sql: `DELETE FROM models WHERE key IN (${placeholders})`, args },
-        ],
-        'write'
-      );
-      await c.sync().catch((err) => logError('db', 'sync after model delete failed', err));
-    } catch (err) {
-      logError('db', 'Failed to delete model rows', err);
-    }
   });
+  return durable;
 }
 
 /** One row per LLM HTTP call. Fire-and-forget; serialized through writeChain. */

@@ -52,9 +52,10 @@ export function findBlocklistedStoredModels(): BlocklistedStoredModel[] {
   return found.sort((a, b) => a.key.localeCompare(b.key));
 }
 
-/** Delete the given stored models and everything referencing them. */
+/** Delete the given stored models and everything referencing them. Returns `true` when
+ * the delete is durable; `false` means it did not reach the primary and will be retried. */
 export async function purgeBlocklistedStoredModels(
   models: BlocklistedStoredModel[],
-): Promise<void> {
-  await deleteModelRows(models.map((m) => m.key));
+): Promise<boolean> {
+  return deleteModelRows(models.map((m) => m.key));
 }

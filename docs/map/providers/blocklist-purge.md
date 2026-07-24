@@ -19,7 +19,7 @@ interface BlocklistedStoredModel {
 
 findBlocklistedStoredModels(): BlocklistedStoredModel[]
 
-purgeBlocklistedStoredModels(models: BlocklistedStoredModel[]): Promise<void>
+purgeBlocklistedStoredModels(models: BlocklistedStoredModel[]): Promise<boolean>
 ```
 <!-- END GENERATED EXPORTS -->
 

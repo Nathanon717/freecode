@@ -162,6 +162,42 @@ describe('db: DB persistence round-trip', () => {
   });
 });
 
+describe('db: deleteModelRows', () => {
+  it('deletes the model row and all children, returns true, and the delete survives reinit', async () => {
+    await db.initStore();
+    const entry = { provider: 'anthropic', modelId: 'claude-old' };
+    const key = 'anthropic:claude-old';
+    db.setModelData({ [key]: entry });
+    db.persistModelRowAsync(key, entry);
+    // A child row in each descendant table so the cascade is exercised.
+    db.saveTranscriptAsync(key, 'humaneval', {
+      timestamp: '2026-06-19T10:00:00.000Z', taskId: 'HumanEval/0', pass: true,
+      turns: 1, tokenUsage: {}, durationMs: 10, error: null,
+    }, undefined, [], undefined);
+    db.persistCallLogAsync({ modelKey: key, timestamp: '2026-06-19T10:00:00.000Z' });
+    await db.drainPendingWrites();
+
+    const durable = await db.deleteModelRows([key]);
+    expect(durable).toBe(true);
+    // Gone from the in-memory cache immediately.
+    expect(db.getModelData()?.[key]).toBeUndefined();
+
+    // Gone from the DB too, and stays gone after a full reinit (no local-only revival).
+    await db.resetStore();
+    await db.initStore();
+    expect(db.getModelData()?.[key]).toBeUndefined();
+    const rows = await db.queryRawForTesting('SELECT count(*) n FROM models WHERE key = ?', [key]);
+    expect(rows[0].n).toBe(0);
+    const calls = await db.queryRawForTesting('SELECT count(*) n FROM llm_calls WHERE model_key = ?', [key]);
+    expect(calls[0].n).toBe(0);
+  });
+
+  it('is a no-op that returns true for an empty key list', async () => {
+    await db.initStore();
+    await expect(db.deleteModelRows([])).resolves.toBe(true);
+  });
+});
+
 describe('db: foreign key enforcement', () => {
   it('PRAGMA foreign_keys is live — inserting eval_run with bogus model_key throws', async () => {
     await db.initStore();

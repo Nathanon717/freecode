@@ -54,7 +54,7 @@ Format: filename (linecount)
   - [`usage-finalize.ts`](agent/usage-finalize.md) (65) — Turn Usage/Cost/Quota Finalization
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/`
-  - [`blocklist-purge-prompt.ts`](cli/blocklist-purge-prompt.md) (82) — Startup Blocklist Purge Confirmation
+  - [`blocklist-purge-prompt.ts`](cli/blocklist-purge-prompt.md) (90) — Startup Blocklist Purge Confirmation
 - `src/cli/chrome/`
   - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (498) — Bottom Terminal UI
   - [`footer-status.ts`](cli/chrome/footer-status.md) (215) — Footer Status State and Formatters
@@ -115,7 +115,7 @@ Format: filename (linecount)
   - [`openai-compat.ts`](providers/adapters/openai-compat.md) (254) — OpenAI-Compatible Adapter
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
-  - [`blocklist-purge.ts`](providers/blocklist-purge.md) (61) — Blocklisted Stored Model Purge
+  - [`blocklist-purge.ts`](providers/blocklist-purge.md) (62) — Blocklisted Stored Model Purge
   - [`fake.ts`](providers/fake.md) (420) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
   - [`model-data.ts`](providers/model-data.md) (279) — Unified Model Store
@@ -137,7 +137,7 @@ Format: filename (linecount)
   - [`db-load.ts`](store/db-load.md) (88) — DB Row Hydration
   - [`db-schema.ts`](store/db-schema.md) (87) — Table & Index DDL
   - [`db-types.ts`](store/db-types.md) (6) — Shared Store Types
-  - [`db.ts`](store/db.md) (458) — SQLite Store (libSQL/Turso)
+  - [`db.ts`](store/db.md) (485) — SQLite Store (libSQL/Turso)
   - [`model-list-cache.ts`](store/model-list-cache.md) (107) — Model List Cache
   - [`store-paths.ts`](store/store-paths.md) (50) — Store Location & Sync Credentials
 - `src/tokenizers/backends/`
