@@ -6,10 +6,11 @@ import chalk from 'chalk';
 
 function tryInjectDoppler(): void {
   if (process.env['DOPPLER_PROJECT']) return;
-  const result = spawnSync('doppler', ['secrets', 'download', '--format=json', '--no-file'], {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const result = spawnSync(
+    'doppler',
+    ['secrets', 'download', '--project', 'freecode', '--config', 'dev', '--format=json', '--no-file'],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+  );
   if (result.error || result.status !== 0) return;
   try {
     const secrets = JSON.parse(result.stdout) as Record<string, string>;

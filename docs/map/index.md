@@ -16,6 +16,7 @@ _No exported symbols._
 
 ## Startup
 
+0. `tryInjectDoppler()` runs before anything else (module-level, before the shebang's first `await`): if `DOPPLER_PROJECT` isn't already set, it shells out to `doppler secrets download --project freecode --config dev --format=json --no-file` and injects the result into `process.env`. Pinned to `freecode`/`dev` explicitly — an unpinned call resolves its project from `process.cwd()` via Doppler's own scope table (`~/.doppler/.doppler.yaml`), so it silently returned nothing outside the repo root before this was pinned. Failure (wrong project, no doppler CLI) is swallowed on purpose; see `docs/bug log/24-07-2026c.md`.
 1. Enables diagnostic logging when `-log` is present.
 2. Validates arguments (`--model`/`--script` presence, `--script` file readability) **before** importing the runtime graph or opening the DB, so bad invocations exit in milliseconds. The runtime graph pulls the `ai` SDK (~4s cold) and libSQL (~1s); only `child_process`/`fs`/`chalk`/`logger` are statically imported, everything else is loaded via dynamic `import()` after validation passes.
 3. Dynamically imports the runtime graph (screen buffer, banner, session modes, conversation/runner, config, db), then creates a process-wide readline interface, sets `projectRoot` to `process.cwd()`, and constructs the `Conversation`.

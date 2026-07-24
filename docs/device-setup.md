@@ -23,17 +23,29 @@ doppler login
 doppler setup   # select project: freecode, config: dev
 ```
 
-### 3. Add the shell wrapper
+### 3. That's it — no shell wrapper needed
 
-Freecode must be launched via `doppler run --` so secrets are injected into the process.
+Freecode self-injects Doppler secrets on every launch: `tryInjectDoppler()` in
+`src/index.ts` runs before anything else and calls
+`doppler secrets download --project freecode --config dev --format=json --no-file`,
+pinned explicitly so it works from any directory, not just inside the repo. Plain
+`freecode` (however your shell resolves it — npm global shim, `dist/index.js`
+directly, doesn't matter) picks up all keys as long as `doppler login` has been
+run once on the machine. See [map/index.md](map/index.md#startup).
 
-Always pass `-p freecode -c dev` explicitly. Without them, `doppler run` resolves the
-project from the **current directory** via the scope table in `~/.doppler/.doppler.yaml`,
-so it only works inside the repo (and its subdirectories) — see [Failure mode](#failure-mode-empty-store).
+A wrapper is only needed for two things `tryInjectDoppler` doesn't cover:
 
-**Windows** — a `.cmd` wrapper on `PATH` covers every shell, including `cmd.exe`, where a
-PowerShell profile function does not exist. Put this in a directory that precedes the npm
-global directory on `PATH` (e.g. `~\bin\freecode.cmd`) so it shadows the npm shim:
+- Scripts run via `npx tsx` instead of the built CLI (`scripts/diagnostics/test-all-models.ts`,
+  `npm run pty`) — these call the same `tryInjectDoppler()`, so they're covered too, but if you
+  add a *new* script that shells out to `doppler` directly, pin `-p freecode -c dev` on it —
+  see [Failure mode](#failure-mode-empty-store).
+- Non-Doppler env overrides (`FREECODE_HOME`, `FREECODE_STORE`) that you want set for every
+  launch regardless of Doppler.
+
+If you want one anyway:
+
+**Windows** — a `.cmd` wrapper on `PATH`, in a directory that precedes the npm global
+directory (e.g. `~\bin\freecode.cmd`):
 ```bat
 @echo off
 doppler run -p freecode -c dev -- node "C:\path\to\freecode\dist\index.js" %*
@@ -46,27 +58,28 @@ then invokes it by name recurses into itself.
 function freecode() { doppler run -p freecode -c dev -- freecode "$@"; }
 ```
 
-That's it. Open a new terminal and `freecode` works with all keys in place.
-
 ### Failure mode: empty store
 
 If secrets do not reach the process, freecode starts **without error** and behaves as a
 fresh install: no saved config, no provider overrides, an empty model list. There is no
 warning — the missing values simply read as absent.
 
-The chain: no `FREECODE_DB_SYNC_URL` / `FREECODE_DB_AUTH_TOKEN` → `readDbConfig()` returns
-empty → the tokenless-replica decline in `src/store/db.ts` refuses to open the existing
-replica (opening it as a plain client would corrupt the sync metadata) → the store degrades
-to an empty in-memory cache. See [map/store/db.md](map/store/db.md).
+The chain: `tryInjectDoppler()`'s `doppler secrets download` fails (wrong/no project scope,
+`doppler login` never run, `doppler` CLI missing) → swallowed on purpose → no
+`FREECODE_DB_SYNC_URL` / `FREECODE_DB_AUTH_TOKEN` → `readDbConfig()` returns empty → the
+tokenless-replica decline in `src/store/db.ts` refuses to open the existing replica (opening
+it as a plain client would corrupt the sync metadata) → the store degrades to an empty
+in-memory cache. See [map/store/db.md](map/store/db.md).
 
 Confirm secrets are actually arriving:
 ```sh
 doppler run -p freecode -c dev -- node -e "console.log(!!process.env.FREECODE_DB_SYNC_URL)"
 ```
-If this prints `false`, or `doppler run` reports `You must specify a project`, the wrapper
-is not injecting — check which binary your shell resolves (`where freecode` on Windows,
-`type freecode` on Linux/macOS). A shell that resolves straight to the npm shim bypasses
-Doppler entirely.
+If this prints `false`, or `doppler run` reports `You must specify a project`, check
+`doppler login` status (`doppler me`) — an unpinned `doppler` invocation elsewhere in your
+setup will still fail outside the repo, since it resolves its project from the **current
+directory** via the scope table in `~/.doppler/.doppler.yaml`. See
+`docs/bug log/24-07-2026c.md`.
 
 ## What's in Doppler
 
