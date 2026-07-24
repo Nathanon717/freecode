@@ -11,18 +11,38 @@ const execFileAsync = promisify(execFile);
 
 const MAX_LINE_LENGTH = 2000;
 const RESULT_LIMIT = 100;
+const TIMEOUT_MS = 10000;
+const MAX_BUFFER = 10 * 1024 * 1024;
 
 async function runRipgrep(pattern: string, cwd: string, include?: string): Promise<string> {
-  const args = ['--no-config', '-n', '--no-heading', '--hidden', '--glob=!.git/*', '--no-messages'];
+  // --no-require-git: rg applies .gitignore only inside a git repo by default, so a
+  // checkout-less tree (or a worktree subdirectory) would have node_modules/bin/obj walked in full.
+  const args = [
+    '--no-config',
+    '-n',
+    '--no-heading',
+    '--hidden',
+    '--no-require-git',
+    '--glob=!.git/*',
+    '--no-messages',
+  ];
   if (include) args.push(`--glob=${include}`);
   args.push('--', pattern, '.');
 
   let stdout: string;
   try {
-    ({ stdout } = await execFileAsync(rgPath, args, { cwd, timeout: 10000, maxBuffer: 10 * 1024 * 1024 }));
+    ({ stdout } = await execFileAsync(rgPath, args, { cwd, timeout: TIMEOUT_MS, maxBuffer: MAX_BUFFER }));
   } catch (err: unknown) {
+    const e = err as { code?: number | string; signal?: string | null; killed?: boolean; stdout?: string };
+    // Node kills the child on maxBuffer overflow; rg never got to exit, so there is no exit code.
+    if (e.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER') {
+      return `Search produced more than ${MAX_BUFFER / (1024 * 1024)}MB of output. Narrow it with a more specific "path" or an "include" glob.`;
+    }
+    // Killed by the timeout: signalled rather than exited, so no exit code to interpret.
+    if (e.killed || e.signal) {
+      return `Search timed out after ${TIMEOUT_MS / 1000}s. Narrow it with a more specific "path" or an "include" glob.`;
+    }
     // exit code 1 = no matches, exit code 2 = partial (some inaccessible paths)
-    const e = err as { code?: number | string; stdout?: string };
     if (e.code === 1) return 'No matches found';
     if (e.code === 2) stdout = e.stdout ?? '';
     else throw err;

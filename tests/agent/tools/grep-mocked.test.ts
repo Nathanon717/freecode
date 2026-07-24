@@ -52,6 +52,33 @@ describe('grep tool – mocked edge cases', () => {
     expect(result).toBe('No matches found');
   });
 
+  it('reports a timeout instead of an opaque "Command failed" when rg is killed', async () => {
+    // Node's timeout kill: signalled, so `code` is null rather than an rg exit code.
+    mockExecFileError(
+      Object.assign(new Error('Command failed: rg.exe --no-config -n ...'), {
+        code: null,
+        signal: 'SIGTERM',
+        killed: true,
+      }),
+    );
+
+    const result = await grepTool.execute({ pattern: 'needle', path: '.' });
+    expect(result).toContain('timed out after 10s');
+    expect(result).not.toContain('Command failed');
+  });
+
+  it('reports an output-size limit instead of an opaque error on maxBuffer overflow', async () => {
+    mockExecFileError(
+      Object.assign(new Error('stdout maxBuffer length exceeded'), {
+        code: 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER',
+      }),
+    );
+
+    const result = await grepTool.execute({ pattern: 'needle', path: '.' });
+    expect(result).toContain('more than 10MB of output');
+    expect(result).not.toContain('maxBuffer');
+  });
+
   it('propagates rg Error through execute catch (lines 28 + 118, instanceof branch)', async () => {
     mockExecFileError(Object.assign(new Error('rg internal error'), { code: 3 }));
 

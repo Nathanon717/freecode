@@ -44,7 +44,7 @@ Format: filename (linecount)
   - [`create.ts`](agent/tools/create.md) (33) — create Tool
   - [`edit-diff-context.ts`](agent/tools/edit-diff-context.md) (103) — Edit Diff Context
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
-  - [`grep.ts`](agent/tools/grep.md) (122) — grep Tool
+  - [`grep.ts`](agent/tools/grep.md) (142) — grep Tool
   - [`index.ts`](agent/tools/index.md) (449) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (88) — read Tool
