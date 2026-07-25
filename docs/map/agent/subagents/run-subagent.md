@@ -30,7 +30,7 @@ runSubAgent(agentType: string, prompt: string, ctx: SubAgentContext): Promise<st
 
 ## Execution paths (must stay parallel)
 
-- `native` — real/fake-native providers: the AI SDK drives the multi-step tool loop; the stream is drained silently for its text. Coverage: `tests/e2e/spawn-agent-native` (mock-native → real `streamText`).
+- `native` — real/fake-native providers: the AI SDK drives the multi-step tool loop; the stream is drained silently for its text. `fullStream` `error` parts **must** be read: they are reported, not thrown, so ignoring one truncates the sub-turn and returns a partial (or empty) report as if it were findings. A rejected tool call (`rejectedToolCall` in [util/errors.md](../../util/errors.md)) is recovered the same way the main loop does it — continue from `responseMessages` plus the feedback, capped by `MAX_REJECTED_TOOL_CALLS`; any other error is rethrown for `runSubAgent`'s catch to turn into a visible `Error: the <agent> sub-agent failed: …` tool result. Coverage: `tests/e2e/spawn-agent-native` (mock-native → real `streamText`).
 - `fake` — e2e tests only: a manual ReAct loop that calls `runFakeModel`, which shares the module-global `consumedSteps` counter with the parent, so a nested fake call consumes from the *same* flat fixture queue. Coverage: `tests/e2e/spawn-agent-fake`.
 
 Both paths return **only the final step's text** (the segment after the last tool call), so inter-step narration is discarded and the caller receives findings, not chatter — keep them symmetric.

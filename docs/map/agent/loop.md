@@ -6,6 +6,17 @@
 ## Exports
 
 ```typescript
+interface AgentLoopOptions {
+  confirmToolCall?: ConfirmToolCall;
+  readOnly?: boolean;
+  onPartialResult?: (partial: { providerId: string; modelId: string; quota: RateLimitSnapshot | null }) => void;
+  // Fires at every step boundary with that step's own prompt tokens, so the
+  // footer's context size ticks up while a multi-step tool turn is still
+  // running instead of jumping once at the end. Each step resends a longer
+  // history, so the values climb; the last one equals the turn's final count.
+  onStepUsage?: (info: { providerId: string; modelId: string; promptTokens: number }) => void;
+}
+
 interface AgentLoopResult {
   text: string;
   usage: { totalTokens: number; promptTokens?: number; outputTokens?: number };
@@ -15,6 +26,8 @@ interface AgentLoopResult {
   providerUsage?: CapturedProviderUsage[];
   costEstimate?: CostEstimate;
 }
+
+type ModelSettings = ReturnType<typeof resolveModelSettings>;
 
 agentLoop(messages: CoreMessage[], projectRoot: string, modelPreference?: string | undefined, options?: AgentLoopOptions): Promise<AgentLoopResult>
 ```
@@ -55,7 +68,9 @@ for await part of fullStream:             (ordered: text-delta -> tool-call -> t
   text-delta:  write to stdout, append to fullText
   tool-call:   flush pending preamble line, then releaseToolRenderGate()
   step-finish: remember this step's own promptTokens (last one = the context size)
-  error:       capture and re-throw after the loop (fullStream reports, not throws)
+  error:       capture; if it is a rejected tool call, render it here (still inside
+               the open step) and recover after the loop, else re-throw
+               (fullStream reports errors, it does not throw them)
 endToolRenderGate()
 await usage  (promptTokens = last step's, NOT the SDK's step-summed total)
 finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens)   (usage-finalize.ts)
@@ -79,8 +94,9 @@ return AgentLoopResult
 
 ## Internal Helpers
 
-- `runFakeLlm(providerId, modelId, ...)` — handles the entire `FAKE_PROVIDER_ID` path including transcript step management. Delegates tool execution to `executeToolCalls` from `parsed-tools.ts` (shared with the text-based fallback path). Returns `AgentLoopResult` directly, so `agentLoop` returns immediately after calling it.
-- `streamWithRetry(languageModel, supportsTools, ...)` — runs the `while(true)` streaming loop for all non-fake providers (OpenAI included — there is no separate OpenAI dispatch path). Handles the three retry cases (tool-not-supported fallback, provider-rejected malformed call, no-such-tool, invalid-args) and returns a `StreamResult` with the accumulated text and token counts. Throws on non-retriable errors, which propagate to `agentLoop`'s catch.
+- `runFakeLlm(providerId, modelId, ...)` now lives in [fake-loop.md](fake-loop.md) (extracted at the 500-line limit). It handles the entire `FAKE_PROVIDER_ID` path and returns `AgentLoopResult` directly, so `agentLoop` returns immediately after calling it. `mock-native:*` is unaffected — it runs through `streamWithRetry` like a real provider.
+- `streamWithRetry(languageModel, supportsTools, ...)` — runs the `while(true)` streaming loop for all non-fake providers (OpenAI included — there is no separate OpenAI dispatch path). Handles the tool-not-supported fallback, the whole-turn restart for a provider-rejected malformed call, and the mid-turn recovery for rejected tool calls (below); returns a `StreamResult` with the accumulated text and token counts. Throws on non-retriable errors, which propagate to `agentLoop`'s catch.
+- **Rejected tool calls continue the turn, they do not end it.** An unknown tool name (`NoSuchToolError`) and arguments that fail the tool's schema (`InvalidToolArgumentsError`) are both rejected by the AI SDK before `execute` runs, so neither produces a tool result — and the SDK then stops stepping, since it only continues when `stepToolResults.length === stepToolCalls.length`. `rejectedToolCall(error)` recognises both and supplies what to render and what to tell the model. The recovery continues from `await result.responseMessages` (it resolves even after an error part, and holds only calls that actually ran, each paired with its result) plus a user message describing the rejection, so nothing already executed is replayed — the earlier restart-from-original-history behaviour risked re-running a completed `shell_exec`/`create`/`edit`. Capped at `MAX_REJECTED_TOOL_CALLS` per turn. Because the turn now spans more than one `streamText` call, `carriedTotalTokens`/`carriedOutputTokens` accumulate usage across them; `promptTokens` stays last-wins. A tool whose `execute` fails is not in this class — `tools/index.ts` returns its message as the call's result instead of throwing.
 - **Context-size (`ctx`) token source.** The native `fullStream` consumer records each `step-finish` part's own `promptTokens` and uses the **last** one as the turn's `promptTokens`, *not* `result.usage.promptTokens` — which ai@3.4 returns SUMMED across every step of a multi-step tool turn (`combinedUsage`), so using it would report roughly step-count× the real context and could exceed the window. For a single-step turn the two are identical. This is the number `cli/session-modes.ts` feeds the footer `ctx` slot (except for Anthropic, which it suppresses — its count omits cache tokens); the summing trap is regression-pinned by the multi-step mock-native test in `tests/agent/loop.test.ts` (last step = 20, not 10+20=30). The parsed-tools fallback path is already last-wins (one single-step `streamText` per iteration).
 - **`onStepUsage` — the per-step `ctx` tick.** An `AgentLoopOptions` callback fired at every step boundary with that step's own `promptTokens`, so the footer's context size climbs during a multi-step tool turn rather than jumping once at the end. Emitted from three places so every execution path ticks: the native `onStepFinish` handler (using `event.usage`, which is per-step — unlike the awaited `result.usage`), `runFakeLlm`'s per-step loop (this is what the TTY e2e tests exercise), and `runParsedToolsLoop` via an optional callback param. Values climb within a turn because each step resends a longer history; the last one equals the turn's final `promptTokens`. Consumer side lives in `cli/session-modes.ts`.
 - `finalizeUsageCapture(...)` now lives in [usage-finalize.md](usage-finalize.md) (extracted at the 500-line limit). `agentLoop` imports it and calls it on both the success and catch paths, feeding the result through `applyUsageOutcome`; for Anthropic it overrides `promptTokens` with the provider's own `inputTokens`.

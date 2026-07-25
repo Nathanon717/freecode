@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "model": "mock-native:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "mustContain": ["Create notes.txt then search it for TODO"],
+        "toolsAvailable": ["create", "grep"],
+        "systemPromptPresent": true,
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["Creating the file first."],
+        "toolCalls": [
+          {
+            "name": "create",
+            "args": {
+              "rationale": "Creating the file the user asked for",
+              "path": "notes.txt",
+              "content": "TODO: written once\n"
+            }
+          }
+        ],
+        "usage": {
+          "promptTokens": 20,
+          "outputTokens": 8,
+          "totalTokens": 28
+        }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["Now searching it."],
+        "toolCalls": [
+          {
+            "name": "repo_browser.grep",
+            "args": {
+              "rationale": "Searching for TODO markers",
+              "pattern": "TODO"
+            }
+          }
+        ],
+        "usage": {
+          "promptTokens": 40,
+          "outputTokens": 8,
+          "totalTokens": 48
+        }
+      }
+    },
+    {
+      "match": {
+        "turn": 3,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "mustContain": [
+          "Your call to \"repo_browser.grep\" was rejected: no such tool exists",
+          "The available tools are:"
+        ],
+        "toolsAvailable": ["grep"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["Dropping the prefix."],
+        "toolCalls": [
+          {
+            "name": "grep",
+            "args": {
+              "rationale": "Searching for TODO markers",
+              "pattern": "TODO",
+              "head_limit": "fifty"
+            }
+          }
+        ],
+        "usage": {
+          "promptTokens": 60,
+          "outputTokens": 9,
+          "totalTokens": 69
+        }
+      }
+    },
+    {
+      "match": {
+        "turn": 4,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "mustContain": [
+          "Your call to \"grep\" was rejected before it ran",
+          "did not match the tool's parameter schema"
+        ],
+        "toolsAvailable": ["grep"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["head_limit takes a number — retrying."],
+        "toolCalls": [
+          {
+            "name": "grep",
+            "args": {
+              "rationale": "Retrying with a numeric head_limit",
+              "pattern": "TODO",
+              "head_limit": 50
+            }
+          }
+        ],
+        "usage": {
+          "promptTokens": 80,
+          "outputTokens": 9,
+          "totalTokens": 89
+        }
+      }
+    },
+    {
+      "match": {
+        "turn": 5,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "Search finished after the retries.",
+        "usage": {
+          "promptTokens": 100,
+          "outputTokens": 5,
+          "totalTokens": 105
+        }
+      }
+    }
+  ]
+}

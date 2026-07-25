@@ -13,25 +13,26 @@ import {
   getLastCapturedAnthropicHeaders,
 } from '../providers/adapters/anthropic.js';
 import { type CostEstimate } from '../providers/anthropic-cost.js';
-import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk } from '../cli/render/transcript-renderer.js';
+import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk, writeToolCallHeader, writeToolStepResult } from '../cli/render/transcript-renderer.js';
 import { beginToolRenderGate, endToolRenderGate, releaseToolRenderGate } from './tool-render-gate.js';
 import { createMarkdownStreamRenderer } from '../cli/render/markdown-renderer.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './workspace.js';
-import { isContextOverflowError, isInvalidToolArgumentsError, isModelNotFoundError, isNoSuchToolError, isProviderToolUseFailed, isToolsNotSupportedError, isUserAbortError, invalidToolName, noSuchToolAvailableList, noSuchToolName, serializeError, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
+import { isContextOverflowError, isModelNotFoundError, isProviderToolUseFailed, isToolsNotSupportedError, isUserAbortError, rejectedToolCall, serializeError, toDetailedErrorMessage, toErrorMessage, MAX_REJECTED_TOOL_CALLS } from '../util/errors.js';
 import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
-import { executeToolCalls, runParsedToolsLoop } from './parsed-tools.js';
+import { runParsedToolsLoop } from './parsed-tools.js';
+import { runFakeLlm } from './fake-loop.js';
 import { runSubAgent } from './subagents/run-subagent.js';
 import { finalizeUsageCapture, type UsageOutcome } from './usage-finalize.js';
 import { isNativeToolsDisabled, setNativeTools } from '../providers/model-data.js';
 import { ensureStoreReady } from '../store/db.js';
-import { FAKE_PROVIDER_ID, FAKE_NATIVE_PROVIDER_ID, assertFakeFixtureComplete, createFakeNativeLanguageModel, runFakeModel } from '../providers/fake.js';
+import { FAKE_PROVIDER_ID, FAKE_NATIVE_PROVIDER_ID, assertFakeFixtureComplete, createFakeNativeLanguageModel } from '../providers/fake.js';
 
 let systemPromptLogged = false;
 
-interface AgentLoopOptions {
+export interface AgentLoopOptions {
   confirmToolCall?: ConfirmToolCall;
   readOnly?: boolean;
   onPartialResult?: (partial: { providerId: string; modelId: string; quota: RateLimitSnapshot | null }) => void;
@@ -52,99 +53,7 @@ export interface AgentLoopResult {
   costEstimate?: CostEstimate;
 }
 
-type ModelSettings = ReturnType<typeof resolveModelSettings>;
-
-async function runFakeLlm(
-  providerId: string,
-  modelId: string,
-  supportsTools: boolean,
-  systemPrompt: string,
-  messages: CoreMessage[],
-  options: AgentLoopOptions,
-  modelSettings: ModelSettings,
-): Promise<AgentLoopResult> {
-  const spawnAgent = (agentType: string, prompt: string): Promise<string> =>
-    runSubAgent(agentType, prompt, {
-      kind: 'fake',
-      providerId,
-      modelId,
-      toolRationale: modelSettings.toolRationale,
-      parallelTools: modelSettings.parallelTools,
-    });
-  const tools = supportsTools ? createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly, spawnAgent) : undefined;
-  const toolNames = tools ? Object.keys(tools) : [];
-  let activeMessages = messages;
-  let fullText = '';
-  let totalTokens = 0;
-  let promptTokens: number | undefined;
-  let outputTokens: number | undefined;
-  const result = (text: string): AgentLoopResult => ({
-    text,
-    usage: { totalTokens, promptTokens, outputTokens },
-    providerId,
-    modelId,
-    quota: null,
-  });
-
-  try {
-    beginTranscriptTurn();
-    // Unbounded like the real paths; the fixture itself terminates the loop by
-    // running out of steps (runFakeModel throws) or emitting no tool calls.
-    for (let step = 0; ; step++) {
-      const generated = await runFakeModel({
-        providerId,
-        modelId,
-        systemPrompt,
-        messages: activeMessages,
-        toolNames,
-        toolRationale: modelSettings.toolRationale,
-        parallelTools: modelSettings.parallelTools,
-        nativeToolsSupplied: Boolean(tools),
-      });
-      fullText += generated.text;
-      totalTokens += generated.usage.totalTokens;
-      promptTokens = generated.usage.promptTokens;
-      outputTokens = generated.usage.outputTokens;
-      if (promptTokens !== undefined) {
-        options.onStepUsage?.({ providerId, modelId, promptTokens });
-      }
-      // runFakeModel already wrote the text to stdout; update renderer state.
-      if (generated.text) notifyTranscriptChunk(generated.text);
-
-      if (generated.toolCalls.length === 0) {
-        assertFakeFixtureComplete();
-        endTranscriptStep(false);
-        return result(fullText);
-      }
-
-      if (!tools) {
-        throw new Error(`Fake LLM fixture emitted tool calls, but ${providerId}:${modelId} does not support tools`);
-      }
-
-      // writeTranscriptToolLeadIn is called inside withToolRendering (via toolFn.execute).
-      const resultParts = await executeToolCalls(tools, generated.toolCalls, `fake-${step}`, activeMessages);
-
-      // Keep this step's preamble from gluing onto the next step's text in the
-      // accumulated result (runFakeModel emits the matching stdout newline).
-      // Added only after the tool resolves — an aborted call has no next step,
-      // matching the native path where onStepFinish fires only on completion.
-      if (generated.text && !generated.text.endsWith('\n')) fullText += '\n';
-
-      endTranscriptStep(true); // close step, open next
-      activeMessages = [
-        ...activeMessages,
-        { role: 'assistant' as const, content: generated.text },
-        { role: 'user' as const, content: resultParts.join('\n\n') },
-      ];
-    }
-  } catch (error) {
-    endTranscriptStep(false);
-    if (isUserAbortError(error)) return result(fullText);
-    const errMsg = toDetailedErrorMessage(error);
-    process.stdout.write(`Error: ${errMsg}\n`);
-    return result(fullText ? `${fullText}\n\nError: ${errMsg}` : `Error: ${errMsg}`);
-  }
-}
+export type ModelSettings = ReturnType<typeof resolveModelSettings>;
 
 interface StreamResult {
   fullText: string;
@@ -166,11 +75,16 @@ async function streamWithRetry(
 ): Promise<StreamResult> {
   let activeMessages = messages;
   let toolUseFailureRetries = 0;
+  let rejectedToolCalls = 0;
   let useParsedToolsFallback = supportsTools && (isNativeToolsDisabled(providerId, modelId) || modelSettings.parsedTools);
   let fullText = '';
   let totalTokens = 0;
   let promptTokens: number | undefined;
   let outputTokens: number | undefined;
+  // Usage from streams that ended in a recovered tool-call rejection. The turn
+  // continues in a fresh streamText call, so its usage has to be carried across.
+  let carriedTotalTokens = 0;
+  let carriedOutputTokens: number | undefined;
 
   while (true) {
     if (useParsedToolsFallback) {
@@ -233,6 +147,10 @@ async function streamWithRetry(
       const typedResult = result as {
         fullStream: AsyncIterable<{ type: string } & Record<string, unknown>>;
         usage: Promise<{ totalTokens: number; promptTokens?: number; completionTokens?: number; outputTokens?: number }>;
+        // Resolved even when a step ended on an error part, and it holds only calls
+        // that actually ran, each paired with its result — a rejected call never
+        // reaches the stream. That makes it the history to continue the turn from.
+        responseMessages: Promise<CoreMessage[]>;
       };
 
       let chunkCount = 0;
@@ -270,12 +188,42 @@ async function streamWithRetry(
             // throwing; re-throw after the loop so the retry/catch logic still runs.
             streamError = part.error;
             streamHadError = true;
+            // Render a rejected call here, while the step is still open, so it lands
+            // under this step's text like any other tool call rather than after the
+            // step divider onStepFinish writes once the stream closes.
+            const rejected = rejectedToolCall(part.error);
+            if (rejected) {
+              flushPendingPreamble();
+              writeRendered(mdStream.flush());
+              const { rationale, ...displayArgs } = rejected.args;
+              writeToolCallHeader({
+                name: rejected.name,
+                displayArgs,
+                rationale: typeof rationale === 'string' ? rationale : undefined,
+              });
+              writeToolStepResult(rejected.name, { kind: 'error', error: part.error });
+            }
           }
         }
       } finally {
         endToolRenderGate();
       }
-      if (streamHadError) throw streamError;
+      if (streamHadError) {
+        const rejected = rejectedToolCall(streamError);
+        if (rejected && rejectedToolCalls < MAX_REJECTED_TOOL_CALLS) {
+          rejectedToolCalls++;
+          log('stream', `Tool call rejected before execution; feeding the error back and continuing the turn`, serializeError(streamError));
+          const stepUsage = await typedResult.usage;
+          carriedTotalTokens += stepUsage?.totalTokens ?? 0;
+          const stepOutput = stepUsage?.completionTokens ?? stepUsage?.outputTokens;
+          if (stepOutput !== undefined) carriedOutputTokens = (carriedOutputTokens ?? 0) + stepOutput;
+          // Continue from what this stream actually did — its text and its completed
+          // tool calls — so nothing already executed is replayed on the next call.
+          activeMessages = [...activeMessages, ...(await typedResult.responseMessages), { role: 'user' as const, content: rejected.feedback }];
+          continue;
+        }
+        throw streamError;
+      }
       writeRendered(mdStream.flush());
       fullText = fullText.trimEnd();
       if (fullText && !fullText.endsWith('\n')) {
@@ -283,12 +231,13 @@ async function streamWithRetry(
       }
       endTranscriptStep(false); // close the final step after text is normalised
       const usage = await typedResult.usage;
-      totalTokens = usage?.totalTokens ?? 0;
+      totalTokens = carriedTotalTokens + (usage?.totalTokens ?? 0);
       // Context size = the LAST step's prompt tokens (see lastStepPromptTokens),
       // not the SDK's step-summed total. Falls back to the aggregate only if no
       // step-finish was seen; for a single-step turn the two are identical.
       promptTokens = lastStepPromptTokens ?? usage?.promptTokens;
-      outputTokens = usage?.completionTokens ?? usage?.outputTokens;
+      const finalOutput = usage?.completionTokens ?? usage?.outputTokens;
+      outputTokens = carriedOutputTokens === undefined ? finalOutput : carriedOutputTokens + (finalOutput ?? 0);
       log('stream', `Stream complete`, { chunks: chunkCount, textLength: fullText.length, totalTokens, promptTokens, outputTokens });
       break;
     } catch (error) {
@@ -299,30 +248,17 @@ async function streamWithRetry(
         log('stream', 'Tool calling rejected by provider; falling back to prompt-based tool protocol', serializeError(error));
         break;
       }
-      if (supportsTools && toolUseFailureRetries < 1) {
-        let feedback: string | null = null;
-        if (fullText.length === 0 && isProviderToolUseFailed(error)) {
-          log('stream', 'Retrying after provider rejected malformed tool call', serializeError(error));
-          feedback = 'The provider rejected your previous response because it contained an invalid tool/function call. Retry the same task. When calling a tool, call exactly one valid tool at a time, use the exact tool name, and provide arguments as valid JSON matching the tool schema. String arguments containing JSON or newlines must be escaped as JSON strings.';
-        } else if (isNoSuchToolError(error)) {
-          fullText = '';
-          const available = noSuchToolAvailableList(error) ?? 'read, create, edit, grep, shell_exec, list_dir';
-          const badName = noSuchToolName(error);
-          const nameHint = badName
-            ? ` You called "${badName}", which does not exist. Do not use namespace prefixes (e.g. "repo_browser.") — use the plain name only.`
-            : '';
-          log('stream', 'Retrying after model called non-existent tool', serializeError(error));
-          feedback = `You called a tool that does not exist.${nameHint} The only available tools are: ${available}. Retry your task using only these exact tool names.`;
-        } else if (isInvalidToolArgumentsError(error)) {
-          fullText = '';
-          log('stream', 'Retrying after model provided invalid tool arguments', serializeError(error));
-          feedback = `Your call to "${invalidToolName(error) ?? 'unknown'}" was rejected because the arguments did not match the tool's parameter schema. Check the required parameter names and types, then retry.`;
-        }
-        if (feedback) {
-          toolUseFailureRetries++;
-          activeMessages = [...messages, { role: 'user' as const, content: feedback }];
-          continue;
-        }
+      // Rejected tool calls are recovered mid-turn above; this is a provider-level
+      // rejection of the whole response, so there is nothing partial to keep and the
+      // turn restarts from the original history.
+      if (supportsTools && toolUseFailureRetries < 1 && fullText.length === 0 && isProviderToolUseFailed(error)) {
+        toolUseFailureRetries++;
+        log('stream', 'Retrying after provider rejected malformed tool call', serializeError(error));
+        activeMessages = [...messages, {
+          role: 'user' as const,
+          content: 'The provider rejected your previous response because it contained an invalid tool/function call. Retry the same task. When calling a tool, call exactly one valid tool at a time, use the exact tool name, and provide arguments as valid JSON matching the tool schema. String arguments containing JSON or newlines must be escaped as JSON strings.',
+        }];
+        continue;
       }
       throw error;
     }
@@ -330,6 +266,7 @@ async function streamWithRetry(
 
   return { fullText, totalTokens, promptTokens, outputTokens, useParsedToolsFallback };
 }
+
 
 export async function agentLoop(
   messages: CoreMessage[],

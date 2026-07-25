@@ -9,7 +9,6 @@ import {
 } from "../cli/render/transcript-renderer.js";
 import { renderMarkdown } from "../cli/render/markdown-renderer.js";
 import { log, logError } from "../logger.js";
-import { isUserAbortError } from "../util/errors.js";
 
 const PARSED_TOOLS_ADDENDUM = `
 
@@ -120,20 +119,17 @@ export async function executeToolCalls(
       toolResultStr = `Unknown tool: "${call.name}". Do not use namespace prefixes (e.g. "repo_browser."). Available tools: ${Object.keys(tools).join(", ")}`;
       process.stdout.write(`[tool error] ${toolResultStr}\n`);
     } else {
-      try {
-        // Calls the wrapped execute — handles logging (prints call line + result
-        // preview) and user confirmation automatically.
-        const rawResult = await (
-          toolFn.execute as (args: unknown, opts: unknown) => Promise<unknown>
-        )(call.args, { toolCallId: `${idPrefix}-${i}`, messages });
-        toolResultStr =
-          typeof rawResult === "string"
-            ? rawResult
-            : JSON.stringify(rawResult, null, 2);
-      } catch (err) {
-        if (isUserAbortError(err)) throw err;
-        toolResultStr = `Error: ${err instanceof Error ? err.message : String(err)}`;
-      }
+      // Calls the wrapped execute — handles logging (prints call line + result
+      // preview) and user confirmation automatically. It also turns a failing tool
+      // into an "Error: ..." result string, so the only throw that reaches here is
+      // a user abort, which must propagate.
+      const rawResult = await (
+        toolFn.execute as (args: unknown, opts: unknown) => Promise<unknown>
+      )(call.args, { toolCallId: `${idPrefix}-${i}`, messages });
+      toolResultStr =
+        typeof rawResult === "string"
+          ? rawResult
+          : JSON.stringify(rawResult, null, 2);
     }
 
     resultParts.push(

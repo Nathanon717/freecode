@@ -11,6 +11,7 @@ This table is generated from `tests/e2e/*.e2e.json`.
 | `agent-preamble-flush.e2e.json` | `agent-preamble-flush` | temp | A pre-tool-call preamble with no trailing newline is flushed in its correct position (before the tool call) instead of being held in the markdown line buffer and glued onto the final step's text |
 | `agent-text-fake.e2e.json` | `agent-text-fake` | temp | Fake LLM fixture enters the agent loop and returns deterministic text without live provider access |
 | `agent-text-native.e2e.json` | `agent-text-native` | temp | Fake LLM fixture exercises the real AI SDK streamText path (native-stream) with a deterministic text response |
+| `agent-tool-arg-error-native.e2e.json` | `agent-tool-arg-error-native` | temp | Tool calls the SDK rejects before execution (unknown name, then bad arguments) are reported back to the model as failed steps; the turn continues from what already ran and the model retries with a valid call |
 | `agent-tool-native.e2e.json` | `agent-tool-native` | temp | Fake native LLM fixture drives a create tool call through the full multi-step streamText orchestration loop |
 | `blocklist-purge-script-mode.e2e.json` | `blocklist-purge-script-mode` | repo | A scripted (non-TTY) run never offers the blocklist purge and never deletes the seeded blocklisted model — the confirmation is unanswerable without a terminal, so the rows must be left alone |
 | `slash-clear.e2e.json` | `slash-clear` | repo | /clear resets history, clears the screen, and redraws the banner |

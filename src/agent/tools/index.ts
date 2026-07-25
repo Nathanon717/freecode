@@ -160,7 +160,11 @@ function withToolRendering(
           getTranscriptRuntimeOptions(),
         );
         logError("tool", `${name} threw`, err);
-        throw err;
+        // Return, don't rethrow: a rejected execute produces no tool result, so the
+        // model would never learn the call failed and the AI SDK would end the turn
+        // (it only continues when every tool call has a result). Handing the message
+        // back as the result lets the model see the failure and try something else.
+        return `Error: ${toErrorMessage(err)}`;
       }
     },
   };

@@ -32,11 +32,12 @@ Format: filename (linecount)
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
   - [`conversation.ts`](agent/conversation.md) (31) — Session Controller
-  - [`loop.ts`](agent/loop.md) (485) — Agent Loop
-  - [`parsed-tools.ts`](agent/parsed-tools.md) (252) — Parsed-Tools Harness
+  - [`fake-loop.ts`](agent/fake-loop.md) (108) — Fake-Fixture Turn Loop
+  - [`loop.ts`](agent/loop.md) (422) — Agent Loop
+  - [`parsed-tools.ts`](agent/parsed-tools.md) (248) — Parsed-Tools Harness
 - `src/agent/subagents/`
   - [`registry.ts`](agent/subagents/registry.md) (56) — Sub-Agent Registry
-  - [`run-subagent.ts`](agent/subagents/run-subagent.md) (158) — Sub-Agent Runner
+  - [`run-subagent.ts`](agent/subagents/run-subagent.md) (187) — Sub-Agent Runner
 - `src/agent/`
   - [`system-prompt.ts`](agent/system-prompt.md) (32) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
@@ -45,7 +46,7 @@ Format: filename (linecount)
   - [`edit-diff-context.ts`](agent/tools/edit-diff-context.md) (103) — Edit Diff Context
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
   - [`grep.ts`](agent/tools/grep.md) (324) — grep Tool
-  - [`index.ts`](agent/tools/index.md) (449) — Tool Registry
+  - [`index.ts`](agent/tools/index.md) (453) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (88) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
@@ -151,7 +152,7 @@ Format: filename (linecount)
   - [`fallback-estimate.ts`](tokenizers/fallback-estimate.md) (30) — Generic Tiktoken Fallback Estimator
   - [`model-family.ts`](tokenizers/model-family.md) (112) — Tokenizer Family Resolver
 - `src/util/`
-  - [`errors.ts`](util/errors.md) (236) — Shared Error Utilities
+  - [`errors.ts`](util/errors.md) (301) — Shared Error Utilities
   - [`guards.ts`](util/guards.md) (4) — Type Guard Utilities
   - [`keyboard.ts`](util/keyboard.md) (5) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) (39) — LCS Line Diff

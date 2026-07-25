@@ -36,6 +36,18 @@ isInvalidToolArgumentsError(error: unknown): boolean
 
 invalidToolName(error: unknown): string | null
 
+MAX_REJECTED_TOOL_CALLS: 8
+
+interface RejectedToolCall {
+  name: string;
+  /** What the model sent, for rendering the call it attempted; empty for an unknown name. */
+  args: Record<string, unknown>;
+  /** The message to hand back so the model can correct itself and continue. */
+  feedback: string;
+}
+
+rejectedToolCall(error: unknown): RejectedToolCall | null
+
 isToolsNotSupportedError(error: unknown): boolean
 
 isModelNotFoundError(error: unknown): boolean
@@ -50,3 +62,4 @@ serializeError(error: unknown): unknown
 - `toDetailedErrorMessage(error)` — includes parsed provider details such as `code`, `type`, `param`, `failed_generation`, response bodies, and a `tool_use_failed` diagnosis when available.
 - `isContextOverflowError(error)` — returns `true` when the error message matches any of the known context-overflow patterns across providers (Anthropic, OpenAI, Gemini, Ollama, etc.).
 - `isProviderToolUseFailed(error)` — returns `true` when the provider returned `code: tool_use_failed`.
+- `rejectedToolCall(error)` — the shared classifier for a call the AI SDK refused **before** `execute` ran: an unknown name (`AI_NoSuchToolError`) or arguments that failed the tool's schema (`AI_InvalidToolArgumentsError`). Neither produces a tool result, and the SDK stops stepping when results don't match calls, so both would end a turn. Returns the tool name, the arguments the model sent (for rendering the attempted call; empty for an unknown name), and the feedback message to hand back. Both native tool loops — `agent/loop.ts` and `agent/subagents/run-subagent.ts` — use it with `MAX_REJECTED_TOOL_CALLS` to recover mid-turn instead of aborting. Lives here rather than in either loop so the two cannot drift.

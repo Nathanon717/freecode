@@ -1,0 +1,70 @@
+{
+  "name": "agent-tool-arg-error-native",
+  "description": "Tool calls the SDK rejects before execution (unknown name, then bad arguments) are reported back to the model as failed steps; the turn continues from what already ran and the model retries with a valid call",
+  "workspace": "temp",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "agent-tool-arg-error-native.llm.json",
+  "turns": [
+    { "input": "Create notes.txt then search it for TODO." },
+    { "input": "y" },
+    { "input": "y" }
+  ],
+  "expect": {
+    "stdoutContains": [
+      "repo_browser.grep() failed",
+      "grep() failed: Invalid arguments for tool grep",
+      "head_limit takes a number",
+      "Line 1: TODO: written once",
+      "Search finished after the retries."
+    ],
+    "stdoutAbsent": ["Error: Invalid arguments", "EEXIST", "FREECODE_NO_LLM=1"],
+    "exitCode": 0,
+    "files": [
+      { "path": "notes.txt", "contentExact": "TODO: written once\n" }
+    ],
+    "toolTrace": {
+      "sequence": ["create", "grep"],
+      "maxCalls": 2
+    },
+    "fakeLlmTrace": {
+      "callCount": 5,
+      "maxCalls": 5,
+      "calls": [
+        {
+          "provider": "mock-native",
+          "model": "gpt-freecode-test",
+          "executionPath": "native-stream",
+          "nativeToolsSupplied": true,
+          "emittedToolCalls": ["create"]
+        },
+        {
+          "provider": "mock-native",
+          "model": "gpt-freecode-test",
+          "executionPath": "native-stream",
+          "nativeToolsSupplied": true,
+          "emittedToolCalls": ["repo_browser.grep"]
+        },
+        {
+          "provider": "mock-native",
+          "model": "gpt-freecode-test",
+          "executionPath": "native-stream",
+          "nativeToolsSupplied": true,
+          "emittedToolCalls": ["grep"]
+        },
+        {
+          "provider": "mock-native",
+          "model": "gpt-freecode-test",
+          "executionPath": "native-stream",
+          "nativeToolsSupplied": true,
+          "emittedToolCalls": ["grep"]
+        },
+        {
+          "provider": "mock-native",
+          "model": "gpt-freecode-test",
+          "executionPath": "native-stream",
+          "emittedTextContains": ["Search finished after the retries."]
+        }
+      ]
+    }
+  }
+}

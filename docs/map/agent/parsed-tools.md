@@ -31,7 +31,7 @@ runParsedToolsLoop(messages: CoreMessage[], systemPrompt: string, model: Languag
 
 ## How It Works
 
-`executeToolCalls` iterates a list of parsed tool calls against a `createTools` map: unknown tools become error strings (fed back to the model), known tools delegate to their wrapped `execute`. This helper is used by both `runParsedToolsLoop` (text-based protocol) and `runFakeLlm` in `loop.ts` (fake fixture tool execution).
+`executeToolCalls` iterates a list of parsed tool calls against a `createTools` map: unknown tools become error strings (fed back to the model), known tools delegate to their wrapped `execute`. It has no try/catch of its own — the wrapper in `tools/index.ts` already turns a failing tool into an `Error: ...` result string, so the only throw that reaches here is a user abort, which must propagate. This helper is used by both `runParsedToolsLoop` (text-based protocol) and `runFakeLlm` in `loop.ts` (fake fixture tool execution).
 
 `runParsedToolsLoop`:
 1. Appends a tool-calling protocol section to the system prompt.

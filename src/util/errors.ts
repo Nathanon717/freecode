@@ -184,6 +184,71 @@ export function invalidToolName(error: unknown): string | null {
   return typeof name === 'string' ? name : null;
 }
 
+/**
+ * The raw arguments JSON the model sent for a call the SDK rejected as invalid.
+ * Only AI_InvalidToolArgumentsError carries it — a call to a non-existent tool is
+ * rejected on the name alone, before its arguments are looked at.
+ */
+function invalidToolArgs(error: unknown): Record<string, unknown> {
+  const raw = (error as Error & { toolArgs?: string }).toolArgs;
+  if (typeof raw !== 'string') return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * How many rejected tool calls one turn may recover from. The model is told what
+ * went wrong and keeps going, so a bad call costs a step rather than the turn;
+ * the cap stops a model that keeps reissuing the same broken call from looping.
+ */
+export const MAX_REJECTED_TOOL_CALLS = 8;
+
+export interface RejectedToolCall {
+  name: string;
+  /** What the model sent, for rendering the call it attempted; empty for an unknown name. */
+  args: Record<string, unknown>;
+  /** The message to hand back so the model can correct itself and continue. */
+  feedback: string;
+}
+
+/**
+ * A tool call the AI SDK refused before it could run: an unknown name, or arguments
+ * that failed the tool's schema. Neither ever reaches `execute`, so neither produces
+ * a tool result — and the SDK then stops stepping, because it only continues when
+ * every call has one. Recognising these lets a turn feed the failure back and carry
+ * on instead of ending. Returns null when the error is something else.
+ */
+export function rejectedToolCall(error: unknown): RejectedToolCall | null {
+  if (isNoSuchToolError(error)) {
+    const name = noSuchToolName(error) ?? 'unknown';
+    const available = noSuchToolAvailableList(error) ?? 'read, create, edit, grep, shell_exec, list_dir';
+    return {
+      name,
+      args: {},
+      feedback:
+        `Your call to "${name}" was rejected: no such tool exists. Do not use namespace prefixes ` +
+        `(e.g. "repo_browser.") — use the plain name only. The available tools are: ${available}. ` +
+        `Continue the task using only these exact tool names.`,
+    };
+  }
+  if (isInvalidToolArgumentsError(error)) {
+    const name = invalidToolName(error) ?? 'unknown';
+    return {
+      name,
+      args: invalidToolArgs(error),
+      feedback:
+        `Your call to "${name}" was rejected before it ran because the arguments did not match the ` +
+        `tool's parameter schema: ${toErrorMessage(error)}. Check the required parameter names and ` +
+        `types, then continue the task.`,
+    };
+  }
+  return null;
+}
+
 const TOOLS_NOT_SUPPORTED_PATTERNS = [
   /does not support tool/i,
   /does not support function/i,
