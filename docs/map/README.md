@@ -32,8 +32,8 @@ Format: filename (linecount)
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
   - [`conversation.ts`](agent/conversation.md) (31) — Session Controller
-  - [`loop.ts`](agent/loop.md) (481) — Agent Loop
-  - [`parsed-tools.ts`](agent/parsed-tools.md) (249) — Parsed-Tools Harness
+  - [`loop.ts`](agent/loop.md) (485) — Agent Loop
+  - [`parsed-tools.ts`](agent/parsed-tools.md) (252) — Parsed-Tools Harness
 - `src/agent/subagents/`
   - [`registry.ts`](agent/subagents/registry.md) (56) — Sub-Agent Registry
   - [`run-subagent.ts`](agent/subagents/run-subagent.md) (158) — Sub-Agent Runner

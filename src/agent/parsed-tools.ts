@@ -164,7 +164,9 @@ export async function runParsedToolsLoop(
   let promptTokens: number | undefined;
   let outputTokens: number | undefined;
 
-  for (let step = 0; step < 10; step++) {
+  // Unbounded, like the native path: the turn ends when the model stops
+  // emitting tool calls, or on a provider error / context overflow / ESC.
+  for (let step = 0; ; step++) {
     log(
       "parsed-tools",
       `Step ${step + 1}: calling model (${activeMessages.length} messages)`,
@@ -243,6 +245,7 @@ export async function runParsedToolsLoop(
     accText += stepText;
   }
 
-  endTranscriptStep(false); // close if loop exhausted without hitting the break
+  // The only way out of the loop is the no-tool-calls break, which already
+  // closed the step.
   return { text: accText.trimEnd(), totalTokens, promptTokens, outputTokens };
 }

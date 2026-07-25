@@ -48,7 +48,7 @@ streamText({
   model,
   system,
   messages,
-  ...(supportsTools ? { tools: createTools(confirmToolCall), maxSteps: 10, onStepFinish } : {})
+  ...(supportsTools ? { tools: createTools(confirmToolCall), maxSteps: unlimited, onStepFinish } : {})
 })
 beginToolRenderGate()                     (tool-render-gate.ts)
 for await part of fullStream:             (ordered: text-delta -> tool-call -> tool-result)
@@ -70,7 +70,7 @@ return AgentLoopResult
 
 - Tools are only passed when the routed provider reports `supportsTools: true`.
 - For `mock:*` fake models, the loop does not call the AI SDK. It passes the real system prompt, message history, and available tool names into `runFakeModel()` so fixture matching can validate the model-facing shape without live provider access. If a fake step emits `toolCalls`, the loop executes them through `createTools()`, appends tool results as user messages, and continues until a final no-tool response.
-- `maxSteps: 10` allows multi-step tool use.
+- There is no per-turn tool-step cap. `maxSteps` is passed as `Number.MAX_SAFE_INTEGER` because the AI SDK defaults it to `1` when omitted — "unlimited" must be spelled out. A turn ends when the model stops calling tools, the context overflows, the provider errors, or the user aborts. The fake-fixture and parsed-tools loops are likewise unbounded.
 - Every turn calls `beginTranscriptTurn()` / `endTranscriptStep()` from `transcript-renderer.ts` to emit the normalised divider framing. Intermediate steps use `endTranscriptStep(true)` (combined close+open); the final step uses `endTranscriptStep(false)` after text normalisation. The renderer state machine ensures consistent blank-line spacing regardless of the model or provider.
 - `streamWithRetry` drives display from the ordered `fullStream` (not the text-only `textStream`) so a step's preamble can never render after the tool call it precedes. Because the AI SDK invokes a tool's `execute` (which draws the header) before that preamble reaches the consumer, the `tool-render-gate.ts` semaphore holds `execute` until the consumer processes that call's `tool-call` part and flushes the pending text. See [tool-render-gate.md](tool-render-gate.md).
 - Tool approval is delegated to the supplied `confirmToolCall`.

@@ -38,7 +38,7 @@ runParsedToolsLoop(messages: CoreMessage[], systemPrompt: string, model: Languag
 2. Calls `streamText` (no native tools) and buffers the full response.
 3. Parses `<tool_call>{"name":"...","args":{...}}</tool_call>` blocks.
 4. If no calls: prints the response and returns.
-5. If calls: prints any text before the first call, calls `executeToolCalls`, injects all results as a `<tool_result>` user message, and loops (up to 10 steps).
+5. If calls: prints any text before the first call, calls `executeToolCalls`, injects all results as a `<tool_result>` user message, and loops. The loop is unbounded — step 4 is the only normal exit.
 
 The embedded tool reference must mirror the actual tool schemas; for example `grep` uses `include` for its optional glob filter.
 

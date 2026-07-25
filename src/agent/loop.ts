@@ -88,7 +88,9 @@ async function runFakeLlm(
 
   try {
     beginTranscriptTurn();
-    for (let step = 0; step < 10; step++) {
+    // Unbounded like the real paths; the fixture itself terminates the loop by
+    // running out of steps (runFakeModel throws) or emitting no tool calls.
+    for (let step = 0; ; step++) {
       const generated = await runFakeModel({
         providerId,
         modelId,
@@ -135,8 +137,6 @@ async function runFakeLlm(
         { role: 'user' as const, content: resultParts.join('\n\n') },
       ];
     }
-
-    throw new Error('Fake LLM fixture exceeded max tool steps (10)');
   } catch (error) {
     endTranscriptStep(false);
     if (isUserAbortError(error)) return result(fullText);
@@ -205,7 +205,11 @@ async function streamWithRetry(
         ...(supportsTools ? {
           tools: createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly, (agentType, prompt) =>
             runSubAgent(agentType, prompt, { kind: 'native', model: languageModel })),
-          maxSteps: 10,
+          // A turn runs as many tool round trips as the model asks for. The SDK
+          // defaults maxSteps to 1, so "no limit" has to be spelled out rather
+          // than omitted; it is only read as `currentStep + 1 < maxSteps`.
+          // The turn still ends on context overflow, a provider error, or ESC.
+          maxSteps: Number.MAX_SAFE_INTEGER,
           onStepFinish: (event) => {
             // Intermediate steps (tool-calls finish reason) get a combined
             // close+open divider. The final step is closed after text normalisation.
@@ -407,7 +411,7 @@ export async function agentLoop(
     log('stream', `System prompt:\n${systemPrompt}`);
   }
 
-  log('stream', `Calling streamText`, { supportsTools, maxSteps: supportsTools ? 10 : undefined });
+  log('stream', `Calling streamText`, { supportsTools, maxSteps: supportsTools ? 'unlimited' : undefined });
 
   if (providerId === FAKE_PROVIDER_ID) {
     return runFakeLlm(providerId, modelId, supportsTools, systemPrompt, messages, options, modelSettings);
