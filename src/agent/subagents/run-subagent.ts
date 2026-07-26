@@ -20,7 +20,8 @@ import { readFileTool } from "../tools/read.js";
 import { grepTool } from "../tools/grep.js";
 import { listDirTool } from "../tools/list-dir.js";
 import { runFakeModel } from "../../providers/fake.js";
-import { isUserAbortError, rejectedToolCall, MAX_REJECTED_TOOL_CALLS } from "../../util/errors.js";
+import { isUserAbortError } from "../../util/errors.js";
+import { runRecoveringStream, type RecoverableStream } from "../stream-turn.js";
 import { log } from "../../logger.js";
 import { agentCatalog, getAgentPersona, type AgentPersona } from "./registry.js";
 
@@ -77,58 +78,38 @@ async function runNativeSubAgent(
   messages: CoreMessage[],
   model: LanguageModel,
 ): Promise<string> {
-  let activeMessages = messages;
-  let rejectedCalls = 0;
   // Keep only the final report, not inter-step narration: reset the buffer at each
   // tool call so what survives is the text after the LAST tool call — the sub-agent's
   // actual findings, not "let me check X…" chatter that would dilute the caller's context.
   let text = "";
 
-  while (true) {
-    const result = (await streamText({
-      model,
-      system: persona.systemPrompt,
-      messages: activeMessages,
-      tools: rawReadOnlyTools(),
-      maxSteps: persona.maxSteps,
-    })) as unknown as {
-      fullStream: AsyncIterable<{ type: string; textDelta?: string; error?: unknown }>;
-      responseMessages: Promise<CoreMessage[]>;
-    };
-
-    let streamError: unknown;
-    let streamHadError = false;
-    for await (const part of result.fullStream) {
+  // Rejected-tool-call recovery (error parts on fullStream, which are reported
+  // rather than thrown) is shared with the foreground loop — see agent/stream-turn.ts.
+  // Left unread, one would silently truncate the sub-turn and the caller would get a
+  // partial (or empty) report presented as findings.
+  await runRecoveringStream<RecoverableStream>({
+    messages,
+    start: async (attemptMessages) => {
+      text = "";
+      return await streamText({
+        model,
+        system: persona.systemPrompt,
+        messages: attemptMessages,
+        tools: rawReadOnlyTools(),
+        maxSteps: persona.maxSteps,
+      });
+    },
+    onPart: (part) => {
       if (part.type === "tool-call") {
         text = "";
       } else if (part.type === "text-delta" && typeof part.textDelta === "string") {
         text += part.textDelta;
-      } else if (part.type === "error") {
-        // fullStream reports failures as a part rather than throwing. Left unread,
-        // a rejected tool call would silently truncate the sub-turn and the caller
-        // would get a partial (or empty) report presented as findings.
-        streamError = part.error;
-        streamHadError = true;
       }
-    }
+    },
+    logPrefix: "spawn_agent: ",
+  });
 
-    if (!streamHadError) return text.trim();
-
-    // Same recovery as the main loop (agent/loop.ts): a call the SDK refused never
-    // produced a tool result, so continue from what actually ran plus the feedback.
-    const rejected = rejectedToolCall(streamError);
-    if (!rejected || rejectedCalls >= MAX_REJECTED_TOOL_CALLS) throw streamError;
-    rejectedCalls++;
-    log("stream", `spawn_agent: tool call rejected before execution; continuing the sub-turn`, {
-      tool: rejected.name,
-    });
-    activeMessages = [
-      ...activeMessages,
-      ...(await result.responseMessages),
-      { role: "user", content: rejected.feedback },
-    ];
-    text = "";
-  }
+  return text.trim();
 }
 
 // Fake-direct provider (e2e tests): a manual ReAct loop that consumes from

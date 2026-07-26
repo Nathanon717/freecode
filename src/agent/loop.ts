@@ -19,7 +19,8 @@ import { createMarkdownStreamRenderer } from '../cli/render/markdown-renderer.js
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './workspace.js';
-import { isContextOverflowError, isModelNotFoundError, isProviderToolUseFailed, isToolsNotSupportedError, isUserAbortError, rejectedToolCall, serializeError, toDetailedErrorMessage, toErrorMessage, MAX_REJECTED_TOOL_CALLS } from '../util/errors.js';
+import { isContextOverflowError, isModelNotFoundError, isProviderToolUseFailed, isToolsNotSupportedError, isUserAbortError, serializeError, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
+import { runRecoveringStream, type RecoverableStream } from './stream-turn.js';
 import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
 import { runParsedToolsLoop } from './parsed-tools.js';
@@ -75,7 +76,6 @@ async function streamWithRetry(
 ): Promise<StreamResult> {
   let activeMessages = messages;
   let toolUseFailureRetries = 0;
-  let rejectedToolCalls = 0;
   let useParsedToolsFallback = supportsTools && (isNativeToolsDisabled(providerId, modelId) || modelSettings.parsedTools);
   let fullText = '';
   let totalTokens = 0;
@@ -92,8 +92,9 @@ async function streamWithRetry(
       break;
     }
     try {
-      beginTranscriptTurn();
-      const mdStream = createMarkdownStreamRenderer();
+      // Reassigned per attempt by `start` below: a recovered tool-call rejection
+      // re-opens the stream, and each attempt renders through its own renderer.
+      let mdStream = createMarkdownStreamRenderer();
       const writeRendered = (rendered: string): void => {
         if (rendered) {
           process.stdout.write(rendered);
@@ -112,64 +113,70 @@ async function streamWithRetry(
           fullText += '\n';
         }
       };
-      const result: unknown = await streamText({
-        model: languageModel,
-        system: systemPrompt,
-        messages: activeMessages,
-        ...(supportsTools ? {
-          tools: createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly, (agentType, prompt) =>
-            runSubAgent(agentType, prompt, { kind: 'native', model: languageModel })),
-          // A turn runs as many tool round trips as the model asks for. The SDK
-          // defaults maxSteps to 1, so "no limit" has to be spelled out rather
-          // than omitted; it is only read as `currentStep + 1 < maxSteps`.
-          // The turn still ends on context overflow, a provider error, or ESC.
-          maxSteps: Number.MAX_SAFE_INTEGER,
-          onStepFinish: (event) => {
-            // Intermediate steps (tool-calls finish reason) get a combined
-            // close+open divider. The final step is closed after text normalisation.
-            // Preamble flushing is handled on the `tool-call` part below (before the
-            // tool's execute renders its header); here we only close the step.
-            if (event.finishReason === 'tool-calls') {
-              endTranscriptStep(true);
-            }
-            const stepQuota = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
-            if (stepQuota) options.onPartialResult?.({ providerId, modelId, quota: stepQuota });
-            // `event.usage` is this step's own usage (unlike the awaited
-            // `result.usage`, which is summed across steps — see below).
-            const stepPromptTokens = event.usage?.promptTokens;
-            if (stepPromptTokens !== undefined) {
-              options.onStepUsage?.({ providerId, modelId, promptTokens: stepPromptTokens });
-            }
-          },
-        } : {}),
-      });
-
-      const typedResult = result as {
-        fullStream: AsyncIterable<{ type: string } & Record<string, unknown>>;
-        usage: Promise<{ totalTokens: number; promptTokens?: number; completionTokens?: number; outputTokens?: number }>;
-        // Resolved even when a step ended on an error part, and it holds only calls
-        // that actually ran, each paired with its result — a rejected call never
-        // reaches the stream. That makes it the history to continue the turn from.
-        responseMessages: Promise<CoreMessage[]>;
-      };
-
       let chunkCount = 0;
-      let streamError: unknown;
-      let streamHadError = false;
       // The AI SDK's final `result.usage.promptTokens` is SUMMED across every
       // step of a multi-step tool turn (ai@3.4 combinedUsage) — using it as the
       // context size would multiply it by the step count and blow past the
       // window. Each `step-finish` part instead carries that step's own usage;
       // the last one is the real context (the full history the final call sent).
       let lastStepPromptTokens: number | undefined;
-      // Drive display from the ordered fullStream (text-delta → tool-call →
-      // tool-result) instead of the text-only textStream, so a step's preamble text
-      // can never render after the tool call it precedes. The gate lets each tool's
-      // execute (which draws the header) wait until the consumer has reached that
-      // call's tool-call part.
-      beginToolRenderGate();
-      try {
-        for await (const part of typedResult.fullStream) {
+
+      type NativeStream = RecoverableStream & {
+        usage: Promise<{ totalTokens: number; promptTokens?: number; completionTokens?: number; outputTokens?: number }>;
+      };
+
+      const openAttempt = async (attemptMessages: CoreMessage[]): Promise<NativeStream> => {
+        beginTranscriptTurn();
+        mdStream = createMarkdownStreamRenderer();
+        chunkCount = 0;
+        lastStepPromptTokens = undefined;
+        const result: unknown = await streamText({
+          model: languageModel,
+          system: systemPrompt,
+          messages: attemptMessages,
+          ...(supportsTools ? {
+            tools: createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly, (agentType, prompt) =>
+              runSubAgent(agentType, prompt, { kind: 'native', model: languageModel })),
+            // A turn runs as many tool round trips as the model asks for. The SDK
+            // defaults maxSteps to 1, so "no limit" has to be spelled out rather
+            // than omitted; it is only read as `currentStep + 1 < maxSteps`.
+            // The turn still ends on context overflow, a provider error, or ESC.
+            maxSteps: Number.MAX_SAFE_INTEGER,
+            onStepFinish: (event) => {
+              // Intermediate steps (tool-calls finish reason) get a combined
+              // close+open divider. The final step is closed after text normalisation.
+              // Preamble flushing is handled on the `tool-call` part below (before the
+              // tool's execute renders its header); here we only close the step.
+              if (event.finishReason === 'tool-calls') {
+                endTranscriptStep(true);
+              }
+              const stepQuota = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
+              if (stepQuota) options.onPartialResult?.({ providerId, modelId, quota: stepQuota });
+              // `event.usage` is this step's own usage (unlike the awaited
+              // `result.usage`, which is summed across steps — see below).
+              const stepPromptTokens = event.usage?.promptTokens;
+              if (stepPromptTokens !== undefined) {
+                options.onStepUsage?.({ providerId, modelId, promptTokens: stepPromptTokens });
+              }
+            },
+          } : {}),
+        });
+        // Drive display from the ordered fullStream (text-delta → tool-call →
+        // tool-result) instead of the text-only textStream, so a step's preamble text
+        // can never render after the tool call it precedes. The gate lets each tool's
+        // execute (which draws the header) wait until the consumer has reached that
+        // call's tool-call part. Closed in onDrained below.
+        beginToolRenderGate();
+        return result as NativeStream;
+      };
+
+      // Rejected-tool-call recovery is shared with the sub-agent runner — see
+      // agent/stream-turn.ts. What is local to the foreground loop is rendering
+      // (onPart/onRejected) and carrying an abandoned attempt's usage (onRecover).
+      const typedResult = await runRecoveringStream<NativeStream>({
+        messages: activeMessages,
+        start: openAttempt,
+        onPart: (part) => {
           if (part.type === 'text-delta') {
             const delta = part.textDelta as string;
             writeRendered(mdStream.push(delta));
@@ -183,47 +190,31 @@ async function streamWithRetry(
           } else if (part.type === 'step-finish') {
             const stepUsage = part.usage as { promptTokens?: number } | undefined;
             if (stepUsage?.promptTokens !== undefined) lastStepPromptTokens = stepUsage.promptTokens;
-          } else if (part.type === 'error') {
-            // fullStream reports mid-stream failures as an error part rather than
-            // throwing; re-throw after the loop so the retry/catch logic still runs.
-            streamError = part.error;
-            streamHadError = true;
-            // Render a rejected call here, while the step is still open, so it lands
-            // under this step's text like any other tool call rather than after the
-            // step divider onStepFinish writes once the stream closes.
-            const rejected = rejectedToolCall(part.error);
-            if (rejected) {
-              flushPendingPreamble();
-              writeRendered(mdStream.flush());
-              const { rationale, ...displayArgs } = rejected.args;
-              writeToolCallHeader({
-                name: rejected.name,
-                displayArgs,
-                rationale: typeof rationale === 'string' ? rationale : undefined,
-              });
-              writeToolStepResult(rejected.name, { kind: 'error', error: part.error });
-            }
           }
-        }
-      } finally {
-        endToolRenderGate();
-      }
-      if (streamHadError) {
-        const rejected = rejectedToolCall(streamError);
-        if (rejected && rejectedToolCalls < MAX_REJECTED_TOOL_CALLS) {
-          rejectedToolCalls++;
-          log('stream', `Tool call rejected before execution; feeding the error back and continuing the turn`, serializeError(streamError));
-          const stepUsage = await typedResult.usage;
+        },
+        // Render a rejected call while the step is still open, so it lands under
+        // this step's text like any other tool call rather than after the step
+        // divider onStepFinish writes once the stream closes.
+        onRejected: (rejected, error) => {
+          flushPendingPreamble();
+          writeRendered(mdStream.flush());
+          const { rationale, ...displayArgs } = rejected.args;
+          writeToolCallHeader({
+            name: rejected.name,
+            displayArgs,
+            rationale: typeof rationale === 'string' ? rationale : undefined,
+          });
+          writeToolStepResult(rejected.name, { kind: 'error', error });
+        },
+        onDrained: () => endToolRenderGate(),
+        onRecover: async (stream) => {
+          const stepUsage = await stream.usage;
           carriedTotalTokens += stepUsage?.totalTokens ?? 0;
           const stepOutput = stepUsage?.completionTokens ?? stepUsage?.outputTokens;
           if (stepOutput !== undefined) carriedOutputTokens = (carriedOutputTokens ?? 0) + stepOutput;
-          // Continue from what this stream actually did — its text and its completed
-          // tool calls — so nothing already executed is replayed on the next call.
-          activeMessages = [...activeMessages, ...(await typedResult.responseMessages), { role: 'user' as const, content: rejected.feedback }];
-          continue;
-        }
-        throw streamError;
-      }
+        },
+      });
+
       writeRendered(mdStream.flush());
       fullText = fullText.trimEnd();
       if (fullText && !fullText.endsWith('\n')) {

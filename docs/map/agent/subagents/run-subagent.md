@@ -24,24 +24,26 @@ runSubAgent(agentType: string, prompt: string, ctx: SubAgentContext): Promise<st
 
 ## Why separate from agentLoop
 
-- The main loop ([../loop.md](../loop.md)) is fused to foreground rendering — transcript steps, the [tool-render gate](../tool-render-gate.md), stdout streaming. A sub-agent must avoid all of it, so this is a minimal loop, not a reuse of `agentLoop`.
+- **`agentLoop` is not reentrant.** `beginTranscriptTurn`, `beginToolRenderGate`, `beginProviderUsageCapture`, and `setProjectRoot` are all module-level singletons, and a sub-agent starts from inside a tool's `execute` — i.e. mid-stream of the parent. A nested `agentLoop` would close the parent's transcript step, end the parent's usage capture, and release the parent's render gate while the parent is still draining. It also returns `AgentLoopResult` (quota, cost, providerUsage), a shape a tool result cannot consume. The separation is forced, not stylistic.
+- Depth limiting falls out for free: `rawReadOnlyTools()` simply omits `spawn_agent`, so no explicit depth tracking is needed.
 - Sub-agents use the **raw, unwrapped** read-only tools (`read`/`grep`/`list_dir`) from the tool files directly. That sidesteps three couplings at once: no confirmation prompts, no render-gate participation, no serialized-execution queue (so a sub-agent running inside a wrapped `spawn_agent` cannot deadlock on the parent's queue).
 - The model handle a tool's `execute` never receives is injected by the caller via `SubAgentContext`.
 
 ## Execution paths (must stay parallel)
 
-- `native` — real/fake-native providers: the AI SDK drives the multi-step tool loop; the stream is drained silently for its text. `fullStream` `error` parts **must** be read: they are reported, not thrown, so ignoring one truncates the sub-turn and returns a partial (or empty) report as if it were findings. A rejected tool call (`rejectedToolCall` in [util/errors.md](../../util/errors.md)) is recovered the same way the main loop does it — continue from `responseMessages` plus the feedback, capped by `MAX_REJECTED_TOOL_CALLS`; any other error is rethrown for `runSubAgent`'s catch to turn into a visible `Error: the <agent> sub-agent failed: …` tool result. Coverage: `tests/e2e/spawn-agent-native` (mock-native → real `streamText`).
+- `native` — real/fake-native providers: the AI SDK drives the multi-step tool loop; the stream is drained silently for its text. Draining and rejected-tool-call recovery are delegated to `runRecoveringStream` ([../stream-turn.md](../stream-turn.md)), shared with the main loop; this file supplies only the text-accumulating `onPart`. Any non-rejection error is rethrown for `runSubAgent`'s catch to turn into a visible `Error: the <agent> sub-agent failed: …` tool result. Coverage: `tests/e2e/spawn-agent-native` (mock-native → real `streamText`).
 - `fake` — e2e tests only: a manual ReAct loop that calls `runFakeModel`, which shares the module-global `consumedSteps` counter with the parent, so a nested fake call consumes from the *same* flat fixture queue. Coverage: `tests/e2e/spawn-agent-fake`.
 
 Both paths return **only the final step's text** (the segment after the last tool call), so inter-step narration is discarded and the caller receives findings, not chatter — keep them symmetric.
 
 ## Known limitations (intentional, v1)
 
-- Sub-agent token usage does **not** roll into the parent's `ctx` count; the delegated turn's tokens are spent but not surfaced in the footer.
+- Sub-agent tokens are **tracked but not displayed**. The sub-agent shares the parent's model handle, so its requests land in the same provider-keyed usage store — `mergeAnthropicUsages` sums them, and they reach `providerUsage[]` and the cost estimate. What they never reach is the footer's `ctx` number: the non-anthropic path reports the last step's own prompt tokens (sub-agent calls are not steps), and the anthropic path blanks the slot outright for cache-accounting reasons (`cli/session-modes.ts`).
 - No abort-signal propagation into the sub-agent; a user abort surfaces at the parent tool boundary.
-- No parsed-tools fallback: if a real provider lacks native tool calling, the native sub-agent returns a graceful error string rather than degrading to the text protocol.
+- **`spawn_agent` does not exist under the prompt-based tool protocol.** `runParsedToolsLoop` builds its tools without a `spawnAgent` runner, so a model that lacks native tool calling (or has `parsedTools` set) cannot delegate at all — the native runner is never reached. `buildSystemPrompt` takes a `spawnAgent` flag so the parsed-mode prompt does not advertise a tool that is not there; keep the two in sync.
 
 ## Key neighbors
 
 - [registry.md](registry.md) — supplies the persona (system prompt + step budget).
 - [../loop.md](../loop.md) — constructs the model-bound `SubAgentContext` and passes the runner into `createTools`.
+- [../stream-turn.md](../stream-turn.md) — the shared drain/recovery driver the native path runs on.
