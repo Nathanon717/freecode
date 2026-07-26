@@ -21,6 +21,8 @@ __pycache__/
 
 # map-drift model-comparison reports (one per model per run)
 scripts/diagnostics/map-drift/
+# rate-limit-probe raw header/body dumps (one per provider per run)
+scripts/diagnostics/rate-limit-probe/
 *.d.ts.map
 poe-cookies.json
 

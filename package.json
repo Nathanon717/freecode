@@ -19,6 +19,7 @@
     "coverage": "vitest run --coverage",
     "test-all-models": "tsx scripts/diagnostics/test-all-models.ts",
     "map-drift": "tsx scripts/diagnostics/map-drift.ts",
+    "rate-limit-probe": "tsx scripts/diagnostics/rate-limit-probe.ts",
     "pty": "cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts",
     "pty:test": "vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts",
     "docs:generate": "tsx scripts/docgen/sync-docs.ts",

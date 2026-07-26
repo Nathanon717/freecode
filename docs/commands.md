@@ -20,6 +20,7 @@ This table is generated from `package.json`.
 | `npm run postinstall` | `node scripts/install/ensure-pty.cjs && node scripts/install/ensure-link.cjs` |
 | `npm run pty` | `cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts` |
 | `npm run pty:test` | `vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts` |
+| `npm run rate-limit-probe` | `tsx scripts/diagnostics/rate-limit-probe.ts` |
 | `npm run start` | `node dist/index.js` |
 | `npm run test` | `tsx scripts/pipeline/test.ts` |
 | `npm run test-all-models` | `tsx scripts/diagnostics/test-all-models.ts` |
