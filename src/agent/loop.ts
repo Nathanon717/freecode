@@ -371,7 +371,10 @@ export async function agentLoop(
     outputTokens = streamed.outputTokens;
 
     if (streamed.useParsedToolsFallback) {
-      const parsedToolsResult = await runParsedToolsLoop(messages, systemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale, options.readOnly, (t) => options.onStepUsage?.({ providerId, modelId, promptTokens: t }));
+      // runParsedToolsLoop builds its tools without a spawnAgent runner, so the
+      // prompt must not advertise spawn_agent — rebuild it without that tool.
+      const parsedSystemPrompt = buildSystemPrompt(modelSettings.loadAgentsMd, false);
+      const parsedToolsResult = await runParsedToolsLoop(messages, parsedSystemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale, options.readOnly, (t) => options.onStepUsage?.({ providerId, modelId, promptTokens: t }));
       fullText = parsedToolsResult.text.trimEnd();
       totalTokens = parsedToolsResult.totalTokens;
       promptTokens = parsedToolsResult.promptTokens;

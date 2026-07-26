@@ -12,6 +12,14 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('list_dir');
   });
 
+  it('omits spawn_agent when the caller does not supply it', () => {
+    // runParsedToolsLoop builds createTools without a spawnAgent runner, so the
+    // prompt must not advertise a tool that mode cannot call. See loop.ts.
+    const prompt = buildSystemPrompt(false, false);
+    expect(prompt).not.toContain('spawn_agent');
+    expect(prompt).toContain('shell_exec');
+  });
+
   it('mentions the current OS', () => {
     const prompt = buildSystemPrompt();
     const expected = process.platform === 'win32' ? 'Windows' : 'Linux';

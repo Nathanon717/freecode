@@ -6,13 +6,14 @@
 ## Exports
 
 ```typescript
-buildSystemPrompt(loadAgentsMd?: boolean): string
+buildSystemPrompt(loadAgentsMd?: boolean, spawnAgent?: boolean): string
 ```
 <!-- END GENERATED EXPORTS -->
 
 ## Export notes
 
 - `loadAgentsMd` defaults to `false`. When `true`, reads `AGENTS.md` from `projectRoot` and appends it under a `# Project Instructions (AGENTS.md)` header; silently omitted if the file does not exist.
+- `spawnAgent` defaults to `true` and must mirror whether the caller actually put `spawn_agent` in the tool set. It gates both the `Available tools:` line and the delegation tip. [parsed-tools.md](parsed-tools.md) builds its tools without a `spawnAgent` runner, so [loop.md](loop.md) rebuilds the prompt with `false` before entering that path — otherwise the model is told to call a tool that does not exist.
 
 ## Behavior
 

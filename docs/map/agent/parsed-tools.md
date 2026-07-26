@@ -42,6 +42,8 @@ runParsedToolsLoop(messages: CoreMessage[], systemPrompt: string, model: Languag
 
 The embedded tool reference must mirror the actual tool schemas; for example `grep` uses `include` for its optional glob filter.
 
+`createTools` is called here **without** a `spawnAgent` runner, so `spawn_agent` does not exist under this protocol and the addendum's tool reference omits it. `loop.ts` therefore passes a prompt built with `buildSystemPrompt(loadAgentsMd, false)`; if `spawn_agent` is ever added here, both the addendum and that flag have to change together.
+
 ## Key Neighbors
 
 - [loop.md](loop.md): invokes `runParsedToolsLoop` when `isToolsNotSupportedError` fires.
