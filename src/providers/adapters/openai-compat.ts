@@ -191,6 +191,7 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
     let response: Response;
     try {
       response = await fetchWithRetry(input, patchedInit, {
+        providerId: providerConfig.id,
         providerName: providerConfig.name,
         maxWaitMs: loadConfig().retryMaxWaitSeconds * 1000,
         onRetryableResponse: shouldCapture

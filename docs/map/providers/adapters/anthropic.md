@@ -27,7 +27,9 @@ createAnthropicProvider(providerConfig: ProviderConfig): AnthropicProvider
 1. `process.env[providerConfig.apiKeyEnvVar]`
 2. `loadConfig().providers[providerConfig.id]?.apiKey`
 
-It wraps `globalThis.fetch` before passing it to `createAnthropic()`.
+It wraps a custom fetch before passing it to `createAnthropic()`. That fetch issues its request through [`fetchWithRetry`](adapter-http-retry.md) rather than `globalThis.fetch`, so Anthropic gets the same automatic 429/503 backoff, `retry-after` handling, retry-countdown banner, and shared per-provider rate-limit gate as the OpenAI-compatible providers. Only the final response reaches the usage/header/call-log branches below, so a retried 429 is not logged as an error.
+
+Session ingress tokens (`sk-ant-si-*`) are JWTs, so the fetch swaps `x-api-key` for an `Authorization: Bearer` header.
 
 ## Header Capture
 

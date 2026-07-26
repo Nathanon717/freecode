@@ -1,6 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import type { ProviderConfig } from '../types.js';
-import { resolveApiKey } from '../../config/index.js';
+import { loadConfig, resolveApiKey } from '../../config/index.js';
+import { fetchWithRetry } from './adapter-http-retry.js';
 import {
   parseAnthropicRateLimitHeaders,
   parseAnthropicExtendedHeaders,
@@ -202,7 +203,11 @@ export function createAnthropicProvider(providerConfig: ProviderConfig) {
 
     let response: Response;
     try {
-      response = await globalThis.fetch(input, fetchInit);
+      response = await fetchWithRetry(input, fetchInit, {
+        providerId: providerConfig.id,
+        providerName: providerConfig.name,
+        maxWaitMs: loadConfig().retryMaxWaitSeconds * 1000,
+      });
     } catch (err) {
       // Transport failure — no response, so no status and no provider usage.
       recordLlmCall({ modelKey, error: err instanceof Error ? err.message : String(err) });

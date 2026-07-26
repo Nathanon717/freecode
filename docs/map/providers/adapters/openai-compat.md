@@ -58,7 +58,7 @@ The custom `fetch` pipeline (in order):
 
 ## 429/503 Auto-Retry
 
-The custom fetch delegates retries to [`fetchWithRetry`](adapter-http-retry.md), which retries 429/503 up to 5 times with bounded backoff capped at `config.retryMaxWaitSeconds` (default 10). On each retryable response the adapter's `onRetryableResponse` callback parses the rate-limit snapshot and pushes it to the quota sink registered via `registerQuotaUpdateSink()`. Retry-countdown rendering is owned by the CLI (see [adapter-http-retry](adapter-http-retry.md)).
+The custom fetch delegates retries to [`fetchWithRetry`](adapter-http-retry.md), which retries 429/503 up to 5 times. A server `retry-after` is honored in full; `config.retryMaxWaitSeconds` (default 120) bounds only the self-computed backoff used when no `retry-after` is sent. Concurrent calls share a rate-limit gate keyed by the `providerId` passed here. On each retryable response the adapter's `onRetryableResponse` callback parses the rate-limit snapshot and pushes it to the quota sink registered via `registerQuotaUpdateSink()`. Retry-countdown rendering is owned by the CLI (see [adapter-http-retry](adapter-http-retry.md)).
 
 ## Rate-Limit Header Capture
 

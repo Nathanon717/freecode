@@ -35,7 +35,7 @@ Provider and Model tabs are only available when `currentModel` contains a colon.
 | `toolRationale` | Tool rationale | Global, Provider, Model | Explain each tool call before executing. |
 | `showProviderUsage` | Provider usage | Global, Provider, Model | Print token/rate-limit usage after each turn. |
 | `parallelTools` | Parallel tools | Global, Provider, Model | Allow multiple tool calls per response. |
-| `retryMaxWaitSeconds` | Max retry wait | Global only | Max seconds before retrying a rate-limited request. |
+| `retryMaxWaitSeconds` | Max retry wait | Global only | Max self-computed backoff when a provider sends no `retry-after`. A `retry-after` is always honored in full and is not clamped by this. |
 | `diffContextLines` | Diff context | Global only | Context lines shown around each edit diff. |
 | `showEvalDots` | Eval dots | Global only | Show per-scenario eval circles in the model picker. |
 | `autoApproveTokenBudget` | Auto-approve under | Global, Provider, Model | Numeric (0–1000, step 100). Auto-approve `read`/`grep`/`list_dir` calls adding fewer than N tokens. `0` renders dim **off**. The only numeric setting that is also overridable. |
