@@ -78,11 +78,11 @@ per-model on most of these — so the model probed is named in each row.
 | LLM7 | `codestral-latest` | ❌ | ❌ | ✅ `1` | — | ✅ `retry_after: 1` field | ≤5s |
 | Z.ai | `glm-4.5-flash` | ❌ | ❌ | ❌ | ❌ none | ⚠️ `code 1302` only | <5s |
 | NVIDIA | `meta/llama-3.1-8b-instruct` | ❌ | ❌ | ❌ | ❌ none | ❌ `{"status":429,"title":"Too Many Requests"}` | 62s |
-| OpenRouter | `nvidia/nemotron-nano-9b-v2:free` | ❌ | ❌ | not reached | — | — | — |
-| Cloudflare | `@cf/…/llama-3.3-70b-…-fast` | ❌ | ❌ | not reached | — | — | — |
+| OpenRouter | `nvidia/nemotron-nano-9b-v2:free` | ❌ | ❌ | ❌ | ✅ limit + remaining + **absolute reset** | ✅ names limit + scope | 50s |
+| Cloudflare | `@cf/…/llama-3.3-70b-…-fast` | ❌ | ❌ | not reached at 60 concurrent | — | — | — |
+| Zen (OpenCode) | `deepseek-v4-flash-free` | ❌ | ❌ | not reached at 60 concurrent | — | — | — |
 | Hugging Face | `allenai/Olmo-3-7B-Instruct:publicai` | ❌ | ❌ | n/a — **402**, not 429 | ✅ `x-error-message` | ✅ "depleted your monthly included credits" | terminal |
 | SiliconFlow | — | key returns 401 `Api key is invalid` — untestable | | | | | |
-| Zen | — | no `OPENCODE_ZEN_API_KEY` in the environment — untested | | | | | |
 
 Three tiers fall out of the "on 200 stream" column, and that column is the one that matters,
 because the agent path streams:
@@ -93,8 +93,10 @@ because the agent path streams:
   reasons, is the only reason we can see its limits at all. Deleting that quirk silently
   deletes the pacing signal.
 - **Reactive only** (nothing until the 429, sometimes nothing even then): NVIDIA, Z.ai, LLM7,
-  OpenRouter, Cloudflare, Cohere (a countdown, but no limit or window). This class is the
-  entire justification for a well-defined generic mode.
+  OpenRouter, Cloudflare, Zen, Cohere (a countdown, but no limit or window). This class is
+  the entire justification for a well-defined generic mode. Note "reactive" says nothing
+  about quality — OpenRouter's 429 is the most precise response in the survey; you just
+  cannot see it coming.
 
 ### Per-provider detail
 
@@ -206,9 +208,27 @@ today's 2^attempt escalation is pure waste here.
 `{"status":429,"title":"Too Many Requests"}` with no rate-limit headers and no `retry-after`.
 Cleared at 62s — a minute-scale window that today's 31s budget cannot ride out.
 
-**OpenRouter** — no rate-limit headers on 200s (stream or not), and 32 concurrent free-model
-calls never tripped a limit, so the 429 shape is **unobserved**; do not assume it. What it
-does have is the survey's only **read-only quota endpoint**, `GET /api/v1/key`, which costs
+**OpenRouter** — nothing on 200s (stream or not), and it took a 60-wide burst to trip at all
+(32 was not enough). But its 429 is **the most precise response in the survey**:
+
+```
+x-ratelimit-limit: 50   x-ratelimit-remaining: 0   x-ratelimit-reset: 1785082980000
+```
+
+`x-ratelimit-reset` is an **absolute epoch in milliseconds** — not a duration to be re-based
+against clock skew, not an estimate. Verified: it read `16:23:00.000Z` and the limit cleared
+at `16:23:00.938Z`, i.e. accurate to under a second, and it lands on the wall-clock minute
+(another fixed-window provider). Nothing else measured comes closer. The body names the
+limit and its scope, and helpfully **repeats the headers inside `metadata.headers`** for
+cases where a proxy strips them:
+
+> Rate limit exceeded: `limit_rpm/nvidia/nemotron-nano-9b-v2/71549a70-…`. High demand for
+> nvidia/nemotron-nano-9b-v2:free on OpenRouter — limited to **50 requests per minute**.
+
+So the limit is per *model*, not per key, and it is a "high demand" free-pool limit that can
+move — one more reason to read it from the response rather than hard-code it.
+
+It also has the survey's only **read-only quota endpoint**, `GET /api/v1/key`, which costs
 no inference:
 
 ```json
@@ -223,10 +243,25 @@ models cost $0. So `/key` is a *credit-budget* signal (useful for "this key is o
 money", `is_free_tier`, monthly reset) and tells you nothing about the free-model request
 cap. Worth reading at startup; not a pacing input.
 
-**Cloudflare** — nothing on 200s and no 429 at 60 concurrent. The free tier is a daily
-neuron budget rather than a request rate, so exhaustion is expected to look like a day-scale
-failure, not a per-minute one. Not characterised; needs a separate probe against the
-account's neuron usage.
+**Cloudflare** — nothing on 200s and no 429 at 60 concurrent, ~85 requests total. That is not
+"no limits": the free tier is metered as a **daily neuron budget** rather than a request
+rate, so the failure mode is a day-scale wall that a burst cannot reach and this probe cannot
+characterise. Its 429/quota-exhausted shape is **unknown**; assume nothing. Characterising it
+needs either a deliberate day-budget burn or a read of the account's neuron usage via
+Cloudflare's analytics API — the latter would be a second read-only quota endpoint, worth
+having.
+
+**Zen (OpenCode)** — **keyless**: the registry sets `defaultApiKey: "public"`, so quota is
+per **IP**, not per key (see `docs/providers.md`). Nothing on 200s and no 429 across 62
+requests at 60 concurrent, so its limit shape is likewise **unknown**. The per-IP quota makes
+it the one provider where a shared egress means someone else's traffic can exhaust *your*
+budget, and where rotating credentials is not a remedy — worth remembering when its failures
+eventually get characterised.
+
+⚠️ The first pass of this survey wrongly recorded Zen as "no API key — untested", because the
+probe gated on `process.env[apiKeyEnvVar]` instead of the `defaultApiKey` fallback that
+`resolveApiKey()` applies. Any future tooling that asks "is this provider usable?" must go
+through `resolveApiKey()`.
 
 **Hugging Face** — the exhaustion signal is **402, not 429**: the key's monthly credits ran
 out *mid-probe*, 9 requests succeeded and the next 13 returned `402` carrying the reason in a
@@ -247,31 +282,37 @@ Ordered by how much they beat `2^attempt`, all of them observed above:
 1. **A read-only quota endpoint.** OpenRouter's `/key`. Zero inference cost, readable at
    startup, tells you the key is dead or out of credit *before* the first call. SiliconFlow
    has `/user/info` (untested — invalid key).
-2. **`retry-after`.** Groq, Cerebras (quota kind), GitHub, LLM7. Already honored.
-3. **A named limit *kind*.** GitHub's `x-ratelimit-type` and Cerebras's body `param`/`code`
+2. **An absolute reset timestamp.** OpenRouter's `x-ratelimit-reset` (epoch ms), verified
+   accurate to under a second. Strictly better than a duration: it survives request latency,
+   it is not re-based against our clock on arrival, and N workers computing a wake-up from it
+   all get the *same* instant rather than N drifting ones. Anthropic's ISO-8601 resets are
+   the same idea (`headers.ts` already converts them to durations at parse time — for retry
+   timing, keep the absolute form).
+3. **`retry-after`.** Groq, Cerebras (quota kind), GitHub, LLM7. Already honored.
+4. **A named limit *kind*.** GitHub's `x-ratelimit-type` and Cerebras's body `param`/`code`
    split "you are over quota" (wait the window) from "too many at once / server busy" (retry
    in ~1s, and cap concurrency). Nothing in the current code distinguishes these, and they
    want opposite responses. Z.ai's sub-5s clear puts it in the second class too, inferred
    from behaviour rather than a label.
-4. **The window length, explicitly.** GitHub's `x-ratelimit-renewalperiod-requests: 60`.
+5. **The window length, explicitly.** GitHub's `x-ratelimit-renewalperiod-requests: 60`.
    With limit + remaining + window you can pace exactly and never 429 at all.
-5. **Prose in the 429 body.** Groq: "on requests per minute (RPM): Limit 30, Used 30" plus
+6. **Prose in the 429 body.** Groq: "on requests per minute (RPM): Limit 30, Used 30" plus
    "Please try again in 2s" — the *only* place Groq states its binding limit. Cohere: "20 API
    calls / minute" — the only place Cohere states any limit. Both are stable enough to parse
    with a narrow regex, and both are strictly better than guessing. Parse defensively: a
    miss must fall through to the next rung, never throw.
-6. **A JSON `retry_after` field.** LLM7 puts it in the body alongside the header.
-7. **A remaining-count with no limit and no window.** Cohere's
+7. **A JSON `retry_after` field.** LLM7 puts it in the body alongside the header.
+8. **A remaining-count with no limit and no window.** Cohere's
    `x-trial-endpoint-call-remaining`. Enough to stop *before* the 429 even though you cannot
    compute a rate from it.
-8. **Cached ceilings from earlier 200s.** Required for Cerebras, whose 429s carry nothing but
+9. **Cached ceilings from earlier 200s.** Required for Cerebras, whose 429s carry nothing but
    whose 200s carry everything. `saveObservedRateLimits` already persists exactly this.
-9. **Our own measured clear time.** Every 429 → success transition is a measurement of the
+10. **Our own measured clear time.** Every 429 → success transition is a measurement of the
    real window — precisely what this probe did. Persisting an EWMA of it per provider+model
    converts the no-signal providers (NVIDIA, Z.ai) into paced ones after a single incident.
    This is the highest-value item for the reactive-only tier, and it needs no cooperation
    from the provider.
-10. **The window's phase, not just its length.** Mistral clears on the wall-clock minute, so
+11. **The window's phase, not just its length.** Mistral clears on the wall-clock minute, so
     the wait is to the boundary (7s and 12s in the two timestamped trials) rather than a flat
     60s. Cohere's counter shows the opposite shape — a rolling window returning one slot at a
     time — and Groq's reset headers describe a continuously refilling bucket. Same nominal
@@ -284,8 +325,9 @@ gone → drop the provider), and SiliconFlow's **401** (bad key → drop the pro
 
 ## Proposal: the generic / fallback mode
 
-For any provider with no usable signal — NVIDIA, Z.ai, Cloudflare, OpenRouter, Cohere-on-429,
-Mistral-on-stream, and any provider added tomorrow — the policy should be built around what
+For any provider with no usable signal — NVIDIA, Z.ai, Cohere-on-429, Mistral-on-stream,
+Cloudflare and Zen (both uncharacterised), and any provider added tomorrow — the policy
+should be built around what
 the measured clear times actually look like. There are two distinct failure *causes*, and
 the second one has no characteristic duration at all:
 
@@ -316,11 +358,7 @@ first two do — nothing gets slower for the fast class. Every wait jittered ±2
 released from the shared gate do not re-collide, which is the synchronised-burst failure the
 original study found. Then:
 
-- **Learn from the outcome.** Record `(provider, model, msFromFirst429ToFirstSuccess)` on
-  every recovery and store an EWMA next to the observed ceilings. On the next 429 with no
-  signal, start the ladder at the learned value instead of 1s. One incident is enough to
-  turn NVIDIA from "guess" into "wait ~60s"; Z.ai stays fast because its learned value is
-  ~2s.
+- **Learn from the outcome.** See "Learned clear time" below.
 - **Terminal means terminal, and says so.** After the ladder, surface "rate limited by
   {provider} for {N}s — {model} allows {limit}/{window}" rather than a raw HTTP 429 body.
   The unbounded-wait option is the wrong default: the caller's `AbortSignal` already bounds
@@ -339,23 +377,74 @@ original study found. Then:
 **Per-provider resolution ladder** (each rung falls through to the next on a miss, ending in
 the generic ladder above):
 
-1. `retry-after` header — but treat `0` as "immediately", and treat a value that overshoots
+1. An absolute reset timestamp — OpenRouter's `x-ratelimit-reset` (epoch ms). Wake at that
+   instant; it needs no arithmetic and no clock-skew allowance.
+2. `retry-after` header — but treat `0` as "immediately", and treat a value that overshoots
    the learned clear time by >3x (Cerebras: 57–60 advertised vs 11–32 measured) as an upper
    bound worth re-probing before, not a floor to sleep out in full.
-2. A provider-specific reset for the *exhausted* bucket — GitHub's `x-ratelimit-timeremaining`.
+3. A provider-specific reset for the *exhausted* bucket — GitHub's `x-ratelimit-timeremaining`.
    Not Groq's `x-ratelimit-reset-requests`, which describes a different (daily) bucket than
    the one that failed.
-3. A `retry_after` field in the body (LLM7), or a parsed prose hint ("try again in 2s",
-   "Please wait 0 seconds").
-4. Exhausted bucket + known window: `remaining == 0` plus a window from
+4. A `retry_after` field in the body (LLM7), or a parsed prose hint ("try again in 2s",
+   "Please wait 0 seconds"). OpenRouter also mirrors its headers into `metadata.headers`,
+   which is the fallback when something upstream strips them.
+5. Exhausted bucket + known window: `remaining == 0` plus a window from
    `renewalperiod` (GitHub), a header suffix (`-minute`/`-hour`/`-day`, Cerebras/Mistral), or
-   a per-provider constant. Wait to the boundary for fixed-window providers (Mistral),
-   `overdraft / refill-rate` for refilling buckets (Groq), and re-probe gradually for rolling
-   ones (Cohere). Cerebras fits none of the three cleanly — pace it, do not model it.
-5. Cached ceilings from earlier 200s (`saveObservedRateLimits`) — the only option for
+   a per-provider constant. Wait to the boundary for fixed-window providers (Mistral,
+   OpenRouter), `overdraft / refill-rate` for refilling buckets (Groq), and re-probe gradually
+   for rolling ones (Cohere). Cerebras fits none of the three cleanly — pace it, do not model
+   it.
+6. Cached ceilings from earlier 200s (`saveObservedRateLimits`) — the only option for
    Cerebras, whose 429s are bare.
-6. The learned EWMA clear time.
-7. The generic ladder.
+7. The learned EWMA clear time (below).
+8. The generic ladder.
+
+### Learned clear time
+
+The probe's most reusable trick is one the agent can run for free, forever: **every 429 → 200
+transition is a measurement of the real window.** The probe learned NVIDIA's ~62s and Z.ai's
+<5s from providers that state nothing, using no privileged information — just the timestamp
+of the first 429 and the timestamp of the first success after it. Nothing stops
+`fetchWithRetry` from recording the same thing, and doing so converts the whole reactive-only
+tier from "guess" into "measured" after a single incident.
+
+Concretely:
+
+- **Key it by `(providerId, modelId)`, not provider.** Mistral's own numbers make the case:
+  23/min for `mistral-medium-2508`, 750/min for `ministral-3b-2512`, same key. A
+  provider-level average would be wrong for both. OpenRouter's 429 body confirms the same
+  shape from the other side — `limit_rpm/nvidia/nemotron-nano-9b-v2/…` is scoped to a model.
+- **Record only clean observations.** The measurement is `firstSuccessAt − first429At` for one
+  provider+model, and it is only meaningful when *our own* waiting is what ended it. Discard
+  the sample if the caller aborted, if the gate held us past the clear time (we would be
+  measuring our own gate, not the provider), or if a different model interleaved on the same
+  key.
+- **EWMA, not mean**, with a small α (~0.3): limits change, free tiers get re-tiered, and
+  OpenRouter's "high demand … limited to 50/min" is explicitly a moving number. An EWMA
+  forgets an old ceiling in a few incidents; a lifetime mean never does.
+- **Store both the value and its spread.** Mistral produced 5s, 10s and 52s for one model —
+  not noise, but *phase*: the same 60s window entered at different points. A learned mean of
+  ~22s would be wrong every single time. So keep `max` alongside the EWMA and treat the
+  spread as the tell: **a wide spread means a fixed window** (wait to the boundary), **a tight
+  one means a short bucket or a concurrency cap** (retry fast). This is the piece that makes
+  the learned value actionable rather than merely descriptive.
+- **Use it as the ladder's starting rung**, not as a hard sleep. On the next signal-free 429,
+  start at the learned value (floored at 1s, capped at the generic ladder's total) and
+  continue down the remaining rungs if it misses. Being wrong then costs one extra probe, not
+  an error.
+- **Persist it next to the observed ceilings.** `saveObservedRateLimits` already writes
+  per-model limit data, so the storage and the lookup path exist; this adds a second field to
+  the same record rather than a new subsystem. Surviving restarts is most of the value — the
+  first 429 of a session is exactly when there is no in-memory history.
+- **It also audits the providers that do talk.** Cerebras advertises `retry-after: 57–60` and
+  clears in 11–32s; the learned value is what proves that, and what would justify re-probing
+  early instead of sleeping out a header we can measure as over-cautious. Same mechanism,
+  applied to a provider that has a signal, catches the signal being wrong.
+
+The one thing it cannot do is prevent the *first* 429 for a provider that says nothing —
+that needs pacing, which needs a ceiling, which those providers do not give. Learned clear
+time is the best available answer for that tier, not a substitute for pacing where pacing is
+possible.
 
 **Proactive pacing, which is the actual fix** (unchanged from the original conclusion, now
 with three more providers that support it): for Groq, Cerebras, GitHub, and Mistral the

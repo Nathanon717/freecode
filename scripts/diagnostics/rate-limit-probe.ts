@@ -78,6 +78,7 @@ const SPECS: Record<string, ProbeSpec> = {
   cloudflare: { model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast' },
   zai: { model: 'glm-4.5-flash' },
   huggingface: { model: 'allenai/Olmo-3-7B-Instruct:publicai' },
+  zen: { model: 'deepseek-v4-flash-free' },
 };
 
 interface Options {
@@ -260,7 +261,9 @@ async function probeProvider(providerId: string, options: Options): Promise<Prov
   const entry = PROVIDER_REGISTRY.find(p => p.id === providerId);
   const spec = SPECS[providerId];
   if (!entry || !spec) throw new Error(`no catalog entry or probe spec for ${providerId}`);
-  const apiKey = process.env[entry.apiKeyEnvVar] ?? '';
+  // defaultApiKey covers keyless providers (zen's "public"), which are quota'd by IP —
+  // skipping them for want of an env var would have left the class unmeasured.
+  const apiKey = process.env[entry.apiKeyEnvVar] || entry.defaultApiKey || '';
   const baseUrl = entry.baseUrl.replace(/\/$/, '');
 
   const report: ProviderReport = {
@@ -420,7 +423,7 @@ async function main(): Promise<void> {
     .filter(p => !p.paid && p.type === 'openai-compat' && SPECS[p.id])
     .filter(p => (options.only.length === 0 ? true : options.only.includes(p.id)))
     .filter(p => {
-      const hasKey = !!process.env[p.apiKeyEnvVar];
+      const hasKey = !!(process.env[p.apiKeyEnvVar] || p.defaultApiKey);
       if (!hasKey) console.log(`skip ${p.id}: no ${p.apiKeyEnvVar}`);
       return hasKey;
     });

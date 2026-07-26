@@ -44,10 +44,16 @@ Use `/keys` inside the freecode REPL to check which provider API keys are config
    - Add `<provider>: '<PROVIDER>_API_KEY'` to the `envVars` map in `src/config/index.ts`
    - Add the provider id to the `providerIds` array in `src/config/index.ts`
    - Set `apiKeyEnvVar: '<PROVIDER>_API_KEY'` on the registry entry
+   - For a keyless provider, also set `defaultApiKey` to whatever literal it expects (see the keyless note under [API Key Configuration](#api-key-configuration))
 
 ## API Key Configuration
 
-API keys are read from environment variables (e.g., `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`) or the Freecode config file.
+API keys are read from environment variables (e.g., `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`) or the Freecode config file. `resolveApiKey()` (`src/config/index.ts`) tries them in order: env var → config file → the registry entry's `defaultApiKey`.
+
+**Keyless providers.** OpenCode (`zen`) needs no credentials at all: its registry entry sets `defaultApiKey: "public"`, so it works on a fresh machine with `OPENCODE_ZEN_API_KEY` unset — the env var in the table above is an override, not a requirement. Its quota is therefore **per IP address, not per key**, which has two consequences worth knowing:
+
+- Every user behind one NAT/VPN egress shares one budget, and nothing in a response identifies whose traffic filled it. Rotating keys cannot help; only slowing down or changing IP can.
+- Any tooling that decides "is this provider usable?" by testing for an env var will wrongly skip it. Check `resolveApiKey()`/`defaultApiKey`, not `process.env`.
 
 **Setting up a new device?** See [device-setup.md](device-setup.md) — all keys are synced via Doppler and require only a one-time `doppler login` + `doppler setup`.
 
