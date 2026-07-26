@@ -33,13 +33,14 @@ Format: filename (linecount)
 - `src/agent/`
   - [`conversation.ts`](agent/conversation.md) (31) — Session Controller
   - [`fake-loop.ts`](agent/fake-loop.md) (108) — Fake-Fixture Turn Loop
-  - [`loop.ts`](agent/loop.md) (422) — Agent Loop
+  - [`loop.ts`](agent/loop.md) (416) — Agent Loop
   - [`parsed-tools.ts`](agent/parsed-tools.md) (248) — Parsed-Tools Harness
+  - [`stream-turn.ts`](agent/stream-turn.md) (87) — Recovering Stream Turn
 - `src/agent/subagents/`
   - [`registry.ts`](agent/subagents/registry.md) (56) — Sub-Agent Registry
-  - [`run-subagent.ts`](agent/subagents/run-subagent.md) (187) — Sub-Agent Runner
+  - [`run-subagent.ts`](agent/subagents/run-subagent.md) (168) — Sub-Agent Runner
 - `src/agent/`
-  - [`system-prompt.ts`](agent/system-prompt.md) (32) — System Prompt
+  - [`system-prompt.ts`](agent/system-prompt.md) (35) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
 - `src/agent/tools/`
   - [`create.ts`](agent/tools/create.md) (33) — create Tool
@@ -107,13 +108,13 @@ Format: filename (linecount)
 - [`index.ts`](index.md) (199) — CLI Entry Point
 - [`logger.ts`](logger.md) (53) — Logging Utility
 - `src/providers/adapters/`
-  - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (120) — Adapter HTTP Retry/Backoff
+  - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (189) — Adapter HTTP Retry/Backoff
   - [`adapter-usage-capture.ts`](providers/adapters/adapter-usage-capture.md) (52) — Shared Usage/Header Capture
-  - [`anthropic.ts`](providers/adapters/anthropic.md) (238) — Anthropic Adapter
+  - [`anthropic.ts`](providers/adapters/anthropic.md) (243) — Anthropic Adapter
   - [`openai-compat-quirks.ts`](providers/adapters/openai-compat-quirks.md) (54) — OpenAI-Compatible Provider Quirk Profiles
   - [`openai-compat-request.ts`](providers/adapters/openai-compat-request.md) (35) — OpenAI-Compatible Request Transforms
   - [`openai-compat-sse.ts`](providers/adapters/openai-compat-sse.md) (142) — OpenAI-Compatible SSE Transforms
-  - [`openai-compat.ts`](providers/adapters/openai-compat.md) (254) — OpenAI-Compatible Adapter
+  - [`openai-compat.ts`](providers/adapters/openai-compat.md) (255) — OpenAI-Compatible Adapter
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
   - [`blocklist-purge.ts`](providers/blocklist-purge.md) (62) — Blocklisted Stored Model Purge

@@ -26,7 +26,7 @@ For each model:
 - `maxRetries: 0` disables the AI SDK's own retry layer, and an `AbortSignal.timeout(90_000)` bounds how long a single hung call can block the run.
 - Each model gets exactly one logical attempt from this script — there is no loop-level retry on failure.
 
-**Caveat:** the OpenAI-compatible adapter (`src/providers/adapters/openai-compat.ts`, used by most free providers) has its own hardcoded HTTP retry on 429/503 responses (up to 5 attempts, exponential backoff capped by `retryMaxWaitSeconds` in config, default 120s) with no public switch to disable it. That retry is part of every real call the app ever makes, not something this script adds — so on a rate-limited key, a single "attempt" here may still involve more than one HTTP request under the hood, and the per-model timer can stall during backoff.
+**Caveat:** every provider adapter routes its fetch through `fetchWithRetry` (`src/providers/adapters/adapter-http-retry.ts`), which retries 429/503 up to 5 times with no public switch to disable it. A server `retry-after` is honored in full — `retryMaxWaitSeconds` (default 120s) caps only the backoff invented when no `retry-after` is sent — and concurrent calls to one provider share a rate-limit gate. That retry is part of every real call the app ever makes, not something this script adds — so on a rate-limited key, a single "attempt" here may still involve more than one HTTP request under the hood, and the per-model timer can stall for the full `retry-after` window during backoff.
 
 ## Progress display
 

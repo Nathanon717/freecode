@@ -18,6 +18,9 @@ __pycache__/
 
 # generated
 *.js.map
+
+# map-drift model-comparison reports (one per model per run)
+scripts/diagnostics/map-drift/
 *.d.ts.map
 poe-cookies.json
 
