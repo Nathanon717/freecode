@@ -15,7 +15,10 @@
       "response": {
         "chunks": ["I'll wait."],
         "toolCalls": [
-          { "name": "shell_exec", "args": { "command": "sleep 4" } }
+          {
+            "name": "shell_exec",
+            "args": { "command": "node -e \"setTimeout(()=>{},4000)\"" }
+          }
         ],
         "usage": { "promptTokens": 1111, "outputTokens": 6, "totalTokens": 1117 }
       }

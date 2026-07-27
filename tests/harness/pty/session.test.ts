@@ -5,7 +5,12 @@
  *
  * These tests exercise the full TCP daemon + RPC round-trip: start → screen →
  * send → stop. They are skipped automatically when dist/index.js is absent (i.e.
- * freecode hasn't been built yet). Run `npm run build` first, then `npm run pty:test`.
+ * freecode hasn't been built yet), and unless FREECODE_PTY=1 is set — `npm run
+ * pty:test` sets it. Run `npm run build` first, then `npm run pty:test`.
+ *
+ * The env gate exists because a bare `vitest` run would otherwise collect these
+ * alongside the full unit suite, where the daemon's 20s waitForText budget is not
+ * reliably met under full-parallel CPU contention (observed on Windows).
  *
  * Tests run sequentially and share a single session — each test depends on the
  * previous one having left the session in the expected state.
@@ -23,6 +28,7 @@ const SESSION_SCRIPT = join(__dirname, 'session.ts');
 const TSX = join(ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
 
 const hasDist = existsSync(DIST_ENTRY);
+const ptyEnabled = process.env.FREECODE_PTY === '1';
 
 interface SessionResult {
   stdout: string;
@@ -44,7 +50,7 @@ function runSession(args: string[]): SessionResult {
   };
 }
 
-describe.skipIf(!hasDist)('PTY session manager', () => {
+describe.skipIf(!hasDist || !ptyEnabled)('PTY session manager', () => {
   afterAll(() => {
     runSession(['stop']);
   });

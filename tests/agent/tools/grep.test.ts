@@ -91,7 +91,10 @@ describe('tool integration: grep', () => {
 
   // The NUL separator exists for exactly this case: a ':' in the filename is
   // indistinguishable from rg's own field separator without it.
-  it('parses paths containing a colon', async () => {
+  // Skipped on Windows: ':' is not a legal filename character there, so writing
+  // "we:ird.ts" silently creates an NTFS alternate data stream named "ird.ts" on a
+  // file called "we". The fixture the test needs cannot exist on that platform.
+  it.skipIf(process.platform === 'win32')('parses paths containing a colon', async () => {
     const root = await mkdtemp(join(tmpdir(), 'freecode-grep-colon-'));
     const previousRoot = projectRoot;
     const needle = ['freecode', 'colon', 'needle'].join('-');

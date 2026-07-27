@@ -12,6 +12,12 @@ npm test              # build + docs check + all e2e tests including TTY + unit 
 npm run pty:test      # PTY driver + session manager vitest unit tests (require a PTY)
 ```
 
+`npm test` runs its sections in order and stops at the first failure, naming the section that
+failed and listing the sections that therefore did not run (`FAILED: e2e (exit 1) - stopping.`
+/ `Not run: unit tests.`). A section that dies without printing its own summary — a native
+crash mid-run — would otherwise leave the pipeline looking like it simply skipped the rest.
+The message is deliberately ASCII: it has to stay readable under a classic cmd.exe codepage.
+
 `npm test` is the normal post-change safety check. E2e tests never call a live LLM — fake LLM fixtures cover the agent loop deterministically, and every other e2e test runs with the loop hard-blocked (`FREECODE_NO_LLM=1`) and provider keys stripped from its environment.
 
 ## PTY unit tests
@@ -20,6 +26,8 @@ Two vitest test files exercise the PTY harness itself rather than freecode's UI:
 
 - **`tests/harness/pty/driver.test.ts`** — unit tests for `createPtyDriver` using a minimal `node -e` subprocess. Covers: raw output capture, snapshot, transcript (scrollback), `waitForText` returning false on timeout, exit detection, `exitCode`, `kill`, and keystroke delivery. Does not require a freecode build.
 - **`tests/harness/pty/session.test.ts`** — integration tests for the persistent TCP session manager (`session.ts`). Exercises the full RPC round-trip: `start` → `screen` → `send` → `stop`. Skips automatically when `dist/index.js` is absent; run `npm run build` first.
+
+Both files self-skip unless `FREECODE_PTY=1` is set. `npm run pty:test` sets it; nothing else does, so a bare `vitest` (watch mode) reports them as skipped instead of running a real PTY against the whole unit suite in parallel — the daemon's 20s readiness budget is not reliably met under that contention. The pipeline additionally `--exclude`s both files so `npm test` never even imports node-pty's native binding.
 
 Run them with:
 

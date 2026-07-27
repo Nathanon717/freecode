@@ -18,6 +18,10 @@ export const useShell = process.platform === 'win32';
 
 // PTY harness tests require a real PTY, so they are excluded from the normal
 // unit run and live behind `npm run pty:test`.
+// The test files also self-skip unless FREECODE_PTY=1, which is what keeps a bare
+// `vitest` (watch mode) from running them. These excludes stay on top of that gate
+// so the pipeline never even collects the files — importing them pulls in node-pty's
+// native binding, which the rest of the unit suite has no reason to load.
 export const PTY_EXCLUDES = [
   '--exclude', 'tests/harness/pty/driver.test.ts',
   '--exclude', 'tests/harness/pty/session.test.ts',

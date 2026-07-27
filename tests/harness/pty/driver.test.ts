@@ -9,7 +9,12 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const NODE = process.execPath;
 
-describe('createPtyDriver', () => {
+// PTY tests need a real PTY and are gated behind `npm run pty:test`, which sets
+// FREECODE_PTY=1. Without the gate a bare `vitest` run collects them alongside the
+// whole unit suite, where PTY startup under full-parallel CPU contention is flaky.
+const ptyEnabled = process.env.FREECODE_PTY === '1';
+
+describe.skipIf(!ptyEnabled)('createPtyDriver', () => {
   let driver: PtyDriver | undefined;
 
   afterEach(() => {

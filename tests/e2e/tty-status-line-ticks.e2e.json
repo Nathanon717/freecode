@@ -1,6 +1,6 @@
 {
   "name": "tty-status-line-ticks",
-  "description": "The footer ctx count ticks up mid-turn: step 1's prompt tokens are on screen while its tool is still running, then the count rises to step 2's larger history when the turn ends",
+  "description": "The footer ctx count ticks up mid-turn: step 1's prompt tokens are on screen while its tool is still running, then the count rises to step 2's larger history when the turn ends. The fixture's tool sleeps via `node -e`, not `sleep` — cmd.exe has no `sleep`, so on Windows the tool returned instantly and the mid-turn window never existed",
   "model": "mock:gpt-freecode-test",
   "llmFixture": "tty-status-line-ticks.llm.json",
   "config": {
