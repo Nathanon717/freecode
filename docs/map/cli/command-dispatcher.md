@@ -42,14 +42,25 @@ dispatchCommand(input: string, runtime: CommandRuntime): Promise<CommandDispatch
 
 | Command | Behavior |
 |---------|----------|
-| `/model [id]` | Without an arg, opens the interactive picker when available or shows status. With an arg, sets selected model. |
+| `/model [id]` | Without an arg, opens the interactive picker when available or shows status. With an arg, sets selected model. Replays the transcript after the picker. |
 | `/models [id]` | Alias for `/model [id]`. |
-| `/config` | Runs config editor if the current mode supplies `runConfig`; otherwise prints unavailable. |
+| `/config` | Runs config editor if the current mode supplies `runConfig`; otherwise prints unavailable. Replays the transcript after the editor. |
 | `/help` | Prints slash command help plus CLI flags. |
-| `/eval` | Opens/renders eval scenario menu. |
+| `/eval` | Opens/renders eval scenario menu. Replays the transcript afterwards. |
 | `/keys` | Prints API key status from env/config. |
 | `/tools` | Lazily loads `cli/tools/tool-runner.ts` and prints the callable-tool list. |
-| `/clear` | Clears in-memory history and Anthropic session cost, redraws banner, and restores screen hooks. |
+| `/clear` | Clears in-memory history and Anthropic session cost, redraws banner, and restores screen hooks. **The only command that empties history** — every other screen wipe preserves it. |
+
+## Screen/history coherence
+
+`/config`, `/model` and `/eval` all end in `redrawBanner()`, which clears the
+screen *and* scrollback while leaving `Conversation.messages` untouched — the
+session then looks fresh but still resends everything on the next turn. The
+dispatcher is the seam that fixes this because it is also the only place that
+mutates history: each of those three is followed by `replayTranscript()` (see
+[render/transcript-replay.md](render/transcript-replay.md)). `/clear` is
+deliberately *not* — it empties the history, so a bare banner is accurate, and
+the replay is a no-op on empty history anyway.
 
 Before falling back to `sendToAgent()`, non-command input is tried against `parseToolInvocation` (`cli/tools/tool-invocation.ts`); a match runs directly via `cli/tools/tool-runner.ts` (lazily imported) instead of the agent.
 

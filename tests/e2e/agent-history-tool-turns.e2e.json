@@ -1,0 +1,30 @@
+{
+  "name": "agent-history-tool-turns",
+  "description": "A turn's tool call and tool result stay in the conversation history, so a second user turn is sent the work itself rather than only the assistant's summary of it",
+  "workspace": "temp",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "agent-history-tool-turns.llm.json",
+  "env": {
+    "FREECODE_AUTO_CONFIRM": "1"
+  },
+  "turns": [
+    { "input": "Create note.txt with the text first turn content." },
+    { "input": "What did you just create?" }
+  ],
+  "expect": {
+    "stdoutContains": ["Created note.txt.", "I created note.txt."],
+    "exitCode": 0,
+    "files": [
+      { "path": "note.txt", "contentExact": "first turn content\n" }
+    ],
+    "fakeLlmTrace": {
+      "callCount": 3,
+      "maxCalls": 3,
+      "calls": [
+        { "inputMessageCount": 1, "lastUserContains": ["Create note.txt"] },
+        { "inputMessageCount": 3, "lastUserContains": ["<tool_result name=\"create\">"] },
+        { "inputMessageCount": 5, "lastUserContains": ["What did you just create"] }
+      ]
+    }
+  }
+}

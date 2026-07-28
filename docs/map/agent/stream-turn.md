@@ -38,7 +38,23 @@ interface RecoveringStreamOptions<S extends RecoverableStream> {
   logPrefix?: string;
 }
 
-runRecoveringStream<S extends RecoverableStream>(opts: RecoveringStreamOptions<S>): Promise<S>
+interface RecoveringStreamOutcome<S extends RecoverableStream> {
+  /** The attempt that drained without an error part. */
+  stream: S;
+  /**
+   * Everything this turn added on top of `opts.messages`: the response messages
+   * of every abandoned attempt, each followed by its rejection feedback, then
+   * the winning attempt's own. Appending these to the caller's history yields
+   * exactly the history a follow-up turn should continue from — which is why
+   * they are also what the foreground loop persists into the session.
+   *
+   * Only ever collected from an attempt that drained, so every tool call in
+   * here is paired with its result (see RecoverableStream.responseMessages).
+   */
+  turnMessages: CoreMessage[];
+}
+
+runRecoveringStream<S extends RecoverableStream>(opts: RecoveringStreamOptions<S>): Promise<RecoveringStreamOutcome<S>>
 ```
 <!-- END GENERATED EXPORTS -->
 
@@ -54,7 +70,15 @@ runRecoveringStream<S extends RecoverableStream>(opts: RecoveringStreamOptions<S
 - `onDrained` — after each attempt's drain, success or failure; pair it with anything `start` opened (the tool-render gate).
 - `onRecover(stream)` — before a retry, for carrying the abandoned attempt's usage forward.
 
-Resolves with the attempt that drained cleanly, typed as the caller's `S`, so the caller can still await that stream's `usage`.
+Resolves with a `RecoveringStreamOutcome`: the attempt that drained cleanly (typed as the caller's `S`, so the caller can still await that stream's `usage`) plus `turnMessages`.
+
+## The turnMessages invariant
+
+`turnMessages` is the turn's contribution to the session history — see [turn-messages.md](turn-messages.md) and [conversation.md](conversation.md). It is accumulated **here** rather than in `loop.ts` because this is where the correct cumulative history already gets built for the recovery path.
+
+The load-bearing property: response messages are only ever collected from an attempt that **drained**, so every tool call in `turnMessages` is paired with its result. Do not add an await of `responseMessages` on a throwing path (the catch or abort handling in [loop.md](loop.md)) — an unpaired tool call persisted into history 400s the provider on every *later* request too, which bricks the session rather than spoiling one turn. Paths that throw should yield no `turnMessages`; the caller falls back to recording the final text alone.
+
+`run-subagent.ts` discards the outcome entirely: a sub-agent's messages terminate at the sub-agent and must never reach the parent `Conversation`.
 
 ## Key neighbors
 

@@ -90,13 +90,17 @@ function makeSession() {
   const clearMessages = vi.fn();
   const addUserMessage = vi.fn();
   const addAssistantMessage = vi.fn();
+  // Mirrors the real contract: returns false when the turn produced no messages,
+  // which is what makes the dispatcher fall back to addAssistantMessage.
+  const addTurnMessages = vi.fn((messages: unknown[]) => messages.length > 0);
   const session = {
     messages: [] as unknown[],
     clearMessages,
     addUserMessage,
     addAssistantMessage,
+    addTurnMessages,
   };
-  return { session: session as unknown as CommandRuntime['session'], clearMessages, addUserMessage, addAssistantMessage };
+  return { session: session as unknown as CommandRuntime['session'], clearMessages, addUserMessage, addAssistantMessage, addTurnMessages };
 }
 
 function makeRuntime(overrides: Partial<CommandRuntime> = {}): CommandRuntime {
@@ -121,6 +125,8 @@ const DEFAULT_AGENT_RESULT = {
   quota: null,
   costEstimate: null,
   providerUsage: null,
+  // Empty is the error/abort shape — the dispatcher then records `text` alone.
+  turnMessages: [],
 };
 
 let consoleSpy: MockInstance;
@@ -381,10 +387,24 @@ describe('dispatchCommand — sendToAgent', () => {
     expect(agentLoop).toHaveBeenCalled();
   });
 
-  it('adds the assistant reply to the session', async () => {
+  it('falls back to the assistant text when the turn produced no messages', async () => {
     const { session, addAssistantMessage } = makeSession();
     await dispatchCommand('hello', makeRuntime({ session }));
     expect(addAssistantMessage).toHaveBeenCalledWith('Hello from AI');
+  });
+
+  it('persists the turn messages — tool calls and results — when the turn produced them', async () => {
+    const turnMessages = [
+      { role: 'assistant', content: [{ type: 'tool-call', toolCallId: 'c1', toolName: 'read', args: {} }] },
+      { role: 'tool', content: [{ type: 'tool-result', toolCallId: 'c1', toolName: 'read', result: 'body' }] },
+      { role: 'assistant', content: 'Hello from AI' },
+    ];
+    vi.mocked(agentLoop).mockResolvedValue({ ...DEFAULT_AGENT_RESULT, turnMessages } as never);
+    const { session, addTurnMessages, addAssistantMessage } = makeSession();
+    await dispatchCommand('hello', makeRuntime({ session }));
+    expect(addTurnMessages).toHaveBeenCalledWith(turnMessages);
+    // Not both — that would duplicate the final reply in history.
+    expect(addAssistantMessage).not.toHaveBeenCalled();
   });
 
   it('logs a yellow warning when the response text is blank', async () => {

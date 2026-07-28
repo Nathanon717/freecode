@@ -31,11 +31,11 @@ Format: filename (linecount)
 
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
-  - [`conversation.ts`](agent/conversation.md) (31) — Session Controller
-  - [`fake-loop.ts`](agent/fake-loop.md) (108) — Fake-Fixture Turn Loop
-  - [`loop.ts`](agent/loop.md) (416) — Agent Loop
-  - [`parsed-tools.ts`](agent/parsed-tools.md) (248) — Parsed-Tools Harness
-  - [`stream-turn.ts`](agent/stream-turn.md) (87) — Recovering Stream Turn
+  - [`conversation.ts`](agent/conversation.md) (56) — Session Controller
+  - [`fake-loop.ts`](agent/fake-loop.md) (117) — Fake-Fixture Turn Loop
+  - [`loop.ts`](agent/loop.md) (438) — Agent Loop
+  - [`parsed-tools.ts`](agent/parsed-tools.md) (268) — Parsed-Tools Harness
+  - [`stream-turn.ts`](agent/stream-turn.md) (106) — Recovering Stream Turn
 - `src/agent/subagents/`
   - [`registry.ts`](agent/subagents/registry.md) (56) — Sub-Agent Registry
   - [`run-subagent.ts`](agent/subagents/run-subagent.md) (168) — Sub-Agent Runner
@@ -53,6 +53,7 @@ Format: filename (linecount)
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
   - [`spawn-agent.ts`](agent/tools/spawn-agent.md) (38) — spawn_agent Tool
 - `src/agent/`
+  - [`turn-messages.ts`](agent/turn-messages.md) (140) — Turn Message Shape Rules
   - [`usage-finalize.ts`](agent/usage-finalize.md) (65) — Turn Usage/Cost/Quota Finalization
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/`
@@ -63,7 +64,7 @@ Format: filename (linecount)
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
   - [`toggles.ts`](cli/chrome/toggles.md) (100) — Footer Toggle State
 - `src/cli/`
-  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (245) — Command Dispatcher
+  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (254) — Command Dispatcher
 - `src/cli/eval/`
   - [`custom-eval-menu.ts`](cli/eval/custom-eval-menu.md) (361) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval/eval-dots.md) (28) — Eval Status Circle Renderers
@@ -81,6 +82,7 @@ Format: filename (linecount)
   - [`markdown-renderer.ts`](cli/render/markdown-renderer.md) (480) — Markdown Renderer
   - [`transcript-options.ts`](cli/render/transcript-options.md) (66) — Transcript Stream + Options
   - [`transcript-renderer.ts`](cli/render/transcript-renderer.md) (486) — Agent Transcript Formatting
+  - [`transcript-replay.ts`](cli/render/transcript-replay.md) (82) — Post-Wipe Transcript Replay
 - `src/cli/`
   - [`scripted-mode.ts`](cli/scripted-mode.md) (96) — Scripted Session Mode
   - [`session-modes.ts`](cli/session-modes.md) (436) — Session Modes

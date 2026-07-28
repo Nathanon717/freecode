@@ -5,6 +5,7 @@ import { isUserAbortError, toDetailedErrorMessage } from '../util/errors.js';
 import { executeToolCalls } from './parsed-tools.js';
 import { runSubAgent } from './subagents/run-subagent.js';
 import { assertFakeFixtureComplete, runFakeModel } from '../providers/fake.js';
+import { flattenToolMessagesToText } from './turn-messages.js';
 // Type-only, so the cycle with loop.ts (which imports runFakeLlm) is erased at runtime.
 import type { AgentLoopOptions, AgentLoopResult, ModelSettings } from './loop.js';
 
@@ -33,17 +34,21 @@ export async function runFakeLlm(
     });
   const tools = supportsTools ? createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly, spawnAgent) : undefined;
   const toolNames = tools ? Object.keys(tools) : [];
-  let activeMessages = messages;
+  // runFakeModel speaks the text protocol, so native tool messages persisted by
+  // an earlier turn are flattened for the same reason as in parsed-tools.ts.
+  const baseMessages = flattenToolMessagesToText(messages);
+  let activeMessages = baseMessages;
   let fullText = '';
   let totalTokens = 0;
   let promptTokens: number | undefined;
   let outputTokens: number | undefined;
-  const result = (text: string): AgentLoopResult => ({
+  const result = (text: string, turnMessages: CoreMessage[] = []): AgentLoopResult => ({
     text,
     usage: { totalTokens, promptTokens, outputTokens },
     providerId,
     modelId,
     quota: null,
+    turnMessages,
   });
 
   try {
@@ -74,7 +79,11 @@ export async function runFakeLlm(
       if (generated.toolCalls.length === 0) {
         assertFakeFixtureComplete();
         endTranscriptStep(false);
-        return result(fullText);
+        // The final answer is the one message the loop never appends itself.
+        const finalMessages = generated.text.trim()
+          ? [...activeMessages, { role: 'assistant' as const, content: generated.text }]
+          : activeMessages;
+        return result(fullText, finalMessages.slice(baseMessages.length));
       }
 
       if (!tools) {

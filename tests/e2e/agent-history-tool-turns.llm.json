@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "comment": "Multi-turn: assertFakeFixtureComplete runs at the end of every turn, so turn 1 would fail on the steps turn 2 still needs.",
+  "allowUnusedSteps": true,
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "messageCount": 1,
+        "mustContain": ["Create note.txt"],
+        "toolsAvailable": ["create"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["Creating it now."],
+        "toolCalls": [
+          {
+            "name": "create",
+            "args": {
+              "path": "note.txt",
+              "content": "first turn content\n"
+            }
+          }
+        ],
+        "usage": { "promptTokens": 20, "outputTokens": 6, "totalTokens": 26 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "messageCount": 3,
+        "mustContain": ["<tool_result name=\"create\">"]
+      },
+      "response": {
+        "text": "Created note.txt.",
+        "usage": { "promptTokens": 30, "outputTokens": 4, "totalTokens": 34 }
+      }
+    },
+    {
+      "match": {
+        "turn": 3,
+        "comment": "The second user turn. Before tool calls were persisted this history was 3 messages (user, assistant summary, user) and the create call plus its result were gone. It is now 5: the turn-1 assistant step and its tool_result survive, so the model can still see what it did.",
+        "messageCount": 5,
+        "mustContain": ["What did you just create"]
+      },
+      "response": {
+        "text": "I created note.txt.",
+        "usage": { "promptTokens": 40, "outputTokens": 5, "totalTokens": 45 }
+      }
+    }
+  ]
+}

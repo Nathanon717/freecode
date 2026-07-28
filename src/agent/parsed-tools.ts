@@ -9,6 +9,7 @@ import {
 } from "../cli/render/transcript-renderer.js";
 import { renderMarkdown } from "../cli/render/markdown-renderer.js";
 import { log, logError } from "../logger.js";
+import { flattenToolMessagesToText } from "./turn-messages.js";
 
 const PARSED_TOOLS_ADDENDUM = `
 
@@ -95,6 +96,8 @@ export interface ParsedToolsResult {
   totalTokens: number;
   promptTokens?: number;
   outputTokens?: number;
+  /** What this turn added on top of `messages` — see agent/turn-messages.ts. */
+  turnMessages: CoreMessage[];
 }
 
 /**
@@ -150,7 +153,13 @@ export async function runParsedToolsLoop(
 ): Promise<ParsedToolsResult> {
   const augSystem = buildParsedToolsSystemPrompt(systemPrompt);
   const tools = createTools(confirmToolCall, toolRationale, true, readOnly);
-  let activeMessages: CoreMessage[] = [...messages];
+  // streamText below is called with no `tools`, so a native `role: 'tool'`
+  // message left in the history by an earlier turn on a native model would be a
+  // request referencing tools it never declared — a 400 on OpenAI and several
+  // compat providers. Reachable via `/model` mid-session, so flatten it to the
+  // same text protocol this loop speaks.
+  const baseMessages = flattenToolMessagesToText(messages);
+  let activeMessages: CoreMessage[] = [...baseMessages];
 
   beginTranscriptTurn(); // idempotent if already opened by the loop.ts fallback path
   process.stdout.write(chalk.blueBright("~ using prompt-based tools\n"));
@@ -207,6 +216,11 @@ export async function runParsedToolsLoop(
       }
       notifyTranscriptChunk(stepText || "\n");
       accText += stepText;
+      // The final answer is the one turn message the loop never appends for
+      // itself — every earlier step added its own pair before iterating.
+      if (stepText.trim()) {
+        activeMessages = [...activeMessages, { role: "assistant" as const, content: stepText }];
+      }
       log("parsed-tools", `Step ${step + 1}: no tool calls, done`);
       endTranscriptStep(false);
       break;
@@ -243,5 +257,11 @@ export async function runParsedToolsLoop(
 
   // The only way out of the loop is the no-tool-calls break, which already
   // closed the step.
-  return { text: accText.trimEnd(), totalTokens, promptTokens, outputTokens };
+  return {
+    text: accText.trimEnd(),
+    totalTokens,
+    promptTokens,
+    outputTokens,
+    turnMessages: activeMessages.slice(baseMessages.length),
+  };
 }

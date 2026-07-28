@@ -44,12 +44,29 @@ export interface RecoveringStreamOptions<S extends RecoverableStream> {
   logPrefix?: string;
 }
 
+export interface RecoveringStreamOutcome<S extends RecoverableStream> {
+  /** The attempt that drained without an error part. */
+  stream: S;
+  /**
+   * Everything this turn added on top of `opts.messages`: the response messages
+   * of every abandoned attempt, each followed by its rejection feedback, then
+   * the winning attempt's own. Appending these to the caller's history yields
+   * exactly the history a follow-up turn should continue from — which is why
+   * they are also what the foreground loop persists into the session.
+   *
+   * Only ever collected from an attempt that drained, so every tool call in
+   * here is paired with its result (see RecoverableStream.responseMessages).
+   */
+  turnMessages: CoreMessage[];
+}
+
 /** Resolves with the attempt that drained without an error part. */
 export async function runRecoveringStream<S extends RecoverableStream>(
   opts: RecoveringStreamOptions<S>,
-): Promise<S> {
+): Promise<RecoveringStreamOutcome<S>> {
   let activeMessages = opts.messages;
   let recoveries = 0;
+  const carried: CoreMessage[] = [];
 
   while (true) {
     const stream = await opts.start(activeMessages);
@@ -71,7 +88,7 @@ export async function runRecoveringStream<S extends RecoverableStream>(
       opts.onDrained?.();
     }
 
-    if (!streamHadError) return stream;
+    if (!streamHadError) return { stream, turnMessages: [...carried, ...(await stream.responseMessages)] };
 
     const rejected = rejectedToolCall(streamError);
     if (!rejected || recoveries >= MAX_REJECTED_TOOL_CALLS) throw streamError;
@@ -81,6 +98,8 @@ export async function runRecoveringStream<S extends RecoverableStream>(
       error: serializeError(streamError),
     });
     await opts.onRecover?.(stream);
-    activeMessages = [...activeMessages, ...(await stream.responseMessages), { role: 'user' as const, content: rejected.feedback }];
+    const recovered: CoreMessage[] = [...(await stream.responseMessages), { role: 'user' as const, content: rejected.feedback }];
+    carried.push(...recovered);
+    activeMessages = [...activeMessages, ...recovered];
   }
 }

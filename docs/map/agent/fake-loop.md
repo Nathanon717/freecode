@@ -19,6 +19,14 @@ runFakeLlm(providerId: string, modelId: string, supportsTools: boolean, systemPr
 
 `runFakeModel` (providers/fake.ts) replays ordered fixture steps against the **real** system prompt, message history, and tool-name list, so fixture matching validates the model-facing shape without provider access. Scripted `toolCalls` execute through the real `createTools()` wrappers via `executeToolCalls` (shared with the parsed-tools path), and results are appended as user messages until a step emits no tool calls. The loop is unbounded — the fixture ends it by running out of steps (`runFakeModel` throws) or by emitting a final no-tool response, which then asserts every step was consumed.
 
+## Turn messages
+
+Incoming history is passed through `flattenToolMessagesToText` ([turn-messages.md](turn-messages.md)) before the first step: this loop speaks the text protocol, and a native `role: 'tool'` message persisted by an earlier turn would be sent to a fixture that never declared tools. Reachable by `/model`-ing from a native model to a `mock:*` one mid-session.
+
+The returned `turnMessages` is everything added on top of that flattened base, including the final answer (which the loop does not append for itself). It is what [conversation.md](conversation.md) persists.
+
+**Multi-turn fixtures need `"allowUnusedSteps": true`.** `assertFakeFixtureComplete()` runs at the end of *every* turn, so a fixture whose later steps belong to a later user turn throws on turn 1 — and that throw lands in this loop's catch, which returns **no** `turnMessages`, silently reverting to the text-only fallback. The symptom is a message count that looks like the pre-persistence behavior. See `tests/e2e/agent-history-tool-turns.e2e.json`.
+
 Note this path pre-dates and bypasses native tool orchestration entirely: there is no `streamText`, no `fullStream`, and no tool-render gate. Transcript framing is driven by hand (`beginTranscriptTurn` / `endTranscriptStep`).
 
 `mock-native:*` is a **different** path — it builds a real `LanguageModel` (`createFakeNativeLanguageModel`) and runs through `streamWithRetry` in `loop.ts` like any provider. Use that one to cover native orchestration behaviour.

@@ -1,0 +1,74 @@
+{
+  "name": "tty-config-keeps-transcript",
+  "description": "Leaving /config wipes the screen but not the conversation, so the transcript is reprinted rather than left looking like a fresh session. /clear, which really does empty the history, still lands on a bare banner. /model and /eval share the same dispatcher call site but cannot be driven here - the model picker refuses to open under FREECODE_FAKE_LLM=1",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "tty-config-keeps-transcript.llm.json",
+  "env": {
+    "FREECODE_AUTO_CONFIRM": "1"
+  },
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "take a turn so there is history to preserve",
+        "send": "Say the magic word",
+        "screenContains": [
+          "> Say the magic word"
+        ]
+      },
+      {
+        "name": "submit",
+        "send": "\r",
+        "waitFor": "xyzzy-first-turn",
+        "waitForMs": 8000
+      },
+      {
+        "name": "type /config",
+        "send": "/config",
+        "screenContains": [
+          "> /config"
+        ]
+      },
+      {
+        "name": "submit - the config editor opens over the transcript",
+        "send": "\r",
+        "waitFor": "Tool rationale",
+        "waitForMs": 8000
+      },
+      {
+        "name": "press q - the screen is wiped, and the still-live history is reprinted with it",
+        "send": "q",
+        "screenContains": [
+          "still sent to the model",
+          "Say the magic word",
+          "xyzzy-first-turn"
+        ],
+        "quietMs": 1500
+      },
+      {
+        "name": "type /clear",
+        "send": "/clear",
+        "screenContains": [
+          "> /clear"
+        ]
+      },
+      {
+        "name": "submit - /clear empties the history for real, so nothing is replayed",
+        "send": "\r",
+        "screenAbsent": [
+          "still sent to the model",
+          "xyzzy-first-turn"
+        ],
+        "screenContains": [
+          "freecode"
+        ],
+        "quietMs": 1500
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

@@ -15,6 +15,8 @@ interface ParsedToolsResult {
   totalTokens: number;
   promptTokens?: number;
   outputTokens?: number;
+  /** What this turn added on top of `messages` — see agent/turn-messages.ts. */
+  turnMessages: CoreMessage[];
 }
 
 executeToolCalls(tools: { read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; } | { create: AnyCoreTool; edit: AnyCoreTool; shell_exec: AnyCoreTool; read: AnyCoreTool; grep: AnyCoreTool; list_dir: AnyCoreTool; }, calls: readonly { ...; }[], idPrefix: string, messages: CoreMessage[]): Promise<...>
@@ -44,11 +46,18 @@ The embedded tool reference must mirror the actual tool schemas; for example `gr
 
 `createTools` is called here **without** a `spawnAgent` runner, so `spawn_agent` does not exist under this protocol and the addendum's tool reference omits it. `loop.ts` therefore passes a prompt built with `buildSystemPrompt(loadAgentsMd, false)`; if `spawn_agent` is ever added here, both the addendum and that flag have to change together.
 
+## Turn messages
+
+`streamText` is called here **without a `tools` parameter**. That makes a native `role: 'tool'` message left in the history by an earlier turn a request referencing tools it never declared — a 400 on OpenAI and several compat providers, reachable by switching models with `/model` mid-session. Incoming history is therefore passed through `flattenToolMessagesToText` ([turn-messages.md](turn-messages.md)) first, which rewrites native tool messages into the same `<tool_result>` text this loop already speaks.
+
+`turnMessages` is everything added on top of that flattened base, including the final answer (the per-step loop appends only the earlier pairs). It is what [conversation.md](conversation.md) persists.
+
 ## Key Neighbors
 
 - [loop.md](loop.md): invokes `runParsedToolsLoop` when `isToolsNotSupportedError` fires.
 - [tools/index.md](tools/index.md): `createTools` provides the wrapped executors.
 - [util/errors.md](../util/errors.md): `isToolsNotSupportedError` triggers the fallback.
+- [turn-messages.md](turn-messages.md): the shape boundary this loop sits on the constrained side of.
 
 ## Update Triggers
 

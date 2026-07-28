@@ -25,6 +25,16 @@ interface AgentLoopResult {
   quota: RateLimitSnapshot | null;
   providerUsage?: CapturedProviderUsage[];
   costEstimate?: CostEstimate;
+  /**
+   * What this turn added on top of the history it was given: assistant text,
+   * tool calls, and tool results. The session appends these so a follow-up turn
+   * sees the work, not just the summary of it — see agent/turn-messages.ts.
+   *
+   * Empty on every path that ended without a drained stream (provider error,
+   * abort, resolve failure); the caller then records `text` alone, which is what
+   * it has always done.
+   */
+  turnMessages: CoreMessage[];
 }
 
 type ModelSettings = ReturnType<typeof resolveModelSettings>;

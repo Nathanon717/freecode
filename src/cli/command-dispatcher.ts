@@ -15,6 +15,7 @@ import {
 } from '../providers/anthropic-cost.js';
 import { formatCapturedProviderUsages } from '../providers/adapters/openai-compat.js';
 import { redrawBanner } from './render/banner.js';
+import { replayTranscript } from './render/transcript-replay.js';
 import { showHelp } from './slash-commands.js';
 import { parseToolInvocation } from './tools/tool-invocation.js';
 import type { Conversation } from '../agent/conversation.js';
@@ -129,7 +130,12 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
       });
     }
 
-    runtime.session.addAssistantMessage(result.text);
+    // Persist the whole turn — assistant text, tool calls, tool results — so the
+    // next turn continues from what happened rather than a prose summary of it.
+    // Error and abort paths carry no messages; those fall back to the text.
+    if (!runtime.session.addTurnMessages(result.turnMessages)) {
+      runtime.session.addAssistantMessage(result.text);
+    }
 
     if (result.providerId === 'anthropic') {
       const sessionTotal = addAnthropicSessionCost(result.costEstimate);
@@ -172,6 +178,7 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
       console.log(chalk.blue(`Model set to: ${runtime.getSelectedModel()}`));
     } else if (runtime.runModelMenu) {
       await runtime.runModelMenu();
+      replayTranscript(runtime.session.messages);
     } else {
       showModelStatus(runtime);
     }
@@ -181,6 +188,7 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
   if (normalized === '/config') {
     if (runtime.runConfig) {
       await runtime.runConfig();
+      replayTranscript(runtime.session.messages);
     } else {
       console.log(chalk.dim('/config is only available in interactive mode.'));
     }
@@ -195,6 +203,7 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
 
   if (normalized === '/eval') {
     await runtime.runEvalMenu();
+    replayTranscript(runtime.session.messages);
     return 'continue';
   }
 

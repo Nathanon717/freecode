@@ -8,6 +8,8 @@ This table is generated from `tests/e2e/*.e2e.json`.
 | File | Name | Workspace | Description |
 | --- | --- | --- | --- |
 | `agent-create-fake.e2e.json` | `agent-create-fake` | temp | Fake LLM fixture drives an approved create tool call through the real agent loop |
+| `agent-history-tool-turns-native.e2e.json` | `agent-history-tool-turns-native` | temp | Native path: the SDK's real tool-call and role:'tool' result messages survive into the next user turn, so a second turn is sent the work itself. The fake path covers the same in agent-history-tool-turns; this one exercises the shapes a real provider would 400 on if they were persisted unpaired |
+| `agent-history-tool-turns.e2e.json` | `agent-history-tool-turns` | temp | A turn's tool call and tool result stay in the conversation history, so a second user turn is sent the work itself rather than only the assistant's summary of it |
 | `agent-preamble-flush.e2e.json` | `agent-preamble-flush` | temp | A pre-tool-call preamble with no trailing newline is flushed in its correct position (before the tool call) instead of being held in the markdown line buffer and glued onto the final step's text |
 | `agent-text-fake.e2e.json` | `agent-text-fake` | temp | Fake LLM fixture enters the agent loop and returns deterministic text without live provider access |
 | `agent-text-native.e2e.json` | `agent-text-native` | temp | Fake LLM fixture exercises the real AI SDK streamText path (native-stream) with a deterministic text response |
@@ -31,6 +33,7 @@ This table is generated from `tests/e2e/*.e2e.json`.
 | `tty-clear-redraws.e2e.json` | `tty-clear-redraws` | repo | Submitting /clear clears the whole terminal, redraws the banner, and the cleared message appears in the raw stream |
 | `tty-config-editor.e2e.json` | `tty-config-editor` | repo | Submitting /config opens the interactive settings editor showing all settings; pressing q closes it and restores the input prompt |
 | `tty-config-esc.e2e.json` | `tty-config-esc` | repo | Submitting /config opens the standalone config editor; pressing Esc closes it, erases its screen, and restores the input prompt |
+| `tty-config-keeps-transcript.e2e.json` | `tty-config-keeps-transcript` | repo | Leaving /config wipes the screen but not the conversation, so the transcript is reprinted rather than left looking like a fresh session. /clear, which really does empty the history, still lands on a bare banner. /model and /eval share the same dispatcher call site but cannot be driven here - the model picker refuses to open under FREECODE_FAKE_LLM=1 |
 | `tty-config-load-agents-md.e2e.json` | `tty-config-load-agents-md` | repo | Load AGENTS.md setting appears in Provider and Model tabs but not in the Global tab |
 | `tty-config-parsed-tools.e2e.json` | `tty-config-parsed-tools` | repo | Parsed tools setting appears only on the Model tab (absent from Global and Provider tabs) |
 | `tty-config-toggle.e2e.json` | `tty-config-toggle` | repo | Space key toggles a boolean setting in the config editor; the changed value persists and the editor can be reopened without error |

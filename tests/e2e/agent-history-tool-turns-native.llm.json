@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "model": "mock-native:gpt-freecode-test",
+  "comment": "Native path: the SDK's own responseMessages (a real assistant tool-call message plus a role:'tool' result message) are persisted and re-sent on the second user turn. assertFakeFixtureComplete runs at the end of every turn, hence allowUnusedSteps.",
+  "allowUnusedSteps": true,
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "messageCount": 1,
+        "mustContain": ["Create hello.txt"],
+        "toolsAvailable": ["create"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["I'll write that file now."],
+        "toolCalls": [
+          {
+            "name": "create",
+            "args": {
+              "rationale": "Creating the file as requested by the user",
+              "path": "hello.txt",
+              "content": "hello from native\n"
+            }
+          }
+        ],
+        "usage": { "promptTokens": 20, "outputTokens": 8, "totalTokens": 28 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "messageCount": 3,
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "File created successfully.",
+        "usage": { "promptTokens": 40, "outputTokens": 4, "totalTokens": 44 }
+      }
+    },
+    {
+      "match": {
+        "turn": 3,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "comment": "The second user turn. The create call and its role:'tool' result survived from turn 1 instead of being discarded at the turn boundary.",
+        "messageCount": 5,
+        "mustContain": ["What did you just create"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "I created hello.txt.",
+        "usage": { "promptTokens": 50, "outputTokens": 5, "totalTokens": 55 }
+      }
+    }
+  ]
+}

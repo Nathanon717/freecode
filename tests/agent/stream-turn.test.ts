@@ -32,7 +32,49 @@ describe('runRecoveringStream', () => {
     });
 
     expect(seen).toEqual(['text-delta', 'tool-call', 'step-finish']);
-    expect(result).toBe(stream);
+    expect(result.stream).toBe(stream);
+  });
+
+  it('returns the drained attempt\'s response messages as the turn\'s contribution', async () => {
+    const produced: CoreMessage[] = [
+      { role: 'assistant', content: [{ type: 'tool-call', toolCallId: 'c1', toolName: 'read', args: {} }] },
+      { role: 'tool', content: [{ type: 'tool-result', toolCallId: 'c1', toolName: 'read', result: 'body' }] },
+    ];
+
+    const result = await runRecoveringStream({
+      messages: [{ role: 'user', content: 'go' }],
+      start: () => Promise.resolve(fakeStream([{ type: 'text-delta', textDelta: 'hi' }], produced)),
+      onPart: () => {},
+    });
+
+    // Not the input history — only what this turn added on top of it.
+    expect(result.turnMessages).toEqual(produced);
+  });
+
+  it('carries an abandoned attempt\'s work and its feedback into turnMessages', async () => {
+    const first: CoreMessage[] = [{ role: 'assistant', content: 'partial work' }];
+    const second: CoreMessage[] = [{ role: 'assistant', content: 'the real answer' }];
+    let attempt = 0;
+
+    const result = await runRecoveringStream({
+      messages: [{ role: 'user', content: 'go' }],
+      start: () => {
+        attempt++;
+        return Promise.resolve(
+          attempt === 1
+            ? fakeStream([{ type: 'error', error: rejection() }], first)
+            : fakeStream([{ type: 'text-delta', textDelta: 'ok' }], second),
+        );
+      },
+      onPart: () => {},
+    });
+
+    // What actually ran, then the rejection feedback, then the winning attempt —
+    // the same sequence the retry itself continued from.
+    expect(result.turnMessages).toHaveLength(3);
+    expect(result.turnMessages[0]).toEqual(first[0]);
+    expect(result.turnMessages[1].role).toBe('user');
+    expect(result.turnMessages[2]).toEqual(second[0]);
   });
 
   it('re-opens the stream after a rejected call, continuing from what actually ran', async () => {

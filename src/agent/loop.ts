@@ -52,6 +52,16 @@ export interface AgentLoopResult {
   quota: RateLimitSnapshot | null;
   providerUsage?: CapturedProviderUsage[];
   costEstimate?: CostEstimate;
+  /**
+   * What this turn added on top of the history it was given: assistant text,
+   * tool calls, and tool results. The session appends these so a follow-up turn
+   * sees the work, not just the summary of it — see agent/turn-messages.ts.
+   *
+   * Empty on every path that ended without a drained stream (provider error,
+   * abort, resolve failure); the caller then records `text` alone, which is what
+   * it has always done.
+   */
+  turnMessages: CoreMessage[];
 }
 
 export type ModelSettings = ReturnType<typeof resolveModelSettings>;
@@ -62,6 +72,7 @@ interface StreamResult {
   promptTokens: number | undefined;
   outputTokens: number | undefined;
   useParsedToolsFallback: boolean;
+  turnMessages: CoreMessage[];
 }
 
 async function streamWithRetry(
@@ -85,6 +96,7 @@ async function streamWithRetry(
   // continues in a fresh streamText call, so its usage has to be carried across.
   let carriedTotalTokens = 0;
   let carriedOutputTokens: number | undefined;
+  let turnMessages: CoreMessage[] = [];
 
   while (true) {
     if (useParsedToolsFallback) {
@@ -173,7 +185,7 @@ async function streamWithRetry(
       // Rejected-tool-call recovery is shared with the sub-agent runner — see
       // agent/stream-turn.ts. What is local to the foreground loop is rendering
       // (onPart/onRejected) and carrying an abandoned attempt's usage (onRecover).
-      const typedResult = await runRecoveringStream<NativeStream>({
+      const recovered = await runRecoveringStream<NativeStream>({
         messages: activeMessages,
         start: openAttempt,
         onPart: (part) => {
@@ -215,6 +227,9 @@ async function streamWithRetry(
         },
       });
 
+      const typedResult = recovered.stream;
+      turnMessages = recovered.turnMessages;
+
       writeRendered(mdStream.flush());
       fullText = fullText.trimEnd();
       if (fullText && !fullText.endsWith('\n')) {
@@ -255,7 +270,7 @@ async function streamWithRetry(
     }
   }
 
-  return { fullText, totalTokens, promptTokens, outputTokens, useParsedToolsFallback };
+  return { fullText, totalTokens, promptTokens, outputTokens, useParsedToolsFallback, turnMessages };
 }
 
 
@@ -269,7 +284,7 @@ export async function agentLoop(
   if (process.env.FREECODE_NO_LLM === '1') {
     const msg = 'LLM calls blocked (FREECODE_NO_LLM=1)';
     process.stdout.write(`Error: ${msg}\n`);
-    return { text: `Error: ${msg}`, usage: { totalTokens: 0 }, providerId: 'none', modelId: 'none', quota: null };
+    return { text: `Error: ${msg}`, usage: { totalTokens: 0 }, providerId: 'none', modelId: 'none', quota: null, turnMessages: [] };
   }
 
   let languageModel: LanguageModel;
@@ -303,6 +318,7 @@ export async function agentLoop(
       providerId: 'none',
       modelId: 'none',
       quota: null,
+      turnMessages: [],
     };
   }
 
@@ -315,6 +331,9 @@ export async function agentLoop(
   let quota: RateLimitSnapshot | null = null;
   let providerUsage: CapturedProviderUsage[] | undefined;
   let costEstimate: CostEstimate | undefined;
+  // Stays empty unless a stream drained: an errored or aborted turn has no
+  // balanced call/result set to persist, and the session falls back to `text`.
+  let turnMessages: CoreMessage[] = [];
 
   const finishResult = (text: string): AgentLoopResult => ({
     text,
@@ -324,6 +343,7 @@ export async function agentLoop(
     quota,
     providerUsage,
     costEstimate,
+    turnMessages,
   });
   const applyUsageOutcome = (outcome: UsageOutcome): void => {
     providerUsage = outcome.providerUsage ?? providerUsage;
@@ -360,6 +380,7 @@ export async function agentLoop(
     totalTokens = streamed.totalTokens;
     promptTokens = streamed.promptTokens;
     outputTokens = streamed.outputTokens;
+    turnMessages = streamed.turnMessages;
 
     if (streamed.useParsedToolsFallback) {
       // runParsedToolsLoop builds its tools without a spawnAgent runner, so the
@@ -370,6 +391,7 @@ export async function agentLoop(
       totalTokens = parsedToolsResult.totalTokens;
       promptTokens = parsedToolsResult.promptTokens;
       outputTokens = parsedToolsResult.outputTokens;
+      turnMessages = parsedToolsResult.turnMessages;
     }
 
     if (providerId === FAKE_NATIVE_PROVIDER_ID && !streamed.useParsedToolsFallback) {
@@ -392,7 +414,7 @@ export async function agentLoop(
     if (isContextOverflowError(error)) {
       process.stdout.write(
         `Error: Context window exceeded — the conversation history is too long for this model.\n` +
-        `  • Start a new session to clear history, or\n` +
+        `  • Run /clear to drop the history without leaving the session, or\n` +
         `  • Switch to a model with a larger context window (e.g. /model).\n`,
       );
     } else if (isDeadModel) {
@@ -402,7 +424,7 @@ export async function agentLoop(
     }
     endTranscriptStep(false);
     const displayError = isContextOverflowError(error)
-      ? 'Context window exceeded — start a new session or switch to a model with a larger context window.'
+      ? 'Context window exceeded — run /clear or switch to a model with a larger context window.'
       : isDeadModel
         ? `Model "${modelId}" returned 404 and has been removed from the picker.`
         : errMsg;

@@ -1,0 +1,31 @@
+{
+  "name": "agent-history-tool-turns-native",
+  "description": "Native path: the SDK's real tool-call and role:'tool' result messages survive into the next user turn, so a second turn is sent the work itself. The fake path covers the same in agent-history-tool-turns; this one exercises the shapes a real provider would 400 on if they were persisted unpaired",
+  "workspace": "temp",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "agent-history-tool-turns-native.llm.json",
+  "env": {
+    "FREECODE_AUTO_CONFIRM": "1"
+  },
+  "turns": [
+    { "input": "Create hello.txt with text hello from native." },
+    { "input": "What did you just create?" }
+  ],
+  "expect": {
+    "stdoutContains": ["File created successfully.", "I created hello.txt."],
+    "exitCode": 0,
+    "files": [
+      { "path": "hello.txt", "contentExact": "hello from native\n" }
+    ],
+    "comment": "inputMessageCount is one higher than the fixture's messageCount on this path: the native trace records options.prompt.length (system message included), while match.messageCount counts non-system messages only.",
+    "fakeLlmTrace": {
+      "callCount": 3,
+      "maxCalls": 3,
+      "calls": [
+        { "executionPath": "native-stream", "inputMessageCount": 2 },
+        { "executionPath": "native-stream", "inputMessageCount": 4 },
+        { "executionPath": "native-stream", "inputMessageCount": 6, "lastUserContains": ["What did you just create"] }
+      ]
+    }
+  }
+}

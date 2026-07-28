@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "comment": "One text-only turn; the marker is what the replay has to bring back after /config wipes the screen.",
+  "allowUnusedSteps": true,
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "messageCount": 1,
+        "mustContain": ["Say the magic word"]
+      },
+      "response": {
+        "text": "xyzzy-first-turn",
+        "usage": { "promptTokens": 12, "outputTokens": 4, "totalTokens": 16 }
+      }
+    }
+  ]
+}
