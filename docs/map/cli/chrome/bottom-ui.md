@@ -1,6 +1,6 @@
 # src/cli/chrome/bottom-ui.ts - Bottom Terminal UI
 
-**Role:** Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and input-area overlay logic; status state lives in `footer-status.ts` and buffer/cursor state lives in `input-buffer.ts`. Import those directly — this module does not re-export them.
+**Role:** Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and input-area overlay logic; status state lives in `footer-status.ts`, buffer/cursor state in `input-buffer.ts`, and the raw escape sequences in `ansi.ts`. Import those directly — this module does not re-export them.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -53,6 +53,12 @@ setOnResizeCallback(cb: (() => void) | null): void
 ## Layout
 
 Uses an ANSI scroll-region to pin the footer/input UI to the bottom rows while normal output scrolls above it. Footer is 2 rows normally, 3 when content overflows at narrow widths (only while the input UI is inactive); the input UI adds top/bottom bars plus the current input line count on top of the footer. Slash-command suggestions draw as an overlay that snapshots the scroll-region's screen content to repaint on close; the overlay epoch starts at the first `setupInputUI` call so pre-UI output (startup banner) is excluded from repaints. A `cursorPos` index tracks the insertion point in the flat buffer; `cursorLineCol()` derives (line, col) from it at draw time. A valid leading tool name followed by `(` is tinted pastel via `styleToolNames`/`toolNameHighlightRanges` from `cli/tools/tool-invocation.ts`, applied per visual chunk so ANSI bytes never disturb the width-based wrap math.
+
+### Cursor discipline when the region changes
+
+DECSTBM homes the cursor to (1,1) as a side effect of setting the scroll region. Most callers here immediately absolute-position afterwards, so it doesn't matter — but `setupFooterUI` runs while the startup banner is the only thing on screen and nothing repositions after it, so it brackets the region change with `saveCursorSequence()` / `restoreCursorSequence()`. Without that the cursor sits at the top of the screen and the next `console.log` paints over the banner.
+
+`setupInputUI` then opens its 3 rows for the input frame by writing bare newlines **from wherever the cursor is**, rather than moving to the bottom of the region first. Newlines scroll only once the cursor reaches the bottom margin, so this scrolls by exactly what is needed: 3 rows when output already fills the region (so the frame overwrites nothing), 0 on a fresh screen (so the banner stays put). Those newlines go through `writeChrome` from `screen-buffer.ts` — they carry no cursor escape, so ordinary capture would record them as blank transcript lines and corrupt overlay restore and the resize branch below.
 
 ## Quota Display
 

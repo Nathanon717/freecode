@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { stripAnsi, getScreenBufferDisplayLinesForOverlay, composeScrollRegionScrub, hasPostEpochContent, startOverlayEpoch } from '../../util/screen-buffer.js';
+import { stripAnsi, getScreenBufferDisplayLinesForOverlay, composeScrollRegionScrub, hasPostEpochContent, startOverlayEpoch, writeChrome } from '../../util/screen-buffer.js';
 import { getBannerColor, clearAndRedrawBanner } from '../render/banner.js';
 import { composeToggleBar, toggleBarWidth } from './toggles.js';
 import {
@@ -13,8 +13,19 @@ import {
   cursorToVisualPos,
 } from './input-buffer.js';
 import { toolNameHighlightRanges, styleToolNames } from '../tools/tool-invocation.js';
-
-const ESC = '\x1b[';
+import {
+  rows,
+  cols,
+  setScrollRegionSequence,
+  setScrollRegion,
+  resetScrollRegion,
+  resetScrollRegionSequence,
+  moveToSequence,
+  moveTo,
+  clearLineSequence,
+  saveCursorSequence,
+  restoreCursorSequence,
+} from './ansi.js';
 
 let footerActive = false;
 let inputUIActive = false;
@@ -34,33 +45,6 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null;
 // to read scrollback. Event-driven redraws (setup/teardown/resize) always repaint
 // and refresh this value; only the timer skips.
 let lastFooterOutput: string | null = null;
-
-function rows(): number { return process.stdout.rows || 24; }
-function cols(): number { return process.stdout.columns || 80; }
-
-function setScrollRegionSequence(top: number, bottom: number): string {
-  return `${ESC}${top};${bottom}r`;
-}
-
-function setScrollRegion(top: number, bottom: number) {
-  process.stdout.write(setScrollRegionSequence(top, bottom));
-}
-
-function resetScrollRegion() {
-  process.stdout.write(`${ESC}r`);
-}
-
-function moveToSequence(row: number, col: number): string {
-  return `${ESC}${row};${col}H`;
-}
-
-function moveTo(row: number, col: number) {
-  process.stdout.write(moveToSequence(row, col));
-}
-
-function clearLineSequence(): string {
-  return `${ESC}2K`;
-}
 
 export function isBottomUIActive(): boolean { return inputUIActive; }
 export function isFooterUIActive(): boolean { return footerActive; }
@@ -97,7 +81,7 @@ export function composeFooterOutput(): string {
   const neededCount = Math.max(2, rightRows.length);
 
   let output = '';
-  output += '\x1b[s'; // save cursor
+  output += saveCursorSequence();
 
   if (neededCount !== footerRowCount) {
     footerRowCount = neededCount;
@@ -141,7 +125,7 @@ export function composeFooterOutput(): string {
   const middle = Math.max(leftStr ? 1 : 0, w - 1 - leftStr.length - safeRight.length);
   output += moveToSequence(r, 1) + chalk.cyan(leftStr) + ' '.repeat(middle) + chalk.gray(safeRight);
 
-  output += '\x1b[u'; // restore cursor
+  output += restoreCursorSequence();
   return output;
 }
 
@@ -320,7 +304,12 @@ export function setupFooterUI() {
     // Unconditional redraws park the cursor at the bottom, causing Termux to snap the viewport.
     if (inputUIActive && footerRowCount !== prevFooterRowCount) drawInputArea();
   }, 1000);
-  setScrollRegion(1, rows() - 2);
+  // DECSTBM homes the cursor to (1,1), which would put the next console.log on top
+  // of whatever already painted (the startup banner). Save/restore around it so the
+  // cursor stays where the last output left it.
+  process.stdout.write(
+    saveCursorSequence() + setScrollRegionSequence(1, rows() - 2) + restoreCursorSequence(),
+  );
   drawFooter();
 }
 
@@ -336,9 +325,12 @@ export function setupInputUI() {
   }
   const r = rows();
   const reserved = footerRowCount + 3;
-  // Scroll the current scroll region up by 3 rows so that any command output
-  // near the bottom is not overwritten when the input area rows are drawn.
-  process.stdout.write(`${ESC}${r - footerRowCount};1H\n\n\n`);
+  // Open 3 rows for the input frame from wherever the last output left the cursor.
+  // Newlines only scroll once the cursor reaches the bottom of the scroll region, so
+  // output already filling the region scrolls up by 3 (nothing is overwritten), while
+  // a short screen (the startup banner) just moves the cursor down and stays put.
+  // writeChrome because these newlines are layout, not transcript.
+  writeChrome('\r\n\n\n');
   setScrollRegion(1, r - reserved);
   lastReservedRows = reserved;
   // Repaint the footer so the toggle bar (a footer row) appears together with the input
@@ -393,7 +385,7 @@ export function teardownFooterUI() {
   for (let i = 0; i < footerRowCount; i++) {
     output += moveToSequence(r - footerRowCount + 1 + i, 1) + clearLineSequence();
   }
-  output += `${ESC}r`;
+  output += resetScrollRegionSequence();
   output += moveToSequence(r - footerRowCount, 1);
   process.stdout.write(output);
   footerRowCount = 2;

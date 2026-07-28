@@ -8,6 +8,8 @@
 ```typescript
 stripAnsi(str: string): string
 
+writeChrome(chunk: string): void
+
 installScreenBuffer(): void
 
 startOverlayEpoch(): void
@@ -29,6 +31,7 @@ getScreenBufferDisplayLinesForOverlay(count: number, _scrollHeight: number): str
 - `installScreenBuffer` — call once at process startup (`index.ts`); no-op if already installed.
 - `startOverlayEpoch` — marks the current write position as the start of the scroll-region epoch; lines before it (banner/chrome) are excluded from overlay repaints. Called after **every** banner (re)draw in `banner.ts`, not just startup, so mid-session banner reprints (/clear, /model, /config, /eval) don't leak into overlay repaints.
 - `hasPostEpochContent` — whether any transcript has been printed since the current epoch. False on a fresh/startup screen (only banner + pre-input chrome), true once real output exists. The `bottom-ui.ts` resize handler branches on it: banner-only → redraw the banner responsively; transcript present → let the terminal reflow it (don't wipe).
+- `writeChrome` — writes bytes that must **not** be recorded, whatever they look like. Capture normally recognises chrome by its cursor/screen escapes, but a write can be pure layout and carry none: `setupInputUI` opens rows for the input frame with bare newlines. Recorded, those become phantom blank lines in overlay repaints and resize scrubs, and make `hasPostEpochContent()` claim a transcript on a fresh screen. Use it for any layout write without an escape; ordinary output must stay captured.
 - A write containing a full-screen / scrollback erase (`\x1b[…J`, e.g. the `\x1b[2J` in `clearEntireTerminal`/`clearAndRedrawBanner`) resets the buffer and the epoch, since nothing previously on screen can sit behind an overlay anymore. Line erase (`\x1b[2K`) does not trigger this.
 - `getScreenBufferDisplayLinesForOverlay` — returns styled lines (ANSI codes intact) needed to repaint `count` overlay rows after a suggestion list closes. Accounts for freecode's cursor-at-bottom-of-scroll-region output model: the bottom overlay row is always blank, the preceding `count-1` rows hold the last epoch lines, top-padded with blanks.
 - `getScreenBufferScrollRegionLines` — returns the last `rowCount` post-epoch transcript lines (styled), top-padded with blanks. The resize handler in `bottom-ui.ts` uses it to repaint the whole scroll region when a suggestion overlay was open, scrubbing the stale duplicate rows the terminal reflows in from the overlay's cursor-addressed writes.

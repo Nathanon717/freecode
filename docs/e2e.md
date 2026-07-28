@@ -31,6 +31,7 @@ This table is generated from `tests/e2e/*.e2e.json`.
 | `tty-all-commands-shown.e2e.json` | `tty-all-commands-shown` | repo | Typing / shows all slash commands in the suggestion list |
 | `tty-autocomplete.e2e.json` | `tty-autocomplete` | repo | Interactive TUI: slash command suggestions, prefix filtering, tab completion, and submit reset, verified against the rendered screen |
 | `tty-backspace.e2e.json` | `tty-backspace` | repo | Backspace key removes the last character from the input buffer; repeated backspaces restore the empty-prompt hint |
+| `tty-banner-not-scrolled.e2e.json` | `tty-banner-not-scrolled` | repo | The startup banner stays where it painted when the footer and input UI draw after it — both compact-banner borders are still on screen |
 | `tty-blocklist-purge.e2e.json` | `tty-blocklist-purge` | repo | A stored model whose id is on a registry blocklist triggers a startup confirmation naming it; Enter deletes it and models that are not blocklisted are left alone |
 | `tty-clear-redraws.e2e.json` | `tty-clear-redraws` | repo | Submitting /clear clears the whole terminal, redraws the banner, and the cleared message appears in the raw stream |
 | `tty-config-editor.e2e.json` | `tty-config-editor` | repo | Submitting /config opens the interactive settings editor showing all settings; pressing q closes it and restores the input prompt |

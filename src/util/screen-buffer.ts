@@ -36,6 +36,23 @@ function pushDisplayLines(styled: string): void {
   }
 }
 
+let capturing = true;
+
+// Writes bytes that are chrome, not transcript, so the buffer never records them.
+// The capture filter normally recognises chrome by its cursor/screen escapes, but a
+// write can be pure layout and still carry none — e.g. the bare newlines that open
+// rows for the input frame. Recorded, those would surface as phantom blank lines in
+// overlay repaints and resize scrubs, and would make hasPostEpochContent() claim a
+// transcript exists on a fresh screen.
+export function writeChrome(chunk: string): void {
+  capturing = false;
+  try {
+    process.stdout.write(chunk);
+  } finally {
+    capturing = true;
+  }
+}
+
 export function installScreenBuffer(): void {
   if (installed) return;
   installed = true;
@@ -44,7 +61,7 @@ export function installScreenBuffer(): void {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
   (process.stdout as any).write = function (chunk: string | Buffer, ...args: unknown[]): boolean {
-    if (typeof chunk === 'string') {
+    if (typeof chunk === 'string' && capturing) {
       if (hasFullScreenErase(chunk)) {
         // A full-screen / scrollback erase wipes everything currently on
         // screen, so nothing buffered can still sit behind a suggestion

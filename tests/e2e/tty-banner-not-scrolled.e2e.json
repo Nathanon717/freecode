@@ -1,0 +1,23 @@
+{
+  "name": "tty-banner-not-scrolled",
+  "description": "The startup banner stays where it painted when the footer and input UI draw after it — both compact-banner borders are still on screen",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "banner intact once the prompt is live",
+        "screenContains": [
+          "freecode",
+          "> / for commands"
+        ],
+        "screenCounts": {
+          "////////////////////": 2
+        }
+      }
+    ],
+    "expectExit": true,
+    "exitCode": 0
+  }
+}
