@@ -18,6 +18,7 @@ import { redrawBanner } from './render/banner.js';
 import { replayTranscript } from './render/transcript-replay.js';
 import { showHelp } from './slash-commands.js';
 import { parseToolInvocation } from './tools/tool-invocation.js';
+import type { CoreMessage } from 'ai';
 import type { Conversation } from '../agent/conversation.js';
 import {
   writeResultPlaceholder,
@@ -91,10 +92,17 @@ function showModelStatus(runtime: CommandRuntime): void {
 
 async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void> {
   await ensureStoreReady();
-  runtime.session.addUserMessage(input);
+  // The user message is sent to the model on a copy and committed to the session
+  // only once the turn has produced something (Conversation.commitTurn). Appending
+  // it up front stranded it in history whenever the turn produced nothing — an
+  // aborted approval, a provider error, a `beforeAgentCall` that threw.
+  const userMessage: CoreMessage = { role: 'user', content: input };
+  const turnInput = [...runtime.session.messages, userMessage];
 
-  await runtime.beforeAgentCall?.();
   try {
+    // Inside the try so a throw here still reaches `afterAgentCall` below; it
+    // tears the bottom UI down, and escaping left the input bar gone for good.
+    await runtime.beforeAgentCall?.();
     const resultJsonPath = process.env['FREECODE_RESULT_JSON'];
 
     // Write an initial placeholder entry so the footer shows the correct model
@@ -106,14 +114,16 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
     // Imported lazily so the interactive boot path doesn't pull in the `ai`
     // SDK (~1.2s) until a turn actually runs.
     const { agentLoop } = await import('../agent/loop.js');
-    const result = await agentLoop(runtime.session.messages, runtime.projectRoot, runtime.getSelectedModel() ?? undefined, {
+    const result = await agentLoop(turnInput, runtime.projectRoot, runtime.getSelectedModel() ?? undefined, {
       confirmToolCall: runtime.confirmToolCall,
       readOnly: runtime.getReadOnly?.() ?? false,
       onPartialResult: resultJsonPath ? makePartialResultUpdater(resultJsonPath) : undefined,
       onStepUsage: runtime.onStepUsage,
     });
 
-    if (!result.text.trim()) {
+    // A failed turn has already printed its error; only a turn that ran fine and
+    // still said nothing needs this line.
+    if (!result.error && !result.text.trim()) {
       console.log(chalk.yellow('(empty response from model)'));
     }
 
@@ -130,12 +140,12 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
       });
     }
 
-    // Persist the whole turn — assistant text, tool calls, tool results — so the
-    // next turn continues from what happened rather than a prose summary of it.
-    // Error and abort paths carry no messages; those fall back to the text.
-    if (!runtime.session.addTurnMessages(result.turnMessages)) {
-      runtime.session.addAssistantMessage(result.text);
-    }
+    // Persist the whole turn — the user message, assistant text, tool calls, tool
+    // results — as one unit, so the next turn continues from what happened rather
+    // than a prose summary of it. Error and abort paths carry no messages; those
+    // fall back to whatever partial text was emitted, and a turn that emitted
+    // none of that leaves history exactly as it was.
+    runtime.session.commitTurn(userMessage, result.turnMessages, result.text);
 
     if (result.providerId === 'anthropic') {
       const sessionTotal = addAnthropicSessionCost(result.costEstimate);

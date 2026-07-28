@@ -70,7 +70,7 @@ export function dropUnpairedToolCalls(messages: CoreMessage[]): CoreMessage[] {
       });
     }
     // An assistant message with no tool calls and no text carries nothing and is
-    // rejected outright by some providers (see Conversation.addTurnMessages).
+    // rejected outright by some providers (see Conversation.commitTurn).
     const hasText = kept.some((part) => part.type === 'text' && partText(part).trim());
     const hasCall = kept.some((part) => part.type === 'tool-call');
     if (!hasText && !hasCall) continue;

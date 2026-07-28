@@ -31,10 +31,19 @@ interface AgentLoopResult {
    * sees the work, not just the summary of it — see agent/turn-messages.ts.
    *
    * Empty on every path that ended without a drained stream (provider error,
-   * abort, resolve failure); the caller then records `text` alone, which is what
-   * it has always done.
+   * abort, resolve failure); the session then falls back to `text` alone, and
+   * commits nothing at all when there is no text either.
    */
   turnMessages: CoreMessage[];
+  /**
+   * Set when the turn failed, to the message already printed to stdout. `text`
+   * stays the model's own output (empty, or whatever partial text it emitted
+   * before the failure) so the caller never persists an error report into
+   * history as something the assistant said — a poisoned history the model then
+   * sees itself having written, and which on context overflow makes the retry
+   * overflow too. A user abort is not a failure and leaves this unset.
+   */
+  error?: string;
 }
 
 type ModelSettings = ReturnType<typeof resolveModelSettings>;
@@ -126,9 +135,10 @@ return AgentLoopResult
 
 ## Error Handling
 
-- Routing errors do not throw; they return `providerId: "none"`, `modelId: "none"`, zero tokens, and an error text.
-- Stream errors are logged and returned with any partial text plus an appended detailed error message. API errors include parsed provider fields such as `code`, `type`, and `failed_generation` when the SDK exposes them. Anthropic usage capture is ended on this path so any available partial cost metadata can still be returned.
-- Context-overflow errors (`isContextOverflowError`) are detected as a distinct subcase: a specific multi-line user-facing message is printed to stdout explaining the limit was exceeded and suggesting starting a new session or switching to a larger-context model via `/model`. The returned `text` carries a condensed single-line version of this message.
+- **Failures ride on `error`, never on `text`.** Every path that fails without throwing (`FREECODE_NO_LLM`, the `resolveModel` failure, the stream catch — and `runFakeLlm`'s catch) returns the message in `AgentLoopResult.error` and leaves `text` as the model's own output: empty, or whatever partial text it emitted first. The loop has already printed the error to stdout, and the session must not persist it as something the assistant said (`docs/bug log/28-07-2026.md`). A user abort is not a failure and leaves `error` unset.
+- Routing errors do not throw; they return `providerId: "none"`, `modelId: "none"`, zero tokens, and the reason in `error`.
+- Stream errors are logged and returned with any partial text plus the detailed error message in `error`. API errors include parsed provider fields such as `code`, `type`, and `failed_generation` when the SDK exposes them. Anthropic usage capture is ended on this path so any available partial cost metadata can still be returned.
+- Context-overflow errors (`isContextOverflowError`) are detected as a distinct subcase: a specific multi-line user-facing message is printed to stdout explaining the limit was exceeded and suggesting starting a new session or switching to a larger-context model via `/model`. `error` carries a condensed single-line version of this message.
 
 ## Update Triggers
 

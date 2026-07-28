@@ -1,0 +1,21 @@
+{
+  "name": "agent-turn-failure-no-orphan",
+  "description": "A turn that fails at the provider leaves history exactly as it was: the next turn is sent only its own user message, with no orphaned request the model never answered and no error report persisted as something the assistant said",
+  "workspace": "temp",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "agent-turn-failure-no-orphan.llm.json",
+  "turns": [
+    { "input": "first message" },
+    { "input": "second message" }
+  ],
+  "expect": {
+    "stdoutContains": ["Error: simulated provider failure", "second turn ok"],
+    "exitCode": 0,
+    "fakeLlmTrace": {
+      "callCount": 1,
+      "calls": [
+        { "inputMessageCount": 1, "lastUserContains": ["second message"] }
+      ]
+    }
+  }
+}

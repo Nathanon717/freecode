@@ -9,78 +9,78 @@ describe('Conversation', () => {
     expect(controller.messages).toEqual([]);
   });
 
-  it('accumulates user and assistant messages in order', () => {
+  it('accumulates turns in order', () => {
     const controller = new Conversation(join(tmpdir(), 'ctrl2'));
-    controller.addUserMessage('hi');
-    controller.addAssistantMessage('hello');
+    controller.commitTurn({ role: 'user', content: 'hi' }, [], 'hello');
+    controller.commitTurn({ role: 'user', content: 'again' }, [], 'hello again');
     expect(controller.messages).toEqual([
       { role: 'user', content: 'hi' },
       { role: 'assistant', content: 'hello' },
-    ]);
-  });
-
-  it('drops empty assistant turns (Mistral rejects content-less assistant messages)', () => {
-    const controller = new Conversation(join(tmpdir(), 'ctrl4'));
-    controller.addUserMessage('hi');
-    controller.addAssistantMessage('');
-    controller.addAssistantMessage('   \n ');
-    controller.addUserMessage('still there?');
-    expect(controller.messages).toEqual([
-      { role: 'user', content: 'hi' },
-      { role: 'user', content: 'still there?' },
+      { role: 'user', content: 'again' },
+      { role: 'assistant', content: 'hello again' },
     ]);
   });
 
   it('clears in-memory messages', () => {
     const controller = new Conversation(join(tmpdir(), 'ctrl3'));
-    controller.addUserMessage('hi');
+    controller.commitTurn({ role: 'user', content: 'hi' }, [], 'hello');
     controller.clearMessages();
     expect(controller.messages).toEqual([]);
   });
 
-  describe('addTurnMessages', () => {
+  describe('commitTurn', () => {
     it('keeps tool calls and their results, so the next turn sees the work', () => {
       const controller = new Conversation(join(tmpdir(), 'ctrl5'));
-      controller.addUserMessage('read a.ts');
-      const appended = controller.addTurnMessages([
+      const committed = controller.commitTurn({ role: 'user', content: 'read a.ts' }, [
         { role: 'assistant', content: [{ type: 'tool-call', toolCallId: 'c1', toolName: 'read', args: { path: 'a.ts' } }] },
         { role: 'tool', content: [{ type: 'tool-result', toolCallId: 'c1', toolName: 'read', result: 'body' }] },
         { role: 'assistant', content: 'It says body.' },
-      ]);
-      expect(appended).toBe(true);
+      ], 'It says body.');
+      expect(committed).toBe(true);
       expect(controller.messages).toHaveLength(4);
       expect(controller.messages.map((m) => m.role)).toEqual(['user', 'assistant', 'tool', 'assistant']);
     });
 
     it('keeps a tool-call-only assistant message (legal — no text is not "empty")', () => {
       const controller = new Conversation(join(tmpdir(), 'ctrl6'));
-      controller.addTurnMessages([
+      controller.commitTurn({ role: 'user', content: 'read a.ts' }, [
         { role: 'assistant', content: [{ type: 'tool-call', toolCallId: 'c1', toolName: 'read', args: {} }] },
         { role: 'tool', content: [{ type: 'tool-result', toolCallId: 'c1', toolName: 'read', result: 'x' }] },
-      ]);
-      expect(controller.messages).toHaveLength(2);
+      ], '');
+      expect(controller.messages).toHaveLength(3);
     });
 
-    it('still drops a genuinely empty assistant message', () => {
+    it('drops a genuinely empty assistant message and, with it, the whole turn', () => {
       const controller = new Conversation(join(tmpdir(), 'ctrl7'));
-      const appended = controller.addTurnMessages([{ role: 'assistant', content: '  ' }]);
-      expect(appended).toBe(false);
+      const committed = controller.commitTurn({ role: 'user', content: 'hi' }, [{ role: 'assistant', content: '  ' }], '  \n ');
+      expect(committed).toBe(false);
       expect(controller.messages).toEqual([]);
     });
 
-    it('reports false on an empty turn so the caller can fall back to the text', () => {
+    it('strands nothing when a turn produced neither messages nor text (abort, provider error)', () => {
       const controller = new Conversation(join(tmpdir(), 'ctrl8'));
-      expect(controller.addTurnMessages([])).toBe(false);
+      expect(controller.commitTurn({ role: 'user', content: 'hi' }, [], '')).toBe(false);
       expect(controller.messages).toEqual([]);
     });
 
     it('never persists a tool call whose result is missing', () => {
       const controller = new Conversation(join(tmpdir(), 'ctrl9'));
-      const appended = controller.addTurnMessages([
+      const committed = controller.commitTurn({ role: 'user', content: 'hi' }, [
         { role: 'assistant', content: [{ type: 'tool-call', toolCallId: 'orphan', toolName: 'read', args: {} }] },
-      ]);
-      expect(appended).toBe(false);
+      ], '');
+      // Sanitizing left nothing, so this is a turn that produced nothing —
+      // committing the user message alone would strand it exactly as before.
+      expect(committed).toBe(false);
       expect(controller.messages).toEqual([]);
+    });
+
+    it('falls back to the partial text when a failed turn carries no messages', () => {
+      const controller = new Conversation(join(tmpdir(), 'ctrl10'));
+      expect(controller.commitTurn({ role: 'user', content: 'hi' }, [], 'I started to say')).toBe(true);
+      expect(controller.messages).toEqual([
+        { role: 'user', content: 'hi' },
+        { role: 'assistant', content: 'I started to say' },
+      ]);
     });
   });
 });

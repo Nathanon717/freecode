@@ -15,6 +15,7 @@ This table is generated from `tests/e2e/*.e2e.json`.
 | `agent-text-native.e2e.json` | `agent-text-native` | temp | Fake LLM fixture exercises the real AI SDK streamText path (native-stream) with a deterministic text response |
 | `agent-tool-arg-error-native.e2e.json` | `agent-tool-arg-error-native` | temp | Tool calls the SDK rejects before execution (unknown name, then bad arguments) are reported back to the model as failed steps; the turn continues from what already ran and the model retries with a valid call |
 | `agent-tool-native.e2e.json` | `agent-tool-native` | temp | Fake native LLM fixture drives a create tool call through the full multi-step streamText orchestration loop |
+| `agent-turn-failure-no-orphan.e2e.json` | `agent-turn-failure-no-orphan` | temp | A turn that fails at the provider leaves history exactly as it was: the next turn is sent only its own user message, with no orphaned request the model never answered and no error report persisted as something the assistant said |
 | `blocklist-purge-script-mode.e2e.json` | `blocklist-purge-script-mode` | repo | A scripted (non-TTY) run never offers the blocklist purge and never deletes the seeded blocklisted model — the confirmation is unanswerable without a terminal, so the rows must be left alone |
 | `slash-clear.e2e.json` | `slash-clear` | repo | /clear resets history, clears the screen, and redraws the banner |
 | `slash-config-script-mode.e2e.json` | `slash-config-script-mode` | repo | /config in script mode (no TTY) prints a message that the editor is only available in interactive mode |
@@ -26,6 +27,7 @@ This table is generated from `tests/e2e/*.e2e.json`.
 | `startup-help-exit.e2e.json` | `startup-help-exit` | repo | Boot the CLI, print help, exit cleanly |
 | `tool-invoke-list-dir.e2e.json` | `tool-invoke-list-dir` | repo | Typing list_dir(path=.) invokes the tool directly through the real wrapped executor instead of sending the text to the agent |
 | `tools-list.e2e.json` | `tools-list` | repo | /tools lists every callable tool with its signature and description |
+| `tty-abort-no-orphan.e2e.json` | `tty-abort-no-orphan` | repo | Escaping a tool approval aborts the turn before the model said anything, and that turn leaves no trace in history: the next turn is sent only its own message instead of following an orphaned request the model never answered |
 | `tty-all-commands-shown.e2e.json` | `tty-all-commands-shown` | repo | Typing / shows all slash commands in the suggestion list |
 | `tty-autocomplete.e2e.json` | `tty-autocomplete` | repo | Interactive TUI: slash command suggestions, prefix filtering, tab completion, and submit reset, verified against the rendered screen |
 | `tty-backspace.e2e.json` | `tty-backspace` | repo | Backspace key removes the last character from the input buffer; repeated backspaces restore the empty-prompt hint |

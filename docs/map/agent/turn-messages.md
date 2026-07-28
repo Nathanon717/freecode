@@ -37,7 +37,8 @@ them.
 
 ## Key neighbors
 
-`agent/conversation.ts` (`addTurnMessages` calls the sanitizer),
+`agent/conversation.ts` (`commitTurn` calls the sanitizer, and decides whether the
+turn produced anything from what survives it),
 `agent/stream-turn.ts` (produces the native `turnMessages`),
 `agent/parsed-tools.ts` and `agent/fake-loop.ts` (consume the flattener).
 

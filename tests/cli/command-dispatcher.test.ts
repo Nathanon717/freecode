@@ -78,6 +78,7 @@ import { redrawBanner } from '../../src/cli/render/banner.js';
 import { showHelp } from '../../src/cli/slash-commands.js';
 import { resolveApiKey, resolveModelSettings } from '../../src/config/index.js';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { Conversation } from '../../src/agent/conversation.js';
 import { ensureStoreReady } from '../../src/store/db.js';
 import { runStatusCommand } from '../../src/commands/status.js';
 import { runRendererDemo } from '../../src/commands/renderer.js';
@@ -86,21 +87,14 @@ import { runRendererDemo } from '../../src/commands/renderer.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
+// The real Conversation, not a stub: what these tests care about is the history
+// a turn leaves behind, and an all-or-nothing commit can only be checked against
+// the real append rules.
 function makeSession() {
-  const clearMessages = vi.fn();
-  const addUserMessage = vi.fn();
-  const addAssistantMessage = vi.fn();
-  // Mirrors the real contract: returns false when the turn produced no messages,
-  // which is what makes the dispatcher fall back to addAssistantMessage.
-  const addTurnMessages = vi.fn((messages: unknown[]) => messages.length > 0);
-  const session = {
-    messages: [] as unknown[],
-    clearMessages,
-    addUserMessage,
-    addAssistantMessage,
-    addTurnMessages,
-  };
-  return { session: session as unknown as CommandRuntime['session'], clearMessages, addUserMessage, addAssistantMessage, addTurnMessages };
+  const session = new Conversation('/test');
+  const clearMessages = vi.spyOn(session, 'clearMessages');
+  const commitTurn = vi.spyOn(session, 'commitTurn');
+  return { session, clearMessages, commitTurn };
 }
 
 function makeRuntime(overrides: Partial<CommandRuntime> = {}): CommandRuntime {
@@ -376,21 +370,31 @@ describe('dispatchCommand — sendToAgent', () => {
     expect(ensureStoreReady).toHaveBeenCalled();
   });
 
-  it('adds the trimmed user message to the session', async () => {
-    const { session, addUserMessage } = makeSession();
+  it('commits the trimmed user message with the reply once the turn succeeds', async () => {
+    const { session } = makeSession();
     await dispatchCommand('  hello world  ', makeRuntime({ session }));
-    expect(addUserMessage).toHaveBeenCalledWith('hello world');
+    expect(session.messages).toEqual([
+      { role: 'user', content: 'hello world' },
+      { role: 'assistant', content: 'Hello from AI' },
+    ]);
   });
 
-  it('calls agentLoop with the session messages', async () => {
-    await dispatchCommand('hello', makeRuntime());
-    expect(agentLoop).toHaveBeenCalled();
-  });
-
-  it('falls back to the assistant text when the turn produced no messages', async () => {
-    const { session, addAssistantMessage } = makeSession();
+  it('sends the history plus the new user message, without committing it first', async () => {
+    const { session } = makeSession();
+    session.commitTurn({ role: 'user', content: 'earlier' }, [], 'earlier reply');
+    vi.mocked(agentLoop).mockImplementation((messages) => {
+      // The message is only a candidate while the turn runs: visible to the
+      // model, absent from the session until the turn produces something.
+      expect(messages).toEqual([
+        { role: 'user', content: 'earlier' },
+        { role: 'assistant', content: 'earlier reply' },
+        { role: 'user', content: 'hello' },
+      ]);
+      expect(session.messages).toHaveLength(2);
+      return Promise.resolve(DEFAULT_AGENT_RESULT as never);
+    });
     await dispatchCommand('hello', makeRuntime({ session }));
-    expect(addAssistantMessage).toHaveBeenCalledWith('Hello from AI');
+    expect(session.messages).toHaveLength(4);
   });
 
   it('persists the turn messages — tool calls and results — when the turn produced them', async () => {
@@ -400,17 +404,57 @@ describe('dispatchCommand — sendToAgent', () => {
       { role: 'assistant', content: 'Hello from AI' },
     ];
     vi.mocked(agentLoop).mockResolvedValue({ ...DEFAULT_AGENT_RESULT, turnMessages } as never);
-    const { session, addTurnMessages, addAssistantMessage } = makeSession();
+    const { session } = makeSession();
     await dispatchCommand('hello', makeRuntime({ session }));
-    expect(addTurnMessages).toHaveBeenCalledWith(turnMessages);
-    // Not both — that would duplicate the final reply in history.
-    expect(addAssistantMessage).not.toHaveBeenCalled();
+    expect(session.messages.map((m) => m.role)).toEqual(['user', 'assistant', 'tool', 'assistant']);
+    // The final reply comes from turnMessages, not from `text` on top of it —
+    // recording both would duplicate it in history.
+    expect(session.messages).toHaveLength(4);
+  });
+
+  it('leaves history untouched when an aborted turn produced nothing', async () => {
+    // The abort shape: agentLoop swallows the UserAbortError and returns the
+    // text so far, which is empty when the user escaped before any output.
+    vi.mocked(agentLoop).mockResolvedValue({ ...DEFAULT_AGENT_RESULT, text: '', turnMessages: [] } as never);
+    const { session } = makeSession();
+    await dispatchCommand('hello', makeRuntime({ session }));
+    expect(session.messages).toEqual([]);
+  });
+
+  it('leaves history untouched when the turn failed before any output', async () => {
+    vi.mocked(agentLoop).mockResolvedValue({ ...DEFAULT_AGENT_RESULT, text: '', error: 'Context window exceeded' } as never);
+    const { session } = makeSession();
+    await dispatchCommand('hello', makeRuntime({ session }));
+    expect(session.messages).toEqual([]);
+  });
+
+  it('never persists the error itself — a failed turn keeps only what the model actually said', async () => {
+    vi.mocked(agentLoop).mockResolvedValue({ ...DEFAULT_AGENT_RESULT, text: 'Working on it.', error: 'Context window exceeded' } as never);
+    const { session } = makeSession();
+    await dispatchCommand('hello', makeRuntime({ session }));
+    expect(session.messages).toEqual([
+      { role: 'user', content: 'hello' },
+      { role: 'assistant', content: 'Working on it.' },
+    ]);
+  });
+
+  it('leaves history untouched when agentLoop throws', async () => {
+    vi.mocked(agentLoop).mockRejectedValue(new Error('network failure'));
+    const { session } = makeSession();
+    await dispatchCommand('hello', makeRuntime({ session }));
+    expect(session.messages).toEqual([]);
   });
 
   it('logs a yellow warning when the response text is blank', async () => {
     vi.mocked(agentLoop).mockResolvedValue({ ...DEFAULT_AGENT_RESULT, text: '   ' } as never);
     await dispatchCommand('hello', makeRuntime());
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('empty response'));
+  });
+
+  it('does not call a failed turn an empty response — the error was already printed', async () => {
+    vi.mocked(agentLoop).mockResolvedValue({ ...DEFAULT_AGENT_RESULT, text: '', error: 'boom' } as never);
+    await dispatchCommand('hello', makeRuntime());
+    expect(consoleSpy).not.toHaveBeenCalledWith(expect.stringContaining('empty response'));
   });
 
   it('calls beforeAgentCall and afterAgentCall hooks in order', async () => {
@@ -425,6 +469,19 @@ describe('dispatchCommand — sendToAgent', () => {
     const onAgentResult = vi.fn().mockResolvedValue(undefined);
     await dispatchCommand('hello', makeRuntime({ onAgentResult }));
     expect(onAgentResult).toHaveBeenCalledWith(DEFAULT_AGENT_RESULT);
+  });
+
+  it('recovers when beforeAgentCall throws: the error is reported, afterAgentCall restores the UI, history is untouched', async () => {
+    // beforeAgentCall tears the bottom UI down. When it used to run outside the
+    // try the throw escaped the dispatcher, so afterAgentCall never rebuilt it.
+    const beforeAgentCall = vi.fn(() => { throw new Error('teardown failed'); });
+    const afterAgentCall = vi.fn().mockResolvedValue(undefined);
+    const { session } = makeSession();
+    await expect(dispatchCommand('hello', makeRuntime({ session, beforeAgentCall, afterAgentCall }))).resolves.toBe('continue');
+    expect(afterAgentCall).toHaveBeenCalled();
+    expect(agentLoop).not.toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('teardown failed'));
+    expect(session.messages).toEqual([]);
   });
 
   it('calls afterAgentCall even when agentLoop throws', async () => {

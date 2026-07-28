@@ -58,10 +58,19 @@ export interface AgentLoopResult {
    * sees the work, not just the summary of it — see agent/turn-messages.ts.
    *
    * Empty on every path that ended without a drained stream (provider error,
-   * abort, resolve failure); the caller then records `text` alone, which is what
-   * it has always done.
+   * abort, resolve failure); the session then falls back to `text` alone, and
+   * commits nothing at all when there is no text either.
    */
   turnMessages: CoreMessage[];
+  /**
+   * Set when the turn failed, to the message already printed to stdout. `text`
+   * stays the model's own output (empty, or whatever partial text it emitted
+   * before the failure) so the caller never persists an error report into
+   * history as something the assistant said — a poisoned history the model then
+   * sees itself having written, and which on context overflow makes the retry
+   * overflow too. A user abort is not a failure and leaves this unset.
+   */
+  error?: string;
 }
 
 export type ModelSettings = ReturnType<typeof resolveModelSettings>;
@@ -284,7 +293,7 @@ export async function agentLoop(
   if (process.env.FREECODE_NO_LLM === '1') {
     const msg = 'LLM calls blocked (FREECODE_NO_LLM=1)';
     process.stdout.write(`Error: ${msg}\n`);
-    return { text: `Error: ${msg}`, usage: { totalTokens: 0 }, providerId: 'none', modelId: 'none', quota: null, turnMessages: [] };
+    return { text: '', error: msg, usage: { totalTokens: 0 }, providerId: 'none', modelId: 'none', quota: null, turnMessages: [] };
   }
 
   let languageModel: LanguageModel;
@@ -313,7 +322,8 @@ export async function agentLoop(
     const errMsg = toErrorMessage(error);
     process.stdout.write(`Error: ${errMsg}\n`);
     return {
-      text: `Error: ${errMsg}`,
+      text: '',
+      error: errMsg,
       usage: { totalTokens: 0 },
       providerId: 'none',
       modelId: 'none',
@@ -335,7 +345,7 @@ export async function agentLoop(
   // balanced call/result set to persist, and the session falls back to `text`.
   let turnMessages: CoreMessage[] = [];
 
-  const finishResult = (text: string): AgentLoopResult => ({
+  const finishResult = (text: string, error?: string): AgentLoopResult => ({
     text,
     usage: { totalTokens, promptTokens, outputTokens },
     providerId,
@@ -344,6 +354,7 @@ export async function agentLoop(
     providerUsage,
     costEstimate,
     turnMessages,
+    ...(error === undefined ? {} : { error }),
   });
   const applyUsageOutcome = (outcome: UsageOutcome): void => {
     providerUsage = outcome.providerUsage ?? providerUsage;
@@ -428,7 +439,7 @@ export async function agentLoop(
       : isDeadModel
         ? `Model "${modelId}" returned 404 and has been removed from the picker.`
         : errMsg;
-    return finishResult(fullText + `\n\nError: ${displayError}`);
+    return finishResult(fullText, displayError);
   } finally {
     setParallelToolsDisabled(providerId, false);
   }

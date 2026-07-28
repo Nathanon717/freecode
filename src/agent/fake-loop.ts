@@ -42,13 +42,14 @@ export async function runFakeLlm(
   let totalTokens = 0;
   let promptTokens: number | undefined;
   let outputTokens: number | undefined;
-  const result = (text: string, turnMessages: CoreMessage[] = []): AgentLoopResult => ({
+  const result = (text: string, turnMessages: CoreMessage[] = [], error?: string): AgentLoopResult => ({
     text,
     usage: { totalTokens, promptTokens, outputTokens },
     providerId,
     modelId,
     quota: null,
     turnMessages,
+    ...(error === undefined ? {} : { error }),
   });
 
   try {
@@ -111,6 +112,8 @@ export async function runFakeLlm(
     if (isUserAbortError(error)) return result(fullText);
     const errMsg = toDetailedErrorMessage(error);
     process.stdout.write(`Error: ${errMsg}\n`);
-    return result(fullText ? `${fullText}\n\nError: ${errMsg}` : `Error: ${errMsg}`);
+    // The error is reported through `error`, never folded into `text` — the
+    // session must not persist it as something the assistant said (loop.ts).
+    return result(fullText, [], errMsg);
   }
 }

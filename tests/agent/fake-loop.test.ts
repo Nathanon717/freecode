@@ -196,7 +196,7 @@ describe('runFakeLlm via agentLoop with the mock fake-direct provider', () => {
       { confirmToolCall: approve },
     );
 
-    expect(result.text).toContain('does not support tools');
+    expect(result.error).toContain('does not support tools');
   });
 
   it('surfaces a fixture error response as an error result', async () => {
@@ -212,7 +212,10 @@ describe('runFakeLlm via agentLoop with the mock fake-direct provider', () => {
       'mock:gpt-freecode-test',
     );
 
-    expect(result.text).toContain('Error: provider exploded');
+    // The failure rides on `error`; `text` keeps only what the model said (here,
+    // nothing), so the session never persists the error as an assistant turn.
+    expect(result.error).toContain('provider exploded');
+    expect(result.text).toBe('');
   });
 
   it('preserves partial text and stops cleanly when the user aborts a tool call', async () => {

@@ -25,7 +25,9 @@ Incoming history is passed through `flattenToolMessagesToText` ([turn-messages.m
 
 The returned `turnMessages` is everything added on top of that flattened base, including the final answer (which the loop does not append for itself). It is what [conversation.md](conversation.md) persists.
 
-**Multi-turn fixtures need `"allowUnusedSteps": true`.** `assertFakeFixtureComplete()` runs at the end of *every* turn, so a fixture whose later steps belong to a later user turn throws on turn 1 — and that throw lands in this loop's catch, which returns **no** `turnMessages`, silently reverting to the text-only fallback. The symptom is a message count that looks like the pre-persistence behavior. See `tests/e2e/agent-history-tool-turns.e2e.json`.
+**Multi-turn fixtures need `"allowUnusedSteps": true`.** `assertFakeFixtureComplete()` runs at the end of *every* turn, so a fixture whose later steps belong to a later user turn throws on turn 1 — and that throw lands in this loop's catch, which returns **no** `turnMessages` and now an `error`, so the session commits nothing for that turn at all. The symptom is a message count that looks like the pre-persistence behavior, or a turn missing from history entirely. See `tests/e2e/agent-history-tool-turns.e2e.json`.
+
+The catch reports failures through `AgentLoopResult.error`, never by folding `Error: …` into `text` — same rule as [loop.md](loop.md), so the session never persists an error report as an assistant turn (`docs/bug log/28-07-2026.md`). A fixture-mismatch throw therefore prints an error and leaves history untouched, which is what makes `messageCount` matchers usable as history assertions in TTY e2e tests (`tests/e2e/tty-abort-no-orphan.e2e.json`).
 
 Note this path pre-dates and bypasses native tool orchestration entirely: there is no `streamText`, no `fullStream`, and no tool-render gate. Transcript framing is driven by hand (`beginTranscriptTurn` / `endTranscriptStep`).
 

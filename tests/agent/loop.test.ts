@@ -51,7 +51,9 @@ describe('agentLoop dispatch', () => {
       'mock:gpt-freecode-test',
     );
 
-    expect(result.text).toContain('LLM calls blocked');
+    // Reported through `error`, never as assistant text — see AgentLoopResult.
+    expect(result.error).toContain('LLM calls blocked');
+    expect(result.text).toBe('');
     expect(result.providerId).toBe('none');
   });
 
@@ -62,8 +64,8 @@ describe('agentLoop dispatch', () => {
       'no-colon-here',
     );
 
-    expect(result.text).toContain('Error:');
-    expect(result.text).toContain('Invalid model format');
+    expect(result.error).toContain('Invalid model format');
+    expect(result.text).toBe('');
     expect(result.providerId).toBe('none');
   });
 });
