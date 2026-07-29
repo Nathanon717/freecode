@@ -3,8 +3,20 @@
 // text. Nothing about the UI is reconstructed: whatever escape sequences the
 // program emits are applied by the emulator, exactly as a real terminal would.
 import { createRequire } from 'module';
+import type { ScreenCell, ScreenRow } from './screen-assert.js';
 
 const require = createRequire(import.meta.url);
+
+export interface ReadOptions {
+  /**
+   * Keep blank rows at the end of the range. Off by default, since a viewport
+   * is mostly empty; on when a block assertion needs the blank line that closes
+   * a transcript step, which is otherwise trimmed away.
+   */
+  keepTrailingBlanks?: boolean;
+}
+
+export type ScreenScope = 'viewport' | 'scrollback';
 
 export interface PtyDriverOptions {
   command: string;
@@ -28,9 +40,15 @@ export interface PtyDriver {
   /** Wait for output to go quiet, then force the emulator to finish parsing. */
   settle(quietMs?: number): Promise<void>;
   /** The visible viewport, as plain-text rows (trailing blank rows trimmed). */
-  snapshot(): string[];
+  snapshot(opts?: ReadOptions): string[];
   /** Scrollback + viewport, as plain-text rows (trailing blank rows trimmed). */
-  transcript(): string[];
+  transcript(opts?: ReadOptions): string[];
+  /**
+   * The same rows, with the colour and attribute of every cell behind them.
+   * The emulator has carried these all along; this is what exposes them so a
+   * test can assert the transcript's colours and not just its text.
+   */
+  cells(scope: ScreenScope, opts?: ReadOptions): ScreenRow[];
   kill(): void;
 }
 
@@ -42,7 +60,20 @@ interface PtyProcess {
   kill(): void;
 }
 
-interface XtermLine { translateToString(trim: boolean): string; }
+interface XtermCell {
+  getChars(): string;
+  getFgColor(): number;
+  getFgColorMode(): number;
+  /** Attribute getters return the raw bit, not a boolean — coerce before use. */
+  isBold(): number;
+  isDim(): number;
+  isItalic(): number;
+}
+interface XtermLine {
+  translateToString(trim: boolean): string;
+  length: number;
+  getCell(x: number): XtermCell | undefined;
+}
 interface XtermBuffer { baseY: number; length: number; getLine(i: number): XtermLine | null; }
 interface XtermTerminal { write(data: string, cb?: () => void): void; resize(cols: number, rows: number): void; buffer: { active: XtermBuffer }; }
 
@@ -85,16 +116,52 @@ export function createPtyDriver(opts: PtyDriverOptions): PtyDriver {
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const flush = () => new Promise<void>((resolve) => term.write('', () => resolve()));
 
-  function readLines(from: number, count: number): string[] {
+  function readLines(from: number, count: number, opts?: ReadOptions): string[] {
     const buf = term.buffer.active;
     const lines: string[] = [];
     for (let i = 0; i < count; i++) {
       const line = buf.getLine(from + i);
       lines.push(line ? line.translateToString(true) : '');
     }
-    while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
+    if (!opts?.keepTrailingBlanks) {
+      while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
+    }
     return lines;
   }
+
+  function readCells(from: number, count: number, opts?: ReadOptions): ScreenRow[] {
+    const buf = term.buffer.active;
+    const rows: ScreenRow[] = [];
+    for (let i = 0; i < count; i++) {
+      const line = buf.getLine(from + i);
+      const text = line ? line.translateToString(true) : '';
+      const cells: ScreenCell[] = [];
+      for (let x = 0; line && x < text.length; x++) {
+        const cell = line.getCell(x);
+        if (!cell) break;
+        cells.push({
+          char: cell.getChars(),
+          fg: cell.getFgColor(),
+          fgMode: cell.getFgColorMode(),
+          // The getters hand back the raw attribute bit (isDim() is 134217728,
+          // not 1), so coerce here rather than in every assertion.
+          bold: !!cell.isBold(),
+          dim: !!cell.isDim(),
+          italic: !!cell.isItalic(),
+        });
+      }
+      rows.push({ text, cells });
+    }
+    if (!opts?.keepTrailingBlanks) {
+      while (rows.length && rows[rows.length - 1].text.trim() === '') rows.pop();
+    }
+    return rows;
+  }
+
+  const rangeFor = (scope: ScreenScope): [number, number] =>
+    scope === 'viewport'
+      ? [term.buffer.active.baseY, rows]
+      : [0, term.buffer.active.length];
 
   return {
     send: (data: string) => proc.write(data),
@@ -148,12 +215,17 @@ export function createPtyDriver(opts: PtyDriverOptions): PtyDriver {
       await flush();
     },
 
-    snapshot() {
-      return readLines(term.buffer.active.baseY, rows);
+    snapshot(opts) {
+      return readLines(term.buffer.active.baseY, rows, opts);
     },
 
-    transcript() {
-      return readLines(0, term.buffer.active.length);
+    transcript(opts) {
+      return readLines(0, term.buffer.active.length, opts);
+    },
+
+    cells(scope, opts) {
+      const [from, count] = rangeFor(scope);
+      return readCells(from, count, opts);
     },
 
     kill() {

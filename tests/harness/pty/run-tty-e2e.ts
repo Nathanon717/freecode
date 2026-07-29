@@ -1,4 +1,5 @@
 import { createPtyDriver } from './driver.js';
+import { matchBlock, matchStyles, type ScreenRow, type StyleExpectation } from './screen-assert.js';
 
 export interface TtyStep {
   name?: string;
@@ -24,6 +25,19 @@ export interface TtyStep {
   // a resize leaving a second, ghost copy of the input frame ("> " prompt) on
   // screen, where the correct state has exactly one.
   screenCounts?: Record<string, number>;
+  // Consecutive rows that must appear verbatim on the viewport. Blank lines are
+  // significant, so unlike screenContains this can enforce layout: divider
+  // spacing, the blank line between response text and a tool call, preview
+  // indentation. A line may be "*" (any one row), "..." (any number of rows), or
+  // "re:<pattern>" (regex, for width-dependent content such as the divider).
+  screenBlock?: string[];
+  // The same, against scrollback + viewport. A full multi-step turn is taller
+  // than the viewport, so anything beyond one short step needs this.
+  transcriptBlock?: string[];
+  // Colour and attribute assertions on the cells behind on-screen text — the
+  // one thing substring matching can never reach. Only non-blank cells are
+  // checked. See screen-assert.ts for the colour naming.
+  screenStyles?: StyleExpectation[];
   // Override the per-step quiet-settle window (ms).
   quietMs?: number;
 }
@@ -67,7 +81,26 @@ function applyMask(text: string, mask?: string[]): string {
   return out;
 }
 
+/** Row-wise mask, so a block assertion sees the same text a substring one does. */
+function maskRows(rows: string[], mask?: string[]): string[] {
+  if (!mask?.length) return rows;
+  return rows.map((row) => applyMask(row, mask));
+}
+
 const TTY_TIMING = !!process.env.TTY_TIMING;
+
+/**
+ * Authoring aid for block assertions: `TTY_DUMP=1` prints each step's rendered
+ * rows, numbered and quoted, so a `screenBlock` can be copied from what the app
+ * actually drew instead of guessed at. Blank rows are shown, since they are the
+ * part a block assertion exists to pin. Pure diagnostics — changes nothing.
+ */
+const TTY_DUMP = !!process.env.TTY_DUMP;
+
+function dumpRows(label: string, rows: string[]): void {
+  console.log(`\n--- ${label} (${rows.length} rows) ---`);
+  rows.forEach((row, i) => console.log(`${String(i).padStart(3)} ${JSON.stringify(row)}`));
+}
 
 export async function runTtyE2eTest(opts: {
   testName: string;
@@ -131,6 +164,7 @@ export async function runTtyE2eTest(opts: {
       await driver.settle(step.quietMs ?? (fastConfirmed ? 100 : 350));
 
       const screen = applyMask(driver.snapshot().join('\n'), tty.mask);
+      if (TTY_DUMP) dumpRows(label, maskRows(driver.snapshot({ keepTrailingBlanks: true }), tty.mask));
       for (const needle of step.screenContains ?? []) {
         if (!screen.includes(needle)) {
           failures.push(`[${label}] screen missing: ${JSON.stringify(needle)}`);
@@ -145,6 +179,29 @@ export async function runTtyE2eTest(opts: {
         const got = needle ? screen.split(needle).length - 1 : 0;
         if (got !== want) {
           failures.push(`[${label}] screen has ${got}×${JSON.stringify(needle)}, expected ${want}`);
+        }
+      }
+
+      // Blank rows carry layout, so blocks read with keepTrailingBlanks: a step
+      // whose contract ends in a blank line would otherwise have it trimmed off.
+      if (step.screenBlock?.length) {
+        const rows = maskRows(driver.snapshot({ keepTrailingBlanks: true }), tty.mask);
+        for (const failure of matchBlock(rows, step.screenBlock)) {
+          failures.push(`[${label}] ${failure}`);
+        }
+      }
+      if (step.transcriptBlock?.length) {
+        const rows = maskRows(driver.transcript({ keepTrailingBlanks: true }), tty.mask);
+        for (const failure of matchBlock(rows, step.transcriptBlock)) {
+          failures.push(`[${label}] ${failure}`);
+        }
+      }
+      if (step.screenStyles?.length) {
+        // Unmasked: masking rewrites the text without touching the cells behind
+        // it, which would misalign every column index.
+        const rows: ScreenRow[] = driver.cells('scrollback');
+        for (const failure of matchStyles(rows, step.screenStyles)) {
+          failures.push(`[${label}] ${failure}`);
         }
       }
       phase(label, ts, failsBefore);

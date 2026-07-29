@@ -43,13 +43,30 @@
       {
         "name": "press q - the screen is wiped, and the still-live history is reprinted with it",
         "send": "q",
-        "screenContains": [
-          "still sent to the model",
-          "Say the magic word",
+        "screenBlock": [
+          "Conversation history (4 messages, still sent to the model):",
+          "",
+          "> Say the magic word",
           "Checking a file first.",
+          "",
+          "Looking for the magic word",
           "read(src/util/guards.ts)",
-          "export function isRecord",
+          "re:^  1: export function isRecord",
+          "*",
+          "re:^  2:",
+          "*",
+          "  3: }",
+          "",
+          "re:^─+$",
+          "",
           "xyzzy-first-turn"
+        ],
+        "screenStyles": [
+          { "text": "read(src/util/guards.ts)", "fg": "rgb" },
+          { "text": "Looking for the magic word", "fg": "rgb" },
+          { "text": "  3: }", "dim": true },
+          { "text": "Conversation history", "dim": true },
+          { "text": "xyzzy-first-turn", "fg": "default", "dim": false }
         ],
         "quietMs": 1500
       },

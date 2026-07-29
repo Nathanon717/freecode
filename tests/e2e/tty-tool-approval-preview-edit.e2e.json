@@ -22,6 +22,11 @@
           "-LINE-001: changelog entry text for this line",
           "+LINE-XYZ-REPLACED: changelog entry text for this line",
           "Enter to confirm · Esc to deny"
+        ],
+        "screenStyles": [
+          { "text": "-LINE-001: changelog entry text for this line", "fg": "red" },
+          { "text": "+LINE-XYZ-REPLACED: changelog entry text for this line", "fg": "green" },
+          { "text": "edit(tests/e2e/long-preview.fixture.txt)", "fg": "rgb" }
         ]
       },
       {

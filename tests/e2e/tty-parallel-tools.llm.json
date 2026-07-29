@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "comment": "Two tool calls in ONE step, then a second step. This is the only fixture that emits parallel calls, so it is what exercises writeTranscriptToolLeadIn's blank-line-between-parallel-calls rule and the ToolCallHeaderRows preamble measurement (non-zero for the first call, zero for the second). Reads rather than writes: TTY tests run with cwd=ROOT, so a writing tool would litter the repo. Only the first call carries a rationale, so the test also pins that a call without one still gets its separator.",
+  "allowUnusedSteps": true,
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "messageCount": 1,
+        "mustContain": ["Read both helpers"]
+      },
+      "response": {
+        "text": "Reading both helpers.",
+        "toolCalls": [
+          {
+            "name": "read",
+            "args": {
+              "rationale": "Checking the type guard first",
+              "path": "src/util/guards.ts"
+            }
+          },
+          {
+            "name": "read",
+            "args": { "path": "src/util/keyboard.ts" }
+          }
+        ],
+        "usage": { "promptTokens": 12, "outputTokens": 6, "totalTokens": 18 }
+      }
+    },
+    {
+      "match": { "turn": 2 },
+      "response": {
+        "text": "xyzzy-parallel-done",
+        "usage": { "promptTokens": 24, "outputTokens": 4, "totalTokens": 28 }
+      }
+    }
+  ]
+}

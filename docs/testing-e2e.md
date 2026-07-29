@@ -275,11 +275,110 @@ Omit `turns`/`expect`; the `tty` block fully describes the run.
   - `waitForMs`: Override the `waitFor` budget (default `8000`). Raise it for heavy steps (e.g. running a real subprocess) that can stall under the CPU contention of many TTY e2e tests running in parallel.
   - `screenContains` / `screenAbsent`: Substrings that must / must not appear on the rendered viewport.
   - `screenCounts`: `{ "<substring>": N }` — each substring must appear exactly `N` times on the viewport. Catches stale duplicates that presence/absence can't, e.g. a resize leaving a second ghost copy of the input frame (`"> / for commands"` should count `1`, not `2`).
+  - `screenBlock` / `transcriptBlock`: consecutive rows that must appear verbatim — see [Block assertions](#block-assertions).
+  - `screenStyles`: colour and attribute assertions on the cells behind on-screen text — see [Colour assertions](#colour-assertions).
   - `quietMs`: Override the per-step settle window (default `350`).
 - `exit`: Keystrokes sent after the last step to end the process. Default `"\u0003"` (Ctrl-C); the CLI has no `/exit` command.
 - `expectExit`: Require the process to exit after `exit`.
 - `exitCode`: Expected exit code when it exits.
 - `mask`: Optional regex strings stripped from the screen before substring checks, for volatile content (e.g. token counts).
+
+### Block assertions
+
+`screenContains` cannot express layout. A blank line in the wrong place, a
+missing divider, a preview that lost its indent — all pass. `screenBlock`
+(viewport) and `transcriptBlock` (scrollback + viewport) assert **consecutive
+rows verbatim**, so blank lines are significant and the transcript's documented
+turn layout becomes enforceable:
+
+```json
+{
+  "name": "the turn renders with its documented spacing",
+  "transcriptBlock": [
+    "Reading both helpers.",
+    "",
+    "",
+    "Checking the type guard first",
+    "read(src/util/guards.ts)",
+    "re:^  1: export function isRecord",
+    "*",
+    "  3: }",
+    "",
+    "read(src/util/keyboard.ts)",
+    "...",
+    "re:^─+$",
+    "",
+    "xyzzy-parallel-done"
+  ]
+}
+```
+
+Each line is one of:
+
+- a **literal** — must match the row exactly. Trailing whitespace is ignored on
+  both sides; **leading whitespace is significant**, since indentation is
+  precisely what these assertions exist to pin.
+- `"*"` — matches any one row. Use for rows whose content is volatile (a preview
+  line that soft-wraps at the terminal edge).
+- `"..."` — matches any number of rows, including none. Use to bridge chrome you
+  do not want to pin.
+- `"re:<pattern>"` — a regex. Use for width-dependent rows: the step divider is
+  as wide as the terminal, so `"re:^─+$"`.
+
+Use `transcriptBlock` for anything longer than a few rows: `screenBlock` sees
+only the viewport, and a full multi-step turn with result previews is taller
+than it.
+
+**Authoring:** run the e2e test with `TTY_DUMP=1` and copy the rows out of the
+dump rather than guessing them.
+
+```bash
+TTY_DUMP=1 npx tsx tests/harness/run-e2e.ts --no-build --only=tty-parallel-tools
+```
+
+Each step prints its rendered rows, numbered and quoted, blank rows included.
+On failure the matcher prints the wanted block against the rows it found and
+marks the ones that differ, so a break says *how* the layout changed.
+
+### Colour assertions
+
+`screenStyles` asserts the colour and attributes of the cells behind on-screen
+text — the one thing substring matching can never reach. The emulator has
+carried these attributes all along; the driver exposes them via `cells()`.
+
+```json
+{
+  "screenStyles": [
+    { "text": "-LINE-001: changelog entry", "fg": "red" },
+    { "text": "+LINE-XYZ-REPLACED: changelog entry", "fg": "green" },
+    { "text": "  3: }", "dim": true },
+    { "text": "read(src/util/guards.ts)", "fg": "rgb" }
+  ]
+}
+```
+
+`fg` accepts a chalk colour name (`red`, `green`, `magentaBright`, …), an
+explicit `#rrggbb`, or one of the mode-only matchers:
+
+| `fg` | matches |
+| --- | --- |
+| `"default"` | unstyled — the terminal's default foreground |
+| `"any"` | anything but default |
+| `"palette"` | a 16/256-colour palette entry (what chalk's named colours emit) |
+| `"rgb"` | a truecolor value, without pinning which |
+
+`bold`, `dim` and `italic` are booleans. Only **non-blank** cells are checked: a
+space carries whatever attributes were active when it was written, which is real
+but not worth pinning a test to.
+
+Use the mode-only forms for anything drawn in the **banner colour** — tool call
+lines, rationales, the `> ` prompt echo. That colour is `chalk.rgb()` from a
+palette that advances per launch, so `"rgb"` pins that the element is still
+coloured without welding the test to one pastel. Semantically fixed colours
+(a diff's red/green, a dim preview) should be pinned by name.
+
+Colour assertions are TTY-only. In script mode stdout is a pipe, so chalk emits
+no styling at all and there is nothing to assert.
 
 Use `npm run pty` to drive the live CLI interactively and print the rendered screen after each step — the fastest way to visually verify a UI change without writing a full e2e file:
 

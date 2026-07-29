@@ -1,0 +1,66 @@
+{
+  "name": "tty-parallel-tools",
+  "description": "Two tool calls in one step render with the transcript's documented spacing: one blank line between the response text and the first call, its rationale directly above it with no blank between, one blank line between the two parallel calls, and a single shared divider closing the step before the turn's final text. Asserted as an exact block, since blank-line placement is the whole contract and substring checks cannot see it",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "tty-parallel-tools.llm.json",
+  "env": {
+    "FREECODE_AUTO_CONFIRM": "1"
+  },
+  "config": {
+    "toolConfirmation": "auto"
+  },
+  "tty": {
+    "cols": 80,
+    "rows": 40,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type the prompt",
+        "send": "Read both helpers",
+        "screenContains": ["> Read both helpers"]
+      },
+      {
+        "name": "submit - both calls render in one step, then the turn's final text",
+        "send": "\r",
+        "waitFor": "xyzzy-parallel-done",
+        "waitForMs": 20000,
+        "transcriptBlock": [
+          "> Read both helpers",
+          "...",
+          "Reading both helpers.",
+          "",
+          "",
+          "Checking the type guard first",
+          "read(src/util/guards.ts)",
+          "re:^  1: export function isRecord",
+          "*",
+          "re:^  2:",
+          "*",
+          "  3: }",
+          "",
+          "read(src/util/keyboard.ts)",
+          "re:^  1: /\\*\\* Terminals send",
+          "*",
+          "re:^  2: export function isBackspaceKey",
+          "re:^  3:",
+          "  4: }",
+          "",
+          "re:^─+$",
+          "",
+          "xyzzy-parallel-done"
+        ],
+        "screenStyles": [
+          { "text": "read(src/util/guards.ts)", "fg": "rgb" },
+          { "text": "read(src/util/keyboard.ts)", "fg": "rgb" },
+          { "text": "Checking the type guard first", "fg": "rgb" },
+          { "text": "  4: }", "dim": true },
+          { "text": "xyzzy-parallel-done", "fg": "default", "dim": false }
+        ],
+        "quietMs": 1500
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}
