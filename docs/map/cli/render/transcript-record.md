@@ -39,7 +39,9 @@ into it.
 [transcript-renderer.md](transcript-renderer.md) does the recording — the hooks
 sit inside `writeToolCallHeader`, `writeToolResultPreview`, `writeToolStepResult`,
 `writeTranscriptText` and `endTranscriptStep`, so a caller that renders normally
-records automatically. Prompts come from `cli/session-modes.ts`, the fake
+records automatically. Prompts come from `cli/session-modes.ts` — which gates the
+call on `isSlashCommand` ([../slash-commands.md](../slash-commands.md)), since a
+slash command is UI and never reaches the model — the fake
 provider records its own chunks (`providers/fake.ts`), and
 [../command-dispatcher.md](../command-dispatcher.md) clears the record alongside
 the history on `/clear`.

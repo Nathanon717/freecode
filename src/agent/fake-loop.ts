@@ -74,8 +74,10 @@ export async function runFakeLlm(
       if (promptTokens !== undefined) {
         options.onStepUsage?.({ providerId, modelId, promptTokens });
       }
-      // runFakeModel already wrote the text to stdout; update renderer state.
-      if (generated.text) notifyTranscriptChunk(generated.text);
+      // runFakeModel already wrote the text to stdout; update renderer state with
+      // what it actually wrote (newline-terminated), not the model's raw text —
+      // the step machine keys the tool lead-in off that trailing newline.
+      if (generated.writtenText) notifyTranscriptChunk(generated.writtenText);
 
       if (generated.toolCalls.length === 0) {
         assertFakeFixtureComplete();

@@ -60,6 +60,15 @@ export interface FakeModelCall {
 
 export interface FakeModelResult {
   text: string;
+  /**
+   * The text exactly as it was written to the screen — the chunks joined, plus
+   * the terminating newline this module adds. `text` is the model's own output
+   * and may lack that newline, so a caller that reports what was painted (the
+   * transcript step state machine) must use this instead: told the text ends
+   * without a newline, the renderer emits a second blank line before the next
+   * tool call that is not on screen.
+   */
+  writtenText: string;
   usage: FakeUsage;
   toolCalls: FakeToolCall[];
 }
@@ -390,10 +399,11 @@ export function runFakeModel(call: FakeModelCall): Promise<FakeModelResult> {
     // Recorded here rather than in fake-loop.ts, which notifies the step state
     // machine with the joined text: the record has to hold what was written,
     // including the terminating newline below.
-    for (const chunk of chunks) { process.stdout.write(chunk); recordTranscriptText(chunk); }
+    let writtenText = '';
+    for (const chunk of chunks) { process.stdout.write(chunk); recordTranscriptText(chunk); writtenText += chunk; }
     // Terminate each step's text with a newline so a pre-tool-call preamble does
     // not glue onto the next step's text on stdout ("…now.File created…").
-    if (chunks.length > 0 && !chunks[chunks.length - 1].endsWith('\n')) { process.stdout.write('\n'); recordTranscriptText('\n'); }
+    if (chunks.length > 0 && !chunks[chunks.length - 1].endsWith('\n')) { process.stdout.write('\n'); recordTranscriptText('\n'); writtenText += '\n'; }
 
     appendTrace({
       callIndex: stepNumber,
@@ -414,6 +424,7 @@ export function runFakeModel(call: FakeModelCall): Promise<FakeModelResult> {
 
     return Promise.resolve({
       text: chunks.join(''),
+      writtenText,
       usage,
       toolCalls,
     });

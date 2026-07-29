@@ -29,7 +29,6 @@
           "...",
           "Reading both helpers.",
           "",
-          "",
           "Checking the type guard first",
           "read(src/util/guards.ts)",
           "re:^  1: export function isRecord",

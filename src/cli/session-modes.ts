@@ -7,7 +7,7 @@ import type {
   ToolCallPreview,
 } from "../agent/tools/index.js";
 import { loadConfig, resolveModelSettings } from "../config/index.js";
-import { getCommandCompletion, getFilteredCommands } from "./slash-commands.js";
+import { getCommandCompletion, getFilteredCommands, isSlashCommand } from "./slash-commands.js";
 import {
   buildToolCallSkeleton,
   nextToolFieldCaret,
@@ -198,7 +198,11 @@ async function readLineWithAutocomplete(
         resetSubmittedInputArea();
         parkCursorInScrollRegion();
         process.stdout.write(formatPromptEcho(submitted, '\r\n') + "\r\n");
-        recordTranscriptPrompt(submitted);
+        // Slash commands are UI, not conversation: they never reach the model,
+        // and their own output (menus, pickers) is not recorded either. Echoing
+        // "> /config" back inside a replayed conversation body would read as a
+        // turn the model was sent.
+        if (!isSlashCommand(submitted)) recordTranscriptPrompt(submitted);
         rawSession.close(submitted);
         return;
       }

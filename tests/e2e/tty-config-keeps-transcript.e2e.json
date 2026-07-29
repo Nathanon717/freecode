@@ -1,6 +1,6 @@
 {
   "name": "tty-config-keeps-transcript",
-  "description": "Leaving /config wipes the screen but not the conversation, so the transcript is reprinted as it was rather than left looking like a fresh session. The replay comes from the render record, so the tool call line and its result preview come back too, not just the text. /clear, which really does empty the history, still lands on a bare banner. /model and /eval share the same dispatcher call site but cannot be driven here - the model picker refuses to open under FREECODE_FAKE_LLM=1",
+  "description": "Leaving /config wipes the screen but not the conversation, so the transcript is reprinted as it was rather than left looking like a fresh session. The replay comes from the render record, so the tool call line and its result preview come back too, not just the text. The '> /config' echo itself is NOT replayed - a slash command never reaches the model, so it is not part of the conversation the record holds. /clear, which really does empty the history, still lands on a bare banner. /model and /eval share the same dispatcher call site but cannot be driven here - the model picker refuses to open under FREECODE_FAKE_LLM=1",
   "model": "mock:gpt-freecode-test",
   "llmFixture": "tty-config-keeps-transcript.llm.json",
   "env": {
@@ -68,6 +68,7 @@
           { "text": "Conversation history", "dim": true },
           { "text": "xyzzy-first-turn", "fg": "default", "dim": false }
         ],
+        "screenAbsent": ["> /config"],
         "quietMs": 1500
       },
       {
@@ -106,6 +107,7 @@
           "> Say it again",
           "xyzzy-second-turn"
         ],
+        "screenAbsent": ["> /config"],
         "screenCounts": {
           "xyzzy-first-turn": 1,
           "xyzzy-second-turn": 1,

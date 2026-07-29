@@ -41,6 +41,15 @@ interface FakeModelCall {
 
 interface FakeModelResult {
   text: string;
+  /**
+   * The text exactly as it was written to the screen — the chunks joined, plus
+   * the terminating newline this module adds. `text` is the model's own output
+   * and may lack that newline, so a caller that reports what was painted (the
+   * transcript step state machine) must use this instead: told the text ends
+   * without a newline, the renderer emits a second blank line before the next
+   * tool call that is not on screen.
+   */
+  writtenText: string;
   usage: FakeUsage;
   toolCalls: FakeToolCall[];
 }
@@ -72,6 +81,10 @@ createFakeNativeLanguageModel(modelId: string, modelSettings: FakeNativeModelSet
 runFakeModel(call: FakeModelCall): Promise<FakeModelResult>
 ```
 <!-- END GENERATED EXPORTS -->
+
+## Export notes
+
+- `FakeModelResult.text` vs `.writtenText` — `text` is the model's own output (what goes into history and the trace); `writtenText` is what this module actually painted, i.e. the chunks plus the newline it appends to terminate the step. Anything reporting *what is on screen* must use `writtenText`: `fake-loop.ts` feeds it to `notifyTranscriptChunk`, and getting that wrong put a phantom blank line above every tool call (see `docs/bug log/29-07-2026b.md`).
 
 ## Read When
 

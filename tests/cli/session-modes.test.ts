@@ -9,6 +9,7 @@ import {
 } from 'vitest';
 import type { Interface } from 'readline';
 import { createInteractiveMode } from '../../src/cli/session-modes.js';
+import { clearTranscriptRecord, getTranscriptRecord } from '../../src/cli/render/transcript-record.js';
 
 // ---------------------------------------------------------------------------
 // Capture raw-key-session handlers so tests can fire key events directly.
@@ -68,7 +69,11 @@ vi.mock('../../src/providers/quota/cache.js', () => ({
   saveQuotaToCache: vi.fn(),
 }));
 
-vi.mock('../../src/cli/slash-commands.js', () => ({
+// Partial: only the completion helpers are stubbed. `isSlashCommand` stays real,
+// so the "slash commands are not recorded" branch is exercised, not faked.
+vi.mock('../../src/cli/slash-commands.js', async (importOriginal) => ({
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+  ...(await importOriginal<typeof import('../../src/cli/slash-commands.js')>()),
   getCommandCompletion: vi.fn(() => null),
   getFilteredCommands: vi.fn(() => [] as string[]),
 }));
@@ -710,6 +715,24 @@ describe('createInteractiveMode — detailed', () => {
       capturedRawSession.onKey?.('\r');
       await p;
       expect(getInputBuffer()).toBe('');
+    });
+
+    // The record is replayed as the conversation after a full-screen wipe, so it
+    // must hold only what the model was actually sent. A slash command is UI.
+    it.each([
+      ['a normal prompt is recorded', 'say hi', ['say hi']],
+      ['a slash command is not recorded', '/config', []],
+      ['a leading-space slash command is not recorded', '  /config', []],
+      ['an unknown slash command is not recorded either', '/confgi', []],
+    ])('\\r: %s', async (_label, input, expected) => {
+      clearTranscriptRecord();
+      const p = startReadInput();
+      setInputBuffer(input);
+      capturedRawSession.onKey?.('\r');
+      await p;
+      const prompts = getTranscriptRecord().entries.flatMap(e => (e.kind === 'prompt' ? [e.text] : []));
+      expect(prompts).toEqual(expected);
+      clearTranscriptRecord();
     });
 
     // --- Tab completion (needs an active completion) ---

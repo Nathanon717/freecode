@@ -32,7 +32,7 @@ Format: filename (linecount)
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
   - [`conversation.ts`](agent/conversation.md) (60) — Session Controller
-  - [`fake-loop.ts`](agent/fake-loop.md) (120) — Fake-Fixture Turn Loop
+  - [`fake-loop.ts`](agent/fake-loop.md) (122) — Fake-Fixture Turn Loop
   - [`loop.ts`](agent/loop.md) (444) — Agent Loop
   - [`parsed-tools.ts`](agent/parsed-tools.md) (268) — Parsed-Tools Harness
   - [`stream-turn.ts`](agent/stream-turn.md) (106) — Recovering Stream Turn
@@ -88,9 +88,9 @@ Format: filename (linecount)
   - [`transcript-replay.ts`](cli/render/transcript-replay.md) (79) — Post-Wipe Transcript Replay
 - `src/cli/`
   - [`scripted-mode.ts`](cli/scripted-mode.md) (96) — Scripted Session Mode
-  - [`session-modes.ts`](cli/session-modes.md) (434) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (438) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (77) — CLI Session Loop
-  - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
+  - [`slash-commands.ts`](cli/slash-commands.md) (76) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
 - `src/cli/tools/`
   - [`tool-approval.ts`](cli/tools/tool-approval.md) (297) — Tool Approval Prompts
@@ -123,7 +123,7 @@ Format: filename (linecount)
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
   - [`blocklist-purge.ts`](providers/blocklist-purge.md) (62) — Blocklisted Stored Model Purge
-  - [`fake.ts`](providers/fake.md) (424) — Fake LLM Fixtures
+  - [`fake.ts`](providers/fake.md) (435) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
   - [`model-data.ts`](providers/model-data.md) (279) — Unified Model Store
   - [`model-quirks.ts`](providers/model-quirks.md) (38) — Per-Model Static Quirks

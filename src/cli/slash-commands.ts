@@ -18,6 +18,17 @@ export const SLASH_COMMANDS: SlashCommandInfo[] = [
 
 const SLASH_COMMAND_NAMES = SLASH_COMMANDS.map(({ command }) => command);
 
+/**
+ * Whether `dispatchCommand` will handle this input as a command rather than
+ * send it to the model. Anything starting with `/` is a command — an unknown
+ * one is rejected with "No command: …", never forwarded. Shared with the
+ * dispatcher so callers that must agree with it (the transcript record, which
+ * holds the conversation only) cannot drift from what it actually does.
+ */
+export function isSlashCommand(input: string): boolean {
+  return input.trim().startsWith('/');
+}
+
 function fuzzyMatch(target: string, query: string): boolean {
   if (!query) return true;
   let qi = 0;

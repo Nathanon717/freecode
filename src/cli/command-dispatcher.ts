@@ -17,7 +17,7 @@ import { formatCapturedProviderUsages } from '../providers/adapters/openai-compa
 import { redrawBanner } from './render/banner.js';
 import { replayTranscript } from './render/transcript-replay.js';
 import { clearTranscriptRecord } from './render/transcript-record.js';
-import { showHelp } from './slash-commands.js';
+import { isSlashCommand, showHelp } from './slash-commands.js';
 import { parseToolInvocation } from './tools/tool-invocation.js';
 import type { CoreMessage } from 'ai';
 import type { Conversation } from '../agent/conversation.js';
@@ -250,7 +250,7 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
     return 'continue';
   }
 
-  if (trimmed.startsWith('/')) {
+  if (isSlashCommand(trimmed)) {
     const name = trimmed.split(' ')[0];
     console.log(chalk.red(`No command: ${name}`));
     return 'continue';

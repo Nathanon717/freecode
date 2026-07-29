@@ -46,7 +46,9 @@ vi.mock('../../src/cli/render/banner.js', () => ({
   getBannerColorRGB: () => [170, 232, 255] as [number, number, number],
 }));
 
-vi.mock('../../src/cli/slash-commands.js', () => ({
+vi.mock('../../src/cli/slash-commands.js', async (importOriginal) => ({
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+  ...(await importOriginal<typeof import('../../src/cli/slash-commands.js')>()),
   showHelp: vi.fn(),
 }));
 
