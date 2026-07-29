@@ -33,7 +33,7 @@ Format: filename (linecount)
 - `src/agent/`
   - [`conversation.ts`](agent/conversation.md) (60) — Session Controller
   - [`fake-loop.ts`](agent/fake-loop.md) (120) — Fake-Fixture Turn Loop
-  - [`loop.ts`](agent/loop.md) (449) — Agent Loop
+  - [`loop.ts`](agent/loop.md) (444) — Agent Loop
   - [`parsed-tools.ts`](agent/parsed-tools.md) (268) — Parsed-Tools Harness
   - [`stream-turn.ts`](agent/stream-turn.md) (106) — Recovering Stream Turn
 - `src/agent/subagents/`
@@ -65,7 +65,7 @@ Format: filename (linecount)
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
   - [`toggles.ts`](cli/chrome/toggles.md) (100) — Footer Toggle State
 - `src/cli/`
-  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (264) — Command Dispatcher
+  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (269) — Command Dispatcher
 - `src/cli/eval/`
   - [`custom-eval-menu.ts`](cli/eval/custom-eval-menu.md) (361) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval/eval-dots.md) (28) — Eval Status Circle Renderers
@@ -81,12 +81,14 @@ Format: filename (linecount)
 - `src/cli/render/`
   - [`banner.ts`](cli/render/banner.md) (124) — Startup Banner
   - [`markdown-renderer.ts`](cli/render/markdown-renderer.md) (480) — Markdown Renderer
+  - [`transcript-format.ts`](cli/render/transcript-format.md) (192) — Transcript Formatters
   - [`transcript-options.ts`](cli/render/transcript-options.md) (66) — Transcript Stream + Options
-  - [`transcript-renderer.ts`](cli/render/transcript-renderer.md) (486) — Agent Transcript Formatting
-  - [`transcript-replay.ts`](cli/render/transcript-replay.md) (82) — Post-Wipe Transcript Replay
+  - [`transcript-record.ts`](cli/render/transcript-record.md) (151) — Rendered Transcript Record
+  - [`transcript-renderer.ts`](cli/render/transcript-renderer.md) (391) — Agent Transcript Formatting
+  - [`transcript-replay.ts`](cli/render/transcript-replay.md) (79) — Post-Wipe Transcript Replay
 - `src/cli/`
   - [`scripted-mode.ts`](cli/scripted-mode.md) (96) — Scripted Session Mode
-  - [`session-modes.ts`](cli/session-modes.md) (436) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (434) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (77) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (65) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
@@ -121,7 +123,7 @@ Format: filename (linecount)
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
   - [`blocklist-purge.ts`](providers/blocklist-purge.md) (62) — Blocklisted Stored Model Purge
-  - [`fake.ts`](providers/fake.md) (420) — Fake LLM Fixtures
+  - [`fake.ts`](providers/fake.md) (424) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
   - [`model-data.ts`](providers/model-data.md) (279) — Unified Model Store
   - [`model-quirks.ts`](providers/model-quirks.md) (38) — Per-Model Static Quirks

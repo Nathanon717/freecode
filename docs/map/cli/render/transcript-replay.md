@@ -12,36 +12,49 @@ The obvious approach — repaint from `util/screen-buffer.ts`, as the resize
 handler in `cli/chrome/bottom-ui.ts` does — does not work here. The raw pickers'
 own cleanup writes `\x1b[${rows}A\r\x1b[J` (`cli/menus/raw-picker.ts`), and
 `hasFullScreenErase` treats `\x1b[J` as a wipe, so the buffer is already empty by
-the time a menu exits. Rendering from `Conversation.messages` instead makes
-screen-matches-history true by construction rather than by bookkeeping.
+the time a menu exits.
 
 ## What it prints
 
-A summary, not a re-run of the original stream: user turns, assistant text, and
-one line per tool call via `formatToolCallLine`. **Tool result bodies are
-deliberately omitted** — since tool results began persisting (see
-[../../agent/turn-messages.md](../../agent/turn-messages.md)) they are the bulk
-of a turn, and replaying them would bury the conversation they belong to. History
-longer than `MAX_REPLAYED_MESSAGES` is tail-shown under a `… N earlier messages`
-line; the header always states the true total.
+The conversation as it was, not a summary of it. Entries come from
+[transcript-record.md](transcript-record.md) and go back through the same
+`renderTurn` that drew them live, so divider spacing, rendered markdown, tool
+call lines, result previews and edit diffs all return unchanged. The unit test
+asserts this directly: live paint and replayed body must be byte-identical.
 
-No-op on empty history, which is what keeps `/clear` landing on a bare banner.
+Two things the live paint did not have: a header stating the true
+`Conversation.messages` count (the record is what was *on screen*; the history is
+what is *sent*, and the header states the latter), and a `… N earlier entries not
+shown` line when the record's size cap evicted anything.
+
+No-op on an empty record, which is what keeps `/clear` landing on a bare banner —
+`/clear` empties the record alongside the history.
+
+## State machine handling
+
+Replay drives the module-global turn/step state in `transcript-renderer.ts`, so
+it brackets itself with `resetTranscriptTurnState()`: a clean slate first, so the
+first replayed turn does not open with the divider the last live turn deferred,
+then `resetTranscriptTurnState(true)` after, leaving the machine as a completed
+turn would. Recording is suspended throughout, or the replay would append itself
+to the record it is reading.
 
 ## Key neighbors
 
 [../command-dispatcher.md](../command-dispatcher.md) is the only caller (after
-`/config`, `/model`, `/eval`). `transcript-renderer.ts` supplies the tool-call
-formatting so a replayed call line matches the live one.
+`/config`, `/model`, `/eval`). [transcript-renderer.md](transcript-renderer.md)
+supplies `renderTurn` and `formatPromptEcho`, the latter shared with
+`cli/session-modes.ts` so a replayed prompt echo cannot drift from the live one.
 
 ## Update triggers
 
-A new command that wipes the screen without clearing history, or a change to the
-message shapes stored in `Conversation`.
+A new command that wipes the screen without clearing history, or a change to what
+`transcript-record.ts` stores.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
 ```typescript
-replayTranscript(messages: CoreMessage[], write?: (s: string) => void): void
+replayTranscript(messages: CoreMessage[], options?: TranscriptRuntimeOptions): void
 ```
 <!-- END GENERATED EXPORTS -->

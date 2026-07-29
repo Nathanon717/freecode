@@ -16,7 +16,8 @@ import {
   toolNameBeforeCursor,
 } from "./tools/tool-invocation.js";
 import { runEvalMenu } from "./eval/eval-menu.js";
-import { getBannerColor } from "./render/banner.js";
+import { formatPromptEcho } from "./render/transcript-renderer.js";
+import { recordTranscriptPrompt } from "./render/transcript-record.js";
 import type { CliSessionMode } from "./session-runner.js";
 import {
   drawBottomUI,
@@ -196,11 +197,8 @@ async function readLineWithAutocomplete(
         setSuggestions([]);
         resetSubmittedInputArea();
         parkCursorInScrollRegion();
-        const displayLines = submitted.split('\n');
-        const displayText = displayLines
-          .map((l, i) => (i === 0 ? getBannerColor()('> ') : '  ') + l)
-          .join('\r\n');
-        process.stdout.write(displayText + "\r\n");
+        process.stdout.write(formatPromptEcho(submitted, '\r\n') + "\r\n");
+        recordTranscriptPrompt(submitted);
         rawSession.close(submitted);
         return;
       }

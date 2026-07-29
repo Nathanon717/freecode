@@ -1,7 +1,7 @@
 {
   "version": 1,
   "model": "mock:gpt-freecode-test",
-  "comment": "One text-only turn; the marker is what the replay has to bring back after /config wipes the screen.",
+  "comment": "One turn with a preamble, a read tool call and a final answer. The replay has to bring back all three — text, the tool call line, and the result preview under it — after /config wipes the screen. Reads rather than creates: TTY tests always run with cwd=ROOT (workspace 'temp' applies only to the verify path), so a writing tool would litter the repo.",
   "allowUnusedSteps": true,
   "steps": [
     {
@@ -11,8 +11,34 @@
         "mustContain": ["Say the magic word"]
       },
       "response": {
-        "text": "xyzzy-first-turn",
+        "text": "Checking a file first.",
+        "toolCalls": [
+          {
+            "name": "read",
+            "args": {
+              "rationale": "Looking for the magic word",
+              "path": "src/util/guards.ts"
+            }
+          }
+        ],
         "usage": { "promptTokens": 12, "outputTokens": 4, "totalTokens": 16 }
+      }
+    },
+    {
+      "match": { "turn": 2 },
+      "response": {
+        "text": "xyzzy-first-turn",
+        "usage": { "promptTokens": 20, "outputTokens": 4, "totalTokens": 24 }
+      }
+    },
+    {
+      "match": {
+        "turn": 3,
+        "mustContain": ["Say it again"]
+      },
+      "response": {
+        "text": "xyzzy-second-turn",
+        "usage": { "promptTokens": 28, "outputTokens": 4, "totalTokens": 32 }
       }
     }
   ]

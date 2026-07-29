@@ -6,6 +6,7 @@ import {
   beginTranscriptTurn,
   endTranscriptStep,
   notifyTranscriptChunk,
+  writeTranscriptText,
 } from "../cli/render/transcript-renderer.js";
 import { renderMarkdown } from "../cli/render/markdown-renderer.js";
 import { log, logError } from "../logger.js";
@@ -120,7 +121,7 @@ export async function executeToolCalls(
 
     if (!toolFn?.execute) {
       toolResultStr = `Unknown tool: "${call.name}". Do not use namespace prefixes (e.g. "repo_browser."). Available tools: ${Object.keys(tools).join(", ")}`;
-      process.stdout.write(`[tool error] ${toolResultStr}\n`);
+      writeTranscriptText(`[tool error] ${toolResultStr}\n`);
     } else {
       // Calls the wrapped execute — handles logging (prints call line + result
       // preview) and user confirmation automatically. It also turns a failing tool
@@ -162,8 +163,7 @@ export async function runParsedToolsLoop(
   let activeMessages: CoreMessage[] = [...baseMessages];
 
   beginTranscriptTurn(); // idempotent if already opened by the loop.ts fallback path
-  process.stdout.write(chalk.blueBright("~ using prompt-based tools\n"));
-  notifyTranscriptChunk("~ using prompt-based tools\n"); // counts as content so lead-in adds blank line
+  writeTranscriptText(chalk.blueBright("~ using prompt-based tools\n")); // counts as content so lead-in adds blank line
   let accText = "";
   let totalTokens = 0;
   let promptTokens: number | undefined;
@@ -210,11 +210,12 @@ export async function runParsedToolsLoop(
       // Final (or only) response — stream it to the user.
       if (stepText) {
         const rendered = renderMarkdown(stepText);
-        process.stdout.write(
-          rendered.endsWith("\n") ? rendered : rendered + "\n",
-        );
+        writeTranscriptText(rendered.endsWith("\n") ? rendered : rendered + "\n");
+      } else {
+        // Nothing was written, but the step still counts as having produced text
+        // for lead-in spacing — state machine only, so nothing is recorded.
+        notifyTranscriptChunk("\n");
       }
-      notifyTranscriptChunk(stepText || "\n");
       accText += stepText;
       // The final answer is the one turn message the loop never appends for
       // itself — every earlier step added its own pair before iterating.
@@ -229,8 +230,7 @@ export async function runParsedToolsLoop(
     // Print any text that appears before the first tool call.
     const textBefore = stepText.slice(0, calls[0].startIdx).trimEnd();
     if (textBefore) {
-      process.stdout.write(renderMarkdown(textBefore) + "\n");
-      notifyTranscriptChunk(textBefore + "\n");
+      writeTranscriptText(renderMarkdown(textBefore) + "\n");
     }
 
     log(

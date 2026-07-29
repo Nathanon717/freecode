@@ -13,7 +13,7 @@ import {
   getLastCapturedAnthropicHeaders,
 } from '../providers/adapters/anthropic.js';
 import { type CostEstimate } from '../providers/anthropic-cost.js';
-import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk, writeToolCallHeader, writeToolStepResult } from '../cli/render/transcript-renderer.js';
+import { beginTranscriptTurn, endTranscriptStep, writeToolCallHeader, writeToolStepResult, writeTranscriptText } from '../cli/render/transcript-renderer.js';
 import { beginToolRenderGate, endToolRenderGate, releaseToolRenderGate } from './tool-render-gate.js';
 import { createMarkdownStreamRenderer } from '../cli/render/markdown-renderer.js';
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
@@ -116,12 +116,7 @@ async function streamWithRetry(
       // Reassigned per attempt by `start` below: a recovered tool-call rejection
       // re-opens the stream, and each attempt renders through its own renderer.
       let mdStream = createMarkdownStreamRenderer();
-      const writeRendered = (rendered: string): void => {
-        if (rendered) {
-          process.stdout.write(rendered);
-          notifyTranscriptChunk(rendered);
-        }
-      };
+      const writeRendered = (rendered: string): void => writeTranscriptText(rendered);
       // When the model emits response text and then a tool call without a
       // trailing newline, that partial line stays in the markdown line buffer.
       // Across the step boundary it would otherwise be held and flushed glued
@@ -242,7 +237,7 @@ async function streamWithRetry(
       writeRendered(mdStream.flush());
       fullText = fullText.trimEnd();
       if (fullText && !fullText.endsWith('\n')) {
-        process.stdout.write('\n');
+        writeTranscriptText('\n');
       }
       endTranscriptStep(false); // close the final step after text is normalised
       const usage = await typedResult.usage;
@@ -259,7 +254,7 @@ async function streamWithRetry(
       if (supportsTools && fullText.length === 0 && !useParsedToolsFallback && isToolsNotSupportedError(error)) {
         useParsedToolsFallback = true;
         setNativeTools(providerId, modelId, false);
-        process.stdout.write(`Note: ${modelId} doesn't support native tool calling — saved. Using prompt-based tools now and automatically next time.\n`);
+        writeTranscriptText(`Note: ${modelId} doesn't support native tool calling — saved. Using prompt-based tools now and automatically next time.\n`);
         log('stream', 'Tool calling rejected by provider; falling back to prompt-based tool protocol', serializeError(error));
         break;
       }
@@ -292,7 +287,7 @@ export async function agentLoop(
   await ensureStoreReady();
   if (process.env.FREECODE_NO_LLM === '1') {
     const msg = 'LLM calls blocked (FREECODE_NO_LLM=1)';
-    process.stdout.write(`Error: ${msg}\n`);
+    writeTranscriptText(`Error: ${msg}\n`);
     return { text: '', error: msg, usage: { totalTokens: 0 }, providerId: 'none', modelId: 'none', quota: null, turnMessages: [] };
   }
 
@@ -320,7 +315,7 @@ export async function agentLoop(
   } catch (error) {
     logError('stream', 'resolveModel failed', error);
     const errMsg = toErrorMessage(error);
-    process.stdout.write(`Error: ${errMsg}\n`);
+    writeTranscriptText(`Error: ${errMsg}\n`);
     return {
       text: '',
       error: errMsg,
@@ -421,17 +416,17 @@ export async function agentLoop(
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);
     log('stream', 'streamText error details', serializeError(error));
     const errMsg = toDetailedErrorMessage(error);
-    if (fullText && !fullText.endsWith('\n')) process.stdout.write('\n');
+    if (fullText && !fullText.endsWith('\n')) writeTranscriptText('\n');
     if (isContextOverflowError(error)) {
-      process.stdout.write(
+      writeTranscriptText(
         `Error: Context window exceeded — the conversation history is too long for this model.\n` +
         `  • Run /clear to drop the history without leaving the session, or\n` +
         `  • Switch to a model with a larger context window (e.g. /model).\n`,
       );
     } else if (isDeadModel) {
-      process.stdout.write(`Error: Model "${modelId}" returned 404 and has been removed from the picker.\n`);
+      writeTranscriptText(`Error: Model "${modelId}" returned 404 and has been removed from the picker.\n`);
     } else {
-      process.stdout.write(`Error: ${errMsg}\n`);
+      writeTranscriptText(`Error: ${errMsg}\n`);
     }
     endTranscriptStep(false);
     const displayError = isContextOverflowError(error)

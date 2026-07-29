@@ -16,6 +16,7 @@ import {
 import { formatCapturedProviderUsages } from '../providers/adapters/openai-compat.js';
 import { redrawBanner } from './render/banner.js';
 import { replayTranscript } from './render/transcript-replay.js';
+import { clearTranscriptRecord } from './render/transcript-record.js';
 import { showHelp } from './slash-commands.js';
 import { parseToolInvocation } from './tools/tool-invocation.js';
 import type { CoreMessage } from 'ai';
@@ -237,6 +238,10 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
 
   if (normalized === '/clear') {
     runtime.session.clearMessages();
+    // The record is what a later wipe replays, so it has to go with the history
+    // it mirrors — otherwise /clear lands on a bare banner and the next /model
+    // brings the cleared conversation back.
+    clearTranscriptRecord();
     resetAnthropicSessionCost();
     await runtime.beforeScreenClear?.();
     redrawBanner();

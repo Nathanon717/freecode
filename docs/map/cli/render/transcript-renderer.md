@@ -1,6 +1,8 @@
 # src/cli/render/transcript-renderer.ts - Agent Transcript Formatting
 
-**Role:** Shared formatting and normalisation for all visible agent transcript output. The state machine here is the single authority for turn layout — every path through `agentLoop` and `runParsedToolsLoop` delegates spacing decisions to these functions so that model-specific differences in whitespace are absorbed here and can never leak into the displayed transcript.
+**Role:** Turn/step state machine and writing for all visible agent transcript output. The state machine here is the single authority for turn layout — every path through `agentLoop` and `runParsedToolsLoop` delegates spacing decisions to these functions so that model-specific differences in whitespace are absorbed here and can never leak into the displayed transcript.
+
+The pure formatters (`format*`) now live in [transcript-format.md](transcript-format.md) and are re-exported here, so this stays the single import site. This module is what *writes*; that one is what decides how things *look*.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -21,31 +23,29 @@ export type {
   TranscriptRuntimeOptions,
 } from "./transcript-options.js"
 
-formatArgs(args: Record<string, unknown>): string
-
-filterArgs(name: string, args: Record<string, unknown>): Record<string, unknown>
-
-formatRationaleLine(rationale: string): string
-
-formatToolCallLine(name: string, args: Record<string, unknown>): string
-
-formatParsedToolCallLine(name: string, args: Record<string, unknown>): string
-
-formatToolErrorLine(name: string, err: unknown): string
-
-formatToolResultPreview(result: unknown, options?: TranscriptRenderOptions): string
-
-formatCreatedFileContent(content: string, options?: TranscriptRenderOptions): string
-
-formatEditFileDiff(_path: string, oldText: string, newText: string, contextBefore?: string[], contextAfter?: string[], options?: TranscriptRenderOptions, lineIndent?: string, startLine?: number): string
-
-formatTranscriptStepDivider(options?: TranscriptRuntimeOptions | undefined): string
+export {
+  filterArgs,
+  formatArgs,
+  formatCreatedFileContent,
+  formatEditFileDiff,
+  formatParsedToolCallLine,
+  formatPromptEcho,
+  formatRationaleLine,
+  formatToolCallLine,
+  formatToolErrorLine,
+  formatToolResultPreview,
+  formatTranscriptStepDivider,
+} from "./transcript-format.js"
 
 writeStepSeparator(options?: TranscriptRuntimeOptions): void
 
 beginTranscriptTurn(options?: TranscriptRuntimeOptions): void
 
 notifyTranscriptChunk(chunk: string): void
+
+writeTranscriptText(chunk: string): void
+
+resetTranscriptTurnState(pendingDivider?: boolean): void
 
 writeTranscriptToolLeadIn(options?: TranscriptRuntimeOptions): number
 
@@ -65,7 +65,14 @@ type ToolStepResult =
       /** 1-based file line number of the first rendered line (context or diff). */
       startLine: number;
     }
-  | { kind: "error"; error: unknown };
+  | { kind: "error"; error: unknown }
+  /**
+   * An already-rendered preview block, written verbatim. Only the transcript
+   * record produces these: it stores the block that was put on screen rather
+   * than the raw result behind it, so a replayed body is byte-identical (and
+   * bounded — see cli/render/transcript-record.ts).
+   */
+  | { kind: "preformatted"; text: string };
 
 interface ToolStep {
   name: string;
@@ -90,7 +97,7 @@ interface RenderedStep {
 
 writeToolCallHeader(step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "parsedTools">, opts?: TranscriptRuntimeOptions | undefined): ToolCallHeaderRows
 
-writeToolResultPreview(name: string, result: { kind: "text"; result: unknown; } | { kind: "create-content"; content: string; } | { kind: "edit-diff"; path: string; oldText: string; newText: string; contextBefore: string[]; contextAfter: string[]; lineIndent: string; startLine: number; }, opts?: TranscriptRuntimeOptions | undefined): boolean
+writeToolResultPreview(name: string, result: { kind: "text"; result: unknown; } | { kind: "create-content"; content: string; } | { kind: "edit-diff"; path: string; oldText: string; newText: string; contextBefore: string[]; contextAfter: string[]; lineIndent: string; startLine: number; } | { ...; }, opts?: TranscriptRuntimeOptions | undefined): boolean
 
 writeToolStepResult(name: string, result: ToolStepResult, opts?: TranscriptRuntimeOptions | undefined): void
 
@@ -111,7 +118,9 @@ renderTurn(steps: RenderedStep[], opts?: TranscriptRuntimeOptions | undefined): 
 - Higher-level API (`writeToolCallHeader`, `writeToolStepResult`, `renderToolStep`, `renderTurn`) — sit on top of the format helpers and state machine so that both the live agent path (`tools/index.ts withToolRendering`) and the `/renderer` demo (`commands/renderer.ts`) share one implementation. `writeToolCallHeader` is called BEFORE tool execution; `writeToolStepResult` is called AFTER.
 - `writeToolCallHeader` returns `ToolCallHeaderRows` (wrap included) rather than `void`, and `writeTranscriptToolLeadIn` returns its own rows. Only the approval path reads them — it budgets the preview that follows against the real height of what sits above it, which a constant cannot express because the call line, the rationale and the preamble can all wrap. `preamble` is measured before the lead-in bumps `toolCount`, and is 0 for any parallel call after the step's first: only that first call sits directly under the response text.
 - `TranscriptRenderOptions.maxResultRows` — caps the preview at N terminal rows counting wrap, on top of `maxResultLines`; see [transcript-options.md](./transcript-options.md) for the type and [tool-approval.md](../tools/tool-approval.md) for who sets it. Honoured by both `formatToolResultPreview` and `formatEditFileDiff`: `edit` (like `create`) previews its diff before confirmation, so the diff must also fit the approval row budget or a long change would scroll the call line the user is approving off-screen. Both trim via `fitLinesToRows`, measuring the rendered (gutter + colour) width, and report the dropped count in a "… (N more lines)" footer.
-- Stream routing and the options types live in [transcript-options.md](./transcript-options.md) and are re-exported here; keep importing them from this module.
+- Stream routing and the options types live in [transcript-options.md](./transcript-options.md) and are re-exported here; keep importing them from this module. The same goes for the `format*` helpers, which live in [transcript-format.md](transcript-format.md).
+- `ToolStepResult`'s `preformatted` kind is produced only by [transcript-record.md](transcript-record.md), which stores the rendered preview block rather than the raw result behind it. `writeToolResultPreview` writes it verbatim.
+- `writeToolCallHeader`, `writeToolResultPreview`, `writeToolStepResult` and `endTranscriptStep` all feed the transcript record as a side effect, so any caller that renders normally is recorded automatically and a replay cannot drift from the live paint.
 
 ## Desired Turn Layout
 
@@ -134,7 +143,9 @@ tool_call(args)  ───
 The module maintains a single `_step` state object. All callers drive it with these functions:
 
 - `beginTranscriptTurn(opts?)` — open a turn; flushes the deferred separator from the previous turn (via `writeStepSeparator`) if one is pending. Idempotent (no-op if already open).
-- `notifyTranscriptChunk(chunk)` — call each time a chunk of model response text is written to stdout; updates `hasText` / `textEndsWithNewline` and accumulates `text`, which exists so the step's preamble height is measurable at header time.
+- `notifyTranscriptChunk(chunk)` — call each time a chunk of model response text is written to stdout; updates `hasText` / `textEndsWithNewline` and accumulates `text`, which exists so the step's preamble height is measurable at header time. Prefer `writeTranscriptText` — the one place that still calls this directly is `parsed-tools.ts`, marking an empty step as having produced text when nothing was actually written.
+- `writeTranscriptText(chunk)` — write model text to stdout, notify the state machine, and record it for replay, in that order. `chunk` must be the text exactly as it appears (already markdown-rendered), since [transcript-record.md](transcript-record.md) replays it verbatim. Stays on `process.stdout` rather than the transcript stream, which is where model text has always gone; the two differ only off-TTY, where nothing replays.
+- `resetTranscriptTurnState(pendingDivider?)` — drop the turn/step state. Only [transcript-replay.md](transcript-replay.md) needs it, to keep a replay from inheriting the divider the last live turn deferred and to restore that state afterwards.
 - `writeTranscriptToolLeadIn(opts?)` — call from `withToolRendering` in `tools/index.ts` immediately before writing the tool call line. Inserts the correct blank-line separator (blank after response text, blank between parallel tool calls).
 - `endTranscriptStep(hasMore, opts?)` — close the current step. `hasMore=true` writes the combined close+open separator (via `writeStepSeparator`) for the next step; `hasMore=false` defers the closing separator (`_pendingDivider`) so it is only emitted if a next turn begins. No-op when no turn is open.
 

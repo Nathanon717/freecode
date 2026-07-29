@@ -1,6 +1,6 @@
 import type { CoreMessage } from 'ai';
 import { createTools } from './tools/index.js';
-import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk } from '../cli/render/transcript-renderer.js';
+import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk, writeTranscriptText } from '../cli/render/transcript-renderer.js';
 import { isUserAbortError, toDetailedErrorMessage } from '../util/errors.js';
 import { executeToolCalls } from './parsed-tools.js';
 import { runSubAgent } from './subagents/run-subagent.js';
@@ -111,7 +111,7 @@ export async function runFakeLlm(
     endTranscriptStep(false);
     if (isUserAbortError(error)) return result(fullText);
     const errMsg = toDetailedErrorMessage(error);
-    process.stdout.write(`Error: ${errMsg}\n`);
+    writeTranscriptText(`Error: ${errMsg}\n`);
     // The error is reported through `error`, never folded into `text` — the
     // session must not persist it as something the assistant said (loop.ts).
     return result(fullText, [], errMsg);

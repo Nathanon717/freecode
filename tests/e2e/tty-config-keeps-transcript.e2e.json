@@ -1,14 +1,17 @@
 {
   "name": "tty-config-keeps-transcript",
-  "description": "Leaving /config wipes the screen but not the conversation, so the transcript is reprinted rather than left looking like a fresh session. /clear, which really does empty the history, still lands on a bare banner. /model and /eval share the same dispatcher call site but cannot be driven here - the model picker refuses to open under FREECODE_FAKE_LLM=1",
+  "description": "Leaving /config wipes the screen but not the conversation, so the transcript is reprinted as it was rather than left looking like a fresh session. The replay comes from the render record, so the tool call line and its result preview come back too, not just the text. /clear, which really does empty the history, still lands on a bare banner. /model and /eval share the same dispatcher call site but cannot be driven here - the model picker refuses to open under FREECODE_FAKE_LLM=1",
   "model": "mock:gpt-freecode-test",
   "llmFixture": "tty-config-keeps-transcript.llm.json",
   "env": {
     "FREECODE_AUTO_CONFIRM": "1"
   },
+  "config": {
+    "toolConfirmation": "auto"
+  },
   "tty": {
     "cols": 80,
-    "rows": 24,
+    "rows": 40,
     "readyText": "for commands",
     "steps": [
       {
@@ -22,7 +25,7 @@
         "name": "submit",
         "send": "\r",
         "waitFor": "xyzzy-first-turn",
-        "waitForMs": 8000
+        "waitForMs": 20000
       },
       {
         "name": "type /config",
@@ -43,8 +46,54 @@
         "screenContains": [
           "still sent to the model",
           "Say the magic word",
+          "Checking a file first.",
+          "read(src/util/guards.ts)",
+          "export function isRecord",
           "xyzzy-first-turn"
         ],
+        "quietMs": 1500
+      },
+      {
+        "name": "take a second turn on top of the replayed transcript",
+        "send": "Say it again",
+        "screenContains": [
+          "> Say it again"
+        ]
+      },
+      {
+        "name": "submit - the live turn continues from the replay, separated by one divider",
+        "send": "\r",
+        "waitFor": "xyzzy-second-turn",
+        "waitForMs": 20000
+      },
+      {
+        "name": "type /config a second time",
+        "send": "/config",
+        "screenContains": [
+          "> /config"
+        ]
+      },
+      {
+        "name": "submit - the editor opens over the replayed-then-continued transcript",
+        "send": "\r",
+        "waitFor": "Tool rationale",
+        "waitForMs": 8000
+      },
+      {
+        "name": "press q - both turns come back, and the replay did not record itself",
+        "send": "q",
+        "screenContains": [
+          "still sent to the model",
+          "read(src/util/guards.ts)",
+          "xyzzy-first-turn",
+          "> Say it again",
+          "xyzzy-second-turn"
+        ],
+        "screenCounts": {
+          "xyzzy-first-turn": 1,
+          "xyzzy-second-turn": 1,
+          "still sent to the model": 1
+        },
         "quietMs": 1500
       },
       {

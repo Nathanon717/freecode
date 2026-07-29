@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import type { CoreMessage, LanguageModel, LanguageModelV1CallOptions, LanguageModelV1StreamPart } from 'ai';
+import { recordTranscriptText } from '../cli/render/transcript-record.js';
 
 export const FAKE_PROVIDER_ID = 'mock';
 export const FAKE_NATIVE_PROVIDER_ID = 'mock-native';
@@ -386,10 +387,13 @@ export function runFakeModel(call: FakeModelCall): Promise<FakeModelResult> {
     const chunks = step.response.chunks ?? (step.response.text !== undefined ? [step.response.text] : []);
     const usage = step.response.usage ?? { totalTokens: 0 };
     const toolCalls = step.response.toolCalls ?? [];
-    for (const chunk of chunks) process.stdout.write(chunk);
+    // Recorded here rather than in fake-loop.ts, which notifies the step state
+    // machine with the joined text: the record has to hold what was written,
+    // including the terminating newline below.
+    for (const chunk of chunks) { process.stdout.write(chunk); recordTranscriptText(chunk); }
     // Terminate each step's text with a newline so a pre-tool-call preamble does
     // not glue onto the next step's text on stdout ("…now.File created…").
-    if (chunks.length > 0 && !chunks[chunks.length - 1].endsWith('\n')) process.stdout.write('\n');
+    if (chunks.length > 0 && !chunks[chunks.length - 1].endsWith('\n')) { process.stdout.write('\n'); recordTranscriptText('\n'); }
 
     appendTrace({
       callIndex: stepNumber,

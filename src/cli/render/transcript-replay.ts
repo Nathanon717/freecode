@@ -4,78 +4,75 @@
 // `/config`, `/model` and `/eval` all end in `redrawBanner()`, which clears the
 // screen *and* scrollback (`\x1b[3J`) while leaving `Conversation.messages`
 // untouched. The result reads as a fresh session that is anything but: the next
-// turn still resends everything. Repainting from the screen buffer is not an
-// option — the raw pickers' own cleanup writes `\x1b[J`, which
-// `util/screen-buffer.ts` treats as a wipe, so the buffer is empty by the time a
-// menu exits. Rendering from `messages` instead makes screen-matches-history
-// true by construction rather than by bookkeeping.
+// turn still resends everything.
 //
-// This is a summary, not a re-run of the original stream: one line per tool call
-// and no result bodies. Tool results are the bulk of a turn and replaying them
-// would bury the conversation they belong to.
+// Repainting from the screen buffer is not an option — the raw pickers' own
+// cleanup writes `\x1b[J`, which `util/screen-buffer.ts` treats as a wipe, so the
+// buffer is empty by the time a menu exits. Instead this replays
+// `cli/render/transcript-record.ts`, the record of what the renderer actually put
+// on screen, through the same `renderTurn` that drew it live. Same formatter,
+// same inputs, same output — dividers, markdown, tool call lines, result previews
+// and edit diffs all come back as they were, rather than as a summary of them.
+//
+// Only the conversation is replayed. Menu chrome, approval prompts and other
+// ephemeral UI are not recorded (see transcript-record.ts) and do not come back.
 
 import chalk from 'chalk';
 import type { CoreMessage } from 'ai';
-import { formatToolCallLine } from './transcript-renderer.js';
-
-/** Messages to replay in full before collapsing the rest into a count line. */
-const MAX_REPLAYED_MESSAGES = 40;
-
-function textOf(content: unknown): string {
-  if (typeof content === 'string') return content;
-  if (!Array.isArray(content)) return '';
-  return content
-    .filter((part): part is { type: string; text: string } =>
-      typeof part === 'object' && part !== null &&
-      (part as { type?: unknown }).type === 'text' &&
-      typeof (part as { text?: unknown }).text === 'string')
-    .map((part) => part.text)
-    .join('');
-}
-
-function toolCallLines(content: unknown): string[] {
-  if (!Array.isArray(content)) return [];
-  const lines: string[] = [];
-  for (const part of content) {
-    if (typeof part !== 'object' || part === null) continue;
-    const { type, toolName, args } = part as { type?: unknown; toolName?: unknown; args?: unknown };
-    if (type !== 'tool-call') continue;
-    lines.push(formatToolCallLine(
-      typeof toolName === 'string' ? toolName : 'tool',
-      (typeof args === 'object' && args !== null ? args : {}) as Record<string, unknown>,
-    ));
-  }
-  return lines;
-}
+import { getTranscriptRecord, setTranscriptRecording } from './transcript-record.js';
+import {
+  formatPromptEcho,
+  getTranscriptRuntimeOptions,
+  getTranscriptStream,
+  renderTurn,
+  resetTranscriptTurnState,
+  type TranscriptRuntimeOptions,
+} from './transcript-renderer.js';
 
 /**
- * Print a condensed replay of `messages`. A no-op on empty history, so `/clear`
- * (which empties it) still lands on a bare banner — there the blank screen is
- * accurate.
+ * Reprint the recorded conversation. A no-op on an empty record, so `/clear`
+ * (which empties it along with the history) still lands on a bare banner — there
+ * the blank screen is accurate.
+ *
+ * `messages` is read only for the header count: the record is what was on screen,
+ * while the history is what the model is sent, and the point of the header is to
+ * state the latter.
  */
-export function replayTranscript(messages: CoreMessage[], write: (s: string) => void = (s) => process.stdout.write(s)): void {
-  if (messages.length === 0) return;
+export function replayTranscript(
+  messages: CoreMessage[],
+  options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions(),
+): void {
+  const { entries, dropped } = getTranscriptRecord();
+  if (entries.length === 0) return;
 
-  const hidden = Math.max(0, messages.length - MAX_REPLAYED_MESSAGES);
-  const shown = messages.slice(hidden);
+  const stream = getTranscriptStream(options);
+  if (messages.length > 0) {
+    stream.write(chalk.dim(`Conversation history (${messages.length} message${messages.length === 1 ? '' : 's'}, still sent to the model):\n`));
+  }
+  if (dropped > 0) {
+    stream.write(chalk.dim(`  … ${dropped} earlier entr${dropped === 1 ? 'y' : 'ies'} not shown\n`));
+  }
+  stream.write('\n');
 
-  write(chalk.dim(`Conversation history (${messages.length} message${messages.length === 1 ? '' : 's'}, still sent to the model):\n`));
-  if (hidden > 0) write(chalk.dim(`  … ${hidden} earlier message${hidden === 1 ? '' : 's'} not shown\n`));
-  write('\n');
-
-  for (const message of shown) {
-    // Tool results are deliberately not replayed — see the header comment.
-    if (message.role === 'tool') continue;
-
-    const text = textOf(message.content).trim();
-    if (message.role === 'user') {
-      if (text) write(chalk.dim('> ') + text + '\n\n');
-      continue;
+  // Start from a clean state machine so the first replayed turn does not open
+  // with the divider the last live turn deferred, and stop recording so the
+  // replay does not append itself to the record it is reading.
+  setTranscriptRecording(false);
+  resetTranscriptTurnState();
+  let replayedTurn = false;
+  try {
+    for (const entry of entries) {
+      if (entry.kind === 'prompt') {
+        stream.write(formatPromptEcho(entry.text) + '\n');
+        continue;
+      }
+      renderTurn(entry.steps, options);
+      replayedTurn = true;
     }
-    if (message.role !== 'assistant') continue;
-
-    if (text) write(text + '\n');
-    for (const line of toolCallLines(message.content)) write(line + '\n');
-    write('\n');
+  } finally {
+    // Leave the machine as a completed turn would, so the next live turn is
+    // separated from the replay exactly as it would have been from the original.
+    resetTranscriptTurnState(replayedTurn);
+    setTranscriptRecording(true);
   }
 }
