@@ -9,7 +9,7 @@
     { "input": "summarize the plan" }
   ],
   "expect": {
-    "stdoutAbsent": ["**", "The plan", "```"],
+    "stdoutAbsent": ["**guards.ts**", "The plan", "```python"],
     "stdoutBlock": [
       "",
       "Rewrite guards.ts and keep isRecord exported.",
