@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { PROVIDER_REGISTRY } from '../../src/providers/provider-registry.js';
 import { readTextFile } from '../../src/util/text-encoding.js';
-import { assertE2eExpectations } from './assertions/index.js';
+import { assertE2eExpectations, outputRows } from './assertions/index.js';
 import type { FakeLlmTraceEvent, E2eExpectations, ToolTraceEvent } from './assertions/index.js';
 import type { TtyE2eTest } from './pty/run-tty-e2e.js';
 import { seedModels, type SeedModel } from './seed-store.js';
@@ -87,6 +87,8 @@ function printCapturedOutput(stdout: string, stderr: string): void {
 const args = process.argv.slice(2);
 const skipTty = args.includes('--skip-tty');
 const onlyTty = args.includes('--only-tty');
+/** `E2E_DUMP=1` prints each non-TTY scenario's stdout as numbered rows, to author `stdoutBlock` from. */
+const E2E_DUMP = !!process.env.E2E_DUMP;
 const noBuild = args.includes('--no-build');
 const showDetails = args.includes('--details');
 const onlyArg = args.find(arg => arg.startsWith('--only='));
@@ -325,7 +327,15 @@ if (nonTtyE2eTests.length > 0) {
       fakeLlmTrace,
       workspaceRoot,
       workspace: test.workspace ?? 'repo',
+      env: test.env,
     });
+
+    // Authoring aid for stdoutBlock, mirroring TTY_DUMP: never hand-write a
+    // block from what the output is assumed to look like.
+    if (E2E_DUMP) {
+      console.log(`\n--- ${test.name} stdout (${outputRows(stdout).length} rows) ---`);
+      outputRows(stdout).forEach((row, i) => console.log(`${String(i).padStart(3)} ${JSON.stringify(row)}`));
+    }
 
     try { rmSync(tmpHome, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpHome:', err); }
     try { rmSync(tmpStore, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpStore:', err); }

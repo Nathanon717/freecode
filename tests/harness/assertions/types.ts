@@ -47,6 +47,18 @@ export interface E2eExpectations {
    * to pin transcript ordering (e.g. a preamble before the tool call it precedes).
    */
   stdoutOrder?: string[];
+  /**
+   * An exact run of consecutive stdout lines — the non-TTY twin of the TTY
+   * `screenBlock`, same matcher and same tokens (`*`, `...`, `re:`), blank lines
+   * significant. Use it where blank-line placement or indentation is the
+   * contract; substring assertions cannot see either.
+   *
+   * Requires `env.FREECODE_TRANSCRIPT_STREAM: "stdout"` on the scenario, since
+   * transcript output otherwise lands on stderr and the two streams are captured
+   * separately. The assertion fails with that explanation rather than silently
+   * matching nothing.
+   */
+  stdoutBlock?: string[];
   exitCode?: number;
   files?: FileExpectation[];
   toolTrace?: ToolTraceExpectation;

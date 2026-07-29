@@ -109,6 +109,8 @@ Any e2e test that drives the agent loop pairs a `mock:*` model with an `llmFixtu
 
 - `stdoutContains`: Substrings expected in combined stdout + stderr.
 - `stdoutAbsent`: Substrings that must not appear in combined stdout + stderr.
+- `stdoutOrder`: Substrings that must appear in this left-to-right order in combined stdout + stderr.
+- `stdoutBlock`: Consecutive stdout lines that must appear verbatim — the non-TTY twin of `screenBlock`, same matcher and tokens. See [Block assertions](#block-assertions).
 - `exitCode`: Expected process exit code.
 - `files`: File assertions relative to the e2e test workspace.
 - `files[].contentExact`: Exact file content. On mismatch, the harness prints the actual content.
@@ -297,7 +299,6 @@ turn layout becomes enforceable:
   "transcriptBlock": [
     "Reading both helpers.",
     "",
-    "",
     "Checking the type guard first",
     "read(src/util/guards.ts)",
     "re:^  1: export function isRecord",
@@ -339,6 +340,48 @@ TTY_DUMP=1 npx tsx tests/harness/run-e2e.ts --no-build --only=tty-parallel-tools
 Each step prints its rendered rows, numbered and quoted, blank rows included.
 On failure the matcher prints the wanted block against the rows it found and
 marks the ones that differ, so a break says *how* the layout changed.
+
+#### `stdoutBlock` (non-TTY scenarios)
+
+Script-mode scenarios get the same matcher over the child's stdout lines, with
+ANSI stripped. It lives in the top-level `expect` block, not in a `tty` step:
+
+```json
+{
+  "env": { "FREECODE_TRANSCRIPT_STREAM": "stdout" },
+  "expect": {
+    "stdoutBlock": [
+      "Let's make this change.",
+      "",
+      "Writing the grading script as requested",
+      "create(grade.py)",
+      "  1: print('grade: A')",
+      "...",
+      "",
+      "re:^─+$",
+      "",
+      "The script now runs successfully and prints the grade summary."
+    ]
+  }
+}
+```
+
+Two things differ from the TTY blocks:
+
+- **`env.FREECODE_TRANSCRIPT_STREAM: "stdout"` is mandatory.** Transcript output
+  (tool call lines, result previews, dividers) goes to stderr by default, and the
+  harness captures the two streams separately and concatenates them — their true
+  interleaving is already gone. A block spanning both would be asserting an order
+  that never existed. The assertion fails with that explanation rather than
+  reporting a layout mismatch the author cannot act on.
+- **No colour assertions.** There is no emulator here, only bytes; `screenStyles`
+  has no non-TTY counterpart.
+
+Author it from `E2E_DUMP=1`, the non-TTY counterpart of `TTY_DUMP`:
+
+```bash
+E2E_DUMP=1 npx tsx tests/harness/run-e2e.ts --no-build --only=agent-preamble-flush
+```
 
 ### Colour assertions
 

@@ -1,3 +1,46 @@
+import { stripAnsi } from '../../../src/util/screen-buffer.js';
+import { matchBlock } from '../pty/screen-assert.js';
+
+/**
+ * Split captured child output into the rows a block assertion matches against.
+ * Colour is forced on in the harness (`FORCE_COLOR`), so SGR has to come off
+ * first; `\r` would otherwise leave a phantom character at every line end on
+ * Windows.
+ */
+export function outputRows(text: string): string[] {
+  return stripAnsi(text).replace(/\r/g, '').split('\n');
+}
+
+/**
+ * Assert an exact run of consecutive stdout lines, using the same matcher as the
+ * TTY `screenBlock` — `*` for one volatile row, `...` for a gap, `re:` for a
+ * pattern, and blank lines significant.
+ *
+ * Why stdout alone rather than the combined output the substring assertions use:
+ * stdout and stderr are captured separately and concatenated, so their relative
+ * order is already lost by the time an assertion runs. A block spanning both
+ * would be asserting against an interleaving that never existed. That makes
+ * `FREECODE_TRANSCRIPT_STREAM=stdout` mandatory — without it, tool call lines,
+ * result previews and dividers are on stderr while model text is on stdout, and
+ * a layout assertion is meaningless. It is required loudly rather than set
+ * implicitly, because the scenario's own `env` is what the CLI actually sees.
+ */
+export function assertStdoutBlock(
+  expected: string[] | undefined,
+  stdout: string,
+  env: Record<string, string> | undefined,
+): string[] {
+  if (!expected || expected.length === 0) return [];
+  if (env?.['FREECODE_TRANSCRIPT_STREAM'] !== 'stdout') {
+    return [
+      'stdoutBlock needs env.FREECODE_TRANSCRIPT_STREAM="stdout": transcript output ' +
+      '(tool call lines, result previews, step dividers) goes to stderr by default, and ' +
+      'stdout/stderr are captured separately, so a layout block cannot span the two.',
+    ];
+  }
+  return matchBlock(outputRows(stdout), expected).map(failure => `stdout ${failure}`);
+}
+
 export function assertOutput(expectation: {
   stdoutContains?: string[];
   stdoutAbsent?: string[];

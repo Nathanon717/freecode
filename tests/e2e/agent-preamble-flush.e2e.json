@@ -1,6 +1,6 @@
 {
   "name": "agent-preamble-flush",
-  "description": "A pre-tool-call preamble with no trailing newline is flushed in its correct position (before the tool call) instead of being held in the markdown line buffer and glued onto the final step's text",
+  "description": "A pre-tool-call preamble with no trailing newline is flushed in its correct position (before the tool call) instead of being held in the markdown line buffer and glued onto the final step's text. Asserted as an exact stdout block, so the documented spacing is pinned too: one blank line between the preamble and the call, the rationale directly above the call line with no blank, the created-content preview directly under it, and one blank line either side of the step divider. The approval chrome between them is spanned by a gap - its row count is not this test's contract",
   "workspace": "temp",
   "model": "mock-native:gpt-freecode-test",
   "llmFixture": "agent-preamble-flush.llm.json",
@@ -10,15 +10,18 @@
     { "input": "y" }
   ],
   "expect": {
-    "stdoutContains": [
-      "Let's make this change.",
-      "The script now runs successfully and prints the grade summary."
-    ],
     "stdoutAbsent": ["change.The script"],
-    "stdoutOrder": [
+    "stdoutBlock": [
       "Let's make this change.",
+      "",
+      "Writing the grading script as requested",
       "create(grade.py)",
-      "The script now runs successfully"
+      "  1: print('grade: A')",
+      "...",
+      "",
+      "re:^─+$",
+      "",
+      "The script now runs successfully and prints the grade summary."
     ],
     "exitCode": 0,
     "files": [

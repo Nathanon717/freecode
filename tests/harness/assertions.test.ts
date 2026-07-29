@@ -8,6 +8,7 @@ import {
   assertFakeLlmTrace,
   assertFiles,
   assertOutput,
+  assertStdoutBlock,
   assertE2eExpectations,
   assertToolTrace,
 } from './assertions/index.js';
@@ -46,6 +47,45 @@ describe('e2e expectation assertions', () => {
     }, 'preamble only')).toEqual([
       'missing (ordered): "nope"',
     ]);
+  });
+
+  describe('stdoutBlock', () => {
+    const ENV = { FREECODE_TRANSCRIPT_STREAM: 'stdout' };
+    // Colour is forced on in the harness, so a real capture arrives with SGR in it.
+    const OUT = "\x1b[38;2;255;182;193mpreamble\x1b[39m\n\n  reading it\nread(x)\n  1: body\n\n────\n\ndone\n";
+
+    it('matches a run of consecutive stdout lines through the ANSI', () => {
+      expect(assertStdoutBlock(
+        ['preamble', '', '  reading it', 'read(x)', '  1: body', '', 're:^─+$', '', 'done'],
+        OUT,
+        ENV,
+      )).toEqual([]);
+    });
+
+    it('fails on a blank line that is not there', () => {
+      // The whole point of a block: a substring check passes on this happily.
+      const failures = assertStdoutBlock(['preamble', '', '', '  reading it'], OUT, ENV);
+      expect(failures).toHaveLength(1);
+      expect(failures[0]).toContain('stdout block not found');
+    });
+
+    it('refuses to run without FREECODE_TRANSCRIPT_STREAM=stdout', () => {
+      // The block would match nothing simply because the dividers went to stderr.
+      // Saying so beats a layout diff the author cannot act on.
+      const failures = assertStdoutBlock(['preamble'], OUT, undefined);
+      expect(failures).toHaveLength(1);
+      expect(failures[0]).toContain('FREECODE_TRANSCRIPT_STREAM');
+      expect(assertStdoutBlock(['preamble'], OUT, { FREECODE_TRANSCRIPT_STREAM: 'stderr' })).toHaveLength(1);
+    });
+
+    it('is skipped entirely when the scenario declares no block', () => {
+      expect(assertStdoutBlock(undefined, OUT, undefined)).toEqual([]);
+      expect(assertStdoutBlock([], OUT, undefined)).toEqual([]);
+    });
+
+    it('strips CR so a Windows capture matches the same block', () => {
+      expect(assertStdoutBlock(['a', 'b'], 'a\r\nb\r\n', ENV)).toEqual([]);
+    });
   });
 
   it('checks exact file content relative to the e2e test workspace', () => {
