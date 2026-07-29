@@ -77,6 +77,17 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
+// Remove a test's temp dir. The child CLI has exited by now, but Windows can hold
+// a just-closed file briefly (AV scanners, delete-pending), so retry rather than
+// leak the dir — `rm` retries exactly the EPERM/EBUSY/ENOTEMPTY family.
+function removeTempDir(dir: string, label: string): void {
+  try {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  } catch (err) {
+    console.error(`[cleanup] failed to remove ${label}:`, err);
+  }
+}
+
 function printCapturedOutput(stdout: string, stderr: string): void {
   console.log(chalk.dim('--- stdout ---'));
   console.log(stdout.slice(0, 8000).trimEnd() || chalk.dim('(empty)'));
@@ -214,8 +225,8 @@ if (ttyE2eTests.length > 0) {
         else writeFileSync(fakeEvalResultPath, previousFakeEvalResult, 'utf-8');
       } catch (err) { console.error('[cleanup] failed to restore fake eval result:', err); }
     }
-    try { rmSync(tmpHome, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpHome:', err); }
-    try { rmSync(tmpStore, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpStore:', err); }
+    removeTempDir(tmpHome, 'tmpHome');
+    removeTempDir(tmpStore, 'tmpStore');
     return { name: test.name, failures: ttyFailures, screen: ttyScreen, ms: Date.now() - t0, phases: ttyPhases };
   });
 
@@ -337,11 +348,9 @@ if (nonTtyE2eTests.length > 0) {
       outputRows(stdout).forEach((row, i) => console.log(`${String(i).padStart(3)} ${JSON.stringify(row)}`));
     }
 
-    try { rmSync(tmpHome, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpHome:', err); }
-    try { rmSync(tmpStore, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpStore:', err); }
-    if (test.workspace === 'temp') {
-      try { rmSync(tmpWorkspace, { recursive: true, force: true }); } catch (err) { console.error('[cleanup] failed to remove tmpWorkspace:', err); }
-    }
+    removeTempDir(tmpHome, 'tmpHome');
+    removeTempDir(tmpStore, 'tmpStore');
+    if (test.workspace === 'temp') removeTempDir(tmpWorkspace, 'tmpWorkspace');
 
     return { test, failures, stdout, stderr, exitCode, trace, fakeLlmTrace, ms: Date.now() - t0 };
   });
