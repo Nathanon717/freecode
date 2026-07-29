@@ -12,6 +12,24 @@ import type { FakeLlmTraceEvent, E2eExpectations, ToolTraceEvent } from './asser
 import type { TtyE2eTest } from './pty/run-tty-e2e.js';
 import { seedModels, type SeedModel } from './seed-store.js';
 
+/**
+ * The ConPTY host node-pty loads is pinned to 1.23 by
+ * `scripts/install/pin-conpty.cjs`, because the 1.25 that node-pty >= beta.12
+ * vendors takes ~1-1.5s to deliver a resize to the child instead of 15ms — and
+ * sometimes doesn't under load, which makes every `tty-resize-*` scenario flaky
+ * (docs/bug log/29-07-2026f.md). Anything that reinstalls node-pty without
+ * running our postinstall drops the pin, so say so loudly rather than let the
+ * flakiness get re-diagnosed from scratch.
+ */
+function warnIfConptyUnpinned(): void {
+  if (process.platform !== 'win32') return;
+  const conptyDir = join(process.cwd(), 'node_modules', 'node-pty', 'prebuilds', `win32-${process.arch}`, 'conpty');
+  if (!existsSync(conptyDir)) return; // not a prebuilt install; nothing to check
+  if (readdirSync(conptyDir).some((entry) => entry.startsWith('.pinned-'))) return;
+  console.warn(chalk.yellow('  WARN  ConPTY is not pinned — expect flaky tty-resize-* failures.'));
+  console.warn(chalk.dim('        Run `npm run postinstall` (see scripts/install/pin-conpty.cjs).'));
+}
+
 // Env vars to strip from every e2e test subprocess so provider API fetches
 // can't make live network requests. E2e tests never call a live LLM.
 const PROVIDER_API_KEY_VARS = new Set(PROVIDER_REGISTRY.map(p => p.apiKeyEnvVar));
@@ -155,6 +173,7 @@ const ttyE2eTests = runnableE2eTests.filter(({ file, test }) => {
 });
 
 if (ttyE2eTests.length > 0) {
+  warnIfConptyUnpinned();
   const { runTtyE2eTest } = await import('./pty/run-tty-e2e.js');
 
   const ttyResults = await mapWithConcurrency(ttyE2eTests, E2E_CONCURRENCY, async ({ test }) => {

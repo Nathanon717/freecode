@@ -17,7 +17,7 @@ This table is generated from `package.json`.
 | `npm run lint` | `eslint src tests scripts --cache` |
 | `npm run lint:fix` | `eslint src tests scripts --cache --fix` |
 | `npm run map-drift` | `tsx scripts/diagnostics/map-drift.ts` |
-| `npm run postinstall` | `node scripts/install/ensure-pty.cjs && node scripts/install/ensure-link.cjs` |
+| `npm run postinstall` | `node scripts/install/ensure-pty.cjs && node scripts/install/pin-conpty.cjs && node scripts/install/ensure-link.cjs` |
 | `npm run pty` | `cross-env MSYS_NO_PATHCONV=1 tsx tests/harness/pty/session.ts` |
 | `npm run pty:test` | `cross-env FREECODE_PTY=1 vitest run tests/harness/pty/driver.test.ts tests/harness/pty/session.test.ts` |
 | `npm run rate-limit-probe` | `tsx scripts/diagnostics/rate-limit-probe.ts` |

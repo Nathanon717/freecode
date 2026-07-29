@@ -8,8 +8,9 @@ export interface TtyStep {
   send?: string;
   // Resize the PTY (and emulator viewport) to these dimensions before asserting,
   // delivering a real SIGWINCH exactly as dragging a terminal edge would. Applied
-  // after `send`, so a step can type then resize. The default settle window covers
-  // the app's 32 ms resize debounce; raise `quietMs` for heavier reflows.
+  // after `send`, so a step can type then resize. How long the child takes to hear
+  // about it is the terminal's business, not ours — ConPTY 1.25 is ~1-1.5s — so
+  // `screenContains` is what paces a resize step; it is waited for, not sampled.
   resize?: { cols: number; rows: number };
   // Wait until this text appears in the raw stream before asserting.
   waitFor?: string;
@@ -90,6 +91,47 @@ function maskRows(rows: string[], mask?: string[]): string[] {
 const TTY_TIMING = !!process.env.TTY_TIMING;
 
 /**
+ * How long a step may wait for its `screenContains` needles to appear on the
+ * viewport. Only a step that hasn't reached its expected state spends any of
+ * this; the common case returns on the first poll, so the budget costs time
+ * only on a step that is going to fail anyway.
+ */
+const SCREEN_STATE_BUDGET_MS = 4000;
+
+/**
+ * A resize step gets much longer, because the wait is on the *terminal* handing
+ * the size change to the child and nothing about it is under our control:
+ * ConPTY 1.25 takes ~1-1.5s idle (15ms on 1.23 — see
+ * docs/bug log/29-07-2026f.md), and that stretches further under the CPU
+ * contention of a full `npm test`, where the non-TTY e2e phase runs alongside.
+ * Sized to swallow that with margin rather than to be tight.
+ */
+const RESIZE_STATE_BUDGET_MS = 10000;
+
+/**
+ * Poll the rendered viewport until every needle is present, or the budget runs
+ * out. Returns whether the state was reached: a caller that got it can settle
+ * briefly, while a caller that timed out still asserts (and fails) on a fully
+ * settled screen. Positive expectations only — an absence can't be waited for,
+ * and asserting one before the positives land would read a half-drawn screen.
+ */
+async function waitForScreen(
+  driver: { snapshot(): string[] },
+  needles: string[],
+  mask: string[] | undefined,
+  budgetMs: number,
+): Promise<boolean> {
+  if (!needles.length) return false;
+  const start = Date.now();
+  for (;;) {
+    const screen = applyMask(driver.snapshot().join('\n'), mask);
+    if (needles.every((needle) => screen.includes(needle))) return true;
+    if (Date.now() - start >= budgetMs) return false;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
+
+/**
  * Authoring aid for block assertions: `TTY_DUMP=1` prints each step's rendered
  * rows, numbered and quoted, so a `screenBlock` can be copied from what the app
  * actually drew instead of guessed at. Blank rows are shown, since they are the
@@ -157,11 +199,23 @@ export async function runTtyE2eTest(opts: {
       // are rendered via cursor-positioning escapes ("Tool rationale") and won't
       // appear raw — those let the short timeout expire and fall back to the full
       // silence-settle below, adding only ~150ms overhead.
-      let fastConfirmed = false;
-      if (!step.waitFor && step.screenContains?.[0]) {
-        fastConfirmed = await driver.waitForText(step.screenContains[0], 150);
-      }
-      await driver.settle(step.quietMs ?? (fastConfirmed ? 100 : 350));
+      // Wait for the app to have actually reached the asserted state before
+      // settling. Neither of the cheaper signals can stand in for this: `raw` is
+      // cumulative, so a needle any earlier step printed matches instantly, and
+      // silence means "hasn't started reacting yet" just as readily as "done"
+      // — driver.waitQuiet() returns immediately when the stream was already
+      // quiet for quietMs. That gap is invisible while a resize reaches the
+      // child in ~15ms, and wide open on ConPTY 1.25, which takes ~1-1.5s (see
+      // docs/bug log/29-07-2026f.md). Polling the rendered viewport — the same
+      // surface the assertions read — costs nothing when the state is already
+      // there and covers the latency when it isn't.
+      const screenConfirmed = await waitForScreen(
+        driver,
+        step.screenContains ?? [],
+        tty.mask,
+        step.resize ? RESIZE_STATE_BUDGET_MS : SCREEN_STATE_BUDGET_MS,
+      );
+      await driver.settle(step.quietMs ?? (screenConfirmed ? 100 : 350));
 
       const screen = applyMask(driver.snapshot().join('\n'), tty.mask);
       if (TTY_DUMP) dumpRows(label, maskRows(driver.snapshot({ keepTrailingBlanks: true }), tty.mask));

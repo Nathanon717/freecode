@@ -9,7 +9,7 @@
     "pty": "./pty"
   },
   "scripts": {
-    "postinstall": "node scripts/install/ensure-pty.cjs && node scripts/install/ensure-link.cjs",
+    "postinstall": "node scripts/install/ensure-pty.cjs && node scripts/install/pin-conpty.cjs && node scripts/install/ensure-link.cjs",
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
@@ -54,9 +54,10 @@
     "@types/node": "^22.19.17",
     "@vitest/coverage-v8": "^4.1.4",
     "@xterm/headless": "^6.0.0",
+    "conpty-pinned": "npm:node-pty@1.1.0",
     "cross-env": "^10.1.0",
     "eslint": "^10.4.1",
-    "node-pty": "^1.1.0",
+    "node-pty": "1.2.0-beta.14",
     "playwright": "^1.60.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",

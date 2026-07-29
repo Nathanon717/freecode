@@ -272,7 +272,7 @@ Omit `turns`/`expect`; the `tty` block fully describes the run.
 - `steps[]`: Ordered interactions, each evaluated after the screen settles.
   - `name`: Label used in failure messages.
   - `send`: Keystrokes to send. Control chars use JSON escapes: `"\t"` (Tab), `"\r"` (Enter), `"\u0003"` (Ctrl-C). The interactive input handler only acts on control keys when they arrive as a standalone chunk — always send typed text and a control key as **separate steps** (e.g. `{"send": "/model"}` then `{"send": "\r"}`). Bundling them (e.g. `"/model\r"`) silently drops the control character.
-  - `resize`: `{ "cols": N, "rows": N }` — resize the PTY (and emulator viewport) before asserting, delivering a real SIGWINCH exactly as dragging a terminal edge would. Applied **after** `send`, so a step can type then resize. The default settle window covers the app's 32 ms resize debounce; raise `quietMs` for heavier reflows. Used by the `tty-resize-*` e2e tests to pin the resize behavior (banner responsiveness, transcript reflow-in-place, input/overlay/menu survival). The stale duplicate-footer block after a transcript-path resize *is* expressible with `screenCounts` (assert the prompt appears exactly once); `tty-resize-preserves-transcript` guards it that way. The stray-`>` accumulation in scrollback is still not viewport-expressible and remains under manual/PTY coverage (see `docs/bug log/14-07-2026.md` and `docs/bug log/22-07-2026.md`).
+  - `resize`: `{ "cols": N, "rows": N }` — resize the PTY (and emulator viewport) before asserting, delivering a real SIGWINCH exactly as dragging a terminal edge would. Applied **after** `send`, so a step can type then resize. How long the child takes to *hear* about a resize belongs to the terminal, not to us: the ConPTY host is pinned to 1.23 (~15 ms) by `postinstall`, because the 1.25 node-pty bundles takes ~1–1.5 s and under load sometimes never delivers (`docs/bug log/29-07-2026f.md`). A resize step is paced by its `screenContains`, which is waited for rather than sampled — so don't reach for `quietMs`, and if one of these goes flaky check the pin marker before anything else. Used by the `tty-resize-*` e2e tests to pin the resize behavior (banner responsiveness, transcript reflow-in-place, input/overlay/menu survival). The stale duplicate-footer block after a transcript-path resize *is* expressible with `screenCounts` (assert the prompt appears exactly once); `tty-resize-preserves-transcript` guards it that way. The stray-`>` accumulation in scrollback is still not viewport-expressible and remains under manual/PTY coverage (see `docs/bug log/14-07-2026.md` and `docs/bug log/22-07-2026.md`).
   - `waitFor`: Optional substring to await in the raw stream before asserting.
   - `waitForMs`: Override the `waitFor` budget (default `8000`). Raise it for heavy steps (e.g. running a real subprocess) that can stall under the CPU contention of many TTY e2e tests running in parallel.
   - `screenContains` / `screenAbsent`: Substrings that must / must not appear on the rendered viewport.
@@ -460,7 +460,7 @@ The phases appear as a chronological timeline under the e2e test, and the leftov
 
 What the phases cover:
 - `startup` — spawn → `readyText` appears in the raw stream, plus the mandatory 400 ms post-ready silence-settle (~2–3 s per e2e test, dominated by Node.js startup and DB init).
-- each step (labeled by the step's `name`) — the `send` plus its wait/settle. Steps without an explicit `waitFor` probe their first `screenContains` needle for 150 ms; a hit cuts the settle to 100 ms, a miss falls through to the full `quietMs` settle. Text rendered via cursor-positioning escapes (not raw text) always misses.
+- each step (labeled by the step's `name`) — the `send` plus its wait/settle. A step with `screenContains` polls the rendered viewport until every needle is present (4 s budget, 10 s on a `resize` step, where the wait is on the terminal delivering the size change to the child), then settles 100 ms; a step that never reaches its expected state spends the whole budget and then settles `quietMs` before failing. The viewport is polled, not the raw stream, because `raw` is cumulative — a needle an earlier step printed would match instantly.
 - `exit` — the exit keystroke through process teardown.
 
 A phase is marked failed (`✗`) if any assertion in that phase failed.
@@ -470,7 +470,7 @@ A phase is marked failed (`✗`) if any assertion in that phase failed.
 | Cost | Cause |
 |---|---|
 | ~2–3 s fixed per e2e test | Node.js spawn + app boot + 400 ms post-ready settle |
-| ~500–700 ms per fastCheck-miss step | 150 ms probe timeout + settle overrun |
+| up to 4 s + settle on a step whose `screenContains` never appears | the viewport poll spending its full budget before failing |
 | settle overrun (e.g. cfg=500 ms → actual=1 073 ms) | UI keeps emitting after `send`; silence timer resets |
 | 7–10 s for humaneval / eval steps | Python subprocess or fake-LLM agent turn; use `waitFor` + `waitForMs` |
 
