@@ -49,6 +49,7 @@ export interface PtyDriver {
    * test can assert the transcript's colours and not just its text.
    */
   cells(scope: ScreenScope, opts?: ReadOptions): ScreenRow[];
+  /** Release the PTY, its conout worker thread, and the emulator. */
   kill(): void;
 }
 
@@ -58,6 +59,17 @@ interface PtyProcess {
   write(data: string): void;
   resize(cols: number, rows: number): void;
   kill(): void;
+}
+
+/**
+ * node-pty's Windows agent owns a worker thread that drains the conout pipe, and
+ * only ever disposes it from inside `kill()` — on the `useConptyDll` path via a
+ * `data` listener that a child which has already exited will never fire. Reaching
+ * for it is the only way to release that thread deterministically. Absent on Unix.
+ */
+function conoutWorkerOf(proc: PtyProcess): { dispose(): void } | undefined {
+  const agent = (proc as { _agent?: { _conoutSocketWorker?: { dispose(): void } } })._agent;
+  return agent?._conoutSocketWorker;
 }
 
 interface XtermCell {
@@ -101,9 +113,13 @@ export function createPtyDriver(opts: PtyDriverOptions): PtyDriver {
   let raw = '';
   let lastDataAt = Date.now();
   let exited = false;
+  let killed = false;
   let code: number | null = null;
 
   proc.onData((d: string) => {
+    // Late data can arrive after kill() disposed the emulator; writing to a
+    // disposed Terminal throws.
+    if (killed) return;
     raw += d;
     lastDataAt = Date.now();
     term.write(d);
@@ -228,10 +244,18 @@ export function createPtyDriver(opts: PtyDriverOptions): PtyDriver {
       return readCells(from, count, opts);
     },
 
+    // Release everything this driver owns, deterministically. A scenario whose
+    // child exited on its own still holds a live ConPTY and a conout worker
+    // thread: node-pty releases those only from `kill()`, so skipping it when
+    // `exited` left one thread and one pseudoconsole per scenario alive for the
+    // rest of the run — measured at 39 of 39 undisposed on `--only-tty`. This is
+    // a leak fix, not a fix for the segfault in docs/bug log/29-07-2026e.md.
     kill() {
-      if (!exited) {
-        try { proc.kill(); } catch { /* already gone */ }
-      }
+      if (killed) return;
+      killed = true;
+      try { proc.kill(); } catch { /* already gone */ }
+      try { conoutWorkerOf(proc)?.dispose(); } catch { /* not on this platform */ }
+      try { (term as { dispose?(): void }).dispose?.(); } catch { /* already disposed */ }
     },
   };
 }
