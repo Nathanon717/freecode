@@ -1,0 +1,40 @@
+{
+  "name": "agent-markdown-render",
+  "description": "Model response text reaches the screen markdown-rendered, not as literal syntax. Until this scenario existed no e2e fixture emitted a single '**', '#' or code fence, so the stream renderer wired into the agent loop was covered only by unit tests on the renderer itself. Asserted as an exact stdout block: '**' and the backticks around 'isRecord' are gone, the list keeps its bullet and indent, and the fenced block becomes a language label plus a padded, indented body. The fixture splits the text mid-construct across chunks, which pins that the renderer buffers by line rather than rendering each chunk as it arrives. It also pins that a heading line is DROPPED ENTIRELY rather than rendered - see docs/map/cli/render/markdown-renderer.md; the block's leading blank line is where '## The plan' was, and the words never appear",
+  "workspace": "temp",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "agent-markdown-render.llm.json",
+  "env": { "FREECODE_TRANSCRIPT_STREAM": "stdout" },
+  "turns": [
+    { "input": "summarize the plan" }
+  ],
+  "expect": {
+    "stdoutAbsent": ["**", "The plan", "```"],
+    "stdoutBlock": [
+      "",
+      "Rewrite guards.ts and keep isRecord exported.",
+      "",
+      "- first item",
+      "- second item",
+      "",
+      "python",
+      "",
+      "  print('ok')",
+      "",
+      "",
+      "Done."
+    ],
+    "exitCode": 0,
+    "fakeLlmTrace": {
+      "callCount": 1,
+      "maxCalls": 1,
+      "calls": [
+        {
+          "provider": "mock-native",
+          "executionPath": "native-stream",
+          "emittedTextContains": ["## The pl", "```py"]
+        }
+      ]
+    }
+  }
+}

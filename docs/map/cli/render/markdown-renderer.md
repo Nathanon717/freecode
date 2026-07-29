@@ -26,6 +26,7 @@ createMarkdownStreamRenderer(): MarkdownStreamRenderer
 
 ## What is rendered
 
+- **ATX headings** (`# ` … `###### `): **dropped entirely** — the line is consumed and nothing takes its place, so `## The plan` costs the reader the words "The plan", not just the styling. This is what the code does (`process` returns `null` for `/^#{1,6}\s/`), not necessarily what it should do; `tests/e2e/agent-markdown-render.e2e.json` pins it so a change is a decision rather than an accident. A heading's following blank line survives, which is the blank at the top of that scenario's block.
 - **Code fences** (`` ``` `` or ```` ```lang ````): content rendered black-on-green background; fence delimiter lines consumed. Language identifier shown as a heading line immediately before the block.
 - **Horizontal rules** (a line of 3+ `-`, `*`, or `_`, optionally space-separated): rendered as a full-width white `─` line spanning `process.stdout.columns`.
 - **Pipe-delimited tables** (a header row, a `| --- | :-: |` delimiter row, then body rows): rendered with box-drawing borders. Columns size to their widest visible cell, the header is bold, and `:` markers in the delimiter row set per-column left/right/center alignment. Cell contents pass through inline rendering. Limitations: the delimiter row must contain a `|` (so bare `---` stays a horizontal rule), and escaped `\|` or pipes inside inline code are not handled.

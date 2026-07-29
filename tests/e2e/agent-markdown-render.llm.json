@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "model": "mock-native:gpt-freecode-test",
+  "comment": "The only fixture whose response text is markdown. Every other fixture emits plain prose, so the stream renderer in loop.ts was reachable only from unit tests and nothing pinned that its output ever reaches the screen. Chunked mid-construct on purpose: the renderer buffers by line, so a heading split across two chunks and a fence opened in one chunk and closed in another are exactly the cases a naive per-chunk renderer gets wrong. mock-native, not mock - the fake-direct path writes fixture chunks straight to stdout and never builds a markdown renderer.",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "mustContain": ["summarize the plan"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": [
+          "## The pl",
+          "an\n\nRewrite **guards.ts** and keep `isRecord` exported.\n\n- first item\n- second item\n\n```py",
+          "thon\nprint('ok')\n``",
+          "`\n\nDone."
+        ],
+        "usage": { "promptTokens": 18, "outputTokens": 24, "totalTokens": 42 }
+      }
+    }
+  ]
+}
