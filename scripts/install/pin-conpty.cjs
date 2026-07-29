@@ -12,7 +12,9 @@
 // The host is a plain pair of files loaded by path: `LoadConptyDll` in
 // node-pty's conpty.cc resolves `conpty\conpty.dll` relative to the *loaded*
 // conpty.node. 1.23 comes from the `conpty-pinned` devDependency (an alias for
-// node-pty@1.1.0) so no binaries live in this repo.
+// node-pty@1.1.0) so no binaries live in this repo. Only that package's
+// `third_party/` payload is consumed — it ships in the tarball, so whether the
+// alias's own native addon was fetched or built makes no difference here.
 'use strict';
 const fs = require('fs');
 const path = require('path');
