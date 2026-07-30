@@ -8,7 +8,7 @@ E2e tests live in `tests/e2e/*.e2e.json` and run through `tests/harness/run-e2e.
 ## Commands
 
 ```powershell
-npm test              # build + docs check + all e2e tests including TTY + unit tests (no PTY)
+npm test              # build + lint + docs check + all e2e tests including TTY + unit tests (no PTY)
 npm run pty:test      # PTY driver + session manager vitest unit tests (require a PTY)
 ```
 

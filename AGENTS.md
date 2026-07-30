@@ -6,6 +6,15 @@ Freecode is a TypeScript CLI coding agent with provider routing, an interactive 
 
 This file is intentionally short. Keep detailed reference material in `docs/` and link to it from here.
 
+## Typical workflow when editing code
+
+1. Read docs
+2. Read code
+3. Edit code
+4. Get `npm test` green
+5. Update docs
+
+
 ## Required Rules
 
 - Before broad source reads, start with `docs/map/README.md` and the relevant map page.
@@ -19,8 +28,8 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 ## Verification
 
-- For any change touching `src/`, run `npm.cmd test` before reporting completion. Build, docs, and e2e failures are blockers. Never end your turn 
-- `npm test` runs build + `docs:generate` + all e2e tests including TTY + all unit tests except PTY. E2e tests never call a live LLM.
+- For any change touching `src/`, run `npm.cmd test` before reporting completion. Test, docs, and line-limit failures are blockers.
+- `npm test` runs, in order: build, lint, `docs:generate` (which also runs the line-limit check), all e2e tests including TTY, then all unit tests except PTY. It stops at the first failing section and names the sections it therefore skipped.
 - If a user-visible behavior changes, ensure it has e2e coverage in `tests/e2e/` or docs coverage, as appropriate.
 - If generated reference sources change, update the source of truth first, then run `npm.cmd run docs:generate`. It checks generated docs first; if they are already current, it stops without rewriting them, and if they are stale, it regenerates them. Do not hand-edit generated sections.
 
@@ -43,6 +52,11 @@ After code changes, inspect `git diff --name-only` and update only map pages for
 
 ## Git
 
+- Only commit when asked.
 - Never branch just to commit. If working on main, commit to main.
 - Keep commit messages very short and terse. Use "feat:", "fix:", "refactor:" etc. where applicable.
 - NEVER EVER include a "co-authored by..." sign off line in the commit msg.
+
+## Handoffs
+
+Whenever you reach a point in the session where there is still work that needs to be done, but your context is mostly full of data that will not be relavent to the remaining work, then stop and output a handoff message that will be used as the first user message in a fresh context. Put it in your response, don't make a file unless asked. 
