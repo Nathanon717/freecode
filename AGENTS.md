@@ -41,7 +41,12 @@ Two ways, for two different jobs:
 
 - **Ask it a question:** `freecode -p "<prompt>"` runs one read-only turn and prints the final answer to stdout, so `$(freecode -p "...")` captures it. It cannot write, run commands, or spawn sub-agents, and it is hard-blocked to free models — safe to call yourself. See the `-p` section of `docs/commands.md`.
 - **Drive the real TUI:** `docs/pty-session.md` (lets you verify and debug the real app just like the user can). Also free-model-only.
- 
+
+**Delegate to it.** Freecode's models are free, so the only budget that matters is the
+*calling* agent's own context. Before any broad read, consider spending a `freecode -p`
+call instead. See `docs/subagents/README.md` for when it pays off, verified prompts, and
+known failure modes — and add to it whenever you learn something new.
+
 ## Documentation
 
 - Use `docs/README.md` as the documentation index.
