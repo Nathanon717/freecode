@@ -6,15 +6,25 @@
 ## Exports
 
 ```typescript
-buildSystemPrompt(loadAgentsMd?: boolean, spawnAgent?: boolean): string
+buildSystemPrompt(loadAgentsMd?: boolean, toolNames?: readonly string[]): string
 ```
 <!-- END GENERATED EXPORTS -->
 
 ## Export notes
 
 - `loadAgentsMd` defaults to `false`. When `true`, reads `AGENTS.md` from `projectRoot` and appends it under a `# Project Instructions (AGENTS.md)` header; silently omitted if the file does not exist.
-- `spawnAgent` defaults to `true` and must mirror whether the caller actually put `spawn_agent` in the tool set. It gates both the `Available tools:` line and the delegation tip. [parsed-tools.md](parsed-tools.md) builds its tools without a `spawnAgent` runner, so [loop.md](loop.md) rebuilds the prompt with `false` before entering that path — otherwise the model is told to call a tool that does not exist.
+- `toolNames` **must be exactly what the caller put in the tool set** — build it with `offeredToolNames` ([tools/tool-names.md](tools/tool-names.md)) from the same flags passed to `createTools`. It defaults to the full set plus `spawn_agent`. Advertising an absent tool sends the model calling something that is not there, and there are two ways to get it wrong: [parsed-tools.md](parsed-tools.md) builds its tools without a `spawnAgent` runner, and a read-only session (the Ctrl+R toggle, `freecode -p`) has no `create`/`edit`/`shell_exec`. [loop.md](loop.md) passes the right list on both paths.
 
 ## Behavior
 
-The prompt is mostly static. Conditional behavior: when `loadAgentsMd` is `true`, it reads `AGENTS.md` from `projectRoot` at call time and appends the file's contents to the prompt.
+Mostly static, with three things derived from `toolNames`:
+
+- the `Available tools:` line;
+- the editing rules, replaced by a "this session is read-only" statement when the set
+  contains no write tool — otherwise the prompt instructs a read-only agent to use
+  tools it does not have;
+- the `HANDY TIPS` section, whose tips are each about a specific tool and are dropped
+  with it. "Running broken code often gives you a helpful error message" contradicts
+  a session with no `shell_exec`, so an all-read-only set drops the section entirely.
+
+Plus `loadAgentsMd`: when `true` it reads `AGENTS.md` from `projectRoot` at call time and appends the file's contents.

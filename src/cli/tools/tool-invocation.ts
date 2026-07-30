@@ -7,23 +7,11 @@
 
 import chalk from 'chalk';
 
-// Canonical set of directly-invokable tool names. Mirrors createTools() in
-// src/agent/tools/index.ts — keep in sync when tools are added or removed.
-export const TOOL_NAMES = [
-  'read',
-  'grep',
-  'list_dir',
-  'create',
-  'edit',
-  'shell_exec',
-] as const;
-export type ToolName = (typeof TOOL_NAMES)[number];
-
-const TOOL_NAME_SET = new Set<string>(TOOL_NAMES);
-
-export function isToolName(name: string): name is ToolName {
-  return TOOL_NAME_SET.has(name);
-}
+// Taken from the registry's leaf name module (no `ai` import, so it stays safe on
+// this path) rather than restated here — there is nothing to keep in sync. Also
+// re-exported, since callers of this module expect the names alongside the parser.
+import { TOOL_NAMES, isToolName, type ToolName } from '../../agent/tools/tool-names.js';
+export { TOOL_NAMES, isToolName, type ToolName };
 
 export interface ToolParam {
   name: string;

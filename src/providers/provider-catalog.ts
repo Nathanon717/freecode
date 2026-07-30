@@ -1,4 +1,33 @@
-import type { ProviderConfig } from "./types.js";
+import type { ModelConfig, ProviderConfig } from "./types.js";
+
+// Zen's free models carry a `-free` suffix, with two exceptions to hand-maintain:
+// one free model that never had the suffix, and one retired name that still does.
+const ZEN_FREE_IDS = new Set(["big-pickle"]);
+const ZEN_RETIRED_FREE_IDS = new Set(["qwen3.6-plus-free"]);
+
+function isZenFreeModelId(modelId: string): boolean {
+  return (
+    (modelId.endsWith("-free") || ZEN_FREE_IDS.has(modelId)) &&
+    !ZEN_RETIRED_FREE_IDS.has(modelId)
+  );
+}
+
+/**
+ * Whether a model is free to call. A provider with no `isFreeModelId` predicate
+ * serves only free models (the free-tier default); a `paid` provider serves none.
+ */
+export function isFreeModel(provider: ProviderConfig, modelId: string): boolean {
+  if (provider.paid) return false;
+  return provider.isFreeModelId?.(modelId) ?? true;
+}
+
+export function selectFreeModels(
+  provider: ProviderConfig,
+  models: ModelConfig[],
+): ModelConfig[] {
+  if (!provider.isFreeModelId) return models;
+  return models.filter((m) => isFreeModel(provider, m.id));
+}
 
 export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
@@ -22,6 +51,10 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     baseUrl: "https://openrouter.ai/api/v1",
     apiKeyEnvVar: "OPENROUTER_API_KEY",
     modelsSource: "live",
+    // `:free` is OpenRouter's canonical marker for an always-free model. Everything
+    // else on the account bills against credit, so it is filtered from the picker
+    // and refused outright under FREECODE_FREE_ONLY=1.
+    isFreeModelId: (modelId) => modelId.endsWith(":free"),
     modelIdBlocklist: [
       "liquid/lfm-2.5-1.2b-thinking",
       "nvidia/nemotron-3.5-content-safety"
@@ -255,6 +288,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
     apiKeyEnvVar: "OPENCODE_ZEN_API_KEY",
     defaultApiKey: "public",
     modelsSource: "live",
+    isFreeModelId: isZenFreeModelId,
     modelIdBlocklist: ["minimax-m3-free"],
     models: [],
   },

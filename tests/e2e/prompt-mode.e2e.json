@@ -1,0 +1,35 @@
+{
+  "name": "prompt-mode",
+  "description": "`freecode -p \"<prompt>\"` runs one headless turn and prints ONLY the final response to stdout. This is the contract an LLM caller depends on: the answer is capturable with $(...), so the tool transcript that a normal session prints (the 'read(...)' call line, its result preview, the step divider) must not reach stdout, and neither must the model's mid-turn preamble. The turn still really runs tools - the fixture's step 1 calls read and step 2 answers from it - and stdoutAbsent proves the chrome went nowhere rather than that the tool never ran. Read-only is asserted where it actually matters, on what the model was offered: read/grep/list_dir present, create/edit/shell_exec/spawn_agent absent, with no approval prompt anywhere in the run",
+  "workspace": "repo",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "prompt-mode.llm.json",
+  "prompt": "what does the package say its name is",
+  "expect": {
+    "exitCode": 0,
+    "stdoutContains": ["The package is named freecode."],
+    "stdoutAbsent": [
+      "Let me look at it.",
+      "read(",
+      "Reading the manifest",
+      "Approve",
+      "Error:"
+    ],
+    "toolTrace": {
+      "sequence": ["read"]
+    },
+    "fakeLlmTrace": {
+      "callCount": 2,
+      "calls": [
+        {
+          "toolsAvailable": ["read", "grep", "list_dir"],
+          "toolsAbsent": ["create", "edit", "shell_exec", "spawn_agent"]
+        },
+        {
+          "toolsAvailable": ["read", "grep", "list_dir"],
+          "toolsAbsent": ["create", "edit", "shell_exec", "spawn_agent"]
+        }
+      ]
+    }
+  }
+}

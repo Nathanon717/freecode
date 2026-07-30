@@ -33,25 +33,26 @@ Format: filename (linecount)
 - `src/agent/`
   - [`conversation.ts`](agent/conversation.md) (60) — Session Controller
   - [`fake-loop.ts`](agent/fake-loop.md) (122) — Fake-Fixture Turn Loop
-  - [`loop.ts`](agent/loop.md) (431) — Agent Loop
+  - [`loop.ts`](agent/loop.md) (438) — Agent Loop
   - [`parsed-tools.ts`](agent/parsed-tools.md) (268) — Parsed-Tools Harness
   - [`stream-turn.ts`](agent/stream-turn.md) (106) — Recovering Stream Turn
 - `src/agent/subagents/`
   - [`registry.ts`](agent/subagents/registry.md) (56) — Sub-Agent Registry
-  - [`run-subagent.ts`](agent/subagents/run-subagent.md) (168) — Sub-Agent Runner
+  - [`run-subagent.ts`](agent/subagents/run-subagent.md) (163) — Sub-Agent Runner
 - `src/agent/`
-  - [`system-prompt.ts`](agent/system-prompt.md) (34) — System Prompt
+  - [`system-prompt.ts`](agent/system-prompt.md) (49) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
 - `src/agent/tools/`
   - [`create.ts`](agent/tools/create.md) (33) — create Tool
   - [`edit-diff-context.ts`](agent/tools/edit-diff-context.md) (103) — Edit Diff Context
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
   - [`grep.ts`](agent/tools/grep.md) (324) — grep Tool
-  - [`index.ts`](agent/tools/index.md) (453) — Tool Registry
+  - [`index.ts`](agent/tools/index.md) (440) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (88) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
   - [`spawn-agent.ts`](agent/tools/spawn-agent.md) (38) — spawn_agent Tool
+  - [`tool-names.ts`](agent/tools/tool-names.md) (65) — Tool Name Partition
 - `src/agent/`
   - [`turn-messages.ts`](agent/turn-messages.md) (140) — Turn Message Shape Rules
   - [`usage-finalize.ts`](agent/usage-finalize.md) (42) — Turn Usage/Quota Finalization
@@ -61,7 +62,7 @@ Format: filename (linecount)
   - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (490) — Bottom Terminal UI
   - [`footer-status.ts`](cli/chrome/footer-status.md) (215) — Footer Status State and Formatters
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
-  - [`toggles.ts`](cli/chrome/toggles.md) (100) — Footer Toggle State
+  - [`toggles.ts`](cli/chrome/toggles.md) (107) — Footer Toggle State
 - `src/cli/`
   - [`command-dispatcher.ts`](cli/command-dispatcher.md) (254) — Command Dispatcher
 - `src/cli/eval/`
@@ -70,6 +71,8 @@ Format: filename (linecount)
   - [`eval-menu.ts`](cli/eval/eval-menu.md) (123) — Unified Eval Menu
   - [`eval-screen.ts`](cli/eval/eval-screen.md) (165) — Eval Screen Renderers
   - [`humaneval-menu.ts`](cli/eval/humaneval-menu.md) (314) — HumanEval Tab + Run Loop
+- `src/cli/`
+  - [`headless-prompt.ts`](cli/headless-prompt.md) (126) — Headless Prompt Mode (`-p`)
 - `src/cli/menus/`
   - [`action-menu.ts`](cli/menus/action-menu.md) (53) — Inline Action Sub-menu
   - [`list-menu.ts`](cli/menus/list-menu.md) (367) — Shared Tabbed List Menu
@@ -80,19 +83,19 @@ Format: filename (linecount)
   - [`banner.ts`](cli/render/banner.md) (124) — Startup Banner
   - [`markdown-renderer.ts`](cli/render/markdown-renderer.md) (489) — Markdown Renderer
   - [`transcript-format.ts`](cli/render/transcript-format.md) (192) — Transcript Formatters
-  - [`transcript-options.ts`](cli/render/transcript-options.md) (66) — Transcript Stream + Options
+  - [`transcript-options.ts`](cli/render/transcript-options.md) (71) — Transcript Stream + Options
   - [`transcript-record.ts`](cli/render/transcript-record.md) (151) — Rendered Transcript Record
-  - [`transcript-renderer.ts`](cli/render/transcript-renderer.md) (391) — Agent Transcript Formatting
+  - [`transcript-renderer.ts`](cli/render/transcript-renderer.md) (399) — Agent Transcript Formatting
   - [`transcript-replay.ts`](cli/render/transcript-replay.md) (79) — Post-Wipe Transcript Replay
 - `src/cli/`
   - [`scripted-mode.ts`](cli/scripted-mode.md) (96) — Scripted Session Mode
-  - [`session-modes.ts`](cli/session-modes.md) (429) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (426) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (77) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (76) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
 - `src/cli/tools/`
   - [`tool-approval.ts`](cli/tools/tool-approval.md) (297) — Tool Approval Prompts
-  - [`tool-invocation.ts`](cli/tools/tool-invocation.md) (339) — Hand-Typed Tool Call Parsing
+  - [`tool-invocation.ts`](cli/tools/tool-invocation.md) (327) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tools/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
 - `src/commands/`
   - [`config.ts`](commands/config.md) (397) — Interactive Config Editor
@@ -100,15 +103,15 @@ Format: filename (linecount)
   - [`renderer.ts`](commands/renderer.md) (284) — Renderer Demo Command
   - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`
-  - [`index.ts`](config/index.md) (239) — Configuration Loader
+  - [`index.ts`](config/index.md) (245) — Configuration Loader
 - `src/eval/`
   - [`custom.ts`](eval/custom.md) (96) — Custom Eval Discovery and Hashing
   - [`errors.ts`](eval/errors.md) (77) — Eval API Error Parser
   - [`history.ts`](eval/history.md) (114) — Eval History and Status Computation
   - [`humaneval-data.ts`](eval/humaneval-data.md) (99) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (79) — Eval Result JSON IPC Sink
-  - [`runner.ts`](eval/runner.md) (203) — Eval Subprocess Runner
-- [`index.ts`](index.md) (190) — CLI Entry Point
+  - [`runner.ts`](eval/runner.md) (202) — Eval Subprocess Runner
+- [`index.ts`](index.md) (226) — CLI Entry Point
 - [`logger.ts`](logger.md) (53) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (189) — Adapter HTTP Retry/Backoff
@@ -124,14 +127,15 @@ Format: filename (linecount)
   - [`model-quirks.ts`](providers/model-quirks.md) (38) — Per-Model Static Quirks
   - [`model-settings-accessor.ts`](providers/model-settings-accessor.md) (14) — Model Settings Accessor
   - [`openai-daily-spend.ts`](providers/openai-daily-spend.md) (181) — OpenAI Daily Spend Footer
+  - [`paid-guard.ts`](providers/paid-guard.md) (60) — Free-Only Hard Block
   - [`pricing-verifier.ts`](providers/pricing-verifier.md) (123) — Dual-Source Pricing Verifier
-  - [`provider-catalog.ts`](providers/provider-catalog.md) (297) — Provider Catalog
-  - [`provider-registry.ts`](providers/provider-registry.md) (447) — Provider Registry
+  - [`provider-catalog.ts`](providers/provider-catalog.md) (331) — Provider Catalog
+  - [`provider-registry.ts`](providers/provider-registry.md) (456) — Provider Registry
 - `src/providers/quota/`
   - [`cache.ts`](providers/quota/cache.md) (39) — Quota Cache
   - [`headers.ts`](providers/quota/headers.md) (250) — Provider Rate-Limit Header Parsing
 - `src/providers/`
-  - [`types.ts`](providers/types.md) (56) — Type Definitions
+  - [`types.ts`](providers/types.md) (64) — Type Definitions
   - [`user-blocklist.ts`](providers/user-blocklist.md) (69) — Per-User Model Blocklist
 - `src/store/`
   - [`call-log.ts`](store/call-log.md) (52) — Per-Call LLM Log

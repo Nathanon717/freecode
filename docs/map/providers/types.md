@@ -30,6 +30,14 @@ interface ProviderConfig {
   models: ModelConfig[];
   supportsTools?: boolean;
   paid?: boolean;
+  /**
+   * Set on providers that serve free AND paid models behind one key, to say which
+   * model ids are the free ones. It is the single definition of that: model
+   * discovery filters the picker with it, and `resolveModel` gates on it under
+   * `FREECODE_FREE_ONLY=1` (see providers/paid-guard.ts). A provider with no
+   * predicate is treated as free throughout — that is the free-tier default.
+   */
+  isFreeModelId?: (modelId: string) => boolean;
   modelsSource?: 'static' | 'live';
   modelIdBlocklist?: string[];
   modelIdExactBlocklist?: string[];
@@ -66,7 +74,8 @@ interface Config {
 ## Notes
 
 - `supportsTools` defaults effectively to true; router checks `provider.supportsTools !== false`.
-- `paid` marks providers that should be treated as paid even if other providers are free-tier oriented.
+- `paid` marks providers that should be treated as paid even if other providers are free-tier oriented. It is no longer only a label: under `FREECODE_FREE_ONLY=1` it suppresses the provider's API key and refuses its models outright ([paid-guard.md](paid-guard.md)).
+- `isFreeModelId` is set only on providers that mix free and paid models behind one key (OpenRouter, Zen). Absent means "all free" — the free-tier default. It is the same predicate for discovery and for the access gate; see [provider-catalog.md](provider-catalog.md).
 - `modelsSource: 'live'` marks providers whose model list is fetched from the provider API at runtime; used by the model picker to show a `· live` badge next to the provider name.
 - `preferredModel` is the startup/default `provider:model` selection used by the CLI.
 - Favorites and per-model settings are **not** config fields — they live in the git-tracked model store (`providers/model-data.ts`), not `config.json`. `modelOverrides` was removed in Phase 3 of the model-store redesign.

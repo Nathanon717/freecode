@@ -6,11 +6,11 @@
 ## Exports
 
 ```typescript
-TOOL_NAMES: readonly ['read', 'grep', 'list_dir', 'create', 'edit', 'shell_exec']
+TOOL_NAMES: readonly ["read", "grep", "list_dir", "create", "edit", "shell_exec"]
 
-type ToolName = (typeof TOOL_NAMES)[number];
+isToolName: (name: string) => name is "create" | "edit" | "shell_exec" | "read" | "grep" | "list_dir"
 
-isToolName(name: string): name is "read" | "grep" | "list_dir" | "create" | "edit" | "shell_exec"
+ToolName: any
 
 interface ToolParam {
   name: string;
@@ -19,9 +19,9 @@ interface ToolParam {
   quoted: boolean;
 }
 
-TOOL_PARAMS: Record<'read' | 'grep' | 'list_dir' | 'create' | 'edit' | 'shell_exec', readonly ToolParam[]>
+TOOL_PARAMS: Record<'create' | 'edit' | 'shell_exec' | 'read' | 'grep' | 'list_dir', readonly ToolParam[]>
 
-buildToolCallSkeleton(name: "read" | "grep" | "list_dir" | "create" | "edit" | "shell_exec"): { text: string; caret: number; }
+buildToolCallSkeleton(name: "create" | "edit" | "shell_exec" | "read" | "grep" | "list_dir"): { text: string; caret: number; }
 
 interface HighlightRange {
   start: number;
@@ -30,7 +30,7 @@ interface HighlightRange {
 
 toolNameHighlightRanges(line: string): HighlightRange[]
 
-toolNameBeforeCursor(buffer: string, cursor: number): "read" | "grep" | "list_dir" | "create" | "edit" | "shell_exec" | null
+toolNameBeforeCursor(buffer: string, cursor: number): "create" | "edit" | "shell_exec" | "read" | "grep" | "list_dir" | null
 
 styleToolNames(chunk: string, chunkStart: number, ranges: HighlightRange[]): string
 
@@ -67,11 +67,11 @@ parseToolArgs(argsText: string): Record<string, unknown>
 ## Read When
 
 - Changing the tool-call typing syntax, argument coercion, the autofill skeleton, tabstop navigation, or the pastel tool-name highlight.
-- Adding/removing a callable tool — update `TOOL_NAMES` **and** `TOOL_PARAMS` here to match `createTools()` in [../agent/tools/index.md](../../agent/tools/index.md).
+- Adding/removing a callable tool — update `TOOL_PARAMS` here. `TOOL_NAMES` needs nothing: it comes from the registry's name module.
 
 ## Export notes
 
-- `TOOL_NAMES` / `isToolName` — canonical set of directly-invokable tools; mirror the tool registry.
+- `TOOL_NAMES` / `isToolName` — re-exported from [../../agent/tools/tool-names.md](../../agent/tools/tool-names.md), not restated here, so there is nothing to keep in sync. That module has no imports, which is what makes it safe on this path (this file must stay off the `ai` SDK's graph).
 - `TOOL_PARAMS` — ordered param list + string-ness per tool, hardcoded to stay off the `ai`-SDK boot path. A drift-guard test in [tool-runner.md](./tool-runner.md) asserts it still matches each tool's real zod schema.
 - `buildToolCallSkeleton(name)` — the `(arg=val, ...)` autofill text + caret offset inserted when `(` is typed after a tool name (strings get `key=""`, others `key=`); consumed by [session-modes.md](../session-modes.md).
 - `nextToolFieldCaret` / `toolFieldBackspace` — Tab cycles forward through value slots; Backspace at an emptied slot steps back instead of eating the skeleton. Both derive from the single field-slot walker (`FieldSlot` / `toolCallSlots`), which also backs argument parsing — one grammar, no drift on quoted commas/`=`.

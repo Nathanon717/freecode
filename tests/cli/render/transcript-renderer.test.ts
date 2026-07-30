@@ -40,7 +40,7 @@ describe('transcript renderer', () => {
   it('writeTranscriptText writes, drives the state machine, and records in one call', () => {
     const output = capture(() => {
       beginTranscriptTurn(OPTS);
-      writeTranscriptText('hello\n');
+      writeTranscriptText('hello\n', OPTS);
       endTranscriptStep(false, OPTS);
     });
     expect(output).toBe('hello\n');
@@ -62,14 +62,14 @@ describe('transcript renderer', () => {
   it('the first turn opens without a divider; the next one flushes the deferred separator', () => {
     const first = capture(() => {
       beginTranscriptTurn(OPTS);
-      writeTranscriptText('one\n');
+      writeTranscriptText('one\n', OPTS);
       endTranscriptStep(false, OPTS);
     });
     expect(first).toBe('one\n');
 
     const second = capture(() => {
       beginTranscriptTurn(OPTS);
-      writeTranscriptText('two\n');
+      writeTranscriptText('two\n', OPTS);
       endTranscriptStep(false, OPTS);
     });
     expect(stripAnsi(second)).toMatch(/^\n─+\n\ntwo\n$/);
@@ -78,14 +78,14 @@ describe('transcript renderer', () => {
   it('resetTranscriptTurnState drops the deferred divider, and can put it back', () => {
     capture(() => {
       beginTranscriptTurn(OPTS);
-      writeTranscriptText('one\n');
+      writeTranscriptText('one\n', OPTS);
       endTranscriptStep(false, OPTS); // defers a divider
     });
 
     resetTranscriptTurnState();
     const afterReset = capture(() => {
       beginTranscriptTurn(OPTS);
-      writeTranscriptText('two\n');
+      writeTranscriptText('two\n', OPTS);
       endTranscriptStep(false, OPTS);
     });
     expect(afterReset).toBe('two\n');
@@ -93,7 +93,7 @@ describe('transcript renderer', () => {
     resetTranscriptTurnState(true);
     const afterRestore = capture(() => {
       beginTranscriptTurn(OPTS);
-      writeTranscriptText('three\n');
+      writeTranscriptText('three\n', OPTS);
       endTranscriptStep(false, OPTS);
     });
     expect(stripAnsi(afterRestore)).toMatch(/^\n─+\n\nthree\n$/);

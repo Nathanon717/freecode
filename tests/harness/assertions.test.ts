@@ -69,13 +69,16 @@ describe('e2e expectation assertions', () => {
       expect(failures[0]).toContain('stdout block not found');
     });
 
-    it('refuses to run without FREECODE_TRANSCRIPT_STREAM=stdout', () => {
-      // The block would match nothing simply because the dividers went to stderr.
+    it('runs with no env at all, since stdout is the default', () => {
+      expect(assertStdoutBlock(['preamble'], OUT, undefined)).toEqual([]);
+    });
+
+    it('refuses to run against a silenced transcript', () => {
+      // The block would match nothing simply because the dividers went nowhere.
       // Saying so beats a layout diff the author cannot act on.
-      const failures = assertStdoutBlock(['preamble'], OUT, undefined);
+      const failures = assertStdoutBlock(['preamble'], OUT, { FREECODE_TRANSCRIPT_STREAM: 'null' });
       expect(failures).toHaveLength(1);
       expect(failures[0]).toContain('FREECODE_TRANSCRIPT_STREAM');
-      expect(assertStdoutBlock(['preamble'], OUT, { FREECODE_TRANSCRIPT_STREAM: 'stderr' })).toHaveLength(1);
     });
 
     it('is skipped entirely when the scenario declares no block', () => {

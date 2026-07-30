@@ -43,7 +43,7 @@ beginTranscriptTurn(options?: TranscriptRuntimeOptions): void
 
 notifyTranscriptChunk(chunk: string): void
 
-writeTranscriptText(chunk: string): void
+writeTranscriptText(chunk: string, options?: TranscriptRuntimeOptions): void
 
 resetTranscriptTurnState(pendingDivider?: boolean): void
 
@@ -157,6 +157,10 @@ The module maintains a single `_step` state object. All callers drive it with th
 
 ## Runtime Options
 
-`FREECODE_TRANSCRIPT_STREAM=stdout` moves transcript output (tool logs, dividers) to stdout; the default is stderr. `FREECODE_TRANSCRIPT_MAX_RESULT_LINES` controls preview truncation, defaulting to 30 lines and accepting `all` for unbounded previews. Neither raises the interactive `maxResultRows` cap: on a short terminal a pending-approval preview is trimmed further regardless, since the alternative is scrolling away the call the user is approving.
+Transcript output (tool logs, dividers, and model text) goes to stdout; `FREECODE_TRANSCRIPT_STREAM=null` silences it. See [transcript-options.md](./transcript-options.md) for why `stderr` is gone.
+
+**`writeTranscriptText` honours the stream**, and takes the same optional `options` as every other writer here. It used to write straight to `process.stdout`, from when the default was stderr and model text had to escape that. Now that stdout *is* the default the only setting this newly respects is `null` — which must silence model text too, or `-p` prints the response twice (once streamed through here, once from `result.text`). The record/notify hooks still fire under `null`: they are in-memory state for replay, not output. Unit tests that assert on visible output therefore have to opt out of the suite-wide `null` (`vitest.config.ts`) with `vi.stubEnv`.
+
+`FREECODE_TRANSCRIPT_MAX_RESULT_LINES` controls preview truncation, defaulting to 30 lines and accepting `all` for unbounded previews. Neither raises the interactive `maxResultRows` cap: on a short terminal a pending-approval preview is trimmed further regardless, since the alternative is scrolling away the call the user is approving.
 
 `FREECODE_TRACE_JSON` only controls machine-readable trace capture and should not be used to change visible transcript formatting.

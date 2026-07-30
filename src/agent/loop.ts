@@ -2,6 +2,7 @@ import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
 import { retireDeadModel, resolveModel } from '../providers/provider-registry.js';
 import { buildSystemPrompt } from './system-prompt.js';
+import { offeredToolNames } from './tools/tool-names.js';
 import { createTools, type ConfirmToolCall } from './tools/index.js';
 import {
   beginProviderUsageCapture,
@@ -350,7 +351,10 @@ export async function agentLoop(
     quota = outcome.quota;
   };
 
-  const systemPrompt = buildSystemPrompt(modelSettings.loadAgentsMd);
+  const systemPrompt = buildSystemPrompt(
+    modelSettings.loadAgentsMd,
+    offeredToolNames({ readOnly: options.readOnly, spawnAgent: true }),
+  );
   if (!systemPromptLogged) {
     systemPromptLogged = true;
     log('stream', `System prompt:\n${systemPrompt}`);
@@ -378,7 +382,10 @@ export async function agentLoop(
     if (streamed.useParsedToolsFallback) {
       // runParsedToolsLoop builds its tools without a spawnAgent runner, so the
       // prompt must not advertise spawn_agent — rebuild it without that tool.
-      const parsedSystemPrompt = buildSystemPrompt(modelSettings.loadAgentsMd, false);
+      const parsedSystemPrompt = buildSystemPrompt(
+        modelSettings.loadAgentsMd,
+        offeredToolNames({ readOnly: options.readOnly, spawnAgent: false }),
+      );
       const parsedToolsResult = await runParsedToolsLoop(messages, parsedSystemPrompt, languageModel, options.confirmToolCall, modelSettings.toolRationale, options.readOnly, (t) => options.onStepUsage?.({ providerId, modelId, promptTokens: t }));
       fullText = parsedToolsResult.text.trimEnd();
       totalTokens = parsedToolsResult.totalTokens;

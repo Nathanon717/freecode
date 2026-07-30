@@ -35,9 +35,12 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 Command details live in `docs/commands.md`. E2e details live in `docs/e2e.md` and `docs/testing-e2e.md`.
 
-## Interactive Freecode Sessions
+## Running Freecode Yourself
 
-See `docs/pty-session.md` on how to drive a live, real freecode TUI (lets you verify and debug the real app just like the user can).
+Two ways, for two different jobs:
+
+- **Ask it a question:** `freecode -p "<prompt>"` runs one read-only turn and prints the final answer to stdout, so `$(freecode -p "...")` captures it. It cannot write, run commands, or spawn sub-agents, and it is hard-blocked to free models — safe to call yourself. See the `-p` section of `docs/commands.md`.
+- **Drive the real TUI:** `docs/pty-session.md` (lets you verify and debug the real app just like the user can). Also free-model-only.
  
 ## Documentation
 

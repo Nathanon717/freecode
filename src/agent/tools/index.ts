@@ -5,6 +5,11 @@ import { grepTool } from "./grep.js";
 import { shellTool } from "./shell.js";
 import { listDirTool } from "./list-dir.js";
 import { makeSpawnAgentTool, type SpawnAgentFn } from "./spawn-agent.js";
+import {
+  isReadOnlyTool,
+  type ReadOnlyToolName,
+  type WriteToolName,
+} from "./tool-names.js";
 import { logError } from "../../logger.js";
 import { loadConfig } from "../../config/index.js";
 import { isUserAbortError, toErrorMessage } from "../../util/errors.js";
@@ -170,11 +175,28 @@ function withToolRendering(
   };
 }
 
-// Tools whose read-only local action is safe to run before the user confirms —
-// the preview shown in the approval UI is the actual result, reused on approval
-// instead of re-executing. Never add a tool here that has a side effect beyond
-// reading (e.g. shell_exec, edit) — the approval UI would then act before consent.
-const PRECOMPUTE_BEFORE_CONFIRM = new Set(["read", "grep", "list_dir"]);
+/**
+ * The name -> tool maps behind the partition declared in tools/tool-names.ts.
+ * Read-only mode (the Ctrl+R toggle and `-p`) offers only READ_ONLY_TOOL_DEFS.
+ *
+ * A read-only tool's action is also, by definition, safe to run BEFORE the user
+ * confirms it: the preview shown in the approval UI is the actual result, reused
+ * on approval instead of re-executing (see withConfirmation). That is why the
+ * precompute check *is* `isReadOnlyTool` rather than a second list that happens
+ * to agree with it. Never move a tool with a side effect beyond reading into
+ * READ_ONLY_TOOL_DEFS — the approval UI would then act before consent.
+ */
+export const READ_ONLY_TOOL_DEFS: Record<ReadOnlyToolName, AnyCoreTool> = {
+  read: readFileTool,
+  grep: grepTool,
+  list_dir: listDirTool,
+};
+
+export const WRITE_TOOL_DEFS: Record<WriteToolName, AnyCoreTool> = {
+  create: createFileTool,
+  edit: editTool,
+  shell_exec: shellTool,
+};
 
 interface PreviewState {
   suppressed: boolean;
@@ -231,7 +253,7 @@ function withConfirmation(
         previewState?.rowsAbove ?? { header: 0, preamble: 0 },
       );
 
-      if (PRECOMPUTE_BEFORE_CONFIRM.has(name)) {
+      if (isReadOnlyTool(name)) {
         precomputedResult = await original(args, opts);
         hasPrecomputed = true;
         if (typeof precomputedResult === "string") resultText = precomputedResult;
@@ -376,76 +398,41 @@ export function createTools(
 ) {
   const useRationale = toolRationale ?? loadConfig().toolRationale;
   const queueExecution = createToolExecutionQueue();
-  // spawn_agent is only available when the caller injects a model-bound runner
-  // (agent/loop.ts). The hand-typed and parsed-tools paths pass none, so it is
-  // simply absent there rather than erroring at call time.
-  const spawnAgentTool: Record<string, AnyCoreTool> = spawnAgent
-    ? {
-        spawn_agent: wrap(
-          "spawn_agent",
-          makeSpawnAgentTool(spawnAgent),
-          useRationale,
-          queueExecution,
-          confirmToolCall,
-          parsedTools,
-          false,
-        ),
-      }
-    : {};
-  const readOnlyTools = {
-    read: wrap(
-      "read",
-      readFileTool,
-      useRationale,
-      queueExecution,
-      confirmToolCall,
-      parsedTools,
-    ),
-    grep: wrap(
-      "grep",
-      grepTool,
-      useRationale,
-      queueExecution,
-      confirmToolCall,
-      parsedTools,
-    ),
-    list_dir: wrap(
-      "list_dir",
-      listDirTool,
-      useRationale,
-      queueExecution,
-      confirmToolCall,
-      parsedTools,
-    ),
-  };
-  if (readOnly) return { ...readOnlyTools, ...spawnAgentTool };
+  const wrapAll = (
+    defs: Record<string, AnyCoreTool>,
+  ): Record<string, AnyCoreTool> =>
+    Object.fromEntries(
+      Object.entries(defs).map(([name, t]) => [
+        name,
+        wrap(name, t, useRationale, queueExecution, confirmToolCall, parsedTools),
+      ]),
+    );
+
+  const readOnlyTools = wrapAll(READ_ONLY_TOOL_DEFS);
+  // Read-only mode offers the read-only half and nothing else. spawn_agent is
+  // excluded deliberately even though the sub-agent it runs is itself read-only:
+  // a call spends a whole LLM sub-turn, which is more than "reading", and the
+  // headless `-p` mode must not be able to fan out.
+  if (readOnly) return readOnlyTools;
   return {
     ...readOnlyTools,
-    ...spawnAgentTool,
-    create: wrap(
-      "create",
-      createFileTool,
-      useRationale,
-      queueExecution,
-      confirmToolCall,
-      parsedTools,
-    ),
-    edit: wrap(
-      "edit",
-      editTool,
-      useRationale,
-      queueExecution,
-      confirmToolCall,
-      parsedTools,
-    ),
-    shell_exec: wrap(
-      "shell_exec",
-      shellTool,
-      useRationale,
-      queueExecution,
-      confirmToolCall,
-      parsedTools,
-    ),
+    // spawn_agent is only available when the caller injects a model-bound runner
+    // (agent/loop.ts). The hand-typed and parsed-tools paths pass none, so it is
+    // simply absent there rather than erroring at call time.
+    ...(spawnAgent
+      ? {
+          spawn_agent: wrap(
+            "spawn_agent",
+            makeSpawnAgentTool(spawnAgent),
+            useRationale,
+            queueExecution,
+            confirmToolCall,
+            parsedTools,
+            false,
+          ),
+        }
+      : {}),
+    ...wrapAll(WRITE_TOOL_DEFS),
   };
 }
 

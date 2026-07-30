@@ -10,6 +10,8 @@ type AskMode = 'ask' | 'auto';
 
 initAskMode(mode: AskMode): void
 
+initReadOnly(on: boolean): void
+
 getAskMode(): AskMode
 
 isReadOnly(): boolean
@@ -29,6 +31,7 @@ toggleBarWidth(): number
 - `cycleByChar(char)` — advances the toggle whose `char` matches; returns `true` when a toggle was found.
 - `areToggleNamesShown()` — state of the leftmost `S` toggle; when on, every toggle renders its full label. Off by default.
 - `getAskMode()` / `initAskMode(mode)` — the `A` toggle reads as **Auto-run tools**, so its on state (index 0) is `AskMode` `'auto'` and its off state is `'ask'`. The `AskMode` values and `config.toolConfirmation` are unchanged; only the display sense is inverted.
+- `initReadOnly(on)` — seeds the `R` toggle. Interactive sessions leave it off (the user presses Ctrl+R); [../headless-prompt.md](../headless-prompt.md) forces it on for the whole run so `-p` reuses this state rather than threading a separate read-only flag. Same reason it forces `initAskMode('auto')`: there is no interactive channel to confirm on, and "off switch for confirmations" already exists here.
 - `composeToggleBar()` — ANSI string prefixed with grey `ctrl+ `, then each toggle rendered as its char in banner art color (fg when off; bg+black when on), single-space separated. When `areToggleNamesShown()`, each char is followed by the grey remainder of the first state's label (e.g. `Auto-run tools`, `Read-only`).
 - `toggleBarWidth()` — visible character count of the toggle bar.
 
@@ -40,4 +43,5 @@ Add an entry to `ALL_TOGGLES` with a unique `char` and a `states` array (`{ labe
 
 - `cli/chrome/bottom-ui.ts` — imports `composeToggleBar` / `toggleBarWidth` to draw the secondary footer row
 - `cli/session-modes.ts` — imports `cycleByChar`, `getAskMode`, `initAskMode`, `isReadOnly`
+- `cli/headless-prompt.ts` — imports `initReadOnly`, `initAskMode`, `isReadOnly`, `getAskMode` for `-p`
 - `cli/session-runner.ts` → `cli/command-dispatcher.ts` → `agent/loop.ts` — `isReadOnly` threads through as `readOnly` in `AgentLoopOptions` to filter tools at creation time

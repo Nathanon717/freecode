@@ -8,7 +8,7 @@
 ```typescript
 printToolsList(): void
 
-executeToolInvocation(name: "read" | "grep" | "list_dir" | "create" | "edit" | "shell_exec", args: Record<string, unknown>, confirmToolCall: ConfirmToolCall): Promise<void>
+executeToolInvocation(name: "create" | "edit" | "shell_exec" | "read" | "grep" | "list_dir", args: Record<string, unknown>, confirmToolCall: ConfirmToolCall): Promise<void>
 ```
 <!-- END GENERATED EXPORTS -->
 

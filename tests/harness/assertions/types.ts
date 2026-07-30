@@ -53,10 +53,9 @@ export interface E2eExpectations {
    * significant. Use it where blank-line placement or indentation is the
    * contract; substring assertions cannot see either.
    *
-   * Requires `env.FREECODE_TRANSCRIPT_STREAM: "stdout"` on the scenario, since
-   * transcript output otherwise lands on stderr and the two streams are captured
-   * separately. The assertion fails with that explanation rather than silently
-   * matching nothing.
+   * Needs no `env`: transcript output goes to stdout by default. A scenario that
+   * silences it (`FREECODE_TRANSCRIPT_STREAM: "null"`) fails with that explanation
+   * rather than silently matching nothing.
    */
   stdoutBlock?: string[];
   exitCode?: number;

@@ -48,6 +48,13 @@ export function initAskMode(mode: AskMode): void {
   _autoRun.index = mode === 'auto' ? 0 : 1;
 }
 
+// Seed the read-only toggle at startup. Interactive sessions leave it off and let
+// the user press Ctrl+R; the headless `-p` mode forces it on for the whole run
+// (cli/headless-prompt.ts) rather than passing a separate read-only flag around.
+export function initReadOnly(on: boolean): void {
+  _read.index = on ? 0 : 1;
+}
+
 export function getAskMode(): AskMode {
   return _autoRun.index === 0 ? 'auto' : 'ask';
 }

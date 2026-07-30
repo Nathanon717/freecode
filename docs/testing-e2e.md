@@ -102,6 +102,7 @@ Any e2e test that drives the agent loop pairs a `mock:*` model with an `llmFixtu
 - `model`: Optional model preference passed as `--model <value>`.
 - `llmFixture`: Fake LLM script path, relative to `tests/e2e/`. Required for any e2e test that drives the agent loop; pair it with a `mock:*` model. Without a fixture, the loop is hard-blocked (`FREECODE_NO_LLM=1`).
 - `turns`: Input lines sent to script mode. Script mode exits cleanly after the final turn.
+- `prompt`: Runs `freecode -p "<value>"` — the headless one-shot mode — instead of a `--script` session. Mutually exclusive with `turns`: the CLI rejects `-p` together with `--script`, so declare one or the other. Use it to assert `-p`'s output contract (stdout carries only the final response) or its refusals; see `tests/e2e/prompt-mode.e2e.json`.
 - `y`/`yes` and `n`/`no` turns are consumed as tool-call confirmations when the agent requests a tool. If the next turn is not an approval answer, the tool call is denied and the turn remains available as normal user input.
 - Approval turns are skipped if there is no pending tool request, so a failed provider call does not accidentally turn `y` into a user prompt.
 
@@ -348,7 +349,6 @@ ANSI stripped. It lives in the top-level `expect` block, not in a `tty` step:
 
 ```json
 {
-  "env": { "FREECODE_TRANSCRIPT_STREAM": "stdout" },
   "expect": {
     "stdoutBlock": [
       "Let's make this change.",
@@ -368,12 +368,14 @@ ANSI stripped. It lives in the top-level `expect` block, not in a `tty` step:
 
 Two things differ from the TTY blocks:
 
-- **`env.FREECODE_TRANSCRIPT_STREAM: "stdout"` is mandatory.** Transcript output
-  (tool call lines, result previews, dividers) goes to stderr by default, and the
-  harness captures the two streams separately and concatenates them — their true
-  interleaving is already gone. A block spanning both would be asserting an order
-  that never existed. The assertion fails with that explanation rather than
-  reporting a layout mismatch the author cannot act on.
+- **It needs no `env`, but it must not be silenced.** Transcript output (tool call
+  lines, result previews, dividers) goes to stdout by default, so a block just
+  works. What it cannot survive is `FREECODE_TRANSCRIPT_STREAM: "null"`, which
+  silences the transcript: the assertion fails with that explanation rather than
+  reporting a layout mismatch the author cannot act on. The block reads stdout
+  alone, not the combined output the substring assertions use — the harness captures
+  the two streams separately and concatenates them, so their true interleaving is
+  already gone and a block spanning both would assert an order that never existed.
 - **No colour assertions.** There is no emulator here, only bytes; `screenStyles`
   has no non-TTY counterpart.
 

@@ -99,7 +99,6 @@ export function startEvalScenario(scenarioDir: string, prompt: string, model?: s
         ...process.env,
         ...(model ? { FREECODE_MODEL: model } : {}),
         FREECODE_TRACE_JSON: traceFile,
-        FREECODE_TRANSCRIPT_STREAM: 'stdout',
         FREECODE_RESULT_JSON: resultFile,
         FREECODE_RETRY_STATUS_FILE: retryStatusFile,
         FREECODE_AUTO_CONFIRM: '1',

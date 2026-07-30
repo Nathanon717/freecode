@@ -6,7 +6,14 @@ import { Writable } from "stream";
  * share them without importing the renderer (and its state machine) back.
  */
 
-export type TranscriptStreamName = "stdout" | "stderr" | "null";
+/**
+ * Transcript output goes to stdout. There is deliberately no stderr option:
+ * `writeTranscriptText` carries the model's own response text, not just tool
+ * chatter, so routing the transcript to stderr put the whole payload on the
+ * error stream. `null` silences it instead — used by headless callers that
+ * print the final response themselves (`-p`) and by unit tests.
+ */
+export type TranscriptStreamName = "stdout" | "null";
 
 const nullStream = new Writable({
   write(_, __, cb) {
@@ -47,8 +54,7 @@ export function getTranscriptRuntimeOptions(
   env: NodeJS.ProcessEnv = process.env,
 ): TranscriptRuntimeOptions {
   const raw = env["FREECODE_TRANSCRIPT_STREAM"];
-  const stream: TranscriptStreamName =
-    raw === "stdout" ? "stdout" : raw === "null" ? "null" : "stderr";
+  const stream: TranscriptStreamName = raw === "null" ? "null" : "stdout";
   return {
     stream,
     maxResultLines: parseMaxResultLines(
@@ -60,6 +66,5 @@ export function getTranscriptRuntimeOptions(
 export function getTranscriptStream(
   options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions(),
 ): NodeJS.WritableStream {
-  if (options.stream === "null") return nullStream;
-  return options.stream === "stdout" ? process.stdout : process.stderr;
+  return options.stream === "null" ? nullStream : process.stdout;
 }

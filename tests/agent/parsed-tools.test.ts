@@ -67,6 +67,7 @@ describe('runParsedToolsLoop', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     stdoutSpy.mockRestore();
     resetFakeModelState();
     setProjectRoot(process.cwd());
@@ -114,6 +115,10 @@ describe('runParsedToolsLoop', () => {
   });
 
   it('feeds an unknown-tool error back to the model and continues', async () => {
+    // This one asserts on visible output, so it has to opt out of the suite-wide
+    // FREECODE_TRANSCRIPT_STREAM=null (vitest.config.ts) that keeps every other
+    // test quiet — writeTranscriptText honours that setting.
+    vi.stubEnv('FREECODE_TRANSCRIPT_STREAM', 'stdout');
     writeFixture({
       version: 1,
       model: 'mock-native:gpt-freecode-test',

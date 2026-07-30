@@ -34,7 +34,11 @@ type ConfirmToolCall = (
   preview: ToolCallPreview,
 ) => Promise<boolean | ToolCallConfirmation>;
 
-createTools(confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, parsedTools?: boolean, readOnly?: boolean, spawnAgent?: SpawnAgentFn | undefined): { ...; } | { ...; }
+READ_ONLY_TOOL_DEFS: Record<'read' | 'grep' | 'list_dir', AnyCoreTool>
+
+WRITE_TOOL_DEFS: Record<'create' | 'edit' | 'shell_exec', AnyCoreTool>
+
+createTools(confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, parsedTools?: boolean, readOnly?: boolean, spawnAgent?: SpawnAgentFn | undefined): Record<...>
 
 readFileTool: CoreTool<ZodObject<{ path: ZodString; offset: ZodOptional<ZodNumber>; limit: ZodOptional<ZodNumber>; }, "strip", ZodTypeAny, { ...; }, { ...; }>, string> & { ...; }
 
@@ -52,14 +56,27 @@ listDirTool: CoreTool<ZodObject<{ path: ZodOptional<ZodString>; }, "strip", ZodT
 
 ## Tool Keys
 
-| Key | Tool | Source |
-|-----|------|--------|
-| `read` | `readFileTool` | `./read` |
-| `create` | `createFileTool` | `./create` |
-| `edit` | `editTool` | `./edit` |
-| `grep` | `grepTool` | `./grep` |
-| `shell_exec` | `shellTool` | `./shell` |
-| `list_dir` | `listDirTool` | `./list-dir` |
+| Key | Tool | Source | Half |
+|-----|------|--------|------|
+| `read` | `readFileTool` | `./read` | read-only |
+| `grep` | `grepTool` | `./grep` | read-only |
+| `list_dir` | `listDirTool` | `./list-dir` | read-only |
+| `create` | `createFileTool` | `./create` | write |
+| `edit` | `editTool` | `./edit` | write |
+| `shell_exec` | `shellTool` | `./shell` | write |
+
+`READ_ONLY_TOOL_DEFS` / `WRITE_TOOL_DEFS` are the name → tool maps for those two
+halves; the names themselves live in [tool-names.md](tool-names.md) (a leaf module
+with no imports, so the boot path can read them without loading the `ai` SDK).
+`createTools` wraps whichever halves apply, and `withConfirmation` decides what is
+safe to precompute with `isReadOnlyTool` rather than a second list.
+
+**`readOnly` returns the read-only half alone — including no `spawn_agent`.** A
+sub-agent is itself read-only, but a call spends a whole LLM sub-turn, which is more
+than reading, and the headless `-p` mode ([../../cli/headless-prompt.md](../../cli/headless-prompt.md))
+must not be able to fan out. `spawn_agent` is otherwise present only when the caller
+injects a model-bound runner (`agent/loop.ts` does; the hand-typed and parsed-tools
+paths do not).
 
 ## Wrapper Stack
 
@@ -85,4 +102,4 @@ Trace entries contain:
 
 Trace failures are swallowed so test tracing cannot break an agent run.
 
-Visible transcript output defaults to stderr. Set `FREECODE_TRANSCRIPT_STREAM=stdout` for captured eval/scripted runs that need to replay the same transcript in stdout, and `FREECODE_TRANSCRIPT_MAX_RESULT_LINES` to override the default result preview limit.
+Visible transcript output goes to stdout. `FREECODE_TRANSCRIPT_STREAM=null` silences it (unit tests, and `-p`, which prints the final response itself); `FREECODE_TRANSCRIPT_MAX_RESULT_LINES` overrides the default result preview limit. See [../../cli/render/transcript-options.md](../../cli/render/transcript-options.md).

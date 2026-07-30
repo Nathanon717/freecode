@@ -52,6 +52,11 @@ interface E2eTest {
   model?: string;
   llmFixture?: string;
   turns?: Array<{ input: string }>;
+  /**
+   * Runs `freecode -p "<prompt>"` — the headless one-shot mode — instead of the
+   * `--script` session. Mutually exclusive with `turns`, which the CLI rejects.
+   */
+  prompt?: string;
   expect?: E2eExpectations;
   tty?: TtyE2eTest;
   env?: Record<string, string>;
@@ -275,7 +280,9 @@ if (nonTtyE2eTests.length > 0) {
     mkdirSync(tmpStore, { recursive: true });
     if (test.workspace === 'temp') mkdirSync(tmpWorkspace, { recursive: true });
 
-    const inputLines = test.turns.map(t => t.input).join('\n');
+    // A `prompt` scenario passes its input as an argv flag, so it declares no turns
+    // and gets no script file — the CLI rejects `-p` together with `--script`.
+    const inputLines = (test.turns ?? []).map(t => t.input).join('\n');
     const inputFile = join(tmpHome, 'input.txt');
     writeFileSync(inputFile, inputLines, 'utf-8');
     const traceFile = join(tmpHome, 'trace.json');
@@ -288,7 +295,8 @@ if (nonTtyE2eTests.length > 0) {
     const cliArgs: string[] = [DIST_ENTRY];
     if (test.flags) cliArgs.push(...test.flags);
     if (test.model) { cliArgs.push('--model'); cliArgs.push(test.model); }
-    cliArgs.push('--script', inputFile);
+    if (test.prompt !== undefined) cliArgs.push('-p', test.prompt);
+    else cliArgs.push('--script', inputFile);
 
     let stdout = '';
     let stderr = '';

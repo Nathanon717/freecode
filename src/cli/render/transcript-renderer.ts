@@ -140,12 +140,20 @@ export function notifyTranscriptChunk(chunk: string): void {
  * the transcript record. `chunk` must be the text exactly as it appears — already
  * markdown-rendered — because the record replays it verbatim.
  *
- * Stays on `process.stdout` rather than the transcript stream, which is where
- * model text has always gone; the two differ only off-TTY, where nothing replays.
+ * Goes through the transcript stream like every other transcript write. It used to
+ * hardcode `process.stdout`, from when the stream defaulted to stderr and model
+ * text had to escape that; now stdout *is* the default, so the only stream this
+ * respects that it previously ignored is `null` — which has to silence model text
+ * too, or `-p` prints the response twice (once streamed here, once from
+ * `result.text`). The record/notify hooks still fire: they are in-memory state for
+ * replay, not output.
  */
-export function writeTranscriptText(chunk: string): void {
+export function writeTranscriptText(
+  chunk: string,
+  options: TranscriptRuntimeOptions = getTranscriptRuntimeOptions(),
+): void {
   if (!chunk) return;
-  process.stdout.write(chunk);
+  getTranscriptStream(options).write(chunk);
   notifyTranscriptChunk(chunk);
   recordTranscriptText(chunk);
 }

@@ -6,6 +6,7 @@ import type {
   ToolCallConfirmation,
   ToolCallPreview,
 } from "../agent/tools/index.js";
+import { isReadOnlyTool, isWriteTool } from "../agent/tools/tool-names.js";
 import { loadConfig, resolveModelSettings } from "../config/index.js";
 import { getCommandCompletion, getFilteredCommands, isSlashCommand } from "./slash-commands.js";
 import {
@@ -296,20 +297,11 @@ export function createInteractiveMode(
   const config = loadConfig();
   initAskMode(config.toolConfirmation);
 
-  const READ_ONLY_TOOLS = new Set(["create", "edit", "shell_exec"]);
-
-  // Tools the token budget may auto-approve. Deliberately an explicit allowlist
-  // rather than "any tool we can count tokens for": it must never widen just
-  // because another tool starts reporting a result size. `create` in particular
-  // shows a content preview and could be measured, but writes a file — it is
-  // never auto-approved at any budget.
-  const BUDGET_APPROVABLE_TOOLS = new Set(["read", "grep", "list_dir"]);
-
   async function confirmToolCall(
     preview: ToolCallPreview,
   ): Promise<ToolCallConfirmation> {
     // Mid-turn read-only enforcement: deny write tools if Read was toggled on since this turn started.
-    if (isReadOnly() && READ_ONLY_TOOLS.has(preview.name)) {
+    if (isReadOnly() && isWriteTool(preview.name)) {
       console.log(chalk.dim(`Read-only mode: denied ${preview.name}`));
       return {
         approved: false,
@@ -334,8 +326,13 @@ export function createInteractiveMode(
     // count the hint would have displayed (exact encoder when loaded, labelled
     // fallback estimate otherwise), so what the user configured against is what
     // the user would have seen. A budget of 0 is off.
+    //
+    // Gated on the read-only set, not on "any tool we can count tokens for": a
+    // write must never be approved silently because its result happened to be
+    // measurable. `create` shows a content preview and could be measured, but
+    // writes a file, so it is never auto-approved at any budget.
     const budget = resolveModelSettings(getSelectedModel()).autoApproveTokenBudget;
-    if (budget > 0 && getTokenCount && BUDGET_APPROVABLE_TOOLS.has(preview.name)) {
+    if (budget > 0 && getTokenCount && isReadOnlyTool(preview.name)) {
       if (getTokenCount().tokens < budget) return { approved: true };
     }
 

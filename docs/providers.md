@@ -34,7 +34,13 @@ Use `/keys` inside the freecode REPL to check which provider API keys are config
    - `id`, `name`, `baseUrl`, `apiKeyEnvVar`
    - `models` array with `id`, `displayName`, optional `contextWindow` and `limits`
    - Set `supportsTools: false` if the provider doesn't support tool calls
-   - Set `paid: true` for providers where paid-provider labeling matters
+   - Set `paid: true` if calls can be billed. This is enforced, not cosmetic: under
+     `FREECODE_FREE_ONLY=1` the provider's key is suppressed and its models refused
+     (`src/providers/paid-guard.ts`), and its key env var must be added to
+     `PAID_API_KEY_ENV_VARS` there — a unit test fails otherwise.
+   - Set `isFreeModelId` if the provider serves free *and* paid models behind one key
+     (OpenRouter, Zen). It filters the picker **and** gates access, so a paid model id
+     cannot be reached through `--model` even though the picker never listed it.
 
 2. Every provider goes through `createOpenAICompatProvider()`. There is no second
    adapter type — a provider that isn't OpenAI-compatible needs an official

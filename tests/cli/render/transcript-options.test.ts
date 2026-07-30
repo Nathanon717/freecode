@@ -14,12 +14,13 @@ describe('transcript runtime options', () => {
     })).toEqual({ stream: 'stdout', maxResultLines: Infinity });
 
     expect(getTranscriptRuntimeOptions({ FREECODE_TRACE_JSON: 'trace.json' }))
-      .toEqual({ stream: 'stderr', maxResultLines: DEFAULT_TRANSCRIPT_MAX_RESULT_LINES });
+      .toEqual({ stream: 'stdout', maxResultLines: DEFAULT_TRANSCRIPT_MAX_RESULT_LINES });
   });
 
-  it('defaults to stderr and treats an unknown stream name as the default', () => {
-    expect(getTranscriptRuntimeOptions({}).stream).toBe('stderr');
-    expect(getTranscriptRuntimeOptions({ FREECODE_TRANSCRIPT_STREAM: 'nonsense' }).stream).toBe('stderr');
+  it('defaults to stdout and treats an unknown stream name as the default', () => {
+    expect(getTranscriptRuntimeOptions({}).stream).toBe('stdout');
+    expect(getTranscriptRuntimeOptions({ FREECODE_TRANSCRIPT_STREAM: 'nonsense' }).stream).toBe('stdout');
+    expect(getTranscriptRuntimeOptions({ FREECODE_TRANSCRIPT_STREAM: 'stderr' }).stream).toBe('stdout');
     expect(getTranscriptRuntimeOptions({ FREECODE_TRANSCRIPT_STREAM: 'null' }).stream).toBe('null');
   });
 
@@ -45,15 +46,13 @@ describe('transcript runtime options', () => {
 });
 
 describe('transcript stream routing', () => {
-  it('routes to the named stream', () => {
+  it('routes to stdout', () => {
     expect(getTranscriptStream({ stream: 'stdout' })).toBe(process.stdout);
-    expect(getTranscriptStream({ stream: 'stderr' })).toBe(process.stderr);
   });
 
   it('routes null to a sink that swallows writes', () => {
     const sink = getTranscriptStream({ stream: 'null' });
     expect(sink).not.toBe(process.stdout);
-    expect(sink).not.toBe(process.stderr);
     expect(() => sink.write('discarded')).not.toThrow();
   });
 });

@@ -3,6 +3,7 @@
 import { spawnSync } from 'child_process';
 import { writeFileSync, readFileSync } from 'fs';
 import chalk from 'chalk';
+import { FREE_ONLY_ENV_VAR, isFreeOnlyMode, isPaidApiKeyEnvVar } from './providers/paid-guard.js';
 
 function tryInjectDoppler(): void {
   if (process.env['DOPPLER_PROJECT']) return;
@@ -12,14 +13,26 @@ function tryInjectDoppler(): void {
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
   );
   if (result.error || result.status !== 0) return;
+  const freeOnly = isFreeOnlyMode();
   try {
     const secrets = JSON.parse(result.stdout) as Record<string, string>;
     for (const [key, value] of Object.entries(secrets)) {
+      // Never let a billable credential into the process in free-only mode. Doing
+      // it here rather than deleting after injection is the point: a later reader
+      // cannot race it, and `/status` and the picker see the same truth.
+      if (freeOnly && isPaidApiKeyEnvVar(key)) continue;
       process.env[key] = value;
     }
   } catch {
     // ignore parse errors
   }
+}
+
+// Argv -> env, before injection: `-p` is a headless mode meant for LLM callers, so
+// it is always free-only. The guard reads env alone (it runs before argv parsing
+// in main), so the entry point is what translates the flag.
+if (process.argv.slice(2).includes('-p')) {
+  process.env[FREE_ONLY_ENV_VAR] = '1';
 }
 
 tryInjectDoppler();
@@ -36,6 +49,20 @@ async function main() {
     const modelPreference = args[modelIdx + 1];
     if (!modelPreference) {
       console.error('Error: --model requires a provider:model argument');
+      process.exitCode = 1;
+      return;
+    }
+  }
+
+  const promptIdx = args.indexOf('-p');
+  if (promptIdx !== -1) {
+    if (!args[promptIdx + 1]) {
+      console.error('Error: -p requires a prompt argument');
+      process.exitCode = 1;
+      return;
+    }
+    if (args.includes('--script')) {
+      console.error('Error: -p and --script are different session modes; pass one');
       process.exitCode = 1;
       return;
     }
@@ -114,6 +141,18 @@ async function main() {
     selectedModel = args[modelIdx + 1];
   }
 
+  if (promptIdx !== -1) {
+    const { runHeadlessPrompt } = await import('./cli/headless-prompt.js');
+    process.exitCode = await runHeadlessPrompt({
+      projectRoot,
+      prompt: args[promptIdx + 1],
+      model: selectedModel,
+    });
+    await drainPendingWrites();
+    rl.close();
+    return;
+  }
+
   if (scriptIdx !== -1) {
     const scriptPath = args[scriptIdx + 1];
 
@@ -148,9 +187,6 @@ async function main() {
   showBanner();
 
   if (process.stdin.isTTY) {
-    // Route tool-call transcript to stdout so it appears in the same stream as
-    // response text — matching /renderer and the eval subprocess (FREECODE_TRANSCRIPT_STREAM=stdout).
-    process.env["FREECODE_TRANSCRIPT_STREAM"] = "stdout";
     setupFooterUI();
     registerRetryBannerSink(setRetryBanner);
     registerQuotaUpdateSink(setQuotaSnapshot);

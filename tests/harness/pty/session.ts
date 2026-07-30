@@ -29,6 +29,7 @@
  * The --server flag is internal – used by 'start' to launch the daemon process.
  */
 import { createPtyDriver } from './driver.js';
+import { FREE_ONLY_ENV_VAR } from '../../../src/providers/paid-guard.js';
 import net from 'net';
 import { spawn } from 'child_process';
 import { join, dirname } from 'path';
@@ -125,7 +126,16 @@ async function runServer(id: string, cols: number, rows: number): Promise<void> 
     command: process.execPath,
     args: [DIST_ENTRY],
     cwd: ROOT,
-    env: { ...process.env, FREECODE_HOME: home, FORCE_COLOR: '1' },
+    // Free-only: a `pty` session is the documented way for an agent to drive the
+    // real TUI, and the model picker lists paid providers when a key is present.
+    // The flag keeps the paid credentials out of the child entirely — see
+    // src/providers/paid-guard.ts.
+    env: {
+      ...process.env,
+      FREECODE_HOME: home,
+      FORCE_COLOR: '1',
+      [FREE_ONLY_ENV_VAR]: '1',
+    },
     cols,
     rows,
   });

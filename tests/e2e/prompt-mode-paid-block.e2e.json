@@ -1,0 +1,17 @@
+{
+  "name": "prompt-mode-paid-block",
+  "description": "`-p` refuses a paid model outright. The hard block lives in resolveModel (src/providers/paid-guard.ts explains the layering), which is what makes it cover the paths that never consult the filtered model list - here --model, the same hole FREECODE_MODEL and a persisted defaultModel go through. FREECODE_NO_LLM is cleared for this scenario on purpose: the harness sets it for every fixture-less test, and its early return in agentLoop would exit before resolveModel and mask the very check under test. No key is present either way (the harness strips them), so the assertion is specifically that the refusal says 'Blocked' - the guard - and not 'No API key configured', which is what a missing key alone would produce",
+  "workspace": "repo",
+  "model": "openai:gpt-5.4",
+  "prompt": "this must never reach a paid provider",
+  "env": { "FREECODE_NO_LLM": "" },
+  "expect": {
+    "exitCode": 1,
+    "stdoutContains": [
+      "Blocked:",
+      "is served by OpenAI, a paid provider",
+      "FREECODE_FREE_ONLY=1"
+    ],
+    "stdoutAbsent": ["No API key configured"]
+  }
+}

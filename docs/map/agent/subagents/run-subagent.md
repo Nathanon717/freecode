@@ -26,7 +26,7 @@ runSubAgent(agentType: string, prompt: string, ctx: SubAgentContext): Promise<st
 
 - **`agentLoop` is not reentrant.** `beginTranscriptTurn`, `beginToolRenderGate`, `beginProviderUsageCapture`, and `setProjectRoot` are all module-level singletons, and a sub-agent starts from inside a tool's `execute` — i.e. mid-stream of the parent. A nested `agentLoop` would close the parent's transcript step, end the parent's usage capture, and release the parent's render gate while the parent is still draining. It also returns `AgentLoopResult` (quota, cost, providerUsage), a shape a tool result cannot consume. The separation is forced, not stylistic.
 - Depth limiting falls out for free: `rawReadOnlyTools()` simply omits `spawn_agent`, so no explicit depth tracking is needed.
-- Sub-agents use the **raw, unwrapped** read-only tools (`read`/`grep`/`list_dir`) from the tool files directly. That sidesteps three couplings at once: no confirmation prompts, no render-gate participation, no serialized-execution queue (so a sub-agent running inside a wrapped `spawn_agent` cannot deadlock on the parent's queue).
+- Sub-agents use the **raw, unwrapped** read-only tools — `READ_ONLY_TOOL_DEFS` straight from [../tools/index.md](../tools/index.md), without `createTools`' wrappers. That sidesteps three couplings at once: no confirmation prompts, no render-gate participation, no serialized-execution queue (so a sub-agent running inside a wrapped `spawn_agent` cannot deadlock on the parent's queue).
 - The model handle a tool's `execute` never receives is injected by the caller via `SubAgentContext`.
 
 ## Execution paths (must stay parallel)

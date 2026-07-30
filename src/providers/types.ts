@@ -23,6 +23,14 @@ export interface ProviderConfig {
   models: ModelConfig[];
   supportsTools?: boolean;
   paid?: boolean;
+  /**
+   * Set on providers that serve free AND paid models behind one key, to say which
+   * model ids are the free ones. It is the single definition of that: model
+   * discovery filters the picker with it, and `resolveModel` gates on it under
+   * `FREECODE_FREE_ONLY=1` (see providers/paid-guard.ts). A provider with no
+   * predicate is treated as free throughout — that is the free-tier default.
+   */
+  isFreeModelId?: (modelId: string) => boolean;
   modelsSource?: 'static' | 'live';
   modelIdBlocklist?: string[];
   modelIdExactBlocklist?: string[];

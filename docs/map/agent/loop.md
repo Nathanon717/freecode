@@ -63,7 +63,7 @@ agentLoop(messages: CoreMessage[], projectRoot: string, modelPreference?: string
 setProjectRoot(projectRoot)
 route(modelPreference)
   -> on failure, return synthetic error result
-buildSystemPrompt(modelSettings.loadAgentsMd)
+buildSystemPrompt(modelSettings.loadAgentsMd, offeredToolNames({ readOnly, spawnAgent: true }))
 if provider is OpenAI:
   build Responses payload
   call direct Responses adapter
@@ -126,7 +126,7 @@ return AgentLoopResult
 - [providers/model-data.md](../providers/model-data.md): `isNativeToolsDisabled`/`setNativeTools` for the native-tools fallback trait.
 - [tool-render-gate.md](tool-render-gate.md): orders streamed text before tool-call headers on the native `fullStream` path.
 - [stream-turn.md](stream-turn.md): drains the native `fullStream` and owns rejected-tool-call recovery.
-- [parsed-tools.md](parsed-tools.md): the text-protocol fallback. It builds tools without a `spawnAgent` runner, so `agentLoop` rebuilds the system prompt with `buildSystemPrompt(loadAgentsMd, false)` before entering it.
+- [parsed-tools.md](parsed-tools.md): the text-protocol fallback. It builds tools without a `spawnAgent` runner, so `agentLoop` rebuilds the system prompt with `offeredToolNames({ readOnly, spawnAgent: false })` before entering it. Both prompt builds pass `options.readOnly` through: the tool list the prompt states has to be the tool set `createTools` actually offers, or a read-only turn is told it can edit files. See [tools/tool-names.md](tools/tool-names.md).
 - [usage-finalize.md](usage-finalize.md): ends usage capture and reads quota headers for each turn.
 
 ## Error Handling

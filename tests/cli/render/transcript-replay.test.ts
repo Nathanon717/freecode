@@ -53,7 +53,7 @@ describe('replayTranscript', () => {
   it('reproduces the live paint exactly — text, divider spacing and result preview', () => {
     const live = capture(() => {
       beginTranscriptTurn(OPTS);
-      writeTranscriptText('Reading the file now.\n');
+      writeTranscriptText('Reading the file now.\n', OPTS);
       writeToolCallHeader({ name: 'read', displayArgs: { path: 'a.ts' } }, OPTS);
       writeToolStepResult('read', { kind: 'text', result: 'line one\nline two' }, OPTS);
       endTranscriptStep(false, OPTS);
@@ -146,11 +146,11 @@ describe('replayTranscript', () => {
     const live = capture(() => {
       recordTranscriptPrompt('one');
       beginTranscriptTurn(OPTS);
-      writeTranscriptText('first answer\n');
+      writeTranscriptText('first answer\n', OPTS);
       endTranscriptStep(false, OPTS);
       recordTranscriptPrompt('two');
       beginTranscriptTurn(OPTS);
-      writeTranscriptText('second answer\n');
+      writeTranscriptText('second answer\n', OPTS);
       endTranscriptStep(false, OPTS);
     });
 

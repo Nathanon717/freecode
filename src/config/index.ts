@@ -4,6 +4,7 @@ import { homedir } from 'os';
 import type { Config, OverridableSettings, ProviderConfig } from '../providers/types.js';
 import { log, logError } from '../logger.js';
 import { getModelSettings } from '../providers/model-settings-accessor.js';
+import { isFreeOnlyMode } from '../providers/paid-guard.js';
 import {
   getDbConfigCache,
   setDbConfigCache,
@@ -81,6 +82,11 @@ export function getConfigDir(): string {
 }
 
 export function resolveApiKey(provider: ProviderConfig): string | undefined {
+  // Report no key for a paid provider in free-only mode, which hides it from the
+  // picker and stops model discovery fetching it. This is the layer that catches a
+  // key exported in the user's own shell rather than injected from Doppler — see
+  // providers/paid-guard.ts. resolveModel refuses these outright as well.
+  if (provider.paid && isFreeOnlyMode()) return undefined;
   return process.env[provider.apiKeyEnvVar] || loadConfig().providers[provider.id]?.apiKey || provider.defaultApiKey || undefined;
 }
 

@@ -31,6 +31,7 @@ describe('agentLoop dispatch', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     stdoutSpy.mockRestore();
     resetFakeModelState();
     if (previousFake === undefined) delete process.env.FREECODE_FAKE_LLM;
@@ -80,6 +81,7 @@ describe('agentLoop with the mock-native (AI SDK streamText) provider', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     stdoutSpy.mockRestore();
     resetFakeModelState();
     if (previousFake === undefined) delete process.env.FREECODE_FAKE_LLM;
@@ -205,6 +207,10 @@ describe('agentLoop with the mock-native (AI SDK streamText) provider', () => {
   });
 
   it('uses prompt-based tools when parsedTools is set on the model', async () => {
+    // Asserts on visible output, so it opts out of the suite-wide
+    // FREECODE_TRANSCRIPT_STREAM=null (vitest.config.ts) that keeps every other test
+    // quiet — writeTranscriptText honours that setting.
+    vi.stubEnv('FREECODE_TRANSCRIPT_STREAM', 'stdout');
     setModelSetting('mock-native:gpt-freecode-test', 'parsedTools', true);
     writeFixture({
       version: 1,

@@ -1,6 +1,7 @@
 import type { LanguageModel } from "ai";
 import type { ModelConfig, ProviderConfig } from "./types.js";
-import { PROVIDER_REGISTRY } from "./provider-catalog.js";
+import { PROVIDER_REGISTRY, isFreeModel, selectFreeModels } from "./provider-catalog.js";
+import { freeOnlyRefusal, isFreeOnlyMode } from "./paid-guard.js";
 import { getDeadIds, getProviderCache, recordDeadModel, updateProviderCache } from "../store/model-list-cache.js";
 import { getProviderCatalog, saveProviderCatalog } from "./model-data.js";
 import { createOpenAICompatProvider } from "./adapters/openai-compat.js";
@@ -113,16 +114,6 @@ function deduplicateByDisplayName(models: ModelConfig[]): ModelConfig[] {
   });
 }
 
-const ZEN_FREE_IDS = new Set(["big-pickle"]);
-const ZEN_RETIRED_FREE_IDS = new Set(["qwen3.6-plus-free"]);
-
-function isCurrentZenFreeModel(model: ModelConfig): boolean {
-  return (
-    (model.id.endsWith("-free") || ZEN_FREE_IDS.has(model.id)) &&
-    !ZEN_RETIRED_FREE_IDS.has(model.id)
-  );
-}
-
 interface LiveInitSpec {
   fetchModels: () => Promise<ModelConfig[]>;
   selectModels: (models: ModelConfig[]) => ModelConfig[];
@@ -214,7 +205,7 @@ async function initOpenRouterModels(): Promise<void> {
             : {}),
         }));
     },
-    selectModels: (models) => models.filter((m) => m.id.endsWith(":free")),
+    selectModels: (models) => selectFreeModels(entry, models),
   });
 }
 
@@ -247,8 +238,9 @@ async function initZenModels(): Promise<void> {
     selectModels: (models) => {
       const blocklist = entry.modelIdBlocklist ?? [];
       const exactBlocklist = entry.modelIdExactBlocklist ?? [];
-      return applyBlocklist(models, blocklist, exactBlocklist).filter(
-        isCurrentZenFreeModel,
+      return selectFreeModels(
+        entry,
+        applyBlocklist(models, blocklist, exactBlocklist),
       );
     },
   });
@@ -428,6 +420,23 @@ export function resolveModel(modelPreference: string): ResolvedModel {
   const provider = getProvider(providerId);
   if (!provider) {
     throw new Error(`Unknown provider: "${providerId}"`);
+  }
+
+  // The hard block on spend. Checked here because every path that reaches a live
+  // provider funnels through this function — including the three that never
+  // consult the picker's filtered list: `--model`, `FREECODE_MODEL`, and a
+  // persisted `defaultModel`. Filtering model *discovery* never covered those.
+  if (isFreeOnlyMode()) {
+    if (provider.paid) {
+      throw new Error(
+        freeOnlyRefusal(modelPreference, `is served by ${provider.name}, a paid provider,`),
+      );
+    }
+    if (!isFreeModel(provider, modelId)) {
+      throw new Error(
+        freeOnlyRefusal(modelPreference, `is not a free ${provider.name} model`),
+      );
+    }
   }
 
   const apiKey = resolveApiKey(provider);

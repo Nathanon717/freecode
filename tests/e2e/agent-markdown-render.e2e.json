@@ -4,7 +4,6 @@
   "workspace": "temp",
   "model": "mock-native:gpt-freecode-test",
   "llmFixture": "agent-markdown-render.llm.json",
-  "env": { "FREECODE_TRANSCRIPT_STREAM": "stdout" },
   "turns": [
     { "input": "summarize the plan" }
   ],

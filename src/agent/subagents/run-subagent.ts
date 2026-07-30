@@ -5,10 +5,11 @@
 // that: it runs "silently" and returns only its final text as a tool result, so
 // the caller spends one tool call of context instead of the whole search.
 //
-// It reuses the RAW read-only tools (unwrapped read/grep/list_dir), which sidesteps
-// three couplings at once: no confirmation prompts (they only read), no render-gate
-// participation (only the wrappers touch it), and no serialized-execution queue
-// (so a sub-agent inside a wrapped tool cannot deadlock on the parent's queue).
+// It reuses the RAW read-only tools — READ_ONLY_TOOL_DEFS straight from the
+// registry, without createTools' wrappers — which sidesteps three couplings at
+// once: no confirmation prompts (they only read), no render-gate participation
+// (only the wrappers touch it), and no serialized-execution queue (so a sub-agent
+// inside a wrapped tool cannot deadlock on the parent's queue).
 //
 // The model handle is injected by the caller (agent/loop.ts) via SubAgentContext,
 // which is why a tool's execute — which never receives a LanguageModel — can still
@@ -16,9 +17,7 @@
 
 import type { CoreMessage, CoreTool, LanguageModel } from "ai";
 import { streamText } from "ai";
-import { readFileTool } from "../tools/read.js";
-import { grepTool } from "../tools/grep.js";
-import { listDirTool } from "../tools/list-dir.js";
+import { READ_ONLY_TOOL_DEFS } from "../tools/index.js";
 import { runFakeModel } from "../../providers/fake.js";
 import { isUserAbortError } from "../../util/errors.js";
 import { runRecoveringStream, type RecoverableStream } from "../stream-turn.js";
@@ -30,11 +29,7 @@ type RawTool = CoreTool & {
 };
 
 function rawReadOnlyTools(): Record<string, RawTool> {
-  return {
-    read: readFileTool as RawTool,
-    grep: grepTool as RawTool,
-    list_dir: listDirTool as RawTool,
-  };
+  return READ_ONLY_TOOL_DEFS as Record<string, RawTool>;
 }
 
 /** Model context for a sub-agent, closed over by the caller where the model lives. */

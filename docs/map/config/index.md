@@ -62,6 +62,8 @@ For known provider IDs, `loadConfig()` builds a fresh `providers` object:
 
 That means a provider API key in config overrides the same provider's environment key.
 
+**`resolveApiKey` reports no key at all for a `paid` provider when `FREECODE_FREE_ONLY=1`**, ahead of every source. That hides the provider from the picker and stops model discovery fetching it, and it is the layer that catches a key exported in the user's own shell rather than injected from Doppler. See [../providers/paid-guard.md](../providers/paid-guard.md) for the other two layers.
+
 ## Provider Env Vars
 
 | Provider ID | Env Var |
