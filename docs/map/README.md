@@ -80,7 +80,7 @@ Format: filename (linecount)
   - [`raw-picker.ts`](cli/menus/raw-picker.md) (241) — Shared Raw-Mode Picker
 - `src/cli/render/`
   - [`banner.ts`](cli/render/banner.md) (124) — Startup Banner
-  - [`markdown-renderer.ts`](cli/render/markdown-renderer.md) (480) — Markdown Renderer
+  - [`markdown-renderer.ts`](cli/render/markdown-renderer.md) (489) — Markdown Renderer
   - [`transcript-format.ts`](cli/render/transcript-format.md) (192) — Transcript Formatters
   - [`transcript-options.ts`](cli/render/transcript-options.md) (66) — Transcript Stream + Options
   - [`transcript-record.ts`](cli/render/transcript-record.md) (151) — Rendered Transcript Record

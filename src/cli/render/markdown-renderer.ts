@@ -100,6 +100,15 @@ function renderProse(line: string): string {
   return wrapStyled(renderInline(line), termWidth());
 }
 
+// An ATX heading renders bold, with the `#` markers and the optional closing
+// run of `#` dropped. All six levels look the same — the terminal has one
+// weight to spend, so level is not conveyed.
+const ATX_RE = /^#{1,6}\s/;
+function renderHeading(line: string): string {
+  const text = line.replace(/^#{1,6}\s+/, "").replace(/\s+#+\s*$/, "");
+  return wrapStyled(chalk.bold(renderInline(text)), termWidth());
+}
+
 // Render marked's inline tokens to chalk-styled text. Nesting is handled by
 // recursing into `tokens`, so emphasis inside emphasis and code inside bold
 // both compose correctly. Unknown token types fall back to `raw`, so anything
@@ -360,7 +369,7 @@ function makeLineProcessor(): {
       codeLang = m[1].trim() || null;
       return null; // buffer until closing fence
     }
-    if (/^#{1,6}\s/.test(line)) return null;
+    if (ATX_RE.test(line)) return renderHeading(line);
     if (HR_RE.test(line)) return renderHorizontalRule();
     if (isTableRow(line)) {
       // Tentatively buffer as a table header; the next line decides.

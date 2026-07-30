@@ -1,6 +1,6 @@
 {
   "name": "agent-markdown-render",
-  "description": "Model response text reaches the screen markdown-rendered, not as literal syntax. Until this scenario existed no e2e fixture emitted a single '**', '#' or code fence, so the stream renderer wired into the agent loop was covered only by unit tests on the renderer itself. Asserted as an exact stdout block: '**' and the backticks around 'isRecord' are gone, the list keeps its bullet and indent, and the fenced block becomes a language label plus a padded, indented body. The fixture splits the text mid-construct across chunks, which pins that the renderer buffers by line rather than rendering each chunk as it arrives. It also pins that a heading line is DROPPED ENTIRELY rather than rendered - see docs/map/cli/render/markdown-renderer.md; the block's leading blank line is where '## The plan' was, and the words never appear",
+  "description": "Model response text reaches the screen markdown-rendered, not as literal syntax. Until this scenario existed no e2e fixture emitted a single '**', '#' or code fence, so the stream renderer wired into the agent loop was covered only by unit tests on the renderer itself. Asserted as an exact stdout block: '**' and the backticks around 'isRecord' are gone, the list keeps its bullet and indent, and the fenced block becomes a language label plus a padded, indented body. The fixture splits the text mid-construct across chunks, which pins that the renderer buffers by line rather than rendering each chunk as it arrives. It also pins that an ATX heading renders BOLD with its '#' markers stripped - see docs/map/cli/render/markdown-renderer.md. Boldness needs its own needle: the block assertion strips SGR before matching, so it can only see that the words 'The plan' arrive on row 1 and that '## The plan' never does. The raw '\\u001b[1m' needle in stdoutContains is what pins the weight",
   "workspace": "temp",
   "model": "mock-native:gpt-freecode-test",
   "llmFixture": "agent-markdown-render.llm.json",
@@ -9,8 +9,10 @@
     { "input": "summarize the plan" }
   ],
   "expect": {
-    "stdoutAbsent": ["**guards.ts**", "The plan", "```python"],
+    "stdoutContains": ["\u001b[1mThe plan\u001b[22m"],
+    "stdoutAbsent": ["**guards.ts**", "## The plan", "```python"],
     "stdoutBlock": [
+      "The plan",
       "",
       "Rewrite guards.ts and keep isRecord exported.",
       "",

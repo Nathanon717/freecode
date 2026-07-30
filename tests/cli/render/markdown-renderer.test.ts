@@ -139,6 +139,34 @@ describe("renderMarkdown", () => {
     expect(stripCode(out)).toBe("\n  **not bold** and *not italic*\n\n");
   });
 
+  it("renders an ATX heading bold, stripping the # markers", () => {
+    const out = renderMarkdown("## The plan");
+    expect(stripAnsi(out)).toBe("The plan");
+    expect(out).toContain(chalk.bold("The plan"));
+  });
+
+  it("renders every heading level the same, and drops a closing # run", () => {
+    for (const raw of ["# a", "###### a", "## a ##"]) {
+      expect(renderMarkdown(raw)).toBe(chalk.bold("a"));
+    }
+  });
+
+  it("renders inline markup inside a heading", () => {
+    expect(stripAnsi(renderMarkdown("## keep `isRecord` **exported**"))).toBe(
+      "keep isRecord exported",
+    );
+  });
+
+  it("leaves a # with no following space as prose", () => {
+    expect(stripAnsi(renderMarkdown("#hashtag"))).toBe("#hashtag");
+    expect(stripAnsi(renderMarkdown("####### seven"))).toBe("####### seven");
+  });
+
+  it("does not treat a # line inside a fenced block as a heading", () => {
+    const out = renderMarkdown("```\n# comment\n```");
+    expect(stripCode(out)).toBe("\n  # comment\n\n");
+  });
+
   it("renders a horizontal rule full-width in white", () => {
     const width = process.stdout.columns || 80;
     const out = renderMarkdown("---");
