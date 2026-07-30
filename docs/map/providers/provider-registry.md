@@ -34,15 +34,15 @@ resolveModel(modelPreference: string): ResolvedModel
 - Adding, removing, or reordering a provider.
 - Changing model IDs, display names, API key env vars, tool support, paid status, or static limits.
 - Debugging router selection where registry order or provider metadata matters.
-- Changing where model display names or context windows come from. Every successful live init writes the provider's final model list to the `models` table via `saveProviderCatalog`, and `_doInit` does the same for static providers afterwards (the change check makes the repeat a no-op). When a fetch fails, the model list is rebuilt from `getProviderCatalog` — the DB, not `model-cache.json`, which holds ids only. `runLiveProviderInit`'s `finish()` applies the registry blocklist (substring + exact) **and** the user blocklist centrally, before the catalog write, so blocklisted models never reach the DB regardless of whether the provider's own `selectModels` filters (openrouter/anthropic do not).
+- Changing where model display names or context windows come from. Every successful live init writes the provider's final model list to the `models` table via `saveProviderCatalog`, and `_doInit` does the same for static providers afterwards (the change check makes the repeat a no-op). When a fetch fails, the model list is rebuilt from `getProviderCatalog` — the DB, not `model-cache.json`, which holds ids only. `runLiveProviderInit`'s `finish()` applies the registry blocklist (substring + exact) **and** the user blocklist centrally, before the catalog write, so blocklisted models never reach the DB regardless of whether the provider's own `selectModels` filters (openrouter does not).
 
 For the generated provider table, see [providers.md](../../providers.md).
 
 ## Special Cases
 
 - LLM7 has `supportsTools: false`, so `agentLoop()` does not pass tools to that model.
-- OpenAI has `type: "openai-compat"` and `paid: true`; uses the standard OpenAI-compatible adapter against `api.openai.com/v1`.
-- Anthropic has `type: "anthropic"` and `paid: true`; routing uses the native Anthropic adapter instead of the OpenAI-compatible adapter.
+- OpenAI has `paid: true`; uses the standard OpenAI-compatible adapter against `api.openai.com/v1`.
+- Anthropic has `paid: true` and is an ordinary catalog entry — `baseUrl: "https://api.anthropic.com/v1"` routed through `createOpenAICompatProvider`, the same adapter as every other provider. There is no separate Anthropic adapter. It's in `LIVE_PROVIDER_IDS` and fetched through the generic `initProviderModels`, whose model mapper falls back to `display_name` when `name` is absent (Anthropic's `/v1/models` labels models `display_name`).
 - Cloudflare Workers AI uses a `baseUrl` templated from `process.env.CLOUDFLARE_ACCOUNT_ID` at module load time; requires both `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_KEY` env vars.
 - Ollama is not in `PROVIDER_REGISTRY`; `createOllamaProvider()` lives in [adapters/openai-compat.md](adapters/openai-compat.md).
 - Providers with `modelsSource: 'live'` have their model list fetched from the provider's `/v1/models` API at runtime via `initDynamicProviders()`. Most live providers start empty and use the cache from `model-list-cache.ts` on fetch failure; Zen keeps a curated current-free seed list for offline/default picker availability. All live fetches are gated on `resolveApiKey(provider)`, so env vars, default keys, and config-file keys enable discovery; if no key is configured, the fetch is skipped entirely.
@@ -56,7 +56,7 @@ For the generated provider table, see [providers.md](../../providers.md).
 
 ## Key Neighbors
 
-- [adapters/openai-compat.md](adapters/openai-compat.md) and [adapters/anthropic.md](adapters/anthropic.md): provider factories consumed by `resolveModel()`.
+- [adapters/openai-compat.md](adapters/openai-compat.md): provider factory consumed by `resolveModel()` for every registry provider, including Anthropic.
 - [config/index.md](../config/index.md): maps provider IDs to config/env keys.
 - [providers.md](../../providers.md): generated reference output.
 - [fake.md](fake.md): fake LLM fixture runner used by e2e verification.

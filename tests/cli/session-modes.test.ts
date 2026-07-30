@@ -501,7 +501,7 @@ describe('createInteractiveMode — detailed', () => {
       expect(setContextUsage).toHaveBeenCalledWith({ tokens: 4242, window: null });
     });
 
-    it('onAgentResult blanks the ctx slot for Anthropic (cache-excluded count reads low)', () => {
+    it('onAgentResult feeds the provider-reported prompt tokens to the ctx slot for Anthropic like any other provider', () => {
       const { mode } = makeMode();
       vi.clearAllMocks();
       void mode.onAgentResult!({
@@ -510,9 +510,8 @@ describe('createInteractiveMode — detailed', () => {
         quota: null,
         usage: { totalTokens: 4243, promptTokens: 4242, outputTokens: 1 },
       } as never);
-      // Even with a reported count, Anthropic is suppressed — input_tokens omits
-      // cache_read/cache_creation, so the number would undercount. Blank, not wrong.
-      expect(setContextUsage).toHaveBeenCalledWith(null);
+      // Anthropic now goes through the same generic path as every other provider.
+      expect(setContextUsage).toHaveBeenCalledWith({ tokens: 4242, window: null });
     });
 
     it('onAgentResult leaves the ctx slot untouched when no token count was reported', () => {
@@ -540,16 +539,6 @@ describe('createInteractiveMode — detailed', () => {
       // Repainted per step — the 1 s footer timer would miss any step that
       // completes inside that second, which is most of them.
       expect(drawFooter).toHaveBeenCalledTimes(2);
-    });
-
-    it('onStepUsage skips Anthropic rather than blanking on every step', () => {
-      const { mode } = makeMode();
-      vi.clearAllMocks();
-      // The per-step count omits cache_read/cache_creation and would read far
-      // low. Leave the slot to onAgentResult instead of clearing it repeatedly.
-      mode.onStepUsage!({ providerId: 'anthropic', modelId: 'claude-3', promptTokens: 4242 });
-      expect(setContextUsage).not.toHaveBeenCalled();
-      expect(drawFooter).not.toHaveBeenCalled();
     });
 
     it('afterDispatch fires applyModelChange when the model has changed', () => {

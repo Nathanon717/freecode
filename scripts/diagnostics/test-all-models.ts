@@ -45,8 +45,8 @@ interface Outcome {
 }
 
 // Duck-types the statusCode/responseBody fields present on both real AI SDK
-// APICallErrors (anthropic path) and the plain Error the openai-compat adapter
-// throws via Object.assign(new Error(...), { statusCode }) (adapter-http-retry.ts).
+// APICallErrors and the plain Error the openai-compat adapter throws via
+// Object.assign(new Error(...), { statusCode }) (adapter-http-retry.ts).
 function describeError(error: unknown): string {
   const e = error as { statusCode?: unknown; responseBody?: unknown };
   const message = error instanceof Error ? error.message : String(error);

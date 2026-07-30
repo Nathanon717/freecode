@@ -6,13 +6,6 @@ import { ensureStoreReady } from '../store/db.js';
 import { toErrorMessage } from '../util/errors.js';
 import { log } from '../logger.js';
 import { PROVIDER_REGISTRY } from '../providers/provider-registry.js';
-import {
-  addAnthropicSessionCost,
-  describeCostEstimate,
-  describeCostEstimateBreakdown,
-  formatUsdCeil,
-  resetAnthropicSessionCost,
-} from '../providers/anthropic-cost.js';
 import { formatCapturedProviderUsages } from '../providers/adapters/openai-compat.js';
 import { redrawBanner } from './render/banner.js';
 import { replayTranscript } from './render/transcript-replay.js';
@@ -148,13 +141,6 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
     // none of that leaves history exactly as it was.
     runtime.session.commitTurn(userMessage, result.turnMessages, result.text);
 
-    if (result.providerId === 'anthropic') {
-      const sessionTotal = addAnthropicSessionCost(result.costEstimate);
-      const costStr = describeCostEstimate(result.costEstimate, { colored: true });
-      console.log(chalk.gray('Estimated API cost: ') + costStr + chalk.gray(` this turn | ${formatUsdCeil(sessionTotal)} session`));
-      const breakdown = describeCostEstimateBreakdown(result.costEstimate);
-      if (breakdown) console.log(chalk.gray(breakdown));
-    }
     const providerUsage = formatCapturedProviderUsages(result.providerUsage);
     const effectiveSettings = resolveModelSettings(runtime.getSelectedModel());
     if (providerUsage && effectiveSettings.showProviderUsage) {
@@ -242,7 +228,6 @@ export async function dispatchCommand(input: string, runtime: CommandRuntime): P
     // it mirrors — otherwise /clear lands on a bare banner and the next /model
     // brings the cleared conversation back.
     clearTranscriptRecord();
-    resetAnthropicSessionCost();
     await runtime.beforeScreenClear?.();
     redrawBanner();
     console.log(chalk.dim('Chat history cleared.'));

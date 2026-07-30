@@ -1,8 +1,6 @@
 # src/providers/adapters/openai-compat.ts - OpenAI-Compatible Adapter
 
-**Role:** Provider-agnostic pipeline for all OpenAI-compatible registry providers and Ollama: parse body → apply profile quirks → fetch with retry → capture rate-limit headers → throw HTTP errors → convert/normalize response, with zero `if (id === 'x')` branches. Provider-specific pieces live elsewhere: static traits in [quirks](openai-compat-quirks.md), body transforms in [request](openai-compat-request.md)/[sse](openai-compat-sse.md), retry + error formatting in [http-retry](adapter-http-retry.md), capture stores in [usage-capture](adapter-usage-capture.md).
-
-> **Intentional asymmetry with `anthropic.ts`:** `anthropic.ts` is a single-provider adapter wired directly to the Anthropic SDK — it has one tenant and needs no routing layer. `openai-compat.ts` is a multi-tenant router shared by every OpenAI-compatible provider. Do not "harmonize" them. The quirks map and fixed pipeline here are load-bearing; they would only add noise in a single-tenant file.
+**Role:** Provider-agnostic pipeline for **every** registry provider (Anthropic included) plus Ollama: parse body → apply profile quirks → fetch with retry → capture rate-limit headers → throw HTTP errors → convert/normalize response, with zero `if (id === 'x')` branches. Provider-specific pieces live elsewhere: static traits in [quirks](openai-compat-quirks.md), body transforms in [request](openai-compat-request.md)/[sse](openai-compat-sse.md), retry + error formatting in [http-retry](adapter-http-retry.md), capture stores in [usage-capture](adapter-usage-capture.md). There is no separate Anthropic adapter; Anthropic is a catalog entry (`baseUrl: "https://api.anthropic.com/v1"`) with no quirk profile, so it runs the default pipeline with `captureRateLimits` off.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

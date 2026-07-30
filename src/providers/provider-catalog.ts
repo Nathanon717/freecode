@@ -4,7 +4,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "groq",
     name: "Groq",
-    type: "openai-compat",
     baseUrl: "https://api.groq.com/openai/v1",
     apiKeyEnvVar: "GROQ_API_KEY",
     modelsSource: "live",
@@ -20,7 +19,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "openrouter",
     name: "OpenRouter",
-    type: "openai-compat",
     baseUrl: "https://openrouter.ai/api/v1",
     apiKeyEnvVar: "OPENROUTER_API_KEY",
     modelsSource: "live",
@@ -33,7 +31,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "siliconflow",
     name: "SiliconFlow",
-    type: "openai-compat",
     baseUrl: "https://api.siliconflow.cn/v1",
     apiKeyEnvVar: "SILICONFLOW_API_KEY",
     modelsSource: "live",
@@ -43,7 +40,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "nvidia",
     name: "NVIDIA",
-    type: "openai-compat",
     baseUrl: "https://integrate.api.nvidia.com/v1",
     apiKeyEnvVar: "NVIDIA_API_KEY",
     modelsSource: "live",
@@ -120,7 +116,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "llm7",
     name: "LLM7",
-    type: "openai-compat",
     baseUrl: "https://api.llm7.io/v1",
     apiKeyEnvVar: "LLM7_API_KEY",
     modelsSource: "live",
@@ -131,7 +126,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "github",
     name: "GitHub",
-    type: "openai-compat",
     baseUrl: "https://models.inference.ai.azure.com",
     apiKeyEnvVar: "GITHUB_TOKEN",
     models: [
@@ -152,7 +146,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "cohere",
     name: "Cohere",
-    type: "openai-compat",
     baseUrl: "https://api.cohere.ai/compatibility/v1",
     apiKeyEnvVar: "COHERE_API_KEY",
     modelsSource: "live",
@@ -162,7 +155,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "cerebras",
     name: "Cerebras",
-    type: "openai-compat",
     baseUrl: "https://api.cerebras.ai/v1",
     apiKeyEnvVar: "CEREBRAS_API_KEY",
     modelsSource: "live",
@@ -172,7 +164,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "mistral",
     name: "Mistral",
-    type: "openai-compat",
     baseUrl: "https://api.mistral.ai/v1",
     apiKeyEnvVar: "MISTRAL_API_KEY",
     modelsSource: "live",
@@ -189,7 +180,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "cloudflare",
     name: "Cloudflare",
-    type: "openai-compat",
     baseUrl: `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID ?? ""}/ai/v1`,
     apiKeyEnvVar: "CLOUDFLARE_API_KEY",
     models: [
@@ -215,7 +205,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "zai",
     name: "Z.ai",
-    type: "openai-compat",
     baseUrl: "https://api.z.ai/api/paas/v4",
     apiKeyEnvVar: "ZAI_API_KEY",
     models: [
@@ -234,7 +223,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "huggingface",
     name: "Hugging Face",
-    type: "openai-compat",
     baseUrl: "https://router.huggingface.co/v1",
     apiKeyEnvVar: "HF_TOKEN",
     models: [
@@ -263,7 +251,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "zen",
     name: "OpenCode",
-    type: "openai-compat",
     baseUrl: "https://opencode.ai/zen/v1",
     apiKeyEnvVar: "OPENCODE_ZEN_API_KEY",
     defaultApiKey: "public",
@@ -274,7 +261,6 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "openai",
     name: "OpenAI",
-    type: "openai-compat",
     baseUrl: "https://api.openai.com/v1",
     apiKeyEnvVar: "OPENAI_API_KEY",
     paid: true,
@@ -301,7 +287,7 @@ export const PROVIDER_REGISTRY: ProviderConfig[] = [
   {
     id: "anthropic",
     name: "Anthropic",
-    type: "anthropic",
+    baseUrl: "https://api.anthropic.com/v1",
     apiKeyEnvVar: "ANTHROPIC_API_KEY",
     paid: true,
     modelsSource: "live",

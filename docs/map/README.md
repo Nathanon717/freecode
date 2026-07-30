@@ -33,7 +33,7 @@ Format: filename (linecount)
 - `src/agent/`
   - [`conversation.ts`](agent/conversation.md) (60) — Session Controller
   - [`fake-loop.ts`](agent/fake-loop.md) (122) — Fake-Fixture Turn Loop
-  - [`loop.ts`](agent/loop.md) (444) — Agent Loop
+  - [`loop.ts`](agent/loop.md) (431) — Agent Loop
   - [`parsed-tools.ts`](agent/parsed-tools.md) (268) — Parsed-Tools Harness
   - [`stream-turn.ts`](agent/stream-turn.md) (106) — Recovering Stream Turn
 - `src/agent/subagents/`
@@ -54,7 +54,7 @@ Format: filename (linecount)
   - [`spawn-agent.ts`](agent/tools/spawn-agent.md) (38) — spawn_agent Tool
 - `src/agent/`
   - [`turn-messages.ts`](agent/turn-messages.md) (140) — Turn Message Shape Rules
-  - [`usage-finalize.ts`](agent/usage-finalize.md) (65) — Turn Usage/Cost/Quota Finalization
+  - [`usage-finalize.ts`](agent/usage-finalize.md) (42) — Turn Usage/Quota Finalization
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/chrome/`
   - [`ansi.ts`](cli/chrome/ansi.md) (56) — Terminal Geometry & Escape Sequences
@@ -63,7 +63,7 @@ Format: filename (linecount)
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
   - [`toggles.ts`](cli/chrome/toggles.md) (100) — Footer Toggle State
 - `src/cli/`
-  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (269) — Command Dispatcher
+  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (254) — Command Dispatcher
 - `src/cli/eval/`
   - [`custom-eval-menu.ts`](cli/eval/custom-eval-menu.md) (361) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval/eval-dots.md) (28) — Eval Status Circle Renderers
@@ -86,7 +86,7 @@ Format: filename (linecount)
   - [`transcript-replay.ts`](cli/render/transcript-replay.md) (79) — Post-Wipe Transcript Replay
 - `src/cli/`
   - [`scripted-mode.ts`](cli/scripted-mode.md) (96) — Scripted Session Mode
-  - [`session-modes.ts`](cli/session-modes.md) (438) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (429) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (77) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (76) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
@@ -113,13 +113,11 @@ Format: filename (linecount)
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (189) — Adapter HTTP Retry/Backoff
   - [`adapter-usage-capture.ts`](providers/adapters/adapter-usage-capture.md) (52) — Shared Usage/Header Capture
-  - [`anthropic.ts`](providers/adapters/anthropic.md) (243) — Anthropic Adapter
   - [`openai-compat-quirks.ts`](providers/adapters/openai-compat-quirks.md) (54) — OpenAI-Compatible Provider Quirk Profiles
   - [`openai-compat-request.ts`](providers/adapters/openai-compat-request.md) (35) — OpenAI-Compatible Request Transforms
   - [`openai-compat-sse.ts`](providers/adapters/openai-compat-sse.md) (142) — OpenAI-Compatible SSE Transforms
   - [`openai-compat.ts`](providers/adapters/openai-compat.md) (255) — OpenAI-Compatible Adapter
 - `src/providers/`
-  - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
   - [`fake.ts`](providers/fake.md) (435) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
   - [`model-data.ts`](providers/model-data.md) (279) — Unified Model Store
@@ -127,16 +125,16 @@ Format: filename (linecount)
   - [`model-settings-accessor.ts`](providers/model-settings-accessor.md) (14) — Model Settings Accessor
   - [`openai-daily-spend.ts`](providers/openai-daily-spend.md) (181) — OpenAI Daily Spend Footer
   - [`pricing-verifier.ts`](providers/pricing-verifier.md) (123) — Dual-Source Pricing Verifier
-  - [`provider-catalog.ts`](providers/provider-catalog.md) (311) — Provider Catalog
-  - [`provider-registry.ts`](providers/provider-registry.md) (472) — Provider Registry
+  - [`provider-catalog.ts`](providers/provider-catalog.md) (297) — Provider Catalog
+  - [`provider-registry.ts`](providers/provider-registry.md) (447) — Provider Registry
 - `src/providers/quota/`
   - [`cache.ts`](providers/quota/cache.md) (39) — Quota Cache
-  - [`headers.ts`](providers/quota/headers.md) (370) — Provider Rate-Limit Header Parsing
+  - [`headers.ts`](providers/quota/headers.md) (250) — Provider Rate-Limit Header Parsing
 - `src/providers/`
-  - [`types.ts`](providers/types.md) (57) — Type Definitions
+  - [`types.ts`](providers/types.md) (56) — Type Definitions
   - [`user-blocklist.ts`](providers/user-blocklist.md) (69) — Per-User Model Blocklist
 - `src/store/`
-  - [`call-log.ts`](store/call-log.md) (53) — Per-Call LLM Log
+  - [`call-log.ts`](store/call-log.md) (52) — Per-Call LLM Log
   - [`db-config-cache.ts`](store/db-config-cache.md) (55) — DB Config Cache
   - [`db-load.ts`](store/db-load.md) (88) — DB Row Hydration
   - [`db-schema.ts`](store/db-schema.md) (87) — Table & Index DDL

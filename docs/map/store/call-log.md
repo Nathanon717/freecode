@@ -1,6 +1,6 @@
 # src/store/call-log.ts - Per-Call LLM Log
 
-**Role:** Defines the `llm_calls` row shape, normalizes provider-reported token counts, and hands rows to `db.ts` for persistence. Called from the two adapter fetch wrappers — the only paths that make completion calls — so no LLM call can complete without producing a row.
+**Role:** Defines the `llm_calls` row shape, normalizes provider-reported token counts, and hands rows to `db.ts` for persistence. Called from the adapter fetch wrapper — the only path that makes completion calls — so no LLM call can complete without producing a row.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -32,18 +32,15 @@ Free models often document no rate limits and send no rate-limit headers. A dura
 
 ## No Estimation
 
-Token fields are populated **only** from a usage object the provider actually returned. Nothing is counted locally or inferred. A null token column means "the provider did not tell us" — that absence is itself the signal, so it must never be backfilled with a guess or a zero. `tokensFromUsagePayload` handles the OpenAI-compatible shape (`prompt_tokens`/`completion_tokens`/`total_tokens`) and the Anthropic shape (`input_tokens`/`output_tokens`); `total_tokens` is summed only when both halves are present, and unrecognised payloads yield all-null.
+Token fields are populated **only** from a usage object the provider actually returned. Nothing is counted locally or inferred. A null token column means "the provider did not tell us" — that absence is itself the signal, so it must never be backfilled with a guess or a zero. `tokensFromUsagePayload` handles only the OpenAI-compatible shape (`prompt_tokens`/`completion_tokens`/`total_tokens`); `total_tokens` is summed only when both halves are present, and unrecognised payloads yield all-null. Anthropic now sends this shape too, routed through the same adapter.
 
 ## Chokepoints
 
-- `adapters/openai-compat.ts` — logs on transport failure, on HTTP error (before the throw), and on success by teeing the existing `parseProviderUsage` promise into the log.
-- `adapters/anthropic.ts` — same three paths; success reuses the `parseAnthropicUsageFromSse` promise, and `hasRawUsage === false` keeps tokens null rather than reporting the zeroed accumulator.
-
-Both wrappers derive `model_key` as `"provider:modelId"` from the outgoing request body, falling back to `"provider:unknown"` — the row is still worth having when the body is unparseable.
+- `adapters/openai-compat.ts` — the only adapter; logs on transport failure, on HTTP error (before the throw), and on success by teeing the existing `parseProviderUsage` promise into the log. Derives `model_key` as `"provider:modelId"` from the outgoing request body, falling back to `"provider:unknown"` — the row is still worth having when the body is unparseable.
 
 ## Read When
 
-Adding a third adapter (it must call `recordLlmCall` on all three paths), changing which fields are logged, or querying the log to infer rate limits.
+Adding a second adapter (it must call `recordLlmCall` on all three paths), changing which fields are logged, or querying the log to infer rate limits.
 
 ## Key Neighbors
 

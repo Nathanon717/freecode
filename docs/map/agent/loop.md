@@ -24,7 +24,6 @@ interface AgentLoopResult {
   modelId: string;
   quota: RateLimitSnapshot | null;
   providerUsage?: CapturedProviderUsage[];
-  costEstimate?: CostEstimate;
   /**
    * What this turn added on top of the history it was given: assistant text,
    * tool calls, and tool results. The session appends these so a follow-up turn
@@ -55,7 +54,7 @@ agentLoop(messages: CoreMessage[], projectRoot: string, modelPreference?: string
 ## Read When
 
 - Changing model turn execution, tool enablement, or stream error handling.
-- Debugging quota/cost metadata returned from a provider call.
+- Debugging quota/usage metadata returned from a provider call.
 - Changing project-root setup before tools run.
 
 ## Execution Flow
@@ -74,8 +73,6 @@ else if provider is mock:
   run ordered fake fixture steps after building the real system prompt/tool list
   execute scripted fake tool calls via executeToolCalls() from parsed-tools.ts
   feed tool results back as user messages until the fixture emits final text
-else if provider is Anthropic:
-  begin usage capture
 streamText({
   model,
   system,
@@ -92,11 +89,10 @@ for await part of fullStream:             (ordered: text-delta -> tool-call -> t
                (fullStream reports errors, it does not throw them)
 endToolRenderGate()
 await usage  (promptTokens = last step's, NOT the SDK's step-summed total)
-finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens)   (usage-finalize.ts)
-  -> ends Anthropic SSE capture or OpenAI-compat raw capture
-  -> fetches verified pricing and estimates turn cost
+finalizeUsageCapture(providerId, promptTokens, outputTokens)   (usage-finalize.ts)
+  -> ends OpenAI-compat raw usage capture
   -> reads most recent rate-limit headers
-  (also runs on catch path so partial cost/quota survives stream failures)
+  (also runs on catch path so partial usage/quota survives stream failures)
 return AgentLoopResult
 ```
 
@@ -116,28 +112,28 @@ return AgentLoopResult
 - `runFakeLlm(providerId, modelId, ...)` now lives in [fake-loop.md](fake-loop.md) (extracted at the 500-line limit). It handles the entire `FAKE_PROVIDER_ID` path and returns `AgentLoopResult` directly, so `agentLoop` returns immediately after calling it. `mock-native:*` is unaffected — it runs through `streamWithRetry` like a real provider.
 - `streamWithRetry(languageModel, supportsTools, ...)` — runs the `while(true)` streaming loop for all non-fake providers (OpenAI included — there is no separate OpenAI dispatch path). Handles the tool-not-supported fallback, the whole-turn restart for a provider-rejected malformed call, and the mid-turn recovery for rejected tool calls (below); returns a `StreamResult` with the accumulated text and token counts. Throws on non-retriable errors, which propagate to `agentLoop`'s catch.
 - **Rejected tool calls continue the turn, they do not end it.** An unknown tool name (`NoSuchToolError`) and arguments that fail the tool's schema (`InvalidToolArgumentsError`) are both rejected by the AI SDK before `execute` runs, so neither produces a tool result — and the SDK then stops stepping, since it only continues when `stepToolResults.length === stepToolCalls.length`. The drain-and-recover mechanism itself lives in [stream-turn.md](stream-turn.md) (`runRecoveringStream`), shared with the sub-agent runner; `streamWithRetry` supplies the callbacks. Recovery continues from `await result.responseMessages` (it resolves even after an error part, and holds only calls that actually ran, each paired with its result) plus a user message describing the rejection, so nothing already executed is replayed — the earlier restart-from-original-history behaviour risked re-running a completed `shell_exec`/`create`/`edit`. Capped at `MAX_REJECTED_TOOL_CALLS` per turn. Because the turn spans more than one `streamText` call, the `onRecover` callback accumulates `carriedTotalTokens`/`carriedOutputTokens` across them; `promptTokens` stays last-wins. Per-attempt render state (transcript turn, markdown renderer, tool-render gate, step counters) is set up inside the `start` callback so each recovery attempt gets a fresh one. A tool whose `execute` fails is not in this class — `tools/index.ts` returns its message as the call's result instead of throwing.
-- **Context-size (`ctx`) token source.** The native `fullStream` consumer records each `step-finish` part's own `promptTokens` and uses the **last** one as the turn's `promptTokens`, *not* `result.usage.promptTokens` — which ai@3.4 returns SUMMED across every step of a multi-step tool turn (`combinedUsage`), so using it would report roughly step-count× the real context and could exceed the window. For a single-step turn the two are identical. This is the number `cli/session-modes.ts` feeds the footer `ctx` slot (except for Anthropic, which it suppresses — its count omits cache tokens); the summing trap is regression-pinned by the multi-step mock-native test in `tests/agent/loop.test.ts` (last step = 20, not 10+20=30). The parsed-tools fallback path is already last-wins (one single-step `streamText` per iteration).
+- **Context-size (`ctx`) token source.** The native `fullStream` consumer records each `step-finish` part's own `promptTokens` and uses the **last** one as the turn's `promptTokens`, *not* `result.usage.promptTokens` — which ai@3.4 returns SUMMED across every step of a multi-step tool turn (`combinedUsage`), so using it would report roughly step-count× the real context and could exceed the window. For a single-step turn the two are identical. This is the number `cli/session-modes.ts` feeds the footer `ctx` slot; the summing trap is regression-pinned by the multi-step mock-native test in `tests/agent/loop.test.ts` (last step = 20, not 10+20=30). The parsed-tools fallback path is already last-wins (one single-step `streamText` per iteration).
 - **`onStepUsage` — the per-step `ctx` tick.** An `AgentLoopOptions` callback fired at every step boundary with that step's own `promptTokens`, so the footer's context size climbs during a multi-step tool turn rather than jumping once at the end. Emitted from three places so every execution path ticks: the native `onStepFinish` handler (using `event.usage`, which is per-step — unlike the awaited `result.usage`), `runFakeLlm`'s per-step loop (this is what the TTY e2e tests exercise), and `runParsedToolsLoop` via an optional callback param. Values climb within a turn because each step resends a longer history; the last one equals the turn's final `promptTokens`. Consumer side lives in `cli/session-modes.ts`.
-- `finalizeUsageCapture(...)` now lives in [usage-finalize.md](usage-finalize.md) (extracted at the 500-line limit). `agentLoop` imports it and calls it on both the success and catch paths, feeding the result through `applyUsageOutcome`; for Anthropic it overrides `promptTokens` with the provider's own `inputTokens`.
+- `finalizeUsageCapture(...)` now lives in [usage-finalize.md](usage-finalize.md) (extracted at the 500-line limit). `agentLoop` imports it and calls it on both the success and catch paths, feeding the result through `applyUsageOutcome`.
 
 ## Key Neighbors
 
 - [providers/provider-registry.md](../providers/provider-registry.md): resolves provider/model.
 - [system-prompt.md](system-prompt.md): builds the prompt.
 - [tools/index.md](tools/index.md): creates tool wrappers.
-- [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md) and [providers/adapters/anthropic.md](../providers/adapters/anthropic.md): capture provider metadata and usage details.
+- [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md): captures provider metadata and usage details.
 - [providers/fake.md](../providers/fake.md): fake fixture runner for free agent-loop verification.
 - [providers/model-data.md](../providers/model-data.md): `isNativeToolsDisabled`/`setNativeTools` for the native-tools fallback trait.
 - [tool-render-gate.md](tool-render-gate.md): orders streamed text before tool-call headers on the native `fullStream` path.
 - [stream-turn.md](stream-turn.md): drains the native `fullStream` and owns rejected-tool-call recovery.
 - [parsed-tools.md](parsed-tools.md): the text-protocol fallback. It builds tools without a `spawnAgent` runner, so `agentLoop` rebuilds the system prompt with `buildSystemPrompt(loadAgentsMd, false)` before entering it.
-- [usage-finalize.md](usage-finalize.md): ends usage capture and computes cost/quota for each turn.
+- [usage-finalize.md](usage-finalize.md): ends usage capture and reads quota headers for each turn.
 
 ## Error Handling
 
 - **Failures ride on `error`, never on `text`.** Every path that fails without throwing (`FREECODE_NO_LLM`, the `resolveModel` failure, the stream catch — and `runFakeLlm`'s catch) returns the message in `AgentLoopResult.error` and leaves `text` as the model's own output: empty, or whatever partial text it emitted first. The loop has already printed the error to stdout, and the session must not persist it as something the assistant said (`docs/bug log/28-07-2026.md`). A user abort is not a failure and leaves `error` unset.
 - Routing errors do not throw; they return `providerId: "none"`, `modelId: "none"`, zero tokens, and the reason in `error`.
-- Stream errors are logged and returned with any partial text plus the detailed error message in `error`. API errors include parsed provider fields such as `code`, `type`, and `failed_generation` when the SDK exposes them. Anthropic usage capture is ended on this path so any available partial cost metadata can still be returned.
+- Stream errors are logged and returned with any partial text plus the detailed error message in `error`. API errors include parsed provider fields such as `code`, `type`, and `failed_generation` when the SDK exposes them. Usage capture is ended on this path so any available partial usage metadata can still be returned.
 - Context-overflow errors (`isContextOverflowError`) are detected as a distinct subcase: a specific multi-line user-facing message is printed to stdout explaining the limit was exceeded and suggesting starting a new session or switching to a larger-context model via `/model`. `error` carries a condensed single-line version of this message.
 
 ## Update Triggers

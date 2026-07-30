@@ -25,16 +25,15 @@ function intOrNull(value: unknown): number | null {
 }
 
 /**
- * Pull token counts out of a raw provider usage payload. Handles the
- * OpenAI-compatible shape (`prompt_tokens`/`completion_tokens`/`total_tokens`)
- * and the Anthropic shape (`input_tokens`/`output_tokens`, no total — summed
- * only when both halves are present). Anything unrecognised yields all-null.
+ * Pull token counts out of a raw provider usage payload: the OpenAI-compatible
+ * shape (`prompt_tokens`/`completion_tokens`/`total_tokens`). A payload missing
+ * `total_tokens` gets it summed; anything unrecognised yields all-null.
  */
 export function tokensFromUsagePayload(usage: unknown): Pick<LlmCallRow, 'inputTokens' | 'outputTokens' | 'totalTokens'> {
   if (!isRecord(usage)) return { inputTokens: null, outputTokens: null, totalTokens: null };
 
-  const inputTokens = intOrNull(usage['prompt_tokens'] ?? usage['input_tokens']);
-  const outputTokens = intOrNull(usage['completion_tokens'] ?? usage['output_tokens']);
+  const inputTokens = intOrNull(usage['prompt_tokens']);
+  const outputTokens = intOrNull(usage['completion_tokens']);
   const reportedTotal = intOrNull(usage['total_tokens']);
   const totalTokens = reportedTotal ?? (inputTokens !== null && outputTokens !== null ? inputTokens + outputTokens : null);
 

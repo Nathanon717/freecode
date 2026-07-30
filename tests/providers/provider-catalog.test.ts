@@ -2,19 +2,20 @@ import { describe, it, expect } from 'vitest';
 import { PROVIDER_REGISTRY } from '../../src/providers/provider-catalog.js';
 
 describe('PROVIDER_REGISTRY data', () => {
-  it('contains both openai-compat and anthropic types', () => {
-    const types = new Set(PROVIDER_REGISTRY.map(p => p.type));
-    expect(types.has('openai-compat')).toBe(true);
-    expect(types.has('anthropic')).toBe(true);
+  it('every entry has an id, name, and apiKeyEnvVar', () => {
+    for (const p of PROVIDER_REGISTRY) {
+      expect(typeof p.id).toBe('string');
+      expect(p.id.length).toBeGreaterThan(0);
+      expect(typeof p.name).toBe('string');
+      expect(p.name.length).toBeGreaterThan(0);
+      expect(typeof p.apiKeyEnvVar).toBe('string');
+      expect(p.apiKeyEnvVar.length).toBeGreaterThan(0);
+    }
   });
 
-  it('all openai-compat entries have a baseUrl', () => {
-    for (const p of PROVIDER_REGISTRY) {
-      if (p.type === 'openai-compat') {
-        expect(typeof p.baseUrl).toBe('string');
-        expect(p.baseUrl!.length).toBeGreaterThan(0);
-      }
-    }
+  it('anthropic has the expected baseUrl', () => {
+    const anthropic = PROVIDER_REGISTRY.find(p => p.id === 'anthropic');
+    expect(anthropic?.baseUrl).toBe('https://api.anthropic.com/v1');
   });
 
   it('all entries have unique ids', () => {

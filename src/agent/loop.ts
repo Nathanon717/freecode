@@ -8,11 +8,6 @@ import {
   getLastCapturedHeaders,
   type CapturedProviderUsage,
 } from '../providers/adapters/openai-compat.js';
-import {
-  beginAnthropicUsageCapture,
-  getLastCapturedAnthropicHeaders,
-} from '../providers/adapters/anthropic.js';
-import { type CostEstimate } from '../providers/anthropic-cost.js';
 import { beginTranscriptTurn, endTranscriptStep, writeToolCallHeader, writeToolStepResult, writeTranscriptText } from '../cli/render/transcript-renderer.js';
 import { beginToolRenderGate, endToolRenderGate, releaseToolRenderGate } from './tool-render-gate.js';
 import { createMarkdownStreamRenderer } from '../cli/render/markdown-renderer.js';
@@ -51,7 +46,6 @@ export interface AgentLoopResult {
   modelId: string;
   quota: RateLimitSnapshot | null;
   providerUsage?: CapturedProviderUsage[];
-  costEstimate?: CostEstimate;
   /**
    * What this turn added on top of the history it was given: assistant text,
    * tool calls, and tool results. The session appends these so a follow-up turn
@@ -166,7 +160,7 @@ async function streamWithRetry(
               if (event.finishReason === 'tool-calls') {
                 endTranscriptStep(true);
               }
-              const stepQuota = getLastCapturedHeaders(providerId) ?? getLastCapturedAnthropicHeaders(providerId);
+              const stepQuota = getLastCapturedHeaders(providerId);
               if (stepQuota) options.onPartialResult?.({ providerId, modelId, quota: stepQuota });
               // `event.usage` is this step's own usage (unlike the awaited
               // `result.usage`, which is summed across steps — see below).
@@ -335,7 +329,6 @@ export async function agentLoop(
   let outputTokens: number | undefined;
   let quota: RateLimitSnapshot | null = null;
   let providerUsage: CapturedProviderUsage[] | undefined;
-  let costEstimate: CostEstimate | undefined;
   // Stays empty unless a stream drained: an errored or aborted turn has no
   // balanced call/result set to persist, and the session falls back to `text`.
   let turnMessages: CoreMessage[] = [];
@@ -347,13 +340,11 @@ export async function agentLoop(
     modelId,
     quota,
     providerUsage,
-    costEstimate,
     turnMessages,
     ...(error === undefined ? {} : { error }),
   });
   const applyUsageOutcome = (outcome: UsageOutcome): void => {
-    providerUsage = outcome.providerUsage ?? providerUsage;
-    costEstimate = outcome.costEstimate ?? costEstimate;
+    providerUsage = outcome.providerUsage;
     promptTokens = outcome.promptTokens;
     outputTokens = outcome.outputTokens;
     quota = outcome.quota;
@@ -371,15 +362,11 @@ export async function agentLoop(
     return runFakeLlm(providerId, modelId, supportsTools, systemPrompt, messages, options, modelSettings);
   }
 
-  if (!modelSettings.parallelTools && providerId !== 'anthropic') {
+  if (!modelSettings.parallelTools) {
     setParallelToolsDisabled(providerId, true);
   }
   try {
-    if (providerId === 'anthropic') {
-      beginAnthropicUsageCapture(providerId);
-    } else {
-      beginProviderUsageCapture(providerId);
-    }
+    beginProviderUsageCapture(providerId);
 
     const streamed = await streamWithRetry(languageModel, supportsTools, systemPrompt, messages, providerId, modelId, options, modelSettings);
     fullText = streamed.fullText;
@@ -404,9 +391,9 @@ export async function agentLoop(
       assertFakeFixtureComplete();
     }
 
-    applyUsageOutcome(await finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens));
+    applyUsageOutcome(await finalizeUsageCapture(providerId, promptTokens, outputTokens));
   } catch (error) {
-    applyUsageOutcome(await finalizeUsageCapture(providerId, modelId, promptTokens, outputTokens));
+    applyUsageOutcome(await finalizeUsageCapture(providerId, promptTokens, outputTokens));
     if (isUserAbortError(error)) {
       endTranscriptStep(false);
       return finishResult(fullText);

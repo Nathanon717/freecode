@@ -377,13 +377,7 @@ export function createInteractiveMode(
       // actually reported a count; a turn that errored before any usage keeps
       // the last good number rather than blanking or showing a guess.
       const promptTokens = result.usage?.promptTokens;
-      if (result.providerId === 'anthropic') {
-        // Anthropic reports input_tokens WITHOUT cache_read/cache_creation, so
-        // once prompt caching kicks in the count reads far low (e.g. ~2k at 100k
-        // real). Blank the slot rather than show a confident undercount, until
-        // finalizeUsageCapture (usage-finalize.ts) sums the cache fields.
-        setContextUsage(null);
-      } else if (promptTokens !== undefined) {
+      if (promptTokens !== undefined) {
         applyContextUsage(result.providerId, result.modelId, promptTokens);
       }
     },
@@ -391,9 +385,6 @@ export function createInteractiveMode(
     // so the context size grows *during* the turn. The footer survives a turn
     // (teardownBottomUI drops only the input area), so it can be repainted here.
     onStepUsage: ({ providerId, modelId, promptTokens }) => {
-      // Anthropic's per-step count omits the cache fields and would read far
-      // low; skip rather than blank, leaving onAgentResult's handling in charge.
-      if (providerId === 'anthropic') return;
       applyContextUsage(providerId, modelId, promptTokens);
       // Repaint now instead of waiting on the 1 s footer timer: a step that
       // finishes inside that second would otherwise never show its value, and

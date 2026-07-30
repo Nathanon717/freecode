@@ -35,11 +35,6 @@ describe('Provider Registry', () => {
       PROVIDER_REGISTRY.forEach(provider => {
         expect(provider.id).toBeDefined();
         expect(provider.name).toBeDefined();
-        expect(provider.type).toBeDefined();
-        expect(['openai-compat', 'anthropic']).toContain(provider.type);
-        if (provider.type === 'openai-compat') {
-          expect(provider.baseUrl).toBeDefined();
-        }
         expect(provider.apiKeyEnvVar).toBeDefined();
         expect(provider.models).toBeDefined();
         expect(Array.isArray(provider.models)).toBe(true);
@@ -102,12 +97,6 @@ describe('Provider Registry', () => {
       expect(getProvider('openai')?.paid).toBe(true);
       expect(getProvider('anthropic')?.paid).toBe(true);
       expect(getProvider('groq')?.paid).toBeFalsy();
-    });
-
-    it('provider types are correct', () => {
-      const types = PROVIDER_REGISTRY.map(p => p.type);
-      expect(types.filter(t => t === 'openai-compat')).toHaveLength(14);
-      expect(types.filter(t => t === 'anthropic')).toHaveLength(1);
     });
 
   });
@@ -409,9 +398,9 @@ describe('initDynamicProviders live fetching', () => {
     expect(savedIds).not.toContain('nvidia/nemotron-3.5-content-safety:free');
   });
 
-  // Regression: anthropic's selectModels returns everything and has no registry
-  // blocklist, so a user-blocklisted id came straight back into the catalog on each
-  // launch. finish() now strips the user blocklist before the catalog is written.
+  // Regression: anthropic has no registry blocklist, so a user-blocklisted id came
+  // straight back into the catalog on each launch. finish() now strips the user
+  // blocklist before the catalog is written.
   it('anthropic drops user-blocklisted ids from models and the catalog write', async () => {
     process.env.ANTHROPIC_API_KEY = 'test-key';
     vi.doMock('../../src/providers/user-blocklist.js', () => ({

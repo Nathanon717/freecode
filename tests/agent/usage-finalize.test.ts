@@ -4,23 +4,10 @@ vi.mock('../../src/providers/adapters/openai-compat.js', () => ({
   endProviderUsageCapture: vi.fn(),
   getLastCapturedHeaders: vi.fn(),
 }));
-vi.mock('../../src/providers/adapters/anthropic.js', () => ({
-  endAnthropicUsageCapture: vi.fn(),
-  getLastCapturedAnthropicHeaders: vi.fn(),
-}));
-vi.mock('../../src/providers/anthropic-cost.js', () => ({
-  estimateAnthropicCostVerified: vi.fn(),
-}));
-vi.mock('../../src/providers/pricing-verifier.js', () => ({
-  getAnthropicVerifiedRates: vi.fn(),
-}));
 vi.mock('../../src/logger.js', () => ({ log: vi.fn(), logError: vi.fn() }));
 
 import { finalizeUsageCapture } from '../../src/agent/usage-finalize.js';
 import { endProviderUsageCapture, getLastCapturedHeaders } from '../../src/providers/adapters/openai-compat.js';
-import { endAnthropicUsageCapture, getLastCapturedAnthropicHeaders } from '../../src/providers/adapters/anthropic.js';
-import { estimateAnthropicCostVerified } from '../../src/providers/anthropic-cost.js';
-import { getAnthropicVerifiedRates } from '../../src/providers/pricing-verifier.js';
 
 const prevDebugQuota = process.env['DEBUG_QUOTA'];
 
@@ -34,47 +21,59 @@ afterEach(() => {
   else process.env['DEBUG_QUOTA'] = prevDebugQuota;
 });
 
-describe('finalizeUsageCapture — non-Anthropic providers', () => {
-  it('keeps the passed prompt/output tokens and reads generic provider usage + quota', async () => {
+describe('finalizeUsageCapture', () => {
+  it('passes promptTokens/outputTokens through untouched and reads provider usage + quota', async () => {
     const captured = [{ providerId: 'groq', model: 'llama', source: 'sse', usage: {}, capturedAt: 1 }];
     vi.mocked(endProviderUsageCapture).mockResolvedValue(captured as never);
     vi.mocked(getLastCapturedHeaders).mockReturnValue([{ label: 'R', remaining: 5, limit: 10 }] as never);
 
-    const outcome = await finalizeUsageCapture('groq', 'llama-3.3', 1234, 56);
+    const outcome = await finalizeUsageCapture('groq', 1234, 56);
 
-    expect(outcome.promptTokens).toBe(1234); // untouched — the stream number stands
+    expect(outcome.promptTokens).toBe(1234);
     expect(outcome.outputTokens).toBe(56);
     expect(outcome.providerUsage).toBe(captured);
-    expect(outcome.costEstimate).toBeUndefined(); // cost only estimated for Anthropic
     expect(outcome.quota).toEqual([{ label: 'R', remaining: 5, limit: 10 }]);
-    // Anthropic paths never touched for a non-Anthropic provider.
-    expect(endAnthropicUsageCapture).not.toHaveBeenCalled();
+    expect(endProviderUsageCapture).toHaveBeenCalledWith('groq');
+    expect(getLastCapturedHeaders).toHaveBeenCalledWith('groq');
+  });
+
+  it('returns an empty providerUsage array when nothing was captured', async () => {
+    vi.mocked(endProviderUsageCapture).mockResolvedValue([] as never);
+    vi.mocked(getLastCapturedHeaders).mockReturnValue(null);
+
+    const outcome = await finalizeUsageCapture('openai', 10, 2);
+
+    expect(outcome.providerUsage).toEqual([]);
+    expect(outcome.quota).toBeNull();
   });
 
   it('suppresses quota reads when DEBUG_QUOTA=0', async () => {
     process.env['DEBUG_QUOTA'] = '0';
     vi.mocked(endProviderUsageCapture).mockResolvedValue([] as never);
 
-    const outcome = await finalizeUsageCapture('groq', 'llama-3.3', 10, 2);
+    const outcome = await finalizeUsageCapture('groq', 10, 2);
 
     expect(outcome.quota).toBeNull();
     expect(getLastCapturedHeaders).not.toHaveBeenCalled();
   });
-});
 
-describe('finalizeUsageCapture — Anthropic', () => {
-  it('overrides prompt/output tokens with Anthropic-reported values and attaches a cost estimate', async () => {
-    vi.mocked(endAnthropicUsageCapture).mockResolvedValue({ inputTokens: 9000, outputTokens: 300 } as never);
-    vi.mocked(getAnthropicVerifiedRates).mockResolvedValue({} as never);
-    vi.mocked(estimateAnthropicCostVerified).mockReturnValue({ usd: 0.12 } as never);
-    vi.mocked(getLastCapturedAnthropicHeaders).mockReturnValue(null);
+  it('reads quota headers when DEBUG_QUOTA is unset', async () => {
+    vi.mocked(endProviderUsageCapture).mockResolvedValue([] as never);
+    vi.mocked(getLastCapturedHeaders).mockReturnValue([{ label: 'R', remaining: 1, limit: 1 }] as never);
 
-    const outcome = await finalizeUsageCapture('anthropic', 'claude-3', 5, 1);
+    const outcome = await finalizeUsageCapture('groq', 10, 2);
 
-    // Anthropic's own numbers win over the (stale) passed-in stream values.
-    expect(outcome.promptTokens).toBe(9000);
-    expect(outcome.outputTokens).toBe(300);
-    expect(outcome.costEstimate).toEqual({ usd: 0.12 });
-    expect(outcome.providerUsage).toHaveLength(1);
+    expect(getLastCapturedHeaders).toHaveBeenCalled();
+    expect(outcome.quota).toEqual([{ label: 'R', remaining: 1, limit: 1 }]);
+  });
+
+  it('passes through undefined promptTokens/outputTokens', async () => {
+    vi.mocked(endProviderUsageCapture).mockResolvedValue([] as never);
+    vi.mocked(getLastCapturedHeaders).mockReturnValue(null);
+
+    const outcome = await finalizeUsageCapture('groq', undefined, undefined);
+
+    expect(outcome.promptTokens).toBeUndefined();
+    expect(outcome.outputTokens).toBeUndefined();
   });
 });

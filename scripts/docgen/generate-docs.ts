@@ -98,7 +98,6 @@ function providerReference(): string {
     String(index + 1),
     provider.name,
     `\`${provider.id}\``,
-    provider.type,
     `\`${provider.apiKeyEnvVar}\``,
     provider.supportsTools === false ? 'No' : 'Yes',
     provider.paid ? 'Yes' : 'No',
@@ -108,7 +107,7 @@ function providerReference(): string {
   ]);
 
   return markdownTable(
-    ['Order', 'Provider', 'ID', 'Type', 'API key env var', 'Tools', 'Paid', 'Models'],
+    ['Order', 'Provider', 'ID', 'API key env var', 'Tools', 'Paid', 'Models'],
     rows,
   );
 }

@@ -1,6 +1,6 @@
 # src/providers/quota/headers.ts - Provider Rate-Limit Header Parsing
 
-**Role:** Pure parsers for Groq, Anthropic, Mistral, and Cerebras rate-limit response headers; plus extractors that derive per-model limit ceilings for persistence in `models.json`.
+**Role:** Pure parsers for Groq, Mistral, and Cerebras rate-limit response headers; plus extractors that derive per-model limit ceilings for persistence in `models.json`. Anthropic has no quirk profile entry (see [openai-compat-quirks.md](../adapters/openai-compat-quirks.md)), so `captureRateLimits` is off for it and none of these parsers run against it.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -32,22 +32,6 @@ parseGroqDuration(s: string): number | null
 
 parseGroqRateLimitHeaders(headers: Record<string, string> | Headers): GroqRateLimitHeaders
 
-interface AnthropicExtendedHeaders {
-  inputTokensLimit: number | null;
-  inputTokensRemaining: number | null;
-  inputTokensResetMs: number | null;
-  inputTokensResetRaw: string | null;
-  outputTokensLimit: number | null;
-  outputTokensRemaining: number | null;
-  outputTokensResetMs: number | null;
-  outputTokensResetRaw: string | null;
-  requestId: string | null;
-}
-
-parseAnthropicRateLimitHeaders(headers: Record<string, string> | Headers): GroqRateLimitHeaders
-
-parseAnthropicExtendedHeaders(headers: Record<string, string> | Headers): AnthropicExtendedHeaders
-
 supplementWithModelLimits(headers: GroqRateLimitHeaders, modelLimits?: { rpm: number; rpd: number; tpm: number; tpd: number | null; } | undefined): GroqRateLimitInfo
 
 interface RateLimitBucket {
@@ -73,14 +57,12 @@ extractMistralRateLimitBuckets(headers: Record<string, string> | Headers): Recor
 extractCerebrasRateLimitBuckets(headers: Record<string, string> | Headers): Record<string, ObservedRateLimitBucket>
 
 extractOpenAICompatRateLimitBuckets(providerId: string, headers: Headers): Record<string, ObservedRateLimitBucket>
-
-extractAnthropicRateLimitBuckets(base: GroqRateLimitHeaders, extended: AnthropicExtendedHeaders): Record<string, ObservedRateLimitBucket>
 ```
 <!-- END GENERATED EXPORTS -->
 
 ## Export notes
 
-- `ObservedRateLimitBucket` = `{ limit: number; intervalMs: number | null }`. `intervalMs` is fixed for Mistral/Cerebras (60k/3.6M/86.4M ms), 60000 for Anthropic, and the dynamic reset-window for Groq/OpenAI.
+- `ObservedRateLimitBucket` = `{ limit: number; intervalMs: number | null }`. `intervalMs` is fixed for Mistral/Cerebras (60k/3.6M/86.4M ms) and the dynamic reset-window for Groq/OpenAI.
 - `extractOpenAICompatRateLimitBuckets` acts as a dispatcher: routes to mistral/cerebras/groq extractors by `providerId`.
 - Snapshot parsers (`parse*`, `groqHeadersToSnapshot`) return live remaining/limit data for UI display; `extract*Buckets` functions return limit-ceiling data for persistence in `models.json`.
 
@@ -93,8 +75,7 @@ extractAnthropicRateLimitBuckets(base: GroqRateLimitHeaders, extended: Anthropic
 ## Key Neighbors
 
 - [providers/provider-registry.md](../provider-registry.md): static model limits.
-- [providers/adapters/openai-compat.md](../adapters/openai-compat.md): captured OpenAI-compatible headers.
-- [providers/adapters/anthropic.md](../adapters/anthropic.md): captured Anthropic headers.
+- [providers/adapters/openai-compat.md](../adapters/openai-compat.md): captured OpenAI-compatible headers (Anthropic included).
 - [agent/loop.md](../../agent/loop.md): attaches quota metadata to turn results.
 
 ## Update Triggers

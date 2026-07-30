@@ -49,7 +49,7 @@ dispatchCommand(input: string, runtime: CommandRuntime): Promise<CommandDispatch
 | `/eval` | Opens/renders eval scenario menu. Replays the transcript afterwards. |
 | `/keys` | Prints API key status from env/config. |
 | `/tools` | Lazily loads `cli/tools/tool-runner.ts` and prints the callable-tool list. |
-| `/clear` | Clears in-memory history and Anthropic session cost, redraws banner, and restores screen hooks. **The only command that empties history** — every other screen wipe preserves it. |
+| `/clear` | Clears in-memory history, redraws banner, and restores screen hooks. **The only command that empties history** — every other screen wipe preserves it. |
 
 ## Screen/history coherence
 
@@ -85,8 +85,7 @@ Non-command input is handled by `sendToAgent()`:
    `result.error`, never in `result.text`, so it is reported but never persisted
    as something the assistant said — the same field gates the
    `(empty response from model)` line.
-8. When using Anthropic, print estimated turn cost, session total, and a token/rate breakdown when available.
-9. When non-OpenAI-compatible provider usage was captured, print the raw provider usage JSON.
-10. Run `afterAgentCall`.
+8. When provider usage was captured and `showProviderUsage` is on, print the raw provider usage JSON.
+9. Run `afterAgentCall`.
 
 Errors are logged and printed, not thrown through the session loop.

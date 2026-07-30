@@ -27,14 +27,6 @@ vi.mock('../../src/providers/provider-registry.js', () => ({
   PROVIDER_REGISTRY: mockProviderRegistry,
 }));
 
-vi.mock('../../src/providers/anthropic-cost.js', () => ({
-  addAnthropicSessionCost: vi.fn().mockReturnValue(0.005),
-  describeCostEstimate: vi.fn().mockReturnValue('$0.001'),
-  describeCostEstimateBreakdown: vi.fn().mockReturnValue(null),
-  formatUsdCeil: vi.fn().mockReturnValue('$0.01'),
-  resetAnthropicSessionCost: vi.fn(),
-}));
-
 vi.mock('../../src/providers/adapters/openai-compat.js', () => ({
   formatCapturedProviderUsages: vi.fn().mockReturnValue(null),
 }));
@@ -74,7 +66,6 @@ import {
   type CommandRuntime,
 } from '../../src/cli/command-dispatcher.js';
 import { agentLoop } from '../../src/agent/loop.js';
-import { addAnthropicSessionCost, describeCostEstimateBreakdown, resetAnthropicSessionCost } from '../../src/providers/anthropic-cost.js';
 import { formatCapturedProviderUsages } from '../../src/providers/adapters/openai-compat.js';
 import { redrawBanner } from '../../src/cli/render/banner.js';
 import { showHelp } from '../../src/cli/slash-commands.js';
@@ -119,7 +110,6 @@ const DEFAULT_AGENT_RESULT = {
   providerId: 'openai',
   modelId: 'gpt-4',
   quota: null,
-  costEstimate: null,
   providerUsage: null,
   // Empty is the error/abort shape — the dispatcher then records `text` alone.
   turnMessages: [],
@@ -322,11 +312,6 @@ describe('dispatchCommand — /clear', () => {
     expect(clearMessages).toHaveBeenCalled();
   });
 
-  it('resets anthropic session cost', async () => {
-    await dispatchCommand('/clear', makeRuntime());
-    expect(resetAnthropicSessionCost).toHaveBeenCalled();
-  });
-
   it('redraws the banner', async () => {
     await dispatchCommand('/clear', makeRuntime());
     expect(redrawBanner).toHaveBeenCalled();
@@ -497,19 +482,6 @@ describe('dispatchCommand — sendToAgent', () => {
     vi.mocked(agentLoop).mockRejectedValue(new Error('network failure'));
     await dispatchCommand('hello', makeRuntime());
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('network failure'));
-  });
-
-  it('shows anthropic cost when provider is anthropic', async () => {
-    vi.mocked(agentLoop).mockResolvedValue({ ...DEFAULT_AGENT_RESULT, providerId: 'anthropic' } as never);
-    await dispatchCommand('hello', makeRuntime());
-    expect(addAnthropicSessionCost).toHaveBeenCalled();
-  });
-
-  it('shows cost breakdown when describeCostEstimateBreakdown returns a string', async () => {
-    vi.mocked(agentLoop).mockResolvedValue({ ...DEFAULT_AGENT_RESULT, providerId: 'anthropic' } as never);
-    vi.mocked(describeCostEstimateBreakdown).mockReturnValue('cache: $0.0001');
-    await dispatchCommand('hello', makeRuntime());
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('cache'));
   });
 
   it('shows provider usage when showProviderUsage is true and usage is available', async () => {

@@ -1,8 +1,8 @@
 import type { RateLimitSnapshot } from '../quota/headers.js';
 
-// Capture infrastructure shared by the OpenAI-compatible and Anthropic adapters.
-// Both keep a per-provider store of the latest rate-limit header snapshot and
-// accumulate per-turn usage-capture promises; only the payload shape differs.
+// Capture infrastructure for the OpenAI-compatible adapter: a per-provider store
+// of the latest rate-limit header snapshot, and a per-turn accumulator of
+// usage-capture promises.
 
 /** Per-provider store of the most-recently captured rate-limit header snapshot. */
 export class HeaderSnapshotStore {

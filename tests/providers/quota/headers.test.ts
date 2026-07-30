@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   parseGroqDuration,
   parseGroqRateLimitHeaders,
-  parseAnthropicRateLimitHeaders,
-  parseAnthropicExtendedHeaders,
   supplementWithModelLimits,
   groqHeadersToSnapshot,
   parseMistralRateLimitSnapshot,
@@ -12,7 +10,6 @@ import {
   extractMistralRateLimitBuckets,
   extractCerebrasRateLimitBuckets,
   extractOpenAICompatRateLimitBuckets,
-  extractAnthropicRateLimitBuckets,
 } from '../../../src/providers/quota/headers.js';
 
 describe('parseGroqDuration', () => {
@@ -115,144 +112,6 @@ describe('parseGroqRateLimitHeaders', () => {
     });
     expect(result.limitRequests).toBeNull();
     expect(result.remainingTokens).toBeNull();
-  });
-});
-
-describe('parseAnthropicRateLimitHeaders', () => {
-  const futureIso = new Date(Date.now() + 60_000).toISOString();
-
-  it('parses all fields from a plain record', () => {
-    const result = parseAnthropicRateLimitHeaders({
-      'anthropic-ratelimit-requests-limit': '100',
-      'anthropic-ratelimit-tokens-limit': '50000',
-      'anthropic-ratelimit-requests-remaining': '95',
-      'anthropic-ratelimit-tokens-remaining': '48000',
-      'anthropic-ratelimit-requests-reset': futureIso,
-      'anthropic-ratelimit-tokens-reset': futureIso,
-    });
-    expect(result.limitRequests).toBe(100);
-    expect(result.limitTokens).toBe(50000);
-    expect(result.remainingRequests).toBe(95);
-    expect(result.remainingTokens).toBe(48000);
-    expect(result.resetRequestsRaw).toBe(futureIso);
-    expect(result.resetTokensRaw).toBe(futureIso);
-    // resetMs should be close to 60000 (within 500ms tolerance)
-    expect(result.resetRequestsMs).toBeGreaterThan(59000);
-    expect(result.resetRequestsMs).toBeLessThanOrEqual(60000);
-    expect(result.resetTokensMs).toBeGreaterThan(59000);
-  });
-
-  it('parses all fields from a Headers object', () => {
-    const headers = new Headers({
-      'anthropic-ratelimit-requests-limit': '50',
-      'anthropic-ratelimit-requests-remaining': '40',
-      'anthropic-ratelimit-requests-reset': futureIso,
-    });
-    const result = parseAnthropicRateLimitHeaders(headers);
-    expect(result.limitRequests).toBe(50);
-    expect(result.remainingRequests).toBe(40);
-    expect(result.resetRequestsMs).toBeGreaterThan(0);
-  });
-
-  it('returns nulls for missing headers', () => {
-    expect(parseAnthropicRateLimitHeaders({})).toEqual({
-      limitRequests: null, limitTokens: null, remainingRequests: null, remainingTokens: null,
-      resetRequestsMs: null, resetTokensMs: null, resetRequestsRaw: null, resetTokensRaw: null,
-    });
-  });
-
-  it('returns null resetMs for invalid ISO timestamps', () => {
-    const result = parseAnthropicRateLimitHeaders({
-      'anthropic-ratelimit-requests-reset': 'not-a-date',
-      'anthropic-ratelimit-tokens-reset': 'garbage',
-    });
-    expect(result.resetRequestsRaw).toBe('not-a-date');
-    expect(result.resetRequestsMs).toBeNull();
-    expect(result.resetTokensRaw).toBe('garbage');
-    expect(result.resetTokensMs).toBeNull();
-  });
-
-  it('returns null for non-numeric limit/remaining values', () => {
-    const result = parseAnthropicRateLimitHeaders({
-      'anthropic-ratelimit-requests-limit': 'many',
-      'anthropic-ratelimit-tokens-remaining': 'lots',
-    });
-    expect(result.limitRequests).toBeNull();
-    expect(result.remainingTokens).toBeNull();
-  });
-
-  it('clamps past reset times to 0', () => {
-    const pastIso = new Date(Date.now() - 10_000).toISOString();
-    const result = parseAnthropicRateLimitHeaders({
-      'anthropic-ratelimit-requests-reset': pastIso,
-    });
-    expect(result.resetRequestsMs).toBe(0);
-  });
-});
-
-describe('parseAnthropicExtendedHeaders', () => {
-  const futureIso = new Date(Date.now() + 30_000).toISOString();
-
-  it('parses all extended fields from a plain record', () => {
-    const result = parseAnthropicExtendedHeaders({
-      'anthropic-ratelimit-input-tokens-limit': '40000',
-      'anthropic-ratelimit-input-tokens-remaining': '38000',
-      'anthropic-ratelimit-input-tokens-reset': futureIso,
-      'anthropic-ratelimit-output-tokens-limit': '10000',
-      'anthropic-ratelimit-output-tokens-remaining': '9500',
-      'anthropic-ratelimit-output-tokens-reset': futureIso,
-      'request-id': 'req_abc123',
-    });
-    expect(result.inputTokensLimit).toBe(40000);
-    expect(result.inputTokensRemaining).toBe(38000);
-    expect(result.inputTokensResetRaw).toBe(futureIso);
-    expect(result.inputTokensResetMs).toBeGreaterThan(0);
-    expect(result.outputTokensLimit).toBe(10000);
-    expect(result.outputTokensRemaining).toBe(9500);
-    expect(result.outputTokensResetRaw).toBe(futureIso);
-    expect(result.outputTokensResetMs).toBeGreaterThan(0);
-    expect(result.requestId).toBe('req_abc123');
-  });
-
-  it('parses from a Headers object', () => {
-    const headers = new Headers({
-      'anthropic-ratelimit-input-tokens-limit': '20000',
-      'request-id': 'req_xyz',
-    });
-    const result = parseAnthropicExtendedHeaders(headers);
-    expect(result.inputTokensLimit).toBe(20000);
-    expect(result.requestId).toBe('req_xyz');
-  });
-
-  it('falls back to x-request-id when request-id is absent', () => {
-    const result = parseAnthropicExtendedHeaders({
-      'x-request-id': 'xreq_456',
-    });
-    expect(result.requestId).toBe('xreq_456');
-  });
-
-  it('returns nulls for missing headers', () => {
-    expect(parseAnthropicExtendedHeaders({})).toEqual({
-      inputTokensLimit: null, inputTokensRemaining: null, inputTokensResetMs: null, inputTokensResetRaw: null,
-      outputTokensLimit: null, outputTokensRemaining: null, outputTokensResetMs: null, outputTokensResetRaw: null,
-      requestId: null,
-    });
-  });
-
-  it('returns null resetMs for invalid ISO timestamps', () => {
-    const result = parseAnthropicExtendedHeaders({
-      'anthropic-ratelimit-input-tokens-reset': 'bad-date',
-    });
-    expect(result.inputTokensResetMs).toBeNull();
-  });
-
-  it('returns null for non-numeric limit/remaining values', () => {
-    const result = parseAnthropicExtendedHeaders({
-      'anthropic-ratelimit-input-tokens-limit': 'unlimited',
-      'anthropic-ratelimit-output-tokens-remaining': 'none',
-    });
-    expect(result.inputTokensLimit).toBeNull();
-    expect(result.outputTokensRemaining).toBeNull();
   });
 });
 
@@ -547,72 +406,5 @@ describe('extractOpenAICompatRateLimitBuckets', () => {
     });
     const buckets = extractOpenAICompatRateLimitBuckets('some-unknown-provider', headers);
     expect(buckets['requests']).toEqual({ limit: 10, intervalMs: 60_000 });
-  });
-});
-
-describe('extractAnthropicRateLimitBuckets', () => {
-  const baseHeaders = {
-    limitRequests: 100,
-    limitTokens: 200000,
-    remainingRequests: 95,
-    remainingTokens: 190000,
-    resetRequestsMs: 60_000,
-    resetTokensMs: 60_000,
-    resetRequestsRaw: new Date(Date.now() + 60_000).toISOString(),
-    resetTokensRaw: new Date(Date.now() + 60_000).toISOString(),
-  };
-
-  it('returns all four buckets when all limits are present', () => {
-    const extended = {
-      inputTokensLimit: 150000,
-      inputTokensRemaining: 140000,
-      inputTokensResetMs: 60_000,
-      inputTokensResetRaw: null,
-      outputTokensLimit: 50000,
-      outputTokensRemaining: 45000,
-      outputTokensResetMs: 60_000,
-      outputTokensResetRaw: null,
-      requestId: 'req_abc',
-    };
-    const buckets = extractAnthropicRateLimitBuckets(baseHeaders, extended);
-    expect(buckets['requests']).toEqual({ limit: 100, intervalMs: 60_000 });
-    expect(buckets['tokens']).toEqual({ limit: 200000, intervalMs: 60_000 });
-    expect(buckets['input-tokens']).toEqual({ limit: 150000, intervalMs: 60_000 });
-    expect(buckets['output-tokens']).toEqual({ limit: 50000, intervalMs: 60_000 });
-  });
-
-  it('omits buckets where limit is null', () => {
-    const extended = {
-      inputTokensLimit: null,
-      inputTokensRemaining: null,
-      inputTokensResetMs: null,
-      inputTokensResetRaw: null,
-      outputTokensLimit: null,
-      outputTokensRemaining: null,
-      outputTokensResetMs: null,
-      outputTokensResetRaw: null,
-      requestId: null,
-    };
-    const nullBase = { ...baseHeaders, limitRequests: null, limitTokens: null };
-    const buckets = extractAnthropicRateLimitBuckets(nullBase, extended);
-    expect(Object.keys(buckets)).toHaveLength(0);
-  });
-
-  it('uses fixed 60s interval for all Anthropic buckets', () => {
-    const extended = {
-      inputTokensLimit: 100,
-      inputTokensRemaining: 100,
-      inputTokensResetMs: 60_000,
-      inputTokensResetRaw: null,
-      outputTokensLimit: 200,
-      outputTokensRemaining: 200,
-      outputTokensResetMs: 60_000,
-      outputTokensResetRaw: null,
-      requestId: null,
-    };
-    const buckets = extractAnthropicRateLimitBuckets(baseHeaders, extended);
-    for (const bucket of Object.values(buckets)) {
-      expect(bucket.intervalMs).toBe(60_000);
-    }
   });
 });

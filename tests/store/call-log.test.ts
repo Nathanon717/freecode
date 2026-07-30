@@ -54,8 +54,8 @@ describe('call-log: tokensFromUsagePayload', () => {
       .toEqual({ inputTokens: 10, outputTokens: 4, totalTokens: 14 });
   });
 
-  it('reads the Anthropic shape and derives the missing total', () => {
-    expect(callLog.tokensFromUsagePayload({ input_tokens: 7, output_tokens: 3 }))
+  it('derives the missing total by summing prompt and completion tokens', () => {
+    expect(callLog.tokensFromUsagePayload({ prompt_tokens: 7, completion_tokens: 3 }))
       .toEqual({ inputTokens: 7, outputTokens: 3, totalTokens: 10 });
   });
 

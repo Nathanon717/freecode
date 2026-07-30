@@ -1,6 +1,6 @@
 # src/providers/adapters/adapter-usage-capture.ts - Shared Usage/Header Capture
 
-**Role:** Capture infrastructure shared by the OpenAI-compatible and Anthropic adapters. Both keep a per-provider store of the latest rate-limit header snapshot and accumulate per-turn usage-capture promises; only the payload shape differs, so the stores are generic.
+**Role:** Capture infrastructure used by the OpenAI-compatible adapter (the only adapter — Anthropic routes through it too). Keeps a per-provider store of the latest rate-limit header snapshot and accumulates per-turn usage-capture promises. The stores are generic (`T` is a type param) even though only one caller remains, in case a second adapter shows up.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -27,8 +27,8 @@ Per-provider store of the most-recently captured rate-limit header snapshot. Wri
 
 ## `UsageCaptureStore<T>`
 
-Per-provider accumulator of in-flight usage-capture promises. `begin()` opens a session; `push()` enqueues a capture (dropped if no session is open, and capture errors resolve to `null`); `end()` awaits all captures and returns the non-null results. The OpenAI-compatible adapter uses `T = CapturedProviderUsage` and returns the array; the Anthropic adapter uses `T = AnthropicTokenUsage` and merges the array via `mergeAnthropicUsages`.
+Per-provider accumulator of in-flight usage-capture promises. `begin()` opens a session; `push()` enqueues a capture (dropped if no session is open, and capture errors resolve to `null`); `end()` awaits all captures and returns the non-null results. The OpenAI-compatible adapter uses `T = CapturedProviderUsage` and returns the array as-is.
 
 ## Read When
 
-Changing how either adapter accumulates per-turn usage, or adding a third adapter that needs the same begin/end capture or header-snapshot pattern.
+Changing how the adapter accumulates per-turn usage, or adding a second adapter that needs the same begin/end capture or header-snapshot pattern.

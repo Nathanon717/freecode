@@ -4,7 +4,6 @@ import { PROVIDER_REGISTRY } from "./provider-catalog.js";
 import { getDeadIds, getProviderCache, recordDeadModel, updateProviderCache } from "../store/model-list-cache.js";
 import { getProviderCatalog, saveProviderCatalog } from "./model-data.js";
 import { createOpenAICompatProvider } from "./adapters/openai-compat.js";
-import { createAnthropicProvider } from "./adapters/anthropic.js";
 import { resolveApiKey } from "../config/index.js";
 import { addToUserBlocklist, getUserBlocklist } from "./user-blocklist.js";
 import { logError } from "../logger.js";
@@ -32,7 +31,6 @@ async function _doInit(): Promise<void> {
     await Promise.all([
       initOpenRouterModels(),
       initZenModels(),
-      initAnthropicModels(),
       ...LIVE_PROVIDER_IDS.map((id) => {
         const entry = PROVIDER_REGISTRY.find((p) => p.id === id);
         return initProviderModels(id, entry ? resolveApiKey(entry) : undefined);
@@ -142,7 +140,7 @@ async function runLiveProviderInit(
 
   const deadIdSet = new Set(getDeadIds(providerId));
   // Blocklists are applied here, centrally, rather than relying on each provider's
-  // selectModels: some (anthropic, openrouter) don't filter at all, so without this
+  // selectModels: some (openrouter) don't filter at all, so without this
   // a blocklisted id fetched live would earn a catalog row on every launch, and a
   // model the user removed fully would come straight back. Covers both the registry
   // blocklist and the user's own, so entry.models (picker) and the catalog agree.
@@ -256,31 +254,6 @@ async function initZenModels(): Promise<void> {
   });
 }
 
-async function initAnthropicModels(): Promise<void> {
-  const entry = PROVIDER_REGISTRY.find((p) => p.id === "anthropic");
-  const apiKey = entry ? resolveApiKey(entry) : undefined;
-  if (!entry || !apiKey) return;
-  await runLiveProviderInit("anthropic", {
-    fetchModels: async () => {
-      const res = await fetch("https://api.anthropic.com/v1/models", {
-        headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = (await res.json()) as { data: Record<string, unknown>[] };
-      return json.data
-        .filter((m) => typeof m.id === "string")
-        .map((m) => ({
-          id: m.id as string,
-          displayName:
-            typeof m.display_name === "string"
-              ? m.display_name
-              : (m.id as string),
-        }));
-    },
-    selectModels: (models) => models,
-  });
-}
-
 async function initProviderModels(
   providerId: string,
   apiKey: string | undefined,
@@ -322,7 +295,13 @@ async function initProviderModels(
                 : undefined;
           return {
             id: m.id as string,
-            displayName: typeof m.name === "string" ? m.name : (m.id as string),
+            // Anthropic labels its models `display_name`; everyone else uses `name`.
+            displayName:
+              typeof m.name === "string"
+                ? m.name
+                : typeof m.display_name === "string"
+                  ? m.display_name
+                  : (m.id as string),
             ...(contextWindow != null ? { contextWindow } : {}),
           };
         });
@@ -345,6 +324,7 @@ const LIVE_PROVIDER_IDS = [
   "cohere",
   "openai",
   "nvidia",
+  "anthropic",
 ] as const;
 
 export async function initDynamicProviders(): Promise<void> {
@@ -457,13 +437,8 @@ export function resolveModel(modelPreference: string): ResolvedModel {
     );
   }
 
-  const model =
-    provider.type === "anthropic"
-      ? createAnthropicProvider(provider)(modelId)
-      : (createOpenAICompatProvider(provider)(modelId) as LanguageModel);
-
   return {
-    model,
+    model: createOpenAICompatProvider(provider)(modelId),
     providerId: provider.id,
     modelId,
     supportsTools: provider.supportsTools !== false,
