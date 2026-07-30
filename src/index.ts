@@ -147,6 +147,7 @@ async function main() {
       projectRoot,
       prompt: args[promptIdx + 1],
       model: selectedModel,
+      stats: args.includes('--stats'),
     });
     await drainPendingWrites();
     rl.close();

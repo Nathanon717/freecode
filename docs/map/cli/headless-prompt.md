@@ -12,6 +12,8 @@ interface HeadlessPromptOptions {
   projectRoot: string;
   prompt: string;
   model: string;
+  /** Print one stderr line of cost/timing info after the turn; stdout is untouched. */
+  stats?: boolean;
 }
 
 runHeadlessPrompt(options: HeadlessPromptOptions): Promise<number>
@@ -36,6 +38,11 @@ This is the part callers depend on; changing it breaks `$(freecode -p ...)`.
   drops inter-step narration so the caller gets findings, not chatter.
 - **Failures go to stderr, exit code 1.** A caller can tell an empty answer from a
   broken run. Partial text still prints when a turn errored after saying something.
+- **`--stats` adds one stderr line, stdout stays untouched.** Model, context tokens
+  (last step's `promptTokens`, not a per-turn sum — see
+  [../agent/loop.md](../agent/loop.md)), output tokens, total tokens, tool-call
+  count, and wall time. Printed even on the error path, since a failed or
+  rate-limited turn still spent tokens.
 
 ## What it is allowed to do
 

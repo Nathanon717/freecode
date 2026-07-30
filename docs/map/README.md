@@ -72,7 +72,7 @@ Format: filename (linecount)
   - [`eval-screen.ts`](cli/eval/eval-screen.md) (165) — Eval Screen Renderers
   - [`humaneval-menu.ts`](cli/eval/humaneval-menu.md) (314) — HumanEval Tab + Run Loop
 - `src/cli/`
-  - [`headless-prompt.ts`](cli/headless-prompt.md) (126) — Headless Prompt Mode (`-p`)
+  - [`headless-prompt.ts`](cli/headless-prompt.md) (144) — Headless Prompt Mode (`-p`)
 - `src/cli/menus/`
   - [`action-menu.ts`](cli/menus/action-menu.md) (53) — Inline Action Sub-menu
   - [`list-menu.ts`](cli/menus/list-menu.md) (367) — Shared Tabbed List Menu
@@ -111,7 +111,7 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (99) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (79) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (202) — Eval Subprocess Runner
-- [`index.ts`](index.md) (226) — CLI Entry Point
+- [`index.ts`](index.md) (227) — CLI Entry Point
 - [`logger.ts`](logger.md) (53) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (189) — Adapter HTTP Retry/Backoff

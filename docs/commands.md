@@ -48,6 +48,7 @@ This table is generated from `src/cli/slash-commands.ts`.
 ## CLI Flags
 
 - `-p "<prompt>"`: Run one non-interactive turn and print the final response to stdout. See [Headless prompt mode](#headless-prompt-mode--p).
+- `--stats`: With `-p`, print one stderr line of cost/timing info after the turn. Ignored without `-p`.
 - `--script <file>`: Run scripted input from a file instead of the interactive TUI. Cannot be combined with `-p`.
 - `--model <provider:model>`: Override `FREECODE_MODEL` and config default model for the current process.
 - `-log`: Enable diagnostic logging.
@@ -81,3 +82,16 @@ the answer back from stdout.
 - Bounded at 50 tool calls so an unattended run cannot loop forever.
   `FREECODE_MAX_TOOL_CALLS` overrides it — the same variable `--script` mode reads
   (where it defaults to 10), so an exported value applies to both.
+
+**Cost/timing stats (`--stats`)**
+
+Add `--stats` to print one stderr line after the turn: model, context tokens, output
+tokens, total tokens, tool-call count, and wall time. stdout is unaffected, so
+`$(...)` still captures a clean answer. Printed even when the turn errors, since a
+failed or rate-limited turn still spent tokens.
+
+```bash
+freecode -p "..." --stats
+# stdout: <answer>
+# stderr: stats: model=groq:llama-3.3-70b ctx=1234 output=56 total=1290 toolCalls=2 wallTimeMs=843
+```

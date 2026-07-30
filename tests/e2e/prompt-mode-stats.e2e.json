@@ -1,0 +1,21 @@
+{
+  "name": "prompt-mode-stats",
+  "description": "`freecode -p \"<prompt>\" --stats` adds one stderr line of cost/timing info (model, ctx/output/total tokens, tool-call count, wall time) without touching the stdout contract. Reuses the prompt-mode fixture (one tool call, then a final answer) so toolCalls=1 is a fixed, assertable value. stdoutBlock pins the answer line followed immediately by end-of-output, so a stats line written to stdout after it (the order this code would produce on a regression) would break the block; stdoutContains proves the stats line reached stderr (stdout+stderr combined) with the right model id and field names.",
+  "workspace": "repo",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "prompt-mode.llm.json",
+  "prompt": "what does the package say its name is",
+  "flags": ["--stats"],
+  "expect": {
+    "exitCode": 0,
+    "stdoutBlock": ["The package is named freecode.", ""],
+    "stdoutContains": [
+      "stats: model=mock-native:gpt-freecode-test",
+      "ctx=",
+      "output=",
+      "total=",
+      "toolCalls=1",
+      "wallTimeMs="
+    ]
+  }
+}

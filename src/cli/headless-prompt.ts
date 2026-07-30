@@ -68,13 +68,16 @@ export interface HeadlessPromptOptions {
   projectRoot: string;
   prompt: string;
   model: string;
+  /** Print one stderr line of cost/timing info after the turn; stdout is untouched. */
+  stats?: boolean;
 }
 
 /** Resolves to the process exit code. */
 export async function runHeadlessPrompt(
   options: HeadlessPromptOptions,
 ): Promise<number> {
-  const { projectRoot, prompt, model } = options;
+  const { projectRoot, prompt, model, stats } = options;
+  const startedAt = Date.now();
 
   if (!model) {
     process.stderr.write(
@@ -117,6 +120,21 @@ export async function runHeadlessPrompt(
   // the exit code has to say the run did not complete.
   const text = finalResponse(result);
   if (text) process.stdout.write(`${text}\n`);
+
+  // Printed even when the turn errored: a rate-limited or failed turn still spent
+  // tokens, and that is exactly the case a caller most wants visibility into.
+  // `usage.promptTokens` is the last step's context size, not a sum of what every
+  // step in a multi-step tool turn actually cost (agent/loop.ts) — labeled `ctx=`
+  // rather than `prompt=` so it doesn't read as a per-turn total.
+  if (stats) {
+    const { totalTokens, promptTokens, outputTokens } = result.usage;
+    process.stderr.write(
+      `stats: model=${result.providerId}:${result.modelId} ctx=${promptTokens ?? 0} ` +
+      `output=${outputTokens ?? 0} total=${totalTokens} toolCalls=${toolCalls} ` +
+      `wallTimeMs=${Date.now() - startedAt}\n`,
+    );
+  }
+
   if (result.error) {
     process.stderr.write(`Error: ${result.error}\n`);
     return 1;
