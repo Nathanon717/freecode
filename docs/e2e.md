@@ -17,7 +17,6 @@ This table is generated from `tests/e2e/*.e2e.json`.
 | `agent-tool-arg-error-native.e2e.json` | `agent-tool-arg-error-native` | temp | Tool calls the SDK rejects before execution (unknown name, then bad arguments) are reported back to the model as failed steps; the turn continues from what already ran and the model retries with a valid call |
 | `agent-tool-native.e2e.json` | `agent-tool-native` | temp | Fake native LLM fixture drives a create tool call through the full multi-step streamText orchestration loop |
 | `agent-turn-failure-no-orphan.e2e.json` | `agent-turn-failure-no-orphan` | temp | A turn that fails at the provider leaves history exactly as it was: the next turn is sent only its own user message, with no orphaned request the model never answered and no error report persisted as something the assistant said |
-| `blocklist-purge-script-mode.e2e.json` | `blocklist-purge-script-mode` | repo | A scripted (non-TTY) run never offers the blocklist purge and never deletes the seeded blocklisted model — the confirmation is unanswerable without a terminal, so the rows must be left alone |
 | `slash-clear.e2e.json` | `slash-clear` | repo | /clear resets history, clears the screen, and redraws the banner |
 | `slash-config-script-mode.e2e.json` | `slash-config-script-mode` | repo | /config in script mode (no TTY) prints a message that the editor is only available in interactive mode |
 | `slash-keys.e2e.json` | `slash-status` | repo | /status command shows API keys, DB, and Doppler info without crashing |
@@ -33,7 +32,6 @@ This table is generated from `tests/e2e/*.e2e.json`.
 | `tty-autocomplete.e2e.json` | `tty-autocomplete` | repo | Interactive TUI: slash command suggestions, prefix filtering, tab completion, and submit reset, verified against the rendered screen |
 | `tty-backspace.e2e.json` | `tty-backspace` | repo | Backspace key removes the last character from the input buffer; repeated backspaces restore the empty-prompt hint |
 | `tty-banner-not-scrolled.e2e.json` | `tty-banner-not-scrolled` | repo | The startup banner stays where it painted when the footer and input UI draw after it — both compact-banner borders are still on screen |
-| `tty-blocklist-purge.e2e.json` | `tty-blocklist-purge` | repo | A stored model whose id is on a registry blocklist triggers a startup confirmation naming it; Enter deletes it and models that are not blocklisted are left alone |
 | `tty-clear-redraws.e2e.json` | `tty-clear-redraws` | repo | Submitting /clear clears the whole terminal, redraws the banner, and the cleared message appears in the raw stream |
 | `tty-config-editor.e2e.json` | `tty-config-editor` | repo | Submitting /config opens the interactive settings editor showing all settings; pressing q closes it and restores the input prompt |
 | `tty-config-esc.e2e.json` | `tty-config-esc` | repo | Submitting /config opens the standalone config editor; pressing Esc closes it, erases its screen, and restores the input prompt |

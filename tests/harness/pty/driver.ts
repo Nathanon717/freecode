@@ -108,7 +108,7 @@ export function createPtyDriver(opts: PtyDriverOptions): PtyDriver {
     // On Windows, useConptyDll avoids fork()ing conpty_console_list_agent on
     // kill(), which otherwise briefly flashes a cmd window. It also selects the
     // host that scripts/install/pin-conpty.cjs pins — the kernel32 path this
-    // would fall back to hangs tty-blocklist-purge at its confirm prompt
+    // would fall back to hangs a raw-key prompt waiting on its first keystroke
     // (docs/bug log/29-07-2026f.md), so don't flip this without reading that.
     useConptyDll: process.platform === 'win32',
   });

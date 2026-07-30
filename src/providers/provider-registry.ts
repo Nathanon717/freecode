@@ -143,8 +143,8 @@ async function runLiveProviderInit(
   const deadIdSet = new Set(getDeadIds(providerId));
   // Blocklists are applied here, centrally, rather than relying on each provider's
   // selectModels: some (anthropic, openrouter) don't filter at all, so without this
-  // a blocklisted id fetched live would earn a catalog row on every launch — exactly
-  // the row the purge prompt keeps offering to delete. Covers both the registry
+  // a blocklisted id fetched live would earn a catalog row on every launch, and a
+  // model the user removed fully would come straight back. Covers both the registry
   // blocklist and the user's own, so entry.models (picker) and the catalog agree.
   const blocklist = entry.modelIdBlocklist ?? [];
   const exactBlocklist = new Set(entry.modelIdExactBlocklist ?? []);

@@ -32,7 +32,6 @@ resetUserBlocklistCache(): void
 ## Key Neighbors
 
 - [providers/provider-registry.md](provider-registry.md): applies the list in `_doInit` (before any catalog write) and owns `blocklistModelPermanently`, the runtime add-plus-strip entry point.
-- [providers/blocklist-purge.md](blocklist-purge.md): folds this list into `findBlocklistedStoredModels`, so hand-editing the file purges matching rows on the next launch.
 - [commands/model.md](../commands/model.md): the picker's Remove Fully action is the only writer.
 - [config/index.md](../config/index.md): `getConfigDir()` decides where the file lives.
 

@@ -385,7 +385,7 @@ describe('initDynamicProviders live fetching', () => {
 
   // Regression: openrouter's selectModels only filters `:free`, so without a central
   // blocklist filter a registry-blocklisted `:free` id kept earning a catalog row on
-  // every launch — the row the purge prompt keeps re-offering to delete.
+  // every launch, so the picker and the catalog disagreed.
   it('openrouter drops registry-blocklisted ids from models and the catalog write', async () => {
     process.env.OPENROUTER_API_KEY = 'test-key';
     vi.stubGlobal('fetch', makeFetch({

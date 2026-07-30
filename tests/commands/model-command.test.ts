@@ -75,8 +75,9 @@ vi.mock('../../src/providers/provider-registry.js', () => ({
   blocklistModelPermanently: vi.fn(),
 }));
 
-vi.mock('../../src/providers/blocklist-purge.js', () => ({
-  purgeBlocklistedStoredModels: vi.fn().mockResolvedValue(undefined),
+vi.mock('../../src/store/db.js', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  deleteModelRows: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('../../src/store/model-list-cache.js', () => ({
@@ -103,7 +104,7 @@ import { saveDefaultModel, resolveApiKey } from '../../src/config/index.js';
 import { setFavorite, getNoNativeToolsKeys, getRemovedKeys, setRemoved } from '../../src/providers/model-data.js';
 import { markModelSelected } from '../../src/store/model-list-cache.js';
 import { clearModelNewFlag, blocklistModelPermanently } from '../../src/providers/provider-registry.js';
-import { purgeBlocklistedStoredModels } from '../../src/providers/blocklist-purge.js';
+import { deleteModelRows } from '../../src/store/db.js';
 import { getOpenAIVerifiedRates } from '../../src/providers/pricing-verifier.js';
 
 const fakeRl = { pause: vi.fn(), resume: vi.fn() } as unknown as Interface;
@@ -401,7 +402,7 @@ describe('runModelCommand', () => {
       // Factory-created vi.fn()s survive restoreAllMocks, so the "was not called"
       // assertions below would otherwise see the previous test's calls.
       vi.mocked(blocklistModelPermanently).mockClear();
-      vi.mocked(purgeBlocklistedStoredModels).mockClear();
+      vi.mocked(deleteModelRows).mockClear();
     });
     afterEach(() => {
       vi.mocked(getRemovedKeys).mockReset().mockReturnValue(new Set());
@@ -463,7 +464,7 @@ describe('runModelCommand', () => {
       expect(lines).toContain('Cancel');
       expect(opts.getControls?.()).toContain('openai:gpt-4o');
       expect(blocklistModelPermanently).not.toHaveBeenCalled();
-      expect(purgeBlocklistedStoredModels).not.toHaveBeenCalled();
+      expect(deleteModelRows).not.toHaveBeenCalled();
     });
 
     it('confirming blocklists the model, purges its rows, and drops it from the tab', async () => {
@@ -473,9 +474,7 @@ describe('runModelCommand', () => {
       opts.onKey('\r', vi.fn(), vi.fn());
 
       expect(blocklistModelPermanently).toHaveBeenCalledWith('openai', 'gpt-4o');
-      expect(purgeBlocklistedStoredModels).toHaveBeenCalledWith([
-        { key: 'openai:gpt-4o', provider: 'openai', modelId: 'gpt-4o' },
-      ]);
+      expect(deleteModelRows).toHaveBeenCalledWith(['openai:gpt-4o']);
       expect(opts.render().join('\n')).not.toContain('GPT-4o');
     });
 
@@ -485,7 +484,7 @@ describe('runModelCommand', () => {
       opts.onKey('\r', vi.fn(), vi.fn()); // Cancel is pre-selected
 
       expect(blocklistModelPermanently).not.toHaveBeenCalled();
-      expect(purgeBlocklistedStoredModels).not.toHaveBeenCalled();
+      expect(deleteModelRows).not.toHaveBeenCalled();
       expect(opts.render().join('\n')).toContain('GPT-4o');
     });
 

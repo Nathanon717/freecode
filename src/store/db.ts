@@ -190,9 +190,9 @@ export function persistModelCatalogAsync(rows: ModelCatalogRow[]): void {
  * and pushed on `sync()`. A local-replica delete is an un-pushed WAL frame, and the
  * catalog upserts every launch keep advancing the remote, so that frame perpetually
  * loses the push race and is discarded by the next launch's WalConflict wipe-and-
- * re-pull — the deleted row comes back from the primary and the blocklist-purge prompt
- * recurs forever (a model the provider no longer serves can never be re-filtered away,
- * so it loops indefinitely). Writing to the primary sidesteps the race entirely. See db.md.
+ * re-pull — the deleted row comes back from the primary, so a model the user removed
+ * fully reappears on the next launch, every launch. Writing to the primary sidesteps the
+ * race entirely. See db.md.
  */
 export async function deleteModelRows(keys: string[]): Promise<boolean> {
   if (keys.length === 0) return true;

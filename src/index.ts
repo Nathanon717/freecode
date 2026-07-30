@@ -145,16 +145,7 @@ async function main() {
     return;
   }
 
-  // Banner first: the purge check below opens the DB (and, for a synced user, waits on
-  // a Turso pull), so painting after it would leave a blank terminal for that whole
-  // round-trip on every launch. The purge still runs before the footer UI is pinned so
-  // its raw-key prompt owns the screen with no status bar repainting under it.
   showBanner();
-
-  if (process.stdin.isTTY) {
-    const { promptBlocklistPurge } = await import('./cli/blocklist-purge-prompt.js');
-    await promptBlocklistPurge();
-  }
 
   if (process.stdin.isTTY) {
     // Route tool-call transcript to stdout so it appears in the same stream as

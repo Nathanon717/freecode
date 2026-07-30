@@ -10,7 +10,6 @@ import { readTextFile } from '../../src/util/text-encoding.js';
 import { assertE2eExpectations, outputRows } from './assertions/index.js';
 import type { FakeLlmTraceEvent, E2eExpectations, ToolTraceEvent } from './assertions/index.js';
 import type { TtyE2eTest } from './pty/run-tty-e2e.js';
-import { seedModels, type SeedModel } from './seed-store.js';
 
 /**
  * The ConPTY host node-pty loads is pinned to 1.23 by
@@ -56,8 +55,6 @@ interface E2eTest {
   expect?: E2eExpectations;
   tty?: TtyE2eTest;
   env?: Record<string, string>;
-  /** Model rows written into the temp store before the CLI starts. */
-  seedModels?: SeedModel[];
   humanEvalDataFixture?: string;
   humanEvalExampleDataFixture?: string;
 }
@@ -191,9 +188,6 @@ if (ttyE2eTests.length > 0) {
     if (test.config) {
       writeFileSync(join(tmpHome, 'config.json'), JSON.stringify(test.config, null, 2), 'utf-8');
     }
-    if (test.seedModels) {
-      await seedModels(tmpStore, test.seedModels);
-    }
     const fakeFixturePath = test.llmFixture ? join(E2E_DIR, test.llmFixture) : '';
     const fakeEvalResultPath = test.llmFixture && test.model
       ? join(ROOT, 'evals', 'custom', 'results', `${test.model.replace(/[:/]/g, '--')}.json`)
@@ -280,9 +274,6 @@ if (nonTtyE2eTests.length > 0) {
     mkdirSync(tmpHome, { recursive: true });
     mkdirSync(tmpStore, { recursive: true });
     if (test.workspace === 'temp') mkdirSync(tmpWorkspace, { recursive: true });
-    if (test.seedModels) {
-      await seedModels(tmpStore, test.seedModels);
-    }
 
     const inputLines = test.turns.map(t => t.input).join('\n');
     const inputFile = join(tmpHome, 'input.txt');

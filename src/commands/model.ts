@@ -2,9 +2,8 @@ import chalk from 'chalk';
 import type { Interface } from 'readline';
 import { loadConfig, resolveApiKey, saveDefaultModel } from '../config/index.js';
 import { getFavorites, setFavorite, getNoNativeToolsKeys, getModel, getRemovedKeys, setRemoved } from '../providers/model-data.js';
-import { ensureStoreReady } from '../store/db.js';
+import { ensureStoreReady, deleteModelRows } from '../store/db.js';
 import { PROVIDER_REGISTRY, initDynamicProviders, blocklistModelPermanently } from '../providers/provider-registry.js';
-import { purgeBlocklistedStoredModels } from '../providers/blocklist-purge.js';
 import { markModelSelected } from '../store/model-list-cache.js';
 import { clearModelNewFlag } from '../providers/provider-registry.js';
 import { getAnthropicVerifiedRates, getOpenAIVerifiedRates } from '../providers/pricing-verifier.js';
@@ -231,9 +230,7 @@ async function runModelBody(
             if (option === 'Delete permanently' && item) {
               const pref = modelPreference(item);
               blocklistModelPermanently(item.providerId, item.modelId);
-              void purgeBlocklistedStoredModels([
-                { key: pref, provider: item.providerId, modelId: item.modelId },
-              ]);
+              void deleteModelRows([pref]);
               const idx = removedItems.findIndex(i => modelPreference(i) === pref);
               if (idx !== -1) removedItems.splice(idx, 1);
               refreshDisplayItems(ctx);

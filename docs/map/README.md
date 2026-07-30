@@ -40,7 +40,7 @@ Format: filename (linecount)
   - [`registry.ts`](agent/subagents/registry.md) (56) — Sub-Agent Registry
   - [`run-subagent.ts`](agent/subagents/run-subagent.md) (168) — Sub-Agent Runner
 - `src/agent/`
-  - [`system-prompt.ts`](agent/system-prompt.md) (35) — System Prompt
+  - [`system-prompt.ts`](agent/system-prompt.md) (34) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
 - `src/agent/tools/`
   - [`create.ts`](agent/tools/create.md) (33) — create Tool
@@ -56,8 +56,6 @@ Format: filename (linecount)
   - [`turn-messages.ts`](agent/turn-messages.md) (140) — Turn Message Shape Rules
   - [`usage-finalize.ts`](agent/usage-finalize.md) (65) — Turn Usage/Cost/Quota Finalization
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
-- `src/cli/`
-  - [`blocklist-purge-prompt.ts`](cli/blocklist-purge-prompt.md) (90) — Startup Blocklist Purge Confirmation
 - `src/cli/chrome/`
   - [`ansi.ts`](cli/chrome/ansi.md) (56) — Terminal Geometry & Escape Sequences
   - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (490) — Bottom Terminal UI
@@ -98,7 +96,7 @@ Format: filename (linecount)
   - [`tool-runner.ts`](cli/tools/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
 - `src/commands/`
   - [`config.ts`](commands/config.md) (397) — Interactive Config Editor
-  - [`model.ts`](commands/model.md) (389) — Interactive Model Picker
+  - [`model.ts`](commands/model.md) (386) — Interactive Model Picker
   - [`renderer.ts`](commands/renderer.md) (284) — Renderer Demo Command
   - [`status.ts`](commands/status.md) (52) — /status Command
 - `src/config/`
@@ -110,7 +108,7 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (99) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (79) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (203) — Eval Subprocess Runner
-- [`index.ts`](index.md) (199) — CLI Entry Point
+- [`index.ts`](index.md) (190) — CLI Entry Point
 - [`logger.ts`](logger.md) (53) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (189) — Adapter HTTP Retry/Backoff
@@ -122,7 +120,6 @@ Format: filename (linecount)
   - [`openai-compat.ts`](providers/adapters/openai-compat.md) (255) — OpenAI-Compatible Adapter
 - `src/providers/`
   - [`anthropic-cost.ts`](providers/anthropic-cost.md) (281) — Anthropic Cost Estimates
-  - [`blocklist-purge.ts`](providers/blocklist-purge.md) (62) — Blocklisted Stored Model Purge
   - [`fake.ts`](providers/fake.md) (435) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (4) — Provider Re-exports
   - [`model-data.ts`](providers/model-data.md) (279) — Unified Model Store
