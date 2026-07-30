@@ -13,8 +13,7 @@ export function buildSystemPrompt(loadAgentsMd = false, spawnAgent = true): stri
 Your OS: ${env}
 Available tools: read, create, edit, grep, shell_exec, list_dir${spawnAgent ? ', spawn_agent' : ''}
 
-RULES - MUST ALWAYS FOLLOW:
-- Use list_dir BEFORE making any assumptions about what files/folders exist.
+RULES - MUST ALWAYS FOLLOW
 - Before editing a file, read it with read first. Use edit with exact old_text and new_text for existing files. Use create only to create new files; it fails if the file already exists. Use real newlines in file content, never the literal two-character sequence backslash-n.
 - If a tool call is denied by the user, update your plan based on their feedback. Do NOT try to make the same tool call again.
 - No emojis.
