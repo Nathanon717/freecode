@@ -2,7 +2,7 @@
 
 **Role:** Owns the libSQL client, schema bootstrap, in-memory model-data cache, startup import trigger, and async transcript persistence. Called once at startup via `initStore()`; all subsequent model-data reads are served from the cache (no per-call file I/O when initialized).
 
-All four phases of the eval/model store migration are complete. See `docs/plans/eval-db-migration-plan.md`.
+The eval/model store migration is complete — expect no half-migrated state.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -61,7 +61,7 @@ Six tables are created idempotently at `initStore()`. The DDL itself lives in [d
 - **`meta`** — key/value store for DB metadata (legacy; holds `import_done` marker from the one-time migration that has already run).
 - **`models`** — one row per `"provider:modelId"` key; structured columns for all `ModelEntry` scalar fields, including `removed` (soft-hide from the model picker; see [commands/model.md](../commands/model.md)).
 - **`eval_runs`** — one row per eval run; UNIQUE on `(model_key, eval_type, task_id, timestamp)` so `INSERT OR IGNORE` / COALESCE upsert is safe. `transcriptRef` is not stored — derived at load time.
-- **`eval_transcripts`** — one row per eval run; populated by the Phase 2 legacy importer and by `saveTranscriptAsync` for new runs. Content (full transcript + scoring) syncs cross-device via Turso.
+- **`eval_transcripts`** — one row per eval run; populated by the legacy transcript importer and by `saveTranscriptAsync` for new runs. Content (full transcript + scoring) syncs cross-device via Turso.
 - **`llm_calls`** — one row per LLM HTTP call, written by `persistCallLogAsync` from the adapter fetch wrappers. Deliberately has **no FK** to `models`: a call must be loggable for a model that was never persisted, and the log must never fail on a missing parent. Indexed on `(model_key, timestamp)` for the rate-limit inference queries. Row shape and the no-estimation rule live in [call-log.md](./call-log.md).
 - **`config`** — one row per scope (`'global'`, `'providerOverrides'`); `data` column holds a JSON blob. Stores syncable global settings and provider overrides. Written on every `writeConfigFile()` call for the global config path; loaded at startup into `db-config-cache.ts`.
 
@@ -96,7 +96,6 @@ Tokenless-replica decline (`isSyncReplica`): sync tokens reach `readDbConfig` on
 
 - [providers/model-data.md](../providers/model-data.md): sole caller of `getModelData`/`setModelData`.
 - [index.md](../index.md): calls `initStore()` once at startup.
-- `docs/plans/eval-db-migration-plan.md`: full migration plan and phase breakdown.
 
 ## Update Triggers
 

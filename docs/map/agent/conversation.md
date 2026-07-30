@@ -33,7 +33,7 @@ Because tool results now persist, context grows much faster than it used to — 
 single large `read` stays in history for the rest of the session. `/clear` is the
 release valve.
 
-No longer provides token estimation. `getContextTokenCount()` (backed by the deleted `agent/token-count.ts`) was removed in the tokenizer-engine work (`docs/plans/tokenizer-registry-plan.md` Phase 1) — see `docs/map/tokenizers/count.md` for the standalone engine that replaces it. A later "live counter" task wires `src/tokenizers/count.ts`'s `countTokens` into the footer directly, without going back through `Conversation`.
+No longer provides token estimation. `getContextTokenCount()` (backed by the deleted `agent/token-count.ts`) was removed when the tokenizer engine was extracted — see `docs/map/tokenizers/count.md` for the standalone engine that replaces it. Any future context-size readout should call `src/tokenizers/count.ts`'s `countTokens` directly rather than routing back through `Conversation`.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

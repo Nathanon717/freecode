@@ -8,7 +8,7 @@ import { readJsonFile } from '../../util/text-encoding.js';
 // config.pattern is the pre-tokenizer regex. It parses into plain vocab+ranks that
 // js-tiktoken consumes directly — no mistral-common preprocessing. Verified
 // 2026-07-06: counts match Mistral's own canonical tokenizer.json exactly (see
-// docs/plans/tokenizer-registry-plan.md Phase 4).
+// docs/map/tokenizers/backends/tekken.md).
 interface TekkenJson {
   config: {
     pattern: string;

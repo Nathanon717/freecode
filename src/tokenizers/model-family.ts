@@ -21,8 +21,8 @@ export const TEKKEN_FILENAME = 'tekken.json';
 // Canonical HF repo whose tokenizer.json is downloaded for each family backed
 // by backends/bpe-json.ts. Verified live against the HF API (content-hash
 // compared across sibling model versions, not guessed) — see
-// docs/plans/tokenizer-registry-plan.md's Phase 3 notes for the full
-// verification trail and why each repo was picked over its siblings.
+// docs/map/tokenizers/model-family.md for the full verification trail and
+// why each repo was picked over its siblings.
 export const HF_TOKENIZER_REPO: Partial<Record<TokenizerFamily, string>> = {
   [LLAMA3_FAMILY]: 'NousResearch/Meta-Llama-3-8B',
   [DEEPSEEK_V3_FAMILY]: 'deepseek-ai/DeepSeek-V3',

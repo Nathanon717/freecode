@@ -40,7 +40,7 @@ describe('resolveTokenizerFamily', () => {
     expect(resolveTokenizerFamily(modelId)).toBe(GPT_OSS_FAMILY);
   });
 
-  // Real fetched IDs from .freecode/model-cache.json (see plan Phase 3 notes).
+  // Real fetched IDs from .freecode/model-cache.json.
   it.each([
     'groq:llama-3.3-70b-versatile',
     'openrouter:meta-llama/llama-3.3-70b-instruct:free',
