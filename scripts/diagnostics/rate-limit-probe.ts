@@ -420,7 +420,7 @@ function summarise(report: ProviderReport): string[] {
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const candidates = PROVIDER_REGISTRY
-    .filter(p => !p.paid && p.type === 'openai-compat' && SPECS[p.id])
+    .filter(p => !p.paid && SPECS[p.id])
     .filter(p => (options.only.length === 0 ? true : options.only.includes(p.id)))
     .filter(p => {
       const hasKey = !!(process.env[p.apiKeyEnvVar] || p.defaultApiKey);

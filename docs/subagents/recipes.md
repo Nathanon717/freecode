@@ -56,9 +56,9 @@ the prompt steers it toward. So either name the layers you care about explicitly
 ("include both the input/keystroke path and the per-command handlers"), or run it twice
 and union the results. Do not assume a single trace enumerated everything.
 
-This was nearly recorded as "map-priming finds more files" — it does not. That conclusion
-came from verifying only the files map-priming *added* and never checking what it
-*dropped*. When comparing two subagent runs, diff both directions.
+Map-priming also cost the line numbers: the cold run cited `session-modes.ts:194`, the
+map-primed run cited none. If you need coverage *and* line numbers, ask for them
+explicitly.
 
 ---
 

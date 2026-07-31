@@ -21,7 +21,9 @@ It still breaks `answer=$(freecode -p "...")` for any caller expecting a bare va
 
 **Workaround:** demand an output shape ("Nothing else.", "answer with only the file path").
 R3's strict formatting produced clean output; the unconstrained trace did not. Map-priming
-also happened to avoid it.
+was once thought to avoid it — it does not; the map-primed control run below opened with
+`Here is the end-to-end flow when a user types a slash command in the REPL:`. Only an
+explicit output-shape demand suppresses this.
 
 **Fix:** see [feature-requests.md](feature-requests.md) #1.
 
@@ -43,16 +45,47 @@ Untested at scale; worth measuring before running a large batch.
 
 ---
 
-## Map-priming costs line numbers
+## Map-priming costs line numbers — unless you demand them
 
-**Seen:** R1, both variants.
+**Seen:** R1, both variants. **Resolved:** control run, `zen:big-pickle`, 2026-07-30.
 
 The cold run cited `session-modes.ts:194`, `command-dispatcher.ts:161–242`. The map-primed
-run cited no line numbers at all — plausibly because the map pages describe files by
-responsibility, not location, and the model anchored to that framing.
+run cited no line numbers at all.
 
-**Instead:** if you need both coverage and line numbers, ask for line numbers explicitly.
-Untested.
+**Instead:** append `cite file_path:line_number for each step` to the map-primed prompt.
+This is now tested and it works. Same model, same task:
+
+| | Cold (R1) | Map-primed (R1) | Map-primed + line demand |
+| --- | --- | --- | --- |
+| Wall time | 27s | 42s | **33s** |
+| Line numbers | yes | **no** | yes — **11/11 exact** |
+| Layers covered | handlers only | input path only | **both** |
+
+`ctx=28752 output=2499 total=99028 toolCalls=11 wallTimeMs=33027` — ~600 tokens back to the
+lead, **~165:1 compression**, the best measured so far.
+
+**Two R1 conclusions are therefore wrong and should not be reused:**
+
+- Map-priming does not *inherently* cost line numbers. It costs them by default.
+- **"One trace call returns roughly one layer's worth of detail" is not a ceiling.** This
+  run covered both layers R1 split across two runs — the input/keystroke path
+  (`session-modes.ts`, `raw-picker.ts`) *and* the per-command handlers (`status.ts`,
+  `renderer.ts`, `tool-runner.ts`).
+
+**The mechanism, which does survive.** Map pages describe files by responsibility, not
+location, so a model given map prose can answer without opening any source — and then has
+no line numbers to give. Demanding them forces real reads (11 tool calls here), which is
+also why coverage widened. The line numbers were never the point; they are a
+**proof-of-read**. Ask for them even when you do not need them, precisely because a
+map-primed answer that cannot produce them was paraphrase, not analysis.
+
+That cuts wider than delegation. Map prose is a good enough substitute for reading that a
+reader stops at it — the lead included. Measured against `docs/map/README.md`'s own
+criterion (*"prose that costs more tokens than it saves defeats the purpose"*), the
+hand-written per-file prose is **41.6% of `src/` by bytes** with generated blocks stripped,
+87 of 111 pages sit at ≥30% of their source file, and 12 pages are larger than the file
+they describe. The index tier is the opposite: all of `docs/map/README.md` is 11.5KB
+against 643KB of source, ~56:1.
 
 ---
 
@@ -60,16 +93,17 @@ Untested.
 
 Checked and found *not* to be problems:
 
-- **Accuracy on file paths was 100%** across every run — 16 distinct claimed paths, all
+- **Accuracy on file paths was 100%** across every run — 25 distinct claimed paths, all
   real. No hallucinated files yet. This is the main reason the file-path-anchored prompt
   style works.
-- **Line numbers were accurate where checked, but that is a small sample.** R3's
+- **Line numbers are accurate, on a sample that is no longer small.** R3's
   `paid-guard.ts:50` is exactly the env-read line (the function signature is 49, so the
-  citation is precise, not off-by-one). R1's line numbers were never verified. Paths stay
-  the cheap check — one `ls` covers a whole list; a line number needs the file opened.
+  citation is precise, not off-by-one). The map-primed control run added **11/11 exact**,
+  spot-checked with `sed` across six files — `index.ts:207`, `session-runner.ts:39`,
+  `session-modes.ts:194`, `slash-commands.ts:28/47/69`, `command-dispatcher.ts:161/225/238`.
+  R1's own line numbers were never verified. Paths are still the *cheaper* check — one `ls`
+  covers a whole list; a line number needs the file opened — but line numbers now look
+  trustworthy enough to demand routinely, and they double as a proof-of-read.
 - **Length caps are respected.** "under 200 words" and "in 2 sentences" both held.
 - **Latency is workable.** 11–42s per call. Slower than a Grep, far faster than the lead
   reading a subsystem.
-- **Docs are exempt from the 500-line limit.** `scripts/checks/check-line-limits.ts` walks
-  `src/` only, so `recipes.md` may grow. Split it by task shape when it gets unwieldy —
-  for readability, not because a check will fail.

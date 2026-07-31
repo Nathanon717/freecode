@@ -6,6 +6,10 @@ prioritized by how much lead-side token or latency cost each would remove.
 Each entry states the problem observed, the proposed change, and why it matters for
 delegation specifically. These are proposals, not decisions.
 
+**When one ships, delete the entry.** Do not annotate it as done — a shipped feature is
+not a request. Its durable facts belong in `commands.md` (the flag contract) and in this
+directory's [README](README.md) Operating Facts (how delegation should use it).
+
 ---
 
 ## 1. Strict output mode (`--raw` / `--only`)
@@ -45,24 +49,7 @@ measuring properly on more than one task before building it.
 
 ---
 
-## 3. Token/cost reporting on stderr — **SHIPPED 2026-07-30**
-
-Implemented as `--stats`. Output:
-
-```
-stats: model=zen:big-pickle ctx=12425 output=1121 total=15774 toolCalls=1 wallTimeMs=17260
-```
-
-Verified: goes to stderr, stdout stays clean — `answer=$(freecode --stats -p "...")`
-captures only the answer.
-
-**Impact:** immediately paid for itself. It produced the ~35:1 compression measurement in
-R4 that justifies fan-out (#4) — a number that was previously unobtainable. Every recipe
-should now carry its stats line.
-
----
-
-## 4. Batch / fan-out mode
+## 3. Batch / fan-out mode
 
 **Problem:** the map-drift script already does per-file LLM calls, but there is no general
 way for the lead to say "run this prompt against each of these 30 files." Doing it from
@@ -79,7 +66,7 @@ workload that free providers unlock. Note the per-IP quota caveat in
 
 ---
 
-## 5. Model fallback chain for `-p`
+## 4. Model fallback chain for `-p`
 
 **Problem:** if the pinned provider is rate-limited, the call fails and the lead must
 notice, pick another model, and retry — spending lead tokens on plumbing.
@@ -89,4 +76,4 @@ notice, pick another model, and retry — spending lead tokens on plumbing.
 **Why it matters:** unattended delegation should not need lead-side babysitting. Free
 providers rate-limit often; that should be freecode's problem, not the caller's.
 
-**Priority: low** until fan-out (#4) exists, then it becomes necessary.
+**Priority: low** until fan-out (#3) exists, then it becomes necessary.

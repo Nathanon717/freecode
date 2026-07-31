@@ -42,6 +42,10 @@ Both halves are evidence-backed from real trials (see [recipes.md](recipes.md)):
 The dividing line is *synthesis*, not *search*. Pattern-matching is what Grep is for.
 Reading many files and forming a narrative across them is what the subagent is for.
 
+The rule generalizes past delegation: **never read a generated reference whole.**
+`docs/providers.md` tabulates every OpenAI and Anthropic model; reading it to learn which
+free models exist costs thousands of lead tokens for one column of one row. Grep it.
+
 ## Verification Cost Is The Tax On Delegation
 
 Every delegated answer needs some lead-side checking, and that checking eats the savings.
@@ -90,44 +94,51 @@ redundant cross-checks, and speculative low-yield scans all become rational when
 - [failures.md](failures.md) — what didn't work, so it isn't retried.
 - [feature-requests.md](feature-requests.md) — freecode changes that would improve delegation.
 
-## The Process
+## Maintaining This Directory
 
-This directory only gets good if it is fed. Three triggers, all cheap:
+This directory only stays useful if it is both **fed and pruned.** Growth is the easy
+half; a directory that only grows becomes a wall of text nobody reads, at which point it
+costs lead tokens instead of saving them.
+
+### Adding
+
+Three triggers, all cheap:
 
 1. **Before a broad read** — more than ~3 files, or any "how does X work" question — stop
    and check [recipes.md](recipes.md) for a matching prompt. If none exists and the
    delegation works, add one. This is the main growth path.
 2. **After any delegated call** — spend one line. It either becomes a recipe (worked,
    verified) or a failure entry (didn't). A call that produces neither was wasted twice.
+   Record the misses too: a log of successes only has stopped being useful.
 3. **When a task feels too wasteful to bother with** — that instinct is calibrated for
    paid providers and is now wrong. Write it in [workloads.md](workloads.md) instead of
    dismissing it.
 
-**Run with `--stats`.** It reports model, context, output, tool calls, and wall time on
-stderr while leaving stdout clean, so `$(...)` is unaffected. Paste the numbers into the
-recipe — delegation economics cannot be improved while they are invisible.
-
-## Self-Audit
-
-Scoring the standing rule honestly means recording the misses, not just the wins. A log of
-successes only is a log that has stopped being useful.
-
-**Session 1 (2026-07-30) — one clear miss.** While researching this directory the lead
-read all of `docs/providers.md` to learn which free models exist. That file's generated
-tables include every OpenAI and Anthropic model — several thousand tokens of paid context
-for one column of one row. A targeted `Grep` for `:free` (or a subagent call) would have
-cost a fraction. The rule caught the *delegation* decisions correctly and missed a plain
-*over-reading* one; both count.
-
-## Maintaining This Directory
-
 Add a recipe only after **actually running it and verifying the output.** An unverified
 prompt is a guess and is worth less than nothing here, because it will be trusted later.
-Record wall time and the exact model — a recipe without both is not reproducible.
+Record wall time, the exact model, and the `--stats` line.
 
 When comparing two subagent runs, **diff both directions.** A near-miss in session 1: one
 run was judged to have "found more files" after checking only what it added, never what it
 dropped. It had dropped an entire layer. See R1 in [recipes.md](recipes.md).
 
+### Removing
+
+Deletion is a normal edit here, not an exception. Two things to delete on sight:
+
+- **Entries whose premise is gone.** When a feature request ships, **delete the entry** —
+  do not rewrite it to say "SHIPPED". A shipped feature is not a request, and the tendency
+  to annotate rather than remove is how this directory rots. Same for a failure whose
+  cause has been fixed, or an untested idea once it has a recipe.
+- **Facts with two homes.** One fact, one file. Evidence lives where it was measured (a
+  recipe); the rule derived from it lives here in the README; everything else links.
+  A number restated in three files will drift in two of them.
+
+The test before deleting is not "was this true once?" but **"does the durable fact still
+live somewhere it belongs?"** Move it first if not, then delete. Flag contracts belong in
+[commands.md](../commands.md), not here.
+
 Nothing here is generated. Do not add `BEGIN GENERATED` markers; the docs generator does
-not own this directory.
+not own this directory. The 500-line limit does not apply either —
+`scripts/checks/check-line-limits.ts` walks `src/` only. Split a file when it gets
+unwieldy to read, not because a check will fail.

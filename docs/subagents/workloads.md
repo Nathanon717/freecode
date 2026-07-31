@@ -32,12 +32,9 @@ Three things become affordable that previously were not:
 
 ## The Measured Case For Fan-Out
 
-From a real call (`--stats`, `zen:big-pickle`, 2026-07-30): analyzing the ~650-line
-`map-drift.ts` cost **15,774 free tokens in, ~450 tokens back to the lead** — a **~35:1
-compression**, in 17s, for one tool call.
-
-That ratio is the engine. It means the lead can afford roughly 35 delegated file-analyses
-per unit of context it would have spent reading one file itself. Fan-out is not a
+R4 in [recipes.md](recipes.md) measured **~35:1 compression** on a single-file analysis.
+That ratio is the engine: the lead can afford roughly 35 delegated file-analyses per unit
+of context it would have spent reading one file itself. Fan-out is not a
 micro-optimization; it is a different order of magnitude.
 
 ## Candidate Workloads

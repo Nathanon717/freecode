@@ -45,7 +45,8 @@ Two ways, for two different jobs:
 **Delegate to it.** Freecode's models are free, so the only budget that matters is the
 *calling* agent's own context. Before any broad read, consider spending a `freecode -p`
 call instead. See `docs/subagents/README.md` for when it pays off, verified prompts, and
-known failure modes — and add to it whenever you learn something new.
+known failure modes. Maintain it: add when you learn something, and delete entries whose
+premise is gone rather than annotating them as outdated.
 
 ## Documentation
 
