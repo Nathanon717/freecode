@@ -25,7 +25,10 @@ was once thought to avoid it — it does not; the map-primed control run below o
 `Here is the end-to-end flow when a user types a slash command in the REPL:`. Only an
 explicit output-shape demand suppresses this.
 
-**Fix:** see [feature-requests.md](feature-requests.md) #1.
+**No fix is planned.** A strict-output flag was proposed and dropped: the workaround above
+costs one clause in the prompt, which is cheaper than a flag that would have to parse
+narration out of prose. Write the output shape into every `-p` prompt whose result you
+intend to capture.
 
 ---
 

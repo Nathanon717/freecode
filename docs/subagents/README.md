@@ -92,7 +92,7 @@ redundant cross-checks, and speculative low-yield scans all become rational when
 - [recipes.md](recipes.md) — verified prompts, with model, wall time, and how each was checked.
 - [workloads.md](workloads.md) — wasteful-but-valuable work that free providers unlock.
 - [failures.md](failures.md) — what didn't work, so it isn't retried.
-- [feature-requests.md](feature-requests.md) — freecode changes that would improve delegation.
+- [feature-requests.md](feature-requests.md) — freecode changes that would improve delegation, ranked most-wanted first.
 
 ## Maintaining This Directory
 
