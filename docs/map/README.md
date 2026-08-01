@@ -40,7 +40,7 @@ Format: filename (linecount)
   - [`registry.ts`](agent/subagents/registry.md) (56) — Sub-Agent Registry
   - [`run-subagent.ts`](agent/subagents/run-subagent.md) (163) — Sub-Agent Runner
 - `src/agent/`
-  - [`system-prompt.ts`](agent/system-prompt.md) (49) — System Prompt
+  - [`system-prompt.ts`](agent/system-prompt.md) (69) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
 - `src/agent/tools/`
   - [`create.ts`](agent/tools/create.md) (33) — create Tool

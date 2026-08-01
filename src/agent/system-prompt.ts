@@ -4,6 +4,21 @@ import { projectRoot } from './workspace.js';
 import { readTextFile } from '../util/text-encoding.js';
 import { isWriteTool, offeredToolNames } from './tools/tool-names.js';
 
+const INSTRUCTION_FILES = ['AGENTS.md', 'CLAUDE.md'] as const;
+
+// An instruction file has two kinds of reader: agents that *call* freecode (Claude
+// Code, Codex) and freecode itself, doing the work. Anything fenced caller-only is
+// for the former, so injecting it here would hand a sub-agent instructions it cannot
+// act on — telling it to delegate to a `freecode -p` it cannot spawn, and to append
+// delegation reports to the stdout its caller captures with `$(freecode -p "...")`.
+// An unterminated fence strips to end of file: dropping project context is the
+// cheaper mistake.
+const CALLER_ONLY = /<!--\s*caller-only:start\s*-->[\s\S]*?(?:<!--\s*caller-only:end\s*-->|$)/g;
+
+function stripCallerOnly(text: string): string {
+  return text.replace(CALLER_ONLY, '').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 // `toolNames` must be exactly what the caller put in the tool set — use
 // `offeredToolNames` with the same flags. Advertising a tool that is absent sends
 // the model off calling something that does not exist: the prompt-based tool
@@ -38,9 +53,14 @@ RULES - MUST ALWAYS FOLLOW${canWrite ? `
   }
 
   if (loadAgentsMd) {
-    const agentsMdPath = join(projectRoot, 'AGENTS.md');
-    if (existsSync(agentsMdPath)) {
-      prompt += `\n\n# Project Instructions (AGENTS.md)\n\n${readTextFile(agentsMdPath)}`;
+    // Repos carry one or the other. Without the CLAUDE.md fallback a subagent
+    // launched in a CLAUDE.md-only repo gets no project context at all.
+    const fileName = INSTRUCTION_FILES.find(name => existsSync(join(projectRoot, name)));
+    if (fileName) {
+      const body = stripCallerOnly(readTextFile(join(projectRoot, fileName)));
+      if (body) {
+        prompt += `\n\n# Project Instructions (${fileName})\n\n${body}`;
+      }
     }
   }
 

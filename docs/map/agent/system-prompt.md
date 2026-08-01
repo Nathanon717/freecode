@@ -12,7 +12,7 @@ buildSystemPrompt(loadAgentsMd?: boolean, toolNames?: readonly string[]): string
 
 ## Export notes
 
-- `loadAgentsMd` defaults to `false`. When `true`, reads `AGENTS.md` from `projectRoot` and appends it under a `# Project Instructions (AGENTS.md)` header; silently omitted if the file does not exist.
+- `loadAgentsMd` defaults to `false`. When `true`, appends the project's instruction file under a `# Project Instructions (<file>)` header; silently omitted if neither file exists. See [Project instructions](#project-instructions) for file choice and caller-only stripping.
 - `toolNames` **must be exactly what the caller put in the tool set** — build it with `offeredToolNames` ([tools/tool-names.md](tools/tool-names.md)) from the same flags passed to `createTools`. It defaults to the full set plus `spawn_agent`. Advertising an absent tool sends the model calling something that is not there, and there are two ways to get it wrong: [parsed-tools.md](parsed-tools.md) builds its tools without a `spawnAgent` runner, and a read-only session (the Ctrl+R toggle, `freecode -p`) has no `create`/`edit`/`shell_exec`. [loop.md](loop.md) passes the right list on both paths.
 
 ## Behavior
@@ -27,4 +27,25 @@ Mostly static, with three things derived from `toolNames`:
   with it. "Running broken code often gives you a helpful error message" contradicts
   a session with no `shell_exec`, so an all-read-only set drops the section entirely.
 
-Plus `loadAgentsMd`: when `true` it reads `AGENTS.md` from `projectRoot` at call time and appends the file's contents.
+## Project instructions
+
+When `loadAgentsMd` is `true`, the prompt gains the project's instruction file, read from
+`projectRoot` at call time.
+
+- **File choice:** `AGENTS.md` first, then `CLAUDE.md`. Repos carry one or the other, and
+  without the fallback a sub-agent launched in a `CLAUDE.md`-only repo would get no
+  project context at all. The header names whichever file was used.
+- **Caller-only stripping:** regions fenced by `<!-- caller-only:start -->` and
+  `<!-- caller-only:end -->` are removed before injection. These files have two kinds of
+  reader — agents that *call* freecode (Claude Code, Codex) read them off disk and see
+  everything; freecode itself only ever sees them through this function. Fenced content
+  is caller-side guidance a sub-agent cannot act on: delegating to a `freecode -p` it
+  cannot spawn, and appending delegation reports to the stdout its caller captures with
+  `$(freecode -p "...")`. This is the same principle as the `hasSpawnAgent` tip gating
+  above — withhold what the reader cannot use — applied to project instructions.
+- **Unterminated fence:** strips to end of file. Losing project context is cheaper than
+  leaking the instructions the fence exists to withhold.
+- If stripping empties the file, no header is added.
+
+This repo's own `CLAUDE.md`/`AGENTS.md` fences its `## Subagents` section. The two files
+must stay identical, so the fence markers have to be edited in both.

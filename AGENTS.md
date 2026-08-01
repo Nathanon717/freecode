@@ -35,18 +35,35 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 Command details live in `docs/commands.md`. E2e details live in `docs/e2e-inventory.md` and `docs/testing-e2e.md`.
 
-## Running Freecode Yourself
+<!-- caller-only:start -->
+## Subagents
 
-Two ways, for two different jobs:
+This section is for agents that *call* Freecode. Freecode strips it when injecting this
+file into its own system prompt (`src/agent/system-prompt.ts`), so a sub-agent never
+sees it — do not remove the fence markers.
 
-- **Ask it a question:** `freecode -p "<prompt>"` runs one read-only turn and prints the final answer to stdout, so `$(freecode -p "...")` captures it. It cannot write, run commands, or spawn sub-agents, and it is hard-blocked to free models — safe to call yourself. See the `-p` section of `docs/commands.md`.
-- **Drive the real TUI:** `docs/pty-session.md` (lets you verify and debug the real app just like the user can). Also free-model-only.
+`freecode -p "<prompt>"` runs one read-only turn and prints the final answer to stdout, so
+`$(freecode -p "...")` captures it. It cannot write, run commands, or spawn sub-agents, and
+it is hard-blocked to free models — safe to call yourself. See the `-p` section of
+`docs/commands.md`.
 
 **Delegate to it.** Freecode's models are free, so the only budget that matters is the
 *calling* agent's own context. Before any broad read, consider spending a `freecode -p`
 call instead. See `docs/subagents/README.md` for when it pays off, verified prompts, and
 known failure modes. Maintain it: add when you learn something, and delete entries whose
 premise is gone rather than annotating them as outdated.
+
+**Always declare your delegation decision:**
+
+- Before starting any substantial task, state whether you plan to delegate and why (or why not).
+- At the end of *every* response, state whether you actually delegated and why (or why not).
+<!-- caller-only:end -->
+
+## Debugging and Verifying the UI
+
+To drive the real TUI, see `docs/pty-session.md`. This lets you verify and debug the real
+app just like the user can. Also free-model-only. This is for inspecting the app, not for
+delegating work.
 
 ## Documentation
 
