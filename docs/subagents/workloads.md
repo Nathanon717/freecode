@@ -60,7 +60,7 @@ questions with checkable answers (file paths, yes/no), so the lead can adjudicat
 
 ### Doc-drift generalized
 `map-drift` proves the pattern for map pages. The same shape applies to every doc that
-describes code: does `providers.md` still match the registry, does `e2e.md` match the
+describes code: does `providers.md` still match the registry, does `e2e-inventory.md` match the
 tests, does each `docs/bug log/` entry still describe live behavior.
 
 ### Post-refactor regression sweep

@@ -26,7 +26,7 @@ Current generated sections:
 
 - `docs/providers.md`: provider registry table from `src/providers/provider-registry.ts`; model lists for live-fetch providers come from the committed snapshot `src/providers/model-snapshot.json` (refresh it with `npm run docs:refresh-models`, never a live fetch during generation).
 - `docs/commands.md`: npm scripts from `package.json` and slash commands from `src/cli/slash-commands.ts`.
-- `docs/e2e.md`: e2e test index from `tests/e2e/*.e2e.json`.
+- `docs/e2e-inventory.md`: e2e test index from `tests/e2e/*.e2e.json`.
 - `docs/map/**/*.md`: the `## Exports` block on every map page, extracted from each source file's TypeScript signatures by `scripts/docgen/map-exports.ts`.
 - `docs/map/README.md`: the structure tree / nav links, generated from the source tree and each page's H1.
 

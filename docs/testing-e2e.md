@@ -45,7 +45,7 @@ npm test
 
 Inside the CLI, run `/eval` to list evals, see the checks each one performs, and select one or many evals to run sequentially. `/eval` accepts numbers, names, comma/space-separated selections, and numeric ranges such as `1-3`.
 
-For the generated e2e test inventory, see [e2e.md](e2e.md).
+For the generated e2e test inventory, see [e2e-inventory.md](e2e-inventory.md).
 
 ## Basic Shape
 

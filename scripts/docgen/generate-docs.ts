@@ -193,7 +193,7 @@ const updates: Array<[string, (content: string) => string]> = [
       slashCommandReference(),
     );
   }],
-  ['docs/e2e.md', content => {
+  ['docs/e2e-inventory.md', content => {
     const base = content || [
       '# E2e Tests',
       '',

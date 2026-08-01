@@ -33,7 +33,7 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 - If a user-visible behavior changes, ensure it has e2e coverage in `tests/e2e/` or docs coverage, as appropriate.
 - If generated reference sources change, update the source of truth first, then run `npm.cmd run docs:generate`. It checks generated docs first; if they are already current, it stops without rewriting them, and if they are stale, it regenerates them. Do not hand-edit generated sections.
 
-Command details live in `docs/commands.md`. E2e details live in `docs/e2e.md` and `docs/testing-e2e.md`.
+Command details live in `docs/commands.md`. E2e details live in `docs/e2e-inventory.md` and `docs/testing-e2e.md`.
 
 ## Running Freecode Yourself
 
