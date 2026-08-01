@@ -1,3 +1,4 @@
+// check-tests: orphan — second test file for src/store/db.ts (mirrored test is tests/store/db.test.ts), kept separate to isolate vi.mock('@libsql/client')
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';

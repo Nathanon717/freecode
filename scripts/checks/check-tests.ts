@@ -95,7 +95,7 @@ if (LIST_EXEMPT) {
 }
 
 if (warnings.length > 0) {
-  console.warn('Test coverage warnings — orphan test files (add // check-tests: orphan to suppress):');
+  console.warn('Test coverage warnings — orphan test files (no matching src/ file). Delete each one, or keep it with // check-tests: orphan (a reason after the marker is not enforced but expected — see docs/unit-tests.md):');
   for (const w of warnings) console.warn(`  - ${w}`);
 }
 
