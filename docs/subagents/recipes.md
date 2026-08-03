@@ -117,7 +117,8 @@ reporting — with a line number on every claim.
 
 **Economics — the key number.** 15,774 free tokens consumed, ~450 tokens returned to the
 lead. **~35:1 compression.** The subagent read the whole file; the lead paid for a
-summary. This is the ratio that makes fan-out viable — see [workloads.md](workloads.md).
+summary. This is the ratio that makes fan-out viable. Beaten since: the map-primed control
+run in [failures.md](failures.md) measured ~165:1.
 
 **Use when:** you need to understand one substantial file's internals without spending
 lead context on it. Better than R2 (which is orientation only) when you need mechanisms
@@ -139,11 +140,23 @@ Distilled from the runs above:
 
 ## Untested Ideas
 
-Not yet run — do not trust until they have an entry above.
+Not yet run — do not trust until they have an entry above. Ideas that are *one call per
+unit across a tree* are sweeps, not recipes; they belong in [../sweeps.md](../sweeps.md).
 
+- **Adversarial self-review.** Before the lead reports work done, run the diff past a
+  subagent with a hostile prompt: *"Find the strongest argument this change is wrong."*
+  Costs the lead only the reading of the reply. Not a sweep — one call, one diff.
+- **N-model consensus on risky judgments.** Same prompt to 3+ free models, compare. Where
+  they agree, confidence is high; where they split, the lead investigates. Converts free
+  quota directly into calibration. Best on questions with checkable answers (file paths,
+  yes/no) so the lead can adjudicate cheaply. This is a modifier — it can wrap any recipe
+  here, or any sweep.
 - Map-primed trace *plus* an explicit line-number demand (map-priming lost them, per R1).
 - A trace prompt naming both layers explicitly — does one call then match the union of the
   two R1 runs, or is ~one layer a hard ceiling per call?
-- Fan-out: one `-p` call per file over a directory, in the style of `npm run map-drift`.
+- Fan-out: one `-p` call per file over a directory. Note this is *not* what `npm run
+  map-drift` does — that is a sweep ([../sweeps.md](../sweeps.md)): a bare call per unit
+  with no agent prompt and no tools. The open question is whether the agentic version
+  earns its extra cost on exploratory per-file questions.
 - "Which of these N files is relevant to X?" as a cheap pre-filter before the lead reads.
 - Comparing `zen:big-pickle` against `zen:nemotron-3-ultra-free` on R1.

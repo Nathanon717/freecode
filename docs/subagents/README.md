@@ -19,9 +19,10 @@ constraint on how much can get done. Freecode's models are free. So the goal is 
 "spend the fewest tokens overall"; it is **spend the fewest _lead_ tokens.**
 
 A subagent that burns 100k tokens to produce 5k of signal is a **win**, even though it was
-wildly inefficient, because the lead never paid for those 100k. Measured compression on a
-real call is ~35:1 (see R4 in [recipes.md](recipes.md)). Even where the lead would have
-been far more efficient per token, delegation still wins on the only axis that binds.
+wildly inefficient, because the lead never paid for those 100k. Measured compression on
+real calls runs from ~35:1 to ~165:1 (R4 in [recipes.md](recipes.md); the map-primed
+control run in [failures.md](failures.md)). Even where the lead would have been far more
+efficient per token, delegation still wins on the only axis that binds.
 
 That inverts the usual instinct. Minimizing total tokens is calibrated for paid providers
 and is the wrong objective here. Efficiency still matters — free quotas are finite and
@@ -81,18 +82,35 @@ Both matter, and the second is the bigger one:
 - **Defensive** — do what the lead would have done anyway, more cheaply. That is
   [recipes.md](recipes.md).
 - **Offensive** — do work that would *never be attempted* on a paid provider, because it
-  is too wasteful to justify. That is [workloads.md](workloads.md).
+  is too wasteful to justify. That is mostly sweeps: [../sweeps.md](../sweeps.md).
 
-It is easy to build only the defensive half and think the job is done. The reason free
-providers change anything is that they unlock the second category: exhaustive sweeps,
-redundant cross-checks, and speculative low-yield scans all become rational when N is free.
+It is easy to build only the defensive half and think the job is done. The second category
+is the reason free providers change anything, and it is a change in kind, not degree.
+
+**The unit economics invert.** On a paid provider, cost scales with N, so the craft is
+*avoiding N*: grep smartly, sample a few files, infer the rest, and be right often enough.
+Every design conversation starts with "can we do this without touching every file?" On a
+free provider N is free, and the craft becomes *sweeping all of N* while accepting a low
+hit rate. Exhaustiveness is now the cheap option — the one needing no cleverness, no
+sampling strategy, and no argument before it runs.
+
+Three things become affordable that were not:
+
+1. **Exhaustive sweeps.** One call per unit across the whole tree. `npm run map-drift` is
+   the proof, `scripts/sweep/` is the engine, and [../sweeps.md](../sweeps.md) is how to
+   write one.
+2. **Redundancy.** Ask three models and take the consensus. Triple cost for a confidence
+   bump is a hard sell on paid; here it converts one model's guess into something with an
+   error signal — disagreement.
+3. **Being wrong.** A scan with a 10% hit rate is a failure on paid and perfectly fine
+   here. Speculative, low-yield, "probably nothing but let's look" work becomes rational.
 
 ## Index
 
 - [recipes.md](recipes.md) — verified prompts, with model, wall time, and how each was checked.
-- [workloads.md](workloads.md) — wasteful-but-valuable work that free providers unlock.
 - [failures.md](failures.md) — what didn't work, so it isn't retried.
 - [feature-requests.md](feature-requests.md) — freecode changes that would improve delegation, ranked most-wanted first.
+- [../sweeps.md](../sweeps.md) — the other half: scripted one-call-per-unit runs over a whole tree, and the candidates not yet written.
 
 ## Maintaining This Directory
 
@@ -111,8 +129,9 @@ Three triggers, all cheap:
    verified) or a failure entry (didn't). A call that produces neither was wasted twice.
    Record the misses too: a log of successes only has stopped being useful.
 3. **When a task feels too wasteful to bother with** — that instinct is calibrated for
-   paid providers and is now wrong. Write it in [workloads.md](workloads.md) instead of
-   dismissing it.
+   paid providers and is now wrong. If it is the same question asked of every unit in a
+   tree, add it to the candidate sweeps in [../sweeps.md](../sweeps.md) instead of
+   dismissing it; otherwise it is an untested idea in [recipes.md](recipes.md).
 
 Add a recipe only after **actually running it and verifying the output.** An unverified
 prompt is a guess and is worth less than nothing here, because it will be trusted later.
@@ -133,6 +152,12 @@ Deletion is a normal edit here, not an exception. Two things to delete on sight:
 - **Facts with two homes.** One fact, one file. Evidence lives where it was measured (a
   recipe); the rule derived from it lives here in the README; everything else links.
   A number restated in three files will drift in two of them.
+- **Standalone backlogs.** Unverified ideas live as a **bounded tail of the file they
+  graduate into** — never as their own file. `recipes.md`'s Untested Ideas and the
+  candidate sweeps in [../sweeps.md](../sweeps.md) sit next to the verified content that
+  dwarfs them, and next to where an entry lands when it works. A backlog with its own file
+  has nothing pulling entries out of it, so it only accretes — and an accreting file of
+  untried ideas is indistinguishable from a wishlist. If one appears, redistribute it.
 
 The test before deleting is not "was this true once?" but **"does the durable fact still
 live somewhere it belongs?"** Move it first if not, then delete. Flag contracts belong in

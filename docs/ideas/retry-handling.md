@@ -471,8 +471,9 @@ limits can be off by orders of magnitude.
   provider survey. `--only`, `--model`, `--burst`, `--no-burst`, `--recover-budget`. Dumps
   every header and the 429 body per provider to `scripts/diagnostics/rate-limit-probe/`.
   Re-run it when adding a provider or when a limit is suspected to have changed.
-- `scripts/diagnostics/map-drift.ts` — the concurrency/waste measurement. Its HTTP
-  diagnostics section established the Mistral study above; it is Mistral-header-shaped by
-  design, so use `rate-limit-probe` for anything cross-provider.
+- `scripts/sweep/http-probe.ts` — the concurrency/waste measurement, now shared by every
+  sweep (`npm run map-drift` is one; see `docs/sweeps.md`). Its HTTP diagnostics section
+  established the Mistral study above; it is Mistral-header-shaped by design, so use
+  `rate-limit-probe` for anything cross-provider.
 - `docs/bug log/26-07-2026.md` — the previous pass on this code (why `retry-after` is honored
   in full, why the gate exists, why waits are abortable). Read before changing policy.

@@ -17,22 +17,6 @@ directory's [README](README.md) Operating Facts (how delegation should use it).
 
 ---
 
-## Batch / fan-out mode
-
-**Problem:** the map-drift script already does per-file LLM calls, but there is no general
-way for the lead to say "run this prompt against each of these 30 files." Doing it from
-the lead means 30 shell calls and 30 result blocks in expensive context.
-
-**Proposal:** `freecode -p "<prompt>" --each <glob>` — runs the prompt per matching file
-and emits one consolidated result. Concurrency capped and configurable.
-
-**Why it matters:** this is the archetypal "too wasteful to justify on a paid provider"
-workload that free providers unlock. Highest ceiling of anything on this list, and the
-most design work. Note the per-IP quota caveat in [failures.md](failures.md) before
-building it.
-
----
-
 ## Auto map-priming
 
 **Problem:** every caller must remember to write "read `docs/map/README.md` first", and
