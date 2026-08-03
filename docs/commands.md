@@ -11,6 +11,7 @@ This table is generated from `package.json`.
 | --- | --- |
 | `npm run build` | `tsc` |
 | `npm run coverage` | `vitest run --coverage` |
+| `npm run dead-code` | `tsx scripts/diagnostics/dead-code.ts` |
 | `npm run dev` | `tsx src/index.ts` |
 | `npm run docs:generate` | `tsx scripts/docgen/sync-docs.ts` |
 | `npm run docs:refresh-models` | `tsx scripts/docgen/refresh-models.ts` |

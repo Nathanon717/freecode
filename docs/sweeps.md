@@ -1,8 +1,9 @@
 # Sweeps
 
 A **sweep** is one bare LLM call per unit across a whole tree, with the per-unit verdicts
-collected into a findings-only report. `npm run map-drift` is the original;
-`scripts/sweep/` is the engine every other sweep should be built on.
+collected into a findings-only report. `npm run map-drift` is the original and
+`npm run dead-code` the second; `scripts/sweep/` is the engine every other sweep should be
+built on.
 
 Sweeps exist because free providers invert the unit economics — see
 [subagents/README.md](subagents/README.md) for why exhaustive, low-hit-rate work becomes
@@ -70,6 +71,11 @@ the model reads it — it has no tools. A unit's prompt is complete or the verdi
 are silent in both the live output and the report, because on a sweep where most units pass,
 listing them buries the hits. The engine assigns `error` itself when a call throws; pick any
 other vocabulary you like.
+
+If the answer format is `OK` or one finding token, `createVerdictParser` in
+`scripts/sweep/binary-verdict.ts` already handles the ways weak models mangle it — code
+fences, preamble, leaked reasoning blocks, `No <token> found` — and never coerces an
+unreadable answer to clean. `map-drift` binds it to `DRIFT`, `dead-code` to `DEAD`.
 
 ## Flags
 
@@ -156,11 +162,6 @@ describe live behavior. Closest to shipping: it is map-drift with a different `c
 every environment variable this file reads."* Grep needs the pattern in advance and misses
 indirection — a var read through a helper, or a computed key. A per-file sweep does not.
 Slower, free, and finds what grep structurally cannot.
-
-**Dead-code and staleness sweep.** Unit = one file, prompt = *"is anything here
-unreachable or unused?"* Low hit rate by design — exactly the speculative scan that only
-makes sense when it is free. `CLAUDE.md` bans "fallback"-justified dead code, so hits are
-actionable rather than debatable.
 
 **Post-refactor regression sweep.** Unit = one changed file's diff, prompt = *"describe
 any behavior change, not style change, in this diff."* Wildly redundant with the test

@@ -47,7 +47,7 @@ If you reach for the marker on anything other than a pure-type or pure-barrel fi
 The mirror runs both ways: a `tests/**/*.test.ts` with no matching `src/` file is reported as an *orphan* — a warning, not a build failure. Either delete the file (it is dead once its source is gone) or mark it `// check-tests: orphan — <why>`. The reason is not enforced the way `no-test`'s is, but write one; it is what tells the next reader the file is deliberate. Two shapes are legitimate:
 
 - **A second test file for one `src/` module**, split off to isolate a `vi.mock` that must not leak into the mirrored test — `tests/store/db-sync-recovery.test.ts` (`src/store/db.ts`), `tests/eval/runner-subprocess.test.ts` (`src/eval/runner.ts`).
-- **Tests of code that has no `src/` mirror** — the e2e harness (`tests/harness/`), `scripts/` (`tests/scripts/map-drift-classify.test.ts`), or repo-wide guards (`tests/repo-encoding.test.ts`).
+- **Tests of code that has no `src/` mirror** — the e2e harness (`tests/harness/`), `scripts/` (everything under `tests/scripts/`), or repo-wide guards (`tests/repo-encoding.test.ts`).
 
 ## Coverage & length
 
