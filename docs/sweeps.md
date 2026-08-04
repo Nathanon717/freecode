@@ -10,6 +10,27 @@ Sweeps exist because free providers invert the unit economics — see
 rational when N is free. Sweeps worth writing but not yet written are at the bottom of
 this file.
 
+## Running one
+
+```bash
+npm run dead-code -- --model zen:big-pickle
+```
+
+Every sweep is an npm script, so the `--` is required — without it the flags go to npm, not
+to the sweep. Models are always `provider:model`; `zen:big-pickle` is the strongest free one
+and the sensible default, and the rest are in [providers.md](providers.md). Drop `--model`
+entirely to use the configured `defaultModel`.
+
+A full sweep is minutes of wall time (111 files ≈ 8m on `zen:big-pickle`), so run it in the
+background rather than blocking on it. `--dry-run` first prints the unit list and spends
+nothing.
+
+The report is written to `scripts/diagnostics/<sweep>/<provider>-<model>.md` — **named after
+the model and nothing else**, so two models sit side by side but a second run of the same
+model overwrites the first. That includes a narrow `--only`/`--limit` re-run, which will
+replace a full report with a one-unit one. When iterating after a real run, send it
+somewhere else with `--out`.
+
 ## A sweep is not `freecode -p`
 
 This is the distinction that decides which tool to reach for.
@@ -121,6 +142,12 @@ Every report ends with an HTTP diagnostics section: one line per physical reques
 made, so handled rate limiting (retried, then answered) can be told apart from terminal rate
 limiting (retries exhausted, reported as an error). A verdict alone cannot distinguish them —
 a unit that ate five 429s and then answered looks identical to one that never saw a limit.
+
+An `error` verdict is not evidence of a rate limit either: a timeout, a dropped connection
+and an exhausted 429 all produce one. The section therefore counts terminal 429s from each
+unit's **last attempt status**, reports the other failures separately, and tags every line in
+`Terminal failures` with that status — `429` an exhausted limit, `200` a response whose body
+stalled mid-stream, `transport` a connection that delivered nothing.
 
 ## Reading a report
 

@@ -113,14 +113,31 @@ function statusHistogram(records: HttpAttempt[]): string {
 export function diagnosticsReport<Unit>(outcomes: SweepOutcome<Unit>[], unitNoun: string): string[] {
   const rateLimited = attempts.filter(a => a.status === 429);
   const withRetryAfter = rateLimited.filter(a => a.retryAfter !== null);
-  const failed = outcomes.filter(o => o.verdict === ERROR_VERDICT);
   const seconds = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
+
+  // An error verdict is not evidence of rate limiting: a per-unit timeout, a
+  // transport drop and an exhausted 429 all produce one. Only the unit's last
+  // attempt says which, so terminal-429 counting reads that instead of the
+  // verdict — counting error verdicts reported 39 terminal 429s on a run whose
+  // every request returned 200.
+  const lastStatusByUnit = new Map<number, number>();
+  for (const attempt of attempts) {
+    if (attempt.unitIndex !== null) lastStatusByUnit.set(attempt.unitIndex, attempt.status);
+  }
+  const failedEntries = outcomes
+    .map((outcome, index) => ({ outcome, index }))
+    .filter(entry => entry.outcome.verdict === ERROR_VERDICT);
+  const failed = failedEntries.map(entry => entry.outcome);
+  const terminalRateLimited = failedEntries.filter(
+    entry => lastStatusByUnit.get(entry.index) === 429,
+  );
 
   const lines = [
     '## HTTP diagnostics',
     '',
     `- requests: ${attempts.length} for ${outcomes.length} ${unitNoun}s (${statusHistogram(attempts)})`,
-    `- 429 responses: ${rateLimited.length} total, of which ${failed.length} were terminal (retries exhausted, surfaced as an error)`,
+    `- 429 responses: ${rateLimited.length} total, of which ${terminalRateLimited.length} were terminal (retries exhausted, surfaced as an error)`,
+    `- failed ${unitNoun}s: ${failed.length} total, of which ${failed.length - terminalRateLimited.length} failed for a reason other than rate limiting`,
     `- 429s carrying a \`retry-after\` header: ${withRetryAfter.length}/${rateLimited.length}` +
       (withRetryAfter.length > 0 ? ` (values: ${[...new Set(withRetryAfter.map(a => a.retryAfter))].join(', ')})` : ''),
     // Aggregate, not wall clock: N workers waiting the same 16s window contribute
@@ -161,11 +178,16 @@ export function diagnosticsReport<Unit>(outcomes: SweepOutcome<Unit>[], unitNoun
   }
 
   if (failed.length > 0) {
+    // The last status is what separates the causes, so it is on the line: `429`
+    // is an exhausted limit, `200` a response that arrived and then stalled
+    // mid-stream, `none` a unit that never got one back.
     lines.push('', '### Terminal failures', '', '```');
-    for (const outcome of failed) {
+    for (const { outcome, index } of failedEntries) {
+      const lastStatus = lastStatusByUnit.get(index);
+      const cause = lastStatus === undefined ? 'none' : lastStatus === 0 ? 'transport' : String(lastStatus);
       lines.push(
         `${seconds(outcome.startedAtMs).padStart(8)} start  ${seconds(outcome.durationMs).padStart(7)} spent  ` +
-          `${String(outcome.requests).padStart(2)} requests  ${outcome.label}`,
+          `${String(outcome.requests).padStart(2)} requests  last:${cause.padEnd(9)} ${outcome.label}`,
       );
     }
     lines.push('```');

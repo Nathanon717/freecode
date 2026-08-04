@@ -47,11 +47,29 @@ function retryHoldSuffix(): string {
   return ` · ${retryHold.label} ${Math.ceil(remaining / 1000)}s`;
 }
 
+/**
+ * `String(x)` on a thrown plain object is `[object Object]`, which leaves the
+ * report with no evidence of what went wrong — three nemotron failures were
+ * lost that way. Providers do throw bare objects, so fall back to their fields.
+ */
+function describeThrown(value: unknown): string {
+  if (value instanceof Error) return value.message;
+  const text = String(value);
+  if (text !== '[object Object]') return text;
+  try {
+    const json = JSON.stringify(value);
+    if (json && json !== '{}') return json.slice(0, 500);
+  } catch {
+    // Circular or throwing-getter payload: nothing better to say than the default.
+  }
+  return text;
+}
+
 // Duck-types the statusCode/responseBody fields present on both real AI SDK
 // APICallErrors and the plain Error the openai-compat adapter throws.
 function describeError(error: unknown): string {
   const e = error as { statusCode?: unknown; responseBody?: unknown };
-  const message = error instanceof Error ? error.message : String(error);
+  const message = describeThrown(error);
   const statusCode = typeof e?.statusCode === 'number' ? e.statusCode : undefined;
   let detail = statusCode !== undefined && !message.includes(`HTTP ${statusCode}`)
     ? `HTTP ${statusCode}: ${message}`
