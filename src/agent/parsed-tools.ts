@@ -116,7 +116,7 @@ export async function executeToolCalls(
   const resultParts: string[] = [];
   for (let i = 0; i < calls.length; i++) {
     const call = calls[i];
-    const toolFn = tools[call.name as keyof typeof tools];
+    const toolFn = tools[call.name];
     let toolResultStr: string;
 
     if (!toolFn?.execute) {
