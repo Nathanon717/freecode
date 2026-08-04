@@ -1,6 +1,6 @@
 # src/cli/headless-prompt.ts - Headless Prompt Mode (`-p`)
 
-**Role:** `freecode -p "<prompt>"` — one non-interactive, read-only agent turn whose final response is printed to stdout. Built so an LLM can shell out to freecode and read the answer back.
+**Role:** `freecode -p "<prompt>"` — one non-interactive agent turn whose final response is printed to stdout, read-only unless `--edit` is passed. Built so an LLM can shell out to freecode and read the answer back.
 
 **Read when:** changing what `-p` prints, its exit codes, or what it is allowed to do.
 
@@ -14,6 +14,8 @@ interface HeadlessPromptOptions {
   model: string;
   /** Print one stderr line of cost/timing info after the turn; stdout is untouched. */
   stats?: boolean;
+  /** Offer the write tools (create/edit/shell_exec) instead of running read-only. */
+  edit?: boolean;
 }
 
 runHeadlessPrompt(options: HeadlessPromptOptions): Promise<number>
@@ -46,12 +48,19 @@ This is the part callers depend on; changing it breaks `$(freecode -p ...)`.
 
 ## What it is allowed to do
 
-- **Read-only.** Forces the read-only toggle on via `initReadOnly(true)` and passes
-  `isReadOnly()` through, so this is the same mechanism as Ctrl+R rather than a
-  parallel flag. `createTools` therefore offers `read`/`grep`/`list_dir` and **no
-  `spawn_agent`** — see [../agent/tools/index.md](../agent/tools/index.md).
+- **Read-only unless `--edit`.** `initReadOnly(!edit)` drives the same toggle as
+  Ctrl+R rather than a parallel flag, and `isReadOnly()` is what reaches `agentLoop`.
+  Default: `read`/`grep`/`list_dir`. With `edit: true` (`--edit` in `src/index.ts`),
+  `createTools` also offers `create`/`edit`/`shell_exec` — see
+  [../agent/tools/index.md](../agent/tools/index.md).
+- **Never `spawn_agent`.** Read-only drops it on its own; the `--edit` path would get
+  it back, so the call passes `spawnAgent: false` explicitly. A headless turn that
+  fans out spends whole sub-turns nobody is watching. Pinned in both directions by
+  `tests/e2e/prompt-mode.e2e.json` and `tests/e2e/prompt-mode-edit.e2e.json`.
 - **No confirmation.** Ask mode is forced to `auto` (`initAskMode('auto')`) — the
-  same off switch as Ctrl+A. There is no interactive channel to prompt on.
+  same off switch as Ctrl+A. There is no interactive channel to prompt on. Under
+  `--edit` that means writes and shell commands run unattended; the tool-call budget
+  below is the only stop.
 - **Free models only.** `src/index.ts` sets `FREECODE_FREE_ONLY=1` for `-p` before
   any credential loads; see [../providers/paid-guard.md](../providers/paid-guard.md).
   A paid `--model` is refused with a message naming the flag, exit 1
@@ -72,5 +81,5 @@ This is the part callers depend on; changing it breaks `$(freecode -p ...)`.
 ## Update triggers
 
 - The output contract changes (what stdout carries, exit codes).
-- Read-only, confirmation, or free-only enforcement moves.
+- Read-only/`--edit`, confirmation, sub-agent, or free-only enforcement moves.
 - `AgentLoopResult` changes shape around `text` / `turnMessages`.

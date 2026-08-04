@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "model": "mock-native:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "mustContain": ["write note.txt"],
+        "toolsAvailable": ["create"],
+        "systemPromptPresent": true,
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["Writing it now."],
+        "toolCalls": [
+          {
+            "name": "create",
+            "args": {
+              "rationale": "Creating the file the caller asked for",
+              "path": "note.txt",
+              "content": "written headlessly\n"
+            }
+          }
+        ],
+        "usage": { "promptTokens": 20, "outputTokens": 8, "totalTokens": 28 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "Wrote note.txt.",
+        "usage": { "promptTokens": 40, "outputTokens": 12, "totalTokens": 52 }
+      }
+    }
+  ]
+}

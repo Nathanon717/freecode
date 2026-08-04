@@ -30,7 +30,7 @@ _No exported symbols._
 
 | Mode | Trigger | Behavior |
 |------|---------|----------|
-| Headless prompt | `-p "<prompt>"` | One read-only turn; the final response goes to stdout. Calls `runHeadlessPrompt()` directly, not `runCliSession()`, and always sets free-only. See [cli/headless-prompt.md](cli/headless-prompt.md). |
+| Headless prompt | `-p "<prompt>"` | One turn, read-only unless `--edit`; the final response goes to stdout. Calls `runHeadlessPrompt()` directly, not `runCliSession()`, and always sets free-only. See [cli/headless-prompt.md](cli/headless-prompt.md). |
 | Scripted CLI | `--script <file>` | Creates a session and runs `runCliSession()` with `createScriptedMode()`. |
 | Interactive CLI | default | Shows banner, performs a startup route probe, sets up bottom UI on TTY, and runs `runCliSession()` with `createInteractiveMode()`. |
 | Logging | `-log` | Enables stderr logging before other startup work. |

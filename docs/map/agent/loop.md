@@ -9,6 +9,12 @@
 interface AgentLoopOptions {
   confirmToolCall?: ConfirmToolCall;
   readOnly?: boolean;
+  /**
+   * Offer spawn_agent (default true). Independent of `readOnly`, which already
+   * drops it: headless `-p --edit` writes files but must not fan out into
+   * sub-turns, so it turns this off on its own.
+   */
+  spawnAgent?: boolean;
   onPartialResult?: (partial: { providerId: string; modelId: string; quota: RateLimitSnapshot | null }) => void;
   // Fires at every step boundary with that step's own prompt tokens, so the
   // footer's context size ticks up while a multi-step tool turn is still
@@ -63,7 +69,7 @@ agentLoop(messages: CoreMessage[], projectRoot: string, modelPreference?: string
 setProjectRoot(projectRoot)
 route(modelPreference)
   -> on failure, return synthetic error result
-buildSystemPrompt(modelSettings.loadAgentsMd, offeredToolNames({ readOnly, spawnAgent: true }))
+buildSystemPrompt(modelSettings.loadAgentsMd, offeredToolNames({ readOnly, spawnAgent: options.spawnAgent !== false }))
 if provider is OpenAI:
   build Responses payload
   call direct Responses adapter
@@ -103,6 +109,7 @@ return AgentLoopResult
 - There is no per-turn tool-step cap. `maxSteps` is passed as `Number.MAX_SAFE_INTEGER` because the AI SDK defaults it to `1` when omitted — "unlimited" must be spelled out. A turn ends when the model stops calling tools, the context overflows, the provider errors, or the user aborts. The fake-fixture and parsed-tools loops are likewise unbounded.
 - Every turn calls `beginTranscriptTurn()` / `endTranscriptStep()` from `transcript-renderer.ts` to emit the normalised divider framing. Intermediate steps use `endTranscriptStep(true)` (combined close+open); the final step uses `endTranscriptStep(false)` after text normalisation. The renderer state machine ensures consistent blank-line spacing regardless of the model or provider.
 - `streamWithRetry` drives display from the ordered `fullStream` (not the text-only `textStream`) so a step's preamble can never render after the tool call it precedes. Because the AI SDK invokes a tool's `execute` (which draws the header) before that preamble reaches the consumer, the `tool-render-gate.ts` semaphore holds `execute` until the consumer processes that call's `tool-call` part and flushes the pending text. See [tool-render-gate.md](tool-render-gate.md).
+- `options.spawnAgent === false` withholds the sub-agent runner from `createTools` (native and fake paths alike) and drops `spawn_agent` from the advertised tool list. It is independent of `readOnly`, which already excludes it: headless `-p --edit` (see [../cli/headless-prompt.md](../cli/headless-prompt.md)) writes files but must not fan out. Default is on, so interactive sessions are unaffected.
 - Tool approval is delegated to the supplied `confirmToolCall`.
 - Tool wrappers serialize execution so concurrent tool calls do not mutate files in parallel.
 - If the provider rejects tool use at runtime (`isToolsNotSupportedError`), the loop automatically retries via `runParsedToolsLoop` from `parsed-tools.ts`, which uses a text-based `<tool_call>` protocol instead of native function calling. The rejection is persisted via `setNativeTools(provider, modelId, false)` (model-data) so the fallback is used automatically next time; the startup read uses `isNativeToolsDisabled`. The user can also manually enable this path by setting `parsedTools: true` in per-model settings (via `/config` → Model tab); both routes check `modelSettings.parsedTools || isNativeToolsDisabled(...)` at the top of `streamWithRetry`.

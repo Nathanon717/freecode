@@ -31,7 +31,7 @@ toggleBarWidth(): number
 - `cycleByChar(char)` — advances the toggle whose `char` matches; returns `true` when a toggle was found.
 - `areToggleNamesShown()` — state of the leftmost `S` toggle; when on, every toggle renders its full label. Off by default.
 - `getAskMode()` / `initAskMode(mode)` — the `A` toggle reads as **Auto-run tools**, so its on state (index 0) is `AskMode` `'auto'` and its off state is `'ask'`. The `AskMode` values and `config.toolConfirmation` are unchanged; only the display sense is inverted.
-- `initReadOnly(on)` — seeds the `R` toggle. Interactive sessions leave it off (the user presses Ctrl+R); [../headless-prompt.md](../headless-prompt.md) forces it on for the whole run so `-p` reuses this state rather than threading a separate read-only flag. Same reason it forces `initAskMode('auto')`: there is no interactive channel to confirm on, and "off switch for confirmations" already exists here.
+- `initReadOnly(on)` — seeds the `R` toggle. Interactive sessions leave it off (the user presses Ctrl+R); [../headless-prompt.md](../headless-prompt.md) seeds it for the whole run — on by default, off under `--edit` — so `-p` reuses this state rather than threading a separate read-only flag. Same reason it forces `initAskMode('auto')`: there is no interactive channel to confirm on, and "off switch for confirmations" already exists here.
 - `composeToggleBar()` — ANSI string prefixed with grey `ctrl+ `, then each toggle rendered as its char in banner art color (fg when off; bg+black when on), single-space separated. When `areToggleNamesShown()`, each char is followed by the grey remainder of the first state's label (e.g. `Auto-run tools`, `Read-only`).
 - `toggleBarWidth()` — visible character count of the toggle bar.
 

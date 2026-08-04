@@ -148,6 +148,7 @@ async function main() {
       prompt: args[promptIdx + 1],
       model: selectedModel,
       stats: args.includes('--stats'),
+      edit: args.includes('--edit'),
     });
     await drainPendingWrites();
     rl.close();

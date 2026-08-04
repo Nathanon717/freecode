@@ -32,7 +32,7 @@ export async function runFakeLlm(
       toolRationale: modelSettings.toolRationale,
       parallelTools: modelSettings.parallelTools,
     });
-  const tools = supportsTools ? createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly, spawnAgent) : undefined;
+  const tools = supportsTools ? createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly, options.spawnAgent === false ? undefined : spawnAgent) : undefined;
   const toolNames = tools ? Object.keys(tools) : [];
   // runFakeModel speaks the text protocol, so native tool messages persisted by
   // an earlier turn are flattened for the same reason as in parsed-tools.ts.

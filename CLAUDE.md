@@ -44,8 +44,9 @@ sees it — do not remove the fence markers.
 
 `freecode -p "<prompt>"` runs one read-only turn and prints the final answer to stdout, so
 `$(freecode -p "...")` captures it. It cannot write, run commands, or spawn sub-agents, and
-it is hard-blocked to free models — safe to call yourself. See the `-p` section of
-`docs/commands.md`.
+it is hard-blocked to free models — safe to call yourself. Adding `--edit` gives that turn
+`create`/`edit`/`shell_exec` (still no sub-agents, still unconfirmed), so use it only for a
+scoped change you will review. See the `-p` section of `docs/commands.md`.
 
 **Delegate to it.** Freecode's models are free, so the only budget that matters is the
 *calling* agent's own context. Before any broad read, consider spending a `freecode -p`

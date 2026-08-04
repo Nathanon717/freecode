@@ -1,0 +1,38 @@
+{
+  "name": "prompt-mode-edit",
+  "description": "`freecode -p \"<prompt>\" --edit` runs the same headless turn with the write half of the registry offered instead of a read-only set. The assertion that matters is the tool set the model was handed: read/grep/list_dir plus create/edit/shell_exec present, spawn_agent still absent - editing is not fan-out, and an unattended turn must not spend whole sub-turns. The write really lands (files checks note.txt), and it lands without an approval prompt, which is what auto ask-mode means once writes are on the table. The stdout contract is unchanged from prompt-mode: only the final answer, no tool chrome",
+  "workspace": "temp",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "prompt-mode-edit.llm.json",
+  "flags": ["--edit"],
+  "prompt": "write note.txt for me",
+  "expect": {
+    "exitCode": 0,
+    "stdoutContains": ["Wrote note.txt."],
+    "stdoutAbsent": [
+      "Writing it now.",
+      "create(",
+      "Approve",
+      "Error:"
+    ],
+    "files": [
+      { "path": "note.txt", "contentExact": "written headlessly\n" }
+    ],
+    "toolTrace": {
+      "sequence": ["create"]
+    },
+    "fakeLlmTrace": {
+      "callCount": 2,
+      "calls": [
+        {
+          "toolsAvailable": ["read", "grep", "list_dir", "create", "edit", "shell_exec"],
+          "toolsAbsent": ["spawn_agent"]
+        },
+        {
+          "toolsAvailable": ["read", "grep", "list_dir", "create", "edit", "shell_exec"],
+          "toolsAbsent": ["spawn_agent"]
+        }
+      ]
+    }
+  }
+}

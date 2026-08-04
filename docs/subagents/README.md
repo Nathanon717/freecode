@@ -68,8 +68,11 @@ This is the single highest-leverage habit in this doc.
   default can change.
 - **Avoid `groq:*` for delegation.** Its rate limits are too low to spend on subagent
   work; save that quota. Prefer `zen:*` — OpenCode is keyless (quota is per IP).
-- **`-p` is read-only** (`read`, `grep`, `list_dir`) and hard-blocked to free models, so
-  it is always safe for the lead to call unattended. No writes, no shell, no sub-agents.
+- **`-p` is read-only by default** (`read`, `grep`, `list_dir`) and hard-blocked to free
+  models, so it is safe for the lead to call unattended. No sub-agents in either mode.
+- **`--edit` adds the write half** (`create`, `edit`, `shell_exec`) — and there is no
+  confirmation channel, so those run unattended in the cwd. Delegation recipes here are
+  read-only; reach for `--edit` only for a scoped change you are willing to `git diff`.
 - **Bounded at 50 tool calls** (`FREECODE_MAX_TOOL_CALLS` overrides).
 - **`--stats` reports cost on stderr**, leaving stdout clean. Use it on every delegated
   call — delegation economics cannot be improved while they are invisible.

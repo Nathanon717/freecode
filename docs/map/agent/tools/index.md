@@ -75,8 +75,9 @@ safe to precompute with `isReadOnlyTool` rather than a second list.
 sub-agent is itself read-only, but a call spends a whole LLM sub-turn, which is more
 than reading, and the headless `-p` mode ([../../cli/headless-prompt.md](../../cli/headless-prompt.md))
 must not be able to fan out. `spawn_agent` is otherwise present only when the caller
-injects a model-bound runner (`agent/loop.ts` does; the hand-typed and parsed-tools
-paths do not).
+injects a model-bound runner (`agent/loop.ts` does — unless `options.spawnAgent` is
+false, which is how `-p --edit` writes files without fanning out; the hand-typed and
+parsed-tools paths never do).
 
 ## Wrapper Stack
 

@@ -56,8 +56,21 @@ describe('runHeadlessPrompt', () => {
     expect(isReadOnly()).toBe(true);
     expect(getAskMode()).toBe('auto');
     expect(process.env.FREECODE_TRANSCRIPT_STREAM).toBe('null');
-    const options = agentLoop.mock.calls[0][3] as { readOnly: boolean };
+    const options = agentLoop.mock.calls[0][3] as { readOnly: boolean; spawnAgent: boolean };
     expect(options.readOnly).toBe(true);
+    expect(options.spawnAgent).toBe(false);
+  });
+
+  it('offers the write tools under edit, still without spawn_agent', async () => {
+    agentLoop.mockResolvedValue(loopResult({ text: 'answer' }));
+
+    await runHeadlessPrompt({ projectRoot: '.', prompt: 'hi', model: 'zen:hy3-free', edit: true });
+
+    expect(isReadOnly()).toBe(false);
+    // Editing is not fan-out: an unattended turn must not spend whole sub-turns.
+    const options = agentLoop.mock.calls[0][3] as { readOnly: boolean; spawnAgent: boolean };
+    expect(options.readOnly).toBe(false);
+    expect(options.spawnAgent).toBe(false);
   });
 
   it('prints the final assistant message, not every step of narration', async () => {

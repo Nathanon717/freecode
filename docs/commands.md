@@ -50,6 +50,7 @@ This table is generated from `src/cli/slash-commands.ts`.
 
 - `-p "<prompt>"`: Run one non-interactive turn and print the final response to stdout. See [Headless prompt mode](#headless-prompt-mode--p).
 - `--stats`: With `-p`, print one stderr line of cost/timing info after the turn. Ignored without `-p`.
+- `--edit`: With `-p`, offer the write tools (`create`, `edit`, `shell_exec`) instead of running read-only. A no-op without `-p`: interactive and `--script` sessions already have those tools, and Ctrl+R is what takes them away.
 - `--script <file>`: Run scripted input from a file instead of the interactive TUI. Cannot be combined with `-p`.
 - `--model <provider:model>`: Override `FREECODE_MODEL` and config default model for the current process.
 - `-log`: Enable diagnostic logging.
@@ -75,7 +76,9 @@ the answer back from stdout.
 
 **What it can do**
 
-- Read-only: `read`, `grep`, `list_dir`. No writes, no shell, and no sub-agents.
+- Read-only by default: `read`, `grep`, `list_dir`. Add `--edit` for the write half.
+- Never sub-agents. `spawn_agent` is absent in both modes: a headless turn that fans
+  out spends whole sub-turns nobody is watching.
 - No confirmation prompts — there is nothing to confirm on.
 - Free models only. It sets `FREECODE_FREE_ONLY=1` on itself, so a paid model is
   refused with a message naming the flag rather than silently billing. Pick the model
@@ -83,6 +86,22 @@ the answer back from stdout.
 - Bounded at 50 tool calls so an unattended run cannot loop forever.
   `FREECODE_MAX_TOOL_CALLS` overrides it — the same variable `--script` mode reads
   (where it defaults to 10), so an exported value applies to both.
+
+**Editing (`--edit`)**
+
+```bash
+freecode -p "add a docstring to the exported function in src/util/foo.ts" --edit
+```
+
+Turns off read-only for the run, so the turn gets `create`, `edit`, and `shell_exec`
+on top of the read tools. `spawn_agent` stays absent — editing is not fan-out.
+
+There is still no confirmation channel, so **writes and shell commands run unattended**
+in the working directory the CLI was launched from. The 50-call budget is the only
+stop; give it a scoped prompt and a workspace you can `git diff`.
+
+`--edit` does not change anything else about `-p`: still free models only, still one
+turn, still nothing but the final answer on stdout.
 
 **Cost/timing stats (`--stats`)**
 

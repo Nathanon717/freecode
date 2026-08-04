@@ -32,6 +32,12 @@ let systemPromptLogged = false;
 export interface AgentLoopOptions {
   confirmToolCall?: ConfirmToolCall;
   readOnly?: boolean;
+  /**
+   * Offer spawn_agent (default true). Independent of `readOnly`, which already
+   * drops it: headless `-p --edit` writes files but must not fan out into
+   * sub-turns, so it turns this off on its own.
+   */
+  spawnAgent?: boolean;
   onPartialResult?: (partial: { providerId: string; modelId: string; quota: RateLimitSnapshot | null }) => void;
   // Fires at every step boundary with that step's own prompt tokens, so the
   // footer's context size ticks up while a multi-step tool turn is still
@@ -146,7 +152,7 @@ async function streamWithRetry(
           system: systemPrompt,
           messages: attemptMessages,
           ...(supportsTools ? {
-            tools: createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly, (agentType, prompt) =>
+            tools: createTools(options.confirmToolCall, modelSettings.toolRationale, false, options.readOnly, options.spawnAgent === false ? undefined : (agentType, prompt) =>
               runSubAgent(agentType, prompt, { kind: 'native', model: languageModel })),
             // A turn runs as many tool round trips as the model asks for. The SDK
             // defaults maxSteps to 1, so "no limit" has to be spelled out rather
@@ -353,7 +359,7 @@ export async function agentLoop(
 
   const systemPrompt = buildSystemPrompt(
     modelSettings.loadAgentsMd,
-    offeredToolNames({ readOnly: options.readOnly, spawnAgent: true }),
+    offeredToolNames({ readOnly: options.readOnly, spawnAgent: options.spawnAgent !== false }),
   );
   if (!systemPromptLogged) {
     systemPromptLogged = true;

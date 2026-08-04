@@ -10,10 +10,16 @@
 //    to leak to.
 //  - **Failures go to stderr with exit code 1**, so a caller can tell an empty
 //    answer from a broken run.
-//  - **Read-only.** The read-only toggle is forced on, so `createTools` offers
-//    read/grep/list_dir and drops spawn_agent — no writes, no shell, no fan-out.
+//  - **Read-only by default.** The read-only toggle is forced on, so `createTools`
+//    offers read/grep/list_dir only. `--edit` (`edit: true`) turns it off and hands
+//    the turn the write half too — create/edit/shell_exec.
+//  - **Never spawn_agent.** Read-only drops it anyway; with `--edit` it is dropped
+//    explicitly (`spawnAgent: false`), because a headless turn that fans out into
+//    sub-turns is a budget nobody is watching. No fan-out in either mode.
 //  - **No confirmation.** There is no interactive channel to confirm on, so ask
-//    mode is forced to `auto` — the same off switch as Ctrl+A, not a new one.
+//    mode is forced to `auto` — the same off switch as Ctrl+A, not a new one. Under
+//    `--edit` that means writes and shell commands run unattended; the tool-call
+//    budget below is the only stop.
 //  - **Free models only.** src/index.ts sets `FREECODE_FREE_ONLY=1` for `-p`
 //    before any credential loads; see providers/paid-guard.ts.
 
@@ -70,13 +76,15 @@ export interface HeadlessPromptOptions {
   model: string;
   /** Print one stderr line of cost/timing info after the turn; stdout is untouched. */
   stats?: boolean;
+  /** Offer the write tools (create/edit/shell_exec) instead of running read-only. */
+  edit?: boolean;
 }
 
 /** Resolves to the process exit code. */
 export async function runHeadlessPrompt(
   options: HeadlessPromptOptions,
 ): Promise<number> {
-  const { projectRoot, prompt, model, stats } = options;
+  const { projectRoot, prompt, model, stats, edit } = options;
   const startedAt = Date.now();
 
   if (!model) {
@@ -87,7 +95,7 @@ export async function runHeadlessPrompt(
   }
 
   process.env["FREECODE_TRANSCRIPT_STREAM"] = "null";
-  initReadOnly(true);
+  initReadOnly(!edit);
   initAskMode("auto");
 
   const maxToolCalls = parseInt(
@@ -113,6 +121,7 @@ export async function runHeadlessPrompt(
   const result = await agentLoop(messages, projectRoot, model, {
     confirmToolCall,
     readOnly: isReadOnly(),
+    spawnAgent: false,
   });
 
   // agentLoop reports failures on `error` and leaves `text` as whatever the model
