@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock",
+        "model": "gpt-freecode-test",
+        "mustContain": ["Build the project."],
+        "toolsAvailable": ["shell_exec"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["Running the build."],
+        "toolCalls": [
+          {
+            "name": "shell_exec",
+            "args": {
+              "command": "node -e \"console.log('BUILD_FAILED_ON_STDOUT'); process.exit(1)\""
+            }
+          }
+        ],
+        "usage": { "promptTokens": 20, "outputTokens": 8, "totalTokens": 28 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "messageCount": 3,
+        "mustContain": ["BUILD_FAILED_ON_STDOUT", "[exit 1]"]
+      },
+      "response": {
+        "text": "The build failed.",
+        "usage": { "promptTokens": 40, "outputTokens": 4, "totalTokens": 44 }
+      }
+    }
+  ]
+}

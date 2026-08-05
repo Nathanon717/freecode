@@ -1,0 +1,24 @@
+{
+  "name": "shell-failure-output",
+  "description": "A shell_exec that exits non-zero still hands the model the command's real stdout plus an [exit 1] status line. Guards the regression where the catch block returned only error.message — which carries stderr but never stdout, so stdout-reporting build tools (dotnet, tsc, msbuild) reported nothing but 'Error: Command failed'",
+  "workspace": "temp",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "shell-failure-output.llm.json",
+  "turns": [
+    { "input": "Build the project." },
+    { "input": "y" }
+  ],
+  "expect": {
+    "stdoutContains": ["BUILD_FAILED_ON_STDOUT", "[exit 1]", "The build failed."],
+    "stdoutAbsent": ["Error: Command failed", "No API key configured"],
+    "exitCode": 0,
+    "toolTrace": {
+      "sequence": ["shell_exec"],
+      "maxCalls": 1
+    },
+    "fakeLlmTrace": {
+      "callCount": 2,
+      "maxCalls": 2
+    }
+  }
+}

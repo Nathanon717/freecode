@@ -50,7 +50,7 @@ Format: filename (linecount)
   - [`index.ts`](agent/tools/index.md) (103) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (88) — read Tool
-  - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
+  - [`shell.ts`](agent/tools/shell.md) (130) — shell_exec Tool
   - [`spawn-agent.ts`](agent/tools/spawn-agent.md) (38) — spawn_agent Tool
   - [`tool-names.ts`](agent/tools/tool-names.md) (65) — Tool Name Partition
   - [`wrappers.ts`](agent/tools/wrappers.md) (445) — Tool Wrapper Stack
