@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "comment": "Only two model calls exist for this whole scenario. Turn 1 proposes the create; Esc denies it and ends the turn, so the next call is turn 2 - the user's SECOND message. If the model were called again mid-turn it would take turn 2's slot with the denial as its last user message, and this fixture's mustContain would fail there.",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "messageCount": 1,
+        "mustContain": [
+          "make a note"
+        ],
+        "toolsAvailable": [
+          "create"
+        ]
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "name": "create",
+            "args": {
+              "path": "esc-note.txt",
+              "content": "never written\n"
+            }
+          }
+        ],
+        "usage": {
+          "promptTokens": 20,
+          "outputTokens": 6,
+          "totalTokens": 26
+        }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "comment": "3: [user('make a note'), user(<tool_result> holding the denial), user('second message')]. The stopped turn's empty assistant message is dropped by commitTurn's Mistral-compat guard; the denial itself committed, which is what this count pins.",
+        "messageCount": 3,
+        "mustContain": [
+          "second message"
+        ]
+      },
+      "response": {
+        "text": "second turn ok",
+        "usage": {
+          "promptTokens": 10,
+          "outputTokens": 2,
+          "totalTokens": 12
+        }
+      }
+    }
+  ]
+}

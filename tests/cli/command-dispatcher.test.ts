@@ -111,7 +111,7 @@ const DEFAULT_AGENT_RESULT = {
   modelId: 'gpt-4',
   quota: null,
   providerUsage: null,
-  // Empty is the error/abort shape — the dispatcher then records `text` alone.
+  // Empty is the error/no-structured-output shape — the dispatcher then records `text` alone.
   turnMessages: [],
 };
 
@@ -399,9 +399,10 @@ describe('dispatchCommand — sendToAgent', () => {
     expect(session.messages).toHaveLength(4);
   });
 
-  it('leaves history untouched when an aborted turn produced nothing', async () => {
-    // The abort shape: agentLoop swallows the UserAbortError and returns the
-    // text so far, which is empty when the user escaped before any output.
+  it('leaves history untouched when a turn produced nothing at all', async () => {
+    // A model can drain cleanly with no text and no tool calls (no `error` set,
+    // this isn't a failure) — the dispatcher prints "(empty response from
+    // model)" for this shape and commits nothing.
     vi.mocked(agentLoop).mockResolvedValue({ ...DEFAULT_AGENT_RESULT, text: '', turnMessages: [] } as never);
     const { session } = makeSession();
     await dispatchCommand('hello', makeRuntime({ session }));

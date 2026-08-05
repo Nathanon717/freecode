@@ -15,11 +15,12 @@ import { createMarkdownStreamRenderer } from '../cli/render/markdown-renderer.js
 import type { RateLimitSnapshot } from '../providers/quota/headers.js';
 import { log, logError } from '../logger.js';
 import { setProjectRoot } from './workspace.js';
-import { isContextOverflowError, isModelNotFoundError, isProviderToolUseFailed, isToolsNotSupportedError, isUserAbortError, serializeError, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
+import { isContextOverflowError, isModelNotFoundError, isProviderToolUseFailed, isToolsNotSupportedError, serializeError, toDetailedErrorMessage, toErrorMessage } from '../util/errors.js';
 import { runRecoveringStream, type RecoverableStream } from './stream-turn.js';
 import { resolveModelSettings } from '../config/index.js';
 import { setParallelToolsDisabled } from '../providers/adapters/openai-compat.js';
 import { runParsedToolsLoop } from './parsed-tools.js';
+import { pairStoppedToolCalls } from './turn-messages.js';
 import { runFakeLlm } from './fake-loop.js';
 import { runSubAgent } from './subagents/run-subagent.js';
 import { finalizeUsageCapture, type UsageOutcome } from './usage-finalize.js';
@@ -59,17 +60,27 @@ export interface AgentLoopResult {
    * sees the work, not just the summary of it — see agent/turn-messages.ts.
    *
    * Empty on every path that ended without a drained stream (provider error,
-   * abort, resolve failure); the session then falls back to `text` alone, and
-   * commits nothing at all when there is no text either.
+   * resolve failure); the session then falls back to `text` alone, and commits
+   * nothing at all when there is no text either. A denied tool call is not one
+   * of these paths — it resolves like any other tool result, so the step it
+   * belongs to still drains and commits normally. Esc denies *and* stops the
+   * turn; its step commits too, once `pairStoppedToolCalls` has given the
+   * stopped call back the result its rejected `execute` never produced.
    */
   turnMessages: CoreMessage[];
+  /**
+   * The user pressed Esc at a tool approval, so the turn ended right there and
+   * the model was not called again. Not an error: everything up to and including
+   * the denial commits, and the conversation resumes on the next user message.
+   */
+  stopped?: boolean;
   /**
    * Set when the turn failed, to the message already printed to stdout. `text`
    * stays the model's own output (empty, or whatever partial text it emitted
    * before the failure) so the caller never persists an error report into
    * history as something the assistant said — a poisoned history the model then
    * sees itself having written, and which on context overflow makes the retry
-   * overflow too. A user abort is not a failure and leaves this unset.
+   * overflow too.
    */
   error?: string;
 }
@@ -83,6 +94,8 @@ interface StreamResult {
   outputTokens: number | undefined;
   useParsedToolsFallback: boolean;
   turnMessages: CoreMessage[];
+  /** Denial text of each call the user's Esc stopped, in execution order. */
+  stopDenials: string[];
 }
 
 async function streamWithRetry(
@@ -107,6 +120,7 @@ async function streamWithRetry(
   let carriedTotalTokens = 0;
   let carriedOutputTokens: number | undefined;
   let turnMessages: CoreMessage[] = [];
+  let stopDenials: string[] = [];
 
   while (true) {
     if (useParsedToolsFallback) {
@@ -157,7 +171,10 @@ async function streamWithRetry(
             // A turn runs as many tool round trips as the model asks for. The SDK
             // defaults maxSteps to 1, so "no limit" has to be spelled out rather
             // than omitted; it is only read as `currentStep + 1 < maxSteps`.
-            // The turn still ends on context overflow, a provider error, or ESC.
+            // The turn still ends on context overflow, a provider error, or an
+            // Esc at a tool approval — that last one because the SDK only steps
+            // again when every call in the step produced a result, and the
+            // stopped call's execute rejects instead (agent/tools/wrappers.ts).
             maxSteps: Number.MAX_SAFE_INTEGER,
             onStepFinish: (event) => {
               // Intermediate steps (tool-calls finish reason) get a combined
@@ -234,6 +251,7 @@ async function streamWithRetry(
 
       const typedResult = recovered.stream;
       turnMessages = recovered.turnMessages;
+      stopDenials = recovered.stopDenials;
 
       writeRendered(mdStream.flush());
       fullText = fullText.trimEnd();
@@ -275,7 +293,7 @@ async function streamWithRetry(
     }
   }
 
-  return { fullText, totalTokens, promptTokens, outputTokens, useParsedToolsFallback, turnMessages };
+  return { fullText, totalTokens, promptTokens, outputTokens, useParsedToolsFallback, turnMessages, stopDenials };
 }
 
 
@@ -336,9 +354,10 @@ export async function agentLoop(
   let outputTokens: number | undefined;
   let quota: RateLimitSnapshot | null = null;
   let providerUsage: CapturedProviderUsage[] | undefined;
-  // Stays empty unless a stream drained: an errored or aborted turn has no
-  // balanced call/result set to persist, and the session falls back to `text`.
+  // Stays empty unless a stream drained: an errored turn has no balanced
+  // call/result set to persist, and the session falls back to `text`.
   let turnMessages: CoreMessage[] = [];
+  let stopped = false;
 
   const finishResult = (text: string, error?: string): AgentLoopResult => ({
     text,
@@ -348,6 +367,7 @@ export async function agentLoop(
     quota,
     providerUsage,
     turnMessages,
+    stopped,
     ...(error === undefined ? {} : { error }),
   });
   const applyUsageOutcome = (outcome: UsageOutcome): void => {
@@ -384,6 +404,11 @@ export async function agentLoop(
     promptTokens = streamed.promptTokens;
     outputTokens = streamed.outputTokens;
     turnMessages = streamed.turnMessages;
+    stopped = streamed.stopDenials.length > 0;
+    // The call Esc stopped has no tool result of its own — its `execute`
+    // rejected, which is exactly what kept the SDK from calling the model again.
+    // Hand the denial back as that result so the turn commits balanced.
+    if (stopped) turnMessages = pairStoppedToolCalls(turnMessages, streamed.stopDenials);
 
     if (streamed.useParsedToolsFallback) {
       // runParsedToolsLoop builds its tools without a spawnAgent runner, so the
@@ -398,19 +423,18 @@ export async function agentLoop(
       promptTokens = parsedToolsResult.promptTokens;
       outputTokens = parsedToolsResult.outputTokens;
       turnMessages = parsedToolsResult.turnMessages;
+      stopped = parsedToolsResult.stopped;
     }
 
-    if (providerId === FAKE_NATIVE_PROVIDER_ID && !streamed.useParsedToolsFallback) {
+    // A stopped turn leaves the fixture's later steps unused by design, which is
+    // the very thing this assertion reports.
+    if (providerId === FAKE_NATIVE_PROVIDER_ID && !streamed.useParsedToolsFallback && !stopped) {
       assertFakeFixtureComplete();
     }
 
     applyUsageOutcome(await finalizeUsageCapture(providerId, promptTokens, outputTokens));
   } catch (error) {
     applyUsageOutcome(await finalizeUsageCapture(providerId, promptTokens, outputTokens));
-    if (isUserAbortError(error)) {
-      endTranscriptStep(false);
-      return finishResult(fullText);
-    }
     const isDeadModel = isModelNotFoundError(error) && providerId === 'nvidia';
     if (isDeadModel) retireDeadModel(providerId, modelId);
     logError('stream', `streamText failed (partial text: ${fullText.length} chars)`, error);

@@ -10,7 +10,7 @@
 // only in what they do with the parts, so the differences are callbacks.
 
 import type { CoreMessage } from 'ai';
-import { MAX_REJECTED_TOOL_CALLS, rejectedToolCall, serializeError, type RejectedToolCall } from '../util/errors.js';
+import { isTurnStoppedError, MAX_REJECTED_TOOL_CALLS, rejectedToolCall, serializeError, type RejectedToolCall } from '../util/errors.js';
 import { log } from '../logger.js';
 
 export type StreamPart = { type: string } & Record<string, unknown>;
@@ -55,9 +55,18 @@ export interface RecoveringStreamOutcome<S extends RecoverableStream> {
    * they are also what the foreground loop persists into the session.
    *
    * Only ever collected from an attempt that drained, so every tool call in
-   * here is paired with its result (see RecoverableStream.responseMessages).
+   * here is paired with its result (see RecoverableStream.responseMessages) —
+   * except the call(s) named by `stopDenials`, which have none because their
+   * `execute` rejected. See `agent/turn-messages.ts` `pairStoppedToolCalls`.
    */
   turnMessages: CoreMessage[];
+  /**
+   * One entry per tool call that ended the turn on the user's Esc, in execution
+   * order, holding the denial result text already rendered for it. Empty when
+   * the turn ran to completion — non-empty means no further model call was made
+   * and none should be.
+   */
+  stopDenials: string[];
 }
 
 /** Resolves with the attempt that drained without an error part. */
@@ -72,11 +81,20 @@ export async function runRecoveringStream<S extends RecoverableStream>(
     const stream = await opts.start(activeMessages);
     let streamError: unknown;
     let streamHadError = false;
+    const stopDenials: string[] = [];
 
     try {
       for await (const part of stream.fullStream) {
         if (part.type !== 'error') {
           opts.onPart(part);
+          continue;
+        }
+        // Not a failure: the user pressed Esc, and the only way to keep the SDK
+        // from taking another step is a tool call with no result. The stream
+        // still finishes cleanly (finishReason `error`, nothing left to run), so
+        // this attempt is the one that drained.
+        if (isTurnStoppedError(part.error)) {
+          stopDenials.push(part.error.denialResult);
           continue;
         }
         streamError = part.error;
@@ -88,7 +106,11 @@ export async function runRecoveringStream<S extends RecoverableStream>(
       opts.onDrained?.();
     }
 
-    if (!streamHadError) return { stream, turnMessages: [...carried, ...(await stream.responseMessages)] };
+    // Checked before the rejection path: a turn the user stopped must not be
+    // retried, even if a call was also rejected before it ran.
+    if (stopDenials.length > 0 || !streamHadError) {
+      return { stream, turnMessages: [...carried, ...(await stream.responseMessages)], stopDenials };
+    }
 
     const rejected = rejectedToolCall(streamError);
     if (!rejected || recoveries >= MAX_REJECTED_TOOL_CALLS) throw streamError;

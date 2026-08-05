@@ -4,7 +4,6 @@ import { tmpdir } from 'os';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { agentLoop } from '../../src/agent/loop.js';
 import { resetFakeModelState } from '../../src/providers/fake.js';
-import { UserAbortError } from '../../src/util/errors.js';
 
 // runFakeLlm is reached through agentLoop's `mock:*` dispatch rather than imported
 // directly, so these also pin that the fixture path is still wired up.
@@ -218,11 +217,10 @@ describe('runFakeLlm via agentLoop with the mock fake-direct provider', () => {
     expect(result.text).toBe('');
   });
 
-  it('preserves partial text and stops cleanly when the user aborts a tool call', async () => {
+  it('denying a tool call resolves the step and lets the turn continue, instead of throwing away everything before it', async () => {
     writeFixture({
       version: 1,
       model: 'mock:gpt-freecode-test',
-      allowUnusedSteps: true,
       steps: [
         {
           response: {
@@ -230,7 +228,7 @@ describe('runFakeLlm via agentLoop with the mock fake-direct provider', () => {
             toolCalls: [{ name: 'create', args: { path: 'a.txt', content: 'b' } }],
           },
         },
-        { response: { chunks: ['unreached'] } },
+        { response: { chunks: ['okay'] } },
       ],
     });
 
@@ -238,10 +236,46 @@ describe('runFakeLlm via agentLoop with the mock fake-direct provider', () => {
       [{ role: 'user', content: 'go' }],
       tempRoot,
       'mock:gpt-freecode-test',
-      { confirmToolCall: () => { throw new UserAbortError(); } },
+      { confirmToolCall: () => ({ approved: false }) },
     );
 
-    expect(result.text).toBe('Thinking. ');
     expect(existsSync(join(tempRoot, 'a.txt'))).toBe(false);
+    // The denied call, its result, and the follow-up step all persist — a
+    // denial is a normal tool result, not a reason to discard the turn.
+    expect(result.turnMessages.some((m) => JSON.stringify(m).includes('denied'))).toBe(true);
+    expect(result.text).toContain('okay');
+  });
+
+  it('a denial carrying stopTurn ends the turn without another model call, and still commits it', async () => {
+    writeFixture({
+      version: 1,
+      model: 'mock:gpt-freecode-test',
+      steps: [
+        {
+          response: {
+            chunks: ['Thinking. '],
+            toolCalls: [{ name: 'create', args: { path: 'a.txt', content: 'b' } }],
+          },
+        },
+        // Never requested: reaching it would mean the model was called again
+        // after the user asked to stop. runFakeModel throws on an unmatched
+        // request, so the assertions below would fail loudly rather than pass.
+        { response: { chunks: ['this step must not run'] } },
+      ],
+    });
+
+    const result = await agentLoop(
+      [{ role: 'user', content: 'go' }],
+      tempRoot,
+      'mock:gpt-freecode-test',
+      { confirmToolCall: () => ({ approved: false, stopTurn: true }) },
+    );
+
+    expect(result.stopped).toBe(true);
+    expect(existsSync(join(tempRoot, 'a.txt'))).toBe(false);
+    expect(result.text).toBe('Thinking.');
+    expect(result.text).not.toContain('this step must not run');
+    // The turn still commits what it did: the model's text, the call, its denial.
+    expect(result.turnMessages.some((m) => JSON.stringify(m).includes('denied'))).toBe(true);
   });
 });

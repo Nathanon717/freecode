@@ -17,6 +17,18 @@ interface ParsedToolsResult {
   outputTokens?: number;
   /** What this turn added on top of `messages` — see agent/turn-messages.ts. */
   turnMessages: CoreMessage[];
+  /** The user pressed Esc at an approval, so the turn ended without a further model call. */
+  stopped: boolean;
+}
+
+interface ExecutedToolCalls {
+  /** `<tool_result>` blocks to feed back to the model, in call order. */
+  parts: string[];
+  /**
+   * The user pressed Esc: the last block is that call's denial and no further
+   * model call may be made this turn. The text loops end the turn here.
+   */
+  stopped: boolean;
 }
 
 executeToolCalls(tools: Record<string, AnyCoreTool>, calls: readonly { name: string; args: Record<string, unknown>; }[], idPrefix: string, messages: CoreMessage[]): Promise<...>
@@ -33,7 +45,7 @@ runParsedToolsLoop(messages: CoreMessage[], systemPrompt: string, model: Languag
 
 ## How It Works
 
-`executeToolCalls` iterates a list of parsed tool calls against a `createTools` map: unknown tools become error strings (fed back to the model), known tools delegate to their wrapped `execute`. It has no try/catch of its own — the wrapper in `tools/index.ts` already turns a failing tool into an `Error: ...` result string, so the only throw that reaches here is a user abort, which must propagate. This helper is used by both `runParsedToolsLoop` (text-based protocol) and `runFakeLlm` in `loop.ts` (fake fixture tool execution).
+`executeToolCalls` iterates a list of parsed tool calls against a `createTools` map: unknown tools become error strings (fed back to the model), known tools delegate to their wrapped `execute`. Its only try/catch is for `TurnStoppedError`: the wrappers in `tools/wrappers.ts` turn every other failure — a throwing tool, a denied call — into a result string, but Esc rejects on purpose (the native path needs a missing tool result to stop the SDK stepping). Here that denial text simply becomes the last `<tool_result>` block and `stopped: true` comes back with it, so both text loops commit the step and end the turn instead of asking the model again. See [tools/wrappers.md](tools/wrappers.md#turn-stop-esc). This helper is used by both `runParsedToolsLoop` (text-based protocol) and `runFakeLlm` in `loop.ts` (fake fixture tool execution).
 
 `runParsedToolsLoop`:
 1. Appends a tool-calling protocol section to the system prompt.

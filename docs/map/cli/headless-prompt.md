@@ -35,7 +35,7 @@ This is the part callers depend on; changing it breaks `$(freecode -p ...)`.
   concatenates every step's text, so a turn that says "Let me look at it." before
   calling a tool would print that too. `finalResponse` takes the last assistant
   message carrying text from `result.turnMessages`, falling back to `result.text`
-  when the turn contributed no messages (an errored or aborted turn). Same reasoning
+  when the turn contributed no messages (an errored turn). Same reasoning
   as [../agent/subagents/run-subagent.md](../agent/subagents/run-subagent.md), which
   drops inter-step narration so the caller gets findings, not chatter.
 - **Failures go to stderr, exit code 1.** A caller can tell an empty answer from a

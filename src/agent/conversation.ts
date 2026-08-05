@@ -19,8 +19,8 @@ export class Conversation {
    * those calls returned — so the next turn continues from what actually
    * happened rather than from a prose summary of it.
    *
-   * All-or-nothing on purpose. A turn that produced *nothing* (aborted at a tool
-   * approval before any text, or failed on the provider's first byte) leaves
+   * All-or-nothing on purpose. A turn that produced *nothing* (failed on the
+   * provider's first byte, or drained with no text and no tool calls) leaves
    * history untouched, so the model is never shown a request it never answered
    * and dead turns stop accumulating cost. The caller therefore hands in the very
    * message it sent the model rather than appending it up front — see
@@ -34,9 +34,9 @@ export class Conversation {
    * legal and load-bearing, and is exactly what a tool step looks like.
    *
    * `assistantText` is the fallback for turns that carry no messages of their
-   * own (abort, provider error): the partial text they did emit, if any. It is
-   * used only when the sanitized turn is empty, and the emptiness decision is
-   * made *after* sanitizing — a turn whose only content was an unpaired tool
+   * own (provider error, a throw mid-stream): the partial text they did emit,
+   * if any. It is used only when the sanitized turn is empty, and the emptiness
+   * decision is made *after* sanitizing — a turn whose only content was an unpaired tool
    * call counts as nothing, not as a reason to strand the user message.
    *
    * Returns false when nothing was committed.

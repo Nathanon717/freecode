@@ -1,7 +1,7 @@
 import type { CoreMessage } from 'ai';
 import { createTools } from './tools/index.js';
 import { beginTranscriptTurn, endTranscriptStep, notifyTranscriptChunk, writeTranscriptText } from '../cli/render/transcript-renderer.js';
-import { isUserAbortError, toDetailedErrorMessage } from '../util/errors.js';
+import { toDetailedErrorMessage } from '../util/errors.js';
 import { executeToolCalls } from './parsed-tools.js';
 import { runSubAgent } from './subagents/run-subagent.js';
 import { assertFakeFixtureComplete, runFakeModel } from '../providers/fake.js';
@@ -42,13 +42,14 @@ export async function runFakeLlm(
   let totalTokens = 0;
   let promptTokens: number | undefined;
   let outputTokens: number | undefined;
-  const result = (text: string, turnMessages: CoreMessage[] = [], error?: string): AgentLoopResult => ({
+  const result = (text: string, turnMessages: CoreMessage[] = [], error?: string, stopped = false): AgentLoopResult => ({
     text,
     usage: { totalTokens, promptTokens, outputTokens },
     providerId,
     modelId,
     quota: null,
     turnMessages,
+    stopped,
     ...(error === undefined ? {} : { error }),
   });
 
@@ -94,24 +95,31 @@ export async function runFakeLlm(
       }
 
       // writeTranscriptToolLeadIn is called inside withToolRendering (via toolFn.execute).
-      const resultParts = await executeToolCalls(tools, generated.toolCalls, `fake-${step}`, activeMessages);
+      const executed = await executeToolCalls(tools, generated.toolCalls, `fake-${step}`, activeMessages);
 
       // Keep this step's preamble from gluing onto the next step's text in the
       // accumulated result (runFakeModel emits the matching stdout newline).
-      // Added only after the tool resolves — an aborted call has no next step,
+      // Added only after the tool resolves — a call that threw has no next step,
       // matching the native path where onStepFinish fires only on completion.
       if (generated.text && !generated.text.endsWith('\n')) fullText += '\n';
 
-      endTranscriptStep(true); // close step, open next
+      // Esc: close the step for good and commit what this one did, without
+      // asking the fixture for another response.
+      endTranscriptStep(!executed.stopped);
       activeMessages = [
         ...activeMessages,
         { role: 'assistant' as const, content: generated.text },
-        { role: 'user' as const, content: resultParts.join('\n\n') },
+        { role: 'user' as const, content: executed.parts.join('\n\n') },
       ];
+      // No assertFakeFixtureComplete here: a stopped turn leaves the fixture's
+      // later steps unused by design, which is what the assertion complains about.
+      // Trimmed because nothing follows it: the preamble newline added above is
+      // there to separate this step's text from the next step's, and there is no
+      // next step.
+      if (executed.stopped) return result(fullText.trimEnd(), activeMessages.slice(baseMessages.length), undefined, true);
     }
   } catch (error) {
     endTranscriptStep(false);
-    if (isUserAbortError(error)) return result(fullText);
     const errMsg = toDetailedErrorMessage(error);
     writeTranscriptText(`Error: ${errMsg}\n`);
     // The error is reported through `error`, never folded into `text` — the

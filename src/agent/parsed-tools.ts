@@ -9,6 +9,7 @@ import {
   writeTranscriptText,
 } from "../cli/render/transcript-renderer.js";
 import { renderMarkdown } from "../cli/render/markdown-renderer.js";
+import { isTurnStoppedError } from "../util/errors.js";
 import { log, logError } from "../logger.js";
 import { flattenToolMessagesToText } from "./turn-messages.js";
 
@@ -99,48 +100,69 @@ export interface ParsedToolsResult {
   outputTokens?: number;
   /** What this turn added on top of `messages` — see agent/turn-messages.ts. */
   turnMessages: CoreMessage[];
+  /** The user pressed Esc at an approval, so the turn ended without a further model call. */
+  stopped: boolean;
+}
+
+export interface ExecutedToolCalls {
+  /** `<tool_result>` blocks to feed back to the model, in call order. */
+  parts: string[];
+  /**
+   * The user pressed Esc: the last block is that call's denial and no further
+   * model call may be made this turn. The text loops end the turn here.
+   */
+  stopped: boolean;
 }
 
 /**
  * Execute a batch of text-protocol tool calls through the wrapped tools and
  * return the `<tool_result>` blocks to feed back to the model. Shared by the
- * parsed-tools loop and the fake-LLM loop in loop.ts. Rethrows user aborts;
- * other tool errors become error results for the model.
+ * parsed-tools loop and the fake-LLM loop in loop.ts.
  */
 export async function executeToolCalls(
   tools: ReturnType<typeof createTools>,
   calls: ReadonlyArray<{ name: string; args: Record<string, unknown> }>,
   idPrefix: string,
   messages: CoreMessage[],
-): Promise<string[]> {
+): Promise<ExecutedToolCalls> {
   const resultParts: string[] = [];
   for (let i = 0; i < calls.length; i++) {
     const call = calls[i];
     const toolFn = tools[call.name];
     let toolResultStr: string;
+    let stopped = false;
 
     if (!toolFn?.execute) {
       toolResultStr = `Unknown tool: "${call.name}". Do not use namespace prefixes (e.g. "repo_browser."). Available tools: ${Object.keys(tools).join(", ")}`;
       writeTranscriptText(`[tool error] ${toolResultStr}\n`);
     } else {
       // Calls the wrapped execute — handles logging (prints call line + result
-      // preview) and user confirmation automatically. It also turns a failing tool
-      // into an "Error: ..." result string, so the only throw that reaches here is
-      // a user abort, which must propagate.
-      const rawResult = await (
-        toolFn.execute as (args: unknown, opts: unknown) => Promise<unknown>
-      )(call.args, { toolCallId: `${idPrefix}-${i}`, messages });
-      toolResultStr =
-        typeof rawResult === "string"
-          ? rawResult
-          : JSON.stringify(rawResult, null, 2);
+      // preview) and user confirmation automatically. It resolves an "Error"/
+      // "denied" result string rather than throwing for every failure except
+      // one: Esc rejects with TurnStoppedError to end the turn (the native path
+      // needs a missing tool result to stop the SDK stepping — see
+      // agent/tools/wrappers.ts). Here the denial text just becomes the last result.
+      try {
+        const rawResult = await (
+          toolFn.execute as (args: unknown, opts: unknown) => Promise<unknown>
+        )(call.args, { toolCallId: `${idPrefix}-${i}`, messages });
+        toolResultStr =
+          typeof rawResult === "string"
+            ? rawResult
+            : JSON.stringify(rawResult, null, 2);
+      } catch (error) {
+        if (!isTurnStoppedError(error)) throw error;
+        toolResultStr = error.denialResult;
+        stopped = true;
+      }
     }
 
     resultParts.push(
       `<tool_result name="${call.name}">\n${toolResultStr}\n</tool_result>`,
     );
+    if (stopped) return { parts: resultParts, stopped: true };
   }
-  return resultParts;
+  return { parts: resultParts, stopped: false };
 }
 
 export async function runParsedToolsLoop(
@@ -169,8 +191,10 @@ export async function runParsedToolsLoop(
   let promptTokens: number | undefined;
   let outputTokens: number | undefined;
 
+  let stopped = false;
+
   // Unbounded, like the native path: the turn ends when the model stops
-  // emitting tool calls, or on a provider error / context overflow / ESC.
+  // emitting tool calls, or on a provider error / context overflow / Esc.
   for (let step = 0; ; step++) {
     log(
       "parsed-tools",
@@ -238,30 +262,36 @@ export async function runParsedToolsLoop(
       `Step ${step + 1}: ${calls.length} tool call(s): ${calls.map((c) => c.name).join(", ")}`,
     );
 
-    const resultParts = await executeToolCalls(
+    const executed = await executeToolCalls(
       tools,
       calls,
       `pt-${step}`,
       activeMessages,
     );
 
-    endTranscriptStep(true); // close step, open next
+    // Esc: this step still commits (its text, its calls, and their results), but
+    // the loop stops here rather than calling the model with the denial.
+    endTranscriptStep(!executed.stopped); // close step, open next unless stopping
     // Append the assistant turn and all tool results for the next iteration.
     activeMessages = [
       ...activeMessages,
       { role: "assistant" as const, content: stepText },
-      { role: "user" as const, content: resultParts.join("\n\n") },
+      { role: "user" as const, content: executed.parts.join("\n\n") },
     ];
     accText += stepText;
+    if (executed.stopped) {
+      log("parsed-tools", `Step ${step + 1}: user stopped the turn`);
+      stopped = true;
+      break;
+    }
   }
 
-  // The only way out of the loop is the no-tool-calls break, which already
-  // closed the step.
   return {
     text: accText.trimEnd(),
     totalTokens,
     promptTokens,
     outputTokens,
     turnMessages: activeMessages.slice(baseMessages.length),
+    stopped,
   };
 }

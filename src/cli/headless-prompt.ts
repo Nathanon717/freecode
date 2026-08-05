@@ -57,8 +57,8 @@ function assistantText(content: unknown): string {
  * The last assistant message carrying text is that answer; runSubAgent discards
  * inter-step chatter for the same reason (agent/subagents/run-subagent.ts).
  *
- * An errored or aborted turn contributes no messages at all (see agent/loop.ts), so
- * that case falls back to whatever partial text the turn managed to emit.
+ * An errored turn contributes no messages at all (see agent/loop.ts), so that
+ * case falls back to whatever partial text the turn managed to emit.
  */
 function finalResponse(result: AgentLoopResult): string {
   for (let i = result.turnMessages.length - 1; i >= 0; i--) {

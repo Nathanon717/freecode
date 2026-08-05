@@ -79,12 +79,20 @@ Non-command input is handled by `sendToAgent()`:
 7. Commit the turn: `session.commitTurn(userMessage, result.turnMessages, result.text)`
    — the same user-message object that was sent to the model —
    appends the user message **and** the turn's output as one unit, or nothing at
-   all when the turn produced neither (aborted approval, provider error, a throw
-   from any step above). See [../agent/conversation.md](../agent/conversation.md)
+   all when the turn produced neither (a model turn with no text and no tool
+   calls, a provider error, a throw from any step above). A tool call denied via
+   the approval prompt is not this case — it resolves like any other tool
+   result, so the step and turn it belongs to still commit normally. Nor is an
+   Esc, which additionally *ends* the turn: its denial is re-paired in
+   `agent/loop.ts` so the stopped turn commits balanced like any other.
+   See [../agent/conversation.md](../agent/conversation.md)
    and `docs/bug log/28-07-2026.md`. A failed turn's error message rides on
    `result.error`, never in `result.text`, so it is reported but never persisted
    as something the assistant said — the same field gates the
-   `(empty response from model)` line.
+   `(empty response from model)` line. `result.stopped` gates it too, and
+   replaces it with `Stopped. Send a message to continue.`: a turn the user
+   ended with Esc is *expected* to have no closing answer, because the model was
+   never asked for one.
 8. When provider usage was captured and `showProviderUsage` is on, print the raw provider usage JSON.
 9. Run `afterAgentCall`.
 

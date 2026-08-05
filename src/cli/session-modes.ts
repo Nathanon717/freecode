@@ -336,6 +336,9 @@ export function createInteractiveMode(
       if (getTokenCount().tokens < budget) return { approved: true };
     }
 
+    // Passed through as-is: an Esc carries `stopTurn`, which the tool wrappers
+    // (agent/tools/wrappers.ts) turn into the end of the turn. No per-turn flag is
+    // kept here — once the turn stops there are no further calls to auto-deny.
     return confirmToolCallInteractive(rl, preview, getTokenCount);
   }
 

@@ -31,6 +31,66 @@ function partText(part: ToolCallPartLike): string {
   return typeof part.text === 'string' ? part.text : '';
 }
 
+/** Every `toolCallId` that already has a `tool-result` somewhere in `messages`. */
+function pairedResultIds(messages: CoreMessage[]): Set<string> {
+  const resultIds = new Set<string>();
+  for (const message of messages) {
+    if (message.role !== 'tool') continue;
+    for (const part of partsOf(message.content)) {
+      if (typeof part.toolCallId === 'string') resultIds.add(part.toolCallId);
+    }
+  }
+  return resultIds;
+}
+
+/**
+ * Give the tool call(s) a stopped turn left unanswered the results that were
+ * already rendered for them, so the turn commits as balanced call/result pairs.
+ *
+ * Esc ends a turn by rejecting out of the tool's `execute` (see
+ * `agent/tools/index.ts` `withTurnStop`), which is precisely what stops the AI
+ * SDK taking another step — but a rejected execute also produces no
+ * `tool-result` part, so the call it denied comes back unpaired. Without this,
+ * `dropUnpairedToolCalls` would strip the call, the turn would sanitize to
+ * nothing, and `Conversation.commitTurn` would drop the user's own message with
+ * it — the very loss `docs/bug log/05-08-2026.md` fixed.
+ *
+ * Which calls need repairing is decided by `toolCallId`. `denials` is consumed
+ * in order: the tools run serialized (`withSerializedExecution`), so the nth
+ * unpaired call is the nth stop, and a count mismatch only costs precision of
+ * wording, never the pairing itself.
+ */
+export function pairStoppedToolCalls(messages: CoreMessage[], denials: string[]): CoreMessage[] {
+  const resultIds = pairedResultIds(messages);
+  const unpaired: { toolCallId: string; toolName: string }[] = [];
+  for (const message of messages) {
+    if (message.role !== 'assistant') continue;
+    for (const part of partsOf(message.content)) {
+      if (part.type !== 'tool-call' || typeof part.toolCallId !== 'string') continue;
+      if (resultIds.has(part.toolCallId)) continue;
+      unpaired.push({
+        toolCallId: part.toolCallId,
+        toolName: typeof part.toolName === 'string' ? part.toolName : 'tool',
+      });
+    }
+  }
+  if (unpaired.length === 0) return messages;
+
+  const fallback = denials[denials.length - 1] ?? 'Tool call denied by user.';
+  return [
+    ...messages,
+    {
+      role: 'tool',
+      content: unpaired.map((call, i) => ({
+        type: 'tool-result' as const,
+        toolCallId: call.toolCallId,
+        toolName: call.toolName,
+        result: denials[i] ?? fallback,
+      })),
+    },
+  ];
+}
+
 /**
  * Drop any assistant `tool-call` part with no matching `tool-result`, and any
  * assistant message left with nothing but whitespace afterwards.
@@ -42,17 +102,12 @@ function partText(part: ToolCallPartLike): string {
  *
  * This is a guard rail, not the mechanism: `runRecoveringStream` only collects
  * response messages from an attempt that drained, and those are already
- * balanced. If this ever drops something, the invariant upstream broke — hence
- * the log line.
+ * balanced — except for a turn stopped by Esc, whose one unpaired call
+ * `pairStoppedToolCalls` above balances before this ever runs. If this drops
+ * something, the invariant upstream broke — hence the log line.
  */
 export function dropUnpairedToolCalls(messages: CoreMessage[]): CoreMessage[] {
-  const resultIds = new Set<string>();
-  for (const message of messages) {
-    if (message.role !== 'tool') continue;
-    for (const part of partsOf(message.content)) {
-      if (typeof part.toolCallId === 'string') resultIds.add(part.toolCallId);
-    }
-  }
+  const resultIds = pairedResultIds(messages);
 
   const out: CoreMessage[] = [];
   for (const message of messages) {

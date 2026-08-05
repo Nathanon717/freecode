@@ -1,16 +1,5 @@
 import { isRecord } from './guards.js';
 
-export class UserAbortError extends Error {
-  constructor() {
-    super('Aborted by user');
-    this.name = 'UserAbortError';
-  }
-}
-
-export function isUserAbortError(error: unknown): boolean {
-  return error instanceof UserAbortError;
-}
-
 export function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -247,6 +236,33 @@ export function rejectedToolCall(error: unknown): RejectedToolCall | null {
     };
   }
   return null;
+}
+
+/**
+ * Thrown out of a tool's `execute` after the user pressed Esc at its approval
+ * prompt, to end the turn without another model call.
+ *
+ * It is a throw rather than a returned result on purpose: the AI SDK only takes
+ * another step when *every* tool call in the step produced a result, so an
+ * execute that rejects is the one lever that stops the step loop while still
+ * letting `streamText` finish gracefully (finishReason `error`, `responseMessages`
+ * resolved). The call it stopped is therefore left unpaired in those messages —
+ * `denialResult` is the result text that was already rendered for it, which
+ * `agent/turn-messages.ts` `pairStoppedToolCalls` puts back so the turn commits
+ * as a balanced call/result pair. See `docs/bug log/06-08-2026.md`.
+ */
+export class TurnStoppedError extends Error {
+  readonly denialResult: string;
+
+  constructor(denialResult: string) {
+    super('Turn stopped by user');
+    this.name = 'TurnStoppedError';
+    this.denialResult = denialResult;
+  }
+}
+
+export function isTurnStoppedError(error: unknown): error is TurnStoppedError {
+  return error instanceof TurnStoppedError;
 }
 
 const TOOLS_NOT_SUPPORTED_PATTERNS = [

@@ -1,0 +1,60 @@
+{
+  "name": "tty-esc-deny-stops-turn-native",
+  "description": "Same stop on the native (AI SDK) tool path, where the mechanism is subtlest: the denied call's execute rejects, which is what keeps streamText from taking another step, and the unpaired call it leaves behind is re-paired with its denial so the turn commits balanced",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "tty-esc-deny-stops-turn-native.llm.json",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type the first prompt",
+        "send": "make a note",
+        "screenContains": [
+          "> make a note"
+        ]
+      },
+      {
+        "name": "submit - the model calls create and waits for approval",
+        "send": "\r",
+        "waitFor": "Esc to deny",
+        "waitForMs": 15000,
+        "screenContains": [
+          "create(esc-note.txt)",
+          "Enter to confirm \u00b7 Esc to deny"
+        ]
+      },
+      {
+        "name": "deny with Esc - the call is denied and the turn ends right there",
+        "send": "\u001b",
+        "waitFor": "Stopped. Send a message to continue.",
+        "waitForMs": 15000,
+        "screenContains": [
+          "denied by user",
+          "Stopped. Send a message to continue."
+        ]
+      },
+      {
+        "name": "back at the prompt, with no model follow-up in between",
+        "send": "second message",
+        "waitFor": "for commands",
+        "screenContains": [
+          "> second message"
+        ]
+      },
+      {
+        "name": "submit - turn 2 is the model's next call, and messageCount:4 proves the assistant tool-call message and its re-paired denial result both committed",
+        "send": "\r",
+        "waitFor": "second turn ok",
+        "waitForMs": 15000,
+        "screenContains": [
+          "second turn ok"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

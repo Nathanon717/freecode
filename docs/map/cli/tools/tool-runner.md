@@ -18,7 +18,7 @@ executeToolInvocation(name: "create" | "edit" | "shell_exec" | "read" | "grep" |
 
 ## How It Works
 
-- `executeToolInvocation` runs the call through the same wrapped executor the agent uses (`createTools`): header, read-only precompute/preview, confirmation, and result all flow through the transcript renderer. `runtime.confirmToolCall` is reused unchanged, so write tools still prompt and read-only mode is enforced exactly as for the agent. Args are validated against the tool's zod schema (with clean error output) before execution.
+- `executeToolInvocation` runs the call through the same wrapped executor the agent uses (`createTools`): header, read-only precompute/preview, confirmation, and result all flow through the transcript renderer. `runtime.confirmToolCall` is reused unchanged, so write tools still prompt and read-only mode is enforced exactly as for the agent. Args are validated against the tool's zod schema (with clean error output) before execution. The `execute` call is wrapped in a `try/catch` that prints a red `Error: …`: the wrapper already converts a failing tool into an `Error: ...` *result*, but the rendering it does before that (render gate, call header) sits outside its own try, and nothing between here and `cli/session-runner.ts` catches — so an escaping throw would end the REPL over a single hand-typed call.
 - `printToolsList` derives each `name([optional] required)` signature from the tool's zod shape so it can never drift from the real parameters.
 
 ## Key Neighbors

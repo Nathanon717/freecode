@@ -12,12 +12,6 @@
 ## Exports
 
 ```typescript
-class UserAbortError extends Error {
-  constructor(): UserAbortError;
-}
-
-isUserAbortError(error: unknown): boolean
-
 toErrorMessage(error: unknown): string
 
 toDetailedErrorMessage(error: unknown): string
@@ -47,6 +41,13 @@ interface RejectedToolCall {
 }
 
 rejectedToolCall(error: unknown): RejectedToolCall | null
+
+class TurnStoppedError extends Error {
+  readonly denialResult: string;
+  constructor(denialResult: string): TurnStoppedError;
+}
+
+isTurnStoppedError(error: unknown): error is TurnStoppedError
 
 isToolsNotSupportedError(error: unknown): boolean
 

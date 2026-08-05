@@ -7,7 +7,6 @@ import {
   parseScriptedToolChoice,
   formatScriptedToolMenu,
 } from '../../../src/cli/tools/tool-approval.js';
-import { UserAbortError } from '../../../src/util/errors.js';
 import {
   type FakeStdin,
   flush,
@@ -304,10 +303,10 @@ describe('confirmToolCallInteractive (TTY, inline hint)', () => {
     expect(allOutput).not.toContain('\n');
   });
 
-  it('unwinds the turn on Escape so the user lands back at the input bar', async () => {
+  it('denies the call and asks for the turn to stop on Escape, rather than throwing', async () => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\x1b');
-    await expect(promise).rejects.toThrow(UserAbortError);
+    await expect(promise).resolves.toEqual({ approved: false, stopTurn: true });
   });
 
   // The old menu bound these to selection movement; there is no selection now, so
@@ -417,10 +416,10 @@ describe('confirmToolCallInteractive (TTY, absolute hint)', () => {
     expect(parkCursorInScrollRegion).not.toHaveBeenCalled();
   });
 
-  it('unwinds the turn on Escape with the absolute hint', async () => {
+  it('denies the call and asks for the turn to stop with the absolute hint too', async () => {
     const promise = confirmToolCallInteractive(ttyRl(), preview);
     stdin.emit('data', '\x1b');
-    await expect(promise).rejects.toThrow(UserAbortError);
+    await expect(promise).resolves.toEqual({ approved: false, stopTurn: true });
   });
 
   it('includes the token count in the absolute (footer) hint too', async () => {

@@ -14,7 +14,7 @@ import {
   listDirTool,
   type ConfirmToolCall,
 } from '../../agent/tools/index.js';
-import { isUserAbortError, toErrorMessage } from '../../util/errors.js';
+import { toErrorMessage } from '../../util/errors.js';
 import { TOOL_NAMES, type ToolName } from './tool-invocation.js';
 
 interface BaseTool {
@@ -86,13 +86,17 @@ export async function executeToolInvocation(
     return;
   }
 
+  // The wrapped executor turns a failing tool into an "Error: ..." result string
+  // rather than rejecting, but the rendering it does *before* that try — the
+  // render gate, the call header — is outside it. Nothing between here and
+  // `runCliSession` catches, so an escaping throw would end the REPL over one
+  // mistyped call; report it and stay at the prompt instead.
   try {
     await tool.execute(parsed.data, {
       toolCallId: 'manual',
       messages: [],
     });
   } catch (err) {
-    if (isUserAbortError(err)) return;
     console.log(chalk.red(`Error: ${toErrorMessage(err)}`));
   }
   console.log();

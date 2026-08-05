@@ -19,7 +19,6 @@ import type { CoreMessage, CoreTool, LanguageModel } from "ai";
 import { streamText } from "ai";
 import { READ_ONLY_TOOL_DEFS } from "../tools/index.js";
 import { runFakeModel } from "../../providers/fake.js";
-import { isUserAbortError } from "../../util/errors.js";
 import { runRecoveringStream, type RecoverableStream } from "../stream-turn.js";
 import { log } from "../../logger.js";
 import { agentCatalog, getAgentPersona, type AgentPersona } from "./registry.js";
@@ -61,7 +60,6 @@ export async function runSubAgent(
         : await runNativeSubAgent(persona, messages, ctx.model);
     return text.length > 0 ? text : `(the ${agentType} agent returned no findings)`;
   } catch (err) {
-    if (isUserAbortError(err)) throw err;
     return `Error: the ${agentType} sub-agent failed: ${err instanceof Error ? err.message : String(err)}`;
   }
 }

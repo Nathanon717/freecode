@@ -1,6 +1,6 @@
 # src/agent/turn-messages.ts - Turn Message Shape Rules
 
-**Role:** Owns both constraints on the messages a turn contributes back to the
+**Role:** Owns the constraints on the messages a turn contributes back to the
 session history. Read it before changing what any loop returns as `turnMessages`,
 or before adding a fourth tool protocol.
 
@@ -14,7 +14,7 @@ Two tool protocols write into the same `Conversation`:
   assistant message and a plain user message of `<tool_result>` blocks.
 
 Text-protocol messages are accepted everywhere and need no translation. Native
-tool messages are the constrained direction, and both exports below exist for
+tool messages are the constrained direction, and every export below exists for
 them.
 
 ## Export notes
@@ -26,6 +26,19 @@ them.
   only collects response messages from an attempt that **drained**, and those are
   already balanced. If this function ever drops something, that invariant broke
   upstream — hence the log line. Do not grow it into an elaborate repair pass.
+- `pairStoppedToolCalls` is the **one** sanctioned repair, and it exists because
+  a turn stopped by Esc breaks that invariant on purpose. `withTurnStop`
+  ([tools/wrappers.md](tools/wrappers.md#turn-stop-esc)) rejects the denied
+  call's `execute` — a call with no result is what stops the AI SDK taking
+  another step — so the attempt drains with exactly one unpaired call, holding
+  the denial text that was already rendered for it. This puts that text back as
+  a real `tool-result`, matched by `toolCallId`. `agent/loop.ts` runs it before
+  anything else sees the turn, so `dropUnpairedToolCalls` still never has work
+  to do. **Without it the guard rail is destructive**: it strips the call, the
+  turn sanitizes to nothing, and `Conversation.commitTurn` drops the user's own
+  message with it — the exact loss `docs/bug log/05-08-2026.md` fixed. The
+  denial texts are consumed in order (the tools run serialized), which affects
+  only which wording lands on which call, never the pairing.
 - `flattenToolMessagesToText` rewrites native tool messages into the text
   protocol. [parsed-tools.md](parsed-tools.md) and [fake-loop.md](fake-loop.md)
   call `streamText` with **no `tools` parameter**, so a `role: 'tool'` message
@@ -51,6 +64,8 @@ provider that rejects a message shape these rules currently allow.
 ## Exports
 
 ```typescript
+pairStoppedToolCalls(messages: CoreMessage[], denials: string[]): CoreMessage[]
+
 dropUnpairedToolCalls(messages: CoreMessage[]): CoreMessage[]
 
 flattenToolMessagesToText(messages: CoreMessage[]): CoreMessage[]

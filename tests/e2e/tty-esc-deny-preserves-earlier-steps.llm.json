@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "comment": "'turn' counts model calls, not user-visible turns: turns 1-2 are both the FIRST cli turn (list_dir runs and is approved, then create is proposed). Esc denies the create and ends the turn, so turn 3 is the next cli turn - there is no model call in between.",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "messageCount": 1,
+        "mustContain": [
+          "do two things"
+        ],
+        "toolsAvailable": [
+          "list_dir",
+          "create"
+        ]
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "name": "list_dir",
+            "args": {
+              "path": "."
+            }
+          }
+        ],
+        "usage": {
+          "promptTokens": 20,
+          "outputTokens": 6,
+          "totalTokens": 26
+        }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "messageCount": 3
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "name": "create",
+            "args": {
+              "path": "should-not-write.txt",
+              "content": "x"
+            }
+          }
+        ],
+        "usage": {
+          "promptTokens": 25,
+          "outputTokens": 6,
+          "totalTokens": 31
+        }
+      }
+    },
+    {
+      "match": {
+        "turn": 3,
+        "comment": "4: [user1, user(list_dir result), user(denial result)] committed from the stopped turn (the two empty pre-tool-call assistant messages are dropped by the Mistral-compat empty-assistant guard), plus this turn's own user message. The completed list_dir call and its result are in there - that's the regression this test pins.",
+        "messageCount": 4,
+        "mustContain": [
+          "check history"
+        ]
+      },
+      "response": {
+        "text": "history preserved",
+        "usage": {
+          "promptTokens": 10,
+          "outputTokens": 2,
+          "totalTokens": 12
+        }
+      }
+    }
+  ]
+}

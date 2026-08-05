@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "model": "mock-native:gpt-freecode-test",
+  "comment": "Native path. Only two model calls exist for the whole scenario: Esc rejects the tool's execute, so the step has a call with no result and the AI SDK stops stepping. Turn 2 is therefore the user's SECOND message - a mid-turn call would take that slot with the denial as its last user message and fail the mustContain below.",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "messageCount": 1,
+        "mustContain": [
+          "make a note"
+        ],
+        "toolsAvailable": [
+          "create"
+        ],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": [
+          "I'll write that now."
+        ],
+        "toolCalls": [
+          {
+            "name": "create",
+            "args": {
+              "path": "esc-note.txt",
+              "content": "never written\n"
+            }
+          }
+        ],
+        "usage": {
+          "promptTokens": 20,
+          "outputTokens": 8,
+          "totalTokens": 28
+        }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "provider": "mock-native",
+        "model": "gpt-freecode-test",
+        "comment": "4: [user('make a note'), assistant(text + tool-call), tool(the denial, re-paired by pairStoppedToolCalls), user('second message')]. Without the re-pairing the tool call would be unpaired, dropUnpairedToolCalls would strip it, and the turn - the user's own message included - would not commit at all.",
+        "messageCount": 4,
+        "mustContain": [
+          "second message"
+        ],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "text": "second turn ok",
+        "usage": {
+          "promptTokens": 30,
+          "outputTokens": 4,
+          "totalTokens": 34
+        }
+      }
+    }
+  ]
+}

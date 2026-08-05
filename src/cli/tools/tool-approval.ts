@@ -6,7 +6,6 @@ import type {
 } from "../../agent/tools/index.js";
 import type { ToolCallHeaderRows } from "../render/transcript-renderer.js";
 import type { TokenCount } from "../../tokenizers/count.js";
-import { UserAbortError } from "../../util/errors.js";
 import {
   drawFooter,
   getLastReservedRows,
@@ -172,8 +171,9 @@ async function readToolApprovalMenu(
   rl.pause();
 
   // Enter confirms; Escape denies. Escape resolves null, which the caller turns
-  // into a UserAbortError so the turn unwinds and the user lands back at the
-  // input bar to say what they wanted instead. Every other key is ignored — there
+  // into a denial plus a stop signal (see confirmToolCallInteractive) rather than
+  // unwinding the turn outright — the denial and everything the turn already did
+  // still commit, the model just isn't called again. Every other key is ignored — there
   // is no selection to move. No newline is written on settle: that would scroll
   // the absolute hint (drawn on the terminal's bottom row) up into the
   // transcript before the finally block can erase it. The finally clear does the
@@ -237,9 +237,12 @@ export async function confirmToolCallInteractive(
 
   try {
     const choice = await readToolApprovalMenu(rl, useAbsoluteHint, getTokenCount);
-    // Escape (TTY) resolves null: unwind the turn so the user is returned to the
-    // input bar to redirect the agent there, rather than through a bespoke prompt.
-    if (choice === null) throw new UserAbortError();
+    // Escape (TTY) resolves null: deny this call like a normal denial — the same
+    // "Tool call denied by user: …" result, and the step drains and commits like
+    // any other — plus `stopTurn`, which ends the turn there instead of letting
+    // the model answer the denial. The conversation resumes on the user's next
+    // message. See agent/tools/index.ts `withTurnStop`.
+    if (choice === null) return { approved: false, stopTurn: true };
     return { approved: choice === "approve" };
   } finally {
     rl.pause();

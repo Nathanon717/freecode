@@ -49,9 +49,18 @@ interface RecoveringStreamOutcome<S extends RecoverableStream> {
    * they are also what the foreground loop persists into the session.
    *
    * Only ever collected from an attempt that drained, so every tool call in
-   * here is paired with its result (see RecoverableStream.responseMessages).
+   * here is paired with its result (see RecoverableStream.responseMessages) —
+   * except the call(s) named by `stopDenials`, which have none because their
+   * `execute` rejected. See `agent/turn-messages.ts` `pairStoppedToolCalls`.
    */
   turnMessages: CoreMessage[];
+  /**
+   * One entry per tool call that ended the turn on the user's Esc, in execution
+   * order, holding the denial result text already rendered for it. Empty when
+   * the turn ran to completion — non-empty means no further model call was made
+   * and none should be.
+   */
+  stopDenials: string[];
 }
 
 runRecoveringStream<S extends RecoverableStream>(opts: RecoveringStreamOptions<S>): Promise<RecoveringStreamOutcome<S>>
@@ -76,7 +85,9 @@ Resolves with a `RecoveringStreamOutcome`: the attempt that drained cleanly (typ
 
 `turnMessages` is the turn's contribution to the session history — see [turn-messages.md](turn-messages.md) and [conversation.md](conversation.md). It is accumulated **here** rather than in `loop.ts` because this is where the correct cumulative history already gets built for the recovery path.
 
-The load-bearing property: response messages are only ever collected from an attempt that **drained**, so every tool call in `turnMessages` is paired with its result. Do not add an await of `responseMessages` on a throwing path (the catch or abort handling in [loop.md](loop.md)) — an unpaired tool call persisted into history 400s the provider on every *later* request too, which bricks the session rather than spoiling one turn. Paths that throw should yield no `turnMessages`; the caller falls back to recording the final text alone.
+The load-bearing property: response messages are only ever collected from an attempt that **drained**, so every tool call in `turnMessages` is paired with its result. Do not add an await of `responseMessages` on a throwing path (the catch in [loop.md](loop.md)) — an unpaired tool call persisted into history 400s the provider on every *later* request too, which bricks the session rather than spoiling one turn. Paths that throw should yield no `turnMessages`; the caller falls back to recording the final text alone. A denied tool call is not a throwing path: `execute` resolves with the denial as an ordinary paired result, so the step containing it drains normally and its messages are collected here like any other step.
+
+The **one** exception is Esc, and it is deliberate. `withTurnStop` ([../agent/tools/wrappers.md](tools/wrappers.md#turn-stop-esc)) rejects *after* the denial has rendered, because a call with no result is what stops the AI SDK stepping. The SDK reports that rejection as an `error` part but still finishes the attempt cleanly, so this driver treats a `TurnStoppedError` part as **not** an error: it collects the denial text into `stopDenials`, keeps draining, and returns the attempt as the one that drained. That check runs *before* the rejected-tool-call recovery below, so a turn the user stopped is never retried. The unpaired call it leaves behind is the caller's to repair — `agent/loop.ts` does, with `pairStoppedToolCalls`, before anything else sees the turn.
 
 `run-subagent.ts` discards the outcome entirely: a sub-agent's messages terminate at the sub-agent and must never reach the parent `Conversation`.
 

@@ -31,7 +31,6 @@ This table is generated from `tests/e2e/*.e2e.json`.
 | `startup-help-exit.e2e.json` | `startup-help-exit` | repo | Boot the CLI, print help, exit cleanly |
 | `tool-invoke-list-dir.e2e.json` | `tool-invoke-list-dir` | repo | Typing list_dir(path=.) invokes the tool directly through the real wrapped executor instead of sending the text to the agent |
 | `tools-list.e2e.json` | `tools-list` | repo | /tools lists every callable tool with its signature and description |
-| `tty-abort-no-orphan.e2e.json` | `tty-abort-no-orphan` | repo | Escaping a tool approval aborts the turn before the model said anything, and that turn leaves no trace in history: the next turn is sent only its own message instead of following an orphaned request the model never answered |
 | `tty-all-commands-shown.e2e.json` | `tty-all-commands-shown` | repo | Typing / shows all slash commands in the suggestion list |
 | `tty-autocomplete.e2e.json` | `tty-autocomplete` | repo | Interactive TUI: slash command suggestions, prefix filtering, tab completion, and submit reset, verified against the rendered screen |
 | `tty-backspace.e2e.json` | `tty-backspace` | repo | Backspace key removes the last character from the input buffer; repeated backspaces restore the empty-prompt hint |
@@ -43,6 +42,9 @@ This table is generated from `tests/e2e/*.e2e.json`.
 | `tty-config-load-agents-md.e2e.json` | `tty-config-load-agents-md` | repo | Load AGENTS.md setting appears in Provider and Model tabs but not in the Global tab |
 | `tty-config-parsed-tools.e2e.json` | `tty-config-parsed-tools` | repo | Parsed tools setting appears only on the Model tab (absent from Global and Provider tabs) |
 | `tty-config-toggle.e2e.json` | `tty-config-toggle` | repo | Space key toggles a boolean setting in the config editor; the changed value persists and the editor can be reopened without error |
+| `tty-esc-deny-preserves-earlier-steps.e2e.json` | `tty-esc-deny-preserves-earlier-steps` | repo | The original bug: a turn that already ran a completed tool call before a later call gets Esc-denied used to lose ALL of it. Now the denial ends the turn without another model call, and everything the turn already did - the completed call included - still commits. |
+| `tty-esc-deny-stops-turn-native.e2e.json` | `tty-esc-deny-stops-turn-native` | repo | Same stop on the native (AI SDK) tool path, where the mechanism is subtlest: the denied call's execute rejects, which is what keeps streamText from taking another step, and the unpaired call it leaves behind is re-paired with its denial so the turn commits balanced |
+| `tty-esc-deny-stops-turn.e2e.json` | `tty-esc-deny-stops-turn` | repo | Escaping a tool approval denies that one call AND ends the turn: the model is not called again, the user lands straight back at the prompt, and the call plus its denial still commit so the next message continues from them |
 | `tty-escape-clears.e2e.json` | `tty-escape-clears` | repo | Escape key clears the input buffer and hides the suggestion list, restoring the empty-prompt hint |
 | `tty-eval-menu.e2e.json` | `tty-eval-menu` | repo | Submitting /eval opens the standalone eval picker showing available scenarios; pressing Esc closes it and restores the input prompt |
 | `tty-eval-then-config-picker.e2e.json` | `tty-eval-then-config-picker` | repo | After a fake eval completes, another raw picker can still receive input and Ctrl-C exits cleanly |

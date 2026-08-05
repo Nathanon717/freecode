@@ -32,13 +32,13 @@ Format: filename (linecount)
 <!-- BEGIN GENERATED MAP STRUCTURE -->
 - `src/agent/`
   - [`conversation.ts`](agent/conversation.md) (60) — Session Controller
-  - [`fake-loop.ts`](agent/fake-loop.md) (122) — Fake-Fixture Turn Loop
-  - [`loop.ts`](agent/loop.md) (444) — Agent Loop
-  - [`parsed-tools.ts`](agent/parsed-tools.md) (268) — Parsed-Tools Harness
-  - [`stream-turn.ts`](agent/stream-turn.md) (106) — Recovering Stream Turn
+  - [`fake-loop.ts`](agent/fake-loop.md) (130) — Fake-Fixture Turn Loop
+  - [`loop.ts`](agent/loop.md) (468) — Agent Loop
+  - [`parsed-tools.ts`](agent/parsed-tools.md) (298) — Parsed-Tools Harness
+  - [`stream-turn.ts`](agent/stream-turn.md) (128) — Recovering Stream Turn
 - `src/agent/subagents/`
   - [`registry.ts`](agent/subagents/registry.md) (56) — Sub-Agent Registry
-  - [`run-subagent.ts`](agent/subagents/run-subagent.md) (163) — Sub-Agent Runner
+  - [`run-subagent.ts`](agent/subagents/run-subagent.md) (161) — Sub-Agent Runner
 - `src/agent/`
   - [`system-prompt.ts`](agent/system-prompt.md) (69) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
@@ -47,14 +47,15 @@ Format: filename (linecount)
   - [`edit-diff-context.ts`](agent/tools/edit-diff-context.md) (103) — Edit Diff Context
   - [`edit.ts`](agent/tools/edit.md) (71) — edit Tool
   - [`grep.ts`](agent/tools/grep.md) (324) — grep Tool
-  - [`index.ts`](agent/tools/index.md) (440) — Tool Registry
+  - [`index.ts`](agent/tools/index.md) (103) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (45) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (88) — read Tool
   - [`shell.ts`](agent/tools/shell.md) (52) — shell_exec Tool
   - [`spawn-agent.ts`](agent/tools/spawn-agent.md) (38) — spawn_agent Tool
   - [`tool-names.ts`](agent/tools/tool-names.md) (65) — Tool Name Partition
+  - [`wrappers.ts`](agent/tools/wrappers.md) (445) — Tool Wrapper Stack
 - `src/agent/`
-  - [`turn-messages.ts`](agent/turn-messages.md) (140) — Turn Message Shape Rules
+  - [`turn-messages.ts`](agent/turn-messages.md) (195) — Turn Message Shape Rules
   - [`usage-finalize.ts`](agent/usage-finalize.md) (42) — Turn Usage/Quota Finalization
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/chrome/`
@@ -64,7 +65,7 @@ Format: filename (linecount)
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
   - [`toggles.ts`](cli/chrome/toggles.md) (107) — Footer Toggle State
 - `src/cli/`
-  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (254) — Command Dispatcher
+  - [`command-dispatcher.ts`](cli/command-dispatcher.md) (260) — Command Dispatcher
 - `src/cli/eval/`
   - [`custom-eval-menu.ts`](cli/eval/custom-eval-menu.md) (361) — Custom Eval Tab + Run Loop
   - [`eval-dots.ts`](cli/eval/eval-dots.md) (28) — Eval Status Circle Renderers
@@ -89,14 +90,14 @@ Format: filename (linecount)
   - [`transcript-replay.ts`](cli/render/transcript-replay.md) (79) — Post-Wipe Transcript Replay
 - `src/cli/`
   - [`scripted-mode.ts`](cli/scripted-mode.md) (96) — Scripted Session Mode
-  - [`session-modes.ts`](cli/session-modes.md) (426) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (429) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (77) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (76) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
 - `src/cli/tools/`
-  - [`tool-approval.ts`](cli/tools/tool-approval.md) (297) — Tool Approval Prompts
+  - [`tool-approval.ts`](cli/tools/tool-approval.md) (300) — Tool Approval Prompts
   - [`tool-invocation.ts`](cli/tools/tool-invocation.md) (327) — Hand-Typed Tool Call Parsing
-  - [`tool-runner.ts`](cli/tools/tool-runner.md) (100) — Hand-Typed Tool Execution + /tools Listing
+  - [`tool-runner.ts`](cli/tools/tool-runner.md) (104) — Hand-Typed Tool Execution + /tools Listing
 - `src/commands/`
   - [`config.ts`](commands/config.md) (397) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (386) — Interactive Model Picker
@@ -157,7 +158,7 @@ Format: filename (linecount)
   - [`fallback-estimate.ts`](tokenizers/fallback-estimate.md) (30) — Generic Tiktoken Fallback Estimator
   - [`model-family.ts`](tokenizers/model-family.md) (112) — Tokenizer Family Resolver
 - `src/util/`
-  - [`errors.ts`](util/errors.md) (301) — Shared Error Utilities
+  - [`errors.ts`](util/errors.md) (317) — Shared Error Utilities
   - [`guards.ts`](util/guards.md) (4) — Type Guard Utilities
   - [`keyboard.ts`](util/keyboard.md) (5) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) (39) — LCS Line Diff

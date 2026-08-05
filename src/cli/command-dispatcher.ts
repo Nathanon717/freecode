@@ -88,8 +88,8 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
   await ensureStoreReady();
   // The user message is sent to the model on a copy and committed to the session
   // only once the turn has produced something (Conversation.commitTurn). Appending
-  // it up front stranded it in history whenever the turn produced nothing — an
-  // aborted approval, a provider error, a `beforeAgentCall` that threw.
+  // it up front stranded it in history whenever the turn produced nothing — a
+  // provider error, a `beforeAgentCall` that threw.
   const userMessage: CoreMessage = { role: 'user', content: input };
   const turnInput = [...runtime.session.messages, userMessage];
 
@@ -116,8 +116,12 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
     });
 
     // A failed turn has already printed its error; only a turn that ran fine and
-    // still said nothing needs this line.
-    if (!result.error && !result.text.trim()) {
+    // still said nothing needs this line. A turn the user stopped with Esc is
+    // *expected* to have no closing text — the model was never asked for any —
+    // so it gets its own line instead of being reported as an empty response.
+    if (result.stopped) {
+      console.log(chalk.yellow('Stopped. Send a message to continue.'));
+    } else if (!result.error && !result.text.trim()) {
       console.log(chalk.yellow('(empty response from model)'));
     }
 
@@ -136,9 +140,11 @@ async function sendToAgent(input: string, runtime: CommandRuntime): Promise<void
 
     // Persist the whole turn — the user message, assistant text, tool calls, tool
     // results — as one unit, so the next turn continues from what happened rather
-    // than a prose summary of it. Error and abort paths carry no messages; those
-    // fall back to whatever partial text was emitted, and a turn that emitted
-    // none of that leaves history exactly as it was.
+    // than a prose summary of it. Error paths carry no messages; those fall back
+    // to whatever partial text was emitted, and a turn that emitted none of that
+    // leaves history exactly as it was. A denied tool call is not one of them —
+    // it resolves as an ordinary tool result, so its step commits like any other,
+    // and that holds for the Esc that also stopped the turn (agent/loop.ts).
     runtime.session.commitTurn(userMessage, result.turnMessages, result.text);
 
     const providerUsage = formatCapturedProviderUsages(result.providerUsage);

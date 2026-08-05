@@ -1,0 +1,69 @@
+{
+  "name": "tty-esc-deny-preserves-earlier-steps",
+  "description": "The original bug: a turn that already ran a completed tool call before a later call gets Esc-denied used to lose ALL of it. Now the denial ends the turn without another model call, and everything the turn already did - the completed call included - still commits.",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "tty-esc-deny-preserves-earlier-steps.llm.json",
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "type the first prompt",
+        "send": "do two things",
+        "screenContains": [
+          "> do two things"
+        ]
+      },
+      {
+        "name": "submit - the model calls list_dir first",
+        "send": "\r",
+        "waitFor": "Esc to deny",
+        "waitForMs": 12000,
+        "screenContains": [
+          "list_dir()",
+          "Enter to confirm \u00b7 Esc to deny"
+        ]
+      },
+      {
+        "name": "approve the first call with Enter",
+        "send": "\r",
+        "waitFor": "create(should-not-write.txt)",
+        "waitForMs": 12000,
+        "screenContains": [
+          "Enter to confirm \u00b7 Esc to deny"
+        ]
+      },
+      {
+        "name": "deny the second call with Esc - the turn ends there",
+        "send": "\u001b",
+        "waitFor": "Stopped. Send a message to continue.",
+        "waitForMs": 12000,
+        "screenContains": [
+          "denied by user",
+          "Stopped. Send a message to continue."
+        ]
+      },
+      {
+        "name": "back at the prompt",
+        "send": "check history",
+        "waitFor": "for commands",
+        "screenContains": [
+          "> check history"
+        ]
+      },
+      {
+        "name": "submit - the fixture's messageCount:4 matcher proves the completed list_dir call and the denial both survived, and its turn number that the model was not called in between",
+        "send": "\r",
+        "waitFor": "history preserved",
+        "waitForMs": 12000,
+        "screenContains": [
+          "history preserved"
+        ]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

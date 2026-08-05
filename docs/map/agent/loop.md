@@ -36,17 +36,27 @@ interface AgentLoopResult {
    * sees the work, not just the summary of it — see agent/turn-messages.ts.
    *
    * Empty on every path that ended without a drained stream (provider error,
-   * abort, resolve failure); the session then falls back to `text` alone, and
-   * commits nothing at all when there is no text either.
+   * resolve failure); the session then falls back to `text` alone, and commits
+   * nothing at all when there is no text either. A denied tool call is not one
+   * of these paths — it resolves like any other tool result, so the step it
+   * belongs to still drains and commits normally. Esc denies *and* stops the
+   * turn; its step commits too, once `pairStoppedToolCalls` has given the
+   * stopped call back the result its rejected `execute` never produced.
    */
   turnMessages: CoreMessage[];
+  /**
+   * The user pressed Esc at a tool approval, so the turn ended right there and
+   * the model was not called again. Not an error: everything up to and including
+   * the denial commits, and the conversation resumes on the next user message.
+   */
+  stopped?: boolean;
   /**
    * Set when the turn failed, to the message already printed to stdout. `text`
    * stays the model's own output (empty, or whatever partial text it emitted
    * before the failure) so the caller never persists an error report into
    * history as something the assistant said — a poisoned history the model then
    * sees itself having written, and which on context overflow makes the retry
-   * overflow too. A user abort is not a failure and leaves this unset.
+   * overflow too.
    */
   error?: string;
 }
@@ -106,7 +116,8 @@ return AgentLoopResult
 
 - Tools are only passed when the routed provider reports `supportsTools: true`.
 - For `mock:*` fake models, the loop does not call the AI SDK. It passes the real system prompt, message history, and available tool names into `runFakeModel()` so fixture matching can validate the model-facing shape without live provider access. If a fake step emits `toolCalls`, the loop executes them through `createTools()`, appends tool results as user messages, and continues until a final no-tool response.
-- There is no per-turn tool-step cap. `maxSteps` is passed as `Number.MAX_SAFE_INTEGER` because the AI SDK defaults it to `1` when omitted — "unlimited" must be spelled out. A turn ends when the model stops calling tools, the context overflows, the provider errors, or the user aborts. The fake-fixture and parsed-tools loops are likewise unbounded.
+- There is no per-turn tool-step cap. `maxSteps` is passed as `Number.MAX_SAFE_INTEGER` because the AI SDK defaults it to `1` when omitted — "unlimited" must be spelled out. A turn ends when the model stops calling tools, the context overflows, the provider errors, or **the user presses Esc at a tool approval**. A plain denial does *not* end it — the denial is an ordinary tool result, so the model gets another step. Esc is the exception, and only because the tools layer makes the stopped call reject instead of resolve: the SDK steps again only when every call in the step produced a result. See [tools/wrappers.md](tools/wrappers.md#turn-stop-esc). The fake-fixture and parsed-tools loops honour the same stop through `executeToolCalls`; all three are otherwise unbounded.
+- **Stopping is not an error path.** `streamWithRetry` returns `stopDenials` (from [stream-turn.md](stream-turn.md)); a non-empty list sets `AgentLoopResult.stopped` and runs `pairStoppedToolCalls` ([turn-messages.md](turn-messages.md)) over `turnMessages` first, giving the rejected call back the denial text that was already rendered for it. Without that repair the call is unpaired, `dropUnpairedToolCalls` strips it, and `Conversation.commitTurn` drops the user's own message along with the turn. `assertFakeFixtureComplete` is skipped when stopped — a stopped turn leaves later fixture steps unused by design.
 - Every turn calls `beginTranscriptTurn()` / `endTranscriptStep()` from `transcript-renderer.ts` to emit the normalised divider framing. Intermediate steps use `endTranscriptStep(true)` (combined close+open); the final step uses `endTranscriptStep(false)` after text normalisation. The renderer state machine ensures consistent blank-line spacing regardless of the model or provider.
 - `streamWithRetry` drives display from the ordered `fullStream` (not the text-only `textStream`) so a step's preamble can never render after the tool call it precedes. Because the AI SDK invokes a tool's `execute` (which draws the header) before that preamble reaches the consumer, the `tool-render-gate.ts` semaphore holds `execute` until the consumer processes that call's `tool-call` part and flushes the pending text. See [tool-render-gate.md](tool-render-gate.md).
 - `options.spawnAgent === false` withholds the sub-agent runner from `createTools` (native and fake paths alike) and drops `spawn_agent` from the advertised tool list. It is independent of `readOnly`, which already excludes it: headless `-p --edit` (see [../cli/headless-prompt.md](../cli/headless-prompt.md)) writes files but must not fan out. Default is on, so interactive sessions are unaffected.
@@ -138,7 +149,7 @@ return AgentLoopResult
 
 ## Error Handling
 
-- **Failures ride on `error`, never on `text`.** Every path that fails without throwing (`FREECODE_NO_LLM`, the `resolveModel` failure, the stream catch — and `runFakeLlm`'s catch) returns the message in `AgentLoopResult.error` and leaves `text` as the model's own output: empty, or whatever partial text it emitted first. The loop has already printed the error to stdout, and the session must not persist it as something the assistant said (`docs/bug log/28-07-2026.md`). A user abort is not a failure and leaves `error` unset.
+- **Failures ride on `error`, never on `text`.** Every path that fails without throwing (`FREECODE_NO_LLM`, the `resolveModel` failure, the stream catch — and `runFakeLlm`'s catch) returns the message in `AgentLoopResult.error` and leaves `text` as the model's own output: empty, or whatever partial text it emitted first. The loop has already printed the error to stdout, and the session must not persist it as something the assistant said (`docs/bug log/28-07-2026.md`).
 - Routing errors do not throw; they return `providerId: "none"`, `modelId: "none"`, zero tokens, and the reason in `error`.
 - Stream errors are logged and returned with any partial text plus the detailed error message in `error`. API errors include parsed provider fields such as `code`, `type`, and `failed_generation` when the SDK exposes them. Usage capture is ended on this path so any available partial usage metadata can still be returned.
 - Context-overflow errors (`isContextOverflowError`) are detected as a distinct subcase: a specific multi-line user-facing message is printed to stdout explaining the limit was exceeded and suggesting starting a new session or switching to a larger-context model via `/model`. `error` carries a condensed single-line version of this message.
