@@ -65,7 +65,8 @@ This is now tested and it works. Same model, same task:
 | Layers covered | handlers only | input path only | **both** |
 
 `ctx=28752 output=2499 total=99028 toolCalls=11 wallTimeMs=33027` — ~600 tokens back to the
-lead, **~165:1 compression**, the best measured so far.
+lead, ~165:1 compression. (For the range across all runs, see [recipes.md](recipes.md);
+R5 is the high-water mark.)
 
 **Two R1 conclusions are therefore wrong and should not be reused:**
 

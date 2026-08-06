@@ -2,7 +2,7 @@
 
 # Freecode Agent Guide
 
-Freecode is a TypeScript CLI coding agent with provider routing, an interactive REPL, and evaluation scenarios.
+Freecode is a TypeScript CLI coding agent. 
 
 This file is intentionally short. Keep detailed reference material in `docs/` and link to it from here.
 
@@ -13,7 +13,6 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 3. Edit code
 4. Get `npm test` green
 5. Update docs
-
 
 ## Required Rules
 
@@ -28,10 +27,10 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 ## Verification
 
-- For any change touching `src/`, run `npm.cmd test` before reporting completion. Test, docs, and line-limit failures are blockers.
+- For any change touching `src/`, run `npm test` before reporting completion. Test, docs, and line-limit failures are blockers.
 - `npm test` runs, in order: build, lint, `docs:generate` (which also runs the line-limit check), all e2e tests including TTY, then all unit tests except PTY. It stops at the first failing section and names the sections it therefore skipped.
 - If a user-visible behavior changes, ensure it has e2e coverage in `tests/e2e/` or docs coverage, as appropriate.
-- If generated reference sources change, update the source of truth first, then run `npm.cmd run docs:generate`. It checks generated docs first; if they are already current, it stops without rewriting them, and if they are stale, it regenerates them. Do not hand-edit generated sections.
+- If generated reference sources change, update the source of truth first, then run `npm run docs:generate`. It checks generated docs first; if they are already current, it stops without rewriting them, and if they are stale, it regenerates them. Do not hand-edit generated sections.
 
 Command details live in `docs/commands.md`. E2e details live in `docs/e2e-inventory.md` and `docs/e2e-testing.md`.
 
@@ -49,15 +48,24 @@ it is hard-blocked to free models — safe to call yourself. Adding `--edit` giv
 scoped change you will review. See the `-p` section of `docs/commands.md`.
 
 **Delegate to it.** Freecode's models are free, so the only budget that matters is the
-*calling* agent's own context. Before any broad read, consider spending a `freecode -p`
-call instead. See `docs/subagents/README.md` for when it pays off, verified prompts, and
-known failure modes. Maintain it: add when you learn something, and delete entries whose
-premise is gone rather than annotating them as outdated.
+*calling* agent's own context. **Delegating is the default; reading files yourself is the
+exception that needs a reason.** The one standing exception is a question whose exact Grep
+pattern you can already name. See `docs/subagents/README.md` for when it pays off,
+verified prompts, and known failure modes. Maintain it: add when you learn something, and
+delete entries whose premise is gone rather than annotating them as outdated.
+
+**If a subagent can't do what you need, that is a bug in freecode — a program you are
+editing anyway.** Fix the prompt first, then write the recipe, then change `src/`. Log the
+gap in `docs/subagents/ideas.md`. Never conclude "the subagent can't do this" and quietly
+do the work by hand.
 
 **Always declare your delegation decision:**
 
 - Before starting any substantial task, state whether you plan to delegate and why (or why not).
 - At the end of *every* response, state whether you actually delegated and why (or why not).
+- A "no" must name the specific cheaper thing you did instead — the literal Grep pattern,
+  the one file. **"I didn't need a summary" and "it was only a few files" are not
+  reasons**; `docs/subagents/README.md` retires both by name.
 <!-- caller-only:end -->
 
 ## Debugging and Verifying the UI

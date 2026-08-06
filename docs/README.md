@@ -19,7 +19,7 @@ Use this directory as the project handbook. Generated reference pages report fac
   <!-- BEGIN GENERATED PTY QUICKSTART REF -->
 For usage only, read lines 1–72.
 <!-- END GENERATED PTY QUICKSTART REF -->
-- [Freecode as a subagent](subagents/README.md): how a paid lead agent delegates work to free `freecode -p` subagents — when to delegate, verified recipes, and known failures.
+- [Freecode as a subagent](subagents/README.md): how a paid lead agent delegates work to free `freecode -p` subagents — when to delegate, verified recipes, known failures, and the capped list of source changes that would make delegation better.
 - [Session logs](sessions/README.md): optional records of substantial feature work.
 - [New device setup](device-setup.md): install Doppler, link the project, and get all API keys + DB sync in one step.
 
