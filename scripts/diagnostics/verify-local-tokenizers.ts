@@ -53,11 +53,44 @@
  * enough that its BPE merges are actually exercised, small enough for the
  * lowest free quotas. Scale it with `--repeat N` for a heavier probe.
  *
+ * ---------------------------------------------------------------------------
+ * `--probe` inverts the question. Verify mode asks "does this model's *known*
+ * family count like the provider?"; probe mode asks "this model has *no* known
+ * family — does it count like one anyway?" It targets the models
+ * `resolveTokenizerFamily` returns null for (anonymized/codenamed models like
+ * `zen:big-pickle`, and genuinely unmapped ones), measures the same server
+ * delta, and compares it against the local delta of *every* known family.
+ *
+ * The discriminator is the same subtraction, so the same "no fudge factor"
+ * property holds. What probe mode adds:
+ *
+ *   - Several distinct sample blocks (ASCII/code, multilingual, symbolic),
+ *     not one. Families collide on any single sample — gpt-oss, llama-3 and
+ *     glm-4 all charge 157 for the ASCII block — and only separate across a
+ *     varied set. A family is only reported as a match if it matches on
+ *     *every* sample; one agreeing sample is a coincidence, not an identity.
+ *   - `--rounds N` repeats the whole measurement. Some providers (zen) load
+ *     balance across upstreams, so an unstable server delta is a routing
+ *     artifact, not a tokenizer signal, and is reported as `unstable` rather
+ *     than scored.
+ *   - A reported margin: how many tokens separated the winner from the nearest
+ *     non-matching family. A match with a 1-token margin is not a result.
+ *
+ * `--probe --dry-run` prints the separation matrix and makes no API calls. Run
+ * it first: it is the free go/no-go for the whole method, and it is where
+ * indistinguishable family pairs declare themselves. DeepSeek V3 and V4 are one
+ * such pair — they ship a byte-identical BPE (same vocab, merges, pre-tokenizer
+ * and post-processor; V4 only appends special tokens), so no probe can ever
+ * separate them and both are reported together.
+ *
  * Usage:
  *   npx tsx scripts/diagnostics/verify-local-tokenizers.ts                     # all live free providers
  *   npx tsx scripts/diagnostics/verify-local-tokenizers.ts--dry-run            # local exact counts only, no API calls
  *   npx tsx scripts/diagnostics/verify-local-tokenizers.ts--repeat 4           # 4x larger sample
  *   npx tsx scripts/diagnostics/verify-local-tokenizers.ts--model gpt-oss-20b  # only models matching this substring
+ *   npx tsx scripts/diagnostics/verify-local-tokenizers.ts--probe --dry-run    # separation matrix, no API calls
+ *   npx tsx scripts/diagnostics/verify-local-tokenizers.ts--probe              # identify every unmapped free model
+ *   npx tsx scripts/diagnostics/verify-local-tokenizers.ts--probe --rounds 3   # 3 rounds, for a load-balancing provider
  */
 import { writeFileSync } from 'fs';
 import { spawnSync } from 'child_process';
@@ -84,6 +117,7 @@ function tryInjectDoppler(): void {
 
 const PER_CALL_TIMEOUT_MS = 90_000;
 const RESULTS_PATH = join(import.meta.dirname, 'local-tokenizer-results.txt');
+const PROBE_RESULTS_PATH = join(import.meta.dirname, 'tokenizer-family-probe.txt');
 
 // A short prefix present in both requests. The sample is appended after it, so
 // the provider's per-request template/overhead is identical between the two
@@ -102,14 +136,76 @@ Unicode: café, naïve, Zürich, 日本語, Ελληνικά, 🚀🔥, — em-d
 snake_case, camelCase, PascalCase, SCREAMING_SNAKE, kebab-case-token.
 `;
 
-function parseArgs(): { dryRun: boolean; repeat: number; model: string | null } {
+// Probe mode's samples. Deliberately three *unlike* blocks rather than one long
+// one: families are separated by where their vocabs disagree, and a single
+// register can't expose that. The ASCII block alone gives gpt-oss, llama-3 and
+// glm-4 the identical count of 157; the multilingual block spreads those same
+// three across 154/180/204. Every distinguishable pair separates by >=14 tokens
+// on at least one block here (see `--probe --dry-run` for the live matrix).
+const PROBE_SAMPLES: Record<string, string> = {
+  // English prose, TypeScript/JS source, and the number/identifier shapes every
+  // code-trained vocab has merges for.
+  ascii: `
+The quick brown fox jumps over 13 lazy dogs — again, and again, and AGAIN.
+function fib(n){ return n < 2 ? n : fib(n-1) + fib(n-2); }  // O(2^n), don't ship this
+Mixed digits: 3.14159, 0xDEADBEEF, 1_000_000, 2026-07-05T12:00:00Z.
+snake_case, camelCase, PascalCase, SCREAMING_SNAKE, kebab-case-token.
+export async function handler(req: Request): Promise<Response> {
+  const { id } = await req.json();
+  return new Response(JSON.stringify({ ok: true, id }), { status: 200 });
+}
+`,
+  // Six scripts. This is the strongest single discriminator: how much of its
+  // vocab a model spent on non-Latin text is the clearest fingerprint of who
+  // trained it (glm-4 charges 204 here where gpt-oss charges 154).
+  multilingual: `
+नमस्ते दुनिया, यह टोकनाइज़र का परीक्षण करने के लिए हिंदी पाठ है।
+中文分词测试：北京市海淀区中关村软件园。深度学习模型的训练与推理过程非常复杂。
+日本語のテキストをここに書きます。東京都渋谷区の天気は晴れです。機械学習と自然言語処理。
+한국어 텍스트 토크나이저 테스트입니다. 서울특별시 강남구 테헤란로에 있습니다.
+Привет мир, это тестовый текст на русском языке для проверки токенизатора.
+مرحبا بالعالم، هذا نص تجريبي باللغة العربية لاختبار المحلل اللغوي.
+`,
+  // Emoji (including ZWJ sequences), LaTeX, long digit runs, typographic
+  // punctuation and a URL — the byte-fallback corners where vocabs differ most.
+  symbolic: `
+🚀🔥💡🎉🧠🌍🐍☕️🛠️📦🔒🎯🥇🍕🚗🏔️👩‍💻👨‍👩‍👧‍👦🏳️‍🌈
+\\begin{equation}\\sum_{i=0}^{n}\\frac{x_i^2}{\\sigma}\\alpha\\beta\\gamma\\end{equation}
+0123456789 3.14159265358979 1234567890987654321 0xDEADBEEF 1e-9 192.168.0.1
+«guillemets» —em— –en– …ellipsis… “curly” ‘single’ †‡§¶©®™ ±≠≤≥∞∫∂
+https://huggingface.co/deepseek-ai/DeepSeek-V3/resolve/main/tokenizer.json?download=true
+`,
+};
+
+// Tie-breaker, measured only when the three samples above leave two or more
+// families tied. Ordinary text can't separate families whose *base* BPE is
+// identical — DeepSeek V3 and V4 share vocab, merges and pre-tokenizer exactly,
+// and differ only in `added_tokens` (V4 appends 465, ids 128815-129279). Those
+// added tokens are live during encoding, so writing their literal strings is the
+// one thing that does separate them: `<think>` costs 3 tokens under V3 and 1
+// under V4. Repeated to turn a 2-token-per-instance difference into a wide
+// margin. Skipped automatically when it doesn't separate the tied families.
+const TIEBREAK_SAMPLE = '\n' + '<think> </think> <｜begin▁of▁file｜> ｜DSML｜ '.repeat(25);
+
+interface Args {
+  dryRun: boolean;
+  repeat: number;
+  model: string | null;
+  probe: boolean;
+  rounds: number;
+}
+
+function parseArgs(): Args {
   const argv = process.argv.slice(2);
   const dryRun = argv.includes('--dry-run');
+  const probe = argv.includes('--probe');
   const repeatIdx = argv.indexOf('--repeat');
   const repeat = repeatIdx !== -1 ? Math.max(1, Number(argv[repeatIdx + 1]) || 1) : 1;
+  const roundsIdx = argv.indexOf('--rounds');
+  const rounds = roundsIdx !== -1 ? Math.max(1, Number(argv[roundsIdx + 1]) || 1) : 1;
   const modelIdx = argv.indexOf('--model');
   const model = modelIdx !== -1 ? (argv[modelIdx + 1] ?? '').trim() || null : null;
-  return { dryRun, repeat, model };
+  return { dryRun, repeat, model, probe, rounds };
 }
 
 interface Row {
@@ -138,7 +234,7 @@ function describeError(error: unknown): string {
 }
 
 async function main(): Promise<void> {
-  const { dryRun, repeat, model } = parseArgs();
+  const { dryRun, repeat, model, probe, rounds } = parseArgs();
   const sample = SAMPLE_UNIT.repeat(repeat);
 
   tryInjectDoppler();
@@ -150,6 +246,10 @@ async function main(): Promise<void> {
   const { resolveModel, PROVIDER_REGISTRY } = await import('../../src/providers/provider-registry.js');
   const { hasExactTokenizer } = await import('../../src/tokenizers/count.js');
   const { resolveTokenizerFamily, GPT_OSS_FAMILY, HF_TOKENIZER_REPO, MISTRAL_TEKKEN_FAMILY, MISTRAL_TEKKEN_REPO, TEKKEN_FILENAME } = await import('../../src/tokenizers/model-family.js');
+  // Every family with an exact backend, i.e. every candidate identity a probed
+  // model can be scored against: the HF fast-tokenizer families plus the two
+  // that load from elsewhere (gpt-oss is bundled, tekken fetches tekken.json).
+  const ALL_FAMILIES = [GPT_OSS_FAMILY, ...Object.keys(HF_TOKENIZER_REPO), MISTRAL_TEKKEN_FAMILY];
   const { loadBpeJsonEncoder } = await import('../../src/tokenizers/backends/bpe-json.js');
   const { loadTekkenEncoder } = await import('../../src/tokenizers/backends/tekken.js');
   const { getGptOssEncoder } = await import('../../src/tokenizers/backends/tiktoken.js');
@@ -191,24 +291,30 @@ async function main(): Promise<void> {
   // OpenAI-compatible providers anyway, so this drops nothing we can measure.
   const paidProviderIds = new Set(PROVIDER_REGISTRY.filter(p => p.paid).map(p => p.id));
 
-  const allExact = (await getSelectableModels())
-    .filter(item => !paidProviderIds.has(item.providerId))
-    .filter(item => hasExactTokenizer(item.modelId));
+  // Verify mode targets models whose family IS known; probe mode targets exactly
+  // the complement — the ones it isn't. `--model` can override the probe filter
+  // so a *known* model can be pushed through the probe as a positive control
+  // ("does the probe recover the family we already know it has?").
+  const free = (await getSelectableModels()).filter(item => !paidProviderIds.has(item.providerId));
+  const allTargets = probe
+    ? free.filter(item => !hasExactTokenizer(item.modelId) || model !== null)
+    : free.filter(item => hasExactTokenizer(item.modelId));
 
   // `--model <substr>` narrows to a single model (or a handful): case-insensitive
   // substring match against the "provider:modelId" preference, the same string
   // the results table prints, so you can copy one straight back in.
   const needle = model?.toLowerCase();
   const items = needle
-    ? allExact.filter(item => modelPreference(item).toLowerCase().includes(needle))
-    : allExact;
+    ? allTargets.filter(item => modelPreference(item).toLowerCase().includes(needle))
+    : allTargets;
 
-  if (items.length === 0) {
-    if (needle && allExact.length > 0) {
-      console.error(`No exact-tokenizer model matches --model "${model}". Available:`);
-      for (const item of allExact) console.error(`  ${modelPreference(item)}`);
+  const kind = probe ? 'unmapped' : 'exact-tokenizer';
+  if (items.length === 0 && !(probe && dryRun)) {
+    if (needle && allTargets.length > 0) {
+      console.error(`No ${kind} model matches --model "${model}". Available:`);
+      for (const item of allTargets) console.error(`  ${modelPreference(item)}`);
     } else {
-      console.error('No selectable free models with an exact local tokenizer found.');
+      console.error(`No selectable free ${kind} models found.`);
       console.error('(Need configured free-provider API keys; see /keys in the app.)');
     }
     process.exitCode = 1;
@@ -219,6 +325,202 @@ async function main(): Promise<void> {
     const msgs = (content: string): CoreMessage[] => [{ role: 'user', content }];
     return enc.countMessages(msgs(withSample)) - enc.countMessages(msgs(base));
   };
+
+  if (probe) {
+    await runProbe();
+    return;
+  }
+
+  // Identify the family of models that have none, by scoring the provider's own
+  // token accounting against every family's local count. See the header comment.
+  async function runProbe(): Promise<void> {
+    const sampleNames = Object.keys(PROBE_SAMPLES);
+    const samples = Object.entries(PROBE_SAMPLES).map(([name, text]) => ({ name, text: text.repeat(repeat) }));
+
+    // Local reference deltas: one row per family, one column per sample. Free —
+    // no API calls — and computed up front so a tokenizer that can't load is a
+    // hard error before any quota is spent.
+    const local = new Map<string, number[]>();
+    const encoderFor = new Map<string, TokenizerEncoder>();
+    for (const family of ALL_FAMILIES) {
+      const encoder = await loadExactEncoder(family); // throws loudly; see loadExactEncoder
+      encoderFor.set(family, encoder);
+      local.set(family, samples.map(s => delta(encoder, ANCHOR, ANCHOR + s.text)));
+    }
+
+    // Which families this sample set can actually tell apart. A pair separated
+    // by 0 on every sample is indistinguishable *by construction*, not by
+    // measurement, and both members are reported together on a match.
+    const separation: string[] = [];
+    const indistinguishable: string[] = [];
+    for (let i = 0; i < ALL_FAMILIES.length; i++) {
+      for (let j = i + 1; j < ALL_FAMILIES.length; j++) {
+        const [a, b] = [ALL_FAMILIES[i], ALL_FAMILIES[j]];
+        const diffs = local.get(a)!.map((v, k) => v - local.get(b)![k]);
+        const best = Math.max(...diffs.map(Math.abs));
+        separation.push(`${a}\tvs ${b}\tmax=${best}\tper-sample=[${diffs.join(', ')}]${best === 0 ? '\tINDISTINGUISHABLE' : ''}`);
+        if (best === 0) indistinguishable.push(`${a} == ${b}`);
+      }
+    }
+
+    const matrix = [
+      ['family', ...sampleNames].join('\t'),
+      ...ALL_FAMILIES.map(f => [f, ...local.get(f)!].join('\t')),
+      '',
+      'Pairwise separation (max |delta difference| across samples):',
+      ...separation.map(s => `  ${s}`),
+    ];
+
+    if (dryRun) {
+      const header = `Dry run — local separation matrix for ${ALL_FAMILIES.length} families over ${samples.length} samples (repeat=${repeat})`;
+      const lines = [header, '', ...matrix];
+      writeFileSync(PROBE_RESULTS_PATH, lines.join('\n') + '\n');
+      console.log([header, '', ...matrix].join('\n'));
+      console.log(`\nResults written to ${PROBE_RESULTS_PATH}`);
+      return;
+    }
+
+    const probeRows: string[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const modelPref = modelPreference(item);
+      const known = resolveTokenizerFamily(item.modelId);
+      const label = `[${i + 1}/${items.length}] ${modelPref}${known ? ` (control, known=${known})` : ''}`;
+      process.stdout.write(`${label} … `);
+
+      // Per round: one anchor call, then one call per sample. Re-anchoring each
+      // round keeps a round internally consistent even if the provider routes
+      // the next round to a different upstream.
+      const observed: number[][] = [];
+      let failure: string | null = null;
+      for (let round = 0; round < rounds && !failure; round++) {
+        try {
+          const { model: resolved } = resolveModel(modelPref);
+          const call = (content: string) => generateText({
+            model: resolved,
+            messages: [{ role: 'user', content }],
+            maxTokens: 1,
+            maxRetries: 0,
+            abortSignal: AbortSignal.timeout(PER_CALL_TIMEOUT_MS),
+          });
+          const anchorTokens = (await call(ANCHOR)).usage.promptTokens;
+          const deltas: number[] = [];
+          for (const s of samples) {
+            const withSample = (await call(ANCHOR + s.text)).usage.promptTokens;
+            if (typeof anchorTokens !== 'number' || typeof withSample !== 'number') {
+              failure = 'provider returned no promptTokens';
+              break;
+            }
+            deltas.push(withSample - anchorTokens);
+          }
+          if (!failure) observed.push(deltas);
+        } catch (error) {
+          failure = describeError(error);
+        }
+      }
+
+      if (failure) {
+        probeRows.push([modelPref, known ?? '-', 'failed', failure].join('\t'));
+        console.log(`failed: ${failure}`);
+        continue;
+      }
+
+      // A provider that load balances can answer two identical requests
+      // differently — zen charges the multilingual block 168 on one upstream and
+      // 247 on another — so take each sample's *modal* delta across rounds
+      // rather than whichever round happened to land. Per sample, not per round:
+      // the deviation is usually confined to one sample (the shared anchor is
+      // fine), and discarding the whole round would throw away good columns.
+      const spread: string[] = [];
+      const first: number[] = [];
+      let weakest = rounds;
+      for (let k = 0; k < samples.length; k++) {
+        const column = observed.map(r => r[k]);
+        const counts = new Map<number, number>();
+        for (const v of column) counts.set(v, (counts.get(v) ?? 0) + 1);
+        const [value, support] = [...counts].sort((a, b) => b[1] - a[1])[0];
+        first.push(value);
+        weakest = Math.min(weakest, support);
+        if (counts.size > 1) spread.push(`${sampleNames[k]}: ${[...counts].map(([v, n]) => `${v}x${n}`).join(' ')}`);
+      }
+
+      // No majority anywhere means the provider never settled on one answer:
+      // that is routing noise, not a tokenizer signal. Refuse to score it.
+      if (weakest * 2 <= rounds) {
+        const detail = spread.join('; ');
+        probeRows.push([modelPref, known ?? '-', 'unstable', `no majority across ${rounds} rounds: ${detail}`].join('\t'));
+        console.log(`UNSTABLE across rounds: ${detail}`);
+        continue;
+      }
+      const consensusNote = spread.length ? ` [consensus ${weakest}/${rounds}; spread ${spread.join('; ')}]` : '';
+
+      const matches = ALL_FAMILIES.filter(f => local.get(f)!.every((v, k) => v === first[k]));
+      const serverStr = sampleNames.map((n, k) => `${n}=${first[k]}`).join(' ');
+      if (matches.length === 0) {
+        // Expected for most unmapped models — they really are a family we have
+        // no backend for. Record the nearest miss so a near-match is visible.
+        const nearest = ALL_FAMILIES
+          .map(f => ({ f, off: local.get(f)!.map((v, k) => v - first[k]) }))
+          .sort((a, b) => Math.max(...a.off.map(Math.abs)) - Math.max(...b.off.map(Math.abs)))[0];
+        probeRows.push([modelPref, known ?? '-', 'no-match', `server ${serverStr}; nearest ${nearest.f} off by [${nearest.off.join(', ')}]${consensusNote}`].join('\t'));
+        console.log(`no known family (server ${serverStr}; nearest ${nearest.f})`);
+        continue;
+      }
+
+      // Margin: how far the closest *non*-matching family sat from the observed
+      // deltas. A 1-token margin means the sample set barely separated them and
+      // the identification should not be trusted.
+      const margin = Math.min(...ALL_FAMILIES
+        .filter(f => !matches.includes(f))
+        .map(f => Math.max(...local.get(f)!.map((v, k) => Math.abs(v - first[k])))));
+
+      // Tie-break, paying for the extra calls only when there is a tie to break
+      // and only when TIEBREAK_SAMPLE actually separates the tied families.
+      let tieNote = '';
+      let winners = matches;
+      const tieLocal = new Map(matches.map(f => [f, delta(encoderFor.get(f)!, ANCHOR, ANCHOR + TIEBREAK_SAMPLE)]));
+      if (matches.length > 1 && new Set(tieLocal.values()).size > 1) {
+        try {
+          const { model: resolved } = resolveModel(modelPref);
+          const call = (content: string) => generateText({
+            model: resolved,
+            messages: [{ role: 'user', content }],
+            maxTokens: 1,
+            maxRetries: 0,
+            abortSignal: AbortSignal.timeout(PER_CALL_TIMEOUT_MS),
+          });
+          const anchorTokens = (await call(ANCHOR)).usage.promptTokens;
+          const withSample = (await call(ANCHOR + TIEBREAK_SAMPLE)).usage.promptTokens;
+          const tieDelta = withSample - anchorTokens;
+          const broken = matches.filter(f => tieLocal.get(f) === tieDelta);
+          const expected = matches.map(f => `${f}=${tieLocal.get(f)}`).join(' ');
+          if (broken.length > 0 && broken.length < matches.length) {
+            winners = broken;
+            tieNote = ` [tie-break on special tokens: server=${tieDelta}, ${expected}]`;
+          } else {
+            // The provider may strip or re-template special-token literals, in
+            // which case its count matches nobody. Report the tie honestly
+            // rather than picking a winner the measurement didn't pick.
+            tieNote = ` [tie-break inconclusive: server=${tieDelta}, ${expected}]`;
+          }
+        } catch (error) {
+          tieNote = ` [tie-break failed: ${describeError(error)}]`;
+        }
+      }
+      const verdict = winners.join(' | ');
+      const status = known ? (winners.includes(known) ? 'control-ok' : 'control-FAILED') : 'identified';
+      probeRows.push([modelPref, known ?? '-', status, `${verdict} (server ${serverStr}; margin ${margin} tokens over nearest other family)${tieNote}${consensusNote}`].join('\t'));
+      console.log(`${status.toUpperCase()}: ${verdict} — margin ${margin}`);
+      if (status === 'control-FAILED') process.exitCode = 1;
+    }
+
+    const identified = probeRows.filter(r => r.includes('\tidentified\t')).length;
+    const header = `Probed ${items.length} model(s) against ${ALL_FAMILIES.length} families over ${samples.length} samples (rounds=${rounds}, repeat=${repeat}) — ${identified} identified`;
+    const lines = [header, ...(indistinguishable.length ? [`Indistinguishable by construction: ${indistinguishable.join(', ')}`] : []), '', ...probeRows, '', ...matrix];
+    writeFileSync(PROBE_RESULTS_PATH, lines.join('\n') + '\n');
+    console.log(`\n${header}`);
+    console.log(`Results written to ${PROBE_RESULTS_PATH}`);
+  }
 
   const rows: Row[] = [];
   const total = items.length;

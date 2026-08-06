@@ -159,7 +159,7 @@ Format: filename (linecount)
   - [`count.ts`](tokenizers/count.md) (109) — Tokenizer Engine Public Surface
   - [`download-tokenizer.ts`](tokenizers/download-tokenizer.md) (90) — HF Tokenizer File Cache/Download
   - [`fallback-estimate.ts`](tokenizers/fallback-estimate.md) (30) — Generic Tiktoken Fallback Estimator
-  - [`model-family.ts`](tokenizers/model-family.md) (112) — Tokenizer Family Resolver
+  - [`model-family.ts`](tokenizers/model-family.md) (134) — Tokenizer Family Resolver
 - `src/util/`
   - [`errors.ts`](util/errors.md) (317) — Shared Error Utilities
   - [`guards.ts`](util/guards.md) (4) — Type Guard Utilities

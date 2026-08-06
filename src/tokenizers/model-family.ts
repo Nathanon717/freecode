@@ -51,7 +51,19 @@ function isLlama3(modelId: string): boolean {
 // `deepseek-r1-distill-qwen-32b`) reuse their base model's tokenizer, not
 // DeepSeek's own — excluded rather than guessed, since a wrong-family exact
 // count is worse than the safe fallback.
+// Codenamed models carry no family substring to group by, so the only possible
+// rule is the literal ID — the one case where a per-ID entry is right rather
+// than lazy. Each one here is wire-measured, never inferred from the name:
+// scripts/diagnostics/verify-local-tokenizers.ts --probe compares the provider's
+// own prompt_tokens against every family's local count over three unlike
+// samples. See the map page's "Probing an unknown model" section.
+// Anchored to the whole model ID, not a substring: a codename carries no
+// generation information, so a successor like `big-pickle-v2` must be probed on
+// its own rather than silently inheriting this mapping.
+const DEEPSEEK_V3_CODENAMES = /(?:^|[:/])big-pickle$/i;
+
 function isDeepSeekV3(modelId: string): boolean {
+  if (DEEPSEEK_V3_CODENAMES.test(modelId)) return true;
   return !/distill/i.test(modelId) && /deepseek-v3|deepseek-chat-v3|deepseek-r1/i.test(modelId);
 }
 
@@ -74,9 +86,19 @@ function isGlm4(modelId: string): boolean {
 // exact count is worse than the safe fallback.
 function isMistralTekken(modelId: string): boolean {
   const id = modelId.toLowerCase();
-  // NVIDIA Nemotron / anything under nvidia/ is Llama-family, NOT Mistral —
-  // despite the "nemo" substring. (`nv-mistralai/mistral-nemo-*` is real Mistral
-  // Nemo and is intentionally not caught here.)
+  // Nemotron *3* is the exception to the Nemotron rule below: it counts exactly
+  // as Tekken despite the NVIDIA branding. Wire-measured, not inferred — the
+  // nano-30b, super-120b and ultra-550b checkpoints all matched on all three
+  // probe samples with a 49-token margin, reproduced across three independent
+  // providers (nvidia, openrouter, zen). The `-omni` multimodal variants are
+  // deliberately left out: they land one token off on the symbolic sample, the
+  // same way on both providers serving them, so they are a near neighbour
+  // rather than a member. Later generations (3.5+) are unmeasured, so the
+  // exclusion below still owns them.
+  if (/nemotron-3-(nano|super|ultra)/.test(id) && !/omni/.test(id)) return true;
+  // Every other NVIDIA Nemotron / anything under nvidia/ is Llama-family, NOT
+  // Mistral — despite the "nemo" substring. (`nv-mistralai/mistral-nemo-*` is
+  // real Mistral Nemo and is intentionally not caught here.)
   if (/nemotron|nvidia\//.test(id)) return false;
   // Legacy SentencePiece era (pre-Tekken): Mixtral, Mistral 7B, first-gen
   // Codestral, and any `-v0.x` checkpoint.

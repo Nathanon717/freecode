@@ -5,6 +5,7 @@ import {
   GLM4_FAMILY,
   GPT_OSS_FAMILY,
   LLAMA3_FAMILY,
+  MISTRAL_TEKKEN_FAMILY,
   resolveTokenizerFamily,
 } from '../../src/tokenizers/model-family.js';
 
@@ -58,6 +59,11 @@ describe('resolveTokenizerFamily', () => {
     'openrouter:deepseek/deepseek-chat-v3-0324',
     'openrouter:deepseek/deepseek-v3.2',
     'openrouter:deepseek/deepseek-v3.1-terminus',
+    // Codenamed, so there is no family substring to match — mapped from a live
+    // wire measurement instead (see the map page's "Probing an unknown model").
+    // The V3-vs-V4 split is load-bearing here: only V4 carries `<think>` as a
+    // single added token, and big-pickle's provider charges V3's 3.
+    'zen:big-pickle',
   ])('resolves %p to the DeepSeek V3 family', (modelId) => {
     expect(resolveTokenizerFamily(modelId)).toBe(DEEPSEEK_V3_FAMILY);
   });
@@ -68,6 +74,33 @@ describe('resolveTokenizerFamily', () => {
     'openrouter:deepseek-v4-flash-free',
   ])('resolves %p to the DeepSeek V4 family', (modelId) => {
     expect(resolveTokenizerFamily(modelId)).toBe(DEEPSEEK_V4_FAMILY);
+  });
+
+  // Nemotron 3 counts as Tekken (wire-measured across nvidia/openrouter/zen);
+  // every other Nemotron generation stays excluded, and the llama-3.x ones are
+  // claimed by the Llama predicate before this one runs.
+  it.each([
+    'nvidia:nvidia/nemotron-3-nano-30b-a3b',
+    'nvidia:nvidia/nemotron-3-super-120b-a12b',
+    'nvidia:nvidia/nemotron-3-ultra-550b-a55b',
+    'openrouter:nvidia/nemotron-3-nano-30b-a3b:free',
+    'zen:nemotron-3-ultra-free',
+  ])('resolves %p to the Mistral Tekken family', (modelId) => {
+    expect(resolveTokenizerFamily(modelId)).toBe(MISTRAL_TEKKEN_FAMILY);
+  });
+
+  // The `-omni` variants measured one token apart from Tekken on both providers
+  // that serve them — a near neighbour, not a member — and 3.5 / 4 / the
+  // unnumbered Nemotrons were never measured at all.
+  it.each([
+    'nvidia:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning',
+    'openrouter:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+    'nvidia:nvidia/nemotron-3-embed-1b',
+    'nvidia:nvidia/nemotron-3.5-content-safety',
+    'nvidia:nvidia/nemotron-4-340b-instruct',
+    'nvidia:nvidia/nemotron-parse',
+  ])('leaves %p unmapped (not a measured Tekken member)', (modelId) => {
+    expect(resolveTokenizerFamily(modelId)).toBeNull();
   });
 
   it.each([
