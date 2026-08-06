@@ -60,10 +60,12 @@ Format: filename (linecount)
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/chrome/`
   - [`ansi.ts`](cli/chrome/ansi.md) (56) — Terminal Geometry & Escape Sequences
-  - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (490) — Bottom Terminal UI
+  - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (481) — Bottom Terminal UI
   - [`footer-status.ts`](cli/chrome/footer-status.md) (215) — Footer Status State and Formatters
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
+  - [`suggestion-overlay.ts`](cli/chrome/suggestion-overlay.md) (58) — Suggestion Overlay Snapshot
   - [`toggles.ts`](cli/chrome/toggles.md) (106) — Footer Toggle State
+  - [`turn-state.ts`](cli/chrome/turn-state.md) (37) — Agent-Turn UI State
 - `src/cli/`
   - [`command-dispatcher.ts`](cli/command-dispatcher.md) (260) — Command Dispatcher
 - `src/cli/eval/`
@@ -90,13 +92,13 @@ Format: filename (linecount)
   - [`transcript-replay.ts`](cli/render/transcript-replay.md) (79) — Post-Wipe Transcript Replay
 - `src/cli/`
   - [`scripted-mode.ts`](cli/scripted-mode.md) (96) — Scripted Session Mode
-  - [`session-modes.ts`](cli/session-modes.md) (429) — Session Modes
+  - [`session-modes.ts`](cli/session-modes.md) (447) — Session Modes
   - [`session-runner.ts`](cli/session-runner.md) (77) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (76) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
   - [`theme.ts`](cli/theme.md) (59) — Color Tokens
 - `src/cli/tools/`
-  - [`tool-approval.ts`](cli/tools/tool-approval.md) (300) — Tool Approval Prompts
+  - [`tool-approval.ts`](cli/tools/tool-approval.md) (304) — Tool Approval Prompts
   - [`tool-invocation.ts`](cli/tools/tool-invocation.md) (324) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tools/tool-runner.md) (104) — Hand-Typed Tool Execution + /tools Listing
 - `src/commands/`

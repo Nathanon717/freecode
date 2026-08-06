@@ -1,7 +1,9 @@
 import chalk from 'chalk';
-import { stripAnsi, getScreenBufferDisplayLinesForOverlay, composeScrollRegionScrub, hasPostEpochContent, startOverlayEpoch, writeChrome } from '../../util/screen-buffer.js';
+import { stripAnsi, composeScrollRegionScrub, hasPostEpochContent, startOverlayEpoch, writeChrome } from '../../util/screen-buffer.js';
+import { captureOverlay, composeOverlayRestore, getOverlayRows, resetOverlay } from './suggestion-overlay.js';
 import { getBannerColor, clearAndRedrawBanner } from '../render/banner.js';
 import { composeToggleBar, toggleBarWidth } from './toggles.js';
+import { isTurnActive, composeThinkingLabel } from './turn-state.js';
 import {
   layoutFooterRightRows,
   formatEvalRunStatus,
@@ -34,9 +36,6 @@ let footerRowCount = 2;
 let lastReservedRows = 2;
 let lastSuggestions: string[] = [];
 let lastInlineCompletion: string | null = null;
-let suggestionOverlayRows = 0;
-let suggestionOverlayStartRow = 0;
-let suggestionOverlayRestoreLines: string[] = [];
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 // Last footer bytes written to the terminal. The 1 s refresh timer compares the
 // freshly-composed footer against this and writes nothing when they are identical,
@@ -85,14 +84,9 @@ export function composeFooterOutput(): string {
 
   if (neededCount !== footerRowCount) {
     footerRowCount = neededCount;
-    if (inputUIActive) {
-      const reserved = footerRowCount + 2 + inputLineCount();
-      output += setScrollRegionSequence(1, r - reserved);
-      lastReservedRows = reserved;
-    } else {
-      output += setScrollRegionSequence(1, r - footerRowCount);
-      lastReservedRows = footerRowCount;
-    }
+    const reserved = reservedRows();
+    output += setScrollRegionSequence(1, r - reserved);
+    lastReservedRows = reserved;
   }
 
   // Clear all footer rows.
@@ -138,30 +132,28 @@ export function drawFooter() {
   }
 }
 
-function restoreSuggestionOverlaySequence(startRow: number, rowCount: number, width: number): string {
-  let output = '';
-  const maxWidth = Math.max(0, width);
-  const padRows = Math.max(0, rowCount - suggestionOverlayRestoreLines.length);
-  const lines = [
-    ...Array.from({ length: padRows }, () => ''),
-    ...suggestionOverlayRestoreLines,
-  ].slice(-rowCount);
-  for (let i = 0; i < rowCount; i++) {
-    const line = lines[i] ?? '';
-    const visible = stripAnsi(line);
-    // Use visible length for truncation so ANSI color bytes don't count as width.
-    const content = visible.length <= maxWidth ? line : visible.slice(0, maxWidth);
-    output += moveToSequence(startRow + i, 1) + clearLineSequence() + content + (content ? '\x1b[0m' : '');
-  }
-  return output;
-}
-
 function inputLineCount(): number {
   const w = cols();
   return (getInputBuffer() || '').split('\n').reduce(
     (sum, line) => sum + visualRowsForLine(line, w),
     0,
   ) || 1;
+}
+
+// The `thinking…` label takes its own row above the input frame's top divider,
+// so it costs a reserved row while it shows. Gated on the input bar being up as
+// well as the turn: that is what makes the tool-approval prompt hide the label
+// for free, since it tears the input bar down. See `turn-state.ts`.
+function showThinking(): boolean {
+  return inputUIActive && isTurnActive();
+}
+
+// Rows the bottom UI holds out of the scroll region. Single source of truth:
+// this expression used to be recomputed at five call sites, and any one of them
+// disagreeing drifts the scroll region from what is actually drawn.
+function reservedRows(): number {
+  if (!inputUIActive) return footerRowCount;
+  return footerRowCount + 2 + inputLineCount() + (showThinking() ? 1 : 0);
 }
 
 // Draws the input area (top bar, N input lines, bottom bar) plus any suggestion rows.
@@ -172,7 +164,7 @@ function drawInputArea() {
   const r = rows();
   const n = lastSuggestions.length;
   const lineCount = inputLineCount();
-  const reserved = footerRowCount + 2 + lineCount;
+  const reserved = reservedRows();
   const prevReserved = lastReservedRows;
 
   let output = '';
@@ -193,20 +185,14 @@ function drawInputArea() {
 
   const topBarRow = r - footerRowCount - 1 - lineCount;
   const bottomBarRow = r - footerRowCount;
-  const suggestionStartRow = topBarRow - n;
+  // The label sits above the top divider, so it is the frame's real top row and
+  // suggestions stack above *it*. Suggestions can't actually be up mid-turn (no
+  // key handling runs), but the geometry has one definition either way.
+  const frameTopRow = showThinking() ? topBarRow - 1 : topBarRow;
+  const suggestionStartRow = frameTopRow - n;
 
-  if (suggestionOverlayRows > 0 && suggestionOverlayRows !== n) {
-    output += restoreSuggestionOverlaySequence(suggestionOverlayStartRow, suggestionOverlayRows, w);
-    suggestionOverlayRows = 0;
-    suggestionOverlayRestoreLines = [];
-  }
-
-  if (n > 0 && suggestionOverlayRows === 0) {
-    suggestionOverlayRows = n;
-    suggestionOverlayStartRow = suggestionStartRow;
-    const scrollHeight = r - reserved;
-    suggestionOverlayRestoreLines = getScreenBufferDisplayLinesForOverlay(n, scrollHeight);
-  }
+  if (getOverlayRows() > 0 && getOverlayRows() !== n) output += composeOverlayRestore(w);
+  if (n > 0 && getOverlayRows() === 0) captureOverlay(n, suggestionStartRow, r - reserved);
 
   // Clear the input frame rows (never touch footer rows).
   const toClearRows = reserved - footerRowCount;
@@ -219,6 +205,9 @@ function drawInputArea() {
     output += moveToSequence(suggestionStartRow + i, 1) + clearLineSequence() + chalk.gray('  ' + lastSuggestions[i]);
   }
 
+  if (showThinking()) {
+    output += moveToSequence(topBarRow - 1, 1) + composeThinkingLabel();
+  }
   output += moveToSequence(topBarRow, 1) + getBannerColor()('─'.repeat(w));
 
   // Draw each input line with visual wrapping.
@@ -254,9 +243,19 @@ function drawInputArea() {
 
   output += moveToSequence(bottomBarRow, 1) + getBannerColor()('─'.repeat(w));
 
-  // Park cursor at the typing position.
-  const { visualRow, visualCol } = cursorToVisualPos(getInputBuffer(), getCursorPos(), w);
-  output += moveToSequence(topBarRow + 1 + visualRow, 3 + visualCol);
+  if (isTurnActive()) {
+    // Mid-turn the transcript is streaming into the scroll region and the cursor
+    // belongs to it, not to the input frame. Parking at the typing caret here
+    // would land the next streamed byte inside the frame. Save/restore around
+    // the whole write instead — the same discipline `composeFooterOutput` uses
+    // to survive concurrent output. Reached from the 1 s footer timer and the
+    // tool-approval restore as well as from `drawBottomUI`.
+    output = saveCursorSequence() + output + restoreCursorSequence();
+  } else {
+    // Park cursor at the typing position.
+    const { visualRow, visualCol } = cursorToVisualPos(getInputBuffer(), getCursorPos(), w);
+    output += moveToSequence(topBarRow + 1 + visualRow, 3 + visualCol);
+  }
 
   process.stdout.write(output);
 }
@@ -324,13 +323,16 @@ export function setupInputUI() {
     startOverlayEpoch(); // Exclude pre-UI output (e.g. banner) from overlay repaints.
   }
   const r = rows();
-  const reserved = footerRowCount + 3;
-  // Open 3 rows for the input frame from wherever the last output left the cursor.
+  const reserved = reservedRows();
+  const frameRows = reserved - footerRowCount;
+  // Open the input frame's rows from wherever the last output left the cursor.
   // Newlines only scroll once the cursor reaches the bottom of the scroll region, so
-  // output already filling the region scrolls up by 3 (nothing is overwritten), while
-  // a short screen (the startup banner) just moves the cursor down and stays put.
+  // output already filling the region scrolls up by exactly that many (nothing is
+  // overwritten), while a short screen (the startup banner) just moves the cursor
+  // down and stays put. Four rows rather than three when the `thinking…` label is
+  // showing — this runs mid-turn when the tool-approval prompt restores the bar.
   // writeChrome because these newlines are layout, not transcript.
-  writeChrome('\r\n\n\n');
+  writeChrome('\r' + '\n'.repeat(frameRows));
   setScrollRegion(1, r - reserved);
   lastReservedRows = reserved;
   // Repaint the footer so the toggle bar (a footer row) appears together with the input
@@ -352,12 +354,7 @@ export function teardownBottomUI() {
   const r = rows();
   const w = cols();
   const toClearRows = lastReservedRows - footerRowCount;
-  let output = '';
-  if (suggestionOverlayRows > 0) {
-    output += restoreSuggestionOverlaySequence(suggestionOverlayStartRow, suggestionOverlayRows, w);
-    suggestionOverlayRows = 0;
-    suggestionOverlayRestoreLines = [];
-  }
+  let output = composeOverlayRestore(w);
   for (let i = 0; i < toClearRows; i++) {
     output += moveToSequence(r - footerRowCount - toClearRows + 1 + i, 1) + clearLineSequence();
   }
@@ -398,14 +395,9 @@ export function resetSubmittedInputArea() {
   if (!inputUIActive) return;
   const r = rows();
   const w = cols();
-  const reserved = footerRowCount + 2 + inputLineCount();
+  const reserved = reservedRows();
   const prevReserved = lastReservedRows;
-  let output = '';
-  if (suggestionOverlayRows > 0) {
-    output += restoreSuggestionOverlaySequence(suggestionOverlayStartRow, suggestionOverlayRows, w);
-    suggestionOverlayRows = 0;
-    suggestionOverlayRestoreLines = [];
-  }
+  let output = composeOverlayRestore(w);
   if (reserved !== prevReserved) {
     setScrollRegion(1, r - reserved);
     lastReservedRows = reserved;
@@ -433,15 +425,14 @@ process.stdout.on('resize', () => {
     _resizeDebounce = null;
 
     // Invalidate stale overlay state — all absolute row positions changed.
-    suggestionOverlayRows = 0;
-    suggestionOverlayRestoreLines = [];
+    resetOverlay();
 
     // Force the footer repaint below rather than let the cached-output skip suppress it.
     lastFooterOutput = null;
 
     // Reset geometry so drawFooter/drawInputArea recompute from new dimensions.
     footerRowCount = 2;
-    const reserved = inputUIActive ? footerRowCount + 2 + inputLineCount() : footerRowCount;
+    const reserved = reservedRows();
     lastReservedRows = reserved;
 
     // Two cases, driven by whether any transcript has been printed:

@@ -59,6 +59,7 @@ import { getModel } from "../providers/model-data.js";
 import { refreshOpenAIDailySpend } from "../providers/openai-daily-spend.js";
 import { loadCachedQuota, saveQuotaToCache } from "../providers/quota/cache.js";
 import { cycleByChar, getAskMode, initAskMode, isReadOnly } from "./chrome/toggles.js";
+import { setTurnActive } from "./chrome/turn-state.js";
 import {
   askQuestion,
   confirmToolCallInteractive,
@@ -349,10 +350,27 @@ export function createInteractiveMode(
     getReadOnly: isReadOnly,
     modelListMode: "full",
     beforeAgentCall: () => {
-      if (process.stdin.isTTY) teardownBottomUI();
+      // The input bar stays up for the whole turn; only the tool-approval prompt
+      // takes it down. `beforeDispatch` has already torn it down — that path is
+      // shared with slash commands and menus, which do need the rows — so put it
+      // back here. Set the flag *first* so the frame opens at its final height,
+      // `thinking…` row included, in one scroll rather than two.
+      setTurnActive(true);
       resetBottomPromptState();
+      if (process.stdin.isTTY) {
+        setupBottomUI();
+        drawBottomUI();
+        // Hand the cursor back to the scroll region. The turn's output streams
+        // from wherever it sits, and while the flag is set `drawInputArea`
+        // deliberately leaves it there rather than parking at the typing caret.
+        parkCursorInScrollRegion();
+      }
     },
     afterAgentCall: () => {
+      // Cleared before the redraw so the label's reserved row is released and
+      // `drawBottomUI` takes `drawInputArea`'s shrink branch, clearing that row
+      // back to the scroll region.
+      setTurnActive(false);
       if (process.stdin.isTTY) {
         setupBottomUI();
         resetBottomPromptState();

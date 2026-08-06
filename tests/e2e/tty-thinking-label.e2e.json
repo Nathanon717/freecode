@@ -1,0 +1,43 @@
+{
+  "name": "tty-thinking-label",
+  "description": "The input bar stays up for the whole agent turn and shows a `thinking...` label above its top divider, then loses the label when the turn ends. Reuses the status-line-ticks LLM fixture because its tool sleeps via `node -e`, which is what makes the mid-turn window observable without a timing race. Auto tool confirmation on purpose: the approval prompt tears the input bar down, and the label must vanish with it",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "tty-status-line-ticks.llm.json",
+  "config": {
+    "toolConfirmation": "auto"
+  },
+  "tty": {
+    "cols": 80,
+    "rows": 24,
+    "readyText": "for commands",
+    "steps": [
+      {
+        "name": "no label at an idle prompt",
+        "screenAbsent": ["thinking..."]
+      },
+      {
+        "name": "type prompt",
+        "send": "Wait a moment",
+        "screenContains": ["> Wait a moment"]
+      },
+      {
+        "name": "mid-turn: input bar still drawn, label above it",
+        "send": "\r",
+        "waitFor": "1111 ctx",
+        "waitForMs": 12000,
+        "screenContains": ["thinking...", "/ for commands", "ctrl+"],
+        "screenAbsent": ["Done waiting."]
+      },
+      {
+        "name": "turn ends: label released, input bar stays",
+        "waitFor": "5555 ctx",
+        "waitForMs": 12000,
+        "screenContains": ["Done waiting.", "/ for commands"],
+        "screenAbsent": ["thinking..."]
+      }
+    ],
+    "exit": "\u0003",
+    "expectExit": true,
+    "exitCode": 0
+  }
+}

@@ -18,6 +18,7 @@ import {
   suspendFooterTimer,
   teardownBottomUI,
 } from "../chrome/bottom-ui.js";
+import { isTurnActive } from "../chrome/turn-state.js";
 import { runRawKeySession } from "../menus/raw-picker.js";
 
 export type ToolApprovalChoice = "approve" | "deny";
@@ -255,14 +256,17 @@ export async function confirmToolCallInteractive(
       process.stdout.write(`\x1b[${getRows()};1H\x1b[2K`);
       resumeFooterTimer();
       drawFooter();
-      // When the input UI was also up, restoring it parks the cursor at the typing
-      // position; otherwise (mid-agent-turn) park at the scroll region's bottom so
-      // continued transcript output flows from there rather than over the footer.
-      if (restoreInputUI) {
-        setupInputUI();
-      } else {
-        parkCursorInScrollRegion();
-      }
+      // Outside a turn, restoring the input UI parks the cursor at the typing
+      // position and that is where it should stay (a hand-typed tool call).
+      // Mid-turn the transcript is still streaming, so the cursor has to both
+      // start and end at the scroll region's bottom: `setupInputUI` opens the
+      // frame's rows with newlines written from wherever the cursor sits, and
+      // the hint erase above left it on the terminal's last row — outside the
+      // scroll region entirely. Without the leading park those newlines scroll
+      // the screen instead of the region.
+      if (isTurnActive()) parkCursorInScrollRegion();
+      if (restoreInputUI) setupInputUI();
+      if (isTurnActive() || !restoreInputUI) parkCursorInScrollRegion();
     } else if (process.stdin.isTTY) {
       process.stdout.write("\r\x1b[2K");
       if (restoreInputUI) setupInputUI();

@@ -175,10 +175,23 @@ pty send enter            # submit
 
 ```bash
 pty send "list the files here"
-pty send enter --wait-for "for commands"
+pty send enter --wait-for "thinking..."   # turn has STARTED
 ```
 
-The `--wait-for "for commands"` waits until the prompt is live again, which means the agent turn is complete.
+> **`--wait-for "for commands"` no longer means the turn is over.** The input bar
+> — placeholder text and all — now stays up for the whole agent turn, so that
+> string is on screen from the moment the turn starts. It used to be a reliable
+> turn-complete signal because the bar was torn down for the turn's duration.
+>
+> To wait for a turn to *finish*, wait on something the answer itself contains,
+> or poll `pty screen` until `thinking...` is gone. `thinking...` is drawn above
+> the input bar's top divider for exactly the duration of the turn, so its
+> presence is the signal that the agent still has the floor.
+
+Note also that a fast model can finish a turn inside a single `pty screen`
+round-trip (~1 s of `tsx` startup), so polling for a mid-turn frame is racy. For
+deterministic mid-turn assertions use a TTY e2e fixture with a sleeping tool —
+`tests/e2e/tty-thinking-label.e2e.json` is the worked example.
 
 ## Session lifecycle
 

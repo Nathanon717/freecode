@@ -145,10 +145,12 @@ import {
   drawBottomUI,
   drawFooter,
   parkCursorAboveBottomUI,
+  parkCursorInScrollRegion,
   setupBottomUI,
   teardownBottomUI,
   teardownFooterUI,
 } from '../../src/cli/chrome/bottom-ui.js';
+import { isTurnActive, setTurnActive } from '../../src/cli/chrome/turn-state.js';
 import { getInputBuffer, setInputBuffer } from '../../src/cli/chrome/input-buffer.js';
 import {
   setActiveModel,
@@ -454,10 +456,20 @@ describe('createInteractiveMode — detailed', () => {
   // -------------------------------------------------------------------------
 
   describe('lifecycle (TTY)', () => {
-    beforeEach(() => setTTY(true));
+    // `turnActive` is module-global, and the lifecycle cases below drive the very
+    // hooks that set it. Reset explicitly so no case depends on the order the
+    // others ran in.
+    beforeEach(() => {
+      setTTY(true);
+      setTurnActive(false);
+    });
 
     it.each([
-      ['beforeAgentCall', [teardownBottomUI]],
+      // The input bar stays up for the whole turn, so beforeAgentCall *restores*
+      // the bar `beforeDispatch` took down (that path is shared with slash
+      // commands and menus, which need the rows) and hands the cursor back to
+      // the scroll region for the turn's streaming output.
+      ['beforeAgentCall', [setupBottomUI, drawBottomUI, parkCursorInScrollRegion]],
       ['afterAgentCall', [setupBottomUI, drawBottomUI]],
       ['beforeScreenClear', [teardownBottomUI]],
       ['afterScreenClear', [setupBottomUI]],
@@ -467,6 +479,18 @@ describe('createInteractiveMode — detailed', () => {
       vi.clearAllMocks();
       void (mode[hook] as () => unknown)();
       for (const fn of expected) expect(fn).toHaveBeenCalled();
+    });
+
+    // The one flag behind both "the input bar shows `thinking…`" and, later, the
+    // send-disable. Set before the redraw so the frame opens at its final height
+    // in one scroll; cleared before the redraw so the label's row is released.
+    it('beforeAgentCall/afterAgentCall bracket the turn-active flag', () => {
+      const { mode } = makeMode();
+      expect(isTurnActive()).toBe(false);
+      void mode.beforeAgentCall!();
+      expect(isTurnActive()).toBe(true);
+      void mode.afterAgentCall!();
+      expect(isTurnActive()).toBe(false);
     });
 
     it('onAgentResult sets the active model, quota snapshot, and saves to cache', () => {
