@@ -27,11 +27,13 @@ redrawBanner(): void
 - `clearEntireTerminal`: resets ANSI state and scroll region; clears both visible and scrollback terminal content.
 - `showBanner`: clears terminal and prints banner using the next persisted color (advances color index).
 - `getBannerColor`: returns a chalk instance for the current banner pastel color.
-- `getBannerColorRGB`: returns the `[r, g, b]` tuple; used by `toggles.ts` for bg rendering.
+- `getBannerColorRGB`: returns the `[r, g, b]` tuple. Sole consumer is [../theme.md](../theme.md), which wraps it as the `rotatingPastel` / `rotatingPastelBg` tokens — background-styled call sites (toggles, menu tabs, model rows) go through those rather than building `chalk.bgRgb(...)` themselves.
 - `redrawBanner`: clears terminal (including scrollback) and redraws banner without advancing the color.
 - `clearAndRedrawBanner`: like `redrawBanner` but preserves scrollback (`\x1b[2J` not `\x1b[3J`); called by the resize handler in `bottom-ui.ts` only when the banner is the only thing on screen (no transcript yet), to redraw it responsively at the new width.
 
 ## Color State
+
+This file owns the pastel ring and the rotation index. `cli/theme.ts` only *reads* the current entry, so the dependency is one-way (banner never imports theme) and the ~30 `getBannerColor()` call sites plus the seven test files that mock this module are unaffected by the token layer.
 
 The color index is stored at:
 

@@ -1,5 +1,6 @@
 import chalk from "chalk";
 import { Lexer, type Token } from "marked";
+import { theme } from "../theme.js";
 
 // Horizontal padding (spaces) added to the left and right of each code block line.
 // Increase this number to add more breathing room inside the grey border.
@@ -140,7 +141,7 @@ function renderToken(token: Token): string {
       return chalk.strikethrough(inner());
     case "codespan":
       // Leaf: never style the contents of a backtick span.
-      return chalk.bgHex("#333333").white(t.text ?? "");
+      return theme.codeSurfaceText(t.text ?? "");
     case "link": {
       // Bare autolinks have text === href; showing the URL twice is noise.
       const label = chalk.underline(inner());
@@ -276,14 +277,14 @@ function renderCodeBlock(lang: string | null, lines: string[]): string {
     lang ? lang.length : 0,
     ...lines.map((l) => l.length + CODE_BLOCK_H_PAD * 2),
   );
-  const blankLine = chalk.bgHex("#333333")(" ".repeat(maxLen));
+  const blankLine = theme.codeSurfaceBg(" ".repeat(maxLen));
   const out: string[] = [];
   // Lang label above the block: grey bg only behind the text, not padded to full width
-  if (lang) out.push(chalk.hex("#333333").bold(lang));
+  if (lang) out.push(theme.codeSurface.bold(lang));
   // Blank line at top of code area
   out.push(blankLine);
   for (const line of lines) {
-    out.push(chalk.bgHex("#333333").white((hPad + line).padEnd(maxLen)));
+    out.push(theme.codeSurfaceText((hPad + line).padEnd(maxLen)));
   }
   // Blank line below
   out.push(blankLine);

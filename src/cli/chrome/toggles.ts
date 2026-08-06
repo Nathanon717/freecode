@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { getBannerColorRGB } from '../render/banner.js';
+import { theme } from '../theme.js';
 
 export type AskMode = 'ask' | 'auto';
 
@@ -81,11 +81,10 @@ function hintRest(t: Toggle): string {
 }
 
 function renderToggle(t: Toggle): string {
-  const [r, g, b] = getBannerColorRGB();
   const isOn = t.index === 0;
-  const charPart = isOn ? chalk.bgRgb(r, g, b).black(t.char) : chalk.rgb(r, g, b)(t.char);
+  const charPart = isOn ? theme.rotatingPastelBg(t.char) : theme.rotatingPastel(t.char);
   if (!areToggleNamesShown()) return charPart;
-  return charPart + chalk.rgb(128, 128, 128)(hintRest(t));
+  return charPart + theme.mutedHint(hintRest(t));
 }
 
 // Renders the toggle bar string (ANSI included, visible length = toggleBarWidth()).

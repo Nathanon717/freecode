@@ -5,12 +5,12 @@
 // execution + `/tools` listing live in tool-runner.ts, which pulls in the tool
 // registry and is only imported lazily from the command dispatcher.
 
-import chalk from 'chalk';
 
 // Taken from the registry's leaf name module (no `ai` import, so it stays safe on
 // this path) rather than restated here — there is nothing to keep in sync. Also
 // re-exported, since callers of this module expect the names alongside the parser.
 import { TOOL_NAMES, isToolName, type ToolName } from '../../agent/tools/tool-names.js';
+import { theme } from '../theme.js';
 export { TOOL_NAMES, isToolName, type ToolName };
 
 export interface ToolParam {
@@ -114,10 +114,7 @@ export function toolNameBeforeCursor(
   return prefix.trim() === '' ? m[1] : null;
 }
 
-// Pastel lavender used to tint a valid tool name in the input line.
-const TOOL_NAME_COLOR = chalk.hex('#c9b3ff');
-
-// Applies TOOL_NAME_COLOR to the portions of a rendered chunk that fall within
+// Applies theme.toolName to the portions of a rendered chunk that fall within
 // `ranges` (absolute char offsets in the logical line). Colouring per-chunk —
 // after the caller's visual-width slicing — keeps wrap math on raw char counts.
 export function styleToolNames(
@@ -133,7 +130,7 @@ export function styleToolNames(
     const range = ranges.find((r) => abs >= r.start && abs < r.end);
     if (range) {
       const end = Math.min(chunk.length, range.end - chunkStart);
-      out += TOOL_NAME_COLOR(chunk.slice(i, end));
+      out += theme.toolName(chunk.slice(i, end));
       i = end;
     } else {
       let next = chunk.length;

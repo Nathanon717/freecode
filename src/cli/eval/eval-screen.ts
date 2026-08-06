@@ -8,6 +8,7 @@ import {
 } from '../../eval/history.js';
 import type { CustomEval } from '../../eval/custom.js';
 import { statusCircle } from './eval-dots.js';
+import { theme } from '../theme.js';
 import type { EvalReport } from '../../eval/runner.js';
 
 export function printEvalHeader(id: string, prompt: string): void {
@@ -46,10 +47,10 @@ export function printEvalReport(report: EvalReport): void {
 
   const firedWarnings = warnings.filter(c => !c.pass);
   if (firedWarnings.length > 0) {
-    console.log(chalk.hex('#FFA500')('\n  Warnings:'));
+    console.log(theme.warning('\n  Warnings:'));
     for (const w of firedWarnings) {
       const text = w.message ?? w.name;
-      for (const line of text.split('\n')) console.log(chalk.hex('#FFA500')(`    ! ${line}`));
+      for (const line of text.split('\n')) console.log(theme.warning(`    ! ${line}`));
     }
   }
 
@@ -144,10 +145,10 @@ export function buildEvalDetailScreen(
   const firedWarnings = warnings.filter((c: EvalCheckResult) => !c.pass);
   if (firedWarnings.length > 0) {
     lines.push('');
-    lines.push(chalk.hex('#FFA500')('  Warnings:'));
+    lines.push(theme.warning('  Warnings:'));
     for (const w of firedWarnings) {
       const text = w.message ?? w.name;
-      for (const line of text.split('\n')) lines.push(chalk.hex('#FFA500')(`    ! ${line}`));
+      for (const line of text.split('\n')) lines.push(theme.warning(`    ! ${line}`));
     }
   }
 

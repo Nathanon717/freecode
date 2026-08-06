@@ -1,7 +1,8 @@
 import chalk from 'chalk';
 import type { PricingConfidence } from '../../providers/pricing-verifier.js';
 import type { OverridableSettings } from '../../providers/types.js';
-import { getBannerColor, getBannerColorRGB } from '../render/banner.js';
+import { getBannerColor } from '../render/banner.js';
+import { theme } from '../theme.js';
 
 export interface ModelMenuItem {
   providerId: string;
@@ -77,7 +78,6 @@ export function buildAllItemLines(
   let lastProvider = '';
   let selectedLineIdx = 0;
   const bannerColor = getBannerColor();
-  const [br, bg, bb] = getBannerColorRGB();
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
@@ -100,7 +100,7 @@ export function buildAllItemLines(
     const renderedName = active
       ? isFavTab
         ? chalk.bgYellow.black(item.displayName)
-        : chalk.bgRgb(br, bg, bb).black(item.displayName)
+        : theme.rotatingPastelBg(item.displayName)
       : isFavTab
         ? chalk.yellow(item.displayName)
         : bannerColor(item.displayName);

@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { theme } from '../theme.js';
 import {
   getEvalStatus,
   type EvalStatus,
@@ -9,7 +10,7 @@ export function statusCircle(status: EvalStatus): string {
   switch (status) {
     case 'green': return chalk.green('●');
     case 'red': return chalk.red('●');
-    case 'orange': return chalk.hex('#FFA500')('●');
+    case 'orange': return theme.warning('●');
     case 'grey': return chalk.gray('●');
   }
 }

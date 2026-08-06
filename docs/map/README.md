@@ -63,26 +63,26 @@ Format: filename (linecount)
   - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (490) — Bottom Terminal UI
   - [`footer-status.ts`](cli/chrome/footer-status.md) (215) — Footer Status State and Formatters
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
-  - [`toggles.ts`](cli/chrome/toggles.md) (107) — Footer Toggle State
+  - [`toggles.ts`](cli/chrome/toggles.md) (106) — Footer Toggle State
 - `src/cli/`
   - [`command-dispatcher.ts`](cli/command-dispatcher.md) (260) — Command Dispatcher
 - `src/cli/eval/`
   - [`custom-eval-menu.ts`](cli/eval/custom-eval-menu.md) (361) — Custom Eval Tab + Run Loop
-  - [`eval-dots.ts`](cli/eval/eval-dots.md) (28) — Eval Status Circle Renderers
+  - [`eval-dots.ts`](cli/eval/eval-dots.md) (29) — Eval Status Circle Renderers
   - [`eval-menu.ts`](cli/eval/eval-menu.md) (123) — Unified Eval Menu
-  - [`eval-screen.ts`](cli/eval/eval-screen.md) (165) — Eval Screen Renderers
+  - [`eval-screen.ts`](cli/eval/eval-screen.md) (166) — Eval Screen Renderers
   - [`humaneval-menu.ts`](cli/eval/humaneval-menu.md) (314) — HumanEval Tab + Run Loop
 - `src/cli/`
   - [`headless-prompt.ts`](cli/headless-prompt.md) (153) — Headless Prompt Mode (`-p`)
 - `src/cli/menus/`
   - [`action-menu.ts`](cli/menus/action-menu.md) (53) — Inline Action Sub-menu
-  - [`list-menu.ts`](cli/menus/list-menu.md) (367) — Shared Tabbed List Menu
+  - [`list-menu.ts`](cli/menus/list-menu.md) (365) — Shared Tabbed List Menu
   - [`menu-shell.ts`](cli/menus/menu-shell.md) (47) — Menu Lifecycle Chrome
   - [`model-screen.ts`](cli/menus/model-screen.md) (236) — Model Picker Screen Renderers
   - [`raw-picker.ts`](cli/menus/raw-picker.md) (241) — Shared Raw-Mode Picker
 - `src/cli/render/`
   - [`banner.ts`](cli/render/banner.md) (124) — Startup Banner
-  - [`markdown-renderer.ts`](cli/render/markdown-renderer.md) (489) — Markdown Renderer
+  - [`markdown-renderer.ts`](cli/render/markdown-renderer.md) (490) — Markdown Renderer
   - [`transcript-format.ts`](cli/render/transcript-format.md) (192) — Transcript Formatters
   - [`transcript-options.ts`](cli/render/transcript-options.md) (71) — Transcript Stream + Options
   - [`transcript-record.ts`](cli/render/transcript-record.md) (151) — Rendered Transcript Record
@@ -94,9 +94,10 @@ Format: filename (linecount)
   - [`session-runner.ts`](cli/session-runner.md) (77) — CLI Session Loop
   - [`slash-commands.ts`](cli/slash-commands.md) (76) — Slash Commands
   - [`stdout-retry-sink.ts`](cli/stdout-retry-sink.md) (34) — Non-TTY Retry Countdown Sink
+  - [`theme.ts`](cli/theme.md) (59) — Color Tokens
 - `src/cli/tools/`
   - [`tool-approval.ts`](cli/tools/tool-approval.md) (300) — Tool Approval Prompts
-  - [`tool-invocation.ts`](cli/tools/tool-invocation.md) (327) — Hand-Typed Tool Call Parsing
+  - [`tool-invocation.ts`](cli/tools/tool-invocation.md) (324) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tools/tool-runner.md) (104) — Hand-Typed Tool Execution + /tools Listing
 - `src/commands/`
   - [`config.ts`](commands/config.md) (397) — Interactive Config Editor

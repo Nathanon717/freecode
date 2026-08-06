@@ -2,7 +2,8 @@ import type { Interface } from "readline";
 import chalk from "chalk";
 import { runRawPicker } from "./raw-picker.js";
 import type { InlineActionMenu } from "./action-menu.js";
-import { getBannerColor, getBannerColorRGB } from "../render/banner.js";
+import { getBannerColor } from "../render/banner.js";
+import { theme } from "../theme.js";
 
 // Key sequences shared by every raw-mode menu.
 const ESC = "\x1b";
@@ -238,10 +239,7 @@ export function runListMenu<TResult>(
       const styleTab = (i: number): string => {
         if (i !== tabIndex) return chalk.dim(` ${tabs[i].label} `);
         if (activeFiltered) return chalk.dim(` ${tabs[i].label} `);
-        if (focused) {
-          const [r, g, b] = getBannerColorRGB();
-          return chalk.bgRgb(r, g, b).black(` ${tabs[i].label} `);
-        }
+        if (focused) return theme.rotatingPastelBg(` ${tabs[i].label} `);
         return getBannerColor().bold(` ${tabs[i].label} `);
       };
       const { lo, hi } = computeTabWindow(tabs, tabScroll, tabIndex, tabBarBudget());
