@@ -5,7 +5,12 @@ import {
   parseGroqRateLimitHeaders,
   groqHeadersToSnapshot,
 } from '../quota/headers.js';
-import { stripTemperatureIfDisallowed, stripStreamForNonStream, injectCodestralSystem } from './openai-compat-request.js';
+import {
+  stripTemperatureIfDisallowed,
+  stripStreamForNonStream,
+  injectCodestralSystem,
+  ensureAssistantReasoningContent,
+} from './openai-compat-request.js';
 
 // Per-provider static quirk profiles. Providers absent from the map get the
 // default path (no transforms, no rate-limit capture, no extra headers).
@@ -49,5 +54,11 @@ export const providerQuirks: Record<string, OpenAICompatQuirks> = {
   },
   openai: {
     transformRequest: (body) => ({ body: stripTemperatureIfDisallowed(body) }),
+  },
+  // Zen load-balances each request between two upstreams; the DeepSeek Console
+  // one 400s on an assistant tool_calls message with no `reasoning_content`.
+  // Applied to every zen model: the other models accept the field and ignore it.
+  zen: {
+    transformRequest: (body) => ({ body: ensureAssistantReasoningContent(body) }),
   },
 };

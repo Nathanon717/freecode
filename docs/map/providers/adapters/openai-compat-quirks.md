@@ -32,6 +32,7 @@ Edit one entry here. The adapter skeleton in [openai-compat](openai-compat.md) r
 | cerebras   |     |     | ✓   |     |
 | groq       |     |     | ✓   |     |
 | openai     |     | ✓   |     |     |
+| zen        |     | ✓   |     |     |
 
 ## Key Neighbors
 

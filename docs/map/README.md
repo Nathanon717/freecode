@@ -118,8 +118,8 @@ Format: filename (linecount)
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (189) — Adapter HTTP Retry/Backoff
   - [`adapter-usage-capture.ts`](providers/adapters/adapter-usage-capture.md) (52) — Shared Usage/Header Capture
-  - [`openai-compat-quirks.ts`](providers/adapters/openai-compat-quirks.md) (54) — OpenAI-Compatible Provider Quirk Profiles
-  - [`openai-compat-request.ts`](providers/adapters/openai-compat-request.md) (35) — OpenAI-Compatible Request Transforms
+  - [`openai-compat-quirks.ts`](providers/adapters/openai-compat-quirks.md) (65) — OpenAI-Compatible Provider Quirk Profiles
+  - [`openai-compat-request.ts`](providers/adapters/openai-compat-request.md) (70) — OpenAI-Compatible Request Transforms
   - [`openai-compat-sse.ts`](providers/adapters/openai-compat-sse.md) (142) — OpenAI-Compatible SSE Transforms
   - [`openai-compat.ts`](providers/adapters/openai-compat.md) (255) — OpenAI-Compatible Adapter
 - `src/providers/`

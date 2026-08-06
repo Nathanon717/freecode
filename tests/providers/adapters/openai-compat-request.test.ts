@@ -4,6 +4,7 @@ import {
   stripStreamForNonStream,
   injectCodestralSystem,
   injectParallelToolCallsFalse,
+  ensureAssistantReasoningContent,
 } from '../../../src/providers/adapters/openai-compat-request.js';
 
 describe('stripTemperatureIfDisallowed', () => {
@@ -66,6 +67,56 @@ describe('injectCodestralSystem', () => {
   it('is a no-op for non-Codestral models', () => {
     const body = { model: 'mistral-large', messages: [{ role: 'system', content: 'Sys' }] };
     expect(injectCodestralSystem(body)).toBe(body);
+  });
+});
+
+describe('ensureAssistantReasoningContent', () => {
+  const toolCall = { id: 'call_1', type: 'function', function: { name: 'read', arguments: '{}' } };
+
+  it('adds an empty reasoning_content to assistant messages with tool_calls', () => {
+    const body = {
+      messages: [
+        { role: 'user', content: 'hi' },
+        { role: 'assistant', content: '', tool_calls: [toolCall] },
+        { role: 'tool', tool_call_id: 'call_1', content: 'file body' },
+      ],
+    };
+    const messages = ensureAssistantReasoningContent(body)['messages'] as Array<Record<string, unknown>>;
+    expect(messages[1]).toHaveProperty('reasoning_content', '');
+    expect(messages[1]).toMatchObject({ role: 'assistant', tool_calls: [toolCall] });
+    expect(messages[0]).not.toHaveProperty('reasoning_content');
+    expect(messages[2]).not.toHaveProperty('reasoning_content');
+  });
+
+  it('adds it to every assistant tool_calls message, not just the last', () => {
+    const body = {
+      messages: [
+        { role: 'assistant', content: '', tool_calls: [toolCall] },
+        { role: 'tool', tool_call_id: 'call_1', content: 'a' },
+        { role: 'assistant', content: '', tool_calls: [{ ...toolCall, id: 'call_2' }] },
+        { role: 'tool', tool_call_id: 'call_2', content: 'b' },
+      ],
+    };
+    const messages = ensureAssistantReasoningContent(body)['messages'] as Array<Record<string, unknown>>;
+    expect(messages[0]).toHaveProperty('reasoning_content', '');
+    expect(messages[2]).toHaveProperty('reasoning_content', '');
+  });
+
+  it('leaves an existing reasoning_content untouched', () => {
+    const body = {
+      messages: [{ role: 'assistant', content: '', reasoning_content: 'thought', tool_calls: [toolCall] }],
+    };
+    expect(ensureAssistantReasoningContent(body)).toBe(body);
+  });
+
+  it('is a no-op for assistant messages carrying only text', () => {
+    const body = { messages: [{ role: 'assistant', content: 'done' }] };
+    expect(ensureAssistantReasoningContent(body)).toBe(body);
+  });
+
+  it('is a no-op when messages is absent', () => {
+    const body = { model: 'x' };
+    expect(ensureAssistantReasoningContent(body)).toBe(body);
   });
 });
 

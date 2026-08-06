@@ -12,6 +12,8 @@ stripStreamForNonStream(body: Record<string, unknown>): { body: Record<string, u
 
 injectCodestralSystem(body: Record<string, unknown>): Record<string, unknown>
 
+ensureAssistantReasoningContent(body: Record<string, unknown>): Record<string, unknown>
+
 injectParallelToolCallsFalse(body: Record<string, unknown>): Record<string, unknown>
 ```
 <!-- END GENERATED EXPORTS -->
