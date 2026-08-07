@@ -1,0 +1,36 @@
+Probed 8 model(s) against 6 families over 3 samples (rounds=3, repeat=1) — 0 identified
+Indistinguishable by construction: deepseek-v3 == deepseek-v4
+
+zen:big-pickle	deepseek-v3	control-ok	deepseek-v3 (server ascii=165 multilingual=168 symbolic=193; margin 14 tokens over nearest other family) [tie-break on special tokens: server=552, deepseek-v3=552 deepseek-v4=201]
+zen:deepseek-v4-flash-free	deepseek-v4	control-ok	deepseek-v4 (server ascii=165 multilingual=168 symbolic=193; margin 14 tokens over nearest other family) [tie-break on special tokens: server=201, deepseek-v3=552 deepseek-v4=201]
+zen:mimo-v2.5-free	-	no-match	server ascii=174 multilingual=203 symbolic=210; nearest llama-3 off by [-17, -23, 11]
+zen:ling-3.0-flash-free	-	failed	OpenCode HTTP 400 Bad Request: Error from provider (Console): Upstream request failed: [404] This model is unavailable for free. The paid version is available now - use this slug instead: inclusionai/ling-3.0-flash
+zen:nemotron-3-ultra-free	mistral-tekken	control-ok	mistral-tekken (server ascii=180 multilingual=180 symbolic=283; margin 49 tokens over nearest other family)
+zen:north-mini-code-free	-	no-match	server ascii=156 multilingual=133 symbolic=173; nearest gpt-oss off by [1, 21, 26]
+zen:laguna-s-2.1-free	-	no-match	server ascii=181 multilingual=241 symbolic=230; nearest glm-4 off by [-24, -37, 4]
+zen:longcat-2.0-free	-	no-match	server ascii=179 multilingual=227 symbolic=223; nearest glm-4 off by [-22, -23, 11]
+
+family	ascii	multilingual	symbolic
+gpt-oss	157	154	199
+llama-3	157	180	221
+deepseek-v3	165	168	193
+deepseek-v4	165	168	193
+glm-4	157	204	234
+mistral-tekken	180	180	283
+
+Pairwise separation (max |delta difference| across samples):
+  gpt-oss	vs llama-3	max=26	per-sample=[0, -26, -22]
+  gpt-oss	vs deepseek-v3	max=14	per-sample=[-8, -14, 6]
+  gpt-oss	vs deepseek-v4	max=14	per-sample=[-8, -14, 6]
+  gpt-oss	vs glm-4	max=50	per-sample=[0, -50, -35]
+  gpt-oss	vs mistral-tekken	max=84	per-sample=[-23, -26, -84]
+  llama-3	vs deepseek-v3	max=28	per-sample=[-8, 12, 28]
+  llama-3	vs deepseek-v4	max=28	per-sample=[-8, 12, 28]
+  llama-3	vs glm-4	max=24	per-sample=[0, -24, -13]
+  llama-3	vs mistral-tekken	max=62	per-sample=[-23, 0, -62]
+  deepseek-v3	vs deepseek-v4	max=0	per-sample=[0, 0, 0]	INDISTINGUISHABLE
+  deepseek-v3	vs glm-4	max=41	per-sample=[8, -36, -41]
+  deepseek-v3	vs mistral-tekken	max=90	per-sample=[-15, -12, -90]
+  deepseek-v4	vs glm-4	max=41	per-sample=[8, -36, -41]
+  deepseek-v4	vs mistral-tekken	max=90	per-sample=[-15, -12, -90]
+  glm-4	vs mistral-tekken	max=49	per-sample=[-23, 24, -49]
