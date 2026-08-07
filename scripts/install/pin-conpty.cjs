@@ -7,7 +7,7 @@
 // flaky. The node-pty version itself must stay >= beta.13, which is where the
 // segfault fix lives (a mutex around the global `ptyHandles` vector in
 // conpty.cc) — so the two are pinned independently. See
-// docs/bug log/29-07-2026f.md.
+// docs/bug log/29-07-2026e.md.
 //
 // The host is a plain pair of files loaded by path: `LoadConptyDll` in
 // node-pty's conpty.cc resolves `conpty\conpty.dll` relative to the *loaded*

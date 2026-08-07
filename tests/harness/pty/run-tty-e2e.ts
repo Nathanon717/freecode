@@ -102,7 +102,7 @@ const SCREEN_STATE_BUDGET_MS = 4000;
  * A resize step gets much longer, because the wait is on the *terminal* handing
  * the size change to the child and nothing about it is under our control:
  * ConPTY 1.25 takes ~1-1.5s idle (15ms on 1.23 — see
- * docs/bug log/29-07-2026f.md), and that stretches further under the CPU
+ * docs/bug log/29-07-2026e.md), and that stretches further under the CPU
  * contention of a full `npm test`, where the non-TTY e2e phase runs alongside.
  * Sized to swallow that with margin rather than to be tight.
  */
@@ -206,7 +206,7 @@ export async function runTtyE2eTest(opts: {
       // — driver.waitQuiet() returns immediately when the stream was already
       // quiet for quietMs. That gap is invisible while a resize reaches the
       // child in ~15ms, and wide open on ConPTY 1.25, which takes ~1-1.5s (see
-      // docs/bug log/29-07-2026f.md). Polling the rendered viewport — the same
+      // docs/bug log/29-07-2026e.md). Polling the rendered viewport — the same
       // surface the assertions read — costs nothing when the state is already
       // there and covers the latency when it isn't.
       const screenConfirmed = await waitForScreen(

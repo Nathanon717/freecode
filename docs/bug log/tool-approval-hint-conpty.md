@@ -14,7 +14,7 @@ row *before* the `finally` block's `\x1b[row;1H\x1b[2K` runs — so the clear la
 on the now-blank margin and the hint survives one row higher, then scrolls into
 the transcript with the following output.
 
-This is the **same failure class** as `tool-approval-hint-persists.md` (a newline
+This is the **same failure class** as [17-07-2026b.md](17-07-2026b.md) (a newline
 at the bottom margin scrolls the hint before the clear), but a different newline
 source: that bug was an app-emitted `\n`; this one is conpty's CR echo, which
 never happens on Linux (raw mode consumed the CR).

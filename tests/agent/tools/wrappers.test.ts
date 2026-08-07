@@ -94,7 +94,7 @@ describe('tool confirmation', () => {
 // Esc denies the call AND ends the turn. The denial is an ordinary result; what
 // stops the turn is withTurnStop rejecting once that result has rendered, which
 // is the only thing that keeps the AI SDK from taking another step. See
-// docs/bug log/05-08-2026b.md.
+// docs/bug log/05-08-2026.md.
 describe('turn stop (stopTurn)', () => {
   it('reports the rendered denial as the rejection, so it can be re-paired into history', async () => {
     const tools = createTools(() => Promise.resolve({ approved: false, stopTurn: true }));

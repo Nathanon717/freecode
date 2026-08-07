@@ -16,7 +16,7 @@ import type { TtyE2eTest } from './pty/run-tty-e2e.js';
  * `scripts/install/pin-conpty.cjs`, because the 1.25 that node-pty >= beta.12
  * vendors takes ~1-1.5s to deliver a resize to the child instead of 15ms — and
  * sometimes doesn't under load, which makes every `tty-resize-*` scenario flaky
- * (docs/bug log/29-07-2026f.md). Anything that reinstalls node-pty without
+ * (docs/bug log/29-07-2026e.md). Anything that reinstalls node-pty without
  * running our postinstall drops the pin, so say so loudly rather than let the
  * flakiness get re-diagnosed from scratch.
  */
