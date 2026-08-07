@@ -1,6 +1,6 @@
 {
   "name": "tty-thinking-label",
-  "description": "The input bar stays up for the whole agent turn and shows a `thinking...` label above its top divider, then loses the label when the turn ends. Reuses the status-line-ticks LLM fixture because its tool sleeps via `node -e`, which is what makes the mid-turn window observable without a timing race. Auto tool confirmation on purpose: the approval prompt tears the input bar down, and the label must vanish with it",
+  "description": "The input bar stays up for the whole agent turn and shows an activity label above its top divider, then loses the label when the turn ends. Reuses the status-line-ticks LLM fixture because its tool sleeps via `node -e`, which is what makes the mid-turn window observable without a timing race. That tool is `shell_exec`, so the mid-turn label is the `shelling...` verb rather than the `thinking...` base state — the 4s sleep clears the 150ms anti-flicker delay by a wide margin. Auto tool confirmation on purpose: the approval prompt tears the input bar down, and the label must vanish with it",
   "model": "mock:gpt-freecode-test",
   "llmFixture": "tty-status-line-ticks.llm.json",
   "config": {
@@ -13,7 +13,7 @@
     "steps": [
       {
         "name": "no label at an idle prompt",
-        "screenAbsent": ["thinking..."]
+        "screenAbsent": ["thinking...", "shelling..."]
       },
       {
         "name": "type prompt",
@@ -21,19 +21,19 @@
         "screenContains": ["> Wait a moment"]
       },
       {
-        "name": "mid-turn: input bar still drawn, label above it",
+        "name": "mid-turn: input bar still drawn, tool verb above it",
         "send": "\r",
         "waitFor": "1111 ctx",
         "waitForMs": 12000,
-        "screenContains": ["thinking...", "/ for commands", "ctrl+"],
-        "screenAbsent": ["Done waiting."]
+        "screenContains": ["shelling...", "/ for commands", "ctrl+"],
+        "screenAbsent": ["thinking...", "Done waiting."]
       },
       {
         "name": "turn ends: label released, input bar stays",
         "waitFor": "5555 ctx",
         "waitForMs": 12000,
         "screenContains": ["Done waiting.", "/ for commands"],
-        "screenAbsent": ["thinking..."]
+        "screenAbsent": ["thinking...", "shelling..."]
       }
     ],
     "exit": "\u0003",

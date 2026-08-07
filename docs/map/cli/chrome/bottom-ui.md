@@ -1,6 +1,6 @@
 # src/cli/chrome/bottom-ui.ts - Bottom Terminal UI
 
-**Role:** Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and the input-area layout; status state lives in `footer-status.ts`, buffer/cursor state in `input-buffer.ts`, the suggestion overlay's snapshot in `suggestion-overlay.ts`, the turn flag behind `thinking…` in `turn-state.ts`, and the raw escape sequences in `ansi.ts`. Import those directly — this module does not re-export them.
+**Role:** Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and the input-area layout; status state lives in `footer-status.ts`, buffer/cursor state in `input-buffer.ts`, the suggestion overlay's snapshot in `suggestion-overlay.ts`, the turn flag and activity verb behind the `thinking…` label in `turn-state.ts`, and the raw escape sequences in `ansi.ts`. Import those directly — this module does not re-export them.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -52,7 +52,7 @@ setOnResizeCallback(cb: (() => void) | null): void
 
 ## Layout
 
-Uses an ANSI scroll-region to pin the footer/input UI to the bottom rows while normal output scrolls above it. Footer is 2 rows normally, 3 when content overflows at narrow widths (only while the input UI is inactive); the input UI adds top/bottom bars plus the current input line count on top of the footer, plus one more row for the `thinking…` label while a turn is in flight. Slash-command suggestions draw as an overlay whose snapshot/restore lives in [suggestion-overlay.md](suggestion-overlay.md); the overlay epoch starts at the first `setupInputUI` call so pre-UI output (startup banner) is excluded from repaints.
+Uses an ANSI scroll-region to pin the footer/input UI to the bottom rows while normal output scrolls above it. Footer is 2 rows normally, 3 when content overflows at narrow widths (only while the input UI is inactive); the input UI adds top/bottom bars plus the current input line count on top of the footer, plus one more row for the `thinking…` label while a turn is in flight. That row's cost is fixed at 1 whatever the label says, so the activity verbs (`grepping…`, `shelling…`, `delegating…` — see [turn-state.md](turn-state.md)) never touch this math; a verb change repaints the row via the listener registered next to `showThinking()`. Slash-command suggestions draw as an overlay whose snapshot/restore lives in [suggestion-overlay.md](suggestion-overlay.md); the overlay epoch starts at the first `setupInputUI` call so pre-UI output (startup banner) is excluded from repaints.
 
 **`reservedRows()` is the single source of truth for how many rows the bottom UI holds out of the scroll region.** That expression used to be recomputed independently at five call sites (`setupInputUI`, `composeFooterOutput`, `drawInputArea`, `resetSubmittedInputArea`, the resize handler); any one of them disagreeing drifts the scroll region from what is actually drawn. `setupInputUI` derives its newline count from it too, so the frame opens at whatever height the label state implies rather than a hardcoded 3.
 

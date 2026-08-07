@@ -30,6 +30,7 @@ import {
   type TranscriptRuntimeOptions,
 } from "../../cli/render/transcript-renderer.js";
 import { getApprovalPreviewRowBudget } from "../../cli/tools/tool-approval.js";
+import { isActivityKind, setActivity } from "../../cli/chrome/turn-state.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyCoreTool = CoreTool<any, any>;
@@ -255,6 +256,52 @@ function withTurnStop(
   };
 }
 
+/**
+ * How long a tool must still be running before its verb replaces `thinking...`.
+ *
+ * Without this, a ripgrep that finishes in 20 ms would swap the label and swap
+ * it straight back — a flicker that reads worse than not naming the tool at all.
+ * The timer is cancelled if the call finishes first, so only genuine waits show.
+ */
+const ACTIVITY_DELAY_MS = 150;
+
+/**
+ * Names the tool the turn is currently blocked on, for the bottom-UI label.
+ *
+ * Applied INSIDE `withSerializedExecution` (see `wrap`), and that placement is
+ * load-bearing. The serialisation wrapper is outermost and returns
+ * `queueExecution(...)` immediately, so on a multi-tool step every outer
+ * `execute` is entered concurrently and only the inner chain is serialised. Set
+ * the activity outside the queue and three parallel greps would race, with the
+ * first `finally` clearing the label while two were still running. Inside it,
+ * exactly one tool holds the activity at a time — which is what lets this be a
+ * plain non-stacked variable in `turn-state.ts`.
+ *
+ * Sub-agents need no special handling: `subagents/run-subagent.ts` builds its
+ * tools without these wrappers, so a sub-agent's own greps never reach here and
+ * `delegating...` stays up for the whole delegation.
+ */
+function withActivity(name: string, t: AnyCoreTool): AnyCoreTool {
+  if (!t.execute || !isActivityKind(name)) return t;
+  const original: ToolExecuteFn = t.execute as ToolExecuteFn;
+  const kind = name;
+  return {
+    ...t,
+    execute: async (
+      args: Record<string, unknown>,
+      opts: unknown,
+    ): Promise<unknown> => {
+      const timer = setTimeout(() => setActivity(kind), ACTIVITY_DELAY_MS);
+      try {
+        return await original(args, opts);
+      } finally {
+        clearTimeout(timer);
+        setActivity(null);
+      }
+    },
+  };
+}
+
 function withConfirmation(
   name: string,
   t: AnyCoreTool,
@@ -436,7 +483,10 @@ export function wrap(
   return withSerializedExecution(
     withTurnStop(
       name,
-      withToolRendering(name, confirmed, parsedTools, previewState),
+      withActivity(
+        name,
+        withToolRendering(name, confirmed, parsedTools, previewState),
+      ),
       stopState,
     ),
     queueExecution,

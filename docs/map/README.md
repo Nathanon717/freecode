@@ -53,19 +53,19 @@ Format: filename (linecount)
   - [`shell.ts`](agent/tools/shell.md) (130) — shell_exec Tool
   - [`spawn-agent.ts`](agent/tools/spawn-agent.md) (38) — spawn_agent Tool
   - [`tool-names.ts`](agent/tools/tool-names.md) (65) — Tool Name Partition
-  - [`wrappers.ts`](agent/tools/wrappers.md) (445) — Tool Wrapper Stack
+  - [`wrappers.ts`](agent/tools/wrappers.md) (495) — Tool Wrapper Stack
 - `src/agent/`
   - [`turn-messages.ts`](agent/turn-messages.md) (195) — Turn Message Shape Rules
   - [`usage-finalize.ts`](agent/usage-finalize.md) (42) — Turn Usage/Quota Finalization
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/chrome/`
   - [`ansi.ts`](cli/chrome/ansi.md) (56) — Terminal Geometry & Escape Sequences
-  - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (481) — Bottom Terminal UI
+  - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (486) — Bottom Terminal UI
   - [`footer-status.ts`](cli/chrome/footer-status.md) (215) — Footer Status State and Formatters
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (115) — Input Buffer State
   - [`suggestion-overlay.ts`](cli/chrome/suggestion-overlay.md) (58) — Suggestion Overlay Snapshot
   - [`toggles.ts`](cli/chrome/toggles.md) (106) — Footer Toggle State
-  - [`turn-state.ts`](cli/chrome/turn-state.md) (37) — Agent-Turn UI State
+  - [`turn-state.ts`](cli/chrome/turn-state.md) (83) — Agent-Turn UI State
 - `src/cli/`
   - [`command-dispatcher.ts`](cli/command-dispatcher.md) (260) — Command Dispatcher
 - `src/cli/eval/`

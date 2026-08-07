@@ -3,7 +3,7 @@ import { stripAnsi, composeScrollRegionScrub, hasPostEpochContent, startOverlayE
 import { captureOverlay, composeOverlayRestore, getOverlayRows, resetOverlay } from './suggestion-overlay.js';
 import { getBannerColor, clearAndRedrawBanner } from '../render/banner.js';
 import { composeToggleBar, toggleBarWidth } from './toggles.js';
-import { isTurnActive, composeThinkingLabel } from './turn-state.js';
+import { isTurnActive, composeThinkingLabel, setActivityChangeListener } from './turn-state.js';
 import {
   layoutFooterRightRows,
   formatEvalRunStatus,
@@ -147,6 +147,11 @@ function inputLineCount(): number {
 function showThinking(): boolean {
   return inputUIActive && isTurnActive();
 }
+
+// A verb change rewrites the label in place. The row count is unchanged, so this
+// repaints rather than moving the scroll region; `drawInputArea` no-ops when the
+// input bar is down (tool approval), which is the same gate `showThinking` uses.
+setActivityChangeListener(() => drawInputArea());
 
 // Rows the bottom UI holds out of the scroll region. Single source of truth:
 // this expression used to be recomputed at five call sites, and any one of them
