@@ -13,11 +13,38 @@ interface EditDiffContext {
   startLine: number;
 }
 
+/**
+ * Read an edit's surrounding-file context from disk: the unchanged lines above
+ * and below the matched `old_text`, the leading indent stripped onto its own
+ * line, and the 1-based line number the diff starts rendering from. Degrades to
+ * empty context (startLine 1) when the file is missing or the match isn't found —
+ * the diff is a projection of the intended edit, not a guarantee it will apply.
+ */
 computeEditDiffContext(path: unknown, oldText: unknown): EditDiffContext
 
+/**
+ * Build the `edit-diff` step result from an edit's args plus its (possibly
+ * absent) disk context. Returns null when the args aren't a well-formed edit, so
+ * both the pending-approval preview and the post-execution render share one shape.
+ */
 editDiffResult(args: Record<string, unknown>, ctx: EditDiffContext | undefined): { kind: "edit-diff"; path: string; oldText: string; newText: string; contextBefore: string[]; contextAfter: string[]; lineIndent: string; startLine: number; } | null
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/transcript-renderer.ts`](../../cli/render/transcript-renderer.md) ×1, [`config/index.ts`](../../config/index.md) ×1
+- **Imported by:** [`agent/tools/wrappers.ts`](wrappers.md) ×5
+
+## Tests
+
+`tests/agent/tools/edit-diff-context.test.ts`.
+
+## Budget
+
+102 / 500 lines (398 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Key Facts
 

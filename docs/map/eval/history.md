@@ -46,6 +46,21 @@ loadEvalDotsData(): EvalDotsData
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`eval/custom.ts`](custom.md) ×5, [`store/db.ts`](../store/db.md) ×1
+- **Imported by:** [`cli/eval/eval-screen.ts`](../cli/eval/eval-screen.md) ×9, [`cli/eval/custom-eval-menu.ts`](../cli/eval/custom-eval-menu.md) ×3, [`cli/eval/eval-dots.ts`](../cli/eval/eval-dots.md) ×3, [`cli/eval/eval-menu.ts`](../cli/eval/eval-menu.md) ×3, [`commands/model.ts`](../commands/model.md) ×2, [`eval/runner.ts`](runner.md) ×1
+
+## Tests
+
+`tests/eval/history.test.ts`. 5 other test files reference it.
+
+## Budget
+
+113 / 500 lines (387 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `loadEvalHistory()`: returns `[]` if the DB is not yet initialized.

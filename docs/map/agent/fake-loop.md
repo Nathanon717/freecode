@@ -6,9 +6,30 @@
 ## Exports
 
 ```typescript
+/**
+ * The `mock:*` fixture turn. It never touches the AI SDK: `runFakeModel` replays
+ * ordered fixture steps against the real system prompt, message history, and tool
+ * list, and this loop executes any scripted tool calls through the real
+ * `createTools()` wrappers, feeding results back as user messages.
+ */
 runFakeLlm(providerId: string, modelId: string, supportsTools: boolean, systemPrompt: string, messages: CoreMessage[], options: AgentLoopOptions, modelSettings: Required<...>): Promise<...>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/transcript-renderer.ts`](../cli/render/transcript-renderer.md) ×6, [`agent/loop.ts`](loop.md) ×4, [`providers/fake.ts`](../providers/fake.md) ×2, [`agent/parsed-tools.ts`](parsed-tools.md) ×1, [`agent/subagents/run-subagent.ts`](subagents/run-subagent.md) ×1, [`agent/tools/index.ts`](tools/index.md) ×1, [`agent/turn-messages.ts`](turn-messages.md) ×1, [`util/errors.ts`](../util/errors.md) ×1
+- **Imported by:** [`agent/loop.ts`](loop.md) ×1
+
+## Tests
+
+`tests/agent/fake-loop.test.ts`.
+
+## Budget
+
+129 / 500 lines (371 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Read When
 

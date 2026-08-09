@@ -3,12 +3,11 @@ import { readFileSync, readdirSync } from "fs";
 import { join, relative } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { MAX_LINES, countLines } from "./line-budget.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..", "..");
 const SRC_ROOT = join(ROOT, "src");
-
-const MAX_LINES = 500;
 
 function toPosix(path: string): string {
   return path.replace(/\\/g, "/");
@@ -32,10 +31,7 @@ const sourceFiles = walkFilesSync(SRC_ROOT, (file) =>
 const failures: string[] = [];
 
 for (const file of sourceFiles) {
-  const content = readFileSync(file, "utf-8");
-  const lines = content.split("\n");
-  const lineCount =
-    lines[lines.length - 1] === "" ? lines.length - 1 : lines.length;
+  const lineCount = countLines(readFileSync(file, "utf-8"));
   if (lineCount > MAX_LINES) {
     failures.push(toPosix(relative(ROOT, file)));
   }

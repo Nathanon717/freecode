@@ -10,6 +10,21 @@ listDirTool: CoreTool<z.ZodObject<{ path: z.ZodOptional<z.ZodString>; }, 'strip'
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/workspace.ts`](../workspace.md) ×1
+- **Imported by:** [`agent/tools/index.ts`](index.md) ×1
+
+## Tests
+
+`tests/agent/tools/list-dir.test.ts`. 1 other test file references it.
+
+## Budget
+
+44 / 500 lines (456 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Parameters
 
 | Param | Type | Default | Description |

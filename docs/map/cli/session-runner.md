@@ -31,6 +31,21 @@ runCliSession(options: CliSessionRunnerOptions): Promise<void>
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/command-dispatcher.ts`](command-dispatcher.md) ×3, [`agent/conversation.ts`](../agent/conversation.md) ×1, [`agent/loop.ts`](../agent/loop.md) ×1, [`agent/tools/index.ts`](../agent/tools/index.md) ×1
+- **Imported by:** [`cli/scripted-mode.ts`](scripted-mode.md) ×1, [`cli/session-modes.ts`](session-modes.md) ×1
+
+## Tests
+
+`tests/cli/session-runner.test.ts`.
+
+## Budget
+
+76 / 500 lines (424 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## `CliSessionMode`
 
 Modes provide:

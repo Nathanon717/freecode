@@ -12,15 +12,42 @@ The file is a bare JSON array and nothing else, so it doubles as the viewing/edi
 ## Exports
 
 ```typescript
+/**
+ * Keys (`provider:modelId`) the user has permanently blocklisted.
+ */
 getUserBlocklist(): Set<string>
 
+/**
+ * True if `provider:modelId` is on the user blocklist.
+ */
 isUserBlocklisted(providerId: string, modelId: string): boolean
 
+/**
+ * Add a key to the blocklist and persist it. No-op if already present.
+ */
 addToUserBlocklist(key: string): void
 
+/**
+ * Drop the in-memory copy so the next read re-reads the file. Tests only.
+ */
 resetUserBlocklistCache(): void
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`logger.ts`](../logger.md) ×2, [`config/index.ts`](../config/index.md) ×1
+- **Imported by:** [`providers/provider-registry.ts`](provider-registry.md) ×3
+
+## Tests
+
+`tests/providers/user-blocklist.test.ts`. 1 other test file references it.
+
+## Budget
+
+68 / 500 lines (432 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

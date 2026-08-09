@@ -20,11 +20,35 @@ interface LlmCallRow {
   error?: string | null;
 }
 
+/**
+ * Pull token counts out of a raw provider usage payload: the OpenAI-compatible
+ * shape (`prompt_tokens`/`completion_tokens`/`total_tokens`). A payload missing
+ * `total_tokens` gets it summed; anything unrecognised yields all-null.
+ */
 tokensFromUsagePayload(usage: unknown): Pick<LlmCallRow, "inputTokens" | "outputTokens" | "totalTokens">
 
+/**
+ * Record one LLM call. Fire-and-forget and never throws — a logging failure
+ * must never break the call it is describing.
+ */
 recordLlmCall(row: Omit<LlmCallRow, "timestamp"> & { timestamp?: string | undefined; }): void
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`store/db.ts`](db.md) ×1, [`util/guards.ts`](../util/guards.md) ×1
+- **Imported by:** [`providers/adapters/openai-compat.ts`](../providers/adapters/openai-compat.md) ×5, [`store/db.ts`](db.md) ×1
+
+## Tests
+
+`tests/store/call-log.test.ts`. 1 other test file references it.
+
+## Budget
+
+51 / 500 lines (449 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Why It Exists
 

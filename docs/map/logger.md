@@ -14,6 +14,20 @@ logError(category: string, message: string, err: unknown): void
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`cli/command-dispatcher.ts`](cli/command-dispatcher.md) ×21, [`store/db.ts`](store/db.md) ×17, [`agent/loop.ts`](agent/loop.md) ×10, [`agent/parsed-tools.ts`](agent/parsed-tools.md) ×5, [`agent/usage-finalize.ts`](agent/usage-finalize.md) ×3, [`eval/result-sink.ts`](eval/result-sink.md) ×3, [`eval/runner.ts`](eval/runner.md) ×3, [`agent/tools/wrappers.ts`](agent/tools/wrappers.md) ×2, +7 more
+
+## Tests
+
+`tests/logger.test.ts`. 3 other test files reference it.
+
+## Budget
+
+52 / 500 lines (448 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `log`: Only emits when `enableLog()` has been called (`-log` flag at startup); no-op otherwise.

@@ -8,6 +8,24 @@
 _No exported symbols._
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`providers/paid-guard.ts`](providers/paid-guard.md) ×3
+
+## Tests
+
+`tests/index.test.ts`.
+
+## Budget
+
+227 / 500 lines (273 to spare).
+
+## Env
+
+`DOPPLER_PROJECT`, `FREECODE_MODEL`, `FREECODE_NO_PREFETCH`, `FREECODE_RETRY_STATUS_FILE`
+<!-- END GENERATED MAP FACTS -->
+
 ## Read When
 
 - Changing CLI startup flags or mode selection.

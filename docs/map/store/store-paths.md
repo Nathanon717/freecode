@@ -10,11 +10,36 @@ getStoreDir(): string
 
 getDbUrl(): string
 
+/**
+ * Path to the config file mirror.
+ */
 getConfigMirrorPath(): string
 
+/**
+ * Sync credentials, env first then `~/.config/freecode/config.json`. Both halves
+ * must be present for syncing to engage; a partial pair reads as local-only.
+ */
 readDbConfig(): { syncUrl?: string | undefined; authToken?: string | undefined; }
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`store/db.ts`](db.md) ×7
+
+## Tests
+
+`tests/store/store-paths.test.ts`.
+
+## Budget
+
+49 / 500 lines (451 to spare).
+
+## Env
+
+`FREECODE_DB_AUTH_TOKEN`, `FREECODE_DB_SYNC_URL`, `FREECODE_HOME`, `FREECODE_STORE`
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

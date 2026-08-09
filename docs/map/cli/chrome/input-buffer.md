@@ -38,6 +38,20 @@ cursorToVisualPos(buf: string, cursor: number, w: number): { visualRow: number; 
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`cli/session-modes.ts`](../session-modes.md) ×35, [`cli/chrome/bottom-ui.ts`](bottom-ui.md) ×9
+
+## Tests
+
+`tests/cli/chrome/input-buffer.test.ts`. 2 other test files reference it.
+
+## Budget
+
+114 / 500 lines (386 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `getInputBuffer()` — current flat buffer string (newlines embedded for multi-line).

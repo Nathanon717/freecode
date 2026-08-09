@@ -8,13 +8,38 @@
 ```typescript
 getOverlayRows(): number
 
+/**
+ * Drop the snapshot without repainting — for when every absolute row moved (resize).
+ */
 resetOverlay(): void
 
+/**
+ * Snapshot the `n` scroll-region rows the overlay is about to cover.
+ */
 captureOverlay(n: number, startRow: number, scrollHeight: number): void
 
+/**
+ * Escape sequence that repaints the covered rows from the snapshot, and clears
+ * it. Returns '' when no overlay is open, so callers can concatenate blindly.
+ */
 composeOverlayRestore(width: number): string
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/chrome/ansi.ts`](ansi.md) ×2, [`util/screen-buffer.ts`](../../util/screen-buffer.md) ×2
+- **Imported by:** [`cli/chrome/bottom-ui.ts`](bottom-ui.md) ×8
+
+## Tests
+
+`tests/cli/chrome/suggestion-overlay.test.ts`.
+
+## Budget
+
+57 / 500 lines (443 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Why a snapshot exists
 

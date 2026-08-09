@@ -23,6 +23,21 @@ computeScenarioHash(scenarioDir: string): string
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`util/text-encoding.ts`](../util/text-encoding.md) ×1
+- **Imported by:** [`cli/eval/eval-menu.ts`](../cli/eval/eval-menu.md) ×6, [`cli/eval/custom-eval-menu.ts`](../cli/eval/custom-eval-menu.md) ×5, [`eval/history.ts`](history.md) ×5, [`cli/eval/eval-screen.ts`](../cli/eval/eval-screen.md) ×2, [`eval/runner.ts`](runner.md) ×1
+
+## Tests
+
+`tests/eval/custom.test.ts`. 4 other test files reference it.
+
+## Budget
+
+95 / 500 lines (405 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `CUSTOM_EVAL_DIR`: Absolute path to `evals/custom/`.

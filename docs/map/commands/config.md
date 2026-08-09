@@ -12,6 +12,21 @@ runConfigCommand(rl: Interface, currentModel?: string, onRestore?: (() => void) 
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`config/index.ts`](../config/index.md) ×8, [`providers/types.ts`](../providers/types.md) ×6, [`cli/render/banner.ts`](../cli/render/banner.md) ×5, [`providers/model-data.ts`](../providers/model-data.md) ×3, [`cli/menus/list-menu.ts`](../cli/menus/list-menu.md) ×2, [`cli/menus/menu-shell.ts`](../cli/menus/menu-shell.md) ×1, [`cli/menus/raw-picker.ts`](../cli/menus/raw-picker.md) ×1, [`store/db.ts`](../store/db.md) ×1
+- **Imported by:** [`cli/session-modes.ts`](../cli/session-modes.md) ×1
+
+## Tests
+
+`tests/commands/config.test.ts`. 1 other test file references it.
+
+## Budget
+
+396 / 500 lines (104 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `runConfigCommand`: `onRestore` carries session footer refresh (`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`) that can't move into this module; the shell fires it after `setupBottomUI` when the bottom UI was active on a TTY.

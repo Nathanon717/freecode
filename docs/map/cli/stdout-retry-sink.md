@@ -6,9 +6,28 @@
 ## Exports
 
 ```typescript
+/**
+ * Retry-banner sink for non-TTY sessions: renders the "retrying in Ns" countdown
+ * to stdout. This is the presentation half of the retry flow — the adapter only
+ * emits target times; how (and whether) they are shown belongs to the CLI layer.
+ */
 createStdoutRetrySink(): (info: RetryBannerInfo | null) => void
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`providers/adapters/adapter-http-retry.ts`](../providers/adapters/adapter-http-retry.md) ×1
+
+## Tests
+
+`tests/cli/stdout-retry-sink.test.ts`.
+
+## Budget
+
+33 / 500 lines (467 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Behavior
 

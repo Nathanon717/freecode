@@ -48,3 +48,18 @@ class Conversation {
 }
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/turn-messages.ts`](turn-messages.md) ×1
+- **Imported by:** [`cli/command-dispatcher.ts`](../cli/command-dispatcher.md) ×1, [`cli/session-runner.ts`](../cli/session-runner.md) ×1
+
+## Tests
+
+`tests/agent/conversation.test.ts`. 1 other test file references it.
+
+## Budget
+
+59 / 500 lines (441 to spare).
+<!-- END GENERATED MAP FACTS -->

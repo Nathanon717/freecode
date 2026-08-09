@@ -12,6 +12,20 @@ executeToolInvocation(name: "create" | "edit" | "shell_exec" | "read" | "grep" |
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/tools/index.ts`](../../agent/tools/index.md) ×8, [`cli/tools/tool-invocation.ts`](tool-invocation.md) ×4, [`util/errors.ts`](../../util/errors.md) ×1
+
+## Tests
+
+`tests/cli/tools/tool-runner.test.ts`.
+
+## Budget
+
+103 / 500 lines (397 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Read When
 
 - Changing how a hand-typed tool call runs, or how `/tools` renders.

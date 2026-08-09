@@ -18,9 +18,30 @@ interface HeadlessPromptOptions {
   edit?: boolean;
 }
 
+/**
+ * Resolves to the process exit code.
+ */
 runHeadlessPrompt(options: HeadlessPromptOptions): Promise<number>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/chrome/toggles.ts`](chrome/toggles.md) ×4, [`agent/loop.ts`](../agent/loop.md) ×1, [`agent/tools/index.ts`](../agent/tools/index.md) ×1
+
+## Tests
+
+`tests/cli/headless-prompt.test.ts`.
+
+## Budget
+
+152 / 500 lines (348 to spare).
+
+## Env
+
+`FREECODE_MAX_TOOL_CALLS`, `FREECODE_TRANSCRIPT_STREAM`
+<!-- END GENERATED MAP FACTS -->
 
 ## The output contract
 

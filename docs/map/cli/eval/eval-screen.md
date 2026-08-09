@@ -18,6 +18,21 @@ buildEvalDetailScreen(scenario: CustomEval, entry: EvalHistoryEntry | null, mode
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`eval/history.ts`](../../eval/history.md) ×9, [`cli/render/banner.ts`](../render/banner.md) ×4, [`cli/theme.ts`](../theme.md) ×4, [`eval/custom.ts`](../../eval/custom.md) ×2, [`cli/eval/eval-dots.ts`](eval-dots.md) ×1, [`eval/runner.ts`](../../eval/runner.md) ×1
+- **Imported by:** [`cli/eval/custom-eval-menu.ts`](custom-eval-menu.md) ×5, [`cli/eval/humaneval-menu.ts`](humaneval-menu.md) ×2
+
+## Tests
+
+`tests/cli/eval/eval-screen.test.ts`. 2 other test files reference it.
+
+## Budget
+
+165 / 500 lines (335 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `printEvalHeader` — prints the labeled `── id ──` bar, "Prompt:", the prompt text, and a single-line prompt→response separator (matching `transcript-renderer.ts` `writeStepSeparator`) to stdout before an eval run; used by `/eval`.

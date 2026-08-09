@@ -64,10 +64,70 @@ provider that rejects a message shape these rules currently allow.
 ## Exports
 
 ```typescript
+/**
+ * Give the tool call(s) a stopped turn left unanswered the results that were
+ * already rendered for them, so the turn commits as balanced call/result pairs.
+ *
+ * Esc ends a turn by rejecting out of the tool's `execute` (see
+ * `agent/tools/index.ts` `withTurnStop`), which is precisely what stops the AI
+ * SDK taking another step — but a rejected execute also produces no
+ * `tool-result` part, so the call it denied comes back unpaired. Without this,
+ * `dropUnpairedToolCalls` would strip the call, the turn would sanitize to
+ * nothing, and `Conversation.commitTurn` would drop the user's own message with
+ * it — the very loss `docs/bug log/05-08-2026.md` fixed.
+ *
+ * Which calls need repairing is decided by `toolCallId`. `denials` is consumed
+ * in order: the tools run serialized (`withSerializedExecution`), so the nth
+ * unpaired call is the nth stop, and a count mismatch only costs precision of
+ * wording, never the pairing itself.
+ */
 pairStoppedToolCalls(messages: CoreMessage[], denials: string[]): CoreMessage[]
 
+/**
+ * Drop any assistant `tool-call` part with no matching `tool-result`, and any
+ * assistant message left with nothing but whitespace afterwards.
+ *
+ * A provider that receives a tool call without its result answers 400 — and it
+ * does so on every *later* request too, because the orphan is now a permanent
+ * part of the history. That makes an unbalanced append the one failure mode
+ * that can brick a session rather than just spoil a turn.
+ *
+ * This is a guard rail, not the mechanism: `runRecoveringStream` only collects
+ * response messages from an attempt that drained, and those are already
+ * balanced — except for a turn stopped by Esc, whose one unpaired call
+ * `pairStoppedToolCalls` above balances before this ever runs. If this drops
+ * something, the invariant upstream broke — hence the log line.
+ */
 dropUnpairedToolCalls(messages: CoreMessage[]): CoreMessage[]
 
+/**
+ * Rewrite native tool messages into the text protocol.
+ *
+ * The parsed-tools and fake loops call `streamText` *without* a `tools`
+ * parameter, so a `role: 'tool'` message in the history is a request that
+ * references tools the request never declared — OpenAI and several
+ * OpenAI-compatible providers 400 on exactly that. It is reachable as soon as
+ * native turns persist: switch from a native model to a parsed-tools one with
+ * `/model` mid-session and the next turn resends the native history.
+ *
+ * Flattening to the same `<tool_result>` text those loops already produce keeps
+ * the history readable to the model instead of discarding it.
+ */
 flattenToolMessagesToText(messages: CoreMessage[]): CoreMessage[]
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`logger.ts`](../logger.md) ×1
+- **Imported by:** [`agent/conversation.ts`](conversation.md) ×1, [`agent/fake-loop.ts`](fake-loop.md) ×1, [`agent/loop.ts`](loop.md) ×1, [`agent/parsed-tools.ts`](parsed-tools.md) ×1
+
+## Tests
+
+`tests/agent/turn-messages.test.ts`.
+
+## Budget
+
+194 / 500 lines (306 to spare).
+<!-- END GENERATED MAP FACTS -->

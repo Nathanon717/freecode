@@ -6,15 +6,43 @@
 ## Exports
 
 ```typescript
+/**
+ * Arm the gate for one native `fullStream` consumption. Clears any stale state.
+ */
 beginToolRenderGate(): void
 
+/**
+ * Disarm the gate and release anything still waiting (end of stream or error).
+ */
 endToolRenderGate(): void
 
+/**
+ * Called by `execute` before it renders the tool-call header. Resolves immediately
+ * when the gate is not armed (non-native paths) or a permit is already banked.
+ */
 awaitToolRenderGate(): Promise<void>
 
+/**
+ * Called by the consumer once it has processed (and flushed the text preceding) a
+ * tool call's `tool-call` part, releasing the next waiting `execute`.
+ */
 releaseToolRenderGate(): void
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`agent/loop.ts`](loop.md) ×3, [`agent/tools/wrappers.ts`](tools/wrappers.md) ×1
+
+## Tests
+
+`tests/agent/tool-render-gate.test.ts`.
+
+## Budget
+
+79 / 500 lines (421 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

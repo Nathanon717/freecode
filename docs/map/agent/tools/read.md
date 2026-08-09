@@ -10,6 +10,21 @@ readFileTool: CoreTool<z.ZodObject<{ path: z.ZodString; offset: z.ZodOptional<z.
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/workspace.ts`](../workspace.md) ×3, [`util/line-numbers.ts`](../../util/line-numbers.md) ×1
+- **Imported by:** [`agent/tools/index.ts`](index.md) ×1
+
+## Tests
+
+`tests/agent/tools/read.test.ts`. 3 other test files reference it.
+
+## Budget
+
+87 / 500 lines (413 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Parameters
 
 | Param | Type | Default | Description |

@@ -29,6 +29,21 @@ recordDeadModel(providerId: string, modelId: string): void
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`logger.ts`](../logger.md) ×2, [`providers/model-data.ts`](../providers/model-data.md) ×2
+- **Imported by:** [`providers/provider-registry.ts`](../providers/provider-registry.md) ×4, [`cli/eval/custom-eval-menu.ts`](../cli/eval/custom-eval-menu.md) ×1, [`commands/model.ts`](../commands/model.md) ×1
+
+## Tests
+
+`tests/store/model-list-cache.test.ts`. 3 other test files reference it.
+
+## Budget
+
+106 / 500 lines (394 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Cache File Shape
 
 ```json

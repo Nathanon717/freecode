@@ -30,6 +30,20 @@ resolveTokenizerFamily(modelId: string): string | null
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`tokenizers/count.ts`](count.md) ×13, [`tokenizers/download-tokenizer.ts`](download-tokenizer.md) ×2
+
+## Tests
+
+`tests/tokenizers/model-family.test.ts`.
+
+## Budget
+
+133 / 500 lines (367 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `resolveTokenizerFamily` resolves, in order: GPT-OSS (regex on `gpt-oss`, matched against real fetched model IDs across Groq/OpenRouter/NVIDIA/Cerebras), DeepSeek V4, DeepSeek V3, Llama 3.x, GLM-4, Mistral Tekken — everything else falls back to the generic tiktoken estimate. Legacy Llama/Mistral (SentencePiece) stays unimplemented (folds cleanly into the fallback).

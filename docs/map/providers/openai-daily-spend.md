@@ -26,6 +26,24 @@ refreshOpenAIDailySpend(options: OpenAIDailySpendRefreshOptions): void
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`cli/chrome/footer-status.ts`](../cli/chrome/footer-status.md) ×2, [`cli/session-modes.ts`](../cli/session-modes.md) ×1
+
+## Tests
+
+`tests/providers/openai-daily-spend.test.ts`. 1 other test file references it.
+
+## Budget
+
+180 / 500 lines (320 to spare).
+
+## Env
+
+`OPENAI_ADMIN_KEY`
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `fetchOpenAITodayCosts(now?)` — calls `GET /v1/organization/costs` with `bucket_width=1d`, `limit=1`, and a UTC-day `start_time`.

@@ -10,11 +10,32 @@ Pure hydration: takes a client, returns plain data, owns no state. Every column 
 ## Exports
 
 ```typescript
+/**
+ * Reads the DB into the shapes the rest of the app holds in memory: the model-data
+ * map and the config blob. Pure hydration — takes a client, returns plain data, owns
+ * no state. Every column decode (null handling, JSON blobs, corrupt-row tolerance)
+ * lives here so `db.ts` keeps only client lifecycle and writes.
+ */
 loadFromDb(c: Client): Promise<ModelDataMap>
 
 loadConfigFromDb(c: Client): Promise<DbConfigData>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`providers/model-data.ts`](../providers/model-data.md) ×5, [`store/db-config-cache.ts`](db-config-cache.md) ×4, [`store/db-types.ts`](db-types.md) ×2
+- **Imported by:** [`store/db.ts`](db.md) ×2
+
+## Tests
+
+`tests/store/db-load.test.ts`.
+
+## Budget
+
+87 / 500 lines (413 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

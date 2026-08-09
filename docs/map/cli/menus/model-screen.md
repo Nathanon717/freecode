@@ -37,9 +37,29 @@ buildAllItemLines(items: ModelMenuItem[], selected: number, currentModel: string
 
 buildScreen(items: ModelMenuItem[], selected: number, currentModel: string, viewStart: number, filterQuery: string, reserveRows?: number, showProviderHeaders?: boolean, emptyMessage?: string): { ...; }
 
+/**
+ * Every `models` column gets a row, null or not, so the screen is a faithful view
+ * of the stored row rather than only its populated half. Derived, non-stored
+ * facts (pricing, tokenizer, eval dots, new) stay conditional. See model-screen.md.
+ */
 buildModelDetailScreen(item: ModelMenuItem): string[]
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/banner.ts`](../render/banner.md) ×5, [`cli/theme.ts`](../theme.md) ×1, [`providers/pricing-verifier.ts`](../../providers/pricing-verifier.md) ×1, [`providers/types.ts`](../../providers/types.md) ×1
+- **Imported by:** [`commands/model.ts`](../../commands/model.md) ×32
+
+## Tests
+
+`tests/cli/menus/model-screen.test.ts`.
+
+## Budget
+
+235 / 500 lines (265 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

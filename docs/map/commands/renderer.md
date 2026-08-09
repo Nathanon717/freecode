@@ -10,6 +10,20 @@ runRendererDemo(): void
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/transcript-renderer.ts`](../cli/render/transcript-renderer.md) ×11, [`cli/render/markdown-renderer.ts`](../cli/render/markdown-renderer.md) ×5
+
+## Tests
+
+`tests/commands/renderer.test.ts`. 1 other test file references it.
+
+## Budget
+
+283 / 500 lines (217 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Implementation
 
 Each demo turn is expressed as a `renderTurn([...], DEMO_OPTS)` call from `cli/render/transcript-renderer.ts`.

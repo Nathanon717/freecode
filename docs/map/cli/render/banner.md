@@ -22,6 +22,25 @@ redrawBanner(): void
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`util/screen-buffer.ts`](../../util/screen-buffer.md) ×3
+- **Imported by:** [`cli/menus/model-screen.ts`](../menus/model-screen.md) ×5, [`cli/render/transcript-format.ts`](transcript-format.md) ×5, [`commands/config.ts`](../../commands/config.md) ×5, [`cli/chrome/bottom-ui.ts`](../chrome/bottom-ui.md) ×4, [`cli/eval/eval-screen.ts`](../eval/eval-screen.md) ×4, [`cli/eval/humaneval-menu.ts`](../eval/humaneval-menu.md) ×3, [`cli/theme.ts`](../theme.md) ×2, [`cli/command-dispatcher.ts`](../command-dispatcher.md) ×1, +4 more
+
+## Tests
+
+`tests/cli/render/banner.test.ts`. 7 other test files reference it.
+
+## Budget
+
+123 / 500 lines (377 to spare).
+
+## Env
+
+`FREECODE_HOME`
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `clearEntireTerminal`: resets ANSI state and scroll region; clears both visible and scrollback terminal content.

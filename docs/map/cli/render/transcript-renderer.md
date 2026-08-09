@@ -37,18 +37,64 @@ export {
   formatTranscriptStepDivider,
 } from "./transcript-format.js"
 
+/**
+ * Write the complete step separator block — the single authority for divider
+ * spacing. The separator is a single full-width line with one blank line above
+ * and one below, so content is set off from it on both sides. Every site that
+ * emits a divider (between-step close, between-turn flush) routes through here so
+ * the separator's look and surrounding whitespace live in exactly one place.
+ */
 writeStepSeparator(options?: TranscriptRuntimeOptions): void
 
+/**
+ * Open a new agent turn. Idempotent — safe to call when a turn is already open.
+ * First turn emits no leading divider. Subsequent turns flush the deferred divider
+ * from the previous turn's close (so it acts as a between-turn separator).
+ */
 beginTranscriptTurn(options?: TranscriptRuntimeOptions): void
 
+/**
+ * Record that a model text chunk was written to the output stream.
+ * Call once per chunk (or with the full text for non-streaming paths).
+ */
 notifyTranscriptChunk(chunk: string): void
 
+/**
+ * Write a chunk of model text: to the screen, to the step state machine, and to
+ * the transcript record. `chunk` must be the text exactly as it appears — already
+ * markdown-rendered — because the record replays it verbatim.
+ *
+ * Goes through the transcript stream like every other transcript write. It used to
+ * hardcode `process.stdout`, from when the stream defaulted to stderr and model
+ * text had to escape that; now stdout *is* the default, so the only stream this
+ * respects that it previously ignored is `null` — which has to silence model text
+ * too, or `-p` prints the response twice (once streamed here, once from
+ * `result.text`). The record/notify hooks still fire: they are in-memory state for
+ * replay, not output.
+ */
 writeTranscriptText(chunk: string, options?: TranscriptRuntimeOptions): void
 
+/**
+ * Drop the turn/step state so a replay starts from a clean slate instead of
+ * inheriting the divider the last live turn deferred. `pendingDivider` restores
+ * it afterwards, leaving the machine as a completed turn would.
+ */
 resetTranscriptTurnState(pendingDivider?: boolean): void
 
+/**
+ * Write the separator immediately before a tool call line.
+ * Inserts a blank line after response text (if any) and between parallel tool calls.
+ * Returns the rows it advanced the cursor by, so writeToolCallHeader can report
+ * the full header height.
+ */
 writeTranscriptToolLeadIn(options?: TranscriptRuntimeOptions): number
 
+/**
+ * Close the current step.
+ * hasMore=true: another step follows — the divider doubles as the next step's opener.
+ * hasMore=false: final step — writes only the closing divider.
+ * No-op when no turn is open.
+ */
 endTranscriptStep(hasMore: boolean, options?: TranscriptRuntimeOptions): void
 
 type ToolStepResult =
@@ -95,17 +141,61 @@ interface RenderedStep {
   tools?: ToolStep[];
 }
 
+/**
+ * Write the lead-in separator, optional rationale line, and tool call line.
+ * The live path calls this BEFORE executing the tool; the result is written
+ * separately via writeToolStepResult after execution completes.
+ *
+ * Returns the heights, in wrapped terminal rows, of what now sits above the
+ * result. The approval path budgets its preview against these so this header —
+ * and the model's preamble explaining the call — stay on screen; see
+ * agent/tools/index.ts.
+ */
 writeToolCallHeader(step: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "parsedTools">, opts?: TranscriptRuntimeOptions | undefined): ToolCallHeaderRows
 
+/**
+ * Write the preview block for a non-error tool result (edit diff, created
+ * file content, or plain text). Returns whether anything was written, so
+ * callers that print a preview ahead of execution (read-only precompute) can
+ * tell the later post-execution write to skip a duplicate.
+ */
 writeToolResultPreview(name: string, result: { kind: "text"; result: unknown; } | { kind: "create-content"; content: string; } | { kind: "edit-diff"; path: string; oldText: string; newText: string; contextBefore: string[]; contextAfter: string[]; lineIndent: string; startLine: number; } | { ...; }, opts?: TranscriptRuntimeOptions | undefined): boolean
 
+/**
+ * Write the preview or error block for a completed tool call.
+ * For errors, always writes the error line.
+ * For successful results, writes the preview only when non-empty.
+ */
 writeToolStepResult(name: string, result: ToolStepResult, opts?: TranscriptRuntimeOptions | undefined): void
 
+/**
+ * Render a complete tool step: header (lead-in + call line) then result preview.
+ */
 renderToolStep(step: ToolStep, opts?: TranscriptRuntimeOptions | undefined): void
 
+/**
+ * Render a complete agent turn: one beginTranscriptTurn followed by one or
+ * more RenderedSteps (each with optional text and zero or more tool calls),
+ * each closed by endTranscriptStep.
+ */
 renderTurn(steps: RenderedStep[], opts?: TranscriptRuntimeOptions | undefined): void
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/transcript-options.ts`](transcript-options.md) ×33, [`cli/render/transcript-format.ts`](transcript-format.md) ×19, [`cli/render/transcript-record.ts`](transcript-record.md) ×5, [`util/wrap-rows.ts`](../../util/wrap-rows.md) ×4, [`util/line-diff.ts`](../../util/line-diff.md) ×1
+- **Imported by:** [`agent/tools/wrappers.ts`](../../agent/tools/wrappers.md) ×16, [`agent/loop.ts`](../../agent/loop.md) ×15, [`commands/renderer.ts`](../../commands/renderer.md) ×11, [`agent/parsed-tools.ts`](../../agent/parsed-tools.md) ×8, [`cli/render/transcript-record.ts`](transcript-record.md) ×7, [`cli/render/transcript-replay.ts`](transcript-replay.md) ×7, [`agent/fake-loop.ts`](../../agent/fake-loop.md) ×6, [`agent/tools/edit-diff-context.ts`](../../agent/tools/edit-diff-context.md) ×1, +2 more
+
+## Tests
+
+`tests/cli/render/transcript-renderer.test.ts`. 1 other test file references it.
+
+## Budget
+
+398 / 500 lines (102 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

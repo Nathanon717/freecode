@@ -14,6 +14,11 @@ getProvider(id: string): ProviderConfig | undefined
 
 clearModelNewFlag(providerId: string, modelId: string): void
 
+/**
+ * Permanently blocklist a model for this user: persist the key and drop it from the
+ * live registry so the running session stops offering it immediately. `_doInit` applies
+ * the same filter on every later launch. The caller owns deleting the DB rows.
+ */
 blocklistModelPermanently(providerId: string, modelId: string): void
 
 retireDeadModel(providerId: string, modelId: string): void
@@ -28,6 +33,21 @@ interface ResolvedModel {
 resolveModel(modelPreference: string): ResolvedModel
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`providers/fake.ts`](fake.md) ×15, [`providers/provider-catalog.ts`](provider-catalog.md) ×14, [`providers/types.ts`](types.md) ×12, [`config/index.ts`](../config/index.md) ×5, [`store/model-list-cache.ts`](../store/model-list-cache.md) ×4, [`providers/model-data.ts`](model-data.md) ×3, [`providers/paid-guard.ts`](paid-guard.md) ×3, [`providers/user-blocklist.ts`](user-blocklist.md) ×3, [`logger.ts`](../logger.md) ×2, [`providers/adapters/openai-compat.ts`](adapters/openai-compat.md) ×1
+- **Imported by:** [`providers/index.ts`](index.md) ×8, [`commands/model.ts`](../commands/model.md) ×4, [`agent/loop.ts`](../agent/loop.md) ×2, [`cli/command-dispatcher.ts`](../cli/command-dispatcher.md) ×1, [`cli/eval/custom-eval-menu.ts`](../cli/eval/custom-eval-menu.md) ×1, [`commands/status.ts`](../commands/status.md) ×1
+
+## Tests
+
+`tests/providers/provider-registry.test.ts`. 3 other test files reference it.
+
+## Budget
+
+455 / 500 lines (45 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Read When
 

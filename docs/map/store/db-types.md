@@ -12,6 +12,21 @@ type ModelDataMap = Record<string, ModelEntry>;
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`providers/model-data.ts`](../providers/model-data.md) ×1
+- **Imported by:** [`store/db.ts`](db.md) ×3, [`store/db-load.ts`](db-load.md) ×2
+
+## Tests
+
+No mirrored test — pure type declarations; erased at compile time, no runtime behavior to test.
+
+## Budget
+
+5 / 500 lines (495 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Key Neighbors
 
 - [store/db.md](db.md), [store/db-load.md](db-load.md): both import from here.

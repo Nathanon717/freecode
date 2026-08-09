@@ -6,6 +6,10 @@
 ## Exports
 
 ```typescript
+/**
+ * Whether a model is free to call. A provider with no `isFreeModelId` predicate
+ * serves only free models (the free-tier default); a `paid` provider serves none.
+ */
 isFreeModel(provider: ProviderConfig, modelId: string): boolean
 
 selectFreeModels(provider: ProviderConfig, models: ModelConfig[]): ModelConfig[]
@@ -13,6 +17,25 @@ selectFreeModels(provider: ProviderConfig, models: ModelConfig[]): ModelConfig[]
 PROVIDER_REGISTRY: ProviderConfig[]
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`providers/types.ts`](types.md) ×5
+- **Imported by:** [`providers/provider-registry.ts`](provider-registry.md) ×14
+
+## Tests
+
+`tests/providers/provider-catalog.test.ts`. 1 other test file references it.
+
+## Budget
+
+330 / 500 lines (170 to spare).
+
+## Env
+
+`CLOUDFLARE_ACCOUNT_ID`
+<!-- END GENERATED MAP FACTS -->
 
 ## Read When
 

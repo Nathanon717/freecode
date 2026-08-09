@@ -12,6 +12,21 @@ buildEvalDots(model: string, data: EvalDotsData): string
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`eval/history.ts`](../../eval/history.md) ×3, [`cli/theme.ts`](../theme.md) ×1
+- **Imported by:** [`cli/eval/eval-menu.ts`](eval-menu.md) ×1, [`cli/eval/eval-screen.ts`](eval-screen.md) ×1, [`cli/eval/humaneval-menu.ts`](humaneval-menu.md) ×1, [`commands/model.ts`](../../commands/model.md) ×1
+
+## Tests
+
+`tests/cli/eval/eval-dots.test.ts`. 2 other test files reference it.
+
+## Budget
+
+28 / 500 lines (472 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `statusCircle(status)` — returns a chalk-colored `●` string for an `EvalStatus`.

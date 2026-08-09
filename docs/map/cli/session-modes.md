@@ -10,6 +10,20 @@ createInteractiveMode(rl: Interface, projectRoot: string, getSelectedModel: () =
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/chrome/input-buffer.ts`](chrome/input-buffer.md) ×35, [`cli/chrome/bottom-ui.ts`](chrome/bottom-ui.md) ×31, [`cli/chrome/footer-status.ts`](chrome/footer-status.md) ×9, [`cli/slash-commands.ts`](slash-commands.md) ×7, [`cli/chrome/toggles.ts`](chrome/toggles.md) ×5, [`cli/tools/tool-invocation.ts`](tools/tool-invocation.md) ×5, [`tokenizers/count.ts`](../tokenizers/count.md) ×3, [`agent/tools/index.ts`](../agent/tools/index.md) ×2, [`agent/tools/tool-names.ts`](../agent/tools/tool-names.md) ×2, [`cli/chrome/turn-state.ts`](chrome/turn-state.md) ×2, [`cli/eval/eval-menu.ts`](eval/eval-menu.md) ×2, [`cli/tools/tool-approval.ts`](tools/tool-approval.md) ×2, +11 more
+
+## Tests
+
+`tests/cli/session-modes.test.ts`.
+
+## Budget
+
+446 / 500 lines (54 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Interactive Mode
 
 - Uses raw stdin for prompt input via `runRawKeySession` (from `cli/menus/raw-picker.ts`), which owns the listener snapshot/restore and raw-mode lifecycle. This prevents readline from echoing typed characters into `process.stdout` and contaminating the screen-buffer epoch used by the suggestion overlay restore.

@@ -10,6 +10,21 @@ loadBpeJsonEncoder(tokenizerJsonPath: string): TokenizerEncoder
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`tokenizers/chat-format.ts`](../chat-format.md) ×1, [`tokenizers/count.ts`](../count.md) ×1, [`util/text-encoding.ts`](../../util/text-encoding.md) ×1
+- **Imported by:** [`tokenizers/count.ts`](../count.md) ×1
+
+## Tests
+
+`tests/tokenizers/backends/bpe-json.test.ts`.
+
+## Budget
+
+33 / 500 lines (467 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `loadBpeJsonEncoder`: reads and `JSON.parse`s the file, then constructs `new Tokenizer(json, {})` — the empty second argument stands in for `tokenizer_config.json`, which this backend never fetches. Verified against `@huggingface/tokenizers`' own source: the library builds `normalizer`/`pre_tokenizer`/`model`/`decoder` directly off `tokenizer.json`'s own top-level fields, and for BPE-type models (every family this backend serves) the config argument is read nowhere in the constructor. This sidesteps DeepSeek's real `tokenizer_config.json` bug (`"tokenizer_class": "LlamaTokenizerFast"` installing a Metaspace pre-tokenizer that drops spaces — huggingface/transformers#45488) by construction, not by special-casing DeepSeek.

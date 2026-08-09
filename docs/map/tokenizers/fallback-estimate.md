@@ -14,6 +14,21 @@ estimateContextTokens(messages: CoreMessage[]): number
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`tokenizers/chat-format.ts`](chat-format.md) ×2
+- **Imported by:** [`tokenizers/count.ts`](count.md) ×2
+
+## Tests
+
+`tests/tokenizers/fallback-estimate.test.ts`. 2 other test files reference it.
+
+## Budget
+
+29 / 500 lines (471 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `estimateTextTokens`: lazily creates a single module-level `js-tiktoken` `o200k_base` encoder and returns its real BPE token count.

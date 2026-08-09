@@ -14,6 +14,21 @@ ensureTokenizerFile(family: string, repoId: string, filename?: string, downloadF
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`tokenizers/model-family.ts`](model-family.md) ×2, [`providers/model-data.ts`](../providers/model-data.md) ×1
+- **Imported by:** [`tokenizers/count.ts`](count.md) ×2
+
+## Tests
+
+`tests/tokenizers/download-tokenizer.test.ts`. 1 other test file references it.
+
+## Budget
+
+89 / 500 lines (411 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `tokenizerCachePath`: keyed by **family** + `filename` (default `tokenizer.json`), not repo ID or model ID — mirrors `count.ts`'s `encoderCache` key, since (so far) one family maps to exactly one canonical repo. The `filename` lets Tekken cache `tekken.json` beside the default without collision.

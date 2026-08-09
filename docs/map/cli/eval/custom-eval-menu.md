@@ -14,6 +14,21 @@ runEvalScenarios(chosen: CustomEval[], model: string): Promise<void>
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/chrome/footer-status.ts`](../chrome/footer-status.md) ×7, [`eval/runner.ts`](../../eval/runner.md) ×6, [`cli/eval/eval-screen.ts`](eval-screen.md) ×5, [`eval/custom.ts`](../../eval/custom.md) ×5, [`cli/menus/list-menu.ts`](../menus/list-menu.md) ×3, [`eval/history.ts`](../../eval/history.md) ×3, [`agent/system-prompt.ts`](../../agent/system-prompt.md) ×1, [`cli/menus/action-menu.ts`](../menus/action-menu.md) ×1, [`eval/errors.ts`](../../eval/errors.md) ×1, [`providers/model-data.ts`](../../providers/model-data.md) ×1, [`providers/provider-registry.ts`](../../providers/provider-registry.md) ×1, [`store/model-list-cache.ts`](../../store/model-list-cache.md) ×1, +1 more
+- **Imported by:** [`cli/eval/eval-menu.ts`](eval-menu.md) ×4
+
+## Tests
+
+`tests/cli/eval/custom-eval-menu.test.ts`. 1 other test file references it.
+
+## Budget
+
+360 / 500 lines (140 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `getEvalStatus` is re-exported from `cli/eval/eval-dots.ts`.

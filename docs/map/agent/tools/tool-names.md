@@ -12,6 +12,9 @@ READ_ONLY_TOOL_NAMES: readonly ['read', 'grep', 'list_dir']
 
 WRITE_TOOL_NAMES: readonly ['create', 'edit', 'shell_exec']
 
+/**
+ * Every directly-invokable tool, read-only half first. Order is display order.
+ */
 TOOL_NAMES: readonly ['read', 'grep', 'list_dir', 'create', 'edit', 'shell_exec']
 
 type ReadOnlyToolName = (typeof READ_ONLY_TOOL_NAMES)[number];
@@ -20,15 +23,45 @@ type WriteToolName = (typeof WRITE_TOOL_NAMES)[number];
 
 type ToolName = (typeof TOOL_NAMES)[number];
 
+/**
+ * A read-only tool only reads: safe to offer in read-only mode, and safe to run
+ * before the user confirms the call (see withConfirmation in tools/index.ts).
+ */
 isReadOnlyTool(name: string): name is "read" | "grep" | "list_dir"
 
+/**
+ * A write tool changes files or runs commands; denied in read-only mode.
+ */
 isWriteTool(name: string): name is "create" | "edit" | "shell_exec"
 
 isToolName(name: string): name is "create" | "edit" | "shell_exec" | "read" | "grep" | "list_dir"
 
+/**
+ * The tool names `createTools` offers for the same flags, in the same order. The
+ * system prompt needs this list without loading the tools themselves (via
+ * tokenizers/chat-format.ts it is on the interactive boot path), so it is stated
+ * here rather than read off the registry — a unit test pins the two together.
+ *
+ * Getting it wrong is not cosmetic: a prompt that advertises `edit` to a read-only
+ * session sends the model off calling a tool that is not there.
+ */
 offeredToolNames(options: { readOnly?: boolean | undefined; spawnAgent?: boolean | undefined; }): readonly string[]
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`cli/tools/tool-invocation.ts`](../../cli/tools/tool-invocation.md) ×9, [`agent/loop.ts`](../loop.md) ×2, [`agent/system-prompt.ts`](../system-prompt.md) ×2, [`agent/tools/index.ts`](index.md) ×2, [`cli/session-modes.ts`](../../cli/session-modes.md) ×2, [`agent/tools/wrappers.ts`](wrappers.md) ×1
+
+## Tests
+
+`tests/agent/tools/tool-names.test.ts`. 2 other test files reference it.
+
+## Budget
+
+64 / 500 lines (436 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Why it is separate from the registry
 

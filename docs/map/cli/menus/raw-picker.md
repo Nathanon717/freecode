@@ -36,6 +36,21 @@ interface RawKeySession<T> {
   promise: Promise<T>;
 }
 
+/**
+ * Low-level stdin raw-mode lifecycle primitive.
+ *
+ * Owns:
+ *   1. Snapshot and remove pre-existing 'data' listeners.
+ *   2. setRawMode(true) / resume() / setEncoding('utf8').
+ *   3. Internal 'data' handler: dispatches Ctrl-C to onCtrlC (after cleanup),
+ *      every other key to onKey.
+ *   4. close(value): removes the internal handler, setRawMode(false), restores
+ *      saved listeners, calls onClose, then resolves the promise.
+ *
+ * Does NOT own: cursor visibility, footer management, viewport scrolling,
+ * readline interface, or any other caller-specific concern. Those belong in
+ * onClose / onCtrlC.
+ */
 runRawKeySession<T = void>(callbacks: RawKeySessionCallbacks): RawKeySession<T>
 
 interface RawPickerOptions<T = void> {
@@ -53,9 +68,31 @@ interface RawPickerOptions<T = void> {
   getControls?: () => string | undefined;
 }
 
+/**
+ * Runs a raw-mode terminal picker.
+ * Owns: raw-mode lifecycle (via runRawKeySession), cursor hide/show,
+ * readline listener restore, initial draw, drawFooter after each redraw.
+ * Caller owns: rendering (render()), key handling (onKey()).
+ * Resolves with whatever value is passed to close().
+ */
 runRawPicker<T = void>(rl: Interface, opts: RawPickerOptions<T>): Promise<T>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/chrome/bottom-ui.ts`](../chrome/bottom-ui.md) ×15
+- **Imported by:** [`cli/menus/menu-shell.ts`](menu-shell.md) ×2, [`cli/eval/eval-menu.ts`](../eval/eval-menu.md) ×1, [`cli/menus/list-menu.ts`](list-menu.md) ×1, [`cli/session-modes.ts`](../session-modes.md) ×1, [`cli/tools/tool-approval.ts`](../tools/tool-approval.md) ×1, [`commands/config.ts`](../../commands/config.md) ×1, [`commands/model.ts`](../../commands/model.md) ×1
+
+## Tests
+
+`tests/cli/menus/raw-picker.test.ts`. 6 other test files reference it.
+
+## Budget
+
+240 / 500 lines (260 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Responsibilities
 

@@ -12,6 +12,21 @@ getModelSettings(key: string): OverridableSettings
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`providers/types.ts`](types.md) ×2
+- **Imported by:** [`config/index.ts`](../config/index.md) ×1, [`providers/model-data.ts`](model-data.md) ×1
+
+## Tests
+
+`tests/providers/model-settings-accessor.test.ts`.
+
+## Budget
+
+13 / 500 lines (487 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Lifecycle
 
 - `model-data.ts` calls `registerModelSettings(getModelSettings)` at module load time.

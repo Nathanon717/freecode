@@ -14,6 +14,21 @@ runModelCommand(rl: Interface, currentModel: string, setSelectedModel: (model: s
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/menus/model-screen.ts`](../cli/menus/model-screen.md) ×32, [`providers/model-data.ts`](../providers/model-data.md) ×6, [`cli/menus/action-menu.ts`](../cli/menus/action-menu.md) ×4, [`providers/provider-registry.ts`](../providers/provider-registry.md) ×4, [`cli/menus/list-menu.ts`](../cli/menus/list-menu.md) ×3, [`config/index.ts`](../config/index.md) ×3, [`store/db.ts`](../store/db.md) ×3, [`eval/history.ts`](../eval/history.md) ×2, [`providers/pricing-verifier.ts`](../providers/pricing-verifier.md) ×2, [`cli/eval/eval-dots.ts`](../cli/eval/eval-dots.md) ×1, [`cli/menus/menu-shell.ts`](../cli/menus/menu-shell.md) ×1, [`cli/menus/raw-picker.ts`](../cli/menus/raw-picker.md) ×1, +4 more
+- **Imported by:** [`cli/session-modes.ts`](../cli/session-modes.md) ×1
+
+## Tests
+
+`tests/commands/model.test.ts`. 3 other test files reference it.
+
+## Budget
+
+385 / 500 lines (115 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `ModelMenuItem`, `filterModelItems`, and `buildAllItemLines` are re-exported from `cli/menus/model-screen.ts` for a stable import surface.

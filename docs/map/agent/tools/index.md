@@ -12,6 +12,17 @@ export type {
   ToolCallPreview,
 } from "./wrappers.js"
 
+/**
+ * The name -> tool maps behind the partition declared in tools/tool-names.ts.
+ * Read-only mode (the Ctrl+R toggle and `-p`) offers only READ_ONLY_TOOL_DEFS.
+ *
+ * A read-only tool's action is also, by definition, safe to run BEFORE the user
+ * confirms it: the preview shown in the approval UI is the actual result, reused
+ * on approval instead of re-executing (see withConfirmation). That is why the
+ * precompute check *is* `isReadOnlyTool` rather than a second list that happens
+ * to agree with it. Never move a tool with a side effect beyond reading into
+ * READ_ONLY_TOOL_DEFS — the approval UI would then act before consent.
+ */
 READ_ONLY_TOOL_DEFS: Record<'read' | 'grep' | 'list_dir', AnyCoreTool>
 
 WRITE_TOOL_DEFS: Record<'create' | 'edit' | 'shell_exec', AnyCoreTool>
@@ -31,6 +42,21 @@ shellTool: CoreTool<ZodObject<{ command: ZodString; timeout_ms: ZodOptional<ZodN
 listDirTool: CoreTool<ZodObject<{ path: ZodOptional<ZodString>; }, "strip", ZodTypeAny, { path?: string | undefined; }, { path?: string | undefined; }>, string> & { ...; }
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/tools/wrappers.ts`](wrappers.md) ×12, [`agent/tools/spawn-agent.ts`](spawn-agent.md) ×2, [`agent/tools/tool-names.ts`](tool-names.md) ×2, [`agent/tools/create.ts`](create.md) ×1, [`agent/tools/edit.ts`](edit.md) ×1, [`agent/tools/grep.ts`](grep.md) ×1, [`agent/tools/list-dir.ts`](list-dir.md) ×1, [`agent/tools/read.ts`](read.md) ×1, [`agent/tools/shell.ts`](shell.md) ×1, [`config/index.ts`](../../config/index.md) ×1
+- **Imported by:** [`cli/tools/tool-runner.ts`](../../cli/tools/tool-runner.md) ×8, [`agent/parsed-tools.ts`](../parsed-tools.md) ×3, [`agent/loop.ts`](../loop.md) ×2, [`cli/session-modes.ts`](../../cli/session-modes.md) ×2, [`cli/tools/tool-approval.ts`](../../cli/tools/tool-approval.md) ×2, [`agent/fake-loop.ts`](../fake-loop.md) ×1, [`agent/subagents/run-subagent.ts`](../subagents/run-subagent.md) ×1, [`cli/command-dispatcher.ts`](../../cli/command-dispatcher.md) ×1, +3 more
+
+## Tests
+
+`tests/agent/tools/index.test.ts`. 2 other test files reference it.
+
+## Budget
+
+102 / 500 lines (398 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Tool Keys
 

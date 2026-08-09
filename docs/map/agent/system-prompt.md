@@ -10,6 +10,21 @@ buildSystemPrompt(loadAgentsMd?: boolean, toolNames?: readonly string[]): string
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/tools/tool-names.ts`](tools/tool-names.md) ×2, [`agent/workspace.ts`](workspace.md) ×2, [`util/text-encoding.ts`](../util/text-encoding.md) ×1
+- **Imported by:** [`agent/loop.ts`](loop.md) ×2, [`cli/eval/custom-eval-menu.ts`](../cli/eval/custom-eval-menu.md) ×1, [`cli/eval/humaneval-menu.ts`](../cli/eval/humaneval-menu.md) ×1, [`tokenizers/chat-format.ts`](../tokenizers/chat-format.md) ×1
+
+## Tests
+
+`tests/agent/system-prompt.test.ts`. 6 other test files reference it.
+
+## Budget
+
+68 / 500 lines (432 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `loadAgentsMd` defaults to `false`. When `true`, appends the project's instruction file under a `# Project Instructions (<file>)` header; silently omitted if neither file exists. See [Project instructions](#project-instructions) for file choice and caller-only stripping.

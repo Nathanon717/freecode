@@ -26,6 +26,21 @@ toggleBarWidth(): number
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/theme.ts`](../theme.md) ×3
+- **Imported by:** [`cli/session-modes.ts`](../session-modes.md) ×5, [`cli/headless-prompt.ts`](../headless-prompt.md) ×4, [`cli/chrome/bottom-ui.ts`](bottom-ui.md) ×2
+
+## Tests
+
+`tests/cli/chrome/toggles.test.ts`. 2 other test files reference it.
+
+## Budget
+
+105 / 500 lines (395 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `cycleByChar(char)` — advances the toggle whose `char` matches; returns `true` when a toggle was found.

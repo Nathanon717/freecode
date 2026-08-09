@@ -10,6 +10,21 @@ createFileTool: CoreTool<z.ZodObject<{ path: z.ZodString; content: z.ZodString; 
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/workspace.ts`](../workspace.md) ×2
+- **Imported by:** [`agent/tools/index.ts`](index.md) ×1
+
+## Tests
+
+`tests/agent/tools/create.test.ts`. 1 other test file references it.
+
+## Budget
+
+32 / 500 lines (468 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Parameters
 
 | Param | Type | Description |

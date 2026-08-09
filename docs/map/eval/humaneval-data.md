@@ -35,6 +35,25 @@ loadHumanEvalProblems(): HumanEvalProblem[] | null
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`util/text-encoding.ts`](../util/text-encoding.md) ×2
+- **Imported by:** [`cli/eval/humaneval-menu.ts`](../cli/eval/humaneval-menu.md) ×10, [`cli/eval/eval-menu.ts`](../cli/eval/eval-menu.md) ×5
+
+## Tests
+
+`tests/eval/humaneval-data.test.ts`. 2 other test files reference it.
+
+## Budget
+
+98 / 500 lines (402 to spare).
+
+## Env
+
+`HUMANEVAL_DATA`, `HUMANEVAL_EXAMPLE_DATA`
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `downloadFile` follows 301/302 redirects and rejects on non-200 status or stream errors; `ensureHumanEvalDataset` accepts an injectable `downloadFn` so tests can stub the network.

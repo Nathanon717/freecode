@@ -28,6 +28,21 @@ preloadTokenizerFor(modelId: string): Promise<void>
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`tokenizers/model-family.ts`](model-family.md) ×13, [`tokenizers/download-tokenizer.ts`](download-tokenizer.md) ×2, [`tokenizers/fallback-estimate.ts`](fallback-estimate.md) ×2, [`tokenizers/backends/bpe-json.ts`](backends/bpe-json.md) ×1, [`tokenizers/backends/tekken.ts`](backends/tekken.md) ×1, [`tokenizers/backends/tiktoken.ts`](backends/tiktoken.md) ×1
+- **Imported by:** [`cli/tools/tool-approval.ts`](../cli/tools/tool-approval.md) ×7, [`cli/session-modes.ts`](../cli/session-modes.md) ×3, [`tokenizers/backends/tiktoken.ts`](backends/tiktoken.md) ×3, [`commands/model.ts`](../commands/model.md) ×1, [`tokenizers/backends/bpe-json.ts`](backends/bpe-json.md) ×1, [`tokenizers/backends/tekken.ts`](backends/tekken.md) ×1
+
+## Tests
+
+`tests/tokenizers/count.test.ts`. 1 other test file references it.
+
+## Budget
+
+108 / 500 lines (392 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `countTokens`: resolves the model's family, looks it up in the in-memory `encoderCache` (keyed by family, not model ID, since many model IDs share one family), and falls back to `fallback-estimate.ts`'s generic tiktoken estimate when no family is resolved or no encoder is cached yet. Never blocks, never throws.

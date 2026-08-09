@@ -41,7 +41,8 @@
       "Bash(sed -i 's/4242 ctx/9999 ctx/g' tests/scenarios/tty-status-line.scenario.json)",
       "Bash(echo \"broken-exit=$?\")",
       "Bash(sed -i 's/9999 ctx/4242 ctx/g' tests/scenarios/tty-status-line.scenario.json)",
-      "Bash(echo \"fixed-exit=$?\")"
+      "Bash(echo \"fixed-exit=$?\")",
+      "Bash(echo \"=== exit $?\".j  h1)"
     ]
   }
 }

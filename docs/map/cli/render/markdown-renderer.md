@@ -6,6 +6,10 @@
 ## Exports
 
 ```typescript
+/**
+ * Render a complete markdown string.
+ * No-ops when output is not a styled terminal (no TTY and no FORCE_COLOR).
+ */
 renderMarkdown(text: string): string
 
 interface MarkdownStreamRenderer {
@@ -15,9 +19,35 @@ interface MarkdownStreamRenderer {
   flush(): string;
 }
 
+/**
+ * Line-buffered streaming markdown renderer.
+ * Emits rendered lines as each `\n` arrives, preserving the live-streaming effect.
+ * Code blocks are buffered until their closing fence so the background width
+ * can be sized to the longest line.
+ * No-ops (pass-through) when output is not a styled terminal.
+ */
 createMarkdownStreamRenderer(): MarkdownStreamRenderer
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/theme.ts`](../theme.md) ×4
+- **Imported by:** [`commands/renderer.ts`](../../commands/renderer.md) ×5, [`agent/loop.ts`](../../agent/loop.md) ×2, [`agent/parsed-tools.ts`](../../agent/parsed-tools.md) ×2
+
+## Tests
+
+`tests/cli/render/markdown-renderer.test.ts`.
+
+## Budget
+
+489 / 500 lines (11 to spare).
+
+## Env
+
+`FORCE_COLOR`
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

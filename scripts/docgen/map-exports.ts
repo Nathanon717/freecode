@@ -2,6 +2,7 @@ import ts from 'typescript';
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { dirname, join, relative } from 'path';
 import { fileURLToPath } from 'url';
+import { countLines } from '../checks/line-budget.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
@@ -9,7 +10,7 @@ const SRC_ROOT = join(ROOT, 'src');
 
 let cachedProgram: ts.Program | null = null;
 
-function getProgram(): ts.Program {
+export function getProgram(): ts.Program {
   if (cachedProgram) return cachedProgram;
   const configPath = join(ROOT, 'tsconfig.json');
   const configFile = ts.readConfigFile(configPath, (path) => ts.sys.readFile(path));
@@ -77,11 +78,28 @@ function sourcePos(sym: ts.Symbol): number {
   return decl ? decl.getStart() : Number.MAX_SAFE_INTEGER;
 }
 
+/**
+ * Re-synthesize the symbol's JSDoc as a comment block.
+ *
+ * Interfaces, type aliases and enums keep their documentation for free because
+ * that branch emits `decl.getText()` verbatim. Everything else goes through the
+ * checker, which reports a signature and nothing else — so per-export intent
+ * has to be lifted back on deliberately, or it stops at the source file. Tags
+ * are not lifted: nothing in `src/` uses them.
+ */
+function docComment(sym: ts.Symbol, checker: ts.TypeChecker): string {
+  const text = ts.displayPartsToString(sym.getDocumentationComment(checker)).trim();
+  if (text === '') return '';
+  const body = text.split('\n').map(line => ` * ${line}`.trimEnd()).join('\n');
+  return `/**\n${body}\n */\n`;
+}
+
 function renderSymbol(sym: ts.Symbol, checker: ts.TypeChecker): string | null {
   const decls = sym.getDeclarations();
   if (!decls || decls.length === 0) return null;
   const decl = decls[0];
   const name = sym.getName();
+  const doc = docComment(sym, checker);
 
   // Interfaces / type aliases / enums: emit explicit source text (full body).
   if (
@@ -96,19 +114,19 @@ function renderSymbol(sym: ts.Symbol, checker: ts.TypeChecker): string | null {
   }
 
   if (ts.isClassDeclaration(decl)) {
-    return renderClass(decl, checker);
+    return `${doc}${renderClass(decl, checker)}`;
   }
 
   // Re-export of a namespace / module
   if (ts.isExportSpecifier(decl) || ts.isNamespaceExport(decl)) {
     const type = checker.getTypeOfSymbolAtLocation(sym, decl);
-    return `${name}: ${checker.typeToString(type)}`;
+    return `${doc}${name}: ${checker.typeToString(type)}`;
   }
 
   const type = checker.getTypeOfSymbolAtLocation(sym, decl);
   const callSigs = type.getCallSignatures();
   if (callSigs.length > 0) {
-    return callSigs
+    return doc + callSigs
       .map((sig) => `${name}${checker.signatureToString(sig)}`)
       .join('\n');
   }
@@ -118,7 +136,7 @@ function renderSymbol(sym: ts.Symbol, checker: ts.TypeChecker): string | null {
     decl,
     ts.TypeFormatFlags.NoTruncation | ts.TypeFormatFlags.UseSingleQuotesForStringLiteralType,
   );
-  return `${name}: ${typeStr}`;
+  return `${doc}${name}: ${typeStr}`;
 }
 
 export function extractExports(srcAbsPath: string): string {
@@ -198,7 +216,7 @@ export function pageLabel(mapAbsPath: string): string {
 
 /** Line count of a source file, as shown next to its entry in the structure tree. */
 function lineCount(srcAbsPath: string): number {
-  return readFileSync(srcAbsPath, 'utf-8').split('\n').length;
+  return countLines(readFileSync(srcAbsPath, 'utf-8'));
 }
 
 /** Generated, directory-grouped structure tree + nav links for docs/map/README.md. */

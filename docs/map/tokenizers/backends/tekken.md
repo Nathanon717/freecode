@@ -10,6 +10,21 @@ loadTekkenEncoder(tekkenJsonPath: string): TokenizerEncoder
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`tokenizers/backends/tiktoken.ts`](tiktoken.md) ×1, [`tokenizers/count.ts`](../count.md) ×1, [`util/text-encoding.ts`](../../util/text-encoding.md) ×1
+- **Imported by:** [`tokenizers/count.ts`](../count.md) ×1
+
+## Tests
+
+`tests/tokenizers/backends/tekken.test.ts`.
+
+## Budget
+
+47 / 500 lines (453 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `loadTekkenEncoder`: reads `{ config, vocab }`, then builds a `js-tiktoken` `Tiktoken` directly — no `mistral-common` preprocessing. Three details are load-bearing:

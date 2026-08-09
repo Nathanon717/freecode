@@ -64,6 +64,21 @@ parseToolArgs(argsText: string): Record<string, unknown>
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/tools/tool-names.ts`](../../agent/tools/tool-names.md) ×9, [`cli/theme.ts`](../theme.md) ×1
+- **Imported by:** [`cli/session-modes.ts`](../session-modes.md) ×5, [`cli/tools/tool-runner.ts`](tool-runner.md) ×4, [`cli/chrome/bottom-ui.ts`](../chrome/bottom-ui.md) ×2, [`cli/command-dispatcher.ts`](../command-dispatcher.md) ×1
+
+## Tests
+
+`tests/cli/tools/tool-invocation.test.ts`. 1 other test file references it.
+
+## Budget
+
+323 / 500 lines (177 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Read When
 
 - Changing the tool-call typing syntax, argument coercion, the autofill skeleton, tabstop navigation, or the pastel tool-name highlight.

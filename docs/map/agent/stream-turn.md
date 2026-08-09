@@ -63,9 +63,27 @@ interface RecoveringStreamOutcome<S extends RecoverableStream> {
   stopDenials: string[];
 }
 
+/**
+ * Resolves with the attempt that drained without an error part.
+ */
 runRecoveringStream<S extends RecoverableStream>(opts: RecoveringStreamOptions<S>): Promise<RecoveringStreamOutcome<S>>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`util/errors.ts`](../util/errors.md) ×6, [`logger.ts`](../logger.md) ×1
+- **Imported by:** [`agent/loop.ts`](loop.md) ×2, [`agent/subagents/run-subagent.ts`](subagents/run-subagent.md) ×2
+
+## Tests
+
+`tests/agent/stream-turn.test.ts`.
+
+## Budget
+
+127 / 500 lines (373 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Why it exists
 

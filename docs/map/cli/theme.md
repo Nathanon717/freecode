@@ -8,11 +8,30 @@
 ## Exports
 
 ```typescript
+/**
+ * Raw color values behind the tokens. Exported for the rare call site that
+ * needs the value itself rather than a styler — prefer `theme` otherwise.
+ */
 palette: { readonly warning: '#FFA500'; readonly codeSurface: '#333333'; readonly toolName: '#c9b3ff'; readonly mutedHint: '#808080'; }
 
 theme: { readonly warning: ChalkInstance; readonly toolName: ChalkInstance; readonly mutedHint: ChalkInstance; readonly codeSurface: ChalkInstance; readonly codeSurfaceBg: ChalkInstance; readonly codeSurfaceText: ChalkInstance; readonly rotatingPastel: ChalkInstance; readonly rotatingPastelBg: ChalkInstance; }
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/banner.ts`](render/banner.md) ×2
+- **Imported by:** [`cli/eval/eval-screen.ts`](eval/eval-screen.md) ×4, [`cli/render/markdown-renderer.ts`](render/markdown-renderer.md) ×4, [`cli/chrome/toggles.ts`](chrome/toggles.md) ×3, [`cli/chrome/turn-state.ts`](chrome/turn-state.md) ×1, [`cli/eval/eval-dots.ts`](eval/eval-dots.md) ×1, [`cli/menus/list-menu.ts`](menus/list-menu.md) ×1, [`cli/menus/model-screen.ts`](menus/model-screen.md) ×1, [`cli/tools/tool-invocation.ts`](tools/tool-invocation.md) ×1
+
+## Tests
+
+`tests/cli/theme.test.ts`.
+
+## Budget
+
+58 / 500 lines (442 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

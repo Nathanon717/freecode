@@ -12,6 +12,24 @@ runStatusCommand(): void
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`config/index.ts`](../config/index.md) ×1, [`providers/provider-registry.ts`](../providers/provider-registry.md) ×1, [`store/db.ts`](../store/db.md) ×1
+
+## Tests
+
+`tests/commands/status.test.ts`. 1 other test file references it.
+
+## Budget
+
+51 / 500 lines (449 to spare).
+
+## Env
+
+`DOPPLER_CONFIG`, `DOPPLER_PROJECT`
+<!-- END GENERATED MAP FACTS -->
+
 ## Read When
 
 - Adding new fields to the `/status` output.

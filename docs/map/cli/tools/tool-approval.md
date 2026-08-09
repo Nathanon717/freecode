@@ -8,6 +8,18 @@
 ```typescript
 type ToolApprovalChoice = "approve" | "deny";
 
+/**
+ * Rows a pending-approval preview may occupy and still leave the content above it
+ * on screen once this hint draws. The preview flows into the current scroll region
+ * directly under the header, so anything past this budget scrolls the header — and
+ * the call the user is approving — out of view; the caller truncates the preview
+ * instead. Returns null when no footer UI is active: those runs draw no hint and
+ * want the full preview.
+ *
+ * The header is non-negotiable, the preamble is best-effort: a preamble longer than
+ * the screen can never be held, and shrinking the preview to nothing chasing it
+ * helps no one.
+ */
 getApprovalPreviewRowBudget(rowsAbove: ToolCallHeaderRows): number | null
 
 askQuestion(rl: Interface, prompt: string): Promise<string>
@@ -19,6 +31,21 @@ formatScriptedToolMenu(choice: ToolApprovalChoice): void
 parseScriptedToolChoice(input: string | undefined): ToolApprovalChoice | null
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/chrome/bottom-ui.ts`](../chrome/bottom-ui.md) ×16, [`tokenizers/count.ts`](../../tokenizers/count.md) ×7, [`agent/tools/index.ts`](../../agent/tools/index.md) ×2, [`cli/chrome/turn-state.ts`](../chrome/turn-state.md) ×2, [`cli/menus/raw-picker.ts`](../menus/raw-picker.md) ×1, [`cli/render/transcript-renderer.ts`](../render/transcript-renderer.md) ×1
+- **Imported by:** [`cli/scripted-mode.ts`](../scripted-mode.md) ×3, [`cli/session-modes.ts`](../session-modes.md) ×2, [`agent/tools/wrappers.ts`](../../agent/tools/wrappers.md) ×1
+
+## Tests
+
+`tests/cli/tools/tool-approval.test.ts`. 1 other test file references it.
+
+## Budget
+
+303 / 500 lines (197 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

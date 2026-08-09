@@ -15,6 +15,7 @@ Use this directory as the project handbook. Generated reference pages report fac
 - [Sweeps](sweeps.md): one bare LLM call per unit across a tree. How to run one (`npm run dead-code`, `npm run map-drift`), how to write one, and the candidates not yet written.
 - [Line limit](line-limit.md): the 500-line hard limit and extraction guidance.
 - [Codebase map](map/README.md): agent-oriented source navigation.
+- [Map overhaul](map-overhaul.md): **temporary plan** to make the map queryable by section and shrink hand-written content to what cannot be derived. Deletes itself as it ships; read its Retirement section before editing it.
 - [PTY session](pty-session.md): drive the live TUI from the shell, exactly as a human would.
   <!-- BEGIN GENERATED PTY QUICKSTART REF -->
 For usage only, read lines 1–72.

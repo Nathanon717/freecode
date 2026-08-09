@@ -27,7 +27,8 @@ Current generated sections:
 - `docs/providers.md`: provider registry table from `src/providers/provider-registry.ts`; model lists for live-fetch providers come from the committed snapshot `src/providers/model-snapshot.json` (refresh it with `npm run docs:refresh-models`, never a live fetch during generation).
 - `docs/commands.md`: npm scripts from `package.json` and slash commands from `src/cli/slash-commands.ts`.
 - `docs/e2e-inventory.md`: e2e test index from `tests/e2e/*.e2e.json`.
-- `docs/map/**/*.md`: the `## Exports` block on every map page, extracted from each source file's TypeScript signatures by `scripts/docgen/map-exports.ts`.
+- `docs/map/**/*.md`: the `## Exports` block on every map page, extracted from each source file's TypeScript signatures — including each export's JSDoc — by `scripts/docgen/map-exports.ts`.
+- `docs/map/**/*.md`: the `## Neighbors`, `## Tests`, `## Budget` and `## Env` sections, derived from the import graph, `tests/`, the line count and the source's `process.env` reads by `scripts/docgen/map-facts.ts`. One marker pair holds all four; a page missing it gets it inserted after its exports block on the next run.
 - `docs/map/README.md`: the structure tree / nav links, generated from the source tree and each page's H1.
 
 When changing any source of truth, run:
@@ -53,7 +54,7 @@ Generated docs should report facts. Human-written docs should explain how to use
 
 `docs/map/` is an agent navigation layer, not a reference manual. It should say where code lives, what owns what, and which files are worth reading first. Reference facts belong in generated docs or source metadata.
 
-Each page's `## Exports` block and the README structure tree are generated facts — see "Generated References" above. Hand-written prose (Role, Read When, Export notes, Behavior, Update Triggers, etc.) carries the intent the signatures cannot.
+Each page's generated blocks and the README structure tree are facts derived from source — see "Generated References" above. Hand-written prose (Role, Read When, Behavior, etc.) carries the intent the signatures cannot. Per-export intent belongs in the export's JSDoc, which the exports block lifts; dependency facts belong to `## Neighbors`, which is derived — do not hand-write either.
 
 The map checker in `scripts/checks/check-map.ts` enforces these structural rules:
 

@@ -30,6 +30,21 @@ runCheckScript(scenarioId: string, scenarioDir: string, result: EvalRunResult): 
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`logger.ts`](../logger.md) ×3, [`eval/custom.ts`](custom.md) ×1, [`eval/history.ts`](history.md) ×1
+- **Imported by:** [`cli/eval/custom-eval-menu.ts`](../cli/eval/custom-eval-menu.md) ×6, [`cli/eval/humaneval-menu.ts`](../cli/eval/humaneval-menu.md) ×2, [`cli/eval/eval-screen.ts`](../cli/eval/eval-screen.md) ×1
+
+## Tests
+
+`tests/eval/runner.test.ts`. 3 other test files reference it.
+
+## Budget
+
+201 / 500 lines (299 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `EvalReport`: Output of `run-check.ts` — scenario id and array of `EvalCheckResult`.

@@ -6,14 +6,29 @@
 ## Exports
 
 ```typescript
+/**
+ * Current terminal height in rows, with a conservative fallback for a detached stdout.
+ */
 rows(): number
 
+/**
+ * Current terminal width in columns, with a conservative fallback for a detached stdout.
+ */
 cols(): number
 
+/**
+ * DECSTBM — set the scroll region to rows `top`..`bottom` (1-based, inclusive).
+ * Note that DECSTBM also homes the cursor to (1,1); wrap it in
+ * `saveCursorSequence()` / `restoreCursorSequence()` when the caller's cursor
+ * position still matters.
+ */
 setScrollRegionSequence(top: number, bottom: number): string
 
 setScrollRegion(top: number, bottom: number): void
 
+/**
+ * Drops the scroll region, restoring the full screen. Also homes the cursor.
+ */
 resetScrollRegionSequence(): string
 
 resetScrollRegion(): void
@@ -22,6 +37,9 @@ moveToSequence(row: number, col: number): string
 
 moveTo(row: number, col: number): void
 
+/**
+ * Erases the cursor's row without moving the cursor.
+ */
 clearLineSequence(): string
 
 saveCursorSequence(): string
@@ -29,6 +47,20 @@ saveCursorSequence(): string
 restoreCursorSequence(): string
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`cli/chrome/bottom-ui.ts`](bottom-ui.md) ×65, [`cli/chrome/suggestion-overlay.ts`](suggestion-overlay.md) ×2
+
+## Tests
+
+`tests/cli/chrome/ansi.test.ts`.
+
+## Budget
+
+55 / 500 lines (445 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

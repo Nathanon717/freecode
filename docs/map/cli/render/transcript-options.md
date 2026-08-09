@@ -34,6 +34,20 @@ getTranscriptStream(options?: TranscriptRuntimeOptions): WritableStream
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`cli/render/transcript-renderer.ts`](transcript-renderer.md) ×33, [`cli/render/transcript-format.ts`](transcript-format.md) ×9
+
+## Tests
+
+`tests/cli/render/transcript-options.test.ts`. 2 other test files reference it.
+
+## Budget
+
+70 / 500 lines (430 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - Split out of [transcript-renderer.md](./transcript-renderer.md) purely so both it and any future module can share these without importing the renderer's state machine back — a cycle. The renderer re-exports every name here, so callers keep importing from `transcript-renderer.js`; prefer that over reaching in here directly.

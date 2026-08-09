@@ -6,12 +6,21 @@
 ## Exports
 
 ```typescript
+/**
+ * Per-provider store of the most-recently captured rate-limit header snapshot.
+ */
 class HeaderSnapshotStore {
   private snapshots;
   set(providerId: string, snapshot: RateLimitSnapshot): void;
   get(providerId: string): RateLimitSnapshot | null;
 }
 
+/**
+ * Per-provider accumulator of in-flight usage-capture promises. A capture
+ * session is opened with begin() and drained with end(); pushes that happen
+ * outside an open session are dropped. Capture errors resolve to null and are
+ * filtered out by end().
+ */
 class UsageCaptureStore<T> {
   private sessions;
   begin(providerId: string): void;
@@ -20,6 +29,21 @@ class UsageCaptureStore<T> {
 }
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`providers/quota/headers.ts`](../quota/headers.md) ×3
+- **Imported by:** [`providers/adapters/openai-compat.ts`](openai-compat.md) ×2
+
+## Tests
+
+`tests/providers/adapters/adapter-usage-capture.test.ts`.
+
+## Budget
+
+51 / 500 lines (449 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## `HeaderSnapshotStore`
 

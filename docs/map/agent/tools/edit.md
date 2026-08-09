@@ -10,6 +10,21 @@ editTool: CoreTool<z.ZodObject<{ path: z.ZodString; old_text: z.ZodString; new_t
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/workspace.ts`](../workspace.md) ×2
+- **Imported by:** [`agent/tools/index.ts`](index.md) ×1
+
+## Tests
+
+`tests/agent/tools/edit.test.ts`. 1 other test file references it.
+
+## Budget
+
+70 / 500 lines (430 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Parameters
 
 | Param | Type | Description |

@@ -15,6 +15,7 @@ import {
   STRUCTURE_BEGIN,
   STRUCTURE_END,
 } from './map-exports.js';
+import { FACTS_BEGIN, FACTS_END, renderFactsBlock } from './map-facts.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
@@ -213,12 +214,25 @@ function replaceMarkerSection(content: string, begin: string, end: string, block
   return pattern.test(content) ? content.replace(pattern, block) : content;
 }
 
-// Maintain the generated EXPORTS block on every map page that has the markers.
+// The derived sections below `Exports` land in one block. A page that does not
+// have it yet gets it inserted directly after its exports block, which is where
+// canonical order wants it — so the corpus adopts the section without a codemod.
+function upsertFactsBlock(content: string, block: string): string {
+  if (content.includes(FACTS_BEGIN)) {
+    return replaceMarkerSection(content, FACTS_BEGIN, FACTS_END, block);
+  }
+  return content.replace(EXPORTS_END, `${EXPORTS_END}\n\n${block}`);
+}
+
+// Maintain the generated blocks on every map page that has the markers.
 for (const srcAbs of listSourceFiles()) {
   const pageRel = relative(ROOT, mapPageForSource(srcAbs)).replace(/\\/g, '/');
   if (!existsSync(join(ROOT, pageRel))) continue;
   updates.push([pageRel, content =>
-    replaceMarkerSection(content, EXPORTS_BEGIN, EXPORTS_END, renderExportsBlock(srcAbs))]);
+    upsertFactsBlock(
+      replaceMarkerSection(content, EXPORTS_BEGIN, EXPORTS_END, renderExportsBlock(srcAbs)),
+      renderFactsBlock(srcAbs),
+    )]);
 }
 
 // Maintain the generated structure tree in the map README.

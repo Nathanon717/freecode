@@ -6,9 +6,28 @@
 ## Exports
 
 ```typescript
+/**
+ * Create every table and index idempotently. Run on each client open (including
+ * after a replica wipe), so it must stay safe to re-execute against a live DB.
+ * Table-by-table detail lives in docs/map/providers/db.md.
+ */
 createSchema(c: Client): Promise<void>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`store/db.ts`](db.md) ×4
+
+## Tests
+
+`tests/store/db-schema.test.ts`. 1 other test file references it.
+
+## Budget
+
+86 / 500 lines (414 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Idempotence
 

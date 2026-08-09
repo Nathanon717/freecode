@@ -37,3 +37,17 @@ getAnthropicVerifiedRates(modelId: string): Promise<VerifiedRates>
 getOpenAIVerifiedRates(modelId: string): Promise<VerifiedRates>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`commands/model.ts`](../commands/model.md) ×2, [`cli/menus/model-screen.ts`](../cli/menus/model-screen.md) ×1
+
+## Tests
+
+`tests/providers/pricing-verifier.test.ts`. 1 other test file references it.
+
+## Budget
+
+122 / 500 lines (378 to spare).
+<!-- END GENERATED MAP FACTS -->

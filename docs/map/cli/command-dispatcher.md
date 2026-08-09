@@ -34,6 +34,25 @@ dispatchCommand(input: string, runtime: CommandRuntime): Promise<CommandDispatch
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`logger.ts`](../logger.md) ×21, [`cli/render/transcript-replay.ts`](render/transcript-replay.md) ×3, [`eval/result-sink.ts`](../eval/result-sink.md) ×3, [`cli/slash-commands.ts`](slash-commands.md) ×2, [`config/index.ts`](../config/index.md) ×2, [`util/errors.ts`](../util/errors.md) ×2, [`agent/conversation.ts`](../agent/conversation.md) ×1, [`agent/loop.ts`](../agent/loop.md) ×1, [`agent/tools/index.ts`](../agent/tools/index.md) ×1, [`cli/render/banner.ts`](render/banner.md) ×1, [`cli/render/transcript-record.ts`](render/transcript-record.md) ×1, [`cli/tools/tool-invocation.ts`](tools/tool-invocation.md) ×1, +3 more
+- **Imported by:** [`cli/session-runner.ts`](session-runner.md) ×3
+
+## Tests
+
+`tests/cli/command-dispatcher.test.ts`. 1 other test file references it.
+
+## Budget
+
+259 / 500 lines (241 to spare).
+
+## Env
+
+`FREECODE_RESULT_JSON`
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `CommandRuntime` is the dependency bundle assembled and passed by `runCliSession()`.

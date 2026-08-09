@@ -10,6 +10,24 @@ createScriptedMode(scriptPath: string): CliSessionMode
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/tools/tool-approval.ts`](tools/tool-approval.md) ×3, [`agent/tools/index.ts`](../agent/tools/index.md) ×1, [`cli/session-runner.ts`](session-runner.md) ×1
+
+## Tests
+
+`tests/cli/scripted-mode.test.ts`.
+
+## Budget
+
+95 / 500 lines (405 to spare).
+
+## Env
+
+`FREECODE_AUTO_CONFIRM`, `FREECODE_MAX_TOOL_CALLS`
+<!-- END GENERATED MAP FACTS -->
+
 ## Behavior
 
 - Reads the script file once, trimming trailing whitespace and dropping empty lines. A line starting with `"` is JSON-decoded, so a quoted string can carry a multi-line message as one input.

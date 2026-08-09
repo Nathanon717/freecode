@@ -82,6 +82,25 @@ runFakeModel(call: FakeModelCall): Promise<FakeModelResult>
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/transcript-record.ts`](../cli/render/transcript-record.md) ×2
+- **Imported by:** [`providers/provider-registry.ts`](provider-registry.md) ×15, [`agent/loop.ts`](../agent/loop.md) ×5, [`agent/fake-loop.ts`](../agent/fake-loop.md) ×2, [`agent/subagents/run-subagent.ts`](../agent/subagents/run-subagent.md) ×1
+
+## Tests
+
+`tests/providers/fake.test.ts`. 4 other test files reference it.
+
+## Budget
+
+434 / 500 lines (66 to spare).
+
+## Env
+
+`FREECODE_FAKE_LLM`, `FREECODE_FAKE_LLM_SCRIPT`, `FREECODE_FAKE_LLM_TRACE`
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `FakeModelResult.text` vs `.writtenText` — `text` is the model's own output (what goes into history and the trace); `writtenText` is what this module actually painted, i.e. the chunks plus the newline it appends to terminate the step. Anything reporting *what is on screen* must use `writtenText`: `fake-loop.ts` feeds it to `notifyTranscriptChunk`, and getting that wrong put a phantom blank line above every tool call (see `docs/bug log/29-07-2026b.md`).

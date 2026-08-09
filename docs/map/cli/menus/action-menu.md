@@ -11,6 +11,10 @@ type ActionMenuResult =
   | { type: 'redraw' }
   | { type: 'select'; option: string };
 
+/**
+ * Renders and handles keyboard input for an inline action sub-menu that splices
+ * into a list picker screen directly below the selected row.
+ */
 class InlineActionMenu {
   sel;
   readonly padWidth: number;
@@ -21,6 +25,21 @@ class InlineActionMenu {
 }
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/banner.ts`](../render/banner.md) ×1
+- **Imported by:** [`commands/model.ts`](../../commands/model.md) ×4, [`cli/eval/custom-eval-menu.ts`](../eval/custom-eval-menu.md) ×1, [`cli/eval/humaneval-menu.ts`](../eval/humaneval-menu.md) ×1, [`cli/menus/list-menu.ts`](list-menu.md) ×1
+
+## Tests
+
+`tests/cli/menus/action-menu.test.ts`. 1 other test file references it.
+
+## Budget
+
+52 / 500 lines (448 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

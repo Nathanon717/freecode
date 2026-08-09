@@ -22,6 +22,21 @@ runSubAgent(agentType: string, prompt: string, ctx: SubAgentContext): Promise<st
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/subagents/registry.ts`](registry.md) ×4, [`agent/stream-turn.ts`](../stream-turn.md) ×2, [`agent/tools/index.ts`](../tools/index.md) ×1, [`logger.ts`](../../logger.md) ×1, [`providers/fake.ts`](../../providers/fake.md) ×1
+- **Imported by:** [`agent/fake-loop.ts`](../fake-loop.md) ×1, [`agent/loop.ts`](../loop.md) ×1
+
+## Tests
+
+`tests/agent/subagents/run-subagent.test.ts`.
+
+## Budget
+
+160 / 500 lines (340 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Why separate from agentLoop
 
 - **`agentLoop` is not reentrant.** `beginTranscriptTurn`, `beginToolRenderGate`, `beginProviderUsageCapture`, and `setProjectRoot` are all module-level singletons, and a sub-agent starts from inside a tool's `execute` — i.e. mid-stream of the parent. A nested `agentLoop` would close the parent's transcript step, end the parent's usage capture, and release the parent's render gate while the parent is still draining. It also returns `AgentLoopResult` (quota, cost, providerUsage), a shape a tool result cannot consume. The separation is forced, not stylistic.

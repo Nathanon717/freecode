@@ -31,6 +31,21 @@ runHumanEvalProblems(chosen: HumanEvalProblem[], model: string, rl: Interface): 
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`eval/humaneval-data.ts`](../../eval/humaneval-data.md) ×10, [`providers/model-data.ts`](../../providers/model-data.md) ×5, [`cli/menus/list-menu.ts`](../menus/list-menu.md) ×3, [`cli/render/banner.ts`](../render/banner.md) ×3, [`cli/eval/eval-screen.ts`](eval-screen.md) ×2, [`eval/runner.ts`](../../eval/runner.md) ×2, [`agent/system-prompt.ts`](../../agent/system-prompt.md) ×1, [`cli/chrome/footer-status.ts`](../chrome/footer-status.md) ×1, [`cli/eval/eval-dots.ts`](eval-dots.md) ×1, [`cli/menus/action-menu.ts`](../menus/action-menu.md) ×1
+- **Imported by:** [`cli/eval/eval-menu.ts`](eval-menu.md) ×2
+
+## Tests
+
+`tests/cli/eval/humaneval-menu.test.ts`. 1 other test file references it.
+
+## Budget
+
+313 / 500 lines (187 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `makeRetryPrompter` builds the rate-limit retry poll callback used by `runHumanEvalProblems` (installed on a 500ms `setInterval`). It owns the `promptingUser`/`lastSeenTargetMs` guard state and takes injectable `ask`/`onDecline` callbacks; exported so the poll branches can be unit-tested directly without driving the whole run loop.

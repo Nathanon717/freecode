@@ -18,6 +18,21 @@ countContextTokens(messages: CoreMessage[], encodeText: (text: string) => number
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/system-prompt.ts`](../agent/system-prompt.md) ×1
+- **Imported by:** [`tokenizers/fallback-estimate.ts`](fallback-estimate.md) ×2, [`tokenizers/backends/bpe-json.ts`](backends/bpe-json.md) ×1, [`tokenizers/backends/tiktoken.ts`](backends/tiktoken.md) ×1
+
+## Tests
+
+`tests/tokenizers/chat-format.test.ts`.
+
+## Budget
+
+41 / 500 lines (459 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `stringifyMessageContent`: handles plain strings, arrays, `{ text }`/`{ content }` parts, and a JSON fallback for anything else. Moved here unchanged from `fallback-estimate.ts`.

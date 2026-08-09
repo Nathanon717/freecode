@@ -16,43 +16,128 @@ interface ModelCatalogRow {
   contextWindow?: number;
 }
 
+/**
+ * Remove the local db file and all its libSQL sidecars. Never throws. Exported for tests.
+ */
 wipeLocalDb(url: string): void
 
+/**
+ * True for a libSQL WalConflict (diverged replica → wipe + re-pull); NOT transient
+ * network/auth errors, which must not trigger a destructive wipe. Exported for tests. See db.md.
+ */
 isReplicaConflict(err: unknown): boolean
 
+/**
+ * Synchronously write the DbConfigData to the file mirror.
+ * Never throws — missing dir is created; all errors are swallowed.
+ */
 writeConfigMirror(data: DbConfigData): void
 
+/**
+ * Synchronously prime the in-memory DbConfigCache from the file mirror.
+ * No libSQL touched. Missing or corrupt file → silent no-op (cache untouched).
+ * Call this at boot before the first loadConfig() to populate the cache from the
+ * last-written mirror without blocking on libSQL initialisation.
+ */
 primeConfigCacheFromFile(): void
 
+/**
+ * Persist a single model row. Fire-and-forget; serialized through writeChain.
+ */
 persistModelRowAsync(key: string, entry: ModelEntry): void
 
+/**
+ * Upsert the provider catalog (display name + context window) for many models in
+ * one batch. `persistModelRowAsync` syncs per row, which would mean hundreds of
+ * syncs on startup; this writes every row in a single transaction and syncs once.
+ * Only the two catalog columns are touched — user state on an existing row (favorite,
+ * removed, settings, rate limits, native tools) is left alone by the conflict clause.
+ */
 persistModelCatalogAsync(rows: ModelCatalogRow[]): void
 
+/**
+ * Delete these model keys and every row that hangs off them. Awaited, not
+ * fire-and-forget: the only caller gates it on a user confirmation and must not
+ * continue before the rows are gone. Returns `true` when the delete is durable.
+ *
+ * The children are deleted explicitly, oldest-descendant first, because nothing in
+ * the schema cascades: `eval_runs.model_key` and `eval_transcripts.run_id` are plain
+ * REFERENCES with no ON DELETE clause, so with `PRAGMA foreign_keys = ON` a parent
+ * delete would be rejected outright, and `llm_calls.model_key` is not a foreign key
+ * at all, so its rows would simply be orphaned. One batch, so a failure part-way
+ * leaves the DB untouched rather than half-deleted.
+ *
+ * Durability on a synced replica: the delete is written **straight to the primary**
+ * via a throwaway remote client, then pulled local — NOT applied to the local replica
+ * and pushed on `sync()`. A local-replica delete is an un-pushed WAL frame, and the
+ * catalog upserts every launch keep advancing the remote, so that frame perpetually
+ * loses the push race and is discarded by the next launch's WalConflict wipe-and-
+ * re-pull — the deleted row comes back from the primary, so a model the user removed
+ * fully reappears on the next launch, every launch. Writing to the primary sidesteps the
+ * race entirely. See db.md.
+ */
 deleteModelRows(keys: string[]): Promise<boolean>
 
+/**
+ * One row per LLM HTTP call. Fire-and-forget; serialized through writeChain.
+ */
 persistCallLogAsync(row: LlmCallRow): void
 
 saveTranscriptAsync(modelKey: string, evalType: string, summary: EvalRunSummary, failReason: string | undefined, transcript: unknown, scoringOutcome: unknown): void
 
 getDbSyncConfig(): { syncUrl?: string | undefined; authToken?: string | undefined; }
 
+/**
+ * Idempotent — multiple callers share a single init promise.
+ */
 initStore(): Promise<void>
 
+/**
+ * Semantic alias for lazy call sites. Memoized — free after first init.
+ */
 ensureStoreReady(): Promise<void>
 
+/**
+ * Drain all pending fire-and-forget writes. Call at graceful shutdown before process exit.
+ */
 drainPendingWrites(): Promise<void>
 
+/**
+ * Reset state — for tests only. Drains in-flight writes before closing.
+ */
 resetStore(): Promise<void>
 
 getModelData(): ModelDataMap | null
 
 setModelData(store: ModelDataMap): void
 
+/**
+ * For testing only: read rows via raw SQL. Separate from executeRawForTesting, whose
+ * void return is itself asserted on.
+ */
 queryRawForTesting(sql: string, args?: InValue[]): Promise<Record<string, unknown>[]>
 
+/**
+ * For testing only: execute raw SQL directly against the live client.
+ */
 executeRawForTesting(sql: string, args: InValue[]): Promise<void>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`logger.ts`](../logger.md) ×17, [`store/store-paths.ts`](store-paths.md) ×7, [`store/db-config-cache.ts`](db-config-cache.md) ×6, [`store/db-schema.ts`](db-schema.md) ×4, [`store/db-types.ts`](db-types.md) ×3, [`providers/model-data.ts`](../providers/model-data.md) ×2, [`store/db-load.ts`](db-load.md) ×2, [`store/call-log.ts`](call-log.md) ×1
+- **Imported by:** [`providers/model-data.ts`](../providers/model-data.md) ×7, [`commands/model.ts`](../commands/model.md) ×3, [`agent/loop.ts`](../agent/loop.md) ×1, [`cli/command-dispatcher.ts`](../cli/command-dispatcher.md) ×1, [`cli/eval/eval-menu.ts`](../cli/eval/eval-menu.md) ×1, [`commands/config.ts`](../commands/config.md) ×1, [`commands/status.ts`](../commands/status.md) ×1, [`config/index.ts`](../config/index.md) ×1, +2 more
+
+## Tests
+
+`tests/store/db.test.ts`. 6 other test files reference it.
+
+## Budget
+
+484 / 500 lines (16 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Schema
 

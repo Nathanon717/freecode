@@ -49,11 +49,15 @@ prompt a structural decision, not a formatting one.
 1. Create a map page for the new file in `docs/map/` (see `docs/map/README.md`
    for format).
 2. Update the map page for the changed file.
-3. Update `docs/map/README.md`'s structure listing.
-4. Run `npm test` to confirm the check passes.
+3. Run `npm test`. It regenerates `docs/map/README.md`'s structure listing — that
+   block is generated, so do not edit it by hand — and confirms the check passes.
 
 ## The check
 
-`scripts/checks/check-line-limits.ts` walks every `.ts` file under `src/`,
-counts lines (ignoring a single trailing newline), and exits non-zero listing
-any file over `MAX_LINES` (currently 500).
+`scripts/checks/check-line-limits.ts` walks every `.ts` file under `src/` and
+exits non-zero listing any file over the limit.
+
+`MAX_LINES` (currently 500) and the counting rule — a single trailing newline
+does not open a line — live in `scripts/checks/line-budget.ts`. The `Budget`
+section on every map page and the line counts in the map's structure tree read
+them from there, so a page can never claim headroom the gate disagrees with.

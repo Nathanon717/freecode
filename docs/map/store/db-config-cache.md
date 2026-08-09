@@ -32,13 +32,37 @@ setDbConfigCache(data: DbConfigData): void
 
 clearDbConfigCache(): void
 
+/**
+ * config/index.ts registers this so writeConfigFile() flushes cachedConfig when DB config changes.
+ */
 registerCacheInvalidator(fn: () => void): void
 
+/**
+ * db.ts registers its fire-and-forget persist helper after initStore().
+ */
 registerConfigPersist(fn: (scope: string, data: unknown) => void): void
 
+/**
+ * config/index.ts calls this in writeConfigFile() to push changes to the DB.
+ */
 persistDbConfig(scope: string, data: unknown): void
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`providers/types.ts`](../providers/types.md) ×1
+- **Imported by:** [`config/index.ts`](../config/index.md) ×9, [`store/db.ts`](db.md) ×6, [`store/db-load.ts`](db-load.md) ×4
+
+## Tests
+
+`tests/store/db-config-cache.test.ts`. 2 other test files reference it.
+
+## Budget
+
+54 / 500 lines (446 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Lifecycle
 

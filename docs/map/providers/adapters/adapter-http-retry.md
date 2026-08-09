@@ -27,11 +27,37 @@ interface FetchWithRetryOptions {
   onRetryableResponse?: (headers: Headers) => void;
 }
 
+/**
+ * Format a non-OK OpenAI-compatible HTTP response into a human-readable error string.
+ * Pass an optional `httpErrorHint` to append provider-specific guidance (e.g. OpenRouter 429 text).
+ */
 formatOpenAICompatHttpError(providerName: string, response: Response, httpErrorHint?: ((response: Response) => string | null) | undefined): Promise<string | null>
 
+/**
+ * Fetch with backoff on 429/503, coordinated across every concurrent call to the
+ * same provider. A server `retry-after` is an instruction, not a suggestion, so it
+ * is honored in full; `maxWaitMs` bounds only the 2^attempt backoff we invent when
+ * the server gives us nothing. Retries up to 5 times, then returns the last
+ * response as-is.
+ */
 fetchWithRetry(input: string | URL | Request, init: RequestInit | undefined, options: FetchWithRetryOptions): Promise<Response>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`util/guards.ts`](../../util/guards.md) ×2
+- **Imported by:** [`providers/adapters/openai-compat.ts`](openai-compat.md) ×2, [`cli/stdout-retry-sink.ts`](../../cli/stdout-retry-sink.md) ×1
+
+## Tests
+
+`tests/providers/adapters/adapter-http-retry.test.ts`. 3 other test files reference it.
+
+## Budget
+
+188 / 500 lines (312 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## `fetchWithRetry`
 

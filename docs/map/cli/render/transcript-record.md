@@ -71,14 +71,46 @@ getTranscriptRecord(): TranscriptRecord
 
 clearTranscriptRecord(): void
 
+/**
+ * Record a submitted prompt, exactly as the input UI echoed it.
+ */
 recordTranscriptPrompt(text: string): void
 
+/**
+ * Record model text as written to the screen — already markdown-rendered.
+ */
 recordTranscriptText(rendered: string): void
 
+/**
+ * Record a tool call header. The result arrives separately, once the call returns.
+ */
 recordTranscriptToolCall(call: Pick<ToolStep, "name" | "displayArgs" | "rationale" | "parsedTools">): void
 
+/**
+ * Attach a result to the tool call currently open. Called twice for a tool whose
+ * preview is rendered ahead of confirmation and again after execution; the second
+ * call carries the same block, so overwriting is correct either way.
+ */
 recordTranscriptToolResult(result: ToolStepResult): void
 
+/**
+ * Close the open step; `hasMore: false` also closes the turn.
+ */
 recordTranscriptStepEnd(hasMore: boolean): void
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/transcript-renderer.ts`](transcript-renderer.md) ×7
+- **Imported by:** [`cli/render/transcript-renderer.ts`](transcript-renderer.md) ×5, [`cli/render/transcript-replay.ts`](transcript-replay.md) ×3, [`providers/fake.ts`](../../providers/fake.md) ×2, [`cli/command-dispatcher.ts`](../command-dispatcher.md) ×1, [`cli/session-modes.ts`](../session-modes.md) ×1
+
+## Tests
+
+`tests/cli/render/transcript-record.test.ts`. 3 other test files reference it.
+
+## Budget
+
+150 / 500 lines (350 to spare).
+<!-- END GENERATED MAP FACTS -->

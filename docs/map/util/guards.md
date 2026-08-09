@@ -15,3 +15,17 @@
 isRecord(value: unknown): value is Record<string, unknown>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`providers/adapters/openai-compat-sse.ts`](../providers/adapters/openai-compat-sse.md) ×11, [`util/errors.ts`](errors.md) ×5, [`providers/adapters/openai-compat.ts`](../providers/adapters/openai-compat.md) ×4, [`providers/adapters/adapter-http-retry.ts`](../providers/adapters/adapter-http-retry.md) ×2, [`store/call-log.ts`](../store/call-log.md) ×1
+
+## Tests
+
+`tests/util/guards.test.ts`.
+
+## Budget
+
+3 / 500 lines (497 to spare).
+<!-- END GENERATED MAP FACTS -->

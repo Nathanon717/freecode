@@ -8,11 +8,38 @@
 ```typescript
 normalizeOpenAICompatToolCallSse(body: string): string
 
+/**
+ * Convert a non-streaming OpenAI-compatible JSON response into SSE format.
+ * Mistral only returns x-ratelimit-* headers on non-streaming responses. We
+ * strip stream:true from the request so we get those headers, then synthesize
+ * SSE here so the rest of the pipeline (AI SDK, normalizer, usage capture) is
+ * unchanged.
+ */
 mistralJsonToSse(json: unknown): string
 
+/**
+ * Wrap a streaming OpenAI-compatible response so each SSE chunk passes through
+ * normalizeOpenAICompatToolCallSse. Non-streaming or non-OK responses are
+ * returned untouched.
+ */
 normalizeOpenAICompatToolCallResponse(response: Response): Response
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`util/guards.ts`](../../util/guards.md) ×11
+- **Imported by:** [`providers/adapters/openai-compat.ts`](openai-compat.md) ×2
+
+## Tests
+
+`tests/providers/adapters/openai-compat-sse.test.ts`.
+
+## Budget
+
+141 / 500 lines (359 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## `normalizeOpenAICompatToolCallSse`
 

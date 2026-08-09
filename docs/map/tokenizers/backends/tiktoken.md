@@ -12,6 +12,21 @@ getGptOssEncoder(): TokenizerEncoder
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`tokenizers/count.ts`](../count.md) ×3, [`tokenizers/chat-format.ts`](../chat-format.md) ×1
+- **Imported by:** [`tokenizers/backends/tekken.ts`](tekken.md) ×1, [`tokenizers/count.ts`](../count.md) ×1
+
+## Tests
+
+`tests/tokenizers/backends/tiktoken.test.ts`.
+
+## Budget
+
+42 / 500 lines (458 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `createTiktokenEncoder`: binds a `js-tiktoken` encoding to [chat-format.md](../chat-format.md)'s `countContextTokens`, always encoding with empty allowed/disallowed-special lists (matches the fallback's never-throw contract).

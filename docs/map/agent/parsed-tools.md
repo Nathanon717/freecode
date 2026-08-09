@@ -31,11 +31,31 @@ interface ExecutedToolCalls {
   stopped: boolean;
 }
 
+/**
+ * Execute a batch of text-protocol tool calls through the wrapped tools and
+ * return the `<tool_result>` blocks to feed back to the model. Shared by the
+ * parsed-tools loop and the fake-LLM loop in loop.ts.
+ */
 executeToolCalls(tools: Record<string, AnyCoreTool>, calls: readonly { name: string; args: Record<string, unknown>; }[], idPrefix: string, messages: CoreMessage[]): Promise<...>
 
 runParsedToolsLoop(messages: CoreMessage[], systemPrompt: string, model: LanguageModelV1, confirmToolCall?: ConfirmToolCall | undefined, toolRationale?: boolean | undefined, readOnly?: boolean | undefined, onStepUsage?: ((promptTokens: number) => void) | undefined): Promise<...>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/transcript-renderer.ts`](../cli/render/transcript-renderer.md) ×8, [`logger.ts`](../logger.md) ×5, [`agent/tools/index.ts`](tools/index.md) ×3, [`cli/render/markdown-renderer.ts`](../cli/render/markdown-renderer.md) ×2, [`agent/turn-messages.ts`](turn-messages.md) ×1, [`util/errors.ts`](../util/errors.md) ×1
+- **Imported by:** [`agent/fake-loop.ts`](fake-loop.md) ×1, [`agent/loop.ts`](loop.md) ×1
+
+## Tests
+
+`tests/agent/parsed-tools.test.ts`.
+
+## Budget
+
+297 / 500 lines (203 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Read When
 

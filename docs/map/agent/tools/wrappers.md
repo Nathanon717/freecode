@@ -47,11 +47,36 @@ type ConfirmToolCall = (
 
 createToolExecutionQueue(): QueuedToolExecution
 
+/**
+ * One per `createTools()` call — see `TurnStopState`.
+ */
 createTurnStopState(): TurnStopState
 
+/**
+ * Apply the whole stack to one raw tool.
+ */
 wrap(name: string, t: AnyCoreTool, useRationale: boolean, queueExecution: QueuedToolExecution, stopState: TurnStopState, confirmToolCall?: ConfirmToolCall | undefined, parsedTools?: boolean, requiresConfirmation?: boolean): AnyCoreTool
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/transcript-renderer.ts`](../../cli/render/transcript-renderer.md) ×16, [`agent/tools/edit-diff-context.ts`](edit-diff-context.md) ×5, [`util/errors.ts`](../../util/errors.md) ×4, [`cli/chrome/turn-state.ts`](../../cli/chrome/turn-state.md) ×3, [`logger.ts`](../../logger.md) ×2, [`agent/tool-render-gate.ts`](../tool-render-gate.md) ×1, [`agent/tools/tool-names.ts`](tool-names.md) ×1, [`cli/tools/tool-approval.ts`](../../cli/tools/tool-approval.md) ×1
+- **Imported by:** [`agent/tools/index.ts`](index.md) ×12
+
+## Tests
+
+`tests/agent/tools/wrappers.test.ts`.
+
+## Budget
+
+494 / 500 lines (6 to spare).
+
+## Env
+
+`FREECODE_TRACE_JSON`
+<!-- END GENERATED MAP FACTS -->
 
 ## Wrapper Stack
 

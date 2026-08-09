@@ -67,6 +67,25 @@ agentLoop(messages: CoreMessage[], projectRoot: string, modelPreference?: string
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/transcript-renderer.ts`](../cli/render/transcript-renderer.md) ×15, [`logger.ts`](../logger.md) ×10, [`util/errors.ts`](../util/errors.md) ×10, [`providers/adapters/openai-compat.ts`](../providers/adapters/openai-compat.md) ×6, [`providers/fake.ts`](../providers/fake.md) ×5, [`agent/tool-render-gate.ts`](tool-render-gate.md) ×3, [`agent/usage-finalize.ts`](usage-finalize.md) ×3, [`providers/quota/headers.ts`](../providers/quota/headers.md) ×3, [`agent/stream-turn.ts`](stream-turn.md) ×2, [`agent/system-prompt.ts`](system-prompt.md) ×2, [`agent/tools/index.ts`](tools/index.md) ×2, [`agent/tools/tool-names.ts`](tools/tool-names.md) ×2, +10 more
+- **Imported by:** [`agent/fake-loop.ts`](fake-loop.md) ×4, [`cli/command-dispatcher.ts`](../cli/command-dispatcher.md) ×1, [`cli/headless-prompt.ts`](../cli/headless-prompt.md) ×1, [`cli/session-runner.ts`](../cli/session-runner.md) ×1
+
+## Tests
+
+`tests/agent/loop.test.ts`. 3 other test files reference it.
+
+## Budget
+
+467 / 500 lines (33 to spare).
+
+## Env
+
+`FREECODE_NO_LLM`
+<!-- END GENERATED MAP FACTS -->
+
 ## Read When
 
 - Changing model turn execution, tool enablement, or stream error handling.

@@ -23,9 +23,26 @@ getAgentPersona(name: string): AgentPersona | undefined
 
 listAgentNames(): string[]
 
+/**
+ * Human-readable "name — description; …" catalog for the spawn_agent tool.
+ */
 agentCatalog(): string
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`agent/subagents/run-subagent.ts`](run-subagent.md) ×4, [`agent/tools/spawn-agent.ts`](../tools/spawn-agent.md) ×2
+
+## Tests
+
+`tests/agent/subagents/registry.test.ts`.
+
+## Budget
+
+55 / 500 lines (445 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Notes
 

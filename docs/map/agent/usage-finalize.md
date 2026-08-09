@@ -14,9 +14,33 @@ interface UsageOutcome {
   quota: RateLimitSnapshot | null;
 }
 
+/**
+ * End any active usage capture for the provider and read captured rate-limit
+ * headers. Shared by the success and error paths of agentLoop so partial
+ * usage/quota metadata survives stream failures.
+ */
 finalizeUsageCapture(providerId: string, promptTokens: number | undefined, outputTokens: number | undefined): Promise<UsageOutcome>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`logger.ts`](../logger.md) ×3, [`providers/adapters/openai-compat.ts`](../providers/adapters/openai-compat.md) ×3, [`providers/quota/headers.ts`](../providers/quota/headers.md) ×2
+- **Imported by:** [`agent/loop.ts`](loop.md) ×3
+
+## Tests
+
+`tests/agent/usage-finalize.test.ts`.
+
+## Budget
+
+41 / 500 lines (459 to spare).
+
+## Env
+
+`DEBUG_QUOTA`
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

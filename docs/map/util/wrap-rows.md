@@ -6,13 +6,45 @@
 ## Exports
 
 ```typescript
+/**
+ * Current terminal width. Both transcript streams share one terminal.
+ */
 terminalColumns(): number
 
+/**
+ * Rows one written line occupies once the terminal wraps it.
+ */
 visualRows(line: string, cols: number): number
 
+/**
+ * Take the leading lines of `lines` that fit `maxRows` wrapped terminal rows,
+ * keeping one row in hand for a caller's "... (N more lines)" note. `render`
+ * maps a line to the text actually written (indent, colouring), so the wrap
+ * math measures what lands on screen. Always keeps at least one line, so a
+ * single over-long line still shows its head.
+ */
 fitLinesToRows<T>(lines: T[], maxRows: number, render: (line: T) => string): T[]
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`util/screen-buffer.ts`](screen-buffer.md) ×1
+- **Imported by:** [`cli/render/transcript-renderer.ts`](../cli/render/transcript-renderer.md) ×4, [`cli/render/transcript-format.ts`](../cli/render/transcript-format.md) ×2
+
+## Tests
+
+`tests/util/wrap-rows.test.ts`.
+
+## Budget
+
+48 / 500 lines (452 to spare).
+
+## Env
+
+`COLUMNS`
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

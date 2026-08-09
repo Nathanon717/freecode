@@ -6,8 +6,14 @@
 ## Exports
 
 ```typescript
+/**
+ * Rows kept on screen at once in a scrolling list-menu tab body.
+ */
 VIEWPORT_SIZE: 20
 
+/**
+ * Smallest viewport shift that keeps `sel` in view (no-op when already visible).
+ */
 clampViewport(sel: number, viewportStart: number): number
 
 interface ListMenuBody {
@@ -70,11 +76,46 @@ interface ListMenuOptions<TResult> {
   countLines?: (lines: string[]) => number;
 }
 
+/**
+ * Window of visible tab indices, scrolled with a one-tab margin (scrolloff=1):
+ * the active tab always keeps at least one neighbour visible on each side, except
+ * at the very ends. The bar scrolls only when the selection reaches that margin —
+ * it never recentres on the active tab. `prevScroll` is the previously rendered
+ * left edge, so a satisfied window stays put.
+ *
+ * Returns the inclusive `[lo, hi]` range of visible tabs.
+ */
 computeTabWindow(tabs: { label: string; }[], prevScroll: number, tabIndex: number, budget: number): { lo: number; hi: number; }
 
+/**
+ * Shared tabbed list menu, built on `runRawPicker`. Owns the active tab, the
+ * selected index (incl. the `-1` tab-row focus when there is more than one tab),
+ * detail/action modes, Up/Down navigation, the inline-action-menu splice, and
+ * the detail-screen swap. Each tab supplies its own body rendering and any
+ * extra key behavior.
+ *
+ * Tab-row focus model (matches `/config`): with multiple tabs, Up from item 0
+ * focuses the tab row (`selected === -1`); Left/Right there switch tabs; Down
+ * returns to item 0.
+ */
 runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TResult>
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/menus/action-menu.ts`](action-menu.md) ×1, [`cli/menus/raw-picker.ts`](raw-picker.md) ×1, [`cli/render/banner.ts`](../render/banner.md) ×1, [`cli/theme.ts`](../theme.md) ×1
+- **Imported by:** [`cli/eval/custom-eval-menu.ts`](../eval/custom-eval-menu.md) ×3, [`cli/eval/humaneval-menu.ts`](../eval/humaneval-menu.md) ×3, [`commands/model.ts`](../../commands/model.md) ×3, [`cli/eval/eval-menu.ts`](../eval/eval-menu.md) ×2, [`commands/config.ts`](../../commands/config.md) ×2
+
+## Tests
+
+`tests/cli/menus/list-menu.test.ts`. 2 other test files reference it.
+
+## Budget
+
+364 / 500 lines (136 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

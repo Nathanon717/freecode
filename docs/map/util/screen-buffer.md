@@ -26,6 +26,20 @@ getScreenBufferDisplayLinesForOverlay(count: number, _scrollHeight: number): str
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`cli/chrome/bottom-ui.ts`](../cli/chrome/bottom-ui.md) ×5, [`cli/render/banner.ts`](../cli/render/banner.md) ×3, [`cli/chrome/suggestion-overlay.ts`](../cli/chrome/suggestion-overlay.md) ×2, [`util/wrap-rows.ts`](wrap-rows.md) ×1
+
+## Tests
+
+`tests/util/screen-buffer.test.ts`. 2 other test files reference it.
+
+## Budget
+
+192 / 500 lines (308 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `installScreenBuffer` — call once at process startup (`index.ts`); no-op if already installed.

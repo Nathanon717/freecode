@@ -10,6 +10,21 @@ runEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string)
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`eval/custom.ts`](../../eval/custom.md) ×6, [`eval/humaneval-data.ts`](../../eval/humaneval-data.md) ×5, [`cli/eval/custom-eval-menu.ts`](custom-eval-menu.md) ×4, [`eval/history.ts`](../../eval/history.md) ×3, [`cli/eval/humaneval-menu.ts`](humaneval-menu.md) ×2, [`cli/menus/list-menu.ts`](../menus/list-menu.md) ×2, [`cli/chrome/bottom-ui.ts`](../chrome/bottom-ui.md) ×1, [`cli/eval/eval-dots.ts`](eval-dots.md) ×1, [`cli/menus/menu-shell.ts`](../menus/menu-shell.md) ×1, [`cli/menus/raw-picker.ts`](../menus/raw-picker.md) ×1, [`cli/render/banner.ts`](../render/banner.md) ×1, [`providers/model-data.ts`](../../providers/model-data.md) ×1, +1 more
+- **Imported by:** [`cli/session-modes.ts`](../session-modes.md) ×2
+
+## Tests
+
+`tests/cli/eval/eval-menu.test.ts`. 1 other test file references it.
+
+## Budget
+
+122 / 500 lines (378 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Behavior
 
 - Builds both tabs every time; opens on the Custom tab. Left/Right on the tab row switches between them.

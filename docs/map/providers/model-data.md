@@ -69,8 +69,18 @@ getModelSettings(key: string): OverridableSettings
 
 setModelSetting(key: string, field: keyof OverridableSettings, value: number | boolean | undefined): void
 
+/**
+ * Append one eval run to the store. Writes the summary into the in-memory cache and
+ * persists the full transcript to `eval_runs`/`eval_transcripts` in the DB via
+ * `saveTranscriptAsync` (fire-and-forget, syncs cross-device via Turso).
+ */
 appendEvalRun(key: string, evalType: string, summary: EvalRunSummary, doc: EvalDoc): void
 
+/**
+ * Derive the latest pass/fail per taskId for humaneval runs from the store.
+ * Runs where `error !== null` (crashes, python-not-found, etc.) are excluded
+ * so a crash does not wipe a prior pass/fail dot.
+ */
 getHumanEvalResults(key: string): Record<string, "pass" | "fail">
 
 interface CatalogModel {
@@ -79,13 +89,50 @@ interface CatalogModel {
   contextWindow?: number;
 }
 
+/**
+ * Write the provider catalog (display name + context window) for one provider into
+ * the store. This is the DB's copy of what the provider says exists; user state on
+ * the same row is untouched. Rows whose catalog values already match are skipped, so
+ * a launch with an unchanged model list writes nothing.
+ *
+ * Callers pass the provider's *final* model list, so blocklisted models never get a
+ * row. Models the provider has stopped offering keep theirs.
+ */
 saveProviderCatalog(provider: string, models: CatalogModel[]): void
 
+/**
+ * The stored catalog for one provider. Feeds the registry's offline path: when a
+ * live fetch fails, the model list is rebuilt from here rather than from the
+ * on-disk JSON cache, which tracks only ids.
+ */
 getProviderCatalog(provider: string): CatalogModel[]
 
+/**
+ * Persist observed rate limit buckets to the store for the given model.
+ * No-op if the limit values are identical to what's already stored.
+ */
 saveObservedRateLimits(provider: string, modelId: string, buckets: Record<string, ObservedRateLimitBucket>): void
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`store/db.ts`](../store/db.md) ×7, [`providers/types.ts`](types.md) ×3, [`providers/model-settings-accessor.ts`](model-settings-accessor.md) ×1
+- **Imported by:** [`providers/quota/headers.ts`](quota/headers.md) ×7, [`commands/model.ts`](../commands/model.md) ×6, [`cli/eval/humaneval-menu.ts`](../cli/eval/humaneval-menu.md) ×5, [`store/db-load.ts`](../store/db-load.md) ×5, [`commands/config.ts`](../commands/config.md) ×3, [`providers/provider-registry.ts`](provider-registry.md) ×3, [`agent/loop.ts`](../agent/loop.md) ×2, [`store/db.ts`](../store/db.md) ×2, +7 more
+
+## Tests
+
+`tests/providers/model-data.test.ts`. 9 other test files reference it.
+
+## Budget
+
+278 / 500 lines (222 to spare).
+
+## Env
+
+`FREECODE_STORE`
+<!-- END GENERATED MAP FACTS -->
 
 ## Export notes
 

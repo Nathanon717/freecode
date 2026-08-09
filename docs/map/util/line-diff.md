@@ -12,6 +12,20 @@ computeLineDiff(oldLines: string[], newLines: string[]): DiffEntry[]
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`cli/render/transcript-format.ts`](../cli/render/transcript-format.md) ×1, [`cli/render/transcript-renderer.ts`](../cli/render/transcript-renderer.md) ×1
+
+## Tests
+
+`tests/util/line-diff.test.ts`. 1 other test file references it.
+
+## Budget
+
+38 / 500 lines (462 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Key Facts
 
 - No chalk or rendering logic — pure algorithm.

@@ -12,6 +12,21 @@ shellTool: CoreTool<z.ZodObject<{ command: z.ZodString; timeout_ms: z.ZodOptiona
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/workspace.ts`](../workspace.md) ×1
+- **Imported by:** [`agent/tools/index.ts`](index.md) ×1
+
+## Tests
+
+`tests/agent/tools/shell.test.ts`. 1 other test file references it.
+
+## Budget
+
+129 / 500 lines (371 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Parameters
 
 | Param | Type | Default | Description |

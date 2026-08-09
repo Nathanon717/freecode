@@ -19,6 +19,21 @@ providerQuirks: Record<string, OpenAICompatQuirks>
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`providers/quota/headers.ts`](../quota/headers.md) ×5, [`providers/adapters/openai-compat-request.ts`](openai-compat-request.md) ×4
+- **Imported by:** [`providers/adapters/openai-compat.ts`](openai-compat.md) ×1
+
+## Tests
+
+`tests/providers/adapters/openai-compat-quirks.test.ts`. 1 other test file references it.
+
+## Budget
+
+64 / 500 lines (436 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Adding or Changing a Provider's Quirks
 
 Edit one entry here. The adapter skeleton in [openai-compat](openai-compat.md) reads the profile and runs a fixed pipeline — no `if (id === 'x')` branches anywhere in the skeleton.

@@ -6,13 +6,38 @@
 ## Exports
 
 ```typescript
+/**
+ * OpenAI reasoning models (o1, o3, gpt-5) reject any temperature value; strip it entirely.
+ */
 openAIModelDisallowsTemperature(modelId: string): boolean
 
+/**
+ * Mistral Codestral models silently ignore the system role; inject system content into the first user message instead.
+ */
 mistralCodestralRequiresSystemInjection(modelId: string): boolean
 
+/**
+ * Move the system message into the first user message for models that ignore
+ * the system role. Removes the system entry and prepends its content to the
+ * first user message's content string.
+ */
 injectSystemIntoFirstUserMessage(messages: Record<string, unknown>[]): Record<string, unknown>[]
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`providers/adapters/openai-compat-request.ts`](adapters/openai-compat-request.md) ×3
+
+## Tests
+
+`tests/providers/model-quirks.test.ts`.
+
+## Budget
+
+37 / 500 lines (463 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Read When
 

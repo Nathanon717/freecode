@@ -71,6 +71,20 @@ interface Config {
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`providers/provider-registry.ts`](provider-registry.md) ×12, [`config/index.ts`](../config/index.md) ×11, [`commands/config.ts`](../commands/config.md) ×6, [`providers/index.ts`](index.md) ×5, [`providers/provider-catalog.ts`](provider-catalog.md) ×5, [`providers/model-data.ts`](model-data.md) ×3, [`providers/model-settings-accessor.ts`](model-settings-accessor.md) ×2, [`cli/menus/model-screen.ts`](../cli/menus/model-screen.md) ×1, +2 more
+
+## Tests
+
+No mirrored test — pure type declarations; erased at compile time, no runtime behavior to test. 2 other test files reference it.
+
+## Budget
+
+63 / 500 lines (437 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Notes
 
 - `supportsTools` defaults effectively to true; router checks `provider.supportsTools !== false`.

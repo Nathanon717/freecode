@@ -24,6 +24,21 @@ layoutFooterRightRows(width: number, rowBudget: number, now?: number): string[]
 ```
 <!-- END GENERATED EXPORTS -->
 
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`providers/openai-daily-spend.ts`](../../providers/openai-daily-spend.md) ×2, [`providers/quota/headers.ts`](../../providers/quota/headers.md) ×2
+- **Imported by:** [`cli/session-modes.ts`](../session-modes.md) ×9, [`cli/eval/custom-eval-menu.ts`](../eval/custom-eval-menu.md) ×7, [`cli/chrome/bottom-ui.ts`](bottom-ui.md) ×2, [`cli/eval/humaneval-menu.ts`](../eval/humaneval-menu.md) ×1
+
+## Tests
+
+`tests/cli/chrome/footer-status.test.ts`. 4 other test files reference it.
+
+## Budget
+
+214 / 500 lines (286 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Export notes
 
 - `formatEvalRunStatus` — returns the retry-banner string for the footer left side.

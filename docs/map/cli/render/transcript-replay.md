@@ -55,6 +55,30 @@ A new command that wipes the screen without clearing history, or a change to wha
 ## Exports
 
 ```typescript
+/**
+ * Reprint the recorded conversation. A no-op on an empty record, so `/clear`
+ * (which empties it along with the history) still lands on a bare banner — there
+ * the blank screen is accurate.
+ *
+ * `messages` is read only for the header count: the record is what was on screen,
+ * while the history is what the model is sent, and the point of the header is to
+ * state the latter.
+ */
 replayTranscript(messages: CoreMessage[], options?: TranscriptRuntimeOptions): void
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/transcript-renderer.ts`](transcript-renderer.md) ×7, [`cli/render/transcript-record.ts`](transcript-record.md) ×3
+- **Imported by:** [`cli/command-dispatcher.ts`](../command-dispatcher.md) ×3
+
+## Tests
+
+`tests/cli/render/transcript-replay.test.ts`.
+
+## Budget
+
+78 / 500 lines (422 to spare).
+<!-- END GENERATED MAP FACTS -->

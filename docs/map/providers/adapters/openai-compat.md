@@ -19,6 +19,10 @@ interface CapturedProviderUsage {
 
 setParallelToolsDisabled(providerId: string, disabled: boolean): void
 
+/**
+ * Return the headers captured from the most recent HTTP response for the given
+ * provider, or null if none have been captured yet.
+ */
 getLastCapturedHeaders(providerId: string): RateLimitSnapshot | null
 
 beginProviderUsageCapture(providerId: string): void
@@ -32,6 +36,25 @@ createOpenAICompatProvider(providerConfig: ProviderConfig): OpenAIProvider
 createOllamaProvider(): OpenAIProvider
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`store/call-log.ts`](../../store/call-log.md) ×5, [`util/guards.ts`](../../util/guards.md) ×4, [`providers/quota/headers.ts`](../quota/headers.md) ×3, [`config/index.ts`](../../config/index.md) ×2, [`providers/adapters/adapter-http-retry.ts`](adapter-http-retry.md) ×2, [`providers/adapters/adapter-usage-capture.ts`](adapter-usage-capture.md) ×2, [`providers/adapters/openai-compat-sse.ts`](openai-compat-sse.md) ×2, [`providers/adapters/openai-compat-quirks.ts`](openai-compat-quirks.md) ×1, [`providers/adapters/openai-compat-request.ts`](openai-compat-request.md) ×1, [`providers/model-data.ts`](../model-data.md) ×1, [`providers/types.ts`](../types.md) ×1
+- **Imported by:** [`agent/loop.ts`](../../agent/loop.md) ×6, [`agent/usage-finalize.ts`](../../agent/usage-finalize.md) ×3, [`cli/command-dispatcher.ts`](../../cli/command-dispatcher.md) ×1, [`providers/provider-registry.ts`](../provider-registry.md) ×1
+
+## Tests
+
+`tests/providers/adapters/openai-compat.test.ts`. 4 other test files reference it.
+
+## Budget
+
+254 / 500 lines (246 to spare).
+
+## Env
+
+`DEBUG_QUOTA`, `DEBUG_TOOLS`
+<!-- END GENERATED MAP FACTS -->
 
 ## `createOpenAICompatProvider`
 

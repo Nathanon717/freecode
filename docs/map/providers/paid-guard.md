@@ -10,15 +10,42 @@
 ```typescript
 FREE_ONLY_ENV_VAR: 'FREECODE_FREE_ONLY'
 
+/**
+ * Env vars holding credentials that can be billed. Kept as literals rather than
+ * derived from PROVIDER_REGISTRY because src/index.ts reads this before the
+ * catalog loads; a unit test pins it against every `paid: true` provider.
+ *
+ * OPENAI_ADMIN_KEY is not a provider key — providers/openai-daily-spend.ts uses it
+ * for the read-only billing endpoint, so it cannot spend. It is filtered anyway so
+ * that "no paid credentials in this process" is literally true.
+ */
 PAID_API_KEY_ENV_VARS: readonly ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_ADMIN_KEY']
 
 isPaidApiKeyEnvVar(name: string): boolean
 
 isFreeOnlyMode(env?: ProcessEnv): boolean
 
+/**
+ * Message for a refused model. Deliberately names the flag: the agent reading it
+ * should understand it needs a different model, not that freecode is broken.
+ */
 freeOnlyRefusal(modelPreference: string, why: string): string
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imported by:** [`index.ts`](../index.md) ×3, [`providers/provider-registry.ts`](provider-registry.md) ×3, [`config/index.ts`](../config/index.md) ×1
+
+## Tests
+
+`tests/providers/paid-guard.test.ts`.
+
+## Budget
+
+59 / 500 lines (441 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Three layers
 

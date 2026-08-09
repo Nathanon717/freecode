@@ -10,6 +10,11 @@ type ActivityKind = keyof typeof ACTIVITY_VERBS;
 
 isActivityKind(name: string): name is "spawn_agent" | "shell_exec" | "grep"
 
+/**
+ * Registered by `bottom-ui.ts` so a verb change repaints the label row. Inverted
+ * rather than imported directly because `bottom-ui.ts` already imports this
+ * module, and the reverse edge would be a cycle.
+ */
 setActivityChangeListener(cb: (() => void) | null): void
 
 setActivity(next: "spawn_agent" | "shell_exec" | "grep" | null): void
@@ -21,6 +26,21 @@ isTurnActive(): boolean
 composeThinkingLabel(): string
 ```
 <!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/theme.ts`](../theme.md) ×1
+- **Imported by:** [`cli/chrome/bottom-ui.ts`](bottom-ui.md) ×4, [`agent/tools/wrappers.ts`](../../agent/tools/wrappers.md) ×3, [`cli/session-modes.ts`](../session-modes.md) ×2, [`cli/tools/tool-approval.ts`](../tools/tool-approval.md) ×2
+
+## Tests
+
+`tests/cli/chrome/turn-state.test.ts`. 1 other test file references it.
+
+## Budget
+
+82 / 500 lines (418 to spare).
+<!-- END GENERATED MAP FACTS -->
 
 ## Why it is its own module
 
