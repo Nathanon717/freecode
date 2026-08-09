@@ -1,3 +1,7 @@
+/**
+ * @role Converts plain markdown text (from LLM responses) into chalk-styled terminal output. Active when `process.stdout.isTTY` is truthy **or** `FORCE_COLOR` is set — the eval subprocess runner sets `FORCE_COLOR=1` so eval output renders identically to interactive chat. Scripted runs without either flag receive raw text unchanged.
+ */
+
 import chalk from "chalk";
 import { Lexer, type Token } from "marked";
 import { theme } from "../theme.js";

@@ -1,3 +1,12 @@
+/**
+ * @role Spawns freecode as a child process for eval scenarios, manages eval file I/O, and runs the check script.
+ *
+ * @readwhen
+ * - Changing eval subprocess environment variables, timeout, or stream handling.
+ * - Modifying how eval results are archived or persisted.
+ * - Debugging the check script runner.
+ */
+
 import { existsSync, readdirSync, readFileSync, mkdirSync, rmSync, cpSync, writeFileSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { spawn, spawnSync } from 'child_process';

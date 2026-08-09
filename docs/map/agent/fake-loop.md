@@ -1,6 +1,15 @@
 # src/agent/fake-loop.ts - Fake-Fixture Turn Loop
 
-**Role:** Runs one turn for `mock:*` fixture models. Extracted from `loop.ts` at the 500-line limit; it is the only path that never touches the AI SDK.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Runs one turn for `mock:*` fixture models. Extracted from `loop.ts` at the 500-line limit; it is the only path that never touches the AI SDK.
+
+## Read When
+
+- Changing how fixture steps drive tool calls or accumulate text/usage.
+- Debugging a `mock:*` e2e test whose fixture matched but whose transcript or result looks wrong.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -30,11 +39,6 @@ runFakeLlm(providerId: string, modelId: string, supportsTools: boolean, systemPr
 
 129 / 500 lines (371 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Read When
-
-- Changing how fixture steps drive tool calls or accumulate text/usage.
-- Debugging a `mock:*` e2e test whose fixture matched but whose transcript or result looks wrong.
 
 ## How It Works
 

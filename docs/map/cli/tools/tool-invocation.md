@@ -1,6 +1,15 @@
 # src/cli/tools/tool-invocation.ts - Hand-Typed Tool Call Parsing
 
-**Role:** Pure parsing/highlighting for user-typed tool calls of the form `name(arg=val, ...)`. Deliberately free of any `ai`-SDK import so it is safe to load on the early interactive boot path; execution lives in [tool-runner.md](./tool-runner.md).
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Pure parsing/highlighting for user-typed tool calls of the form `name(arg=val, ...)`. Deliberately free of any `ai`-SDK import so it is safe to load on the early interactive boot path; execution lives in [tool-runner.md](./tool-runner.md).
+
+## Read When
+
+- Changing the tool-call typing syntax, argument coercion, the autofill skeleton, tabstop navigation, or the pastel tool-name highlight.
+- Adding/removing a callable tool — update `TOOL_PARAMS` here. `TOOL_NAMES` needs nothing: it comes from the registry's name module.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -78,11 +87,6 @@ parseToolArgs(argsText: string): Record<string, unknown>
 
 323 / 500 lines (177 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Read When
-
-- Changing the tool-call typing syntax, argument coercion, the autofill skeleton, tabstop navigation, or the pastel tool-name highlight.
-- Adding/removing a callable tool — update `TOOL_PARAMS` here. `TOOL_NAMES` needs nothing: it comes from the registry's name module.
 
 ## Export notes
 

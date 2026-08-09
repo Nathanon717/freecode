@@ -1,3 +1,11 @@
+/**
+ * @role Holds the interactive and scripted tool-approval UI shared by both `CliSessionMode` implementations in `cli/session-modes.ts`.
+ *
+ * @readwhen
+ * - Changing the approval hint, its keybindings, or the row budget the preview above it gets.
+ * - Changing how scripted runs parse approve/deny lines.
+ */
+
 import type { Interface } from "readline";
 import chalk from "chalk";
 import type {

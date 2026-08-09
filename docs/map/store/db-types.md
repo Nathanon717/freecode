@@ -1,8 +1,14 @@
 # src/store/db-types.ts - Shared Store Types
 
-**Role:** The `ModelDataMap` shape, in its own file so `db.ts` and `db-load.ts` can share it without a cycle.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
 
-**Read when:** you need the in-memory store's type and want to avoid importing `db.ts`.
+The `ModelDataMap` shape, in its own file so `db.ts` and `db-load.ts` can share it without a cycle.
+
+## Read When
+
+you need the in-memory store's type and want to avoid importing `db.ts`.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

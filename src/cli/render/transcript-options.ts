@@ -1,3 +1,10 @@
+/**
+ * @role Resolves where transcript output goes and how much of a tool result it may show.
+ *
+ * @readwhen
+ * - Changing transcript stream routing or result-preview truncation policy.
+ */
+
 import { Writable } from "stream";
 
 /**

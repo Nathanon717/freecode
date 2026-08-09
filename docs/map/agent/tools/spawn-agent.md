@@ -1,8 +1,14 @@
 # src/agent/tools/spawn-agent.ts - spawn_agent Tool
 
-**Role:** Factory for the `spawn_agent` tool, which lets the main model delegate a focused read-only investigation to a named sub-agent and get back a compact findings report.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
 
-**Read when:** changing the `spawn_agent` schema/description, or how the model-bound runner is injected.
+Factory for the `spawn_agent` tool, which lets the main model delegate a focused read-only investigation to a named sub-agent and get back a compact findings report.
+
+## Read When
+
+changing the `spawn_agent` schema/description, or how the model-bound runner is injected.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

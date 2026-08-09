@@ -1,10 +1,16 @@
 # src/store/db-load.ts - DB Row Hydration
 
-**Role:** Reads the DB into the shapes the app holds in memory — the model-data map and the config blob.
-
 Pure hydration: takes a client, returns plain data, owns no state. Every column decode lives here (null handling, JSON blob parsing, corrupt-row tolerance), so `db.ts` keeps only client lifecycle and writes.
 
-**Read when:** adding a column to `models`/`eval_runs` that must reach `ModelEntry`, or changing how a stored blob is decoded.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Reads the DB into the shapes the app holds in memory — the model-data map and the config blob.
+
+## Read When
+
+adding a column to `models`/`eval_runs` that must reach `ModelEntry`, or changing how a stored blob is decoded.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

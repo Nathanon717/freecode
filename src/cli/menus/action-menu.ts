@@ -1,3 +1,7 @@
+/**
+ * @role Shared inline action sub-menu that splices into any list-picker screen below the selected row. Used by both `custom-eval-menu.ts` (eval picker) and `commands/model.ts` (model picker).
+ */
+
 import chalk from 'chalk';
 import { getBannerColor } from '../render/banner.js';
 

@@ -1,3 +1,7 @@
+/**
+ * @role Applies one exact text replacement inside an existing UTF-8 file relative to the active project root.
+ */
+
 import { tool } from 'ai';
 import { z } from 'zod';
 import { readFile, writeFile } from 'fs/promises';

@@ -1,3 +1,7 @@
+/**
+ * @role Wraps a `js-tiktoken` encoding as a `TokenizerEncoder`, and registers the GPT-OSS exact family into `count.ts`'s `encoderCache`. `createTiktokenEncoder` is the reusable wrapper — typed to accept any `Tiktoken`, whether from `getEncoding` (GPT-OSS) or constructed directly from parsed ranks. The Mistral Tekken backend ([tekken.md](tekken.md)) reuses it, building a `Tiktoken` from `tekken.json`'s vocab.
+ */
+
 import type { CoreMessage } from 'ai';
 import { getEncoding, type Tiktoken } from 'js-tiktoken';
 import { countContextTokens } from '../chat-format.js';

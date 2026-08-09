@@ -1,3 +1,7 @@
+/**
+ * @role Lists one directory relative to the active project root.
+ */
+
 import { tool } from 'ai';
 import { z } from 'zod';
 import { readdir, stat } from 'fs/promises';

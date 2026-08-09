@@ -1,6 +1,10 @@
 # src/providers/openai-daily-spend.ts - OpenAI Daily Spend Footer
 
-**Role:** Fetches and caches the current UTC day's OpenAI organization cost for the interactive footer.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Fetches and caches the current UTC day's OpenAI organization cost for the interactive footer.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

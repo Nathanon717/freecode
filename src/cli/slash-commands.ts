@@ -1,3 +1,7 @@
+/**
+ * @role Defines slash command names, fuzzy filtering, inline completion, and help text.
+ */
+
 import chalk from 'chalk';
 
 export interface SlashCommandInfo {

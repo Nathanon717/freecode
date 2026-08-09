@@ -1,8 +1,14 @@
 # src/cli/headless-prompt.ts - Headless Prompt Mode (`-p`)
 
-**Role:** `freecode -p "<prompt>"` — one non-interactive agent turn whose final response is printed to stdout, read-only unless `--edit` is passed. Built so an LLM can shell out to freecode and read the answer back.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
 
-**Read when:** changing what `-p` prints, its exit codes, or what it is allowed to do.
+`freecode -p "<prompt>"` — one non-interactive agent turn whose final response is printed to stdout, read-only unless `--edit` is passed. Built so an LLM can shell out to freecode and read the answer back.
+
+## Read When
+
+changing what `-p` prints, its exit codes, or what it is allowed to do.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

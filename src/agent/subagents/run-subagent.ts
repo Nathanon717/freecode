@@ -1,3 +1,10 @@
+/**
+ * @role Runs a named sub-agent turn loop that is deliberately *not* the main `agentLoop`. Returns only the sub-agent's final text as a string, so the caller spends one tool call of context instead of the whole search.
+ *
+ * @readwhen
+ * changing how spawned sub-agents execute, which tools they get, or how the injected model handle reaches them.
+ */
+
 // Runs a named sub-agent turn loop that is deliberately NOT the main agentLoop.
 //
 // The main loop (agent/loop.ts) is fused to foreground rendering — transcript

@@ -1,3 +1,7 @@
+/**
+ * @role Creates a new UTF-8 file relative to the active project root.
+ */
+
 import { tool } from 'ai';
 import { z } from 'zod';
 import { writeFile, mkdir } from 'fs/promises';

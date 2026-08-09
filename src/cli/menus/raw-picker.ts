@@ -1,3 +1,12 @@
+/**
+ * @role Provides the shared raw-mode terminal picker primitive used by `/model`, `/config`, and `/eval`. Also exports `runRawKeySession`, the low-level stdin raw-mode lifecycle primitive that `runRawPicker` is built on.
+ *
+ * @readwhen
+ * - Changing the raw-mode lifecycle shared by the pickers.
+ * - Adding a new interactive picker command.
+ * - Implementing Phase 3 (session-modes.ts) to reuse `runRawKeySession`.
+ */
+
 import type { Interface } from 'readline';
 import { composeFooterOutput, drawFooter, getLastReservedRows, getRows, resumeFooterTimer, setOnResizeCallback, suspendFooterTimer } from '../chrome/bottom-ui.js';
 

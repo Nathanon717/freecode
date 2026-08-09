@@ -1,3 +1,12 @@
+/**
+ * @role Fallback agentic loop for models that reject native function calling. Augments the system prompt with a text-based `<tool_call>` protocol and drives a ReAct-style loop by injecting tool results as user messages.
+ *
+ * @readwhen
+ * - Understanding the parsed-tools fallback path.
+ * - Changing how tool calls are formatted or parsed in text-only mode.
+ * - Debugging tool execution when the model doesn't support native function calling.
+ */
+
 import { streamText } from "ai";
 import type { CoreMessage, LanguageModel } from "ai";
 import chalk from "chalk";

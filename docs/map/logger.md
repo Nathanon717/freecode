@@ -1,6 +1,10 @@
 # src/logger.ts - Logging Utility
 
-**Role:** Category-colored stderr logging. Diagnostic logging is disabled by default; errors always surface.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Category-colored stderr logging. Diagnostic logging is disabled by default; errors always surface.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

@@ -1,3 +1,7 @@
+/**
+ * @role Owns the in-memory conversation for a CLI session.
+ */
+
 import type { CoreMessage } from 'ai';
 import { dropUnpairedToolCalls } from './turn-messages.js';
 

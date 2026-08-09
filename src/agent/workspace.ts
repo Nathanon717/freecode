@@ -1,3 +1,7 @@
+/**
+ * @role Provides the current project root and per-root file read tracking to tool modules that are created outside a single request scope.
+ */
+
 import { realpath } from 'fs/promises';
 import { dirname, isAbsolute, relative, resolve } from 'path';
 

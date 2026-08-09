@@ -1,6 +1,10 @@
 # src/cli/eval/custom-eval-menu.ts - Custom Eval Tab + Run Loop
 
-**Role:** Provides the **Custom** tab of the unified eval menu (`buildCustomEvalTab`) and the eval scenario run loop (`runEvalScenarios`) backed by `evals/custom/`. The `/eval` menu itself is composed in `cli/eval/eval-menu.ts`. Delegates subprocess execution to `eval-runner.ts`, rendering to `eval-screen.ts`, error parsing to `eval-errors.ts`, and the inline action sub-menu to `action-menu.ts`.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Provides the **Custom** tab of the unified eval menu (`buildCustomEvalTab`) and the eval scenario run loop (`runEvalScenarios`) backed by `evals/custom/`. The `/eval` menu itself is composed in `cli/eval/eval-menu.ts`. Delegates subprocess execution to `eval-runner.ts`, rendering to `eval-screen.ts`, error parsing to `eval-errors.ts`, and the inline action sub-menu to `action-menu.ts`.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

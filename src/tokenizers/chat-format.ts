@@ -1,3 +1,7 @@
+/**
+ * @role The message/content-stringification and overhead-arithmetic logic every tokenizer backend shares — a fixed per-message and per-request overhead plus whatever `encodeText` function the caller supplies. Extracted from `fallback-estimate.ts` in Phase 2 so the new tiktoken backend (and future HF/SentencePiece/Tekken backends) reuse the same formula instead of duplicating it per encoder.
+ */
+
 import type { CoreMessage } from 'ai';
 import { buildSystemPrompt } from '../agent/system-prompt.js';
 

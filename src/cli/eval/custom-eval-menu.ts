@@ -1,3 +1,7 @@
+/**
+ * @role Provides the **Custom** tab of the unified eval menu (`buildCustomEvalTab`) and the eval scenario run loop (`runEvalScenarios`) backed by `evals/custom/`. The `/eval` menu itself is composed in `cli/eval/eval-menu.ts`. Delegates subprocess execution to `eval-runner.ts`, rendering to `eval-screen.ts`, error parsing to `eval-errors.ts`, and the inline action sub-menu to `action-menu.ts`.
+ */
+
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import chalk from "chalk";

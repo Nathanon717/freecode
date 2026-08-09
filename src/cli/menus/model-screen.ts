@@ -1,3 +1,11 @@
+/**
+ * @role Pure rendering + data helpers for the `/model` picker. Holds the `ModelMenuItem` shape and every function that turns model lists into screen lines, with no terminal/raw-mode or provider-fetch logic.
+ *
+ * @readwhen
+ * - Changing how model rows, the Favorites section, pricing/eval/`~tools`/`◉` (exact-tokenizer eye) badges, the scroll indicators, or the model detail screen look. The eye badge is banner-tinted and driven by `ModelMenuItem.exactTokenizer`, which `commands/model.ts` fills from `tokenizers/count.ts`'s `hasExactTokenizer`.
+ * - Adjusting filtering, sort order, or the `showProviderHeaders` flag that controls provider headers and gold-highlight behavior.
+ */
+
 import chalk from 'chalk';
 import type { PricingConfidence } from '../../providers/pricing-verifier.js';
 import type { OverridableSettings } from '../../providers/types.js';

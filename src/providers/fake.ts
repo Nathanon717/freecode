@@ -1,3 +1,12 @@
+/**
+ * @role Test-only fake model runner for free agent-loop verification. It validates ordered JSON fixture steps, emits deterministic text/chunk responses and scripted tool calls, and records fake-model traces for e2e assertions when requested.
+ *
+ * @readwhen
+ * - Changing fake LLM fixture format or matching rules.
+ * - Debugging `llmFixture` e2e failures.
+ * - Extending fake coverage into parsed-tools or Responses-style paths.
+ */
+
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import type { CoreMessage, LanguageModel, LanguageModelV1CallOptions, LanguageModelV1StreamPart } from 'ai';
 import { recordTranscriptText } from '../cli/render/transcript-record.js';

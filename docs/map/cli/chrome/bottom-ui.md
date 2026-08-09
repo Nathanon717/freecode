@@ -1,6 +1,10 @@
 # src/cli/chrome/bottom-ui.ts - Bottom Terminal UI
 
-**Role:** Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and the input-area layout; status state lives in `footer-status.ts`, buffer/cursor state in `input-buffer.ts`, the suggestion overlay's snapshot in `suggestion-overlay.ts`, the turn flag and activity verb behind the `thinking…` label in `turn-state.ts`, and the raw escape sequences in `ansi.ts`. Import those directly — this module does not re-export them.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and the input-area layout; status state lives in `footer-status.ts`, buffer/cursor state in `input-buffer.ts`, the suggestion overlay's snapshot in `suggestion-overlay.ts`, the turn flag and activity verb behind the `thinking…` label in `turn-state.ts`, and the raw escape sequences in `ansi.ts`. Import those directly — this module does not re-export them.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

@@ -1,3 +1,10 @@
+/**
+ * @role Owns the mutable input buffer and cursor position used by the interactive prompt.
+ *
+ * @readwhen
+ * Editing the interactive input area, cursor movement, or visual row/column calculations.
+ */
+
 let lastInputBuf = '';
 let cursorPos = 0;
 

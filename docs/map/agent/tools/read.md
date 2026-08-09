@@ -1,6 +1,10 @@
 # src/agent/tools/read.ts - read Tool
 
-**Role:** Reads a UTF-8 file relative to the active project root, with line-based pagination and fuzzy "did you mean" suggestions on ENOENT.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Reads a UTF-8 file relative to the active project root, with line-based pagination and fuzzy "did you mean" suggestions on ENOENT.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

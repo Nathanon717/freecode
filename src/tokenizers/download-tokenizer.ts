@@ -1,3 +1,7 @@
+/**
+ * @role Ensures a canonical HF repo file is cached under `.freecode/tokenizers/<family>/<filename>`, downloading it if missing. The HF-fast families use the default `tokenizer.json`; the Tekken family passes `tekken.json`. Mirrors `eval/humaneval-data.ts`'s injectable-`downloadFn` shape for testability.
+ */
+
 import { createWriteStream, existsSync, mkdirSync, renameSync, rmSync, statSync } from 'fs';
 import { dirname, join } from 'path';
 import https from 'https';

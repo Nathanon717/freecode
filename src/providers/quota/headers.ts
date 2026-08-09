@@ -1,3 +1,12 @@
+/**
+ * @role Pure parsers for Groq, Mistral, and Cerebras rate-limit response headers; plus extractors that derive per-model limit ceilings for persistence in `models.json`. Anthropic has no quirk profile entry (see [openai-compat-quirks.md](../adapters/openai-compat-quirks.md)), so `captureRateLimits` is off for it and none of these parsers run against it.
+ *
+ * @readwhen
+ * - Debugging quota display or provider response headers.
+ * - Adding provider-specific rate-limit parsing.
+ * - Changing how static registry limits supplement live quota headers.
+ */
+
 import type { ObservedRateLimitBucket } from '../model-data.js';
 
 /**

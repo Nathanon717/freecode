@@ -1,3 +1,9 @@
+/**
+ * @role Owns the constraints on the messages a turn contributes back to the
+ * session history. Read it before changing what any loop returns as `turnMessages`,
+ * or before adding a fourth tool protocol.
+ */
+
 // Shape rules for the messages a turn contributes back to the session history.
 //
 // Two different tool protocols write into the same `Conversation`:

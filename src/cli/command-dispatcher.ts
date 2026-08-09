@@ -1,3 +1,7 @@
+/**
+ * @role Handles slash commands and sends normal user input to the agent loop.
+ */
+
 import chalk from 'chalk';
 import type { AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';

@@ -1,3 +1,7 @@
+/**
+ * @role Public API layer for all per-model data: the provider catalog (display name, context window), favorites, native-tools state, per-model settings, eval run records, and observed rate limits. Keyed by `"provider:modelId"`. All public function signatures are synchronous; reads hit the `db.ts` in-memory cache and writes update the cache then fire-and-forget persist to the DB.
+ */
+
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import type { OverridableSettings } from './types.js';

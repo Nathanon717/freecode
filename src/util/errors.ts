@@ -1,3 +1,10 @@
+/**
+ * @role Shared error-formatting utilities.
+ *
+ * @readwhen
+ * You need a consistent way to extract a string message from an `unknown` catch value, or to surface provider/API details from structured error payloads.
+ */
+
 import { isRecord } from './guards.js';
 
 export function toErrorMessage(error: unknown): string {

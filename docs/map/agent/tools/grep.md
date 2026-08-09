@@ -1,6 +1,10 @@
 # src/agent/tools/grep.ts - grep Tool
 
-**Role:** Searches files using ripgrep (`rg`), which is a required freecode dependency. Results are sorted by file modification time (newest first) so recently-changed code surfaces first.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Searches files using ripgrep (`rg`), which is a required freecode dependency. Results are sorted by file modification time (newest first) so recently-changed code surfaces first.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

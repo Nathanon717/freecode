@@ -1,6 +1,15 @@
 # src/providers/model-quirks.ts - Per-Model Static Quirks
 
-**Role:** Single home for all static per-model capability predicates. Keeps model-ID checks out of the adapter and off the hot path.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Single home for all static per-model capability predicates. Keeps model-ID checks out of the adapter and off the hot path.
+
+## Read When
+
+- Adding a new per-model request-body quirk (wrong temperature range, empty content rejection, unsupported fields, etc.).
+- Debugging an adapter patch to understand which models trigger it.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -38,11 +47,6 @@ injectSystemIntoFirstUserMessage(messages: Record<string, unknown>[]): Record<st
 
 31 / 500 lines (469 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Read When
-
-- Adding a new per-model request-body quirk (wrong temperature range, empty content rejection, unsupported fields, etc.).
-- Debugging an adapter patch to understand which models trigger it.
 
 ## Key Neighbors
 

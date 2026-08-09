@@ -1,3 +1,11 @@
+/**
+ * @role Persists the most-recently seen `RateLimitSnapshot` per provider to disk so the footer can show stale quota data on app start or immediately after `/model` switch, before any inference call.
+ *
+ * @readwhen
+ * - Understanding how footer quota data is seeded on startup.
+ * - Changing where/how quota snapshots are persisted between sessions.
+ */
+
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { getConfigDir } from '../../config/index.js';

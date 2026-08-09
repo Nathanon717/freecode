@@ -1,12 +1,18 @@
 # src/util/guards.ts - Type Guard Utilities
 
-**Purpose:** Shared type guard utilities used across multiple modules.
-
-**Read when:** You need to narrow `unknown` to a plain object (`Record<string, unknown>`).
-
 **Key neighbors:** `src/providers/adapters/openai-compat.ts`
 
 **Update triggers:** New type guards that are (or will be) used in two or more source files.
+
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Shared type guard utilities used across multiple modules.
+
+## Read When
+
+You need to narrow `unknown` to a plain object (`Record<string, unknown>`).
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

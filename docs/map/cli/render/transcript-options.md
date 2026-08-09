@@ -1,6 +1,14 @@
 # src/cli/render/transcript-options.ts - Transcript Stream + Options
 
-**Role:** Resolves where transcript output goes and how much of a tool result it may show.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Resolves where transcript output goes and how much of a tool result it may show.
+
+## Read When
+
+- Changing transcript stream routing or result-preview truncation policy.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -61,10 +69,6 @@ getTranscriptStream(options?: TranscriptRuntimeOptions): WritableStream
 - **There are two streams, not three: `stdout` (the default) and `null`.** `stderr` was removed. It had been the default, which meant an off-TTY run put transcript output on the error stream while every real consumer — the TTY session, the eval subprocess, e2e layout scenarios — overrode it back to stdout; nothing ever wanted stderr. Substring e2e assertions match combined output, so they never cared either. `FREECODE_TRANSCRIPT_STREAM` now only distinguishes "show it" from `null`, which silences it: unit tests set that suite-wide (`vitest.config.ts`), and `-p` sets it because it prints the final response itself ([../headless-prompt.md](../headless-prompt.md)). An unrecognised value is stdout.
 - `maxResultLines` vs `maxResultRows` — lines is the stable default (30, `all` for unbounded, env-driven); rows is the interactive-only wrap-aware cap set by the approval path. Both apply; whichever trims first wins.
 - `TRANSCRIPT_DIVIDER_WIDTH` — a fallback only; the runtime divider uses the real terminal width.
-
-## Read when
-
-- Changing transcript stream routing or result-preview truncation policy.
 
 ## Key neighbors
 

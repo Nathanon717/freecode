@@ -1,6 +1,10 @@
 # src/cli/menus/action-menu.ts - Inline Action Sub-menu
 
-**Role:** Shared inline action sub-menu that splices into any list-picker screen below the selected row. Used by both `custom-eval-menu.ts` (eval picker) and `commands/model.ts` (model picker).
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Shared inline action sub-menu that splices into any list-picker screen below the selected row. Used by both `custom-eval-menu.ts` (eval picker) and `commands/model.ts` (model picker).
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

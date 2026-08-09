@@ -1,3 +1,7 @@
+/**
+ * @role Implements the `/config` terminal UI for editing settings at global, provider, and model levels.
+ */
+
 import chalk from 'chalk';
 import type { Interface } from 'readline';
 import { getBannerColor } from '../cli/render/banner.js';

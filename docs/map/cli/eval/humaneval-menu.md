@@ -1,7 +1,5 @@
 # src/cli/eval/humaneval-menu.ts - HumanEval Tab + Run Loop
 
-**Role:** Implements the HumanEval tab (`buildHumanEvalTab`), the run loop (`runHumanEvalProblems`/`runOneProblem`), the rate-limit retry prompter (`makeRetryPrompter`), and the Python-based scorer. Composed into `/eval` by `cli/eval/eval-menu.ts` (this file doesn't own the menu chrome or the `runRawPicker` loop). Dataset loading/download lives in `eval/humaneval-data.ts`; this file only imports its `HumanEvalProblem`/`HumanEvalResultMap` types. Sibling of `cli/eval/custom-eval-menu.ts` (the Custom tab).
-
 **Key neighbors:**
 - `src/cli/eval/eval-menu.ts` — composes this tab into `/eval`
 - `src/cli/eval/custom-eval-menu.ts` — the Custom-tab sibling (same `MenuTab` + run-loop shape)
@@ -17,7 +15,15 @@
 
 **Result persistence:** Each run is stored in `.freecode/models.json` (summary) and `.freecode/evals/humaneval/{provider}-{modelId}/{timestamp}.json` (full transcript + scoring). The `transcript` field is an array of turn objects, each with `systemPrompt`, `userMessage`, `tokenUsage: { input?, output? }`, and `toolCalls`. For humaneval (single-turn evals) the array always has exactly one entry.
 
-**Read when:** Changing prompt wording, the Python check logic, viewport size, run-dir layout, dot rendering, result persistence format, or the tab/menu composition (see `cli/eval/eval-menu.ts`).
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Implements the HumanEval tab (`buildHumanEvalTab`), the run loop (`runHumanEvalProblems`/`runOneProblem`), the rate-limit retry prompter (`makeRetryPrompter`), and the Python-based scorer. Composed into `/eval` by `cli/eval/eval-menu.ts` (this file doesn't own the menu chrome or the `runRawPicker` loop). Dataset loading/download lives in `eval/humaneval-data.ts`; this file only imports its `HumanEvalProblem`/`HumanEvalResultMap` types. Sibling of `cli/eval/custom-eval-menu.ts` (the Custom tab).
+
+## Read When
+
+Changing prompt wording, the Python check logic, viewport size, run-dir layout, dot rendering, result persistence format, or the tab/menu composition (see `cli/eval/eval-menu.ts`).
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

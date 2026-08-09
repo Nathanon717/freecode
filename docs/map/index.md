@@ -1,6 +1,16 @@
 # src/index.ts - CLI Entry Point
 
-**Role:** Thin executable entry point. It parses process flags, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Thin executable entry point. It parses process flags, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
+
+## Read When
+
+- Changing CLI startup flags or mode selection.
+- Debugging startup provider probes, readline lifecycle, or default model selection.
+- Tracing how the executable enters the shared session runner.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -19,18 +29,12 @@ _No exported symbols._
 
 ## Budget
 
-227 / 500 lines (273 to spare).
+226 / 500 lines (274 to spare).
 
 ## Env
 
 `DOPPLER_PROJECT`, `FREECODE_MODEL`, `FREECODE_NO_PREFETCH`, `FREECODE_RETRY_STATUS_FILE`
 <!-- END GENERATED MAP FACTS -->
-
-## Read When
-
-- Changing CLI startup flags or mode selection.
-- Debugging startup provider probes, readline lifecycle, or default model selection.
-- Tracing how the executable enters the shared session runner.
 
 ## Startup
 

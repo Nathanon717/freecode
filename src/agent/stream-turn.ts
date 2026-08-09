@@ -1,3 +1,10 @@
+/**
+ * @role Drives one logical model turn as a sequence of `streamText` attempts, recovering from tool calls the SDK rejected before execution. The shared core behind both the foreground loop and the sub-agent runner.
+ *
+ * @readwhen
+ * changing how a rejected tool call is fed back to the model, how many recovery attempts a turn gets, or how a caller hooks into stream parts.
+ */
+
 // Drives one logical model turn as a sequence of streamText attempts, recovering
 // from tool calls the SDK rejected before execution.
 //

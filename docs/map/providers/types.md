@@ -1,6 +1,10 @@
 # src/providers/types.ts - Type Definitions
 
-**Role:** Shared interfaces for provider metadata, model metadata, static limits, and loaded config.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Shared interfaces for provider metadata, model metadata, static limits, and loaded config.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

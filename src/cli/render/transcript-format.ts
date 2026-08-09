@@ -1,3 +1,12 @@
+/**
+ * @role Pure transcript formatters — value in, styled string out. No stream, no
+ * state.
+ *
+ * @readwhen
+ * changing what a tool call line, rationale, result preview, created
+ * file, edit diff, prompt echo or step divider *looks* like.
+ */
+
 // Pure transcript formatters: value in, styled string out. No stream, no state.
 //
 // Split from transcript-renderer.ts, which owns the turn/step state machine and

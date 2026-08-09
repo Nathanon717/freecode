@@ -1,3 +1,10 @@
+/**
+ * @role Shared BOM handling for any text file that may have been authored or edited outside this codebase (config, prompts, downloaded eval datasets, recorded e2e fixtures).
+ *
+ * @readwhen
+ * You're about to `readFileSync` a file that a user, an external tool, or a download could have written with a leading UTF-8 BOM — a bare `JSON.parse` throws on one with no useful message.
+ */
+
 import { readFileSync } from 'fs';
 
 const BOM = '﻿';

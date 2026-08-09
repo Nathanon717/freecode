@@ -1,3 +1,7 @@
+/**
+ * @role Clears the terminal and prints the freecode ASCII banner in a rotating pastel color.
+ */
+
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";

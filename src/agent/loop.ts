@@ -1,3 +1,12 @@
+/**
+ * @role Executes one model turn. It routes to a provider, sets the active project root, builds the system prompt, streams or generates text, optionally enables tools, and returns response metadata.
+ *
+ * @readwhen
+ * - Changing model turn execution, tool enablement, or stream error handling.
+ * - Debugging quota/usage metadata returned from a provider call.
+ * - Changing project-root setup before tools run.
+ */
+
 import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
 import { retireDeadModel, resolveModel } from '../providers/provider-registry.js';

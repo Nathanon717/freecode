@@ -39,8 +39,8 @@ prompt a structural decision, not a formatting one.
 
 ## What is not checked
 
-- **The module header** — a block comment opening the file, and the blank line
-  after it — is not counted. That comment holds `@role` and `@readwhen`, which
+- **The module header** — a block comment opening the file (below the shebang,
+  if it has one), and the blank line after it — is not counted. That comment holds `@role` and `@readwhen`, which
   the codebase map reads (see `docs/map/README.md`), and a file must not be
   pushed over the limit for stating what it is for. The exemption stops at the
   header: a comment anywhere below it counts like any other line.

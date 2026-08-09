@@ -1,6 +1,10 @@
 # src/tokenizers/download-tokenizer.ts - HF Tokenizer File Cache/Download
 
-**Role:** Ensures a canonical HF repo file is cached under `.freecode/tokenizers/<family>/<filename>`, downloading it if missing. The HF-fast families use the default `tokenizer.json`; the Tekken family passes `tekken.json`. Mirrors `eval/humaneval-data.ts`'s injectable-`downloadFn` shape for testability.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Ensures a canonical HF repo file is cached under `.freecode/tokenizers/<family>/<filename>`, downloading it if missing. The HF-fast families use the default `tokenizer.json`; the Tekken family passes `tekken.json`. Mirrors `eval/humaneval-data.ts`'s injectable-`downloadFn` shape for testability.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

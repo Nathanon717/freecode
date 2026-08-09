@@ -1,8 +1,14 @@
 # src/agent/subagents/run-subagent.ts - Sub-Agent Runner
 
-**Role:** Runs a named sub-agent turn loop that is deliberately *not* the main `agentLoop`. Returns only the sub-agent's final text as a string, so the caller spends one tool call of context instead of the whole search.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
 
-**Read when:** changing how spawned sub-agents execute, which tools they get, or how the injected model handle reaches them.
+Runs a named sub-agent turn loop that is deliberately *not* the main `agentLoop`. Returns only the sub-agent's final text as a string, so the caller spends one tool call of context instead of the whole search.
+
+## Read When
+
+changing how spawned sub-agents execute, which tools they get, or how the injected model handle reaches them.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

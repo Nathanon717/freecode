@@ -1,3 +1,12 @@
+/**
+ * @role Thin shared module holding the in-memory DB config cache and callback hooks. Exists to break the potential circular import between `db.ts` (which owns the libSQL client) and `config/index.ts` (which needs to read DB-sourced config values). Neither file imports the other; both import this one.
+ *
+ * @readwhen
+ * - Debugging config sync (global settings or provider overrides not propagating cross-device).
+ * - Adding a new syncable config field.
+ * - Tracing the circular-import avoidance pattern.
+ */
+
 import type { OverridableSettings } from '../providers/types.js';
 
 export type SyncableGlobalConfig = {

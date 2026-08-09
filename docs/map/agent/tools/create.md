@@ -1,6 +1,10 @@
 # src/agent/tools/create.ts - create Tool
 
-**Role:** Creates a new UTF-8 file relative to the active project root.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Creates a new UTF-8 file relative to the active project root.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

@@ -1,6 +1,10 @@
 # src/cli/chrome/toggles.ts - Footer Toggle State
 
-**Role:** Holds runtime state for the footer toggle bar — Show toggle names (label visibility), Auto-run tools (tool-confirmation), and Read-only mode — and exposes getters, cyclers, and the renderer used by `bottom-ui.ts`.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Holds runtime state for the footer toggle bar — Show toggle names (label visibility), Auto-run tools (tool-confirmation), and Read-only mode — and exposes getters, cyclers, and the renderer used by `bottom-ui.ts`.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

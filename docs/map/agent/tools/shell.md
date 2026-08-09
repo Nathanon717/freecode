@@ -1,6 +1,10 @@
 # src/agent/tools/shell.ts - shell_exec Tool
 
-**Role:** Executes shell commands in the active project root with a regex-based destructive-command guard.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Executes shell commands in the active project root with a regex-based destructive-command guard.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

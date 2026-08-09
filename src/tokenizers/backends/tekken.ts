@@ -1,3 +1,10 @@
+/**
+ * @role Loads a cached Mistral `tekken.json` into a `js-tiktoken` `TokenizerEncoder`. Backs the modern Mistral line (NeMo-era and newer) registered as `MISTRAL_TEKKEN_FAMILY` in `model-family.ts`. Tekken is a tiktoken-based byte-BPE tokenizer in a non-standard file layout, so this reuses `tiktoken.ts`'s `createTiktokenEncoder` rather than a separate engine.
+ *
+ * @readwhen
+ * - Adding another Tekken-era Mistral model: extend the `isMistralTekken` predicate in `model-family.ts`, not here — this file is family-agnostic and one canonical repo covers the whole line.
+ */
+
 import { Tiktoken } from 'js-tiktoken';
 import { createTiktokenEncoder } from './tiktoken.js';
 import type { TokenizerEncoder } from '../count.js';

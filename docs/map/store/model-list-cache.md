@@ -1,8 +1,17 @@
 # src/store/model-list-cache.ts - Model List Cache
 
-**Role:** Tracks the model **ids** each live provider returned on the last successful fetch, in `<packageRoot>/.freecode/model-cache.json` (or `$FREECODE_STORE/model-cache.json`), so the next fetch can be diffed against it: which ids are newly appeared (the "new" badge), which vanished, and which are dead. Clears the new flag when a model is selected.
-
 **Ids only — this is not the catalog.** Display names and context windows live in the `models` table ([db.md](./db.md)), which is the single source for them and syncs across machines. When a live fetch fails, [provider-registry.ts](../providers/provider-registry.md) rebuilds the model list from that table, not from this file; this cache supplies only the new/dead id sets.
+
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Tracks the model **ids** each live provider returned on the last successful fetch, in `<packageRoot>/.freecode/model-cache.json` (or `$FREECODE_STORE/model-cache.json`), so the next fetch can be diffed against it: which ids are newly appeared (the "new" badge), which vanished, and which are dead. Clears the new flag when a model is selected.
+
+## Read When
+
+- Debugging why a live provider shows stale or empty models.
+- Adding new logic that needs to know whether a model is new or was recently removed.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -61,11 +70,6 @@ recordDeadModel(providerId: string, modelId: string): void
   }
 }
 ```
-
-## Read When
-
-- Debugging why a live provider shows stale or empty models.
-- Adding new logic that needs to know whether a model is new or was recently removed.
 
 ## Key Neighbors
 

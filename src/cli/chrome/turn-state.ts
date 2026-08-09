@@ -1,3 +1,10 @@
+/**
+ * @role One flag — "an agent turn currently has the floor" — plus the label it drives and the verb that label currently reads. Owns nothing else; `bottom-ui.ts` decides where the label draws and what it costs in reserved rows.
+ *
+ * @readwhen
+ * Changing when the label appears, changing which tools get a verb, or adding another affordance that should follow "a turn is in flight".
+ */
+
 // Whether an agent turn currently has the floor, and what it is doing.
 //
 // One flag, set either side of the agent loop, is the source of truth for every

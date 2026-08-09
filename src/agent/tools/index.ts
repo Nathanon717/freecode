@@ -1,3 +1,7 @@
+/**
+ * @role Declares which tools exist and which of them a given turn is offered, and assembles them through the wrapper stack. What happens *around* each call — rationale, confirmation, rendering, turn stop, serialization — moved to [wrappers.md](wrappers.md) at the 500-line limit; the confirmation types are defined there and re-exported here, so the rest of the codebase keeps importing them from `agent/tools/index.js`.
+ */
+
 // Which tools exist, and which of them a given turn is offered. What happens
 // around each call — confirmation, rendering, turn stop, serialisation — lives
 // in `wrappers.ts`.

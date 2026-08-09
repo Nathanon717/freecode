@@ -1,6 +1,14 @@
 # src/cli/chrome/suggestion-overlay.ts - Suggestion Overlay Snapshot
 
-**Role:** The snapshot/restore half of the slash-command suggestion rows. Owns the captured screen lines and the escape sequence that repaints them; `bottom-ui.ts` owns where the rows sit and when they open.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+The snapshot/restore half of the slash-command suggestion rows. Owns the captured screen lines and the escape sequence that repaints them; `bottom-ui.ts` owns where the rows sit and when they open.
+
+## Read When
+
+Debugging transcript rows left blank or duplicated after a `/` menu closes, or changing where suggestion rows draw.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -49,10 +57,6 @@ Suggestion rows draw **over** the scroll region rather than inside the reserved 
 
 - `composeOverlayRestore` — returns `''` when no overlay is open, so callers concatenate it unconditionally. It **clears the snapshot as a side effect**; there is no separate close call.
 - `resetOverlay` — drops the snapshot *without* repainting. Only for resize, where every absolute row position the snapshot recorded is already stale.
-
-## Read when
-
-Debugging transcript rows left blank or duplicated after a `/` menu closes, or changing where suggestion rows draw.
 
 ## Key neighbors
 

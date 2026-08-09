@@ -1,3 +1,10 @@
+/**
+ * @role Factory for the `spawn_agent` tool, which lets the main model delegate a focused read-only investigation to a named sub-agent and get back a compact findings report.
+ *
+ * @readwhen
+ * changing the `spawn_agent` schema/description, or how the model-bound runner is injected.
+ */
+
 import { tool } from "ai";
 import { z } from "zod";
 import { agentCatalog, listAgentNames } from "../subagents/registry.js";

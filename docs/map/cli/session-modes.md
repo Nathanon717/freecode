@@ -1,6 +1,10 @@
 # src/cli/session-modes.ts - Session Modes
 
-**Role:** Builds the interactive TTY `CliSessionMode` (`createInteractiveMode`). The deterministic `--script` mode was split into [scripted-mode.md](scripted-mode.md) at the 500-line limit.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Builds the interactive TTY `CliSessionMode` (`createInteractiveMode`). The deterministic `--script` mode was split into [scripted-mode.md](scripted-mode.md) at the 500-line limit.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

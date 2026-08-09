@@ -1,6 +1,15 @@
 # src/util/line-diff.ts - LCS Line Diff
 
-**Role:** Pure LCS-based line diff algorithm with no rendering dependencies. Returns a structured diff array for consumption by renderers.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Pure LCS-based line diff algorithm with no rendering dependencies. Returns a structured diff array for consumption by renderers.
+
+## Read When
+
+- Changing the diff algorithm or its output shape.
+- Adding a new consumer of structured line diffs.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -31,8 +40,3 @@ computeLineDiff(oldLines: string[], newLines: string[]): DiffEntry[]
 - No chalk or rendering logic — pure algorithm.
 - Used by `cli/render/transcript-renderer.ts` (`formatEditFileDiff`) to render colored file diffs.
 - `DiffEntry` is re-exported from `cli/render/transcript-renderer.ts` for backward compatibility.
-
-## Read When
-
-- Changing the diff algorithm or its output shape.
-- Adding a new consumer of structured line diffs.

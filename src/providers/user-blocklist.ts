@@ -1,3 +1,10 @@
+/**
+ * @role Reads and writes `$FREECODE_HOME/blocklist.json`, the flat list of `provider:modelId` keys this machine's user never wants offered.
+ *
+ * @readwhen
+ * changing where the user blocklist is stored, what it applies to, or how a malformed file is tolerated.
+ */
+
 import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { getConfigDir } from '../config/index.js';

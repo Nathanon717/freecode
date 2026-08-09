@@ -1,3 +1,12 @@
+/**
+ * @role Owns the libSQL client, schema bootstrap, in-memory model-data cache, startup import trigger, and async transcript persistence. Called once at startup via `initStore()`; all subsequent model-data reads are served from the cache (no per-call file I/O when initialized).
+ *
+ * @readwhen
+ * - Troubleshooting startup DB errors or the libSQL client configuration.
+ * - Extending the schema (new table or column).
+ * - Understanding why model-data reads hit cache vs. JSON.
+ */
+
 import { createClient, type Client, type InValue } from '@libsql/client';
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { log, logError } from '../logger.js';

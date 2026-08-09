@@ -1,6 +1,10 @@
 # src/cli/eval/eval-dots.ts - Eval Status Circle Renderers
 
-**Role:** Chalk-based renderers for eval status circles. The domain logic (history loading, status computation, hashing, types) has been extracted to `src/eval/history.ts` and `src/eval/custom.ts`. This file keeps only the visual rendering functions.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Chalk-based renderers for eval status circles. The domain logic (history loading, status computation, hashing, types) has been extracted to `src/eval/history.ts` and `src/eval/custom.ts`. This file keeps only the visual rendering functions.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

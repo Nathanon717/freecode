@@ -1,3 +1,10 @@
+/**
+ * @role Executes user-typed tool calls and renders the `/tools` list. Pulls in the tool registry (and transitively the `ai` SDK), so it is imported **lazily** from [command-dispatcher.md](../command-dispatcher.md) — never on the interactive boot path.
+ *
+ * @readwhen
+ * - Changing how a hand-typed tool call runs, or how `/tools` renders.
+ */
+
 // Execution + `/tools` listing for hand-typed tool calls. Pulls in the tool
 // registry (and transitively the `ai` SDK), so it is imported lazily from the
 // command dispatcher rather than on the interactive boot path.

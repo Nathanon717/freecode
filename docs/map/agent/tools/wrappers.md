@@ -1,6 +1,10 @@
 # src/agent/tools/wrappers.ts - Tool Wrapper Stack
 
-**Role:** The decorator layer every offered tool is built from — rationale argument, user confirmation and approval preview, transcript rendering and trace capture, turn stop, and serialized execution. Split out of [index.md](index.md) at the 500-line limit; `index.ts` owns *which* tools exist and which a turn is offered, this file owns *what happens around each call*.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+The decorator layer every offered tool is built from — rationale argument, user confirmation and approval preview, transcript rendering and trace capture, turn stop, and serialized execution. Split out of [index.md](index.md) at the 500-line limit; `index.ts` owns *which* tools exist and which a turn is offered, this file owns *what happens around each call*.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

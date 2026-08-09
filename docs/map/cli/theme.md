@@ -1,8 +1,14 @@
 # src/cli/theme.ts - Color Tokens
 
-**Role:** Names the CLI's static colors by *role* (`warning`, `toolName`, `codeSurface`, …) so a color is retuned in one place instead of at each call site. Tokens are `ChalkInstance` values that drop in wherever a `chalk.hex(...)` literal used to sit.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
 
-**Read when:** adding or retuning a static color anywhere under `src/cli/`, or before hardcoding a hex/rgb value in a renderer.
+Names the CLI's static colors by *role* (`warning`, `toolName`, `codeSurface`, …) so a color is retuned in one place instead of at each call site. Tokens are `ChalkInstance` values that drop in wherever a `chalk.hex(...)` literal used to sit.
+
+## Read When
+
+adding or retuning a static color anywhere under `src/cli/`, or before hardcoding a hex/rgb value in a renderer.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

@@ -1,7 +1,9 @@
 /**
- * Static per-model capability quirks. One named predicate per quirk.
- * Import these wherever request bodies are patched (openai-compat.ts) rather
- * than inlining model-ID checks in the adapter.
+ * @role Single home for all static per-model capability predicates. Keeps model-ID checks out of the adapter and off the hot path.
+ *
+ * @readwhen
+ * - Adding a new per-model request-body quirk (wrong temperature range, empty content rejection, unsupported fields, etc.).
+ * - Debugging an adapter patch to understand which models trigger it.
  */
 
 /** OpenAI reasoning models (o1, o3, gpt-5) reject any temperature value; strip it entirely. */

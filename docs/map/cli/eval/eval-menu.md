@@ -1,6 +1,14 @@
 # src/cli/eval/eval-menu.ts - Unified Eval Menu
 
-**Role:** Orchestrates the unified, tabbed eval menu behind `/eval`. Wraps the lifecycle chrome (`menu-shell.ts`) around a tabbed list menu (`list-menu.ts`) whose tabs are the **Custom** tab (evals/custom scenarios, from `custom-eval-menu.ts`) and the **HumanEval** tab (from `cli/eval/humaneval-menu.ts`, with dataset loading from `eval/humaneval-data.ts`). After the picker closes it dispatches the tagged choice to the matching run loop.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Orchestrates the unified, tabbed eval menu behind `/eval`. Wraps the lifecycle chrome (`menu-shell.ts`) around a tabbed list menu (`list-menu.ts`) whose tabs are the **Custom** tab (evals/custom scenarios, from `custom-eval-menu.ts`) and the **HumanEval** tab (from `cli/eval/humaneval-menu.ts`, with dataset loading from `eval/humaneval-data.ts`). After the picker closes it dispatches the tagged choice to the matching run loop.
+
+## Read When
+
+- Changing how `/eval` is composed, adding a new eval tab, or changing the tab data-loading strategy.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -33,10 +41,6 @@ runEvalMenu(rl: Interface, _projectRoot: string, getSelectedModel: () => string)
 - Non-TTY prints the eval scenarios list and returns.
 - The picker resolves with a tagged `EvalChoice` (`{ kind: 'custom' | 'humaneval', … }`) or null; the body then calls `runEvalScenarios` or `runHumanEvalProblems`.
 - When a choice is made, the body does a full screen clear (`\x1b[1;1H\x1b[J`) and redraws the footer before starting the run loop. This ensures the eval header starts at row 1 regardless of how many items were in the list. Sequential evals (run-all) are not cleared between them — only this one-time clear at the menu→run boundary fires.
-
-## Read when
-
-- Changing how `/eval` is composed, adding a new eval tab, or changing the tab data-loading strategy.
 
 ## Key neighbors
 

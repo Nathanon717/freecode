@@ -1,6 +1,10 @@
 # src/util/screen-buffer.ts - Screen Buffer
 
-**Role:** Intercepts `process.stdout.write` at startup to maintain rolling buffers of recent terminal output. Keeps a plain (ANSI-stripped) buffer for text search and a parallel styled buffer (ANSI codes preserved) for overlay repaints. Used by the bottom TUI to repaint rows after temporary overlays.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Intercepts `process.stdout.write` at startup to maintain rolling buffers of recent terminal output. Keeps a plain (ANSI-stripped) buffer for text search and a parallel styled buffer (ANSI codes preserved) for overlay repaints. Used by the bottom TUI to repaint rows after temporary overlays.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

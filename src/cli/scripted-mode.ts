@@ -1,3 +1,10 @@
+/**
+ * @role Builds the deterministic `--script` `CliSessionMode` used by eval subprocesses and non-interactive runs — reads inputs and tool-approval choices from a file instead of a live TTY. Split out of `session-modes.ts` at the 500-line limit as the self-contained non-interactive counterpart to `createInteractiveMode`.
+ *
+ * @readwhen
+ * - Changing how `--script` runs consume input or approve tools, or how eval subprocesses are driven unattended.
+ */
+
 import { readFileSync } from "fs";
 import chalk from "chalk";
 import type { ToolCallConfirmation } from "../agent/tools/index.js";

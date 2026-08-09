@@ -1,8 +1,14 @@
 # src/agent/tools/tool-names.ts - Tool Name Partition
 
-**Role:** The tool registry's names, split into the read-only half and the write half, plus the predicates and the `offeredToolNames` list built from them. Single source for "which tools can change anything".
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
 
-**Read when:** adding or removing a tool; changing what read-only mode offers; touching the system prompt's tool list.
+The tool registry's names, split into the read-only half and the write half, plus the predicates and the `offeredToolNames` list built from them. Single source for "which tools can change anything".
+
+## Read When
+
+adding or removing a tool; changing what read-only mode offers; touching the system prompt's tool list.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

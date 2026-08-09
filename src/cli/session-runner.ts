@@ -1,3 +1,7 @@
+/**
+ * @role Generic loop that reads inputs from a mode and dispatches them until EOF or exit.
+ */
+
 import type { AgentLoopResult } from '../agent/loop.js';
 import type { ConfirmToolCall } from '../agent/tools/index.js';
 import { dispatchCommand, type ModelListMode } from './command-dispatcher.js';

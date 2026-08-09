@@ -1,3 +1,7 @@
+/**
+ * @role Searches files using ripgrep (`rg`), which is a required freecode dependency. Results are sorted by file modification time (newest first) so recently-changed code surfaces first.
+ */
+
 import { tool } from 'ai';
 import { z } from 'zod';
 import { execFile } from 'child_process';

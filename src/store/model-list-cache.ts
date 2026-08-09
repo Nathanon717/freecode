@@ -1,3 +1,11 @@
+/**
+ * @role Tracks the model **ids** each live provider returned on the last successful fetch, in `<packageRoot>/.freecode/model-cache.json` (or `$FREECODE_STORE/model-cache.json`), so the next fetch can be diffed against it: which ids are newly appeared (the "new" badge), which vanished, and which are dead. Clears the new flag when a model is selected.
+ *
+ * @readwhen
+ * - Debugging why a live provider shows stale or empty models.
+ * - Adding new logic that needs to know whether a model is new or was recently removed.
+ */
+
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { getStoreDir } from '../providers/model-data.js';

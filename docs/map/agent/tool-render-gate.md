@@ -1,6 +1,15 @@
 # src/agent/tool-render-gate.ts - Tool Render Gate
 
-**Role:** A one-slot rendezvous that keeps a tool's `execute` from drawing its call header until the native stream consumer has flushed the preceding response text. Fixes the ordering bug where a model's pre-tool preamble printed *after* the tool call (the AI SDK invokes `execute` before that text reaches the consumer).
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+A one-slot rendezvous that keeps a tool's `execute` from drawing its call header until the native stream consumer has flushed the preceding response text. Fixes the ordering bug where a model's pre-tool preamble printed *after* the tool call (the AI SDK invokes `execute` before that text reaches the consumer).
+
+## Read When
+
+- Debugging transcript ordering between streamed text and tool calls.
+- Changing how `loop.ts` consumes the native `fullStream`, or how `tools/index.ts` renders tool headers.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -50,11 +59,6 @@ releaseToolRenderGate(): void
 - `beginToolRenderGate()` / `endToolRenderGate()` — arm/disarm around one native `fullStream` consumption; `end` releases anything still waiting. Only `loop.ts` `streamWithRetry` arms it.
 - `awaitToolRenderGate()` — called by `withToolRendering.execute` before the header; a no-op when unarmed (parsed-tools, fake-direct, `/renderer`) or when a permit is banked. Has a safety timeout so a lost release can never hang the agent.
 - `releaseToolRenderGate()` — called by the consumer on each `tool-call` part, after flushing that step's pending text.
-
-## Read When
-
-- Debugging transcript ordering between streamed text and tool calls.
-- Changing how `loop.ts` consumes the native `fullStream`, or how `tools/index.ts` renders tool headers.
 
 ## Key Neighbors
 

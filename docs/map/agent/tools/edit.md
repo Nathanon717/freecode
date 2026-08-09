@@ -1,6 +1,10 @@
 # src/agent/tools/edit.ts - edit Tool
 
-**Role:** Applies one exact text replacement inside an existing UTF-8 file relative to the active project root.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Applies one exact text replacement inside an existing UTF-8 file relative to the active project root.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

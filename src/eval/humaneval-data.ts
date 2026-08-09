@@ -1,3 +1,10 @@
+/**
+ * @role Owns the HumanEval dataset concern for the `/eval` HumanEval tab: resolving the dataset path (`humanEvalDatasetPath`), downloading it if missing (`ensureHumanEvalDataset`/`downloadFile`), and parsing it into `HumanEvalProblem[]` (`loadHumanEvalProblems`). Defines the `HumanEvalProblem`/`HumanEvalResultMap` types consumed by the tab/run loop. Counterpart of `eval/custom.ts` (scenario discovery for the Custom tab).
+ *
+ * @readwhen
+ * Changing dataset location/format, download/redirect behavior, the example-problem prepend, or the `HUMANEVAL_DATA` / `HUMANEVAL_EXAMPLE_DATA` env overrides (test fixtures).
+ */
+
 import { createWriteStream, existsSync, mkdirSync, readFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';

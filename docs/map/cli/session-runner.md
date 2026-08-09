@@ -1,6 +1,10 @@
 # src/cli/session-runner.ts - CLI Session Loop
 
-**Role:** Generic loop that reads inputs from a mode and dispatches them until EOF or exit.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Generic loop that reads inputs from a mode and dispatches them until EOF or exit.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

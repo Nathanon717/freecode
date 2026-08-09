@@ -1,8 +1,18 @@
 # src/cli/render/transcript-renderer.ts - Agent Transcript Formatting
 
-**Role:** Turn/step state machine and writing for all visible agent transcript output. The state machine here is the single authority for turn layout — every path through `agentLoop` and `runParsedToolsLoop` delegates spacing decisions to these functions so that model-specific differences in whitespace are absorbed here and can never leak into the displayed transcript.
-
 The pure formatters (`format*`) now live in [transcript-format.md](transcript-format.md) and are re-exported here, so this stays the single import site. This module is what *writes*; that one is what decides how things *look*.
+
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Turn/step state machine and writing for all visible agent transcript output. The state machine here is the single authority for turn layout — every path through `agentLoop` and `runParsedToolsLoop` delegates spacing decisions to these functions so that model-specific differences in whitespace are absorbed here and can never leak into the displayed transcript.
+
+## Read When
+
+- Changing how tool calls, tool errors, tool result previews, or agent step dividers are displayed.
+- Changing eval/scripted transcript output policy.
+- Debugging spacing issues between response text and tool calls.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -247,12 +257,6 @@ The module maintains a single `_step` state object. All callers drive it with th
 - `resetTranscriptTurnState(pendingDivider?)` — drop the turn/step state. Only [transcript-replay.md](transcript-replay.md) needs it, to keep a replay from inheriting the divider the last live turn deferred and to restore that state afterwards.
 - `writeTranscriptToolLeadIn(opts?)` — call from `withToolRendering` in `tools/index.ts` immediately before writing the tool call line. Inserts the correct blank-line separator (blank after response text, blank between parallel tool calls).
 - `endTranscriptStep(hasMore, opts?)` — close the current step. `hasMore=true` writes the combined close+open separator (via `writeStepSeparator`) for the next step; `hasMore=false` defers the closing separator (`_pendingDivider`) so it is only emitted if a next turn begins. No-op when no turn is open.
-
-## Read When
-
-- Changing how tool calls, tool errors, tool result previews, or agent step dividers are displayed.
-- Changing eval/scripted transcript output policy.
-- Debugging spacing issues between response text and tool calls.
 
 ## Runtime Options
 

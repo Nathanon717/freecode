@@ -1,6 +1,10 @@
 # src/commands/renderer.ts - Renderer Demo Command
 
-**Role:** Implements `/renderer` — a hardcoded example transcript that exercises every turn layout type through the live transcript and markdown renderers. Because it calls the real renderer functions, any change to those renderers is immediately reflected in the demo output.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Implements `/renderer` — a hardcoded example transcript that exercises every turn layout type through the live transcript and markdown renderers. Because it calls the real renderer functions, any change to those renderers is immediately reflected in the demo output.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

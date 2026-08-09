@@ -1,3 +1,10 @@
+/**
+ * @role The one switch that makes freecode safe to hand to an LLM: `FREECODE_FREE_ONLY=1` blocks every paid model call. Declares the flag, the billable env vars, and the refusal message.
+ *
+ * @readwhen
+ * working on anything that resolves a model, loads an API key, or spawns a freecode child process that an agent drives.
+ */
+
 // One hard block on paid model calls, so freecode can be handed to an LLM (the
 // `-p` mode, a `pty` session) without risking spend.
 //

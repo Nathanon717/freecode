@@ -1,8 +1,14 @@
 # src/agent/subagents/registry.ts - Sub-Agent Registry
 
-**Role:** Declares the named sub-agent personas the main loop can spawn via `spawn_agent` — each an id, one-line description, specialized system prompt, and step budget. Ships the `explore` persona (a terse, cited, read-only code-mapping contract).
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
 
-**Read when:** adding or editing a callable agent persona, or changing what `spawn_agent` advertises.
+Declares the named sub-agent personas the main loop can spawn via `spawn_agent` — each an id, one-line description, specialized system prompt, and step budget. Ships the `explore` persona (a terse, cited, read-only code-mapping contract).
+
+## Read When
+
+adding or editing a callable agent persona, or changing what `spawn_agent` advertises.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

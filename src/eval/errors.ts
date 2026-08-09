@@ -1,3 +1,11 @@
+/**
+ * @role Parses structured API error objects out of eval run stdout for display after a failed eval.
+ *
+ * @readwhen
+ * - Modifying how API errors are surfaced in the eval output.
+ * - Adding new provider-specific error field extraction.
+ */
+
 export interface ApiError {
   message: string;
   code?: string;

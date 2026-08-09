@@ -1,12 +1,22 @@
 # src/providers/fake.ts - Fake LLM Fixtures
 
-**Role:** Test-only fake model runner for free agent-loop verification. It validates ordered JSON fixture steps, emits deterministic text/chunk responses and scripted tool calls, and records fake-model traces for e2e assertions when requested.
-
 **Why it lives in `src/` and ships in `dist/`:** `mock` and `mock-native` are real entries in
 `provider-registry.ts`, resolved at runtime from a model string like `mock:gpt-freecode-test`.
 E2e tests spawn the built binary (`tests/harness/run-e2e.ts` runs `dist/index.js`), so the
 fake must be present in the build or e2e tests lose their model. It is a deliberately fake
 provider, not a test fixture - do not move it to `tests/`.
+
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Test-only fake model runner for free agent-loop verification. It validates ordered JSON fixture steps, emits deterministic text/chunk responses and scripted tool calls, and records fake-model traces for e2e assertions when requested.
+
+## Read When
+
+- Changing fake LLM fixture format or matching rules.
+- Debugging `llmFixture` e2e failures.
+- Extending fake coverage into parsed-tools or Responses-style paths.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -104,12 +114,6 @@ runFakeModel(call: FakeModelCall): Promise<FakeModelResult>
 ## Export notes
 
 - `FakeModelResult.text` vs `.writtenText` — `text` is the model's own output (what goes into history and the trace); `writtenText` is what this module actually painted, i.e. the chunks plus the newline it appends to terminate the step. Anything reporting *what is on screen* must use `writtenText`: `fake-loop.ts` feeds it to `notifyTranscriptChunk`, and getting that wrong put a phantom blank line above every tool call (see `docs/bug log/29-07-2026b.md`).
-
-## Read When
-
-- Changing fake LLM fixture format or matching rules.
-- Debugging `llmFixture` e2e failures.
-- Extending fake coverage into parsed-tools or Responses-style paths.
 
 ## Execution Paths
 

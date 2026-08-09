@@ -1,3 +1,10 @@
+/**
+ * @role Owns the mutable state for the footer status display, all formatting helpers, and the multi-row layout logic.
+ *
+ * @readwhen
+ * Changing what is shown in the footer status area, adding new status fields, or debugging the multi-row layout.
+ */
+
 import type { RateLimitSnapshot } from '../../providers/quota/headers.js';
 import type { OpenAIDailySpend } from '../../providers/openai-daily-spend.js';
 

@@ -1,15 +1,21 @@
 # src/eval/humaneval-data.ts - HumanEval Dataset Loader
 
-**Role:** Owns the HumanEval dataset concern for the `/eval` HumanEval tab: resolving the dataset path (`humanEvalDatasetPath`), downloading it if missing (`ensureHumanEvalDataset`/`downloadFile`), and parsing it into `HumanEvalProblem[]` (`loadHumanEvalProblems`). Defines the `HumanEvalProblem`/`HumanEvalResultMap` types consumed by the tab/run loop. Counterpart of `eval/custom.ts` (scenario discovery for the Custom tab).
-
-**Read when:** Changing dataset location/format, download/redirect behavior, the example-problem prepend, or the `HUMANEVAL_DATA` / `HUMANEVAL_EXAMPLE_DATA` env overrides (test fixtures).
-
 **Key neighbors:**
 - `src/cli/eval/humaneval-menu.ts` — the tab + run loop that consume the problems and types
 - `src/cli/eval/eval-menu.ts` — calls `humanEvalDatasetPath`/`loadHumanEvalProblems` to populate the tab
 - `src/eval/custom.ts` — the Custom-tab counterpart (scenario discovery)
 - `evals/humaneval/data/` — bundled dataset (`HumanEval.jsonl.gz`, `example_problem.jsonl`); gitignored under `evals/*`
 - `tests/e2e/humaneval-mini.jsonl.gz`, `tests/e2e/humaneval-example.jsonl` — fixtures pointed at via env overrides
+
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Owns the HumanEval dataset concern for the `/eval` HumanEval tab: resolving the dataset path (`humanEvalDatasetPath`), downloading it if missing (`ensureHumanEvalDataset`/`downloadFile`), and parsing it into `HumanEvalProblem[]` (`loadHumanEvalProblems`). Defines the `HumanEvalProblem`/`HumanEvalResultMap` types consumed by the tab/run loop. Counterpart of `eval/custom.ts` (scenario discovery for the Custom tab).
+
+## Read When
+
+Changing dataset location/format, download/redirect behavior, the example-problem prepend, or the `HUMANEVAL_DATA` / `HUMANEVAL_EXAMPLE_DATA` env overrides (test fixtures).
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

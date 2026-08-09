@@ -1,3 +1,11 @@
+/**
+ * @role Resolves a model ID string to the tokenizer backend family that should count its tokens exactly. One named predicate per family (mirrors `providers/model-quirks.ts`), matched against the active `providerId:modelId` string — not a static per-model field, since most providers fetch their model lists live at runtime.
+ *
+ * @readwhen
+ * - Adding a new exact tokenizer backend: add its predicate (and, for an HF fast-tokenizer family, its `HF_TOKENIZER_REPO` entry) here, matched against real fetched model ID strings (pull a live dump via the registry / `model-cache.json` first — providers use different ID conventions).
+ * - Deciding whether some model belongs to a family already implemented here: don't reason from its name. Repo-hash it if it has a repo, and `--probe` it if it doesn't — see "Probing an unknown model".
+ */
+
 // One named predicate per tokenizer backend family, matched against the active
 // `providerId:modelId` string. Each phase adds a predicate here without
 // touching the shared type.

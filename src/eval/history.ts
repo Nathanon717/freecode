@@ -1,3 +1,7 @@
+/**
+ * @role Loads eval history from the DB cache, computes per-scenario eval status, and provides the bulk data bundle used by the model picker and eval menus.
+ */
+
 import { join } from 'path';
 import { getModelData } from '../store/db.js';
 import {

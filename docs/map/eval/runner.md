@@ -1,6 +1,16 @@
 # src/eval/runner.ts - Eval Subprocess Runner
 
-**Role:** Spawns freecode as a child process for eval scenarios, manages eval file I/O, and runs the check script.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Spawns freecode as a child process for eval scenarios, manages eval file I/O, and runs the check script.
+
+## Read When
+
+- Changing eval subprocess environment variables, timeout, or stream handling.
+- Modifying how eval results are archived or persisted.
+- Debugging the check script runner.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -60,9 +70,3 @@ runCheckScript(scenarioId: string, scenarioDir: string, result: EvalRunResult): 
 - Sets no transcript stream: stdout is the default, which is what the captured run wants. The explicit `FREECODE_TRANSCRIPT_STREAM=stdout` it used to pass became redundant when `stderr` was dropped ([../cli/render/transcript-options.md](../cli/render/transcript-options.md)).
 - 120-second hard timeout per run via `setTimeout`.
 - Imports `modelSlug` from `./custom.js` and `EvalCheckResult` from `./history.js`.
-
-## Read When
-
-- Changing eval subprocess environment variables, timeout, or stream handling.
-- Modifying how eval results are archived or persisted.
-- Debugging the check script runner.

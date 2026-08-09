@@ -1,3 +1,10 @@
+/**
+ * @role Dual-source pricing verifier. Fetches rates from LiteLLM and OpenRouter in parallel, compares them, and returns a confidence-tagged result used to color-code cost estimates in the UI.
+ *
+ * @readwhen
+ * Tracing how a model picker pricing badge's `confidence` is set, debugging "sources disagree" or missing pricing, or adding support for a new provider's pricing.
+ */
+
 export type PricingConfidence = 'agreed' | 'litellm-only' | 'openrouter-only' | 'disagree';
 
 export interface VerifiedRates {

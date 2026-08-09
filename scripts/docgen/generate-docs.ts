@@ -16,6 +16,7 @@ import {
   STRUCTURE_END,
 } from './map-exports.js';
 import { FACTS_BEGIN, FACTS_END, renderFactsBlock } from './map-facts.js';
+import { INTENT_BEGIN, INTENT_END, renderIntentBlock } from './map-intent.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
@@ -209,9 +210,12 @@ const updates: Array<[string, (content: string) => string]> = [
     replaceGeneratedSection(content, 'PTY QUICKSTART REF', ptyQuickstartRef())],
 ];
 
+// A generated block is inserted through a replacer function, never a
+// replacement string: a `$&` or `$'` anywhere in generated prose would
+// otherwise be read as a backreference and splice the page into itself.
 function replaceMarkerSection(content: string, begin: string, end: string, block: string): string {
   const pattern = new RegExp(`${escapeRegExp(begin)}[\\s\\S]*?${escapeRegExp(end)}`);
-  return pattern.test(content) ? content.replace(pattern, block) : content;
+  return pattern.test(content) ? content.replace(pattern, () => block) : content;
 }
 
 // The derived sections below `Exports` land in one block. A page that does not
@@ -221,7 +225,16 @@ function upsertFactsBlock(content: string, block: string): string {
   if (content.includes(FACTS_BEGIN)) {
     return replaceMarkerSection(content, FACTS_BEGIN, FACTS_END, block);
   }
-  return content.replace(EXPORTS_END, `${EXPORTS_END}\n\n${block}`);
+  return content.replace(EXPORTS_END, () => `${EXPORTS_END}\n\n${block}`);
+}
+
+// `Role` and `Read When` head the page, so a page without the block yet takes
+// it directly above `Exports`.
+function upsertIntentBlock(content: string, block: string): string {
+  if (content.includes(INTENT_BEGIN)) {
+    return replaceMarkerSection(content, INTENT_BEGIN, INTENT_END, block);
+  }
+  return content.replace(EXPORTS_BEGIN, () => `${block}\n\n${EXPORTS_BEGIN}`);
 }
 
 // Maintain the generated blocks on every map page that has the markers.
@@ -229,9 +242,12 @@ for (const srcAbs of listSourceFiles()) {
   const pageRel = relative(ROOT, mapPageForSource(srcAbs)).replace(/\\/g, '/');
   if (!existsSync(join(ROOT, pageRel))) continue;
   updates.push([pageRel, content =>
-    upsertFactsBlock(
-      replaceMarkerSection(content, EXPORTS_BEGIN, EXPORTS_END, renderExportsBlock(srcAbs)),
-      renderFactsBlock(srcAbs),
+    upsertIntentBlock(
+      upsertFactsBlock(
+        replaceMarkerSection(content, EXPORTS_BEGIN, EXPORTS_END, renderExportsBlock(srcAbs)),
+        renderFactsBlock(srcAbs),
+      ),
+      renderIntentBlock(srcAbs),
     )]);
 }
 

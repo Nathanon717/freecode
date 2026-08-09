@@ -1,6 +1,10 @@
 # src/cli/chrome/ansi.ts - Terminal Geometry & Escape Sequences
 
-**Role:** The raw terminal protocol the bottom UI is built from — current rows/columns, scroll-region (DECSTBM), cursor addressing, line erase, and cursor save/restore. Pure sequences with no knowledge of the footer, input frame, or any layout.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+The raw terminal protocol the bottom UI is built from — current rows/columns, scroll-region (DECSTBM), cursor addressing, line erase, and cursor save/restore. Pure sequences with no knowledge of the footer, input frame, or any layout.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

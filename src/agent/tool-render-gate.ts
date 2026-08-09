@@ -1,3 +1,11 @@
+/**
+ * @role A one-slot rendezvous that keeps a tool's `execute` from drawing its call header until the native stream consumer has flushed the preceding response text. Fixes the ordering bug where a model's pre-tool preamble printed *after* the tool call (the AI SDK invokes `execute` before that text reaches the consumer).
+ *
+ * @readwhen
+ * - Debugging transcript ordering between streamed text and tool calls.
+ * - Changing how `loop.ts` consumes the native `fullStream`, or how `tools/index.ts` renders tool headers.
+ */
+
 // Rendezvous between the native `fullStream` consumer (agent/loop.ts) and a tool's
 // `execute` (agent/tools/index.ts withToolRendering).
 //

@@ -1,3 +1,12 @@
+/**
+ * @role Discovers custom eval scenarios from the filesystem, provides content hashing for cache-invalidation, and defines the shared `modelSlug` helper.
+ *
+ * @readwhen
+ * - Changing scenario discovery rules (folder naming conventions, required files).
+ * - Changing what inputs are hashed (adding/removing files from the hash).
+ * - Understanding `modelSlug` for artifact directory naming.
+ */
+
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { createHash } from 'crypto';
 import { join, resolve, dirname, relative } from 'path';

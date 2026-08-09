@@ -1,3 +1,10 @@
+/**
+ * @role `freecode -p "<prompt>"` — one non-interactive agent turn whose final response is printed to stdout, read-only unless `--edit` is passed. Built so an LLM can shell out to freecode and read the answer back.
+ *
+ * @readwhen
+ * changing what `-p` prints, its exit codes, or what it is allowed to do.
+ */
+
 // `freecode -p "<prompt>"`: one non-interactive agent turn whose final response is
 // printed to stdout. Built for LLM callers — an agent shells out to freecode to
 // explore a codebase and reads the answer back from stdout.

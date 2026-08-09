@@ -1,3 +1,10 @@
+/**
+ * @role The shared tabbed list-menu state machine built on `raw-picker.ts`. Owns the active tab, the selected index (including the `-1` tab-row focus), detail/action modes, Up/Down navigation, the inline-action-menu splice, and the detail-screen swap. Replaces the per-menu copies of this logic in `/eval`, `/config`, and the `/model` picker. Each tab supplies only its body rendering and any extra key behavior.
+ *
+ * @readwhen
+ * - Adding or changing a tabbed/list menu, or the shared navigation/detail/action behavior.
+ */
+
 import type { Interface } from "readline";
 import chalk from "chalk";
 import { runRawPicker } from "./raw-picker.js";

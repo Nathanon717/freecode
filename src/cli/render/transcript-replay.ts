@@ -1,3 +1,12 @@
+/**
+ * @role Reprints the conversation after a full-screen wipe, so the screen never
+ * claims less history than the model is actually being sent.
+ *
+ * @readwhen
+ * changing what a menu leaves on screen, or what a replayed turn
+ * shows.
+ */
+
 // Reprints the conversation after a full-screen wipe, so the screen never claims
 // less history than the model is actually being sent.
 //

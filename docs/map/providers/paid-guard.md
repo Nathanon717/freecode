@@ -1,8 +1,14 @@
 # src/providers/paid-guard.ts - Free-Only Hard Block
 
-**Role:** The one switch that makes freecode safe to hand to an LLM: `FREECODE_FREE_ONLY=1` blocks every paid model call. Declares the flag, the billable env vars, and the refusal message.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
 
-**Read when:** working on anything that resolves a model, loads an API key, or spawns a freecode child process that an agent drives.
+The one switch that makes freecode safe to hand to an LLM: `FREECODE_FREE_ONLY=1` blocks every paid model call. Declares the flag, the billable env vars, and the refusal message.
+
+## Read When
+
+working on anything that resolves a model, loads an API key, or spawns a freecode child process that an agent drives.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

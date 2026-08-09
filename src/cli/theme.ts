@@ -1,3 +1,10 @@
+/**
+ * @role Names the CLI's static colors by *role* (`warning`, `toolName`, `codeSurface`, …) so a color is retuned in one place instead of at each call site. Tokens are `ChalkInstance` values that drop in wherever a `chalk.hex(...)` literal used to sit.
+ *
+ * @readwhen
+ * adding or retuning a static color anywhere under `src/cli/`, or before hardcoding a hex/rgb value in a renderer.
+ */
+
 // Named color tokens for the CLI's static palette.
 //
 // Call sites should name a *role* ("this is a warning") rather than a color

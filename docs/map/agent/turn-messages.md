@@ -1,9 +1,5 @@
 # src/agent/turn-messages.ts - Turn Message Shape Rules
 
-**Role:** Owns the constraints on the messages a turn contributes back to the
-session history. Read it before changing what any loop returns as `turnMessages`,
-or before adding a fourth tool protocol.
-
 ## Why it exists
 
 Two tool protocols write into the same `Conversation`:
@@ -59,6 +55,14 @@ turn produced anything from what survives it),
 
 A new tool protocol, a change to what `runRecoveringStream` collects, or a
 provider that rejects a message shape these rules currently allow.
+
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Owns the constraints on the messages a turn contributes back to the
+session history. Read it before changing what any loop returns as `turnMessages`,
+or before adding a fourth tool protocol.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

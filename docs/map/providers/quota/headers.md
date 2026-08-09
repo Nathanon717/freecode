@@ -1,6 +1,16 @@
 # src/providers/quota/headers.ts - Provider Rate-Limit Header Parsing
 
-**Role:** Pure parsers for Groq, Mistral, and Cerebras rate-limit response headers; plus extractors that derive per-model limit ceilings for persistence in `models.json`. Anthropic has no quirk profile entry (see [openai-compat-quirks.md](../adapters/openai-compat-quirks.md)), so `captureRateLimits` is off for it and none of these parsers run against it.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Pure parsers for Groq, Mistral, and Cerebras rate-limit response headers; plus extractors that derive per-model limit ceilings for persistence in `models.json`. Anthropic has no quirk profile entry (see [openai-compat-quirks.md](../adapters/openai-compat-quirks.md)), so `captureRateLimits` is off for it and none of these parsers run against it.
+
+## Read When
+
+- Debugging quota display or provider response headers.
+- Adding provider-specific rate-limit parsing.
+- Changing how static registry limits supplement live quota headers.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -137,12 +147,6 @@ extractOpenAICompatRateLimitBuckets(providerId: string, headers: Headers): Recor
 - `ObservedRateLimitBucket` = `{ limit: number; intervalMs: number | null }`. `intervalMs` is fixed for Mistral/Cerebras (60k/3.6M/86.4M ms) and the dynamic reset-window for Groq/OpenAI.
 - `extractOpenAICompatRateLimitBuckets` acts as a dispatcher: routes to mistral/cerebras/groq extractors by `providerId`.
 - Snapshot parsers (`parse*`, `groqHeadersToSnapshot`) return live remaining/limit data for UI display; `extract*Buckets` functions return limit-ceiling data for persistence in `models.json`.
-
-## Read When
-
-- Debugging quota display or provider response headers.
-- Adding provider-specific rate-limit parsing.
-- Changing how static registry limits supplement live quota headers.
 
 ## Key Neighbors
 

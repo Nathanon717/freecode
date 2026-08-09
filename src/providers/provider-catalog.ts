@@ -1,3 +1,12 @@
+/**
+ * @role Static data file containing the `PROVIDER_REGISTRY` array — the catalog of all known cloud providers with their IDs, names, base URLs, API key env vars, blocklists, and static model lists. Nearly pure configuration: the only logic is the free-model predicate, which belongs with the data it reads.
+ *
+ * @readwhen
+ * - Adding, removing, or reordering a provider.
+ * - Changing a provider's base URL, API key env var, blocklist, or static model list.
+ * - Changing which models count as free for a provider.
+ */
+
 import type { ModelConfig, ProviderConfig } from "./types.js";
 
 // Zen's free models carry a `-free` suffix, with two exceptions to hand-maintain:

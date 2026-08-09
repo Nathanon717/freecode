@@ -66,25 +66,6 @@ Tail sections are only ever fetched one page at a time.
 
 ## Decisions
 
-### Authored intent moves into source
-
-`Role` and `Read When` become `@role` / `@readwhen` tags in the module header comment of
-the `.ts` file. Docgen lifts them into the page.
-
-The point is that intent gets edited in the same diff as the code that invalidates it —
-the largest single cause of map drift. It also means a future strategy change is a
-`docs:generate` run, which is what makes hard-failing on missing sections affordable.
-
-One fact makes the move safe:
-
-- **Text moves verbatim, links included.** 12 Roles contain relative markdown links.
-  `docs/map/` mirrors `src/` at identical depth, so a link written in
-  `src/agent/loop.ts`'s header resolves identically from `docs/map/agent/loop.md`.
-
-`Read When` stays **optional** for this overhaul and becomes mandatory afterwards — 42
-pages lack one, and authoring them is the single largest manual cost. Deferring it keeps
-the overhaul mechanical.
-
 ### Export Notes are deleted, prose moves to the declaration
 
 55 pages carry `## Export notes`. The content is real — per-export semantics a signature
@@ -140,14 +121,15 @@ evidence that shelved them. Do not re-derive them here.
 
 ## Phases
 
-1. **Source migration** — `@role` / `@readwhen` into module headers; keyed export-note
-   bullets onto declarations.
+1. **Source migration** — keyed export-note bullets onto declarations.
 2. **Page codemod** — case-fold headings, promote inline fields, reorder, delete superseded
    sections, `Note` → `Notes`. Then the manual residue: ~11 Update Triggers rescues, 5
    Used By rescues, 21 freeform export bullets + 5 prose blocks, 12 pages the parser
    reports as carrying orphan prose outside any section, 10 over-length Roles.
 3. **Enforcement** — `check-map.ts` gains canonical-section and size-cap checks; the
-   doc-reference report lands in `docs:generate`.
+   doc-reference report lands in `docs:generate`. `Read When` becomes mandatory here and
+   not before: 42 modules have no `@readwhen`, and authoring them is the single largest
+   manual cost in the overhaul.
 4. **Retire this file.**
 
 Roughly 80% of the corpus change is deterministic. The manual residue is ~60 small edits
@@ -181,7 +163,6 @@ Where each part goes:
 | --- | --- |
 | Target page, Grammar, Size caps | `docs/map/README.md` — it already states the schema as a preference; this makes it the contract |
 | Generated-vs-authored ownership | `docs/docs.md` § Generated References + § Source Of Truth |
-| `@role` / `@readwhen` convention | `docs/map/README.md`, and the section manifest in `scripts/docgen/` |
 | Enforcement rules | `docs/docs.md` § Codebase Map, which already lists what `check-map.ts` enforces |
 | Shelved generators | already in `ideas/map-generation-candidates.md` — nothing to move |
 | Phases, migration counts, the 80/20 split | **nothing — these die with the plan** |

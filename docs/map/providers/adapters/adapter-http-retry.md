@@ -1,6 +1,14 @@
 # src/providers/adapters/adapter-http-retry.ts - Adapter HTTP Retry/Backoff
 
-**Role:** HTTP retry/backoff and error formatting for **every** provider adapter — [openai-compat](openai-compat.md) routes its `customFetch` through `fetchWithRetry` (the only adapter; Anthropic is a catalog entry routed through it too), so 429/503 handling is automatic for any LLM call the app makes. Surfaces "retrying in Ns" status through a sink, so the CLI layer — not the adapter — owns how it is rendered. Also owns the per-provider rate-limit gate shared across concurrent calls. Also owns `formatOpenAICompatHttpError`, which parses non-OK responses for provider-specific `{ error: { message, code } }` bodies and formats a human-readable error string; accepts an optional `httpErrorHint` callback for per-provider extra context (e.g. OpenRouter 429 guidance).
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+HTTP retry/backoff and error formatting for **every** provider adapter — [openai-compat](openai-compat.md) routes its `customFetch` through `fetchWithRetry` (the only adapter; Anthropic is a catalog entry routed through it too), so 429/503 handling is automatic for any LLM call the app makes. Surfaces "retrying in Ns" status through a sink, so the CLI layer — not the adapter — owns how it is rendered. Also owns the per-provider rate-limit gate shared across concurrent calls. Also owns `formatOpenAICompatHttpError`, which parses non-OK responses for provider-specific `{ error: { message, code } }` bodies and formats a human-readable error string; accepts an optional `httpErrorHint` callback for per-provider extra context (e.g. OpenRouter 429 guidance).
+
+## Read When
+
+Changing retry/backoff policy (attempts, caps, which status codes retry), how concurrent calls coordinate on a shared rate limit, how retry status is surfaced to the UI, or how non-OK HTTP responses are formatted for callers.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -86,7 +94,3 @@ When no sink is registered the wait still happens; only the countdown display is
 ## `formatOpenAICompatHttpError`
 
 Reads the response body (non-consuming — uses `.clone()`) and tries to parse an OpenAI-compatible `{ error: { message, code } }` structure. On a 429 with a `retry-after` header, appends "Retry after Ns." using `parseRetryAfterMs` internally (no duplicate parse logic). Appends the result of `httpErrorHint?.(response)` when provided. Returns `null` for OK responses.
-
-## Read When
-
-Changing retry/backoff policy (attempts, caps, which status codes retry), how concurrent calls coordinate on a shared rate limit, how retry status is surfaced to the UI, or how non-OK HTTP responses are formatted for callers.

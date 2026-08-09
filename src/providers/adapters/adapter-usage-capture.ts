@@ -1,3 +1,10 @@
+/**
+ * @role Capture infrastructure used by the OpenAI-compatible adapter (the only adapter — Anthropic routes through it too). Keeps a per-provider store of the latest rate-limit header snapshot and accumulates per-turn usage-capture promises. The stores are generic (`T` is a type param) even though only one caller remains, in case a second adapter shows up.
+ *
+ * @readwhen
+ * Changing how the adapter accumulates per-turn usage, or adding a second adapter that needs the same begin/end capture or header-snapshot pattern.
+ */
+
 import type { RateLimitSnapshot } from '../quota/headers.js';
 
 // Capture infrastructure for the OpenAI-compatible adapter: a per-provider store

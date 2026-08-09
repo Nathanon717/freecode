@@ -15,6 +15,8 @@ Most of a page is **generated** from source — do not hand-edit content between
 
 | Generated section | Derived from |
 | --- | --- |
+| `Role` | `@role` in the source file's module header (`scripts/docgen/map-intent.ts`) |
+| `Read When` | `@readwhen` in the same header; absent when the module has no tag |
 | `Exports` | each export's signature and its JSDoc (`scripts/docgen/map-exports.ts`) |
 | `Neighbors` | the intra-`src/` import graph, both directions (`scripts/docgen/map-facts.ts`) |
 | `Tests` | the mirrored `tests/` file, plus a count of the others that name this module |
@@ -23,11 +25,26 @@ Most of a page is **generated** from source — do not hand-edit content between
 
 **Neighbors are ranked, not listed.** `×7` weighs the edge: how many times the importing file mentions the names it imported, or for a re-export, how many names it carries across. The file a module leans on sorts above the one it touches once — salience is derived rather than curated, which is why no page carries a hand-written "why it matters" line beside an edge. Long lists are cut off with `+n more`; the withheld edges are the lightest ones.
 
-Per-export intent goes in the export's **JSDoc**, not on the page: it is lifted into `Exports`, and it gets edited in the same diff as the code that invalidates it.
+**Intent lives in the source file, not on the page** — for the same reason in both directions: a sentence sitting beside the code it describes is edited in the diff that invalidates it, which is where map drift comes from.
+
+- What the module is for, and when to open it, go in the **module header**: `@role <one paragraph>` and `@readwhen`, whose body is copied to the page verbatim (a bullet list on most pages, a sentence on some). `docs/map/` mirrors `src/` at identical depth, so a relative link written in a header resolves the same from the page.
+- Per-export intent goes in that export's **JSDoc**, which `Exports` lifts.
+
+The header holds **tags and nothing else**. Untagged prose there attaches to the first export when that export has no comment of its own, and would then print inside the page's own `Exports` block. The header is exempt from the 500-line limit (`docs/line-limit.md`), so there is no reason to keep it short at the expense of saying what the file is.
+
+```ts
+/**
+ * @role Executes one model turn: routes to a provider, builds the system prompt,
+ * streams text, optionally enables tools, and returns response metadata.
+ *
+ * @readwhen
+ * - Changing model turn execution, tool enablement, or stream error handling.
+ */
+```
 
 `npm run docs:generate` checks generated reference docs first. If they are current, it leaves them untouched; if they are stale, it regenerates them (including every page's generated blocks and this file's structure tree). It then runs `scripts/checks/check-map.ts`, which checks that every `src/**/*.ts` file has a matching map page, that map pages still point to existing source files, and that each page keeps its generated blocks.
 
-What you still write by hand is the part no parser could produce: the page's `Role`, its `Read When`, and whatever tail sections the file's behavior needs. Keep it short and operational, and do not restate a fact a generated section already carries.
+What you still write on the page itself is the tail: whatever sections the file's behavior needs, below the generated head. Keep it short and operational, and do not restate a fact a generated section already carries.
 
 ## Querying
 
@@ -135,7 +152,7 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (98) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (78) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (201) — Eval Subprocess Runner
-- [`index.ts`](index.md) (227) — CLI Entry Point
+- [`index.ts`](index.md) (226) — CLI Entry Point
 - [`logger.ts`](logger.md) (52) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (188) — Adapter HTTP Retry/Backoff
@@ -183,9 +200,9 @@ Format: filename (linecount)
 - `src/util/`
   - [`errors.ts`](util/errors.md) (316) — Shared Error Utilities
   - [`guards.ts`](util/guards.md) (3) — Type Guard Utilities
-  - [`keyboard.ts`](util/keyboard.md) (3) — Raw-Key Helpers
+  - [`keyboard.ts`](util/keyboard.md) (4) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) (38) — LCS Line Diff
-  - [`line-numbers.ts`](util/line-numbers.md) (5) — Line-Number Gutter
+  - [`line-numbers.ts`](util/line-numbers.md) (13) — Line-Number Gutter
   - [`screen-buffer.ts`](util/screen-buffer.md) (192) — Screen Buffer
   - [`text-encoding.ts`](util/text-encoding.md) (23) — Text Encoding Helpers
   - [`wrap-rows.ts`](util/wrap-rows.md) (48) — Wrapped-Row Math

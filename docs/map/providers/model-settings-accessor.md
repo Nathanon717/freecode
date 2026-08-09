@@ -1,6 +1,15 @@
 # src/providers/model-settings-accessor.ts - Model Settings Accessor
 
-**Role:** Thin shared module holding the `getModelSettings` function pointer. Exists to break the circular-import risk between `model-data.ts` (which depends on `db.ts`) and `config/index.ts` (which calls `getModelSettings` inside `resolveModelSettings`). Neither file imports the other; `model-data.ts` registers into this module and `config/index.ts` reads from it.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Thin shared module holding the `getModelSettings` function pointer. Exists to break the circular-import risk between `model-data.ts` (which depends on `db.ts`) and `config/index.ts` (which calls `getModelSettings` inside `resolveModelSettings`). Neither file imports the other; `model-data.ts` registers into this module and `config/index.ts` reads from it.
+
+## Read When
+
+- Tracing the circular-import avoidance pattern between `model-data.ts` and `config/index.ts`.
+- Debugging per-model settings not applying in `resolveModelSettings`.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -32,11 +41,6 @@ getModelSettings(key: string): OverridableSettings
 - `model-data.ts` calls `registerModelSettings(getModelSettings)` at module load time.
 - In tests, `model-data.ts` is never loaded → accessor returns `{}` → `resolveModelSettings` falls back to provider/global defaults.
 - In the real app, `model-data.ts` is loaded before `resolveModelSettings` is ever called, so the accessor is populated in time.
-
-## Read When
-
-- Tracing the circular-import avoidance pattern between `model-data.ts` and `config/index.ts`.
-- Debugging per-model settings not applying in `resolveModelSettings`.
 
 ## Key Neighbors
 

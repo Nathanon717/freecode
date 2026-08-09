@@ -1,3 +1,11 @@
+/**
+ * @role Owns the terminal lifecycle chrome shared by every interactive raw-mode menu (`/eval`, and — over time — `/config` and `/model`): bottom-UI teardown/restore, readline pause/resume, and the Windows console-mode resets. Wraps the menu body so each menu no longer re-implements this boilerplate.
+ *
+ * @readwhen
+ * - Changing how menus tear down / restore the bottom UI or readline.
+ * - Adding a new interactive menu command (wrap its body in `runMenuShell`).
+ */
+
 import type { Interface } from 'readline';
 import { isBottomUIActive, setupBottomUI, teardownBottomUI } from '../chrome/bottom-ui.js';
 import { resetStdinConsoleMode, resetTerminalPrivateModes } from './raw-picker.js';

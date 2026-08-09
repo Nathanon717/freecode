@@ -1,3 +1,7 @@
+/**
+ * @role The raw terminal protocol the bottom UI is built from — current rows/columns, scroll-region (DECSTBM), cursor addressing, line erase, and cursor save/restore. Pure sequences with no knowledge of the footer, input frame, or any layout.
+ */
+
 // Terminal geometry and the raw escape sequences the chrome is built from.
 // Pure protocol: nothing here knows about the footer, the input frame, or any
 // layout — callers compose these into the sequences they write.

@@ -1,3 +1,7 @@
+/**
+ * @role Defines the `OpenAICompatQuirks` interface and the `providerQuirks` map. Each entry co-locates one provider's static traits: extra headers, request transforms, rate-limit capture, and error hints. Providers absent from the map get the default path in the adapter skeleton.
+ */
+
 import type { RateLimitSnapshot } from '../quota/headers.js';
 import {
   parseMistralRateLimitSnapshot,

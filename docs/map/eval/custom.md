@@ -1,6 +1,16 @@
 # src/eval/custom.ts - Custom Eval Discovery and Hashing
 
-**Role:** Discovers custom eval scenarios from the filesystem, provides content hashing for cache-invalidation, and defines the shared `modelSlug` helper.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Discovers custom eval scenarios from the filesystem, provides content hashing for cache-invalidation, and defines the shared `modelSlug` helper.
+
+## Read When
+
+- Changing scenario discovery rules (folder naming conventions, required files).
+- Changing what inputs are hashed (adding/removing files from the hash).
+- Understanding `modelSlug` for artifact directory naming.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -51,9 +61,3 @@ computeScenarioHash(scenarioDir: string): string
 - No chalk imports — pure data/IO.
 - `computeRunHash` is used as the canonical `scenarioHash` for new history entries.
 - `computeScenarioHash` matches older entries that were hashed before the run/full split.
-
-## Read When
-
-- Changing scenario discovery rules (folder naming conventions, required files).
-- Changing what inputs are hashed (adding/removing files from the hash).
-- Understanding `modelSlug` for artifact directory naming.

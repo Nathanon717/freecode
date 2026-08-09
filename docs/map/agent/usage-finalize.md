@@ -1,6 +1,15 @@
 # src/agent/usage-finalize.ts - Turn Usage/Quota Finalization
 
-**Role:** Ends the per-provider usage capture at the close of a model turn and reads the last-captured rate-limit headers into a single `UsageOutcome`. Extracted from `loop.ts` (which was at the 500-line limit) as the cohesive "what usage/quota is left after this turn" concern; `loop.ts` calls it from both the success and error paths so partial usage/quota metadata survives stream failures.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Ends the per-provider usage capture at the close of a model turn and reads the last-captured rate-limit headers into a single `UsageOutcome`. Extracted from `loop.ts` (which was at the 500-line limit) as the cohesive "what usage/quota is left after this turn" concern; `loop.ts` calls it from both the success and error paths so partial usage/quota metadata survives stream failures.
+
+## Read When
+
+- Changing how a turn's provider usage or quota headers are gathered.
+- Adding a provider whose usage reporting differs from the OpenAI-compatible default.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -45,11 +54,6 @@ finalizeUsageCapture(providerId: string, promptTokens: number | undefined, outpu
 ## Export notes
 
 - `finalizeUsageCapture(providerId, promptTokens, outputTokens)` — ends the generic OpenAI-compatible provider usage capture (every provider, including Anthropic, routes through it). Then, unless `DEBUG_QUOTA=0`, it reads the last-captured rate-limit headers. `promptTokens`/`outputTokens` pass through unchanged from the caller.
-
-## Read When
-
-- Changing how a turn's provider usage or quota headers are gathered.
-- Adding a provider whose usage reporting differs from the OpenAI-compatible default.
 
 ## Key Neighbors
 

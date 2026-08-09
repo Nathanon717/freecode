@@ -1,6 +1,10 @@
 # src/providers/index.ts - Provider Re-exports
 
-**Role:** Barrel file for the providers subsystem.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Barrel file for the providers subsystem.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

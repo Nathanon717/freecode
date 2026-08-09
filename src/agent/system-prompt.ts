@@ -1,3 +1,7 @@
+/**
+ * @role Builds the static string injected as the `system` message for every agent turn.
+ */
+
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { projectRoot } from './workspace.js';

@@ -1,3 +1,7 @@
+/**
+ * @role Implements the interactive `/model` picker used by TTY sessions: provider fetch, the per-provider tabs, and the run loop. Pure rendering/data helpers live in [cli/menus/model-screen.ts](../cli/menus/model-screen.md).
+ */
+
 import chalk from 'chalk';
 import type { Interface } from 'readline';
 import { loadConfig, resolveApiKey, saveDefaultModel } from '../config/index.js';

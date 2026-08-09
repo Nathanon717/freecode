@@ -1,6 +1,15 @@
 # src/cli/eval/eval-screen.ts - Eval Screen Renderers
 
-**Role:** Renders the eval picker list, scenario detail view, and pass/fail report to the terminal.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Renders the eval picker list, scenario detail view, and pass/fail report to the terminal.
+
+## Read When
+
+- Changing the visual layout of the eval picker or detail pane.
+- Modifying how grading results (assertions, warnings, stats) are formatted.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -38,8 +47,3 @@ buildEvalDetailScreen(scenario: CustomEval, entry: EvalHistoryEntry | null, mode
 - `printEvalHeader` — prints the labeled `── id ──` bar, "Prompt:", the prompt text, and a single-line prompt→response separator (matching `transcript-renderer.ts` `writeStepSeparator`) to stdout before an eval run; used by `/eval`.
 - `buildEvalPickerScreen` — controls hint is pinned to the bottom row via `list-menu`'s `controls` field (not rendered inline).
 - `printEvalSummary` — shared by the Custom and HumanEval run loops within `/eval`; called when more than one run executed.
-
-## Read When
-
-- Changing the visual layout of the eval picker or detail pane.
-- Modifying how grading results (assertions, warnings, stats) are formatted.

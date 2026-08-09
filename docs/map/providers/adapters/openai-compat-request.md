@@ -1,6 +1,14 @@
 # src/providers/adapters/openai-compat-request.ts - OpenAI-Compatible Request Transforms
 
-**Role:** Pure request-body transforms for OpenAI-compatible providers — no provider state, no network. Mirrors [openai-compat-sse](openai-compat-sse.md) on the response side. Called from quirk profiles in [openai-compat-quirks](openai-compat-quirks.md).
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Pure request-body transforms for OpenAI-compatible providers — no provider state, no network. Mirrors [openai-compat-sse](openai-compat-sse.md) on the response side. Called from quirk profiles in [openai-compat-quirks](openai-compat-quirks.md).
+
+## Read When
+
+Adding or changing a request-body transform for any OpenAI-compatible provider. The entry point is the provider's `transformRequest` hook in `openai-compat-quirks.ts`; `injectParallelToolCallsFalse` is called directly by the adapter skeleton.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -49,10 +57,6 @@ injectParallelToolCallsFalse(body: Record<string, unknown>): Record<string, unkn
 
 69 / 500 lines (431 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Read When
-
-Adding or changing a request-body transform for any OpenAI-compatible provider. The entry point is the provider's `transformRequest` hook in `openai-compat-quirks.ts`; `injectParallelToolCallsFalse` is called directly by the adapter skeleton.
 
 ## Key Neighbors
 

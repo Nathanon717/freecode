@@ -1,6 +1,14 @@
 # src/cli/chrome/footer-status.ts - Footer Status State and Formatters
 
-**Role:** Owns the mutable state for the footer status display, all formatting helpers, and the multi-row layout logic.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Owns the mutable state for the footer status display, all formatting helpers, and the multi-row layout logic.
+
+## Read When
+
+Changing what is shown in the footer status area, adding new status fields, or debugging the multi-row layout.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -44,10 +52,6 @@ layoutFooterRightRows(width: number, rowBudget: number, now?: number): string[]
 - `formatEvalRunStatus` — returns the retry-banner string for the footer left side.
 - `setContextUsage` — sets the live conversation's context size for the `ctx` slot. `tokens` is the **provider-reported prompt (input) tokens of the most recent API call** — which already equals the whole history, since every call resends it — so it is *latest-wins, never summed*. `window` is the model's context window (or `null` when unknown). Pass `null` to blank the slot (never measured, or the model just changed). The only writer is `cli/session-modes.ts` — from `onAgentResult` at end of turn and from `onStepUsage` at each step boundary of a multi-step tool turn, so the slot ticks up while the turn runs.
 - `layoutFooterRightRows` — lays out right-side footer content into 1–3 rows; `result[0]` is the bottom row. Primary-row priority is model → ctx → quota (kept longest to shortest); OpenAI spend is secondary and drops first.
-
-## Read when
-
-Changing what is shown in the footer status area, adding new status fields, or debugging the multi-row layout.
 
 ## Note
 

@@ -1,3 +1,14 @@
+/**
+ * @role Append-only, size-capped record of what the transcript renderer
+ * actually put on screen, so a post-wipe replay can reprint the conversation
+ * instead of reconstructing an approximation of it.
+ *
+ * @readwhen
+ * changing what a replay shows, adding a write site that puts
+ * conversation content on screen, or chasing a replay that renders something the
+ * live paint did not.
+ */
+
 // An append-only record of what the transcript renderer actually put on screen,
 // so a post-wipe replay can *reprint* the conversation rather than reconstruct an
 // approximation of it.

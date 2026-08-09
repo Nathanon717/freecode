@@ -1,3 +1,7 @@
+/**
+ * @role Executes shell commands in the active project root with a regex-based destructive-command guard.
+ */
+
 import { tool } from 'ai';
 import { z } from 'zod';
 import { exec } from 'child_process';

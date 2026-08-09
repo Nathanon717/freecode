@@ -1,6 +1,10 @@
 # src/commands/model.ts - Interactive Model Picker
 
-**Role:** Implements the interactive `/model` picker used by TTY sessions: provider fetch, the per-provider tabs, and the run loop. Pure rendering/data helpers live in [cli/menus/model-screen.ts](../cli/menus/model-screen.md).
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Implements the interactive `/model` picker used by TTY sessions: provider fetch, the per-provider tabs, and the run loop. Pure rendering/data helpers live in [cli/menus/model-screen.ts](../cli/menus/model-screen.md).
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

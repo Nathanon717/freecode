@@ -1,3 +1,10 @@
+/**
+ * @role Reads the DB into the shapes the app holds in memory — the model-data map and the config blob.
+ *
+ * @readwhen
+ * adding a column to `models`/`eval_runs` that must reach `ModelEntry`, or changing how a stored blob is decoded.
+ */
+
 import type { Client } from '@libsql/client';
 import type { ModelEntry, EvalRunSummary } from '../providers/model-data.js';
 import type { DbConfigData } from './db-config-cache.js';

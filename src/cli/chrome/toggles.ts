@@ -1,3 +1,7 @@
+/**
+ * @role Holds runtime state for the footer toggle bar — Show toggle names (label visibility), Auto-run tools (tool-confirmation), and Read-only mode — and exposes getters, cyclers, and the renderer used by `bottom-ui.ts`.
+ */
+
 import chalk from 'chalk';
 import { theme } from '../theme.js';
 

@@ -1,8 +1,17 @@
 # src/commands/status.ts - /status Command
 
-**Role:** Implements the `/status` slash command. Shows API key status for all providers, Turso DB sync configuration, and whether environment variables are being injected via Doppler.
-
 No state is mutated; output only.
+
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Implements the `/status` slash command. Shows API key status for all providers, Turso DB sync configuration, and whether environment variables are being injected via Doppler.
+
+## Read When
+
+- Adding new fields to the `/status` output.
+- Changing Doppler detection logic (looks for `DOPPLER_PROJECT` env var).
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -29,11 +38,6 @@ runStatusCommand(): void
 
 `DOPPLER_CONFIG`, `DOPPLER_PROJECT`
 <!-- END GENERATED MAP FACTS -->
-
-## Read When
-
-- Adding new fields to the `/status` output.
-- Changing Doppler detection logic (looks for `DOPPLER_PROJECT` env var).
 
 ## Key Neighbors
 

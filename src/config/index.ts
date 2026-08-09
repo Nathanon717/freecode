@@ -1,3 +1,7 @@
+/**
+ * @role Loads settings/API keys from defaults, global config, local config, and environment variables into one cached `Config` object.
+ */
+
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir } from 'os';

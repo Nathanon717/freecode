@@ -1,6 +1,15 @@
 # src/store/store-paths.ts - Store Location & Sync Credentials
 
-**Role:** Resolves where the local store lives on disk and how its libSQL sync credentials are read. Pure path and environment reading — no client, no cache, no I/O beyond one config file read.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Resolves where the local store lives on disk and how its libSQL sync credentials are read. Pure path and environment reading — no client, no cache, no I/O beyond one config file read.
+
+## Read When
+
+- Changing where the store directory, DB file, or config mirror lives.
+- Changing how sync credentials are discovered or which env vars win.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -47,11 +56,6 @@ readDbConfig(): { syncUrl?: string | undefined; authToken?: string | undefined; 
 - `getDbUrl()` — the `file:` URL for `freecode.db` inside the store dir.
 - `getConfigMirrorPath()` — `config-cache.json` inside the store dir; the mirror [db.ts](./db.md) writes so config can be primed at boot without touching libSQL.
 - `readDbConfig()` — sync URL + auth token, env (`FREECODE_DB_SYNC_URL` / `FREECODE_DB_AUTH_TOKEN`) taking precedence over `db.syncUrl` / `db.authToken` in `~/.config/freecode/config.json` (or `$FREECODE_HOME`). Both halves must be present for syncing to engage; a partial pair reads as local-only. Never throws — a missing or corrupt config file falls back to the env values.
-
-## Read when
-
-- Changing where the store directory, DB file, or config mirror lives.
-- Changing how sync credentials are discovered or which env vars win.
 
 ## Key neighbors
 

@@ -1,6 +1,10 @@
 # src/providers/adapters/openai-compat-quirks.ts - OpenAI-Compatible Provider Quirk Profiles
 
-**Role:** Defines the `OpenAICompatQuirks` interface and the `providerQuirks` map. Each entry co-locates one provider's static traits: extra headers, request transforms, rate-limit capture, and error hints. Providers absent from the map get the default path in the adapter skeleton.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Defines the `OpenAICompatQuirks` interface and the `providerQuirks` map. Each entry co-locates one provider's static traits: extra headers, request transforms, rate-limit capture, and error hints. Providers absent from the map get the default path in the adapter skeleton.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

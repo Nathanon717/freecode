@@ -11,10 +11,10 @@ export const MAX_LINES = 500;
 
 /**
  * A block comment opening the file, plus the blank line that separates it from
- * the first statement. Anything below it — including another block comment — is
- * ordinary content.
+ * the first statement. A shebang sits above it and is kept — it is code. Any
+ * comment lower down, block or not, is ordinary content.
  */
-const MODULE_HEADER = /^\s*\/\*[\s\S]*?\*\/[^\S\n]*\n?\n?/;
+const MODULE_HEADER = /^(#![^\n]*\n)?\s*\/\*[\s\S]*?\*\/[^\S\n]*\n?\n?/;
 
 /**
  * Lines as the limit counts them: a trailing newline does not open a new line,
@@ -28,6 +28,8 @@ const MODULE_HEADER = /^\s*\/\*[\s\S]*?\*\/[^\S\n]*\n?\n?/;
  * much file there is to read.
  */
 export function countLines(content: string): number {
-  const lines = content.replace(MODULE_HEADER, '').split('\n');
+  const lines = content
+    .replace(MODULE_HEADER, (_match: string, shebang: string | undefined) => shebang ?? '')
+    .split('\n');
   return lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
 }

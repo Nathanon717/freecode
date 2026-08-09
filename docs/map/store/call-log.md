@@ -1,6 +1,14 @@
 # src/store/call-log.ts - Per-Call LLM Log
 
-**Role:** Defines the `llm_calls` row shape, normalizes provider-reported token counts, and hands rows to `db.ts` for persistence. Called from the adapter fetch wrapper — the only path that makes completion calls — so no LLM call can complete without producing a row.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Defines the `llm_calls` row shape, normalizes provider-reported token counts, and hands rows to `db.ts` for persistence. Called from the adapter fetch wrapper — the only path that makes completion calls — so no LLM call can complete without producing a row.
+
+## Read When
+
+Adding a second adapter (it must call `recordLlmCall` on all three paths), changing which fields are logged, or querying the log to infer rate limits.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -66,10 +74,6 @@ Token fields are populated **only** from a usage object the provider actually re
 ## Chokepoints
 
 - `adapters/openai-compat.ts` — the only adapter; logs on transport failure, on HTTP error (before the throw), and on success by teeing the existing `parseProviderUsage` promise into the log. Derives `model_key` as `"provider:modelId"` from the outgoing request body, falling back to `"provider:unknown"` — the row is still worth having when the body is unparseable.
-
-## Read When
-
-Adding a second adapter (it must call `recordLlmCall` on all three paths), changing which fields are logged, or querying the log to infer rate limits.
 
 ## Key Neighbors
 

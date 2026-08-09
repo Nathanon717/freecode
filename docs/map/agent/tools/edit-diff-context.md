@@ -1,6 +1,14 @@
 # src/agent/tools/edit-diff-context.ts - Edit Diff Context
 
-**Role:** Reads an edit's surrounding-file context from disk and shapes the `edit-diff` step result, so both the pending-approval preview and the post-execution render draw the same diff from a single disk read.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Reads an edit's surrounding-file context from disk and shapes the `edit-diff` step result, so both the pending-approval preview and the post-execution render draw the same diff from a single disk read.
+
+## Read When
+
+- Changing what surrounding context an edit diff shows, or the shape of the `edit-diff` step result.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -54,10 +62,6 @@ editDiffResult(args: Record<string, unknown>, ctx: EditDiffContext | undefined):
 - `computeEditDiffContext(path, oldText)` reads the file at `join(process.cwd(), path)`, locates `oldText` (with the same `\n`/`\t`/CRLF normalisation the edit tool applies), and returns the unchanged lines above/below, the leading indent stripped onto its own line, and the 1-based `startLine` the diff renders from. It never throws — a missing file or unmatched `oldText` degrades to empty context (`startLine` 1). The context walk stops at blank lines and at `loadConfig().diffContextLines`.
 - `editDiffResult(args, ctx)` builds the `edit-diff` `ToolStepResult` from the edit's args plus that (possibly absent) context, or returns `null` when the args aren't a well-formed edit (missing/typed-wrong `path`/`old_text`/`new_text`).
 - The diff is a **projection** of the intended edit: it renders even when `old_text` won't match, in which case the edit tool errors on execute.
-
-## Read When
-
-- Changing what surrounding context an edit diff shows, or the shape of the `edit-diff` step result.
 
 ## Key Neighbors
 

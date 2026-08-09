@@ -1,3 +1,11 @@
+/**
+ * @role Implements the `/status` slash command. Shows API key status for all providers, Turso DB sync configuration, and whether environment variables are being injected via Doppler.
+ *
+ * @readwhen
+ * - Adding new fields to the `/status` output.
+ * - Changing Doppler detection logic (looks for `DOPPLER_PROJECT` env var).
+ */
+
 import chalk from 'chalk';
 import { loadConfig } from '../config/index.js';
 import { PROVIDER_REGISTRY } from '../providers/provider-registry.js';

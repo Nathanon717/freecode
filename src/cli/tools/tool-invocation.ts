@@ -1,3 +1,11 @@
+/**
+ * @role Pure parsing/highlighting for user-typed tool calls of the form `name(arg=val, ...)`. Deliberately free of any `ai`-SDK import so it is safe to load on the early interactive boot path; execution lives in [tool-runner.md](./tool-runner.md).
+ *
+ * @readwhen
+ * - Changing the tool-call typing syntax, argument coercion, the autofill skeleton, tabstop navigation, or the pastel tool-name highlight.
+ * - Adding/removing a callable tool — update `TOOL_PARAMS` here. `TOOL_NAMES` needs nothing: it comes from the registry's name module.
+ */
+
 // Pure parsing/highlighting for hand-typed tool calls (`name(arg=val, ...)`).
 //
 // Kept free of any `ai`-SDK import so it is safe to load on the early

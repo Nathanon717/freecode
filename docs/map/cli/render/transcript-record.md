@@ -1,13 +1,5 @@
 # src/cli/render/transcript-record.ts - Rendered Transcript Record
 
-**Role:** Append-only, size-capped record of what the transcript renderer
-actually put on screen, so a post-wipe replay can reprint the conversation
-instead of reconstructing an approximation of it.
-
-**Read when:** changing what a replay shows, adding a write site that puts
-conversation content on screen, or chasing a replay that renders something the
-live paint did not.
-
 ## Why record rather than re-derive
 
 `Conversation.messages` stores a tool's result *string*, not the
@@ -50,6 +42,20 @@ the history on `/clear`.
 
 A new kind of conversation content on screen, a change to `RenderedStep` /
 `ToolStep`, or a new command that wipes the screen.
+
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Append-only, size-capped record of what the transcript renderer
+actually put on screen, so a post-wipe replay can reprint the conversation
+instead of reconstructing an approximation of it.
+
+## Read When
+
+changing what a replay shows, adding a write site that puts
+conversation content on screen, or chasing a replay that renders something the
+live paint did not.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

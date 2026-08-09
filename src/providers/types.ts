@@ -1,3 +1,7 @@
+/**
+ * @role Shared interfaces for provider metadata, model metadata, static limits, and loaded config.
+ */
+
 // check-tests: no-test — pure type declarations; erased at compile time, no runtime behavior to test
 export interface RateLimits {
   rpm: number;

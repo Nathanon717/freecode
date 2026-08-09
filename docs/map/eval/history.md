@@ -1,6 +1,10 @@
 # src/eval/history.ts - Eval History and Status Computation
 
-**Role:** Loads eval history from the DB cache, computes per-scenario eval status, and provides the bulk data bundle used by the model picker and eval menus.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Loads eval history from the DB cache, computes per-scenario eval status, and provides the bulk data bundle used by the model picker and eval menus.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

@@ -1,6 +1,15 @@
 # src/cli/tools/tool-approval.ts - Tool Approval Prompts
 
-**Role:** Holds the interactive and scripted tool-approval UI shared by both `CliSessionMode` implementations in `cli/session-modes.ts`.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Holds the interactive and scripted tool-approval UI shared by both `CliSessionMode` implementations in `cli/session-modes.ts`.
+
+## Read When
+
+- Changing the approval hint, its keybindings, or the row budget the preview above it gets.
+- Changing how scripted runs parse approve/deny lines.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -64,11 +73,6 @@ parseScriptedToolChoice(input: string | undefined): ToolApprovalChoice | null
 - Draws the confirm hint either inline or, on the footer path (`isFooterUIActive()`), on the terminal's last row with the footer rows blanked and its refresh timer frozen; repaints the footer and re-parks the cursor on settle.
 - Non-TTY paths fall back to `rl.question` text prompts, where `deny` means "tell the model no" — the same outcome as a TTY Deny, just with no Escape key and so no `stopTurn` to set; the turn continues.
 - Tears down the bottom UI while a prompt is shown and restores the input UI afterward.
-
-## Read when
-
-- Changing the approval hint, its keybindings, or the row budget the preview above it gets.
-- Changing how scripted runs parse approve/deny lines.
 
 ## Key neighbors
 

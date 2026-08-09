@@ -1,11 +1,5 @@
 # src/cli/render/transcript-replay.ts - Post-Wipe Transcript Replay
 
-**Role:** Reprints the conversation after a full-screen wipe, so the screen never
-claims less history than the model is actually being sent.
-
-**Read when:** changing what a menu leaves on screen, or what a replayed turn
-shows.
-
 ## Why not repaint from the screen buffer
 
 The obvious approach — repaint from `util/screen-buffer.ts`, as the resize
@@ -50,6 +44,18 @@ supplies `renderTurn` and `formatPromptEcho`, the latter shared with
 
 A new command that wipes the screen without clearing history, or a change to what
 `transcript-record.ts` stores.
+
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Reprints the conversation after a full-screen wipe, so the screen never
+claims less history than the model is actually being sent.
+
+## Read When
+
+changing what a menu leaves on screen, or what a replayed turn
+shows.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

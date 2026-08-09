@@ -1,3 +1,7 @@
+/**
+ * @role Intercepts `process.stdout.write` at startup to maintain rolling buffers of recent terminal output. Keeps a plain (ANSI-stripped) buffer for text search and a parallel styled buffer (ANSI codes preserved) for overlay repaints. Used by the bottom TUI to repaint rows after temporary overlays.
+ */
+
 const MAX_LINES = 150;
 const displayLineBufferStyled: string[] = [];
 let installed = false;

@@ -1,6 +1,14 @@
 # src/cli/chrome/turn-state.ts - Agent-Turn UI State
 
-**Role:** One flag — "an agent turn currently has the floor" — plus the label it drives and the verb that label currently reads. Owns nothing else; `bottom-ui.ts` decides where the label draws and what it costs in reserved rows.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+One flag — "an agent turn currently has the floor" — plus the label it drives and the verb that label currently reads. Owns nothing else; `bottom-ui.ts` decides where the label draws and what it costs in reserved rows.
+
+## Read When
+
+Changing when the label appears, changing which tools get a verb, or adding another affordance that should follow "a turn is in flight".
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -67,10 +75,6 @@ Slash commands and menus run through `beforeDispatch`, not `beforeAgentCall`, so
 Model phases (request in flight vs. streaming vs. reasoning) get no verb either. That distinction is the one that would genuinely need a signal plumbed out of `agent/loop.ts`, and streamed text is already visible in the transcript. Retry backoff is likewise left alone: `footer-status.ts` already owns `retryBannerInfo`, with a live countdown that says strictly more than a verb could.
 
 This supersedes an earlier note here arguing for one flag and no phase enum. That argument's premise — that any verb would need a signal out of `agent/loop.ts` — turned out to hold only for model phases. For tool verbs the name is already a plain string in `wrappers.ts`, so the cost was a lookup, not a plumbing job.
-
-## Read when
-
-Changing when the label appears, changing which tools get a verb, or adding another affordance that should follow "a turn is in flight".
 
 ## Key neighbors
 

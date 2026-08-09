@@ -1,8 +1,12 @@
 # src/commands/config.ts - Interactive Config Editor
 
-**Role:** Implements the `/config` terminal UI for editing settings at global, provider, and model levels.
-
 Built on the shared menu layers ([menu-shell](../cli/menus/menu-shell.md), [list-menu](../cli/menus/list-menu.md)). Each config tab is a `MenuTab` whose `onKey` cycles the focused setting's value (no `actionMenu`/`renderDetail`). `wrap: false` matches the editor's non-wrapping navigation.
+
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Implements the `/config` terminal UI for editing settings at global, provider, and model levels.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

@@ -1,3 +1,7 @@
+/**
+ * @role Chalk-based renderers for eval status circles. The domain logic (history loading, status computation, hashing, types) has been extracted to `src/eval/history.ts` and `src/eval/custom.ts`. This file keeps only the visual rendering functions.
+ */
+
 import chalk from 'chalk';
 import { theme } from '../theme.js';
 import {

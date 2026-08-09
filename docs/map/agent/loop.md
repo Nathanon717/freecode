@@ -1,6 +1,16 @@
 # src/agent/loop.ts - Agent Loop
 
-**Role:** Executes one model turn. It routes to a provider, sets the active project root, builds the system prompt, streams or generates text, optionally enables tools, and returns response metadata.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Executes one model turn. It routes to a provider, sets the active project root, builds the system prompt, streams or generates text, optionally enables tools, and returns response metadata.
+
+## Read When
+
+- Changing model turn execution, tool enablement, or stream error handling.
+- Debugging quota/usage metadata returned from a provider call.
+- Changing project-root setup before tools run.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -85,12 +95,6 @@ agentLoop(messages: CoreMessage[], projectRoot: string, modelPreference?: string
 
 `FREECODE_NO_LLM`
 <!-- END GENERATED MAP FACTS -->
-
-## Read When
-
-- Changing model turn execution, tool enablement, or stream error handling.
-- Debugging quota/usage metadata returned from a provider call.
-- Changing project-root setup before tools run.
 
 ## Execution Flow
 

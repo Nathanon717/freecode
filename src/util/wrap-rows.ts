@@ -1,3 +1,10 @@
+/**
+ * @role Counts the terminal rows soft-wrapped text actually occupies, for callers that must fit a block into a known number of rows.
+ *
+ * @readwhen
+ * - Changing how a transcript block is trimmed to fit the screen.
+ */
+
 import { stripAnsi } from "./screen-buffer.js";
 
 /**

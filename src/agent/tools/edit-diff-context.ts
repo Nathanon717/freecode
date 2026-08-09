@@ -1,3 +1,10 @@
+/**
+ * @role Reads an edit's surrounding-file context from disk and shapes the `edit-diff` step result, so both the pending-approval preview and the post-execution render draw the same diff from a single disk read.
+ *
+ * @readwhen
+ * - Changing what surrounding context an edit diff shows, or the shape of the `edit-diff` step result.
+ */
+
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { loadConfig } from "../../config/index.js";

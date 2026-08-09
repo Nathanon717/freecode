@@ -1,3 +1,7 @@
+/**
+ * @role Reads a UTF-8 file relative to the active project root, with line-based pagination and fuzzy "did you mean" suggestions on ENOENT.
+ */
+
 import { tool } from 'ai';
 import { z } from 'zod';
 import { readFile, readdir } from 'fs/promises';

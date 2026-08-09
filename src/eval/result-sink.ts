@@ -1,3 +1,12 @@
+/**
+ * @role Manages reads and writes to the `FREECODE_RESULT_JSON` file used for IPC between the eval subprocess and its parent. Preserves the placeholder→partial→final write semantics required by `custom-eval-menu.ts` polling.
+ *
+ * @readwhen
+ * - Changing the `FREECODE_RESULT_JSON` file format or write timing.
+ * - Debugging footer model/quota display during eval runs.
+ * - Understanding the IPC boundary between the agent loop and the eval runner.
+ */
+
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { logError } from '../logger.js';
 

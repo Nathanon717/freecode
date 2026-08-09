@@ -1,3 +1,10 @@
+/**
+ * @role Defines the `llm_calls` row shape, normalizes provider-reported token counts, and hands rows to `db.ts` for persistence. Called from the adapter fetch wrapper — the only path that makes completion calls — so no LLM call can complete without producing a row.
+ *
+ * @readwhen
+ * Adding a second adapter (it must call `recordLlmCall` on all three paths), changing which fields are logged, or querying the log to infer rate limits.
+ */
+
 import { isRecord } from '../util/guards.js';
 import { persistCallLogAsync } from './db.js';
 

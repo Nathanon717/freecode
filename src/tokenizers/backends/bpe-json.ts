@@ -1,3 +1,10 @@
+/**
+ * @role Loads a cached HF `tokenizer.json` into a real BPE `TokenizerEncoder` via `@huggingface/tokenizers`. Backs the Llama 3.x, DeepSeek V3/V4, and GLM-4.5-4.7 families registered in `model-family.ts`'s `HF_TOKENIZER_REPO`.
+ *
+ * @readwhen
+ * - Adding a new HF-fast-tokenizer family: add its predicate + canonical repo ID to `model-family.ts`'s `HF_TOKENIZER_REPO`, not here — this file is family-agnostic.
+ */
+
 import type { CoreMessage } from 'ai';
 import { Tokenizer } from '@huggingface/tokenizers';
 import { countContextTokens } from '../chat-format.js';

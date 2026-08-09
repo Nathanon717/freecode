@@ -1,4 +1,11 @@
 /**
+ * @role Pure helper that prefixes lines with a right-aligned line-number gutter (`padStart` number + `": "`) so every colon aligns regardless of digit count. No rendering/color dependencies.
+ *
+ * @readwhen
+ * - Changing how line numbers are shown in read/create/edit output.
+ */
+
+/**
  * Render lines with a right-aligned line-number gutter so every colon lines up
  * regardless of digit count. Shared by the read tool (model-facing output) and
  * the create/edit transcript previews so all three show one gutter format.

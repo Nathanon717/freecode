@@ -1,6 +1,14 @@
 # src/tokenizers/backends/bpe-json.ts - HF Fast-Tokenizer (tokenizer.json) Backend
 
-**Role:** Loads a cached HF `tokenizer.json` into a real BPE `TokenizerEncoder` via `@huggingface/tokenizers`. Backs the Llama 3.x, DeepSeek V3/V4, and GLM-4.5-4.7 families registered in `model-family.ts`'s `HF_TOKENIZER_REPO`.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Loads a cached HF `tokenizer.json` into a real BPE `TokenizerEncoder` via `@huggingface/tokenizers`. Backs the Llama 3.x, DeepSeek V3/V4, and GLM-4.5-4.7 families registered in `model-family.ts`'s `HF_TOKENIZER_REPO`.
+
+## Read When
+
+- Adding a new HF-fast-tokenizer family: add its predicate + canonical repo ID to `model-family.ts`'s `HF_TOKENIZER_REPO`, not here — this file is family-agnostic.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -29,10 +37,6 @@ loadBpeJsonEncoder(tokenizerJsonPath: string): TokenizerEncoder
 
 - `loadBpeJsonEncoder`: reads and `JSON.parse`s the file, then constructs `new Tokenizer(json, {})` — the empty second argument stands in for `tokenizer_config.json`, which this backend never fetches. Verified against `@huggingface/tokenizers`' own source: the library builds `normalizer`/`pre_tokenizer`/`model`/`decoder` directly off `tokenizer.json`'s own top-level fields, and for BPE-type models (every family this backend serves) the config argument is read nowhere in the constructor. This sidesteps DeepSeek's real `tokenizer_config.json` bug (`"tokenizer_class": "LlamaTokenizerFast"` installing a Metaspace pre-tokenizer that drops spaces — huggingface/transformers#45488) by construction, not by special-casing DeepSeek.
 - Encodes with `add_special_tokens: false` for every call, matching the tiktoken backend's `encode(text, [], [])` discipline — keeps per-message overhead consistent across backends via `chat-format.ts`'s shared constant instead of double-counting a model's real BOS/EOS injection.
-
-## Read When
-
-- Adding a new HF-fast-tokenizer family: add its predicate + canonical repo ID to `model-family.ts`'s `HF_TOKENIZER_REPO`, not here — this file is family-agnostic.
 
 ## Key Neighbors
 

@@ -1,6 +1,10 @@
 # src/cli/command-dispatcher.ts - Command Dispatcher
 
-**Role:** Handles slash commands and sends normal user input to the agent loop.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Handles slash commands and sends normal user input to the agent loop.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

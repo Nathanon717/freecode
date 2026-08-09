@@ -1,6 +1,16 @@
 # src/agent/parsed-tools.ts - Parsed-Tools Harness
 
-**Role:** Fallback agentic loop for models that reject native function calling. Augments the system prompt with a text-based `<tool_call>` protocol and drives a ReAct-style loop by injecting tool results as user messages.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Fallback agentic loop for models that reject native function calling. Augments the system prompt with a text-based `<tool_call>` protocol and drives a ReAct-style loop by injecting tool results as user messages.
+
+## Read When
+
+- Understanding the parsed-tools fallback path.
+- Changing how tool calls are formatted or parsed in text-only mode.
+- Debugging tool execution when the model doesn't support native function calling.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -56,12 +66,6 @@ runParsedToolsLoop(messages: CoreMessage[], systemPrompt: string, model: Languag
 
 297 / 500 lines (203 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Read When
-
-- Understanding the parsed-tools fallback path.
-- Changing how tool calls are formatted or parsed in text-only mode.
-- Debugging tool execution when the model doesn't support native function calling.
 
 ## How It Works
 

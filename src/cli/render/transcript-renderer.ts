@@ -1,3 +1,12 @@
+/**
+ * @role Turn/step state machine and writing for all visible agent transcript output. The state machine here is the single authority for turn layout — every path through `agentLoop` and `runParsedToolsLoop` delegates spacing decisions to these functions so that model-specific differences in whitespace are absorbed here and can never leak into the displayed transcript.
+ *
+ * @readwhen
+ * - Changing how tool calls, tool errors, tool result previews, or agent step dividers are displayed.
+ * - Changing eval/scripted transcript output policy.
+ * - Debugging spacing issues between response text and tool calls.
+ */
+
 import { terminalColumns, visualRows } from "../../util/wrap-rows.js";
 import {
   getTranscriptRuntimeOptions,

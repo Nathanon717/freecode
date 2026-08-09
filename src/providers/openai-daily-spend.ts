@@ -1,3 +1,7 @@
+/**
+ * @role Fetches and caches the current UTC day's OpenAI organization cost for the interactive footer.
+ */
+
 export interface OpenAIDailySpend {
   state: 'idle' | 'pending' | 'ready' | 'unavailable';
   amountUsd?: number;

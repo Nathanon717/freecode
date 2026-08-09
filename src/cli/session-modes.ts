@@ -1,3 +1,7 @@
+/**
+ * @role Builds the interactive TTY `CliSessionMode` (`createInteractiveMode`). The deterministic `--script` mode was split into [scripted-mode.md](scripted-mode.md) at the 500-line limit.
+ */
+
 import type { Interface } from "readline";
 import chalk from "chalk";
 import { runConfigCommand } from "../commands/config.js";

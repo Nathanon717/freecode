@@ -1,6 +1,15 @@
 # src/tokenizers/model-family.ts - Tokenizer Family Resolver
 
-**Role:** Resolves a model ID string to the tokenizer backend family that should count its tokens exactly. One named predicate per family (mirrors `providers/model-quirks.ts`), matched against the active `providerId:modelId` string — not a static per-model field, since most providers fetch their model lists live at runtime.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Resolves a model ID string to the tokenizer backend family that should count its tokens exactly. One named predicate per family (mirrors `providers/model-quirks.ts`), matched against the active `providerId:modelId` string — not a static per-model field, since most providers fetch their model lists live at runtime.
+
+## Read When
+
+- Adding a new exact tokenizer backend: add its predicate (and, for an HF fast-tokenizer family, its `HF_TOKENIZER_REPO` entry) here, matched against real fetched model ID strings (pull a live dump via the registry / `model-cache.json` first — providers use different ID conventions).
+- Deciding whether some model belongs to a family already implemented here: don't reason from its name. Repo-hash it if it has a repo, and `--probe` it if it doesn't — see "Probing an unknown model".
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -85,11 +94,6 @@ Results are written to `scripts/diagnostics/tokenizer-family-probe.txt`.
 One catalog ID is left unmapped on purpose: `nvidia/nemotron-nano-3-30b-a3b` looks like an alias of the measured `nemotron-3-nano-30b-a3b` (same size and MoE shape, words transposed), but "looks like" is exactly the inference this page tells you not to make. Probe it before adding it.
 
 **Separating DeepSeek V3 from V4 needs the tie-breaker.** Their base BPE is byte-identical, so no ordinary text can tell them apart — the probe reports both and says `INDISTINGUISHABLE`. What does separate them is writing V4's *added* tokens literally: `<think>` costs 3 tokens under V3 and 1 under V4. The probe runs that sample only when a tie needs breaking. `big-pickle` charged 552 where V3 predicts 552 and V4 predicts 201; the known-V4 control charged 201. That control matters — had it also charged 552, the measurement would have been telling us the serving stack ignores added tokens rather than anything about the vocab.
-
-## Read When
-
-- Adding a new exact tokenizer backend: add its predicate (and, for an HF fast-tokenizer family, its `HF_TOKENIZER_REPO` entry) here, matched against real fetched model ID strings (pull a live dump via the registry / `model-cache.json` first — providers use different ID conventions).
-- Deciding whether some model belongs to a family already implemented here: don't reason from its name. Repo-hash it if it has a repo, and `--probe` it if it doesn't — see "Probing an unknown model".
 
 ## Key Neighbors
 

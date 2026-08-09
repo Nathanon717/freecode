@@ -1,6 +1,14 @@
 # src/cli/tools/tool-runner.ts - Hand-Typed Tool Execution + /tools Listing
 
-**Role:** Executes user-typed tool calls and renders the `/tools` list. Pulls in the tool registry (and transitively the `ai` SDK), so it is imported **lazily** from [command-dispatcher.md](../command-dispatcher.md) — never on the interactive boot path.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Executes user-typed tool calls and renders the `/tools` list. Pulls in the tool registry (and transitively the `ai` SDK), so it is imported **lazily** from [command-dispatcher.md](../command-dispatcher.md) — never on the interactive boot path.
+
+## Read When
+
+- Changing how a hand-typed tool call runs, or how `/tools` renders.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -25,10 +33,6 @@ executeToolInvocation(name: "create" | "edit" | "shell_exec" | "read" | "grep" |
 
 103 / 500 lines (397 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Read When
-
-- Changing how a hand-typed tool call runs, or how `/tools` renders.
 
 ## How It Works
 

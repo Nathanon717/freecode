@@ -11,7 +11,7 @@
   },
   "tty": {
     "cols": 80,
-    "rows": 40,
+    "rows": 60,
     "readyText": "for commands",
     "steps": [
       {
@@ -51,11 +51,9 @@
           "",
           "Looking for the magic word",
           "read(src/util/guards.ts)",
-          "re:^  1: export function isRecord",
-          "*",
-          "re:^  2:",
-          "*",
-          "  3: }",
+          "re:^   1: /\\*\\*",
+          "...",
+          "  10: }",
           "",
           "re:^─+$",
           "",
@@ -64,7 +62,7 @@
         "screenStyles": [
           { "text": "read(src/util/guards.ts)", "fg": "rgb" },
           { "text": "Looking for the magic word", "fg": "rgb" },
-          { "text": "  3: }", "dim": true },
+          { "text": "10: }", "dim": true },
           { "text": "Conversation history", "dim": true },
           { "text": "xyzzy-first-turn", "fg": "default", "dim": false }
         ],

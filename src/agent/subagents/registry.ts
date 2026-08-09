@@ -1,3 +1,10 @@
+/**
+ * @role Declares the named sub-agent personas the main loop can spawn via `spawn_agent` — each an id, one-line description, specialized system prompt, and step budget. Ships the `explore` persona (a terse, cited, read-only code-mapping contract).
+ *
+ * @readwhen
+ * adding or editing a callable agent persona, or changing what `spawn_agent` advertises.
+ */
+
 // Named sub-agent personas. Each is a callable "agent" the main loop can spawn
 // via the spawn_agent tool; the persona supplies a specialized system prompt and
 // a step budget. Sub-agents run read-only (read/grep/list_dir) and cannot spawn

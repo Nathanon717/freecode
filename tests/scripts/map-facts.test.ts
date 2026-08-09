@@ -37,6 +37,10 @@ describe('countLines — the arithmetic the 500-line gate uses', () => {
   it('counts a block comment that is not the header', () => {
     expect(countLines('a\n\n/**\n * Not the header.\n */\nb\n')).toBe(6);
   });
+
+  it('keeps a shebang, and finds the header under it', () => {
+    expect(countLines('#!/usr/bin/env node\n\n/**\n * @role r\n */\n\na\n')).toBe(2);
+  });
 });
 
 describe('renderFactsBlock', () => {

@@ -1,3 +1,7 @@
+/**
+ * @role The permanent fallback token estimator for any model with no exact tokenizer backend — a real `o200k_base` BPE count for the wrong model family, not a chars/4 heuristic. Replaces the deleted `src/agent/token-count.ts`.
+ */
+
 import type { CoreMessage } from 'ai';
 import { getEncoding } from 'js-tiktoken';
 import { countContextTokens, countMessageTokens } from './chat-format.js';

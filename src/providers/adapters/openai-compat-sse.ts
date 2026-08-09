@@ -1,3 +1,10 @@
+/**
+ * @role Pure request/response body transforms used by the OpenAI-compatible adapter. No provider state and no network — just functions over SSE/JSON strings and `Response` bodies.
+ *
+ * @readwhen
+ * Changing how OpenAI-compatible stream/JSON bodies are normalized, or adding a new provider quirk that requires reshaping the response body.
+ */
+
 import { isRecord } from '../../util/guards.js';
 
 // SSE / response-body transforms shared by the OpenAI-compatible adapter.

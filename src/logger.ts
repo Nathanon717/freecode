@@ -1,3 +1,7 @@
+/**
+ * @role Category-colored stderr logging. Diagnostic logging is disabled by default; errors always surface.
+ */
+
 import chalk from 'chalk';
 
 let enabled = false;

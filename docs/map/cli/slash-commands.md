@@ -1,6 +1,10 @@
 # src/cli/slash-commands.ts - Slash Commands
 
-**Role:** Defines slash command names, fuzzy filtering, inline completion, and help text.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Defines slash command names, fuzzy filtering, inline completion, and help text.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

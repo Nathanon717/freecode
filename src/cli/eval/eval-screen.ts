@@ -1,3 +1,11 @@
+/**
+ * @role Renders the eval picker list, scenario detail view, and pass/fail report to the terminal.
+ *
+ * @readwhen
+ * - Changing the visual layout of the eval picker or detail pane.
+ * - Modifying how grading results (assertions, warnings, stats) are formatted.
+ */
+
 import chalk from 'chalk';
 import { getBannerColor } from '../render/banner.js';
 import {

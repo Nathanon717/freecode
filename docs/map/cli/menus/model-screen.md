@@ -1,6 +1,15 @@
 # src/cli/menus/model-screen.ts - Model Picker Screen Renderers
 
-**Role:** Pure rendering + data helpers for the `/model` picker. Holds the `ModelMenuItem` shape and every function that turns model lists into screen lines, with no terminal/raw-mode or provider-fetch logic.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Pure rendering + data helpers for the `/model` picker. Holds the `ModelMenuItem` shape and every function that turns model lists into screen lines, with no terminal/raw-mode or provider-fetch logic.
+
+## Read When
+
+- Changing how model rows, the Favorites section, pricing/eval/`~tools`/`◉` (exact-tokenizer eye) badges, the scroll indicators, or the model detail screen look. The eye badge is banner-tinted and driven by `ModelMenuItem.exactTokenizer`, which `commands/model.ts` fills from `tokenizers/count.ts`'s `hasExactTokenizer`.
+- Adjusting filtering, sort order, or the `showProviderHeaders` flag that controls provider headers and gold-highlight behavior.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -68,11 +77,6 @@ buildModelDetailScreen(item: ModelMenuItem): string[]
 - `buildScreen` — sizes the body to the terminal height minus `reserveRows` (caller passes the tab-bar height when the picker is multi-provider so the body never overflows); off-screen rows are flagged with `↑ N more above` / `↓ N more below`. `emptyMessage` overrides the empty-list body text (default `No models match the current filter`; the Removed tab passes `No removed models` when unfiltered).
 - `buildModelDetailScreen(item)` — the `View` / `→` detail screen. Every `models` DB column gets a row whether or not it holds a value (`—` when null/unset): ID, Provider, Display, Context, Native tools, Favorite, Removed, Settings, Rate limits. `contextWindow` / `nativeTools` / `settings` exist on `ModelMenuItem` only to feed this screen and are filled from the stored row by `commands/model.ts`. Derived, non-stored facts (Pricing, Tokenizer, Eval dots, Traits, Status) stay conditional.
 - `showProviderHeaders` (default `true`): when `false`, provider name headers are omitted and favorites render in gold; when `true`, provider headers group the list and model names render in the normal accent color.
-
-## Read when
-
-- Changing how model rows, the Favorites section, pricing/eval/`~tools`/`◉` (exact-tokenizer eye) badges, the scroll indicators, or the model detail screen look. The eye badge is banner-tinted and driven by `ModelMenuItem.exactTokenizer`, which `commands/model.ts` fills from `tokenizers/count.ts`'s `hasExactTokenizer`.
-- Adjusting filtering, sort order, or the `showProviderHeaders` flag that controls provider headers and gold-highlight behavior.
 
 ## Key neighbors
 

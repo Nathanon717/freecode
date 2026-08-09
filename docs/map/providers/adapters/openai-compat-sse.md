@@ -1,6 +1,14 @@
 # src/providers/adapters/openai-compat-sse.ts - OpenAI-Compatible SSE Transforms
 
-**Role:** Pure request/response body transforms used by the OpenAI-compatible adapter. No provider state and no network — just functions over SSE/JSON strings and `Response` bodies.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Pure request/response body transforms used by the OpenAI-compatible adapter. No provider state and no network — just functions over SSE/JSON strings and `Response` bodies.
+
+## Read When
+
+Changing how OpenAI-compatible stream/JSON bodies are normalized, or adding a new provider quirk that requires reshaping the response body.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -52,7 +60,3 @@ Converts a non-streaming OpenAI-compatible JSON completion into `chat.completion
 ## `normalizeOpenAICompatToolCallResponse`
 
 Wraps a streaming response so each complete SSE line passes through `normalizeOpenAICompatToolCallSse`, buffering partial lines across chunks. Non-OK or non-`text/event-stream` responses are returned untouched.
-
-## Read When
-
-Changing how OpenAI-compatible stream/JSON bodies are normalized, or adding a new provider quirk that requires reshaping the response body.

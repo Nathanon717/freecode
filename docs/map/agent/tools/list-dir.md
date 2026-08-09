@@ -1,6 +1,10 @@
 # src/agent/tools/list-dir.ts - list_dir Tool
 
-**Role:** Lists one directory relative to the active project root.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Lists one directory relative to the active project root.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

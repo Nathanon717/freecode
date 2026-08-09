@@ -1,6 +1,14 @@
 # src/cli/chrome/input-buffer.ts - Input Buffer State
 
-**Role:** Owns the mutable input buffer and cursor position used by the interactive prompt.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Owns the mutable input buffer and cursor position used by the interactive prompt.
+
+## Read When
+
+Editing the interactive input area, cursor movement, or visual row/column calculations.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -59,10 +67,6 @@ cursorToVisualPos(buf: string, cursor: number, w: number): { visualRow: number; 
 - `setInputBuffer(input)` — replaces buffer and moves cursor to end.
 - `setCursorPos(pos)` — places the caret at a clamped absolute offset; used by tool-call tabstop navigation in `session-modes.ts`.
 - `visualRowsForLine` / `cursorToVisualPos` — used by `bottom-ui.ts` to convert buffer positions to screen coordinates.
-
-## Read when
-
-Editing the interactive input area, cursor movement, or visual row/column calculations.
 
 ## Key neighbors
 

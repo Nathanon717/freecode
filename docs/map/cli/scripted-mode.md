@@ -1,6 +1,14 @@
 # src/cli/scripted-mode.ts - Scripted Session Mode
 
-**Role:** Builds the deterministic `--script` `CliSessionMode` used by eval subprocesses and non-interactive runs — reads inputs and tool-approval choices from a file instead of a live TTY. Split out of `session-modes.ts` at the 500-line limit as the self-contained non-interactive counterpart to `createInteractiveMode`.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Builds the deterministic `--script` `CliSessionMode` used by eval subprocesses and non-interactive runs — reads inputs and tool-approval choices from a file instead of a live TTY. Split out of `session-modes.ts` at the 500-line limit as the self-contained non-interactive counterpart to `createInteractiveMode`.
+
+## Read When
+
+- Changing how `--script` runs consume input or approve tools, or how eval subprocesses are driven unattended.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -36,10 +44,6 @@ createScriptedMode(scriptPath: string): CliSessionMode
 - `/eval` prints that the menu is unavailable instead of opening it.
 - Under `FREECODE_AUTO_CONFIRM=1` (eval subprocesses) every call is auto-approved until `FREECODE_MAX_TOOL_CALLS` is exceeded, after which calls are silently denied — a hard budget for unattended runs, no prompt (scripted stdin is closed).
 - On EOF, prints `Goodbye!` unless `FREECODE_AUTO_CONFIRM=1`.
-
-## Read When
-
-- Changing how `--script` runs consume input or approve tools, or how eval subprocesses are driven unattended.
 
 ## Key Neighbors
 

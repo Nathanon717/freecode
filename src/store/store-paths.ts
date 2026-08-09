@@ -1,3 +1,11 @@
+/**
+ * @role Resolves where the local store lives on disk and how its libSQL sync credentials are read. Pure path and environment reading — no client, no cache, no I/O beyond one config file read.
+ *
+ * @readwhen
+ * - Changing where the store directory, DB file, or config mirror lives.
+ * - Changing how sync credentials are discovered or which env vars win.
+ */
+
 import { existsSync, readFileSync } from 'fs';
 import { join, dirname, resolve } from 'path';
 import { homedir } from 'os';

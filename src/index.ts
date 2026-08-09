@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 
+/**
+ * @role Thin executable entry point. It parses process flags, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
+ *
+ * @readwhen
+ * - Changing CLI startup flags or mode selection.
+ * - Debugging startup provider probes, readline lifecycle, or default model selection.
+ * - Tracing how the executable enters the shared session runner.
+ */
+
 import { spawnSync } from 'child_process';
 import { writeFileSync, readFileSync } from 'fs';
 import chalk from 'chalk';

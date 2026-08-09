@@ -1,6 +1,16 @@
 # src/store/db-config-cache.ts - DB Config Cache
 
-**Role:** Thin shared module holding the in-memory DB config cache and callback hooks. Exists to break the potential circular import between `db.ts` (which owns the libSQL client) and `config/index.ts` (which needs to read DB-sourced config values). Neither file imports the other; both import this one.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Thin shared module holding the in-memory DB config cache and callback hooks. Exists to break the potential circular import between `db.ts` (which owns the libSQL client) and `config/index.ts` (which needs to read DB-sourced config values). Neither file imports the other; both import this one.
+
+## Read When
+
+- Debugging config sync (global settings or provider overrides not propagating cross-device).
+- Adding a new syncable config field.
+- Tracing the circular-import avoidance pattern.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -70,12 +80,6 @@ persistDbConfig(scope: string, data: unknown): void
 - `db.ts` calls `registerConfigPersist()` in `initStore()` to wire up the async DB write path.
 - `config/index.ts` calls `registerCacheInvalidator()` at module load time so cache changes flush `cachedConfig`.
 - `config/index.ts` calls `setDbConfigCache()` + `persistDbConfig()` synchronously in `writeConfigFile()` when writing the global config path.
-
-## Read When
-
-- Debugging config sync (global settings or provider overrides not propagating cross-device).
-- Adding a new syncable config field.
-- Tracing the circular-import avoidance pattern.
 
 ## Key Neighbors
 

@@ -1,6 +1,10 @@
 # src/agent/system-prompt.ts - System Prompt
 
-**Role:** Builds the static string injected as the `system` message for every agent turn.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Builds the static string injected as the `system` message for every agent turn.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

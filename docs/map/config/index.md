@@ -1,6 +1,10 @@
 # src/config/index.ts - Configuration Loader
 
-**Role:** Loads settings/API keys from defaults, global config, local config, and environment variables into one cached `Config` object.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Loads settings/API keys from defaults, global config, local config, and environment variables into one cached `Config` object.
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

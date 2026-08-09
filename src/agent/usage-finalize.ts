@@ -1,3 +1,11 @@
+/**
+ * @role Ends the per-provider usage capture at the close of a model turn and reads the last-captured rate-limit headers into a single `UsageOutcome`. Extracted from `loop.ts` (which was at the 500-line limit) as the cohesive "what usage/quota is left after this turn" concern; `loop.ts` calls it from both the success and error paths so partial usage/quota metadata survives stream failures.
+ *
+ * @readwhen
+ * - Changing how a turn's provider usage or quota headers are gathered.
+ * - Adding a provider whose usage reporting differs from the OpenAI-compatible default.
+ */
+
 import {
   endProviderUsageCapture,
   getLastCapturedHeaders,

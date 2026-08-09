@@ -1,3 +1,10 @@
+/**
+ * @role The snapshot/restore half of the slash-command suggestion rows. Owns the captured screen lines and the escape sequence that repaints them; `bottom-ui.ts` owns where the rows sit and when they open.
+ *
+ * @readwhen
+ * Debugging transcript rows left blank or duplicated after a `/` menu closes, or changing where suggestion rows draw.
+ */
+
 // Slash-command suggestion rows, which draw *over* the scroll region rather than
 // inside the reserved bottom rows.
 //

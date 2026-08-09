@@ -1,3 +1,11 @@
+/**
+ * @role Pure LCS-based line diff algorithm with no rendering dependencies. Returns a structured diff array for consumption by renderers.
+ *
+ * @readwhen
+ * - Changing the diff algorithm or its output shape.
+ * - Adding a new consumer of structured line diffs.
+ */
+
 export type DiffEntry = { type: 'equal' | 'remove' | 'add'; text: string };
 
 export function computeLineDiff(

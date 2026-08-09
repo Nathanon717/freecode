@@ -1,6 +1,15 @@
 # src/cli/menus/menu-shell.ts - Menu Lifecycle Chrome
 
-**Role:** Owns the terminal lifecycle chrome shared by every interactive raw-mode menu (`/eval`, and — over time — `/config` and `/model`): bottom-UI teardown/restore, readline pause/resume, and the Windows console-mode resets. Wraps the menu body so each menu no longer re-implements this boilerplate.
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Owns the terminal lifecycle chrome shared by every interactive raw-mode menu (`/eval`, and — over time — `/config` and `/model`): bottom-UI teardown/restore, readline pause/resume, and the Windows console-mode resets. Wraps the menu body so each menu no longer re-implements this boilerplate.
+
+## Read When
+
+- Changing how menus tear down / restore the bottom UI or readline.
+- Adding a new interactive menu command (wrap its body in `runMenuShell`).
+<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -58,11 +67,6 @@ runMenuShell<T>(rl: Interface, opts: MenuShellOptions<T>): Promise<T>
 4. `finally`: `rl.pause()`; when the bottom UI was active on a TTY, `resetStdinConsoleMode()` + `resetTerminalPrivateModes()` + `setupBottomUI()` + `onRestore?.()`.
 
 Does **not** own: the picker render/key loop (see `raw-picker.ts` / `list-menu.ts`), non-TTY fallbacks (handle inside `run()`), or session-state refresh (pass via `onRestore`).
-
-## Read when
-
-- Changing how menus tear down / restore the bottom UI or readline.
-- Adding a new interactive menu command (wrap its body in `runMenuShell`).
 
 ## Key neighbors
 
