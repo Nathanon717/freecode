@@ -1,5 +1,11 @@
 # src/agent/conversation.ts - Session Controller
 
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Owns the in-memory conversation for a CLI session.
+<!-- END GENERATED MAP INTENT -->
+
 ## Note
 
 `commitTurn` is the only append path, and it is all-or-nothing: the user's
@@ -32,12 +38,6 @@ single large `read` stays in history for the rest of the session. `/clear` is th
 release valve.
 
 No longer provides token estimation. `getContextTokenCount()` (backed by the deleted `agent/token-count.ts`) was removed when the tokenizer engine was extracted — see `docs/map/tokenizers/count.md` for the standalone engine that replaces it. Any future context-size readout should call `src/tokenizers/count.ts`'s `countTokens` directly rather than routing back through `Conversation`.
-
-<!-- BEGIN GENERATED MAP INTENT -->
-## Role
-
-Owns the in-memory conversation for a CLI session.
-<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

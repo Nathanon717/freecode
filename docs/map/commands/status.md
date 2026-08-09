@@ -1,7 +1,5 @@
 # src/commands/status.ts - /status Command
 
-No state is mutated; output only.
-
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
@@ -12,6 +10,8 @@ Implements the `/status` slash command. Shows API key status for all providers, 
 - Adding new fields to the `/status` output.
 - Changing Doppler detection logic (looks for `DOPPLER_PROJECT` env var).
 <!-- END GENERATED MAP INTENT -->
+
+No state is mutated; output only.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

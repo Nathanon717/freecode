@@ -1,7 +1,5 @@
 # src/store/model-list-cache.ts - Model List Cache
 
-**Ids only — this is not the catalog.** Display names and context windows live in the `models` table ([db.md](./db.md)), which is the single source for them and syncs across machines. When a live fetch fails, [provider-registry.ts](../providers/provider-registry.md) rebuilds the model list from that table, not from this file; this cache supplies only the new/dead id sets.
-
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
@@ -12,6 +10,8 @@ Tracks the model **ids** each live provider returned on the last successful fetc
 - Debugging why a live provider shows stale or empty models.
 - Adding new logic that needs to know whether a model is new or was recently removed.
 <!-- END GENERATED MAP INTENT -->
+
+**Ids only — this is not the catalog.** Display names and context windows live in the `models` table ([db.md](./db.md)), which is the single source for them and syncs across machines. When a live fetch fails, [provider-registry.ts](../providers/provider-registry.md) rebuilds the model list from that table, not from this file; this cache supplies only the new/dead id sets.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

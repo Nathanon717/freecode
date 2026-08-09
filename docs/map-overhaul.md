@@ -12,11 +12,10 @@ minimum that cannot be derived from source.
 
 Two problems, both measured across all 115 pages.
 
-**Nothing can query the map.** The same field appears in two syntaxes — `**Role:**` as
-inline bold on 115 pages, `## Read When` as an H2 on 39 and `**Read when:**` inline on 21,
-plus `## Key neighbors` / `## Key Neighbors` / `## Key Neighbours`. There is no grammar to
-address, so "show me just the exports of `loop.ts`" or "the role of every page under
-`agent/`" cannot be asked.
+**Nothing can query the map.** The same field appears in two syntaxes — an inline bold
+`**Key neighbors:**` on some pages and `## Key neighbors` / `## Key Neighbors` /
+`## Key Neighbours` on others. There is no grammar to address, so "show me just the
+exports of `loop.ts`" or "the role of every page under `agent/`" cannot be asked.
 
 **Every strategy change costs 115 edits.** That cost is what has kept the map's structure
 frozen. The fix is not a gentler migration process — it is having almost nothing left that
@@ -72,8 +71,25 @@ Tail sections are only ever fetched one page at a time.
 cannot hold — but it is a JSDoc comment that took a detour into a separate file, and the
 exports generator now lifts JSDoc for every export.
 
-158 of 179 bullets are keyed by a backticked identifier and attach mechanically. The
-remaining 21, plus 5 blocks containing non-bullet prose, need placing by hand.
+**This one is an editorial pass, not a codemod** — re-measured against the corpus with the
+exports generator in place, which is what changed the picture:
+
+- **152 bullets are keyed** by a backticked identifier that resolves to an export or to a
+  member of an exported interface. Keyed is not the same as mechanical.
+- **40 of those 152 land on a declaration that already has a JSDoc comment.** Every one is
+  a judgement call — the two texts agree, complement, or contradict — and a script that
+  appends blindly gets all three wrong.
+- **27 bullets are unkeyed** and 1 block is non-bullet prose. Most unkeyed bullets are
+  module-level facts (`tokenizers/model-family.md`'s four "why this family is/isn't
+  mapped" notes, `providers/user-blocklist.md`'s four file-format rules), which belong in
+  the tail or `@role`, not on any one declaration.
+
+The other reason to read rather than move: a good share of the keyed bullets restate the
+signature they sit under (*"`getInputBuffer()` — current flat buffer string"*), which
+`docs/map/README.md` already tells authors not to write. Moving those into source would
+relocate the noise instead of deleting it, and `Exports` prints it on every read of the
+page from then on. Judge each bullet against the signature the generator now emits beside
+it: **delete, merge, or move**.
 
 ### Sections deleted outright
 

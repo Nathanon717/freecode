@@ -1,11 +1,5 @@
 # src/providers/fake.ts - Fake LLM Fixtures
 
-**Why it lives in `src/` and ships in `dist/`:** `mock` and `mock-native` are real entries in
-`provider-registry.ts`, resolved at runtime from a model string like `mock:gpt-freecode-test`.
-E2e tests spawn the built binary (`tests/harness/run-e2e.ts` runs `dist/index.js`), so the
-fake must be present in the build or e2e tests lose their model. It is a deliberately fake
-provider, not a test fixture - do not move it to `tests/`.
-
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
@@ -17,6 +11,12 @@ Test-only fake model runner for free agent-loop verification. It validates order
 - Debugging `llmFixture` e2e failures.
 - Extending fake coverage into parsed-tools or Responses-style paths.
 <!-- END GENERATED MAP INTENT -->
+
+**Why it lives in `src/` and ships in `dist/`:** `mock` and `mock-native` are real entries in
+`provider-registry.ts`, resolved at runtime from a model string like `mock:gpt-freecode-test`.
+E2e tests spawn the built binary (`tests/harness/run-e2e.ts` runs `dist/index.js`), so the
+fake must be present in the build or e2e tests lose their model. It is a deliberately fake
+provider, not a test fixture - do not move it to `tests/`.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

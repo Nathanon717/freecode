@@ -1,7 +1,5 @@
 # src/store/db.ts - SQLite Store (libSQL/Turso)
 
-The eval/model store migration is complete — expect no half-migrated state.
-
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
@@ -13,6 +11,8 @@ Owns the libSQL client, schema bootstrap, in-memory model-data cache, startup im
 - Extending the schema (new table or column).
 - Understanding why model-data reads hit cache vs. JSON.
 <!-- END GENERATED MAP INTENT -->
+
+The eval/model store migration is complete — expect no half-migrated state.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

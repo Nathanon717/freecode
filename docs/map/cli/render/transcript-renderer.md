@@ -1,7 +1,5 @@
 # src/cli/render/transcript-renderer.ts - Agent Transcript Formatting
 
-The pure formatters (`format*`) now live in [transcript-format.md](transcript-format.md) and are re-exported here, so this stays the single import site. This module is what *writes*; that one is what decides how things *look*.
-
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
@@ -13,6 +11,8 @@ Turn/step state machine and writing for all visible agent transcript output. The
 - Changing eval/scripted transcript output policy.
 - Debugging spacing issues between response text and tool calls.
 <!-- END GENERATED MAP INTENT -->
+
+The pure formatters (`format*`) now live in [transcript-format.md](transcript-format.md) and are re-exported here, so this stays the single import site. This module is what *writes*; that one is what decides how things *look*.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

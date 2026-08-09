@@ -1,12 +1,12 @@
 # src/cli/render/banner.ts - Startup Banner
 
-Every function that draws the banner (`showBanner`, `redrawBanner`, `clearAndRedrawBanner`) calls `startOverlayEpoch()` from `screen-buffer.ts` right after printing, so the just-drawn banner is treated as chrome and excluded from slash-suggestion overlay repaints. This must happen on every mid-session redraw (/clear, /model, /config, /eval, and a fresh-screen resize), not just startup — otherwise a reprinted banner leaks into overlay repaints and appears where suggestions shrink.
-
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
 Clears the terminal and prints the freecode ASCII banner in a rotating pastel color.
 <!-- END GENERATED MAP INTENT -->
+
+Every function that draws the banner (`showBanner`, `redrawBanner`, `clearAndRedrawBanner`) calls `startOverlayEpoch()` from `screen-buffer.ts` right after printing, so the just-drawn banner is treated as chrome and excluded from slash-suggestion overlay repaints. This must happen on every mid-session redraw (/clear, /model, /config, /eval, and a fresh-screen resize), not just startup — otherwise a reprinted banner leaks into overlay repaints and appears where suggestions shrink.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

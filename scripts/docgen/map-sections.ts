@@ -119,11 +119,13 @@ const INLINE_FIELD = /^\*\*([^*]+):\*\*\s*(.*)$/;
 /**
  * Split one page into its sections.
  *
- * An H2 runs to the next H2. An inline bold field runs to the first blank line
- * — a field is one paragraph, and anything after it is orphan prose the parser
- * must surface rather than silently fold into `Role`. Only labels the manifest
+ * An H2 runs to the next H2 **or to the next generated marker, whichever comes
+ * first** — a generated section ends where its block ends, so prose written
+ * under a block is orphan prose rather than something the last section inside
+ * it silently absorbs. An inline bold field runs to the first blank line, for
+ * the same reason: a field is one paragraph. Only labels the manifest
  * recognizes open a section; `**Agreement logic:**` is prose, not a field.
- * Headings inside fenced code are ignored, and `BEGIN/END GENERATED` markers are
+ * Headings inside fenced code are ignored, and the markers themselves are
  * dropped so `## Exports` does not carry its own closing marker in its body.
  */
 export function parseMapPage(path: string, content: string): ParsedPage {
@@ -140,6 +142,7 @@ export function parseMapPage(path: string, content: string): ParsedPage {
   }
   const marks: Mark[] = [];
   const dropped = new Set<number>();
+  const markers: number[] = [];
   let title = '';
   let fence: string | null = null;
 
@@ -156,6 +159,7 @@ export function parseMapPage(path: string, content: string): ParsedPage {
 
     if (GENERATED_MARKER.test(line)) {
       dropped.add(i);
+      markers.push(i);
       continue;
     }
 
@@ -186,7 +190,9 @@ export function parseMapPage(path: string, content: string): ParsedPage {
 
   for (let m = 0; m < marks.length; m++) {
     const mark = marks[m];
-    const stop = m + 1 < marks.length ? marks[m + 1].index : lines.length;
+    const nextHeading = m + 1 < marks.length ? marks[m + 1].index : lines.length;
+    const nextMarker = markers.find(line => line > mark.index) ?? lines.length;
+    const stop = Math.min(nextHeading, nextMarker);
     const body: string[] = mark.first ? [mark.first] : [];
     consumed.add(mark.index);
 

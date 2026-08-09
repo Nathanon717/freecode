@@ -1,14 +1,14 @@
 # src/providers/model-data.ts - Unified Model Store
 
-The DB is now lazy — `db.ts`'s `ensureStoreReady()` is called at every consumer entry point (agentLoop, getSelectableModels, runConfigCommand, runHumanEvalMenu, runEvalMenu, sendToAgent) before the first store read/mutate. Boot uses `primeConfigCacheFromFile()` (file mirror, no libSQL) to populate the DB config cache without waiting for the real DB.
-
-The DB migration is complete. `models.json`, `evals/`, and `model-cache.json` are gitignored; the DB (synced via Turso) is the cross-device source of truth. No JSON files are written. All legacy seed functions (`seedFavorites`, `seedNativeTools`, `seedModelSettings`) have been removed — data was migrated once via `store-import.ts` when the DB was introduced.
-
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
 Public API layer for all per-model data: the provider catalog (display name, context window), favorites, native-tools state, per-model settings, eval run records, and observed rate limits. Keyed by `"provider:modelId"`. All public function signatures are synchronous; reads hit the `db.ts` in-memory cache and writes update the cache then fire-and-forget persist to the DB.
 <!-- END GENERATED MAP INTENT -->
+
+The DB is now lazy — `db.ts`'s `ensureStoreReady()` is called at every consumer entry point (agentLoop, getSelectableModels, runConfigCommand, runHumanEvalMenu, runEvalMenu, sendToAgent) before the first store read/mutate. Boot uses `primeConfigCacheFromFile()` (file mirror, no libSQL) to populate the DB config cache without waiting for the real DB.
+
+The DB migration is complete. `models.json`, `evals/`, and `model-cache.json` are gitignored; the DB (synced via Turso) is the cross-device source of truth. No JSON files are written. All legacy seed functions (`seedFavorites`, `seedNativeTools`, `seedModelSettings`) have been removed — data was migrated once via `store-import.ts` when the DB was introduced.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

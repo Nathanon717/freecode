@@ -9,7 +9,7 @@ The map is maintained incrementally:
 1. Start from this file and the relevant area page.
 2. Read source only when the map points you to files involved in the change.
 3. After edits, run `npm run docs:generate` and inspect `git diff --name-only`.
-4. Update only the hand-written prose on map pages whose purpose, ownership, dependencies, or read/use guidance changed.
+4. Update the intent where it lives: a module whose purpose or read/use guidance changed needs its `@role` / `@readwhen` edited **in the source file**, not on the page. Only the page's tail sections are edited on the page.
 
 Most of a page is **generated** from source — do not hand-edit content between the `BEGIN/END GENERATED` markers. `npm run docs:generate` maintains it; you only write the surrounding intent.
 

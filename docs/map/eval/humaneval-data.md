@@ -1,12 +1,5 @@
 # src/eval/humaneval-data.ts - HumanEval Dataset Loader
 
-**Key neighbors:**
-- `src/cli/eval/humaneval-menu.ts` — the tab + run loop that consume the problems and types
-- `src/cli/eval/eval-menu.ts` — calls `humanEvalDatasetPath`/`loadHumanEvalProblems` to populate the tab
-- `src/eval/custom.ts` — the Custom-tab counterpart (scenario discovery)
-- `evals/humaneval/data/` — bundled dataset (`HumanEval.jsonl.gz`, `example_problem.jsonl`); gitignored under `evals/*`
-- `tests/e2e/humaneval-mini.jsonl.gz`, `tests/e2e/humaneval-example.jsonl` — fixtures pointed at via env overrides
-
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
@@ -16,6 +9,13 @@ Owns the HumanEval dataset concern for the `/eval` HumanEval tab: resolving the 
 
 Changing dataset location/format, download/redirect behavior, the example-problem prepend, or the `HUMANEVAL_DATA` / `HUMANEVAL_EXAMPLE_DATA` env overrides (test fixtures).
 <!-- END GENERATED MAP INTENT -->
+
+**Key neighbors:**
+- `src/cli/eval/humaneval-menu.ts` — the tab + run loop that consume the problems and types
+- `src/cli/eval/eval-menu.ts` — calls `humanEvalDatasetPath`/`loadHumanEvalProblems` to populate the tab
+- `src/eval/custom.ts` — the Custom-tab counterpart (scenario discovery)
+- `evals/humaneval/data/` — bundled dataset (`HumanEval.jsonl.gz`, `example_problem.jsonl`); gitignored under `evals/*`
+- `tests/e2e/humaneval-mini.jsonl.gz`, `tests/e2e/humaneval-example.jsonl` — fixtures pointed at via env overrides
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

@@ -51,9 +51,9 @@
           "",
           "Looking for the magic word",
           "read(src/util/guards.ts)",
-          "re:^   1: /\\*\\*",
+          "re:^ +1: /\\*\\*",
           "...",
-          "  10: }",
+          "re:^ +\\d+: \\}$",
           "",
           "re:^─+$",
           "",
@@ -62,7 +62,7 @@
         "screenStyles": [
           { "text": "read(src/util/guards.ts)", "fg": "rgb" },
           { "text": "Looking for the magic word", "fg": "rgb" },
-          { "text": "10: }", "dim": true },
+          { "text": ": }", "dim": true },
           { "text": "Conversation history", "dim": true },
           { "text": "xyzzy-first-turn", "fg": "default", "dim": false }
         ],

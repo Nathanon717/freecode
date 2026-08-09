@@ -85,7 +85,7 @@ delegating work.
 - **One file per bug per day.** If a bug you already logged today comes back — the fix was wrong, incomplete, or moved the failure — edit *that* file so it reads as current truth, rather than adding a second entry that supersedes it. A *different* bug on the same day still gets the next suffix (`24-07-2026b.md`, `24-07-2026c.md` — three unrelated bugs shipped on one day); a recurrence on a *later* day still gets its own dated file.
 - Verification should succeed BEFORE docs are updated, not after.
 
-After code changes, inspect `git diff --name-only` and update only map pages for changed files whose purpose, ownership, exports, dependencies, or read/use guidance changed.
+After code changes, inspect `git diff --name-only`. A changed file's purpose and read/use guidance live in its `@role` / `@readwhen` module header and are generated onto the page, so edit those in the source file; edit the map page itself only for the tail sections below the generated head.
 
 ## Git
 

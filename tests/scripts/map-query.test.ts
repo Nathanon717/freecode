@@ -47,6 +47,15 @@ describe('parseMapPage — the two syntaxes', () => {
     expect(findSection(page, 'Exports')?.body).toContain('## Not A Heading');
   });
 
+  it('ends a generated section at its block, so prose below it stays orphan prose', () => {
+    const page = parseMapPage(
+      'x.md',
+      '# T\n\n<!-- BEGIN GENERATED MAP INTENT -->\n## Role\n\nDoes the thing.\n<!-- END GENERATED MAP INTENT -->\n\nStranded prose.\n\n## Notes\n\ntail\n',
+    );
+    expect(findSection(page, 'Role')?.body).toBe('Does the thing.');
+    expect(page.preamble).toBe('Stranded prose.');
+  });
+
   it('drops BEGIN/END GENERATED markers so Exports does not swallow its own', () => {
     const page = parseMapPage(
       'x.md',

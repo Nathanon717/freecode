@@ -1,5 +1,17 @@
 # src/cli/render/transcript-format.ts - Transcript Formatters
 
+<!-- BEGIN GENERATED MAP INTENT -->
+## Role
+
+Pure transcript formatters — value in, styled string out. No stream, no
+state.
+
+## Read When
+
+changing what a tool call line, rationale, result preview, created
+file, edit diff, prompt echo or step divider *looks* like.
+<!-- END GENERATED MAP INTENT -->
+
 ## Why it is separate
 
 Split from [transcript-renderer.md](transcript-renderer.md), which owns the
@@ -42,18 +54,6 @@ truncation defaults.
 
 A new transcript element that needs a look of its own, or a change to preview
 truncation.
-
-<!-- BEGIN GENERATED MAP INTENT -->
-## Role
-
-Pure transcript formatters — value in, styled string out. No stream, no
-state.
-
-## Read When
-
-changing what a tool call line, rationale, result preview, created
-file, edit diff, prompt echo or step divider *looks* like.
-<!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports

@@ -228,13 +228,22 @@ function upsertFactsBlock(content: string, block: string): string {
   return content.replace(EXPORTS_END, () => `${EXPORTS_END}\n\n${block}`);
 }
 
-// `Role` and `Read When` head the page, so a page without the block yet takes
-// it directly above `Exports`.
+// `Role` and `Read When` head the page: the block is always cut and re-laid
+// directly under the H1, rather than replaced where it sits. Position is then a
+// property of the generator instead of wherever the block first landed — which
+// on a page that opens with a legacy inline field is below it, leaving the page
+// introducing itself with something other than what the module is for.
 function upsertIntentBlock(content: string, block: string): string {
-  if (content.includes(INTENT_BEGIN)) {
-    return replaceMarkerSection(content, INTENT_BEGIN, INTENT_END, block);
+  const lines = content.split('\n');
+  const begin = lines.indexOf(INTENT_BEGIN);
+  if (begin !== -1) {
+    let end = lines.indexOf(INTENT_END, begin);
+    while (end + 1 < lines.length && lines[end + 1].trim() === '') end++;
+    lines.splice(begin, end - begin + 1);
   }
-  return content.replace(EXPORTS_BEGIN, () => `${block}\n\n${EXPORTS_BEGIN}`);
+  const h1 = lines.findIndex(line => line.startsWith('# '));
+  lines.splice(h1 + 1, 0, '', ...block.split('\n'));
+  return lines.join('\n');
 }
 
 // Maintain the generated blocks on every map page that has the markers.
