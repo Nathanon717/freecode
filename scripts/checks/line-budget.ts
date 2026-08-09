@@ -9,8 +9,25 @@
 
 export const MAX_LINES = 500;
 
-/** Lines as the limit counts them: a trailing newline does not open a new line. */
+/**
+ * A block comment opening the file, plus the blank line that separates it from
+ * the first statement. Anything below it — including another block comment — is
+ * ordinary content.
+ */
+const MODULE_HEADER = /^\s*\/\*[\s\S]*?\*\/[^\S\n]*\n?\n?/;
+
+/**
+ * Lines as the limit counts them: a trailing newline does not open a new line,
+ * and the module header comment is free.
+ *
+ * The header is exempt because it is where `@role` and `@readwhen` live. A file
+ * that states its own purpose must not be pushed over the limit for doing so,
+ * and the alternative — paying for it — is an incentive to describe the module
+ * somewhere the code cannot invalidate. Only the header is exempt; a comment
+ * anywhere below it counts like any other line, so the limit still measures how
+ * much file there is to read.
+ */
 export function countLines(content: string): number {
-  const lines = content.split('\n');
+  const lines = content.replace(MODULE_HEADER, '').split('\n');
   return lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
 }

@@ -6,6 +6,9 @@
 ## Exports
 
 ```typescript
+/**
+ * Surrounding-file context an edit diff renders with, computed once from disk.
+ */
 interface EditDiffContext {
   contextBefore: string[];
   contextAfter: string[];

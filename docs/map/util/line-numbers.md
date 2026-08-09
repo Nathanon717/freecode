@@ -29,7 +29,7 @@ withLineNumbers(startLine: number, lines: string[]): string[]
 
 ## Budget
 
-13 / 500 lines (487 to spare).
+5 / 500 lines (495 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Key Facts

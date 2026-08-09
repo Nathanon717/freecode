@@ -8,6 +8,9 @@ The eval/model store migration is complete — expect no half-migrated state.
 ## Exports
 
 ```typescript
+/**
+ * One provider-catalog row: the registry's view of a model, no user state.
+ */
 interface ModelCatalogRow {
   key: string;
   provider: string;

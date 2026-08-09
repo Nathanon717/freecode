@@ -8,6 +8,9 @@
 ## Exports
 
 ```typescript
+/**
+ * Bound in agent/loop.ts where the model handle lives; injected into createTools.
+ */
 type SpawnAgentFn = (agentType: string, prompt: string) => Promise<string>;
 
 makeSpawnAgentTool(spawnAgent: SpawnAgentFn): CoreTool<ZodObject<{ agentType: ZodEnum<[string, ...string[]]>; prompt: ZodString; }, "strip", ZodTypeAny, { agentType: string; prompt: string; }, { ...; }>, string> & { ...; }

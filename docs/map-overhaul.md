@@ -75,14 +75,11 @@ The point is that intent gets edited in the same diff as the code that invalidat
 the largest single cause of map drift. It also means a future strategy change is a
 `docs:generate` run, which is what makes hard-failing on missing sections affordable.
 
-Two facts that make the move safe:
+One fact makes the move safe:
 
 - **Text moves verbatim, links included.** 12 Roles contain relative markdown links.
   `docs/map/` mirrors `src/` at identical depth, so a link written in
   `src/agent/loop.ts`'s header resolves identically from `docs/map/agent/loop.md`.
-- **`check-line-limits.ts` must exclude the leading block comment** from the 500-line
-  count. Without it the tax lands hardest on `wrappers.ts` (495) and `loop.ts` (468),
-  which have no headroom.
 
 `Read When` stays **optional** for this overhaul and becomes mandatory afterwards — 42
 pages lack one, and authoring them is the single largest manual cost. Deferring it keeps
@@ -144,7 +141,7 @@ evidence that shelved them. Do not re-derive them here.
 ## Phases
 
 1. **Source migration** — `@role` / `@readwhen` into module headers; keyed export-note
-   bullets onto declarations; `check-line-limits.ts` comment exclusion.
+   bullets onto declarations.
 2. **Page codemod** — case-fold headings, promote inline fields, reorder, delete superseded
    sections, `Note` → `Notes`. Then the manual residue: ~11 Update Triggers rescues, 5
    Used By rescues, 21 freeform export bullets + 5 prose blocks, 12 pages the parser
@@ -185,7 +182,6 @@ Where each part goes:
 | Target page, Grammar, Size caps | `docs/map/README.md` — it already states the schema as a preference; this makes it the contract |
 | Generated-vs-authored ownership | `docs/docs.md` § Generated References + § Source Of Truth |
 | `@role` / `@readwhen` convention | `docs/map/README.md`, and the section manifest in `scripts/docgen/` |
-| Line-limit comment exclusion | `docs/line-limit.md` |
 | Enforcement rules | `docs/docs.md` § Codebase Map, which already lists what `check-map.ts` enforces |
 | Shelved generators | already in `ideas/map-generation-candidates.md` — nothing to move |
 | Phases, migration counts, the 80/20 split | **nothing — these die with the plan** |

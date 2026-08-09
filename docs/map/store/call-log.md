@@ -6,6 +6,11 @@
 ## Exports
 
 ```typescript
+/**
+ * One LLM HTTP call. Token fields are populated only from a usage object the
+ * provider actually returned — never estimated, never counted locally. A null
+ * token field means "the provider did not tell us", which is information.
+ */
 interface LlmCallRow {
   /** `"provider:modelId"`, matching the `models` table key format. */
   modelKey: string;

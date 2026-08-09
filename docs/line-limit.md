@@ -39,6 +39,11 @@ prompt a structural decision, not a formatting one.
 
 ## What is not checked
 
+- **The module header** — a block comment opening the file, and the blank line
+  after it — is not counted. That comment holds `@role` and `@readwhen`, which
+  the codebase map reads (see `docs/map/README.md`), and a file must not be
+  pushed over the limit for stating what it is for. The exemption stops at the
+  header: a comment anywhere below it counts like any other line.
 - **Pure configuration data** can stay in a data file of any size if it has no
   logic and is only read, not executed.
 - **Test files** are out of scope — `tests/**` is not checked.
@@ -58,6 +63,7 @@ prompt a structural decision, not a formatting one.
 exits non-zero listing any file over the limit.
 
 `MAX_LINES` (currently 500) and the counting rule — a single trailing newline
-does not open a line — live in `scripts/checks/line-budget.ts`. The `Budget`
+does not open a line, and the module header is not counted — live in
+`scripts/checks/line-budget.ts`. The `Budget`
 section on every map page and the line counts in the map's structure tree read
 them from there, so a page can never claim headroom the gate disagrees with.

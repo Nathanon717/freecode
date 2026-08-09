@@ -8,6 +8,9 @@
 ## Exports
 
 ```typescript
+/**
+ * The in-memory model store: every `"provider:modelId"` key to its entry.
+ */
 type ModelDataMap = Record<string, ModelEntry>;
 ```
 <!-- END GENERATED EXPORTS -->

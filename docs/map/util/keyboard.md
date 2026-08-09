@@ -30,5 +30,5 @@ isBackspaceKey(key: string): boolean
 
 ## Budget
 
-4 / 500 lines (496 to spare).
+3 / 500 lines (497 to spare).
 <!-- END GENERATED MAP FACTS -->

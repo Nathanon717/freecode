@@ -148,7 +148,7 @@ Format: filename (linecount)
   - [`fake.ts`](providers/fake.md) (434) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (3) — Provider Re-exports
   - [`model-data.ts`](providers/model-data.md) (278) — Unified Model Store
-  - [`model-quirks.ts`](providers/model-quirks.md) (37) — Per-Model Static Quirks
+  - [`model-quirks.ts`](providers/model-quirks.md) (31) — Per-Model Static Quirks
   - [`model-settings-accessor.ts`](providers/model-settings-accessor.md) (13) — Model Settings Accessor
   - [`openai-daily-spend.ts`](providers/openai-daily-spend.md) (180) — OpenAI Daily Spend Footer
   - [`paid-guard.ts`](providers/paid-guard.md) (59) — Free-Only Hard Block
@@ -183,9 +183,9 @@ Format: filename (linecount)
 - `src/util/`
   - [`errors.ts`](util/errors.md) (316) — Shared Error Utilities
   - [`guards.ts`](util/guards.md) (3) — Type Guard Utilities
-  - [`keyboard.ts`](util/keyboard.md) (4) — Raw-Key Helpers
+  - [`keyboard.ts`](util/keyboard.md) (3) — Raw-Key Helpers
   - [`line-diff.ts`](util/line-diff.md) (38) — LCS Line Diff
-  - [`line-numbers.ts`](util/line-numbers.md) (13) — Line-Number Gutter
+  - [`line-numbers.ts`](util/line-numbers.md) (5) — Line-Number Gutter
   - [`screen-buffer.ts`](util/screen-buffer.md) (192) — Screen Buffer
   - [`text-encoding.ts`](util/text-encoding.md) (23) — Text Encoding Helpers
   - [`wrap-rows.ts`](util/wrap-rows.md) (48) — Wrapped-Row Math

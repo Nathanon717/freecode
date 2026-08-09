@@ -16,6 +16,10 @@ VIEWPORT_SIZE: 20
  */
 clampViewport(sel: number, viewportStart: number): number
 
+/**
+ * What a tab's `renderBody` returns: the body screen plus the indices the base
+ * needs to splice the inline action menu and swap the hint line.
+ */
 interface ListMenuBody {
   /** The body screen (header + items + footer), with any viewport already applied. */
   lines: string[];
@@ -25,6 +29,9 @@ interface ListMenuBody {
   hintLineIdx?: number;
 }
 
+/**
+ * Handed to per-tab callbacks so they can drive the base's owned state.
+ */
 interface ListMenuContext<TResult> {
   /** Index of the active tab. */
   readonly tabIndex: number;

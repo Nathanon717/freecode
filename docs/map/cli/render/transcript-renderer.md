@@ -97,6 +97,9 @@ writeTranscriptToolLeadIn(options?: TranscriptRuntimeOptions): number
  */
 endTranscriptStep(hasMore: boolean, options?: TranscriptRuntimeOptions): void
 
+/**
+ * A fully-decided tool result, ready to render as a preview block.
+ */
 type ToolStepResult =
   | { kind: "text"; result: unknown }
   | { kind: "create-content"; content: string }
@@ -129,6 +132,9 @@ interface ToolStep {
   result: ToolStepResult;
 }
 
+/**
+ * Heights of the content a tool result will be written under, in wrapped rows.
+ */
 interface ToolCallHeaderRows {
   /** The header itself: lead-in blanks + optional rationale + the call line. */
   header: number;
@@ -136,6 +142,9 @@ interface ToolCallHeaderRows {
   preamble: number;
 }
 
+/**
+ * A single step within a rendered turn: optional text followed by zero or more tool calls.
+ */
 interface RenderedStep {
   text?: string;
   tools?: ToolStep[];

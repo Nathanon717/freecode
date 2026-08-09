@@ -28,6 +28,15 @@ describe('countLines — the arithmetic the 500-line gate uses', () => {
     expect(countLines('a\nb')).toBe(2);
     expect(countLines('')).toBe(0);
   });
+
+  it('does not count the module header, or the blank line under it', () => {
+    expect(countLines('/**\n * @role Does the thing.\n */\n\na\nb\n')).toBe(2);
+    expect(countLines('/** One-liner. */\na\n')).toBe(1);
+  });
+
+  it('counts a block comment that is not the header', () => {
+    expect(countLines('a\n\n/**\n * Not the header.\n */\nb\n')).toBe(6);
+  });
 });
 
 describe('renderFactsBlock', () => {

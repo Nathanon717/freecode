@@ -36,7 +36,7 @@ injectSystemIntoFirstUserMessage(messages: Record<string, unknown>[]): Record<st
 
 ## Budget
 
-37 / 500 lines (463 to spare).
+31 / 500 lines (469 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Read When

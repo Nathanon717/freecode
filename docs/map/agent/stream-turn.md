@@ -10,6 +10,9 @@
 ```typescript
 type StreamPart = { type: string } & Record<string, unknown>;
 
+/**
+ * The slice of a `streamText` result this driver needs.
+ */
 interface RecoverableStream {
   fullStream: AsyncIterable<StreamPart>;
   // Resolved even when a step ended on an error part, and it holds only calls

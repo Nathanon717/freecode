@@ -24,6 +24,10 @@ interface EvalRunSummary {
   checks?: EvalCheck[];
 }
 
+/**
+ * Public API layer for all per-model data. Keyed by `"provider:modelId"`.
+ * All public functions are synchronous; persistence is via the `db.ts` in-memory cache.
+ */
 interface ObservedRateLimitBucket {
   limit: number;
   intervalMs: number | null;
@@ -83,6 +87,9 @@ appendEvalRun(key: string, evalType: string, summary: EvalRunSummary, doc: EvalD
  */
 getHumanEvalResults(key: string): Record<string, "pass" | "fail">
 
+/**
+ * The registry's view of one model, as stored in the catalog columns.
+ */
 interface CatalogModel {
   modelId: string;
   displayName: string;

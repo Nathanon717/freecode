@@ -6,6 +6,13 @@
 ## Exports
 
 ```typescript
+/**
+ * Transcript output goes to stdout. There is deliberately no stderr option:
+ * `writeTranscriptText` carries the model's own response text, not just tool
+ * chatter, so routing the transcript to stderr put the whole payload on the
+ * error stream. `null` silences it instead — used by headless callers that
+ * print the final response themselves (`-p`) and by unit tests.
+ */
 type TranscriptStreamName = "stdout" | "null";
 
 interface TranscriptRenderOptions {

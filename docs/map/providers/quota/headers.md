@@ -6,6 +6,20 @@
 ## Exports
 
 ```typescript
+/**
+ * Pure parser for Groq rate-limit response headers.
+ *
+ * Groq returns standard x-ratelimit-* headers on every response:
+ *   x-ratelimit-limit-requests:     30
+ *   x-ratelimit-limit-tokens:       6000
+ *   x-ratelimit-remaining-requests: 29
+ *   x-ratelimit-remaining-tokens:   5970
+ *   x-ratelimit-reset-requests:     2s
+ *   x-ratelimit-reset-tokens:       1s
+ *
+ * Reset values use Go's time.Duration string format:
+ *   "300ms", "1.5s", "2s", "1m30s", "5m", "1h30m"
+ */
 interface GroqRateLimitHeaders {
   limitRequests: number | null;
   limitTokens: number | null;
@@ -46,6 +60,10 @@ parseGroqRateLimitHeaders(headers: Record<string, string> | Headers): GroqRateLi
 
 supplementWithModelLimits(headers: GroqRateLimitHeaders, modelLimits?: { rpm: number; rpd: number; tpm: number; tpd: number | null; } | undefined): GroqRateLimitInfo
 
+/**
+ * A single rate-limit bucket: remaining and limit counts, with an optional
+ * reset duration (ms) for time-based estimation.
+ */
 interface RateLimitBucket {
   label: string;
   remaining: number | null;
@@ -54,6 +72,9 @@ interface RateLimitBucket {
   resetMs?: number | null;
 }
 
+/**
+ * Normalised rate-limit state for any provider, as an ordered list of buckets.
+ */
 type RateLimitSnapshot = RateLimitBucket[];
 
 /**

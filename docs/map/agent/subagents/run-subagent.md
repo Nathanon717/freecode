@@ -8,6 +8,9 @@
 ## Exports
 
 ```typescript
+/**
+ * Model context for a sub-agent, closed over by the caller where the model lives.
+ */
 type SubAgentContext =
   | { kind: "native"; model: LanguageModel }
   | {

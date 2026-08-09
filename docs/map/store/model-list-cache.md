@@ -8,6 +8,10 @@
 ## Exports
 
 ```typescript
+/**
+ * Ids only. Display names and context windows live in the `models` table — this
+ * cache exists to diff one fetch against the last, so ids are all it needs.
+ */
 interface RawCachedModel {
   id: string;
 }

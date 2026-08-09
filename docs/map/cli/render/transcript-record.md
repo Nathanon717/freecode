@@ -55,6 +55,9 @@ A new kind of conversation content on screen, a change to `RenderedStep` /
 ## Exports
 
 ```typescript
+/**
+ * One replayable unit: a submitted prompt, or a whole agent turn.
+ */
 type TranscriptEntry =
   | { kind: 'prompt'; text: string; size: number }
   | { kind: 'turn'; steps: RenderedStep[]; size: number };

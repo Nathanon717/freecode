@@ -81,11 +81,15 @@ function sourcePos(sym: ts.Symbol): number {
 /**
  * Re-synthesize the symbol's JSDoc as a comment block.
  *
- * Interfaces, type aliases and enums keep their documentation for free because
- * that branch emits `decl.getText()` verbatim. Everything else goes through the
- * checker, which reports a signature and nothing else — so per-export intent
- * has to be lifted back on deliberately, or it stops at the source file. Tags
- * are not lifted: nothing in `src/` uses them.
+ * Nothing carries its documentation across on its own. The checker reports a
+ * signature and nothing else, and `decl.getText()` starts after the leading
+ * trivia — so a declaration's own comment is dropped by both routes unless it
+ * is lifted back on deliberately. Every branch of `renderSymbol` therefore
+ * emits this.
+ *
+ * Tags are not lifted. `@role` and `@readwhen` live in the module header, and
+ * a header attaches to the first export when that export has no comment of its
+ * own — so lifting tags would print the page's own Role inside its Exports.
  */
 function docComment(sym: ts.Symbol, checker: ts.TypeChecker): string {
   const text = ts.displayPartsToString(sym.getDocumentationComment(checker)).trim();
@@ -107,8 +111,8 @@ function renderSymbol(sym: ts.Symbol, checker: ts.TypeChecker): string | null {
     ts.isTypeAliasDeclaration(decl) ||
     ts.isEnumDeclaration(decl)
   ) {
-    // Merge multiple interface declarations under one name.
-    return decls
+    // Merge multiple interface declarations under one name, under one doc.
+    return doc + decls
       .map((d) => stripLeadingKeywords(d.getText()))
       .join('\n');
   }
