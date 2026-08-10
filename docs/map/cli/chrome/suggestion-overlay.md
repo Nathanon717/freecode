@@ -28,7 +28,8 @@ captureOverlay(n: number, startRow: number, scrollHeight: number): void
 
 /**
  * Escape sequence that repaints the covered rows from the snapshot, and clears
- * it. Returns '' when no overlay is open, so callers can concatenate blindly.
+ * it — there is no separate close call. Returns '' when no overlay is open, so
+ * callers can concatenate blindly.
  */
 composeOverlayRestore(width: number): string
 ```
@@ -46,17 +47,12 @@ composeOverlayRestore(width: number): string
 
 ## Budget
 
-57 / 500 lines (443 to spare).
+58 / 500 lines (442 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Why a snapshot exists
 
 Suggestion rows draw **over** the scroll region rather than inside the reserved bottom rows, so they overpaint live transcript. The covered rows are read out of the screen buffer when the overlay opens (`captureOverlay`) and repainted from that copy when it closes (`composeOverlayRestore`), which is why closing the overlay doesn't leave holes in the transcript.
-
-## Export notes
-
-- `composeOverlayRestore` — returns `''` when no overlay is open, so callers concatenate it unconditionally. It **clears the snapshot as a side effect**; there is no separate close call.
-- `resetOverlay` — drops the snapshot *without* repainting. Only for resize, where every absolute row position the snapshot recorded is already stale.
 
 ## Key neighbors
 

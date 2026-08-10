@@ -16,6 +16,17 @@ Changing what is shown in the footer status area, adding new status fields, or d
 ```typescript
 setQuotaSnapshot(quota: RateLimitSnapshot | null): void
 
+/**
+ * Set the live conversation's context size for the footer's `ctx` slot.
+ *
+ * `tokens` is the *provider-reported* prompt (input) token count of the most
+ * recent API call, which already equals the whole message history because every
+ * call resends it — so this is latest-wins and never a running sum (a running
+ * sum across eval turns was the old bug). `window` is the model's context
+ * window when known, else null. Pass `null` to blank the slot: never measured,
+ * or the model just changed, and the footer shows nothing rather than a
+ * fabricated estimate.
+ */
 setContextUsage(usage: { tokens: number; window: number | null; } | null): void
 
 setActiveModel(providerId: string, modelId: string): void
@@ -26,8 +37,19 @@ setOpenAIDailySpend(snapshot: OpenAIDailySpend): void
 
 setRetryBanner(info: { name: string; label: string; targetMs: number; } | null): void
 
+/**
+ * The retry-banner string for the footer's left side; `''` when no retry is pending.
+ */
 formatEvalRunStatus(now?: number): string
 
+/**
+ * Lay out the right-side footer content into 1..`rowBudget` rows. `result[0]` is
+ * the bottom (primary) row, `result[1]` the row above it, and so on.
+ *
+ * Primary-row priority is model → ctx → quota, kept longest to shortest; the
+ * secondary content (OpenAI spend) drops first. `rowBudget` of 1 matches the old
+ * single-row drop behaviour, which existing tests rely on.
+ */
 layoutFooterRightRows(width: number, rowBudget: number, now?: number): string[]
 ```
 <!-- END GENERATED EXPORTS -->
@@ -44,14 +66,8 @@ layoutFooterRightRows(width: number, rowBudget: number, now?: number): string[]
 
 ## Budget
 
-214 / 500 lines (286 to spare).
+225 / 500 lines (275 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `formatEvalRunStatus` — returns the retry-banner string for the footer left side.
-- `setContextUsage` — sets the live conversation's context size for the `ctx` slot. `tokens` is the **provider-reported prompt (input) tokens of the most recent API call** — which already equals the whole history, since every call resends it — so it is *latest-wins, never summed*. `window` is the model's context window (or `null` when unknown). Pass `null` to blank the slot (never measured, or the model just changed). The only writer is `cli/session-modes.ts` — from `onAgentResult` at end of turn and from `onStepUsage` at each step boundary of a multi-step tool turn, so the slot ticks up while the turn runs.
-- `layoutFooterRightRows` — lays out right-side footer content into 1–3 rows; `result[0]` is the bottom row. Primary-row priority is model → ctx → quota (kept longest to shortest); OpenAI spend is secondary and drops first.
 
 ## Note
 

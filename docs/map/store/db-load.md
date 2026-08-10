@@ -21,6 +21,11 @@ Pure hydration: takes a client, returns plain data, owns no state. Every column 
  * map and the config blob. Pure hydration — takes a client, returns plain data, owns
  * no state. Every column decode (null handling, JSON blobs, corrupt-row tolerance)
  * lives here so `db.ts` keeps only client lifecycle and writes.
+ *
+ * Eval runs attach to their model row, and a run whose parent row is absent is
+ * **dropped** — writers must persist the model row alongside the eval, not only
+ * the eval. Corrupt `settings` / `rate_limits` / `checks` JSON is skipped rather
+ * than thrown: one bad row must not fail the whole load.
  */
 loadFromDb(c: Client): Promise<ModelDataMap>
 
@@ -40,13 +45,8 @@ loadConfigFromDb(c: Client): Promise<DbConfigData>
 
 ## Budget
 
-87 / 500 lines (413 to spare).
+92 / 500 lines (408 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `loadFromDb` attaches eval runs to their model row and **drops runs whose parent row is absent** (`if (!entry) continue`) — writers must persist the model row alongside the eval, not only the eval.
-- Corrupt `settings`/`rate_limits`/`checks` JSON is skipped, never thrown: one bad row must not fail the whole load.
 
 ## Key Neighbors
 

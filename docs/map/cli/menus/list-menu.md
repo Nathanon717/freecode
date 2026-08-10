@@ -132,10 +132,6 @@ runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TRe
 364 / 500 lines (136 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Export notes
-
-- `VIEWPORT_SIZE` / `clampViewport` — shared by tab bodies that scroll a long item list (`custom-eval-menu.ts` Custom tab, `cli/eval/humaneval-menu.ts` HumanEval tab).
-
 ## Behavior
 
 - **Tab-row focus model** (matches `/config`): with more than one tab, Up from item 0 focuses the tab row (`selected === -1`); Left/Right there switch tabs; Down returns to item 0. Any other key on the tab row falls through to `tab.onKey` (e.g. `/config`'s `q` to quit). With a single tab, no tab bar or tab chrome is drawn and the tab row is unreachable.

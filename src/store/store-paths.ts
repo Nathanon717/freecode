@@ -20,22 +20,30 @@ import { fileURLToPath } from 'url';
 const _dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(_dirname, '..', '..');
 
+/** `$FREECODE_STORE`, else `<package root>/.freecode`. */
 export function getStoreDir(): string {
   return process.env.FREECODE_STORE ?? join(PACKAGE_ROOT, '.freecode');
 }
 
+/** The `file:` URL for `freecode.db` inside the store dir. */
 export function getDbUrl(): string {
   return `file:${join(getStoreDir(), 'freecode.db')}`;
 }
 
-/** Path to the config file mirror. */
+/**
+ * Path to the config file mirror: `config-cache.json` inside the store dir, which
+ * `db.ts` writes so config can be primed at boot without touching libSQL.
+ */
 export function getConfigMirrorPath(): string {
   return join(getStoreDir(), 'config-cache.json');
 }
 
 /**
- * Sync credentials, env first then `~/.config/freecode/config.json`. Both halves
- * must be present for syncing to engage; a partial pair reads as local-only.
+ * Sync credentials: `FREECODE_DB_SYNC_URL` / `FREECODE_DB_AUTH_TOKEN` take
+ * precedence over `db.syncUrl` / `db.authToken` in `~/.config/freecode/config.json`
+ * (or `$FREECODE_HOME`). Both halves must be present for syncing to engage; a
+ * partial pair reads as local-only. Never throws — a missing or corrupt config
+ * file falls back to the env values.
  */
 export function readDbConfig(): { syncUrl?: string; authToken?: string } {
   const syncUrl = process.env.FREECODE_DB_SYNC_URL ?? undefined;

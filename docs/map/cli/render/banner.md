@@ -12,16 +12,38 @@ Every function that draws the banner (`showBanner`, `redrawBanner`, `clearAndRed
 ## Exports
 
 ```typescript
+/**
+ * Reset ANSI state and the scroll region, then clear both the visible screen and scrollback.
+ */
 clearEntireTerminal(): void
 
+/**
+ * Like `redrawBanner()` but preserves scrollback (`\x1b[2J`, not `\x1b[3J`) — the
+ * resize handler in `bottom-ui.ts` calls it only when the banner is the one thing
+ * on screen (no transcript yet), to redraw it responsively at the new width.
+ */
 clearAndRedrawBanner(): void
 
+/**
+ * A chalk instance for the current banner pastel.
+ */
 getBannerColor(): ChalkInstance
 
+/**
+ * The current banner pastel as an `[r, g, b]` tuple. `cli/theme.ts` wraps it as
+ * the `rotatingPastel` / `rotatingPastelBg` tokens; background-styled call sites
+ * go through those rather than building `chalk.bgRgb(...)` themselves.
+ */
 getBannerColorRGB(): [number, number, number]
 
+/**
+ * Clear the terminal and print the banner in the next persisted colour, advancing the colour index.
+ */
 showBanner(): void
 
+/**
+ * Clear the terminal (scrollback included) and redraw the banner without advancing the colour.
+ */
 redrawBanner(): void
 ```
 <!-- END GENERATED EXPORTS -->
@@ -38,21 +60,12 @@ redrawBanner(): void
 
 ## Budget
 
-123 / 500 lines (377 to spare).
+135 / 500 lines (365 to spare).
 
 ## Env
 
 `FREECODE_HOME`
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `clearEntireTerminal`: resets ANSI state and scroll region; clears both visible and scrollback terminal content.
-- `showBanner`: clears terminal and prints banner using the next persisted color (advances color index).
-- `getBannerColor`: returns a chalk instance for the current banner pastel color.
-- `getBannerColorRGB`: returns the `[r, g, b]` tuple. Sole consumer is [../theme.md](../theme.md), which wraps it as the `rotatingPastel` / `rotatingPastelBg` tokens — background-styled call sites (toggles, menu tabs, model rows) go through those rather than building `chalk.bgRgb(...)` themselves.
-- `redrawBanner`: clears terminal (including scrollback) and redraws banner without advancing the color.
-- `clearAndRedrawBanner`: like `redrawBanner` but preserves scrollback (`\x1b[2J` not `\x1b[3J`); called by the resize handler in `bottom-ui.ts` only when the banner is the only thing on screen (no transcript yet), to redraw it responsively at the new width.
 
 ## Color State
 

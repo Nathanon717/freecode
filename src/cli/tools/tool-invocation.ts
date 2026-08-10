@@ -28,10 +28,16 @@ export interface ToolParam {
   quoted: boolean;
 }
 
-// Ordered parameter list per tool, used to autofill the argument skeleton when
-// a tool call is opened. Mirrors each tool's zod schema in src/agent/tools/ —
-// order, names, and string-ness must match. A drift guard test in
-// tests/cli/tool-runner.test.ts checks this against the real schemas.
+/**
+ * Ordered parameter list per tool, used to autofill the argument skeleton when
+ * a tool call is opened. Mirrors each tool's zod schema in src/agent/tools/ —
+ * order, names, and string-ness must match. A drift guard test in
+ * tests/cli/tool-runner.test.ts checks this against the real schemas.
+ *
+ * Hardcoded rather than derived from the schemas so this file stays off the
+ * `ai` SDK's boot path — the same reason `TOOL_NAMES` / `isToolName` come from
+ * `agent/tools/tool-names.ts`, which has no imports of its own.
+ */
 export const TOOL_PARAMS: Record<ToolName, readonly ToolParam[]> = {
   read: [
     { name: 'path', quoted: true },
@@ -65,10 +71,12 @@ export const TOOL_PARAMS: Record<ToolName, readonly ToolParam[]> = {
   ],
 };
 
-// The `(arg=val, ...)` text to insert after a freshly-typed tool name, plus the
-// caret offset (into that text) at which the cursor should land — inside the
-// first param's value slot, i.e. between the quotes of `path=""` or right after
-// the `=` of a bare param. Tab/Backspace then move between slots.
+/**
+ * The `(arg=val, ...)` text to insert after a freshly-typed tool name, plus the
+ * caret offset (into that text) at which the cursor should land — inside the
+ * first param's value slot, i.e. between the quotes of `path=""` or right after
+ * the `=` of a bare param. Tab/Backspace then move between slots.
+ */
 export function buildToolCallSkeleton(name: ToolName): {
   text: string;
   caret: number;
@@ -94,9 +102,11 @@ const HIGHLIGHT_RE = new RegExp(
   'g',
 );
 
-// Char ranges within `line` naming a valid tool that is the leading token of
-// the line and is immediately followed by `(`. Used to paint the tool name a
-// pastel colour while the user types; args and parens stay the default colour.
+/**
+ * Char ranges within `line` naming a valid tool that is the leading token of
+ * the line and is immediately followed by `(`. Used to paint the tool name a
+ * pastel colour while the user types; args and parens stay the default colour.
+ */
 export function toolNameHighlightRanges(line: string): HighlightRange[] {
   const ranges: HighlightRange[] = [];
   for (const m of line.matchAll(HIGHLIGHT_RE)) {
@@ -107,9 +117,11 @@ export function toolNameHighlightRanges(line: string): HighlightRange[] {
   return ranges;
 }
 
-// The identifier ending exactly at `cursor`, returned only when it is a valid
-// tool name and the leading token of its logical line. Drives the auto-closing
-// `(` → `()` affordance so it fires only for a genuine tool call.
+/**
+ * The identifier ending exactly at `cursor`, returned only when it is a valid
+ * tool name and the leading token of its logical line. Drives the auto-closing
+ * `(` → `()` affordance so it fires only for a genuine tool call.
+ */
 export function toolNameBeforeCursor(
   buffer: string,
   cursor: number,
@@ -122,9 +134,11 @@ export function toolNameBeforeCursor(
   return prefix.trim() === '' ? m[1] : null;
 }
 
-// Applies theme.toolName to the portions of a rendered chunk that fall within
-// `ranges` (absolute char offsets in the logical line). Colouring per-chunk —
-// after the caller's visual-width slicing — keeps wrap math on raw char counts.
+/**
+ * Applies theme.toolName to the portions of a rendered chunk that fall within
+ * `ranges` (absolute char offsets in the logical line). Colouring per-chunk —
+ * after the caller's visual-width slicing — keeps wrap math on raw char counts.
+ */
 export function styleToolNames(
   chunk: string,
   chunkStart: number,
@@ -158,9 +172,11 @@ export interface ParsedInvocation {
   args: Record<string, unknown>;
 }
 
-// Parses a whole input line of the form `name(arg=val, ...)`. Returns null when
-// the line is not a complete, valid tool invocation so it falls through to the
-// agent. Never throws — malformed args yield a best-effort object.
+/**
+ * Parses a whole input line of the form `name(arg=val, ...)`. Returns null when
+ * the line is not a complete, valid tool invocation so it falls through to the
+ * agent. Never throws — malformed args yield a best-effort object.
+ */
 export function parseToolInvocation(input: string): ParsedInvocation | null {
   const m = /^([A-Za-z_][A-Za-z0-9_]*)\(([\s\S]*)\)$/.exec(input.trim());
   if (!m || !isToolName(m[1])) return null;
@@ -249,6 +265,14 @@ function scanFields(argsText: string): FieldSlot[] {
 // (so callers fall back to their normal editing behaviour).
 const TEMPLATE_RE = /^(\s*)([A-Za-z_][A-Za-z0-9_]*)\(([\s\S]*)\)(\s*)$/;
 
+/**
+ * The field slots of a whole-buffer tool-call template (leading whitespace, a
+ * valid tool name, `(`, args, `)`, trailing whitespace), with positions shifted
+ * into absolute buffer offsets. Null when the buffer is not such a template, so
+ * callers fall back to their normal editing behaviour. The single field-slot
+ * walker: Tab/Backspace navigation and argument parsing both derive from it, so
+ * one grammar governs quoted commas and `=` with no drift between them.
+ */
 export function toolCallSlots(buffer: string): FieldSlot[] | null {
   const m = TEMPLATE_RE.exec(buffer);
   if (!m || !isToolName(m[2])) return null;
@@ -264,9 +288,11 @@ export function toolCallSlots(buffer: string): FieldSlot[] | null {
     }));
 }
 
-// Cyclic Tab target: the value slot after the one the cursor sits in (or the
-// first slot when the cursor is outside any slot). Returns null when the buffer
-// is not a tool call or has no fields, so Tab falls back to command completion.
+/**
+ * Cyclic Tab target: the value slot after the one the cursor sits in (or the
+ * first slot when the cursor is outside any slot). Returns null when the buffer
+ * is not a tool call or has no fields, so Tab falls back to command completion.
+ */
 export function nextToolFieldCaret(buffer: string, cursor: number): number | null {
   const slots = toolCallSlots(buffer);
   if (!slots || slots.length === 0) return null;
@@ -274,10 +300,12 @@ export function nextToolFieldCaret(buffer: string, cursor: number): number | nul
   return slots[(idx + 1) % slots.length].valEnd;
 }
 
-// Backspace at an emptied value slot: navigate rather than eat the skeleton.
-//  - number → move the caret to the previous slot's value (append point);
-//  - 'block' → the first slot is empty, swallow the keypress (skeleton stays);
-//  - null → not at an empty slot start, so do a normal backspace.
+/**
+ * Backspace at an emptied value slot: navigate rather than eat the skeleton.
+ *  - number → move the caret to the previous slot's value (append point);
+ *  - 'block' → the first slot is empty, swallow the keypress (skeleton stays);
+ *  - null → not at an empty slot start, so do a normal backspace.
+ */
 export function toolFieldBackspace(buffer: string, cursor: number): 'block' | number | null {
   const slots = toolCallSlots(buffer);
   if (!slots) return null;
@@ -291,9 +319,11 @@ function isEmptyRawValue(raw: string): boolean {
   return raw === '' || raw === '""' || raw === "''";
 }
 
-// Drops autofilled-but-untouched args (`key=`, `key=""`) from a submitted tool
-// call so tabbed-past optional params are simply omitted. Leaves non-tool input
-// and already-clean calls untouched.
+/**
+ * Drops autofilled-but-untouched args (`key=`, `key=""`) from a submitted tool
+ * call so tabbed-past optional params are simply omitted. Leaves non-tool input
+ * and already-clean calls untouched.
+ */
 export function stripEmptyToolArgs(input: string): string {
   const m = TEMPLATE_RE.exec(input);
   if (!m || !isToolName(m[2])) return input;
@@ -321,6 +351,10 @@ function coerceValue(raw: string): unknown {
   try { return JSON.parse(raw); } catch { return raw; }
 }
 
+/**
+ * Values coerce as: quoted → the literal string, else JSON when it parses, else
+ * the bare string.
+ */
 export function parseToolArgs(argsText: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   for (const f of scanFields(argsText)) {

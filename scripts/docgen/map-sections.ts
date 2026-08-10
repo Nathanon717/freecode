@@ -64,7 +64,6 @@ export const MAP_SECTIONS: MapSection[] = [
   { name: 'Tests', source: 'generated', status: 'canonical', required: true, aliases: ['tests'] },
   { name: 'Budget', source: 'generated', status: 'canonical', required: true, aliases: ['budget'] },
   { name: 'Env', source: 'generated', status: 'canonical', required: false, aliases: ['env'] },
-  { name: 'Export Notes', source: 'authored', status: 'legacy', required: false, aliases: ['export notes'] },
   { name: 'Update Triggers', source: 'authored', status: 'legacy', required: false, aliases: ['update triggers'] },
   { name: 'Used By', source: 'authored', status: 'legacy', required: false, aliases: ['used by'] },
 ];

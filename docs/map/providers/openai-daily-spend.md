@@ -10,6 +10,9 @@ Fetches and caches the current UTC day's OpenAI organization cost for the intera
 ## Exports
 
 ```typescript
+/**
+ * The footer's snapshot of the current UTC day's OpenAI organization cost.
+ */
 interface OpenAIDailySpend {
   state: 'idle' | 'pending' | 'ready' | 'unavailable';
   amountUsd?: number;
@@ -20,12 +23,24 @@ interface OpenAIDailySpend {
   warning?: string;
 }
 
+/**
+ * Clears the in-memory refresh state; for tests.
+ */
 resetOpenAIDailySpendCache(): void
 
+/**
+ * Whether the selected preference is an `openai:<model>` one — the footer slot's gate.
+ */
 isOpenAIModelPreference(modelPreference: string | undefined): boolean
 
+/**
+ * `GET /v1/organization/costs` with `bucket_width=1d`, `limit=1`, and a UTC-day `start_time`.
+ */
 fetchOpenAITodayCosts(now?: Date): Promise<OpenAIDailySpend>
 
+/**
+ * Non-blocking cached refresh, for UI hooks that must not await a network call.
+ */
 refreshOpenAIDailySpend(options: OpenAIDailySpendRefreshOptions): void
 ```
 <!-- END GENERATED EXPORTS -->
@@ -41,20 +56,12 @@ refreshOpenAIDailySpend(options: OpenAIDailySpendRefreshOptions): void
 
 ## Budget
 
-180 / 500 lines (320 to spare).
+185 / 500 lines (315 to spare).
 
 ## Env
 
 `OPENAI_ADMIN_KEY`
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `fetchOpenAITodayCosts(now?)` — calls `GET /v1/organization/costs` with `bucket_width=1d`, `limit=1`, and a UTC-day `start_time`.
-- `refreshOpenAIDailySpend(options)` — non-blocking cached refresh helper for UI hooks.
-- `isOpenAIModelPreference(modelPreference)` — detects selected `openai:<model>` preferences for footer gating.
-- `resetOpenAIDailySpendCache()` — clears in-memory refresh state for tests.
-- `OpenAIDailySpend` — footer snapshot type.
 
 ## Behavior
 

@@ -42,6 +42,7 @@ export interface EvalDotsData {
   history: EvalHistoryEntry[];
 }
 
+/** Every stored history entry; `[]` when the DB is not yet initialized. */
 export function loadEvalHistory(): EvalHistoryEntry[] {
   const cache = getModelData();
   if (!cache) return [];
@@ -71,6 +72,7 @@ function matchesHash(entry: EvalHistoryEntry, runHash: string, legacyFullHash?: 
   return entry.scenarioHash === runHash || (!!legacyFullHash && entry.scenarioHash === legacyFullHash);
 }
 
+/** Matches on `runHash`; `legacyFullHash` grandfathers entries written before the run-hash split. */
 export function getEvalStatus(
   scenarioId: string,
   runHash: string,
@@ -105,6 +107,7 @@ export function getLatestEvalEntry(
   return relevant.reduce((newest, entry) => entry.timestamp > newest.timestamp ? entry : newest);
 }
 
+/** Convenience bundle: discovers scenarios via `custom.ts`, hashes them all, and loads all history. */
 export function loadEvalDotsData(): EvalDotsData {
   const scenarios = discoverCustomEvals();
   const hashes = new Map<string, ScenarioHashes>();

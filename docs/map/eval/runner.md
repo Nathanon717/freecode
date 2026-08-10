@@ -26,16 +26,34 @@ interface EvalRunResult {
   quota: unknown;
 }
 
+/**
+ * Output of `run-check.ts`: the scenario id and its check results.
+ */
 interface EvalReport { scenarioId: string; checks: EvalCheckResult[]; }
 
+/**
+ * Reads `eval.config.json`; `{}` on a missing file or a parse error.
+ */
 loadEvalConfig(scenarioDir: string): EvalConfig
 
+/**
+ * Copies `work/` and the result JSON to `.artifacts/{modelSlug}/`.
+ */
 archiveEvalRun(scenarioDir: string, model: string, result: EvalRunResult): void
 
+/**
+ * Wipes and re-seeds `work/` and `.run/` from `start/`.
+ */
 resetEvalWorkDir(scenarioDir: string): void
 
+/**
+ * Starts the subprocess run: a promise, a cancel function, and the paths of the live status files.
+ */
 startEvalScenario(scenarioDir: string, prompt: string, model?: string | undefined): CancellableEval
 
+/**
+ * Writes the result to `.run/result-input.json` and runs `run-check.ts` via `tsx`; throws on failure.
+ */
 runCheckScript(scenarioId: string, scenarioDir: string, result: EvalRunResult): EvalReport
 ```
 <!-- END GENERATED EXPORTS -->
@@ -52,17 +70,8 @@ runCheckScript(scenarioId: string, scenarioDir: string, result: EvalRunResult): 
 
 ## Budget
 
-201 / 500 lines (299 to spare).
+207 / 500 lines (293 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `EvalReport`: Output of `run-check.ts` — scenario id and array of `EvalCheckResult`.
-- `loadEvalConfig`: Reads `eval.config.json`; returns `{}` on missing or parse error.
-- `startEvalScenario`: Returns a `CancellableEval` with a promise, cancel function, and paths to the live status files.
-- `resetEvalWorkDir`: Wipes and re-seeds `work/` and `.run/` from `start/`.
-- `archiveEvalRun`: Copies `work/` and result JSON to `.artifacts/{modelSlug}/`.
-- `runCheckScript`: Writes result to `.run/result-input.json`, runs `run-check.ts` via `tsx`; throws on failure.
 
 ## Key Facts
 

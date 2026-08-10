@@ -2,6 +2,7 @@
  * @role Fetches and caches the current UTC day's OpenAI organization cost for the interactive footer.
  */
 
+/** The footer's snapshot of the current UTC day's OpenAI organization cost. */
 export interface OpenAIDailySpend {
   state: 'idle' | 'pending' | 'ready' | 'unavailable';
   amountUsd?: number;
@@ -46,6 +47,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 let cachedSnapshot: OpenAIDailySpend | null = null;
 let inFlight: Promise<void> | null = null;
 
+/** Clears the in-memory refresh state; for tests. */
 export function resetOpenAIDailySpendCache(): void {
   cachedSnapshot = null;
   inFlight = null;
@@ -69,6 +71,7 @@ function resolveModelPreference(modelPreference: OpenAIDailySpendRefreshOptions[
   return typeof modelPreference === 'function' ? modelPreference() : modelPreference;
 }
 
+/** Whether the selected preference is an `openai:<model>` one — the footer slot's gate. */
 export function isOpenAIModelPreference(modelPreference: string | undefined): boolean {
   if (!modelPreference) return false;
   const colonIdx = modelPreference.indexOf(':');
@@ -103,6 +106,7 @@ function parseTodayCosts(json: CostsResponse): { amountUsd: number; startTime?: 
   return { amountUsd, startTime, endTime };
 }
 
+/** `GET /v1/organization/costs` with `bucket_width=1d`, `limit=1`, and a UTC-day `start_time`. */
 export async function fetchOpenAITodayCosts(now = new Date()): Promise<OpenAIDailySpend> {
   const apiKey = getAdminApiKey();
   if (!apiKey) {
@@ -139,6 +143,7 @@ export async function fetchOpenAITodayCosts(now = new Date()): Promise<OpenAIDai
   };
 }
 
+/** Non-blocking cached refresh, for UI hooks that must not await a network call. */
 export function refreshOpenAIDailySpend(options: OpenAIDailySpendRefreshOptions): void {
   if (options.modelPreference !== undefined && !isOpenAIModelPreference(resolveModelPreference(options.modelPreference))) {
     options.setOpenAIDailySpend({ state: 'idle', updatedAt: Date.now() });

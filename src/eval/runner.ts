@@ -28,12 +28,14 @@ export interface EvalRunResult {
   toolCalls: EvalToolCall[]; tokens: EvalTokenUsage; workDir: string;
   quota: unknown;
 }
+/** Output of `run-check.ts`: the scenario id and its check results. */
 export interface EvalReport { scenarioId: string; checks: EvalCheckResult[]; }
 
 interface EvalConfig {
   maxToolCalls?: number;
 }
 
+/** Reads `eval.config.json`; `{}` on a missing file or a parse error. */
 export function loadEvalConfig(scenarioDir: string): EvalConfig {
   const configPath = join(scenarioDir, 'eval.config.json');
   if (!existsSync(configPath)) return {};
@@ -43,6 +45,7 @@ export function loadEvalConfig(scenarioDir: string): EvalConfig {
   }
 }
 
+/** Copies `work/` and the result JSON to `.artifacts/{modelSlug}/`. */
 export function archiveEvalRun(scenarioDir: string, model: string, result: EvalRunResult): void {
   const slug = modelSlug(model || 'default');
   const artifactsDir = join(scenarioDir, '.artifacts', slug);
@@ -55,6 +58,7 @@ export function archiveEvalRun(scenarioDir: string, model: string, result: EvalR
   writeFileSync(join(artifactsDir, 'result.json'), JSON.stringify(archived, null, 2) + '\n', 'utf-8');
 }
 
+/** Wipes and re-seeds `work/` and `.run/` from `start/`. */
 export function resetEvalWorkDir(scenarioDir: string): void {
   const startDir = join(scenarioDir, 'start');
   const workDir = join(scenarioDir, 'work');
@@ -78,6 +82,7 @@ interface CancellableEval {
   resultFile: string;
 }
 
+/** Starts the subprocess run: a promise, a cancel function, and the paths of the live status files. */
 export function startEvalScenario(scenarioDir: string, prompt: string, model?: string): CancellableEval {
   const workDir = join(scenarioDir, 'work');
   const runDir = join(scenarioDir, '.run');
@@ -193,6 +198,7 @@ export function startEvalScenario(scenarioDir: string, prompt: string, model?: s
   return { promise, cancel: () => killProc(), retryStatusFile, resultFile };
 }
 
+/** Writes the result to `.run/result-input.json` and runs `run-check.ts` via `tsx`; throws on failure. */
 export function runCheckScript(scenarioId: string, scenarioDir: string, result: EvalRunResult): EvalReport {
   const resultInputPath = join(scenarioDir, '.run', 'result-input.json');
   const checkPath = join(scenarioDir, 'eval', 'check.ts');

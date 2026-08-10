@@ -27,6 +27,7 @@ import {
 export type CommandDispatchResult = 'continue' | 'exit';
 export type ModelListMode = 'current-only' | 'full';
 
+/** The dependency bundle `runCliSession()` assembles and passes to every command. */
 export interface CommandRuntime {
   projectRoot: string;
   session: Conversation;

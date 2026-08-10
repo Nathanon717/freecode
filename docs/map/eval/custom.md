@@ -16,6 +16,9 @@ Discovers custom eval scenarios from the filesystem, provides content hashing fo
 ## Exports
 
 ```typescript
+/**
+ * Absolute path to `evals/custom/`.
+ */
 CUSTOM_EVAL_DIR: string
 
 interface CustomEval {
@@ -23,12 +26,25 @@ interface CustomEval {
   firstLine: string;
 }
 
+/**
+ * `provider:model` → `provider--model`, for filesystem artifact directory naming.
+ */
 modelSlug(model: string): string
 
+/**
+ * Scenarios with both a `prompt.md` and an `eval/check.ts`, sorted by folder name.
+ */
 discoverCustomEvals(): CustomEval[]
 
+/**
+ * Hash of what the agent sees and does (prompt, config, start files). Excludes
+ * `eval/`, so scoring changes do not invalidate stored results.
+ */
 computeRunHash(scenarioDir: string): string
 
+/**
+ * Full hash including `eval/` — retained for entries hashed before the run-hash split.
+ */
 computeScenarioHash(scenarioDir: string): string
 ```
 <!-- END GENERATED EXPORTS -->
@@ -45,16 +61,8 @@ computeScenarioHash(scenarioDir: string): string
 
 ## Budget
 
-95 / 500 lines (405 to spare).
+100 / 500 lines (400 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `CUSTOM_EVAL_DIR`: Absolute path to `evals/custom/`.
-- `modelSlug`: Converts `provider:model` to `provider--model` for filesystem artifact directory naming.
-- `discoverCustomEvals`: Requires `prompt.md` and `eval/check.ts` to be present; sorted by folder name.
-- `computeRunHash`: Excludes `eval/` so scoring changes do not invalidate stored results.
-- `computeScenarioHash`: Includes `eval/` files; retained for grandfathered entries hashed before the run-hash split.
 
 ## Key Facts
 

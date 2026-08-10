@@ -28,20 +28,25 @@ interface TekkenJson {
   vocab: { rank: number; token_bytes: string }[];
 }
 
-// Builds a js-tiktoken encoder from a cached tekken.json.
-//
-// - Slices vocab to `default_vocab_size - default_num_special_tokens` entries —
-//   this boundary is load-bearing: including the padding ranks lets BPE merge
-//   into tokens the real model doesn't have, undercounting. The slice is what
-//   makes counts match Mistral's canonical tokenizer (verified, not assumed).
-// - Emits js-tiktoken's compact bpe_ranks string: one `_ <rank> <base64>` line
-//   per token (the first field is discarded, the second is the rank offset).
-//   token_bytes is already base64, exactly what that format wants.
-// - Ranks go in 0-based as-is: the real model offsets token ids past the special
-//   tokens, but a token *count* only depends on relative rank order, not id.
-// - special_tokens is left empty and encode() is called with empty special lists
-//   (via createTiktokenEncoder), matching every backend's never-throw contract:
-//   special-token-looking substrings in content are tokenized as ordinary text.
+/**
+ * Builds a js-tiktoken encoder from a cached `tekken.json`. Three details are
+ * load-bearing:
+ *
+ * - **Vocab slice** to `default_vocab_size - default_num_special_tokens` entries.
+ *   The file ships ~150k but only those are real vocab; including the padding
+ *   ranks lets BPE merge into tokens the real model doesn't have, undercounting.
+ *   The slice is what makes counts match Mistral's canonical `tokenizer.json`
+ *   (verified, not assumed).
+ * - **bpe_ranks format**: js-tiktoken's compact string is one
+ *   `_ <rank> <base64>` line per token (the first field is discarded, the second
+ *   is the rank offset). `token_bytes` is already base64, exactly what that
+ *   format consumes.
+ * - **Ranks go in 0-based as-is**, and `special_tokens` is left empty. The real
+ *   model offsets token ids past its special tokens, but a token *count* depends
+ *   only on relative rank order. Encoding uses empty special lists (via
+ *   `createTiktokenEncoder`), matching every backend's never-throw contract:
+ *   special-token-looking substrings in content tokenize as ordinary text.
+ */
 export function loadTekkenEncoder(tekkenJsonPath: string): TokenizerEncoder {
   const { config, vocab } = readJsonFile<TekkenJson>(tekkenJsonPath);
   const inner = config.default_vocab_size - config.default_num_special_tokens;

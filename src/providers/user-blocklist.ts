@@ -27,7 +27,14 @@ function blocklistPath(): string {
 
 let cached: Set<string> | null = null;
 
-/** Keys (`provider:modelId`) the user has permanently blocklisted. */
+/**
+ * Keys (`provider:modelId`) the user has permanently blocklisted.
+ *
+ * Cached in memory after the first read. Reads are lenient by design: a
+ * hand-edited file keeps its well-formed entries and drops the rest, and an
+ * unparseable file reads as empty rather than throwing — a blocklist that fails
+ * to load must never break startup.
+ */
 export function getUserBlocklist(): Set<string> {
   if (cached) return cached;
   cached = new Set<string>();
@@ -49,12 +56,18 @@ export function getUserBlocklist(): Set<string> {
   return cached;
 }
 
-/** True if `provider:modelId` is on the user blocklist. */
+/**
+ * True if `provider:modelId` is on the user blocklist. Matching is on the whole
+ * key, never a substring — unlike `modelIdBlocklist`.
+ */
 export function isUserBlocklisted(providerId: string, modelId: string): boolean {
   return getUserBlocklist().has(`${providerId}:${modelId}`);
 }
 
-/** Add a key to the blocklist and persist it. No-op if already present. */
+/**
+ * Add a key to the blocklist and persist it. No-op if already present. Writes are
+ * sorted and pretty-printed, to keep the file readable and diff-stable.
+ */
 export function addToUserBlocklist(key: string): void {
   const list = getUserBlocklist();
   if (list.has(key)) return;

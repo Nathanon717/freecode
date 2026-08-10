@@ -29,12 +29,32 @@ GLM4_FAMILY: 'glm-4'
 
 MISTRAL_TEKKEN_FAMILY: 'mistral-tekken'
 
+/**
+ * Tekken is fetched from a different repo file (`tekken.json`, not the
+ * `tokenizer.json` the HF-fast families use), so it's not in HF_TOKENIZER_REPO;
+ * count.ts loads it through backends/tekken.ts. The whole modern Mistral line
+ * shares one byte-BPE vocab (Nemo v3 and Magistral v11 verified byte-identical),
+ * so one repo covers it.
+ */
 MISTRAL_TEKKEN_REPO: 'mistralai/Mistral-Nemo-Instruct-2407'
 
 TEKKEN_FILENAME: 'tekken.json'
 
+/**
+ * Canonical HF repo whose tokenizer.json is downloaded for each family backed
+ * by backends/bpe-json.ts. Verified live against the HF API (content-hash
+ * compared across sibling model versions, not guessed) — see this page's
+ * "Verification trail" and "Family coverage" sections for why each repo was
+ * picked over its siblings.
+ */
 HF_TOKENIZER_REPO: Partial<Record<string, string>>
 
+/**
+ * Resolves, in order: GPT-OSS, DeepSeek V4, DeepSeek V3, Llama 3.x, GLM-4,
+ * Mistral Tekken. Everything else returns null and falls back to the generic
+ * tiktoken estimate — including legacy Llama/Mistral (SentencePiece), which stays
+ * unimplemented because it folds cleanly into that fallback.
+ */
 resolveTokenizerFamily(modelId: string): string | null
 ```
 <!-- END GENERATED EXPORTS -->
@@ -50,17 +70,20 @@ resolveTokenizerFamily(modelId: string): string | null
 
 ## Budget
 
-133 / 500 lines (367 to spare).
+146 / 500 lines (354 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Export notes
+## Family coverage
 
-- `resolveTokenizerFamily` resolves, in order: GPT-OSS (regex on `gpt-oss`, matched against real fetched model IDs across Groq/OpenRouter/NVIDIA/Cerebras), DeepSeek V4, DeepSeek V3, Llama 3.x, GLM-4, Mistral Tekken — everything else falls back to the generic tiktoken estimate. Legacy Llama/Mistral (SentencePiece) stays unimplemented (folds cleanly into the fallback).
-- `HF_TOKENIZER_REPO`: the family→canonical-HF-repo-ID map consumed by `count.ts`'s `preloadTokenizerFor` and `download-tokenizer.ts`. Every entry was verified live against the HF API (content-hash compared across sibling model versions) before being committed — not guessed from model names. See "Verification trail" below before trusting or extending this map. Tekken is deliberately **not** in this map — it fetches a different repo file (`tekken.json`), so its repo/filename constants (`MISTRAL_TEKKEN_REPO`, `TEKKEN_FILENAME`) sit alongside it and `count.ts` loads it through `backends/tekken.ts`.
-- **`isMistralTekken` covers the modern Mistral line** (NeMo-era and newer: Ministral, Mistral Small 3.x/4, Magistral, Devstral, modern Codestral, Pixtral, Mistral Medium 3.x, `mistral-vibe-cli`, `mistral-large-2512`/`-3`, and proprietary `mistral:` API models). Built ID-by-ID against the live catalog with hard excludes first, because the naming has landmines: anything under `nvidia/` is Llama-family despite the "nemo" substring, **except the Nemotron 3 line, which really is Tekken** (see the findings table below — measured, not inferred; the `-omni` variants and every other Nemotron generation stay excluded); Mixtral / Mistral-7B / first-gen Codestral / any `-v0.x` are legacy SentencePiece; `-embed`/`-ocr`/`-moderation`/`voxtral`/`saba` are non-chat; and `mistral-large-2407`/`-2411` predate Tekken (they ship `tokenizer.json` + SentencePiece, no `tekken.json`). One canonical repo covers the whole line — Nemo (v3) and Magistral (v11) have byte-identical used-vocab (verified 2026-07-06).
-- **Kimi K2 is deliberately unmapped.** The plan assumed a "converted `tokenizer.json`" existed; live-checking `moonshotai/Kimi-K2-Instruct` and every variant/mirror repo (K2-Thinking, K2.5/2.6/2.7, unsloth, mlx-community) found none — Moonshot ships only a raw `tiktoken.model` ranks file plus a custom `tokenization_kimi.py` loader. That's tiktoken-family machinery (same shape as Mistral Tekken), not this HF-fast-tokenizer backend. Deferred, not silently dropped — surfaced to the user rather than left unmapped without explanation.
-- **DeepSeek splits into two families, not one — but they share a BPE.** V3/V3.1/V3.2/R1 use `deepseek-ai/DeepSeek-V3`; V4-Pro/V4-Flash use `deepseek-ai/DeepSeek-V4-Pro`. The V4 file has a different content hash and is ~1.5MB smaller, but that difference is **not** a retrained vocab: `model.vocab` (128000 entries), `model.merges` (127741), `pre_tokenizer`, `normalizer`, `decoder` and `post_processor` all hash byte-identically between the two, with zero token-ID differences. The entire delta is `added_tokens` — 818 in V3 vs 1283 in V4, the 465 extras being IDs 128815-129279 (`<think>`, `<｜begin▁of▁file｜>`, `｜DSML｜`, repo/file markers). Keep them separate anyway: those added tokens are live during encoding, so `<think>` costs **3 tokens under V3 and 1 under V4**, which matters for reasoning-model transcripts. On text with no special-token literals the two are *numerically identical* and no measurement can tell them apart — see "Probing an unknown model" below. `deepseek-r1-distill-*` models are excluded from both — they're fine-tunes distilled onto a different base model's tokenizer (Llama/Qwen), which this resolver doesn't try to guess.
-- **GLM-4 covers only the verified 4.5-4.7 main line** (including `-air`/`-v` vision variants, confirmed identical tokenizer content hash across `GLM-4.5-Air`/`GLM-4.6`/`GLM-4.7`/`GLM-4.5V`/`GLM-4.6V`). `-flash` variants and pre-4.5 releases (e.g. `glm-4-9b-chat`) use a different tokenizer and are excluded.
+Which model IDs each family claims, and why the exclusions are exclusions. Every call here was measured, never inferred from a name.
+
+**Mistral Tekken** covers the modern Mistral line: NeMo-era and newer — Ministral, Mistral Small 3.x/4, Magistral, Devstral, modern Codestral, Pixtral, Mistral Medium 3.x, `mistral-vibe-cli`, `mistral-large-2512`/`-3`, and the proprietary `mistral:` API models. Built ID-by-ID against the live catalog with hard excludes first, because the naming has landmines: anything under `nvidia/` is Llama-family despite the "nemo" substring, **except the Nemotron 3 line, which really is Tekken** (the `-omni` variants and every other Nemotron generation stay excluded); Mixtral / Mistral-7B / first-gen Codestral / any `-v0.x` are legacy SentencePiece; `-embed`/`-ocr`/`-moderation`/`voxtral`/`saba` are non-chat; and `mistral-large-2407`/`-2411` predate Tekken (they ship `tokenizer.json` + SentencePiece, no `tekken.json`). One canonical repo covers the whole line — Nemo (v3) and Magistral (v11) have byte-identical used-vocab (verified 2026-07-06).
+
+**DeepSeek splits into two families, but they share a BPE.** V3/V3.1/V3.2/R1 use `deepseek-ai/DeepSeek-V3`; V4-Pro/V4-Flash use `deepseek-ai/DeepSeek-V4-Pro`. The V4 file has a different content hash and is ~1.5MB smaller, but that is **not** a retrained vocab: `model.vocab` (128000 entries), `model.merges` (127741), `pre_tokenizer`, `normalizer`, `decoder` and `post_processor` all hash byte-identically, with zero token-ID differences. The entire delta is `added_tokens` — 818 in V3 vs 1283 in V4, the 465 extras being IDs 128815–129279 (`<think>`, `<｜begin▁of▁file｜>`, `｜DSML｜`, repo/file markers). They stay separate anyway, because those added tokens are live during encoding: `<think>` costs **3 tokens under V3 and 1 under V4**, which matters for reasoning-model transcripts. On text with no special-token literals the two are numerically identical and no measurement can tell them apart — see "Probing an unknown model" below. `deepseek-r1-distill-*` is excluded from both: those are fine-tunes distilled onto a different base model's tokenizer (Llama/Qwen), which this resolver does not try to guess.
+
+**GLM-4** covers only the verified 4.5–4.7 main line, including the `-air`/`-v` vision variants (identical tokenizer content hash across `GLM-4.5-Air`, `GLM-4.6`, `GLM-4.7`, `GLM-4.5V`, `GLM-4.6V`). `-flash` variants and pre-4.5 releases such as `glm-4-9b-chat` use a different tokenizer and are excluded.
+
+**Kimi K2 is deliberately unmapped.** The plan assumed a converted `tokenizer.json` existed; live-checking `moonshotai/Kimi-K2-Instruct` and every variant and mirror (K2-Thinking, K2.5/2.6/2.7, unsloth, mlx-community) found none. Moonshot ships only a raw `tiktoken.model` ranks file plus a custom `tokenization_kimi.py` loader — tiktoken-family machinery, the same shape as Mistral Tekken, not this HF-fast-tokenizer backend. Deferred, not silently dropped.
 
 ## Verification trail
 

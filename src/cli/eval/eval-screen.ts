@@ -19,6 +19,11 @@ import { statusCircle } from './eval-dots.js';
 import { theme } from '../theme.js';
 import type { EvalReport } from '../../eval/runner.js';
 
+/**
+ * Print the labelled `── id ──` bar, "Prompt:", the prompt text, and a
+ * single-line prompt→response separator (matching `transcript-renderer.ts`
+ * `writeStepSeparator`) to stdout before an eval run. Used by `/eval`.
+ */
 export function printEvalHeader(id: string, prompt: string): void {
   const termWidth = process.stdout.columns || 80;
   const dashCount = Math.max(2, termWidth - 4 - id.length);
@@ -70,8 +75,11 @@ export function printEvalReport(report: EvalReport): void {
   }
 }
 
-// Prints the multi-run results summary (passed/failed/incomplete). Callers guard
-// on more than one run having executed.
+/**
+ * Print the multi-run results summary (passed/failed/incomplete). Shared by the
+ * Custom and HumanEval run loops within `/eval`; callers guard on more than one
+ * run having executed.
+ */
 export function printEvalSummary(passed: number, failed: number, incomplete: number): void {
   console.log('');
   const parts = [
@@ -83,6 +91,10 @@ export function printEvalSummary(passed: number, failed: number, incomplete: num
   console.log(color(`Results: ${parts.join(', ')}`));
 }
 
+/**
+ * The scenario picker body. Its controls hint is pinned to the bottom row via
+ * `list-menu`'s `controls` field rather than rendered inline.
+ */
 export function buildEvalPickerScreen(
   scenarios: CustomEval[],
   selected: number,

@@ -14,6 +14,14 @@ Loads a cached HF `tokenizer.json` into a real BPE `TokenizerEncoder` via `@hugg
 ## Exports
 
 ```typescript
+/**
+ * Reads and `JSON.parse`s the file, then constructs `new Tokenizer(json, {})` —
+ * see the note above for why the empty config argument is safe. Encodes with
+ * `add_special_tokens: false` on every call, matching the tiktoken backend's
+ * `encode(text, [], [])` discipline: per-message overhead stays consistent across
+ * backends via `chat-format.ts`'s shared constant, instead of double-counting a
+ * model's real BOS/EOS injection.
+ */
 loadBpeJsonEncoder(tokenizerJsonPath: string): TokenizerEncoder
 ```
 <!-- END GENERATED EXPORTS -->
@@ -30,13 +38,8 @@ loadBpeJsonEncoder(tokenizerJsonPath: string): TokenizerEncoder
 
 ## Budget
 
-33 / 500 lines (467 to spare).
+41 / 500 lines (459 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `loadBpeJsonEncoder`: reads and `JSON.parse`s the file, then constructs `new Tokenizer(json, {})` — the empty second argument stands in for `tokenizer_config.json`, which this backend never fetches. Verified against `@huggingface/tokenizers`' own source: the library builds `normalizer`/`pre_tokenizer`/`model`/`decoder` directly off `tokenizer.json`'s own top-level fields, and for BPE-type models (every family this backend serves) the config argument is read nowhere in the constructor. This sidesteps DeepSeek's real `tokenizer_config.json` bug (`"tokenizer_class": "LlamaTokenizerFast"` installing a Metaspace pre-tokenizer that drops spaces — huggingface/transformers#45488) by construction, not by special-casing DeepSeek.
-- Encodes with `add_special_tokens: false` for every call, matching the tiktoken backend's `encode(text, [], [])` discipline — keeps per-message overhead consistent across backends via `chat-format.ts`'s shared constant instead of double-counting a model's real BOS/EOS injection.
 
 ## Key Neighbors
 

@@ -10,6 +10,20 @@ Builds the static string injected as the `system` message for every agent turn.
 ## Exports
 
 ```typescript
+/**
+ * `toolNames` must be exactly what the caller put in the tool set — build it with
+ * `offeredToolNames` (`agent/tools/tool-names.ts`) from the same flags passed to
+ * `createTools`. Advertising a tool that is absent sends the model off calling
+ * something that does not exist, and there are two ways to get it wrong:
+ * `agent/parsed-tools.ts` builds its tools with no `spawnAgent` runner, and a
+ * read-only session (the Ctrl+R toggle, `freecode -p`) has no
+ * `create`/`edit`/`shell_exec`.
+ *
+ * `loadAgentsMd` appends the project's instruction file under a
+ * `# Project Instructions (<file>)` header, silently omitted when neither file
+ * exists. See [Project instructions](#project-instructions) for file choice and
+ * caller-only stripping.
+ */
 buildSystemPrompt(loadAgentsMd?: boolean, toolNames?: readonly string[]): string
 ```
 <!-- END GENERATED EXPORTS -->
@@ -26,13 +40,8 @@ buildSystemPrompt(loadAgentsMd?: boolean, toolNames?: readonly string[]): string
 
 ## Budget
 
-68 / 500 lines (432 to spare).
+77 / 500 lines (423 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `loadAgentsMd` defaults to `false`. When `true`, appends the project's instruction file under a `# Project Instructions (<file>)` header; silently omitted if neither file exists. See [Project instructions](#project-instructions) for file choice and caller-only stripping.
-- `toolNames` **must be exactly what the caller put in the tool set** — build it with `offeredToolNames` ([tools/tool-names.md](tools/tool-names.md)) from the same flags passed to `createTools`. It defaults to the full set plus `spawn_agent`. Advertising an absent tool sends the model calling something that is not there, and there are two ways to get it wrong: [parsed-tools.md](parsed-tools.md) builds its tools without a `spawnAgent` runner, and a read-only session (the Ctrl+R toggle, `freecode -p`) has no `create`/`edit`/`shell_exec`. [loop.md](loop.md) passes the right list on both paths.
 
 ## Behavior
 

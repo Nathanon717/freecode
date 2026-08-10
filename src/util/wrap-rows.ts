@@ -22,7 +22,12 @@ export function terminalColumns(): number {
   return process.stdout.columns || envCols || DEFAULT_COLUMNS;
 }
 
-/** Rows one written line occupies once the terminal wraps it. */
+/**
+ * Rows one written line occupies once the terminal wraps it. Logical lines are not
+ * rows — one long line wraps to several — so any budget expressed in logical lines
+ * silently overflows on long content. That is the bug this and `fitLinesToRows`
+ * exist to prevent.
+ */
 export function visualRows(line: string, cols: number): number {
   const width = stripAnsi(line).length;
   if (width === 0 || cols <= 0) return 1;

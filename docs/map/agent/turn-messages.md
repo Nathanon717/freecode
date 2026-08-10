@@ -21,37 +21,6 @@ Text-protocol messages are accepted everywhere and need no translation. Native
 tool messages are the constrained direction, and every export below exists for
 them.
 
-## Export notes
-
-- `dropUnpairedToolCalls` is a **guard rail, not the mechanism**. A tool call
-  persisted without its result 400s the provider on every *later* request too —
-  the one failure mode that bricks a session rather than spoiling a turn. The
-  real invariant lives in [stream-turn.md](stream-turn.md): `runRecoveringStream`
-  only collects response messages from an attempt that **drained**, and those are
-  already balanced. If this function ever drops something, that invariant broke
-  upstream — hence the log line. Do not grow it into an elaborate repair pass.
-- `pairStoppedToolCalls` is the **one** sanctioned repair, and it exists because
-  a turn stopped by Esc breaks that invariant on purpose. `withTurnStop`
-  ([tools/wrappers.md](tools/wrappers.md#turn-stop-esc)) rejects the denied
-  call's `execute` — a call with no result is what stops the AI SDK taking
-  another step — so the attempt drains with exactly one unpaired call, holding
-  the denial text that was already rendered for it. This puts that text back as
-  a real `tool-result`, matched by `toolCallId`. `agent/loop.ts` runs it before
-  anything else sees the turn, so `dropUnpairedToolCalls` still never has work
-  to do. **Without it the guard rail is destructive**: it strips the call, the
-  turn sanitizes to nothing, and `Conversation.commitTurn` drops the user's own
-  message with it — the exact loss `docs/bug log/05-08-2026.md` fixed. The
-  denial texts are consumed in order (the tools run serialized), which affects
-  only which wording lands on which call, never the pairing.
-- `flattenToolMessagesToText` rewrites native tool messages into the text
-  protocol. [parsed-tools.md](parsed-tools.md) and [fake-loop.md](fake-loop.md)
-  call `streamText` with **no `tools` parameter**, so a `role: 'tool'` message
-  left by an earlier native turn is a request referencing tools it never
-  declared — a 400 on OpenAI and several compat providers. Reachable as soon as
-  native turns persist: `/model` from a native model to a parsed-tools one
-  mid-session resends the native history. Both loops flatten their incoming
-  history for this reason.
-
 ## Key neighbors
 
 `agent/conversation.ts` (`commitTurn` calls the sanitizer, and decides whether the
@@ -100,7 +69,8 @@ pairStoppedToolCalls(messages: CoreMessage[], denials: string[]): CoreMessage[]
  * response messages from an attempt that drained, and those are already
  * balanced — except for a turn stopped by Esc, whose one unpaired call
  * `pairStoppedToolCalls` above balances before this ever runs. If this drops
- * something, the invariant upstream broke — hence the log line.
+ * something, the invariant upstream broke — hence the log line. Do not grow it
+ * into an elaborate repair pass.
  */
 dropUnpairedToolCalls(messages: CoreMessage[]): CoreMessage[]
 
@@ -133,5 +103,5 @@ flattenToolMessagesToText(messages: CoreMessage[]): CoreMessage[]
 
 ## Budget
 
-194 / 500 lines (306 to spare).
+195 / 500 lines (305 to spare).
 <!-- END GENERATED MAP FACTS -->

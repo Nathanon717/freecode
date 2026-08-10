@@ -19,6 +19,7 @@ const HUMANEVAL_EXAMPLE_DATA_DEFAULT = resolve(_dirname, '..', '..', 'evals', 'h
 
 const HUMANEVAL_DOWNLOAD_URL = 'https://github.com/openai/human-eval/raw/master/data/HumanEval.jsonl.gz';
 
+/** Follows 301/302 redirects; rejects on a non-200 status or a stream error. */
 export function downloadFile(url: string, dest: string): Promise<void> {
   return new Promise((resolve, reject) => {
     mkdirSync(dirname(dest), { recursive: true });
@@ -69,13 +70,16 @@ function readProblems(): HumanEvalProblem[] {
   return [...example, ...main];
 }
 
-// Resolved path of the HumanEval dataset (env override or bundled default).
+/** Resolved dataset path: the `HUMANEVAL_DATA` override, else the bundled default. */
 export function humanEvalDatasetPath(): string {
   return process.env['HUMANEVAL_DATA'] ?? HUMANEVAL_DATA_DEFAULT;
 }
 
-// Downloads the HumanEval dataset if it is missing, printing progress. Returns
-// false (after printing an error) if the download was needed and failed.
+/**
+ * Download the HumanEval dataset if it is missing, printing progress. Returns
+ * false (after printing an error) when the download was needed and failed.
+ * `downloadFn` is injectable so tests can stub the network.
+ */
 export async function ensureHumanEvalDataset(
   downloadFn: (url: string, dest: string) => Promise<void> = downloadFile,
 ): Promise<boolean> {
@@ -93,8 +97,11 @@ export async function ensureHumanEvalDataset(
   }
 }
 
-// Loads and parses the HumanEval problems. Returns null (after printing an
-// error) if the dataset cannot be read/parsed.
+/**
+ * Load and parse the HumanEval problems. Returns null (after printing an error)
+ * when the dataset cannot be read or parsed. Also honours `HUMANEVAL_EXAMPLE_DATA`,
+ * prepending the example problem when it is present.
+ */
 export function loadHumanEvalProblems(): HumanEvalProblem[] | null {
   try {
     return readProblems();

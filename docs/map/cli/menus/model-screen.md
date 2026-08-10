@@ -36,20 +36,41 @@ interface ModelMenuItem {
   rateLimits?: { buckets: Record<string, { limit: number; intervalMs: number | null }>; observedAt: string };
 }
 
+/**
+ * The `provider:model` preference string, `${providerId}:${modelId}`.
+ */
 modelPreference(item: ModelMenuItem): string
 
+/**
+ * Sort in place, alphabetical by `displayName` within each provider group.
+ */
 sortItemsAlphabetically(items: ModelMenuItem[]): void
 
 filterModelItems(items: ModelMenuItem[], query: string): ModelMenuItem[]
 
+/**
+ * `showProviderHeaders` (default `true`) groups the list under provider name
+ * headers and renders model names in the normal accent colour. When `false` the
+ * headers are omitted and favourites render in gold.
+ */
 buildAllItemLines(items: ModelMenuItem[], selected: number, currentModel: string, showProviderHeaders?: boolean): { itemLines: string[]; selectedLineIdx: number; }
 
+/**
+ * Size the body to the terminal height minus `reserveRows` — the caller passes
+ * the tab-bar height when the picker is multi-provider, so the body never
+ * overflows — and flag off-screen rows with `↑ N more above` / `↓ N more below`.
+ * `emptyMessage` overrides the empty-list body text (default `No models match the
+ * current filter`; the Removed tab passes `No removed models` when unfiltered).
+ */
 buildScreen(items: ModelMenuItem[], selected: number, currentModel: string, viewStart: number, filterQuery: string, reserveRows?: number, showProviderHeaders?: boolean, emptyMessage?: string): { ...; }
 
 /**
- * Every `models` column gets a row, null or not, so the screen is a faithful view
- * of the stored row rather than only its populated half. Derived, non-stored
- * facts (pricing, tokenizer, eval dots, new) stay conditional. See model-screen.md.
+ * The `View` / `→` detail screen. Every `models` DB column gets a row whether or
+ * not it holds a value (`—` when null/unset) — ID, Provider, Display, Context,
+ * Native tools, Favorite, Removed, Settings, Rate limits — so the screen is a
+ * faithful view of the stored row rather than only its populated half. Derived,
+ * non-stored facts (Pricing, Tokenizer, Eval dots, Traits, Status) stay
+ * conditional.
  */
 buildModelDetailScreen(item: ModelMenuItem): string[]
 ```
@@ -67,16 +88,8 @@ buildModelDetailScreen(item: ModelMenuItem): string[]
 
 ## Budget
 
-235 / 500 lines (265 to spare).
+252 / 500 lines (248 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `modelPreference(item)` — returns `${providerId}:${modelId}`.
-- `sortItemsAlphabetically(items)` — sorts in-place, alphabetical by displayName within each provider group.
-- `buildScreen` — sizes the body to the terminal height minus `reserveRows` (caller passes the tab-bar height when the picker is multi-provider so the body never overflows); off-screen rows are flagged with `↑ N more above` / `↓ N more below`. `emptyMessage` overrides the empty-list body text (default `No models match the current filter`; the Removed tab passes `No removed models` when unfiltered).
-- `buildModelDetailScreen(item)` — the `View` / `→` detail screen. Every `models` DB column gets a row whether or not it holds a value (`—` when null/unset): ID, Provider, Display, Context, Native tools, Favorite, Removed, Settings, Rate limits. `contextWindow` / `nativeTools` / `settings` exist on `ModelMenuItem` only to feed this screen and are filled from the stored row by `commands/model.ts`. Derived, non-stored facts (Pricing, Tokenizer, Eval dots, Traits, Status) stay conditional.
-- `showProviderHeaders` (default `true`): when `false`, provider name headers are omitted and favorites render in gold; when `true`, provider headers group the list and model names render in the normal accent color.
 
 ## Key neighbors
 

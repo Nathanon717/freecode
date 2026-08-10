@@ -53,11 +53,6 @@ createMarkdownStreamRenderer(): MarkdownStreamRenderer
 `FORCE_COLOR`
 <!-- END GENERATED MAP FACTS -->
 
-## Export notes
-
-- `renderMarkdown(text)` — renders a complete string; use for OpenAI and parsed-tools paths where the full text is available at once.
-- `createMarkdownStreamRenderer()` — stateful line-buffered streaming renderer; call `.push(chunk)` per incoming chunk (returns ready rendered lines), then `.flush()` at end of stream to emit any remaining partial line. Preserves live token-by-token output.
-
 ## What is rendered
 
 - **ATX headings** (`# ` … `###### `): rendered **bold**, with the `#` markers and any closing run of `#` (`## Foo ##`) stripped. All six levels look identical — the terminal has one weight to spend, so heading level is not conveyed. The text goes through inline rendering first, so `## keep \`isRecord\` **exported**` keeps its code span. The `\s` in `/^#{1,6}\s/` is load-bearing: `#hashtag` and `####### seven` fall through to prose and render verbatim. A heading's following blank line survives, which is the blank on row 2 of the `tests/e2e/agent-markdown-render.e2e.json` block. Since bold is open across the whole line, an over-width heading is always hard-broken by `wrapStyled` rather than left to the terminal to soft-wrap — the same trade any styled prose line already makes (see below). Headings *inside* a fence are never touched — the `inCode` branch of `process` precedes the heading check. Until 2026-07-30 a heading line was dropped entirely, taking its words with it; the e2e scenario pins the current behaviour, so changing it again is a decision rather than an accident.

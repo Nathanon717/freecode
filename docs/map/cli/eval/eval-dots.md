@@ -10,8 +10,14 @@ Chalk-based renderers for eval status circles. The domain logic (history loading
 ## Exports
 
 ```typescript
+/**
+ * A chalk-coloured `●` for one `EvalStatus`.
+ */
 statusCircle(status: EvalStatus): string
 
+/**
+ * A compact string of coloured circles, one per scenario in discovery order.
+ */
 buildEvalDots(model: string, data: EvalDotsData): string
 ```
 <!-- END GENERATED EXPORTS -->
@@ -28,13 +34,8 @@ buildEvalDots(model: string, data: EvalDotsData): string
 
 ## Budget
 
-28 / 500 lines (472 to spare).
+30 / 500 lines (470 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `statusCircle(status)` — returns a chalk-colored `●` string for an `EvalStatus`.
-- `buildEvalDots(model, data)` — returns a compact string of colored circles, one per scenario in discovery order.
 
 ## Key Neighbors
 

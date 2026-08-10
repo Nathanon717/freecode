@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 import { readTextFile } from '../util/text-encoding.js';
 
 const _dirname = dirname(fileURLToPath(import.meta.url));
+/** Absolute path to `evals/custom/`. */
 export const CUSTOM_EVAL_DIR = resolve(_dirname, '..', '..', 'evals', 'custom');
 
 export interface CustomEval {
@@ -21,10 +22,12 @@ export interface CustomEval {
   firstLine: string;
 }
 
+/** `provider:model` → `provider--model`, for filesystem artifact directory naming. */
 export function modelSlug(model: string): string {
   return model.replace(/[:/]/g, '--');
 }
 
+/** Scenarios with both a `prompt.md` and an `eval/check.ts`, sorted by folder name. */
 export function discoverCustomEvals(): CustomEval[] {
   if (!existsSync(CUSTOM_EVAL_DIR)) return [];
   const dirs = readdirSync(CUSTOM_EVAL_DIR, { withFileTypes: true })
@@ -83,8 +86,10 @@ function hashFiles(scenarioDir: string, files: string[]): string {
   return hash.digest('hex');
 }
 
-// Hash of what the agent sees and does (prompt, config, start files).
-// Scoring changes (eval/check.ts edits) do NOT invalidate run-hash matches.
+/**
+ * Hash of what the agent sees and does (prompt, config, start files). Excludes
+ * `eval/`, so scoring changes do not invalidate stored results.
+ */
 export function computeRunHash(scenarioDir: string): string {
   return hashFiles(scenarioDir, [
     join(scenarioDir, 'prompt.md'),
@@ -93,7 +98,7 @@ export function computeRunHash(scenarioDir: string): string {
   ]);
 }
 
-// Full hash including eval/ — retained for grandfathering entries written before run-hash split.
+/** Full hash including `eval/` — retained for entries hashed before the run-hash split. */
 export function computeScenarioHash(scenarioDir: string): string {
   return hashFiles(scenarioDir, [
     join(scenarioDir, 'prompt.md'),

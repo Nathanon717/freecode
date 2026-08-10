@@ -10,6 +10,7 @@ import {
   type EvalDotsData,
 } from '../../eval/history.js';
 
+/** A chalk-coloured `●` for one `EvalStatus`. */
 export function statusCircle(status: EvalStatus): string {
   switch (status) {
     case 'green': return chalk.green('●');
@@ -19,6 +20,7 @@ export function statusCircle(status: EvalStatus): string {
   }
 }
 
+/** A compact string of coloured circles, one per scenario in discovery order. */
 export function buildEvalDots(
   model: string,
   data: EvalDotsData,

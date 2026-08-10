@@ -14,6 +14,25 @@ Loads a cached Mistral `tekken.json` into a `js-tiktoken` `TokenizerEncoder`. Ba
 ## Exports
 
 ```typescript
+/**
+ * Builds a js-tiktoken encoder from a cached `tekken.json`. Three details are
+ * load-bearing:
+ *
+ * - **Vocab slice** to `default_vocab_size - default_num_special_tokens` entries.
+ *   The file ships ~150k but only those are real vocab; including the padding
+ *   ranks lets BPE merge into tokens the real model doesn't have, undercounting.
+ *   The slice is what makes counts match Mistral's canonical `tokenizer.json`
+ *   (verified, not assumed).
+ * - **bpe_ranks format**: js-tiktoken's compact string is one
+ *   `_ <rank> <base64>` line per token (the first field is discarded, the second
+ *   is the rank offset). `token_bytes` is already base64, exactly what that
+ *   format consumes.
+ * - **Ranks go in 0-based as-is**, and `special_tokens` is left empty. The real
+ *   model offsets token ids past its special tokens, but a token *count* depends
+ *   only on relative rank order. Encoding uses empty special lists (via
+ *   `createTiktokenEncoder`), matching every backend's never-throw contract:
+ *   special-token-looking substrings in content tokenize as ordinary text.
+ */
 loadTekkenEncoder(tekkenJsonPath: string): TokenizerEncoder
 ```
 <!-- END GENERATED EXPORTS -->
@@ -30,15 +49,8 @@ loadTekkenEncoder(tekkenJsonPath: string): TokenizerEncoder
 
 ## Budget
 
-47 / 500 lines (453 to spare).
+52 / 500 lines (448 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `loadTekkenEncoder`: reads `{ config, vocab }`, then builds a `js-tiktoken` `Tiktoken` directly — no `mistral-common` preprocessing. Three details are load-bearing:
-  - **Vocab slice:** only the first `config.default_vocab_size - config.default_num_special_tokens` (= 130072 for the current line) entries are the real vocab; the file ships ~150k, the rest are padding. Including the padding lets BPE merge into tokens the real model doesn't have, undercounting. The slice is what makes counts match Mistral's canonical `tokenizer.json` (verified 2026-07-06 by direct count comparison, not assumed).
-  - **bpe_ranks format:** js-tiktoken's compact ranks string is `<ignored> <offset> <base64tok>…` per line; this emits one `_ <rank> <token_bytes>` line per token. `token_bytes` is already base64, exactly what that format consumes.
-  - **Ranks 0-based, `pat_str` = `config.pattern`, empty `special_tokens`:** the real model offsets token ids past its special tokens, but a token *count* only depends on relative rank order, so ranks go in as-is. Encoding uses empty special lists (via `createTiktokenEncoder`), matching every backend's never-throw contract.
 
 ## Key Neighbors
 

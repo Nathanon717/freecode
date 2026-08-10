@@ -5,6 +5,7 @@
 import { realpath } from 'fs/promises';
 import { dirname, isAbsolute, relative, resolve } from 'path';
 
+/** Initialized to `process.cwd()` at module load; `setProjectRoot` replaces it. */
 export let projectRoot: string = process.cwd();
 
 const readFiles = new Set<string>();

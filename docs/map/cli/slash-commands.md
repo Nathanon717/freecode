@@ -48,10 +48,6 @@ showHelp(): void
 75 / 500 lines (425 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Export notes
-
-- `isSlashCommand(input)` — the single predicate for "the dispatcher will handle this, the model will never see it". Any `/`-prefixed input qualifies, including an unknown one (rejected with `No command: …`). Used by [command-dispatcher.md](command-dispatcher.md) for its fallthrough and by [session-modes.md](session-modes.md) to keep slash commands out of the transcript record; keep those two sharing it rather than re-testing the prefix, or the record and the dispatcher can disagree about what a turn is.
-
 ## Commands
 
 ```text

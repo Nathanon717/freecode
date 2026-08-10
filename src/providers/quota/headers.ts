@@ -247,6 +247,10 @@ export function extractCerebrasRateLimitBuckets(headers: Headers | Record<string
 /**
  * Dispatch rate-limit bucket extraction by provider.
  * Covers groq, mistral, cerebras, and OpenAI-compat providers sharing the Groq header shape.
+ *
+ * Each bucket is `{ limit, intervalMs }`. `intervalMs` is fixed for Mistral and
+ * Cerebras (60k / 3.6M / 86.4M ms) and the dynamic reset window for Groq and the
+ * OpenAI-compat providers.
  */
 export function extractOpenAICompatRateLimitBuckets(
   providerId: string,

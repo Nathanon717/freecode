@@ -33,12 +33,21 @@ export const palette = {
   mutedHint: '#808080',
 } as const;
 
-// Getters, not stored values: chalk resolves a hex down to whatever the current
-// `chalk.level` supports when the *builder* is constructed, not when it is
-// called. Building these once at module load would freeze every token at the
-// level detected during import — truecolor `#333333` collapses to basic black
-// if the level is still 0 at that moment. Resolving per access reproduces the
-// inline `chalk.hex(...)` calls these tokens replaced.
+/**
+ * The tokens call sites use. Every entry is a **getter**, not a stored value:
+ * chalk resolves a hex down to whatever the current `chalk.level` supports when
+ * the *builder* is constructed, not when it is called, so building these once at
+ * module load would freeze every token at the level detected during import —
+ * truecolor `#333333` collapses to basic black if the level is still 0 at that
+ * moment. Resolving per access reproduces the inline `chalk.hex(...)` calls these
+ * tokens replaced. Do not "optimize" the getters into plain properties.
+ *
+ * `codeSurface` / `codeSurfaceBg` / `codeSurfaceText` are one colour in three
+ * uses: foreground tint, background with the foreground untouched, and background
+ * with a readable foreground. `rotatingPastel` / `rotatingPastelBg` are the
+ * per-session accent, read live from `banner.ts` on each access and deliberately
+ * absent from `palette`, which holds one fixed value per role.
+ */
 export const theme = {
   /** Warning text and the degraded eval status dot. */
   get warning() { return chalk.hex(palette.warning); },

@@ -92,10 +92,14 @@ export async function getSelectableModels(includeRemoved = false): Promise<Model
 
 type ModelPickResult = { item: ModelMenuItem; saveDefault: boolean } | null;
 
-// Returns true if the interactive picker was shown (screen left blank on close),
-// false for early exits that leave text output behind. The bottom-UI teardown/
-// restore lifecycle is owned by runMenuShell; `onRestore` carries the session
-// footer refresh that can't move into this module.
+/**
+ * Returns true if the interactive picker was shown (screen left blank on close),
+ * false for early exits that leave text output behind. The bottom-UI
+ * teardown/restore lifecycle is owned by `runMenuShell`; `onRestore` carries the
+ * session footer refresh that cannot move into this module
+ * (`applyModelChange` / `resetBottomPromptState` / `refreshFooterDailySpend` /
+ * `drawBottomUI`).
+ */
 export async function runModelCommand(
   rl: Interface,
   currentModel: string,

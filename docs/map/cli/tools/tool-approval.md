@@ -27,16 +27,57 @@ type ToolApprovalChoice = "approve" | "deny";
  *
  * The header is non-negotiable, the preamble is best-effort: a preamble longer than
  * the screen can never be held, and shrinking the preview to nothing chasing it
- * helps no one.
+ * helps no one (`MIN_PREVIEW_ROWS`).
+ *
+ * `agent/tools/index.ts` calls this at preview-*write* time, not at confirm time:
+ * by the time `confirmToolCallInteractive` runs the preview is already on the
+ * terminal and it is too late to trim.
  */
 getApprovalPreviewRowBudget(rowsAbove: ToolCallHeaderRows): number | null
 
 askQuestion(rl: Interface, prompt: string): Promise<string>
 
+/**
+ * Ask the user to approve one tool call. Enter confirms; Escape resolves
+ * `{ approved: false, stopTurn: true }` — a denial like any other, not a thrown
+ * abort. There is deliberately no denial-feedback prompt and no selection to
+ * move, so every other key is ignored.
+ *
+ * This is the **only** producer of `stopTurn`. A plain Deny, a read-only-mode
+ * denial and the scripted tool-call cap are all ordinary denials that let the
+ * turn continue. The flag is honoured in the tools layer
+ * (`agent/tools/wrappers.ts` `withTurnStop`), not here and not in
+ * `cli/session-modes.ts`, which passes the confirmation straight through: the
+ * usual `Tool call denied by user: …` result renders, and only then does the turn
+ * end. Two earlier designs failed here — Escape threw `UserAbortError` and unwound
+ * the whole turn, discarding completed tool calls; then it denied without
+ * stopping, so the model was called again for every auto-denial (both in
+ * `docs/bug log/05-08-2026.md`).
+ *
+ * `getTokenCount` is a **thunk, not a value, and is evaluated on a deferred
+ * timer**: it yields a `{ tokens, exact }` prefixing the hint with `+N tokens ·`
+ * (exact encoder) or `+N tokens appx ·` (generic estimate) — how much approving a
+ * read-only call adds to the model's context. The controls paint immediately and
+ * the hint repaints with the prefix once the count resolves, because the first
+ * count compiles the tokenizer (a one-time ~1s synchronous cost) and evaluating it
+ * inline would stall the hint from appearing at all. This module stays
+ * model-agnostic: it invokes the thunk and renders the result, never touching the
+ * tokenizer. Omitted for tools with no precomputed result.
+ *
+ * On the footer path (`isFooterUIActive()`) it draws no header row — the tool call
+ * header is already flowed into the transcript by `agent/tools/index.ts` just above.
+ */
 confirmToolCallInteractive(rl: Interface, _preview: ToolCallPreview, getTokenCount?: (() => TokenCount) | undefined): Promise<ToolCallConfirmation>
 
 formatScriptedToolMenu(choice: ToolApprovalChoice): void
 
+/**
+ * Accepts `y`/`yes`/`approve`/`a` (approve) or `n`/`no`/`deny`/`d` (deny); null
+ * for anything else. Scripted mode keeps its own deny-with-message flow
+ * (`ToolCallConfirmation.message`), which the interactive UI no longer offers;
+ * that field is still used by the read-only and scripted tool-call-cap denials in
+ * `cli/session-modes.ts`.
+ */
 parseScriptedToolChoice(input: string | undefined): ToolApprovalChoice | null
 ```
 <!-- END GENERATED EXPORTS -->
@@ -53,19 +94,8 @@ parseScriptedToolChoice(input: string | undefined): ToolApprovalChoice | null
 
 ## Budget
 
-303 / 500 lines (197 to spare).
+344 / 500 lines (156 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `getApprovalPreviewRowBudget(rowsAbove)` — how many terminal rows a pending-approval preview may occupy and still leave the content above it on screen; `null` when no footer UI is active (no hint is drawn, so the preview is unbounded). Lives here because the budget is this module's own geometry: `scrollHeight - header - APPROVAL_MENU_ROWS`. That constant is held at 3 (the historical footer-plus-hint reservation); the hint now draws on the terminal's last row rather than inside the scroll region, so the constant is over-conservative but never clips the header. Called from `agent/tools/index.ts` at preview-write time: by the time `confirmToolCallInteractive` runs, the preview is already on the terminal and it is too late to trim. The header is treated as non-negotiable and `preamble` as best-effort — a preamble taller than the screen can never be held, so the budget stops yielding at `MIN_PREVIEW_ROWS` rather than starve the preview chasing it.
-- `confirmToolCallInteractive` — Enter confirms; Escape resolves `{ approved: false, stopTurn: true }` — a denial like any other, not a thrown abort. This is the **only** producer of `stopTurn`: a plain Deny, a read-only-mode denial and the scripted tool-call cap are ordinary denials that let the turn continue. The flag is honoured in the tools layer ([../../agent/tools/wrappers.md](../../agent/tools/wrappers.md#turn-stop-esc)), not here and not in `cli/session-modes.ts` (which passes the confirmation straight through): the usual `Tool call denied by user: …` result renders, and only then does `withTurnStop` end the turn. Two earlier designs failed here — Escape threw `UserAbortError` and unwound the whole turn, discarding completed tool calls, then denied without stopping, so the model was called again for every auto-denial (both in `docs/bug log/05-08-2026.md`). There is deliberately no denial-feedback prompt and no selection to move: every other key is ignored. On the footer path (`isFooterUIActive()`) it draws no header row — the tool call header is already flowed into the transcript by `agent/tools/index.ts` just above.
-  - **Token-count prefix:** the optional `getTokenCount` thunk (supplied by `cli/session-modes.ts`, closing over `preview.resultText` + the active model) yields a `{ tokens, exact }` that prefixes the hint with `+N tokens ·` (exact encoder) or `+N tokens appx ·` (generic estimate) — how much approving this read-only call adds to the model's context. It is a **thunk, not a value, and evaluated on a deferred timer**: the confirm controls paint immediately, then the hint repaints with the prefix once the count resolves. This is deliberate — the first count compiles the tokenizer (a one-time ~1 s synchronous cost), so evaluating it inline would stall the whole hint from appearing. The compile blocks the loop while it runs, but the controls are already on screen and any keypress queued during it is handled right after. This module stays model-agnostic: it invokes the thunk and renders the result, never touching the tokenizer itself. Omitted for tools with no precomputed result, where the prefix is empty.
-  - **Footer hidden during the prompt:** the scroll region is left pinned (never torn down). `drawToolApprovalHintAbsolute` blanks the footer's own rows and draws the hint on the terminal's **literal last row**, so the hint owns the bottom of the screen with no status bar beneath it. The footer refresh timer is frozen for the prompt's duration (`suspendFooterTimer`) so its 1 s tick can't repaint the footer rows and clobber the hint. See `docs/bug log/tool-approval-footer-hidden.md`.
-  - **Erasing the hint on settle:** the keypress handler writes **no** newline — the absolute hint sits on the terminal's last row, so a bare `\n` would scroll it up one line into the transcript before it could be cleared. The `finally` block does the erasing so the controls line never persists past the decision: footer runs clear the last row (`\x1b[rows;1H\x1b[2K`), then `resumeFooterTimer` + `drawFooter` repaint the footer and the cursor is restored so continued transcript output flows from the scroll region's bottom. Inline runs clear the parked cursor's line in place (`\r\x1b[2K`). See `docs/bug log/17-07-2026b.md` and `docs/bug log/tool-approval-hint-conpty.md`.
-  - **The restore path forks on `isTurnActive()`** ([../chrome/turn-state.md](../chrome/turn-state.md)), not just on whether the input UI was up. Now that the input bar survives an agent turn, `restoreInputUI` is *true* mid-turn where it used to be false, so the old `setupInputUI`-else-`parkCursorInScrollRegion` fork would have parked the cursor at the typing caret and painted the next streamed byte inside the input frame. Mid-turn the cursor must both **start and end** in the scroll region: `setupInputUI` opens the frame's rows with newlines written from wherever the cursor sits, and the hint erase above leaves it on the terminal's last row, outside the region entirely — without the leading park those newlines scroll the screen rather than the region. Outside a turn (a hand-typed tool call) the caret park is still what you want.
-    - **Windows/conpty:** before `session.close` releases raw mode, the footer path parks the cursor at the top (`\x1b[1;1H`). conpty echoes the buffered Enter CR as `\r\n` on the return to cooked mode; parked on the last row that newline scrolls the hint up a row so the `finally` clear misses it (same failure class as the bare-`\n` bug, different newline source). Parking off the row makes the echo scroll nothing. Inert on Linux (no CR echo) and on the inline path. See `docs/bug log/tool-approval-hint-conpty.md`.
-- `parseScriptedToolChoice` — accepts `y/yes/approve/a` (approve) or `n/no/deny/d` (deny); returns `null` for anything else. Scripted mode keeps its own deny-with-message flow (`ToolCallConfirmation.message`), which the interactive UI no longer offers; the field is still used by the read-only and scripted tool-call-cap denials in `cli/session-modes.ts`.
 
 ## Responsibilities
 

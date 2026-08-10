@@ -18,6 +18,9 @@ getInputBuffer(): string
 
 getCursorPos(): number
 
+/**
+ * Replace the buffer and move the cursor to the end.
+ */
 setInputBuffer(input: string): void
 
 insertAtCursor(text: string): void
@@ -30,6 +33,10 @@ moveCursorLeft(): void
 
 moveCursorRight(): void
 
+/**
+ * Place the caret at an absolute buffer offset, clamped into range. Used by the
+ * hand-typed tool-call tabstop navigation (Tab / Backspace between value slots).
+ */
 setCursorPos(pos: number): void
 
 moveCursorHome(): void
@@ -57,16 +64,8 @@ cursorToVisualPos(buf: string, cursor: number, w: number): { visualRow: number; 
 
 ## Budget
 
-114 / 500 lines (386 to spare).
+117 / 500 lines (383 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `getInputBuffer()` — current flat buffer string (newlines embedded for multi-line).
-- `getCursorPos()` — current cursor index within the flat buffer.
-- `setInputBuffer(input)` — replaces buffer and moves cursor to end.
-- `setCursorPos(pos)` — places the caret at a clamped absolute offset; used by tool-call tabstop navigation in `session-modes.ts`.
-- `visualRowsForLine` / `cursorToVisualPos` — used by `bottom-ui.ts` to convert buffer positions to screen coordinates.
 
 ## Key neighbors
 

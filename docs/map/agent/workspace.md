@@ -10,6 +10,9 @@ Provides the current project root and per-root file read tracking to tool module
 ## Exports
 
 ```typescript
+/**
+ * Initialized to `process.cwd()` at module load; `setProjectRoot` replaces it.
+ */
 projectRoot: string
 
 setProjectRoot(path: string): void
@@ -42,12 +45,8 @@ resolveWritableProjectPath(path: string): Promise<ResolvedProjectPath>
 
 ## Budget
 
-71 / 500 lines (429 to spare).
+72 / 500 lines (428 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `projectRoot` is initialized to `process.cwd()` at module load.
 
 ## Used By
 

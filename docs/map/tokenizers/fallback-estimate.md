@@ -10,10 +10,24 @@ The permanent fallback token estimator for any model with no exact tokenizer bac
 ## Exports
 
 ```typescript
+/**
+ * Real BPE token count for the wrong model family — the permanent fallback
+ * for any model with no exact tokenizer backend, not a stopgap. Special-token
+ * strings (e.g. "<|endoftext|>") are encoded as ordinary text via empty
+ * allowed/disallowed-special lists: js-tiktoken throws on them by default,
+ * but a real chat request sends user content as plain text too, so this is
+ * both the accurate and the non-throwing behavior.
+ */
 estimateTextTokens(text: string): number
 
+/**
+ * Thin wrapper over `chat-format.ts`'s `countMessageTokens`, bound to `estimateTextTokens`.
+ */
 estimateMessageTokens(message: CoreMessage): number
 
+/**
+ * Thin wrapper over `chat-format.ts`'s `countContextTokens`, bound to `estimateTextTokens`.
+ */
 estimateContextTokens(messages: CoreMessage[]): number
 ```
 <!-- END GENERATED EXPORTS -->
@@ -30,13 +44,8 @@ estimateContextTokens(messages: CoreMessage[]): number
 
 ## Budget
 
-29 / 500 lines (471 to spare).
+33 / 500 lines (467 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `estimateTextTokens`: lazily creates a single module-level `js-tiktoken` `o200k_base` encoder and returns its real BPE token count.
-- `estimateMessageTokens` / `estimateContextTokens`: thin wrappers over [chat-format.md](chat-format.md)'s `countMessageTokens`/`countContextTokens`, bound to `estimateTextTokens`. The overhead formula and content-stringification logic live there now (extracted in Phase 2 so `backends/tiktoken.ts` can reuse them); this file only supplies the `o200k_base` encoder.
 
 ## Used By
 

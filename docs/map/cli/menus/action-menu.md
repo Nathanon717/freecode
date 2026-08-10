@@ -45,10 +45,6 @@ class InlineActionMenu {
 52 / 500 lines (448 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Export notes
-
-- `InlineActionMenu` manages action sub-menu state, rendering, and key handling; spliced inline below the selected row in any list-picker screen.
-
 ## Usage
 
 ```typescript

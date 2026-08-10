@@ -147,12 +147,18 @@ function askContinuePrompt(rl: Interface, message: string): Promise<boolean> {
 
 interface RetryStatusInfo { name: string; label: string; targetMs: number }
 
-// Builds the poll callback that watches `retryStatusFile` for rate-limit events.
-// On each tick, when a *new* event appears (a targetMs not seen before) it asks the
-// user whether to continue, calling `onDecline` if they decline. Re-prompts are
-// suppressed while a prompt is open and for any targetMs already handled; read
-// errors are swallowed. State (`promptingUser`, `lastSeenTargetMs`) lives in the
-// returned closure, so the caller just installs it on a timer.
+/**
+ * Build the poll callback that watches `retryStatusFile` for rate-limit events;
+ * `runHumanEvalProblems` installs it on a 500ms `setInterval`.
+ *
+ * On each tick, when a *new* event appears (a targetMs not seen before) it asks
+ * the user whether to continue, calling `onDecline` if they decline. Re-prompts
+ * are suppressed while a prompt is open and for any targetMs already handled;
+ * read errors are swallowed. The guard state (`promptingUser`,
+ * `lastSeenTargetMs`) lives in the returned closure, so the caller just installs
+ * it on a timer. Exported with injectable `ask`/`onDecline` so the poll branches
+ * are unit-testable without driving the whole run loop.
+ */
 export function makeRetryPrompter(
   retryStatusFile: string,
   ask: (message: string) => Promise<boolean>,

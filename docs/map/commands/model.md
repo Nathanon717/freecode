@@ -14,6 +14,14 @@ export { type ModelMenuItem, filterModelItems, buildAllItemLines } from '../cli/
 
 getSelectableModels(includeRemoved?: boolean): Promise<ModelMenuItem[]>
 
+/**
+ * Returns true if the interactive picker was shown (screen left blank on close),
+ * false for early exits that leave text output behind. The bottom-UI
+ * teardown/restore lifecycle is owned by `runMenuShell`; `onRestore` carries the
+ * session footer refresh that cannot move into this module
+ * (`applyModelChange` / `resetBottomPromptState` / `refreshFooterDailySpend` /
+ * `drawBottomUI`).
+ */
 runModelCommand(rl: Interface, currentModel: string, setSelectedModel: (model: string) => void, onRestore?: (() => void) | undefined): Promise<boolean>
 ```
 <!-- END GENERATED EXPORTS -->
@@ -30,14 +38,8 @@ runModelCommand(rl: Interface, currentModel: string, setSelectedModel: (model: s
 
 ## Budget
 
-385 / 500 lines (115 to spare).
+389 / 500 lines (111 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `ModelMenuItem`, `filterModelItems`, and `buildAllItemLines` are re-exported from `cli/menus/model-screen.ts` for a stable import surface.
-
-Built on the shared menu layers ([menu-shell](../cli/menus/menu-shell.md), [list-menu](../cli/menus/list-menu.md); `onRestore` carries the session footer refresh — `applyModelChange`/`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`). The picker builds a **`♥` Favourites tab** (leftmost, present when ≥1 favourite exists), one tab per provider, and a **`⊘` Removed tab** (always present, always last). Each tab owns its filter query, viewport, and `displayItems`; the favorites set and `actionMenu` are shared in the enclosing scope. `renderBody` wraps `buildScreen` (reserved tab-bar rows, `showProviderHeaders`), `renderDetail` = `buildModelDetailScreen`, `actionMenu` = Select/View/Edit/Remove (the Removed tab uses a second `InlineActionMenu` instance with Restore in place of Remove). Favourites (`←`), filter typing/backspace, and Space-default are handled in `tab.onKey` (both `←` and Space-default are gated off on the Removed tab) (ignores stray escape sequences so e.g. Up at the tab row never leaks into the filter), via `ctx.getSelected`/`ctx.setSelected`. Opens on Favourites tab if the current model is a favourite, else its provider tab. Run loop: `runModelBody`.
 
 ## Model Discovery
 
@@ -49,6 +51,10 @@ Built on the shared menu layers ([menu-shell](../cli/menus/menu-shell.md), [list
 4. Flags any `provider:model` key marked `removed` (`getRemovedKeys()`) and filters those out before returning. `includeRemoved: true` keeps them in the list (still flagged) — only `runModelBody` passes it, splitting the result into `items` / `removedItems` so the Removed tab has something to show. Pricing is resolved for visible models only, so a just-restored model has no pricing badge until the picker is reopened.
 
 The selected model string is always `providerId:modelId`.
+
+## Picker Composition
+
+Built on the shared menu layers ([menu-shell](../cli/menus/menu-shell.md), [list-menu](../cli/menus/list-menu.md)). The picker builds a **`♥` Favourites tab** (leftmost, present when ≥1 favourite exists), one tab per provider, and a **`⊘` Removed tab** (always present, always last). Each tab owns its filter query, viewport, and `displayItems`; the favourites set and `actionMenu` are shared in the enclosing scope. `renderBody` wraps `buildScreen` (reserved tab-bar rows, `showProviderHeaders`), `renderDetail` is `buildModelDetailScreen`, and `actionMenu` is Select/View/Edit/Remove — the Removed tab uses a second `InlineActionMenu` instance with Restore in place of Remove. Favourites (`←`), filter typing/backspace and Space-default are handled in `tab.onKey` via `ctx.getSelected`/`ctx.setSelected`, which ignores stray escape sequences so Up at the tab row never leaks into the filter; `←` and Space-default are gated off on the Removed tab. Opens on the Favourites tab when the current model is a favourite, else on its provider tab. Run loop: `runModelBody`.
 
 ## TTY Picker
 

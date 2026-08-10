@@ -11,6 +11,7 @@ let cursorPos = 0;
 export function getInputBuffer(): string { return lastInputBuf; }
 export function getCursorPos(): number { return cursorPos; }
 
+/** Replace the buffer and move the cursor to the end. */
 export function setInputBuffer(input: string): void {
   lastInputBuf = input;
   cursorPos = input.length;
@@ -37,8 +38,10 @@ export function deleteAtCursor(): void {
 export function moveCursorLeft(): void { if (cursorPos > 0) cursorPos--; }
 export function moveCursorRight(): void { if (cursorPos < lastInputBuf.length) cursorPos++; }
 
-// Places the caret at an absolute buffer offset, clamped into range. Used by the
-// hand-typed tool-call tabstop navigation (Tab / Backspace between value slots).
+/**
+ * Place the caret at an absolute buffer offset, clamped into range. Used by the
+ * hand-typed tool-call tabstop navigation (Tab / Backspace between value slots).
+ */
 export function setCursorPos(pos: number): void {
   cursorPos = Math.max(0, Math.min(pos, lastInputBuf.length));
 }

@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-The raw terminal protocol the bottom UI is built from — current rows/columns, scroll-region (DECSTBM), cursor addressing, line erase, and cursor save/restore. Pure sequences with no knowledge of the footer, input frame, or any layout.
+The raw terminal protocol the bottom UI is built from — rows/columns, scroll-region (DECSTBM), cursor addressing, line erase, cursor save/restore — with no knowledge of the footer, input frame, or any layout. Every operation has a `…Sequence()` form returning the string, plus a writing form where a caller needs one; prefer the former so a frame goes out in one `process.stdout.write`.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
@@ -11,12 +11,12 @@ The raw terminal protocol the bottom UI is built from — current rows/columns, 
 
 ```typescript
 /**
- * Current terminal height in rows, with a conservative fallback for a detached stdout.
+ * Current terminal height in rows; falls back to 24 when stdout is not a TTY.
  */
 rows(): number
 
 /**
- * Current terminal width in columns, with a conservative fallback for a detached stdout.
+ * Current terminal width in columns; falls back to 80 when stdout is not a TTY.
  */
 cols(): number
 
@@ -24,7 +24,8 @@ cols(): number
  * DECSTBM — set the scroll region to rows `top`..`bottom` (1-based, inclusive).
  * Note that DECSTBM also homes the cursor to (1,1); wrap it in
  * `saveCursorSequence()` / `restoreCursorSequence()` when the caller's cursor
- * position still matters.
+ * position still matters. A caller that absolute-positions immediately
+ * afterwards (teardown, resize) does not need to.
  */
 setScrollRegionSequence(top: number, bottom: number): string
 
@@ -42,7 +43,7 @@ moveToSequence(row: number, col: number): string
 moveTo(row: number, col: number): void
 
 /**
- * Erases the cursor's row without moving the cursor.
+ * `\x1b[2K` — erases the cursor's row without moving the cursor or touching scrollback.
  */
 clearLineSequence(): string
 
@@ -63,15 +64,8 @@ restoreCursorSequence(): string
 
 ## Budget
 
-55 / 500 lines (445 to spare).
+56 / 500 lines (444 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- Each operation comes in a `…Sequence()` form that returns the string and, where a caller needs it, a writing form. Prefer the `…Sequence()` form when building one batched `process.stdout.write` — a single write keeps the terminal from painting a half-updated frame.
-- `rows()` / `cols()` fall back to 24×80 when stdout is not a TTY, so callers never divide by an undefined geometry.
-- `setScrollRegionSequence` / `setScrollRegion` — **DECSTBM also homes the cursor to (1,1).** Any caller whose cursor position still matters must bracket it with `saveCursorSequence()` / `restoreCursorSequence()`; `setupFooterUI` does exactly this so the startup banner is not overwritten by the next `console.log`. Callers that immediately absolute-position afterwards (teardown, resize) don't need to.
-- `clearLineSequence()` is `\x1b[2K` — erases the cursor's row without moving the cursor, and without touching the scrollback.
 
 ## Key neighbors
 

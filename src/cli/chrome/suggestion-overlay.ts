@@ -39,7 +39,8 @@ export function captureOverlay(n: number, startRow: number, scrollHeight: number
 
 /**
  * Escape sequence that repaints the covered rows from the snapshot, and clears
- * it. Returns '' when no overlay is open, so callers can concatenate blindly.
+ * it — there is no separate close call. Returns '' when no overlay is open, so
+ * callers can concatenate blindly.
  */
 export function composeOverlayRestore(width: number): string {
   if (overlayRows === 0) return '';

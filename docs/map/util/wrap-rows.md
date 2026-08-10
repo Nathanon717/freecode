@@ -20,7 +20,10 @@ Counts the terminal rows soft-wrapped text actually occupies, for callers that m
 terminalColumns(): number
 
 /**
- * Rows one written line occupies once the terminal wraps it.
+ * Rows one written line occupies once the terminal wraps it. Logical lines are not
+ * rows — one long line wraps to several — so any budget expressed in logical lines
+ * silently overflows on long content. That is the bug this and `fitLinesToRows`
+ * exist to prevent.
  */
 visualRows(line: string, cols: number): number
 
@@ -47,17 +50,12 @@ fitLinesToRows<T>(lines: T[], maxRows: number, render: (line: T) => string): T[]
 
 ## Budget
 
-48 / 500 lines (452 to spare).
+53 / 500 lines (447 to spare).
 
 ## Env
 
 `COLUMNS`
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `visualRows` / `fitLinesToRows` — exist because logical lines are not rows: one long line wraps to several. Any budget expressed in logical lines silently overflows on long content, which is the whole bug these prevent.
-- `fitLinesToRows(lines, maxRows, render)` — generic over the line element (`T`), so callers can fit either plain strings (the read/create/text preview) or richer entry objects (the edit diff's `{ text, type, num }` rows) as long as `render` maps one to the text actually written (indent, colour). The wrap math then measures what lands on screen. Reserves one row for the caller's own "… (N more lines)" note, and always keeps at least one line so a single over-long line still shows its head.
 
 ## Key neighbors
 

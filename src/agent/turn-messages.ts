@@ -110,7 +110,8 @@ export function pairStoppedToolCalls(messages: CoreMessage[], denials: string[])
  * response messages from an attempt that drained, and those are already
  * balanced — except for a turn stopped by Esc, whose one unpaired call
  * `pairStoppedToolCalls` above balances before this ever runs. If this drops
- * something, the invariant upstream broke — hence the log line.
+ * something, the invariant upstream broke — hence the log line. Do not grow it
+ * into an elaborate repair pass.
  */
 export function dropUnpairedToolCalls(messages: CoreMessage[]): CoreMessage[] {
   const resultIds = pairedResultIds(messages);

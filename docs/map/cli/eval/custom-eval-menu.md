@@ -33,10 +33,6 @@ runEvalScenarios(chosen: CustomEval[], model: string): Promise<void>
 360 / 500 lines (140 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Export notes
-
-- `getEvalStatus` is re-exported from `cli/eval/eval-dots.ts`.
-
 ## Custom eval tab (`buildCustomEvalTab`)
 
 - The scenario list (discovered numbered folders in `evals/custom/`, requiring `prompt.md` + `eval/check.ts`) becomes the **Custom** tab of the unified menu (`cli/eval/eval-menu.ts`, which discovers scenarios + history and composes the tabs). Up/Down navigate, Enter opens the Run/View/Edit action menu, `→` opens detail, `a` runs all, Esc closes.

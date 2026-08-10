@@ -15,12 +15,26 @@ Renders the eval picker list, scenario detail view, and pass/fail report to the 
 ## Exports
 
 ```typescript
+/**
+ * Print the labelled `── id ──` bar, "Prompt:", the prompt text, and a
+ * single-line prompt→response separator (matching `transcript-renderer.ts`
+ * `writeStepSeparator`) to stdout before an eval run. Used by `/eval`.
+ */
 printEvalHeader(id: string, prompt: string): void
 
 printEvalReport(report: EvalReport): void
 
+/**
+ * Print the multi-run results summary (passed/failed/incomplete). Shared by the
+ * Custom and HumanEval run loops within `/eval`; callers guard on more than one
+ * run having executed.
+ */
 printEvalSummary(passed: number, failed: number, incomplete: number): void
 
+/**
+ * The scenario picker body. Its controls hint is pinned to the bottom row via
+ * `list-menu`'s `controls` field rather than rendered inline.
+ */
 buildEvalPickerScreen(scenarios: CustomEval[], selected: number, history: EvalHistoryEntry[], model: string, scenarioHashes: Map<string, ScenarioHashes>): string[]
 
 buildEvalDetailScreen(scenario: CustomEval, entry: EvalHistoryEntry | null, model: string): string[]
@@ -39,11 +53,5 @@ buildEvalDetailScreen(scenario: CustomEval, entry: EvalHistoryEntry | null, mode
 
 ## Budget
 
-165 / 500 lines (335 to spare).
+177 / 500 lines (323 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `printEvalHeader` — prints the labeled `── id ──` bar, "Prompt:", the prompt text, and a single-line prompt→response separator (matching `transcript-renderer.ts` `writeStepSeparator`) to stdout before an eval run; used by `/eval`.
-- `buildEvalPickerScreen` — controls hint is pinned to the bottom row via `list-menu`'s `controls` field (not rendered inline).
-- `printEvalSummary` — shared by the Custom and HumanEval run loops within `/eval`; called when more than one run executed.

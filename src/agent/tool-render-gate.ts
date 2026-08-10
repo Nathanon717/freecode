@@ -56,6 +56,7 @@ export function endToolRenderGate(): void {
 /**
  * Called by `execute` before it renders the tool-call header. Resolves immediately
  * when the gate is not armed (non-native paths) or a permit is already banked.
+ * A lost release can never hang the agent: waiting is bounded by a safety timeout.
  */
 export async function awaitToolRenderGate(): Promise<void> {
   if (!active) return;

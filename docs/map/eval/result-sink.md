@@ -53,12 +53,6 @@ writeFinalResult(path: string, result: FinalResultEntry): void
 78 / 500 lines (422 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Export notes
-
-- `writeResultPlaceholder`: Appends an initial placeholder entry (tokens=0, provider/model info) so the footer reflects the correct model immediately.
-- `makePartialResultUpdater`: Returns an `onPartialResult` callback; merges quota info into the last entry as soon as the first API response arrives.
-- `writeFinalResult`: Replaces the placeholder with the full result (tokens, quota, model) after the agent loop completes.
-
 ## IPC Contract (INV-4)
 
 The file at `FREECODE_RESULT_JSON` is a JSON array of entries. The write sequence is:

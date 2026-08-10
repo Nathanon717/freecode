@@ -122,6 +122,10 @@ extractCerebrasRateLimitBuckets(headers: Record<string, string> | Headers): Reco
 /**
  * Dispatch rate-limit bucket extraction by provider.
  * Covers groq, mistral, cerebras, and OpenAI-compat providers sharing the Groq header shape.
+ *
+ * Each bucket is `{ limit, intervalMs }`. `intervalMs` is fixed for Mistral and
+ * Cerebras (60k / 3.6M / 86.4M ms) and the dynamic reset window for Groq and the
+ * OpenAI-compat providers.
  */
 extractOpenAICompatRateLimitBuckets(providerId: string, headers: Headers): Record<string, ObservedRateLimitBucket>
 ```
@@ -139,14 +143,8 @@ extractOpenAICompatRateLimitBuckets(providerId: string, headers: Headers): Recor
 
 ## Budget
 
-249 / 500 lines (251 to spare).
+253 / 500 lines (247 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `ObservedRateLimitBucket` = `{ limit: number; intervalMs: number | null }`. `intervalMs` is fixed for Mistral/Cerebras (60k/3.6M/86.4M ms) and the dynamic reset-window for Groq/OpenAI.
-- `extractOpenAICompatRateLimitBuckets` acts as a dispatcher: routes to mistral/cerebras/groq extractors by `providerId`.
-- Snapshot parsers (`parse*`, `groqHeadersToSnapshot`) return live remaining/limit data for UI display; `extract*Buckets` functions return limit-ceiling data for persistence in `models.json`.
 
 ## Key Neighbors
 

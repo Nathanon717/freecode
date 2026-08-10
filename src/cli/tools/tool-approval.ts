@@ -53,7 +53,11 @@ const MIN_PREVIEW_ROWS = 3;
  *
  * The header is non-negotiable, the preamble is best-effort: a preamble longer than
  * the screen can never be held, and shrinking the preview to nothing chasing it
- * helps no one.
+ * helps no one (`MIN_PREVIEW_ROWS`).
+ *
+ * `agent/tools/index.ts` calls this at preview-*write* time, not at confirm time:
+ * by the time `confirmToolCallInteractive` runs the preview is already on the
+ * terminal and it is too late to trim.
  */
 export function getApprovalPreviewRowBudget(
   rowsAbove: ToolCallHeaderRows,
@@ -231,6 +235,36 @@ async function readToolApprovalMenu(
   return choice;
 }
 
+/**
+ * Ask the user to approve one tool call. Enter confirms; Escape resolves
+ * `{ approved: false, stopTurn: true }` — a denial like any other, not a thrown
+ * abort. There is deliberately no denial-feedback prompt and no selection to
+ * move, so every other key is ignored.
+ *
+ * This is the **only** producer of `stopTurn`. A plain Deny, a read-only-mode
+ * denial and the scripted tool-call cap are all ordinary denials that let the
+ * turn continue. The flag is honoured in the tools layer
+ * (`agent/tools/wrappers.ts` `withTurnStop`), not here and not in
+ * `cli/session-modes.ts`, which passes the confirmation straight through: the
+ * usual `Tool call denied by user: …` result renders, and only then does the turn
+ * end. Two earlier designs failed here — Escape threw `UserAbortError` and unwound
+ * the whole turn, discarding completed tool calls; then it denied without
+ * stopping, so the model was called again for every auto-denial (both in
+ * `docs/bug log/05-08-2026.md`).
+ *
+ * `getTokenCount` is a **thunk, not a value, and is evaluated on a deferred
+ * timer**: it yields a `{ tokens, exact }` prefixing the hint with `+N tokens ·`
+ * (exact encoder) or `+N tokens appx ·` (generic estimate) — how much approving a
+ * read-only call adds to the model's context. The controls paint immediately and
+ * the hint repaints with the prefix once the count resolves, because the first
+ * count compiles the tokenizer (a one-time ~1s synchronous cost) and evaluating it
+ * inline would stall the hint from appearing at all. This module stays
+ * model-agnostic: it invokes the thunk and renders the result, never touching the
+ * tokenizer. Omitted for tools with no precomputed result.
+ *
+ * On the footer path (`isFooterUIActive()`) it draws no header row — the tool call
+ * header is already flowed into the transcript by `agent/tools/index.ts` just above.
+ */
 export async function confirmToolCallInteractive(
   rl: Interface,
   _preview: ToolCallPreview,
@@ -287,6 +321,13 @@ export function formatScriptedToolMenu(choice: ToolApprovalChoice): void {
   console.log(choice === "deny" ? chalk.inverse("> Deny") : "  Deny");
 }
 
+/**
+ * Accepts `y`/`yes`/`approve`/`a` (approve) or `n`/`no`/`deny`/`d` (deny); null
+ * for anything else. Scripted mode keeps its own deny-with-message flow
+ * (`ToolCallConfirmation.message`), which the interactive UI no longer offers;
+ * that field is still used by the read-only and scripted tool-call-cap denials in
+ * `cli/session-modes.ts`.
+ */
 export function parseScriptedToolChoice(
   input: string | undefined,
 ): ToolApprovalChoice | null {

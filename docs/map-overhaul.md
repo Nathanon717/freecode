@@ -65,32 +65,6 @@ Tail sections are only ever fetched one page at a time.
 
 ## Decisions
 
-### Export Notes are deleted, prose moves to the declaration
-
-55 pages carry `## Export notes`. The content is real — per-export semantics a signature
-cannot hold — but it is a JSDoc comment that took a detour into a separate file, and the
-exports generator now lifts JSDoc for every export.
-
-**This one is an editorial pass, not a codemod** — re-measured against the corpus with the
-exports generator in place, which is what changed the picture:
-
-- **152 bullets are keyed** by a backticked identifier that resolves to an export or to a
-  member of an exported interface. Keyed is not the same as mechanical.
-- **40 of those 152 land on a declaration that already has a JSDoc comment.** Every one is
-  a judgement call — the two texts agree, complement, or contradict — and a script that
-  appends blindly gets all three wrong.
-- **27 bullets are unkeyed** and 1 block is non-bullet prose. Most unkeyed bullets are
-  module-level facts (`tokenizers/model-family.md`'s four "why this family is/isn't
-  mapped" notes, `providers/user-blocklist.md`'s four file-format rules), which belong in
-  the tail or `@role`, not on any one declaration.
-
-The other reason to read rather than move: a good share of the keyed bullets restate the
-signature they sit under (*"`getInputBuffer()` — current flat buffer string"*), which
-`docs/map/README.md` already tells authors not to write. Moving those into source would
-relocate the noise instead of deleting it, and `Exports` prints it on every read of the
-page from then on. Judge each bullet against the signature the generator now emits beside
-it: **delete, merge, or move**.
-
 ### Sections deleted outright
 
 - **`Update Triggers`** (51 pages). Roughly 40 restate the Role — *"update this page when
@@ -137,23 +111,22 @@ evidence that shelved them. Do not re-derive them here.
 
 ## Phases
 
-1. **Source migration** — keyed export-note bullets onto declarations.
-2. **Page codemod** — case-fold headings, promote inline fields, reorder, delete superseded
+1. **Page codemod** — case-fold headings, promote inline fields, reorder, delete superseded
    sections, `Note` → `Notes`. Then the manual residue: ~11 Update Triggers rescues, 5
-   Used By rescues, 21 freeform export bullets + 5 prose blocks, 12 pages the parser
-   reports as carrying orphan prose outside any section, 10 over-length Roles.
-3. **Enforcement** — `check-map.ts` gains canonical-section and size-cap checks; the
+   Used By rescues, 12 pages the parser reports as carrying orphan prose outside any
+   section, 10 over-length Roles.
+2. **Enforcement** — `check-map.ts` gains canonical-section and size-cap checks; the
    doc-reference report lands in `docs:generate`. `Read When` becomes mandatory here and
    not before: 42 modules have no `@readwhen`, and authoring them is the single largest
    manual cost in the overhaul.
-4. **Retire this file.**
+3. **Retire this file.**
 
-Roughly 80% of the corpus change is deterministic. The manual residue is ~60 small edits
-once `Read When` is deferred; leaving it mandatory would have added 42 authored sections.
+Most of the codemod is deterministic; the manual residue is ~30 small edits once
+`Read When` is deferred, and leaving it mandatory would have added 42 authored sections.
 
 `npm run map -- sections <file>` and `role '**'` are the instruments each remaining phase is
 verified with: the section manifest they read is the array every generator and check must
-also read, and its `legacy` entries are exactly what phases 1–3 delete.
+also read, and its `legacy` entries are exactly what phases 1–2 delete.
 
 ## Retirement
 

@@ -105,16 +105,14 @@ const SYSTEM_PROMPT = `You audit a codebase map for drift. You are given one sou
 The map is an agent-navigation layer, not documentation. Its rules:
 - It exists purely for token reduction: it lets an agent decide which files matter WITHOUT reading them.
 - Pages are deliberately terse. Brevity is correct, not a defect.
-- A page carries: purpose; "read when"; export notes (intent that signatures cannot convey); key neighbors; update triggers.
+- Purpose and "read when" are generated from the source file's @role/@readwhen tags, and per-export intent is generated from each export's JSDoc. What is written on the page itself is the free-form tail below those blocks.
 - Pages must NOT duplicate reference facts, exhaustive API listings, or implementation detail.
-- The page's generated blocks (auto-synced export signatures) have been REMOVED before you see it. Their absence is not drift, and missing signature/API coverage is never drift.
+- EVERY generated block has been REMOVED before you see it — purpose, "read when", export signatures, neighbors, tests, budget and env are all gone. You are seeing only the authored tail. Their absence is not drift, and missing purpose/signature/API coverage is never drift.
 
-Drift is ONLY where the page's prose asserts something the code contradicts or no longer supports:
-- a stated purpose the file no longer has,
-- "read when" guidance pointing at behaviour that moved elsewhere or no longer exists,
+Drift is ONLY where the tail's prose asserts something the code contradicts or no longer supports:
 - named neighbors, exports, symbols, flags, or files that the code no longer references,
 - claims about behaviour the code contradicts,
-- a substantial responsibility the file now owns that the page's purpose statement actively misrepresents.
+- a substantial responsibility the file now owns that the tail actively misrepresents.
 
 Incompleteness is NOT drift. Terseness is NOT drift. Wanting more detail is NOT drift.
 

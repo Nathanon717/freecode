@@ -24,12 +24,16 @@ const COLOR_STATE_PATH = join(
   "banner-color.json",
 );
 
+/** Reset ANSI state and the scroll region, then clear both the visible screen and scrollback. */
 export function clearEntireTerminal() {
   process.stdout.write("\x1b[0m\x1b[r\x1b[H\x1b[2J\x1b[3J\x1b[H");
 }
 
-// Like redrawBanner() but preserves scrollback (`\x1b[2J` not `\x1b[3J`) — safe to
-// call on a resize where the banner is the only thing on screen (no transcript yet).
+/**
+ * Like `redrawBanner()` but preserves scrollback (`\x1b[2J`, not `\x1b[3J`) — the
+ * resize handler in `bottom-ui.ts` calls it only when the banner is the one thing
+ * on screen (no transcript yet), to redraw it responsively at the new width.
+ */
 export function clearAndRedrawBanner() {
   process.stdout.write("\x1b[0m\x1b[r\x1b[H\x1b[2J\x1b[H");
   const cols = process.stdout.columns ?? 80;
@@ -74,11 +78,17 @@ try {
   /* ignore */
 }
 
+/** A chalk instance for the current banner pastel. */
 export function getBannerColor(): ChalkInstance {
   const [r, g, b] = PASTEL_COLORS[currentBannerColorIdx];
   return chalk.rgb(r, g, b);
 }
 
+/**
+ * The current banner pastel as an `[r, g, b]` tuple. `cli/theme.ts` wraps it as
+ * the `rotatingPastel` / `rotatingPastelBg` tokens; background-styled call sites
+ * go through those rather than building `chalk.bgRgb(...)` themselves.
+ */
 export function getBannerColorRGB(): [number, number, number] {
   return PASTEL_COLORS[currentBannerColorIdx];
 }
@@ -110,6 +120,7 @@ const COMPACT_BANNER = [
   "",
 ].join("\n");
 
+/** Clear the terminal and print the banner in the next persisted colour, advancing the colour index. */
 export function showBanner() {
   clearEntireTerminal();
   const cols = process.stdout.columns ?? 80;
@@ -118,6 +129,7 @@ export function showBanner() {
   startOverlayEpoch(); // Exclude the just-drawn banner from overlay repaints.
 }
 
+/** Clear the terminal (scrollback included) and redraw the banner without advancing the colour. */
 export function redrawBanner() {
   clearEntireTerminal();
   const cols = process.stdout.columns ?? 80;

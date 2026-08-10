@@ -14,10 +14,18 @@ TOKENS_PER_MESSAGE_OVERHEAD: 4
 
 TOKENS_PER_REQUEST_OVERHEAD: 2
 
+/**
+ * Handles plain strings, arrays, `{ text }` / `{ content }` parts, and a JSON fallback for anything else.
+ */
 stringifyMessageContent(value: unknown): string
 
 countMessageTokens(message: CoreMessage, encodeText: (text: string) => number): number
 
+/**
+ * Parameterized over `encodeText` rather than hardwired to one encoder, so any
+ * backend that can turn text into a token count builds a `TokenizerEncoder` on
+ * top of this and `countMessageTokens`.
+ */
 countContextTokens(messages: CoreMessage[], encodeText: (text: string) => number): number
 ```
 <!-- END GENERATED EXPORTS -->
@@ -34,13 +42,8 @@ countContextTokens(messages: CoreMessage[], encodeText: (text: string) => number
 
 ## Budget
 
-41 / 500 lines (459 to spare).
+47 / 500 lines (453 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `stringifyMessageContent`: handles plain strings, arrays, `{ text }`/`{ content }` parts, and a JSON fallback for anything else. Moved here unchanged from `fallback-estimate.ts`.
-- `countMessageTokens` / `countContextTokens`: identical arithmetic to Phase 1's `estimateMessageTokens`/`estimateContextTokens`, but parameterized over an `encodeText` function instead of being hardwired to the `o200k_base` fallback encoder. Any backend that can turn text into a token count can build a `TokenizerEncoder` on top of these.
 
 ## Used By
 

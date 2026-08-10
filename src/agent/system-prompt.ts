@@ -23,11 +23,20 @@ function stripCallerOnly(text: string): string {
   return text.replace(CALLER_ONLY, '').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-// `toolNames` must be exactly what the caller put in the tool set — use
-// `offeredToolNames` with the same flags. Advertising a tool that is absent sends
-// the model off calling something that does not exist: the prompt-based tool
-// protocol (agent/parsed-tools.ts) has no spawn_agent, and a read-only session
-// (the Ctrl+R toggle, `freecode -p`) has no create/edit/shell_exec.
+/**
+ * `toolNames` must be exactly what the caller put in the tool set — build it with
+ * `offeredToolNames` (`agent/tools/tool-names.ts`) from the same flags passed to
+ * `createTools`. Advertising a tool that is absent sends the model off calling
+ * something that does not exist, and there are two ways to get it wrong:
+ * `agent/parsed-tools.ts` builds its tools with no `spawnAgent` runner, and a
+ * read-only session (the Ctrl+R toggle, `freecode -p`) has no
+ * `create`/`edit`/`shell_exec`.
+ *
+ * `loadAgentsMd` appends the project's instruction file under a
+ * `# Project Instructions (<file>)` header, silently omitted when neither file
+ * exists. See [Project instructions](#project-instructions) for file choice and
+ * caller-only stripping.
+ */
 export function buildSystemPrompt(
   loadAgentsMd = false,
   toolNames: readonly string[] = offeredToolNames({ spawnAgent: true }),

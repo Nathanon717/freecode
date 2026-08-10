@@ -14,6 +14,9 @@ type CommandDispatchResult = 'continue' | 'exit';
 
 type ModelListMode = 'current-only' | 'full';
 
+/**
+ * The dependency bundle `runCliSession()` assembles and passes to every command.
+ */
 interface CommandRuntime {
   projectRoot: string;
   session: Conversation;
@@ -50,16 +53,12 @@ dispatchCommand(input: string, runtime: CommandRuntime): Promise<CommandDispatch
 
 ## Budget
 
-259 / 500 lines (241 to spare).
+260 / 500 lines (240 to spare).
 
 ## Env
 
 `FREECODE_RESULT_JSON`
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `CommandRuntime` is the dependency bundle assembled and passed by `runCliSession()`.
 
 ## Slash Commands
 

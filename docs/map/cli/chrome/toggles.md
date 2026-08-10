@@ -12,20 +12,49 @@ Holds runtime state for the footer toggle bar — Show toggle names (label visib
 ```typescript
 type AskMode = 'ask' | 'auto';
 
+/**
+ * Seed the auto-run toggle from persisted config (called once at startup).
+ *
+ * The `A` toggle reads as **Auto-run tools**, so its on state (index 0) is
+ * `AskMode` `'auto'` and its off state is `'ask'` — the display sense is
+ * inverted, while the `AskMode` values and `config.toolConfirmation` are not.
+ */
 initAskMode(mode: AskMode): void
 
+/**
+ * Seed the read-only toggle at startup. Interactive sessions leave it off and let
+ * the user press Ctrl+R; headless `-p` (`cli/headless-prompt.ts`) seeds it for the
+ * whole run — on by default, off under `--edit` — rather than threading a separate
+ * read-only flag around. Same reason it forces `initAskMode('auto')`: there is no
+ * interactive channel to confirm on, and the off switch for confirmations is here.
+ */
 initReadOnly(on: boolean): void
 
 getAskMode(): AskMode
 
 isReadOnly(): boolean
 
+/**
+ * State of the leftmost `S` toggle: when on, every toggle renders its full label. Off by default.
+ */
 areToggleNamesShown(): boolean
 
+/**
+ * Advance the toggle whose display char matches (case-insensitive); false when none does.
+ */
 cycleByChar(char: string): boolean
 
+/**
+ * The toggle bar as an ANSI string: grey `ctrl+ `, then each toggle's char in
+ * banner art colour (foreground when off, background + black when on), single-space
+ * separated. Under `areToggleNamesShown()` each char carries the grey remainder of
+ * its first state's label. Visible length is `toggleBarWidth()`.
+ */
 composeToggleBar(): string
 
+/**
+ * Visible (non-ANSI) character count of the toggle bar.
+ */
 toggleBarWidth(): number
 ```
 <!-- END GENERATED EXPORTS -->
@@ -42,17 +71,8 @@ toggleBarWidth(): number
 
 ## Budget
 
-105 / 500 lines (395 to spare).
+121 / 500 lines (379 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `cycleByChar(char)` — advances the toggle whose `char` matches; returns `true` when a toggle was found.
-- `areToggleNamesShown()` — state of the leftmost `S` toggle; when on, every toggle renders its full label. Off by default.
-- `getAskMode()` / `initAskMode(mode)` — the `A` toggle reads as **Auto-run tools**, so its on state (index 0) is `AskMode` `'auto'` and its off state is `'ask'`. The `AskMode` values and `config.toolConfirmation` are unchanged; only the display sense is inverted.
-- `initReadOnly(on)` — seeds the `R` toggle. Interactive sessions leave it off (the user presses Ctrl+R); [../headless-prompt.md](../headless-prompt.md) seeds it for the whole run — on by default, off under `--edit` — so `-p` reuses this state rather than threading a separate read-only flag. Same reason it forces `initAskMode('auto')`: there is no interactive channel to confirm on, and "off switch for confirmations" already exists here.
-- `composeToggleBar()` — ANSI string prefixed with grey `ctrl+ `, then each toggle rendered as its char in banner art color (fg when off; bg+black when on), single-space separated. When `areToggleNamesShown()`, each char is followed by the grey remainder of the first state's label (e.g. `Auto-run tools`, `Read-only`).
-- `toggleBarWidth()` — visible character count of the toggle bar.
 
 ## Adding a new toggle
 

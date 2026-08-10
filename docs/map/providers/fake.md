@@ -57,7 +57,9 @@ interface FakeModelResult {
    * and may lack that newline, so a caller that reports what was painted (the
    * transcript step state machine) must use this instead: told the text ends
    * without a newline, the renderer emits a second blank line before the next
-   * tool call that is not on screen.
+   * tool call that is not on screen. `fake-loop.ts` feeds this to
+   * `notifyTranscriptChunk`; getting it wrong put a phantom blank line above
+   * every tool call (`docs/bug log/29-07-2026b.md`).
    */
   writtenText: string;
   usage: FakeUsage;
@@ -104,16 +106,12 @@ runFakeModel(call: FakeModelCall): Promise<FakeModelResult>
 
 ## Budget
 
-434 / 500 lines (66 to spare).
+436 / 500 lines (64 to spare).
 
 ## Env
 
 `FREECODE_FAKE_LLM`, `FREECODE_FAKE_LLM_SCRIPT`, `FREECODE_FAKE_LLM_TRACE`
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `FakeModelResult.text` vs `.writtenText` — `text` is the model's own output (what goes into history and the trace); `writtenText` is what this module actually painted, i.e. the chunks plus the newline it appends to terminate the step. Anything reporting *what is on screen* must use `writtenText`: `fake-loop.ts` feeds it to `notifyTranscriptChunk`, and getting that wrong put a phantom blank line above every tool call (see `docs/bug log/29-07-2026b.md`).
 
 ## Execution Paths
 

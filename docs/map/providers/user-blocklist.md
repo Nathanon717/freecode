@@ -20,16 +20,23 @@ The file is a bare JSON array and nothing else, so it doubles as the viewing/edi
 ```typescript
 /**
  * Keys (`provider:modelId`) the user has permanently blocklisted.
+ *
+ * Cached in memory after the first read. Reads are lenient by design: a
+ * hand-edited file keeps its well-formed entries and drops the rest, and an
+ * unparseable file reads as empty rather than throwing — a blocklist that fails
+ * to load must never break startup.
  */
 getUserBlocklist(): Set<string>
 
 /**
- * True if `provider:modelId` is on the user blocklist.
+ * True if `provider:modelId` is on the user blocklist. Matching is on the whole
+ * key, never a substring — unlike `modelIdBlocklist`.
  */
 isUserBlocklisted(providerId: string, modelId: string): boolean
 
 /**
- * Add a key to the blocklist and persist it. No-op if already present.
+ * Add a key to the blocklist and persist it. No-op if already present. Writes are
+ * sorted and pretty-printed, to keep the file readable and diff-stable.
  */
 addToUserBlocklist(key: string): void
 
@@ -52,15 +59,8 @@ resetUserBlocklistCache(): void
 
 ## Budget
 
-68 / 500 lines (432 to spare).
+81 / 500 lines (419 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- The parsed list is cached in-memory after the first read; `resetUserBlocklistCache()` exists for tests, which point `$FREECODE_HOME` at a temp dir per case.
-- Reads are lenient by design: a hand-edited file keeps its well-formed entries and drops the rest, and an unparseable file reads as empty rather than throwing. A blocklist that fails to load must never break startup.
-- Writes are sorted and pretty-printed to keep the file readable and diff-stable.
-- Matching is on the whole `provider:modelId` key — never a substring, unlike `modelIdBlocklist`.
 
 ## Key Neighbors
 

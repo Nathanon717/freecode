@@ -12,6 +12,11 @@ Built on the shared menu layers ([menu-shell](../cli/menus/menu-shell.md), [list
 ## Exports
 
 ```typescript
+/**
+ * `onRestore` carries the session footer refresh (`resetBottomPromptState` /
+ * `refreshFooterDailySpend` / `drawBottomUI`) that cannot move into this module;
+ * the shell fires it after `setupBottomUI` when the bottom UI was active on a TTY.
+ */
 runConfigCommand(rl: Interface, currentModel?: string, onRestore?: (() => void) | undefined): Promise<void>
 ```
 <!-- END GENERATED EXPORTS -->
@@ -28,12 +33,8 @@ runConfigCommand(rl: Interface, currentModel?: string, onRestore?: (() => void) 
 
 ## Budget
 
-396 / 500 lines (104 to spare).
+401 / 500 lines (99 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `runConfigCommand`: `onRestore` carries session footer refresh (`resetBottomPromptState`/`refreshFooterDailySpend`/`drawBottomUI`) that can't move into this module; the shell fires it after `setupBottomUI` when the bottom UI was active on a TTY.
 
 ## Tabs
 

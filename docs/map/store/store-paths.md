@@ -15,18 +15,28 @@ Resolves where the local store lives on disk and how its libSQL sync credentials
 ## Exports
 
 ```typescript
+/**
+ * `$FREECODE_STORE`, else `<package root>/.freecode`.
+ */
 getStoreDir(): string
 
+/**
+ * The `file:` URL for `freecode.db` inside the store dir.
+ */
 getDbUrl(): string
 
 /**
- * Path to the config file mirror.
+ * Path to the config file mirror: `config-cache.json` inside the store dir, which
+ * `db.ts` writes so config can be primed at boot without touching libSQL.
  */
 getConfigMirrorPath(): string
 
 /**
- * Sync credentials, env first then `~/.config/freecode/config.json`. Both halves
- * must be present for syncing to engage; a partial pair reads as local-only.
+ * Sync credentials: `FREECODE_DB_SYNC_URL` / `FREECODE_DB_AUTH_TOKEN` take
+ * precedence over `db.syncUrl` / `db.authToken` in `~/.config/freecode/config.json`
+ * (or `$FREECODE_HOME`). Both halves must be present for syncing to engage; a
+ * partial pair reads as local-only. Never throws — a missing or corrupt config
+ * file falls back to the env values.
  */
 readDbConfig(): { syncUrl?: string | undefined; authToken?: string | undefined; }
 ```
@@ -43,19 +53,12 @@ readDbConfig(): { syncUrl?: string | undefined; authToken?: string | undefined; 
 
 ## Budget
 
-49 / 500 lines (451 to spare).
+57 / 500 lines (443 to spare).
 
 ## Env
 
 `FREECODE_DB_AUTH_TOKEN`, `FREECODE_DB_SYNC_URL`, `FREECODE_HOME`, `FREECODE_STORE`
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `getStoreDir()` — `$FREECODE_STORE`, else `<package root>/.freecode`.
-- `getDbUrl()` — the `file:` URL for `freecode.db` inside the store dir.
-- `getConfigMirrorPath()` — `config-cache.json` inside the store dir; the mirror [db.ts](./db.md) writes so config can be primed at boot without touching libSQL.
-- `readDbConfig()` — sync URL + auth token, env (`FREECODE_DB_SYNC_URL` / `FREECODE_DB_AUTH_TOKEN`) taking precedence over `db.syncUrl` / `db.authToken` in `~/.config/freecode/config.json` (or `$FREECODE_HOME`). Both halves must be present for syncing to engage; a partial pair reads as local-only. Never throws — a missing or corrupt config file falls back to the env values.
 
 ## Key neighbors
 

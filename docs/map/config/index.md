@@ -18,12 +18,17 @@ loadConfig(): Config
 
 getConfigPaths(): { globalPath: string; localPath: string; }
 
+/**
+ * One JSON config file, read without merging — `model-data.ts` uses it for legacy migration.
+ */
 readRawConfig(path: string): Partial<Config> | null
 
 /**
  * `overridesAuthoritative` marks a write that intends to change providerOverrides
  * (only the config UI's override editor does). Every other write carries whatever
  * config.json happened to hold, which may be a stale subset of the DB's copy.
+ *
+ * Clears the in-memory cache, so the next `loadConfig()` re-reads disk.
  */
 writeConfigFile(path: string, data: Partial<Config>, overridesAuthoritative?: boolean): void
 
@@ -31,6 +36,12 @@ updateGlobalConfig(patch: Record<string, unknown>): void
 
 saveDefaultModel(model: string): void
 
+/**
+ * Apply the model > provider > global priority cascade. The cascade uses `??`,
+ * not `||`: `autoApproveTokenBudget` is numeric and `0` is meaningful
+ * (auto-approve off), so an override of `0` must beat a non-zero parent rather
+ * than falling through to it.
+ */
 resolveModelSettings(selectedModel: string): Required<OverridableSettings>
 ```
 <!-- END GENERATED EXPORTS -->
@@ -47,18 +58,12 @@ resolveModelSettings(selectedModel: string): Required<OverridableSettings>
 
 ## Budget
 
-244 / 500 lines (256 to spare).
+253 / 500 lines (247 to spare).
 
 ## Env
 
 `FREECODE_HOME`
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `readRawConfig`: reads one JSON config file without merging (used by model-data for legacy migration).
-- `writeConfigFile`: writes JSON config and clears the in-memory cache so the next `loadConfig()` re-reads disk.
-- `resolveModelSettings`: applies model > provider > global priority cascade. The cascade uses `??`, not `||` — `autoApproveTokenBudget` is numeric and `0` is a meaningful value (auto-approve off), so an override of `0` must beat a non-zero parent rather than falling through to it.
 
 ## Defaults
 

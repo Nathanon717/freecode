@@ -28,8 +28,24 @@ interface ToolParam {
   quoted: boolean;
 }
 
+/**
+ * Ordered parameter list per tool, used to autofill the argument skeleton when
+ * a tool call is opened. Mirrors each tool's zod schema in src/agent/tools/ —
+ * order, names, and string-ness must match. A drift guard test in
+ * tests/cli/tool-runner.test.ts checks this against the real schemas.
+ *
+ * Hardcoded rather than derived from the schemas so this file stays off the
+ * `ai` SDK's boot path — the same reason `TOOL_NAMES` / `isToolName` come from
+ * `agent/tools/tool-names.ts`, which has no imports of its own.
+ */
 TOOL_PARAMS: Record<'create' | 'edit' | 'shell_exec' | 'read' | 'grep' | 'list_dir', readonly ToolParam[]>
 
+/**
+ * The `(arg=val, ...)` text to insert after a freshly-typed tool name, plus the
+ * caret offset (into that text) at which the cursor should land — inside the
+ * first param's value slot, i.e. between the quotes of `path=""` or right after
+ * the `=` of a bare param. Tab/Backspace then move between slots.
+ */
 buildToolCallSkeleton(name: "create" | "edit" | "shell_exec" | "read" | "grep" | "list_dir"): { text: string; caret: number; }
 
 interface HighlightRange {
@@ -37,10 +53,25 @@ interface HighlightRange {
   end: number;
 }
 
+/**
+ * Char ranges within `line` naming a valid tool that is the leading token of
+ * the line and is immediately followed by `(`. Used to paint the tool name a
+ * pastel colour while the user types; args and parens stay the default colour.
+ */
 toolNameHighlightRanges(line: string): HighlightRange[]
 
+/**
+ * The identifier ending exactly at `cursor`, returned only when it is a valid
+ * tool name and the leading token of its logical line. Drives the auto-closing
+ * `(` → `()` affordance so it fires only for a genuine tool call.
+ */
 toolNameBeforeCursor(buffer: string, cursor: number): "create" | "edit" | "shell_exec" | "read" | "grep" | "list_dir" | null
 
+/**
+ * Applies theme.toolName to the portions of a rendered chunk that fall within
+ * `ranges` (absolute char offsets in the logical line). Colouring per-chunk —
+ * after the caller's visual-width slicing — keeps wrap math on raw char counts.
+ */
 styleToolNames(chunk: string, chunkStart: number, ranges: HighlightRange[]): string
 
 interface ParsedInvocation {
@@ -48,6 +79,11 @@ interface ParsedInvocation {
   args: Record<string, unknown>;
 }
 
+/**
+ * Parses a whole input line of the form `name(arg=val, ...)`. Returns null when
+ * the line is not a complete, valid tool invocation so it falls through to the
+ * agent. Never throws — malformed args yield a best-effort object.
+ */
 parseToolInvocation(input: string): ParsedInvocation | null
 
 interface FieldSlot {
@@ -61,14 +97,42 @@ interface FieldSlot {
   valEnd: number;
 }
 
+/**
+ * The field slots of a whole-buffer tool-call template (leading whitespace, a
+ * valid tool name, `(`, args, `)`, trailing whitespace), with positions shifted
+ * into absolute buffer offsets. Null when the buffer is not such a template, so
+ * callers fall back to their normal editing behaviour. The single field-slot
+ * walker: Tab/Backspace navigation and argument parsing both derive from it, so
+ * one grammar governs quoted commas and `=` with no drift between them.
+ */
 toolCallSlots(buffer: string): FieldSlot[] | null
 
+/**
+ * Cyclic Tab target: the value slot after the one the cursor sits in (or the
+ * first slot when the cursor is outside any slot). Returns null when the buffer
+ * is not a tool call or has no fields, so Tab falls back to command completion.
+ */
 nextToolFieldCaret(buffer: string, cursor: number): number | null
 
+/**
+ * Backspace at an emptied value slot: navigate rather than eat the skeleton.
+ *  - number → move the caret to the previous slot's value (append point);
+ *  - 'block' → the first slot is empty, swallow the keypress (skeleton stays);
+ *  - null → not at an empty slot start, so do a normal backspace.
+ */
 toolFieldBackspace(buffer: string, cursor: number): number | "block" | null
 
+/**
+ * Drops autofilled-but-untouched args (`key=`, `key=""`) from a submitted tool
+ * call so tabbed-past optional params are simply omitted. Leaves non-tool input
+ * and already-clean calls untouched.
+ */
 stripEmptyToolArgs(input: string): string
 
+/**
+ * Values coerce as: quoted → the literal string, else JSON when it parses, else
+ * the bare string.
+ */
 parseToolArgs(argsText: string): Record<string, unknown>
 ```
 <!-- END GENERATED EXPORTS -->
@@ -85,20 +149,8 @@ parseToolArgs(argsText: string): Record<string, unknown>
 
 ## Budget
 
-323 / 500 lines (177 to spare).
+357 / 500 lines (143 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `TOOL_NAMES` / `isToolName` — re-exported from [../../agent/tools/tool-names.md](../../agent/tools/tool-names.md), not restated here, so there is nothing to keep in sync. That module has no imports, which is what makes it safe on this path (this file must stay off the `ai` SDK's graph).
-- `TOOL_PARAMS` — ordered param list + string-ness per tool, hardcoded to stay off the `ai`-SDK boot path. A drift-guard test in [tool-runner.md](./tool-runner.md) asserts it still matches each tool's real zod schema.
-- `buildToolCallSkeleton(name)` — the `(arg=val, ...)` autofill text + caret offset inserted when `(` is typed after a tool name (strings get `key=""`, others `key=`); consumed by [session-modes.md](../session-modes.md).
-- `nextToolFieldCaret` / `toolFieldBackspace` — Tab cycles forward through value slots; Backspace at an emptied slot steps back instead of eating the skeleton. Both derive from the single field-slot walker (`FieldSlot` / `toolCallSlots`), which also backs argument parsing — one grammar, no drift on quoted commas/`=`.
-- `stripEmptyToolArgs(input)` — on submit, drops autofilled-but-untouched args (`key=`, `key=""`) so tabbed-past optionals are omitted.
-- `toolNameHighlightRanges(line)` / `styleToolNames(chunk, chunkStart, ranges)` — locate a leading tool name immediately followed by `(` and tint it pastel per rendered chunk; consumed by [bottom-ui.md](../chrome/bottom-ui.md).
-- `toolNameBeforeCursor(buffer, cursor)` — gates the autofill-on-`(` affordance in [session-modes.md](../session-modes.md) to genuine tool calls.
-- `parseToolInvocation(input)` — whole-line `name(args)` → `{name, args}` or null (falls through to the agent). Never throws; args are best-effort.
-- Argument values coerce as: quoted → literal string, else JSON when it parses, else the bare string.
 
 ## Key Neighbors
 

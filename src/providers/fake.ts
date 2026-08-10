@@ -75,7 +75,9 @@ export interface FakeModelResult {
    * and may lack that newline, so a caller that reports what was painted (the
    * transcript step state machine) must use this instead: told the text ends
    * without a newline, the renderer emits a second blank line before the next
-   * tool call that is not on screen.
+   * tool call that is not on screen. `fake-loop.ts` feeds this to
+   * `notifyTranscriptChunk`; getting it wrong put a phantom blank line above
+   * every tool call (`docs/bug log/29-07-2026b.md`).
    */
   writtenText: string;
   usage: FakeUsage;

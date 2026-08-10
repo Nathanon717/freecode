@@ -10,8 +10,16 @@ Wraps a `js-tiktoken` encoding as a `TokenizerEncoder`, and registers the GPT-OS
 ## Exports
 
 ```typescript
+/**
+ * Binds a `js-tiktoken` encoding to `chat-format.ts`'s `countContextTokens`, always
+ * encoding with empty allowed/disallowed-special lists — the fallback's
+ * never-throw contract.
+ */
 createTiktokenEncoder(encoding: Tiktoken): TokenizerEncoder
 
+/**
+ * Memoized encoder built from js-tiktoken's bundled `o200k_base` ranks.
+ */
 getGptOssEncoder(): TokenizerEncoder
 ```
 <!-- END GENERATED EXPORTS -->
@@ -28,13 +36,8 @@ getGptOssEncoder(): TokenizerEncoder
 
 ## Budget
 
-42 / 500 lines (458 to spare).
+48 / 500 lines (452 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `createTiktokenEncoder`: binds a `js-tiktoken` encoding to [chat-format.md](../chat-format.md)'s `countContextTokens`, always encoding with empty allowed/disallowed-special lists (matches the fallback's never-throw contract).
-- `getGptOssEncoder`: memoized `TokenizerEncoder` built from js-tiktoken's bundled `o200k_base` ranks.
 
 ## Known inaccuracy — read before trusting GPT-OSS counts as "exact"
 

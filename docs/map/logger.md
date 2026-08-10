@@ -12,8 +12,14 @@ Category-colored stderr logging. Diagnostic logging is disabled by default; erro
 ```typescript
 enableLog(): void
 
+/**
+ * Emits only after `enableLog()` (the `-log` startup flag); a no-op otherwise.
+ */
 log(category: string, message: string, data?: unknown): void
 
+/**
+ * Always writes to stderr regardless of `enableLog` state, with the error text and stack.
+ */
 logError(category: string, message: string, err: unknown): void
 ```
 <!-- END GENERATED EXPORTS -->
@@ -29,13 +35,8 @@ logError(category: string, message: string, err: unknown): void
 
 ## Budget
 
-52 / 500 lines (448 to spare).
+54 / 500 lines (446 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `log`: Only emits when `enableLog()` has been called (`-log` flag at startup); no-op otherwise.
-- `logError`: Always writes to stderr regardless of `enableLog` state; includes the error text and stack trace.
 
 ## Category Colors
 

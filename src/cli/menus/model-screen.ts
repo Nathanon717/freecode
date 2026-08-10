@@ -33,6 +33,7 @@ export interface ModelMenuItem {
   rateLimits?: { buckets: Record<string, { limit: number; intervalMs: number | null }>; observedAt: string };
 }
 
+/** The `provider:model` preference string, `${providerId}:${modelId}`. */
 export function modelPreference(item: ModelMenuItem): string {
   return `${item.providerId}:${item.modelId}`;
 }
@@ -53,6 +54,7 @@ function buildPricingBadge(pricing?: ModelMenuItem['pricing']): string {
   return '';
 }
 
+/** Sort in place, alphabetical by `displayName` within each provider group. */
 export function sortItemsAlphabetically(items: ModelMenuItem[]): void {
   const providers = [...new Set(items.map(x => x.providerId))];
   let idx = 0;
@@ -76,6 +78,11 @@ export function filterModelItems(items: ModelMenuItem[], query: string): ModelMe
   ].some(value => value.toLowerCase().includes(normalized)));
 }
 
+/**
+ * `showProviderHeaders` (default `true`) groups the list under provider name
+ * headers and renders model names in the normal accent colour. When `false` the
+ * headers are omitted and favourites render in gold.
+ */
 export function buildAllItemLines(
   items: ModelMenuItem[],
   selected: number,
@@ -124,6 +131,13 @@ export function buildAllItemLines(
   return { itemLines, selectedLineIdx };
 }
 
+/**
+ * Size the body to the terminal height minus `reserveRows` — the caller passes
+ * the tab-bar height when the picker is multi-provider, so the body never
+ * overflows — and flag off-screen rows with `↑ N more above` / `↓ N more below`.
+ * `emptyMessage` overrides the empty-list body text (default `No models match the
+ * current filter`; the Removed tab passes `No removed models` when unfiltered).
+ */
 export function buildScreen(
   items: ModelMenuItem[],
   selected: number,
@@ -176,9 +190,12 @@ export function buildScreen(
 const NULL_MARK = chalk.dim('—');
 
 /**
- * Every `models` column gets a row, null or not, so the screen is a faithful view
- * of the stored row rather than only its populated half. Derived, non-stored
- * facts (pricing, tokenizer, eval dots, new) stay conditional. See model-screen.md.
+ * The `View` / `→` detail screen. Every `models` DB column gets a row whether or
+ * not it holds a value (`—` when null/unset) — ID, Provider, Display, Context,
+ * Native tools, Favorite, Removed, Settings, Rate limits — so the screen is a
+ * faithful view of the stored row rather than only its populated half. Derived,
+ * non-stored facts (Pricing, Tokenizer, Eval dots, Traits, Status) stay
+ * conditional.
  */
 export function buildModelDetailScreen(item: ModelMenuItem): string[] {
   const lines: string[] = [];

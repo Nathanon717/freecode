@@ -161,6 +161,7 @@ export function getConfigPaths(): { globalPath: string; localPath: string } {
   };
 }
 
+/** One JSON config file, read without merging — `model-data.ts` uses it for legacy migration. */
 export function readRawConfig(path: string): Partial<Config> | null {
   return loadJsonFile<Partial<Config>>(path);
 }
@@ -169,6 +170,8 @@ export function readRawConfig(path: string): Partial<Config> | null {
  * `overridesAuthoritative` marks a write that intends to change providerOverrides
  * (only the config UI's override editor does). Every other write carries whatever
  * config.json happened to hold, which may be a stale subset of the DB's copy.
+ *
+ * Clears the in-memory cache, so the next `loadConfig()` re-reads disk.
  */
 export function writeConfigFile(path: string, data: Partial<Config>, overridesAuthoritative = false): void {
   delete (data as Record<string, unknown>)['preferLocal'];
@@ -216,6 +219,12 @@ export function saveDefaultModel(model: string): void {
   updateGlobalConfig({ defaultModel: model });
 }
 
+/**
+ * Apply the model > provider > global priority cascade. The cascade uses `??`,
+ * not `||`: `autoApproveTokenBudget` is numeric and `0` is meaningful
+ * (auto-approve off), so an override of `0` must beat a non-zero parent rather
+ * than falling through to it.
+ */
 export function resolveModelSettings(selectedModel: string): Required<OverridableSettings> {
   const config = loadConfig();
   const colonIdx = selectedModel.indexOf(':');

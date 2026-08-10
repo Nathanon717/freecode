@@ -148,7 +148,12 @@ interface ToolStep {
 interface ToolCallHeaderRows {
   /** The header itself: lead-in blanks + optional rationale + the call line. */
   header: number;
-  /** The model's response text directly above the header; 0 when it isn't adjacent. */
+  /**
+   * The model's response text directly above the header; 0 when it isn't
+   * adjacent. Measured before the lead-in bumps `toolCount`, so it is 0 for any
+   * parallel call after the step's first — only that first call sits directly
+   * under the response text.
+   */
   preamble: number;
 }
 
@@ -213,23 +218,8 @@ renderTurn(steps: RenderedStep[], opts?: TranscriptRuntimeOptions | undefined): 
 
 ## Budget
 
-398 / 500 lines (102 to spare).
+403 / 500 lines (97 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `DiffEntry` — re-exported from `util/line-diff.ts`; `equal | remove | add` diff entry type.
-- `formatEditFileDiff()` — smart diff renderer; red/green for changed lines, dim for file context. Prefixes every line with a dim right-aligned line-number gutter (removed lines keep old-file numbers, everything else new-file numbers), starting at `startLine`; same gutter format as `read`/`create` (via [util/line-numbers.md](../../util/line-numbers.md)).
-- `formatCreatedFileContent()` — create-file preview; numbers content from line 1 with the shared gutter, then dims/truncates like `formatToolResultPreview`.
-- `formatParsedToolCallLine()` — like `formatToolCallLine` but prefixes `~ `.
-- `formatTranscriptStepDivider(options?)` — returns one raw divider line (no newlines); uses the target stream's column width when `options` is provided.
-- `writeStepSeparator(options?)` — single authority for divider spacing: writes a single full-width divider line with one blank line above and one below, so content is set off from the separator on both sides. Every divider-emitting site (`beginTranscriptTurn` deferred flush, `endTranscriptStep` close) routes through it.
-- Higher-level API (`writeToolCallHeader`, `writeToolStepResult`, `renderToolStep`, `renderTurn`) — sit on top of the format helpers and state machine so that both the live agent path (`tools/index.ts withToolRendering`) and the `/renderer` demo (`commands/renderer.ts`) share one implementation. `writeToolCallHeader` is called BEFORE tool execution; `writeToolStepResult` is called AFTER.
-- `writeToolCallHeader` returns `ToolCallHeaderRows` (wrap included) rather than `void`, and `writeTranscriptToolLeadIn` returns its own rows. Only the approval path reads them — it budgets the preview that follows against the real height of what sits above it, which a constant cannot express because the call line, the rationale and the preamble can all wrap. `preamble` is measured before the lead-in bumps `toolCount`, and is 0 for any parallel call after the step's first: only that first call sits directly under the response text.
-- `TranscriptRenderOptions.maxResultRows` — caps the preview at N terminal rows counting wrap, on top of `maxResultLines`; see [transcript-options.md](./transcript-options.md) for the type and [tool-approval.md](../tools/tool-approval.md) for who sets it. Honoured by both `formatToolResultPreview` and `formatEditFileDiff`: `edit` (like `create`) previews its diff before confirmation, so the diff must also fit the approval row budget or a long change would scroll the call line the user is approving off-screen. Both trim via `fitLinesToRows`, measuring the rendered (gutter + colour) width, and report the dropped count in a "… (N more lines)" footer.
-- Stream routing and the options types live in [transcript-options.md](./transcript-options.md) and are re-exported here; keep importing them from this module. The same goes for the `format*` helpers, which live in [transcript-format.md](transcript-format.md).
-- `ToolStepResult`'s `preformatted` kind is produced only by [transcript-record.md](transcript-record.md), which stores the rendered preview block rather than the raw result behind it. `writeToolResultPreview` writes it verbatim.
-- `writeToolCallHeader`, `writeToolResultPreview`, `writeToolStepResult` and `endTranscriptStep` all feed the transcript record as a side effect, so any caller that renders normally is recorded automatically and a replay cannot drift from the live paint.
 
 ## Desired Turn Layout
 
@@ -257,6 +247,12 @@ The module maintains a single `_step` state object. All callers drive it with th
 - `resetTranscriptTurnState(pendingDivider?)` — drop the turn/step state. Only [transcript-replay.md](transcript-replay.md) needs it, to keep a replay from inheriting the divider the last live turn deferred and to restore that state afterwards.
 - `writeTranscriptToolLeadIn(opts?)` — call from `withToolRendering` in `tools/index.ts` immediately before writing the tool call line. Inserts the correct blank-line separator (blank after response text, blank between parallel tool calls).
 - `endTranscriptStep(hasMore, opts?)` — close the current step. `hasMore=true` writes the combined close+open separator (via `writeStepSeparator`) for the next step; `hasMore=false` defers the closing separator (`_pendingDivider`) so it is only emitted if a next turn begins. No-op when no turn is open.
+
+## Higher-Level API
+
+`writeToolCallHeader`, `writeToolResultPreview`, `writeToolStepResult`, `renderToolStep` and `renderTurn` sit on top of the format helpers and the state machine so the live agent path (`tools/index.ts` `withToolRendering`) and the `/renderer` demo ([../../commands/renderer.md](../../commands/renderer.md)) share one implementation.
+
+`writeToolCallHeader`, `writeToolResultPreview`, `writeToolStepResult` and `endTranscriptStep` all feed the transcript record as a side effect, so any caller that renders normally is recorded automatically and a replay cannot drift from the live paint.
 
 ## Runtime Options
 

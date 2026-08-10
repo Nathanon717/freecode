@@ -31,6 +31,18 @@ Changing prompt wording, the Python check logic, viewport size, run-dir layout, 
 ```typescript
 buildHumanEvalTab<R>(problems: HumanEvalProblem[], results: HumanEvalResultMap, choose: (problems: HumanEvalProblem[]) => R): MenuTab<R>
 
+/**
+ * Build the poll callback that watches `retryStatusFile` for rate-limit events;
+ * `runHumanEvalProblems` installs it on a 500ms `setInterval`.
+ *
+ * On each tick, when a *new* event appears (a targetMs not seen before) it asks
+ * the user whether to continue, calling `onDecline` if they decline. Re-prompts
+ * are suppressed while a prompt is open and for any targetMs already handled;
+ * read errors are swallowed. The guard state (`promptingUser`,
+ * `lastSeenTargetMs`) lives in the returned closure, so the caller just installs
+ * it on a timer. Exported with injectable `ask`/`onDecline` so the poll branches
+ * are unit-testable without driving the whole run loop.
+ */
 makeRetryPrompter(retryStatusFile: string, ask: (message: string) => Promise<boolean>, onDecline: () => void): () => void
 
 runHumanEvalProblems(chosen: HumanEvalProblem[], model: string, rl: Interface): Promise<void>
@@ -49,9 +61,5 @@ runHumanEvalProblems(chosen: HumanEvalProblem[], model: string, rl: Interface): 
 
 ## Budget
 
-313 / 500 lines (187 to spare).
+319 / 500 lines (181 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `makeRetryPrompter` builds the rate-limit retry poll callback used by `runHumanEvalProblems` (installed on a 500ms `setInterval`). It owns the `promptingUser`/`lastSeenTargetMs` guard state and takes injectable `ask`/`onDecline` callbacks; exported so the poll branches can be unit-tested directly without driving the whole run loop.

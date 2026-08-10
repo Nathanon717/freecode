@@ -103,8 +103,11 @@ interface CatalogModel {
 /**
  * Write the provider catalog (display name + context window) for one provider into
  * the store. This is the DB's copy of what the provider says exists; user state on
- * the same row is untouched. Rows whose catalog values already match are skipped, so
- * a launch with an unchanged model list writes nothing.
+ * the same row is untouched — this writer touches only `display_name` and
+ * `context_window`, and the user-state writers never touch those two. Rows whose
+ * catalog values already match are skipped, so a launch with an unchanged model
+ * list writes nothing, and the changed rows go out as one batched
+ * `persistModelCatalogAsync` rather than a sync per row.
  *
  * Callers pass the provider's *final* model list, so blocklisted models never get a
  * row. Models the provider has stopped offering keep theirs.
@@ -138,17 +141,12 @@ saveObservedRateLimits(provider: string, modelId: string, buckets: Record<string
 
 ## Budget
 
-278 / 500 lines (222 to spare).
+281 / 500 lines (219 to spare).
 
 ## Env
 
 `FREECODE_STORE`
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `saveProviderCatalog(provider, models)` / `getProviderCatalog(provider)` — the DB's copy of what a provider says exists. The registry writes it after every successful fetch and reads it back when a fetch fails, so display names and context windows survive offline and sync across machines. Callers pass the provider's **final** model list, so blocklisted models never get a row; models a provider has stopped offering keep theirs. Rows whose catalog values are unchanged are skipped, so a launch with a stable model list writes nothing, and changed rows go out as one batched `persistModelCatalogAsync` rather than a sync per row.
-- The catalog columns and user state share a row but never overwrite each other: `saveProviderCatalog` touches only `display_name`/`context_window`, and the user-state writers never touch those two.
 
 ## Key Neighbors
 

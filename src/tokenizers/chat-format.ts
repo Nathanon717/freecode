@@ -8,6 +8,7 @@ import { buildSystemPrompt } from '../agent/system-prompt.js';
 export const TOKENS_PER_MESSAGE_OVERHEAD = 4;
 export const TOKENS_PER_REQUEST_OVERHEAD = 2;
 
+/** Handles plain strings, arrays, `{ text }` / `{ content }` parts, and a JSON fallback for anything else. */
 export function stringifyMessageContent(value: unknown): string {
   if (typeof value === 'string') return value;
   if (value === null || value === undefined) return '';
@@ -38,6 +39,11 @@ export function countMessageTokens(message: CoreMessage, encodeText: (text: stri
     + encodeText(stringifyMessageContent(message.content));
 }
 
+/**
+ * Parameterized over `encodeText` rather than hardwired to one encoder, so any
+ * backend that can turn text into a token count builds a `TokenizerEncoder` on
+ * top of this and `countMessageTokens`.
+ */
 export function countContextTokens(messages: CoreMessage[], encodeText: (text: string) => number): number {
   return TOKENS_PER_REQUEST_OVERHEAD
     + encodeText(buildSystemPrompt())

@@ -20,29 +20,6 @@ lets the live path, the `/renderer` demo and the post-wipe replay produce
 byte-identical text from the same inputs — the replay's test asserts exactly
 that.
 
-## Export notes
-
-- `formatEditFileDiff()` — smart diff renderer; red/green for changed lines, dim
-  for file context. Prefixes every line with a dim right-aligned line-number
-  gutter (removed lines keep old-file numbers, everything else new-file numbers),
-  starting at `startLine`; same gutter format as `read`/`create` (via
-  [../../util/line-numbers.md](../../util/line-numbers.md)).
-- `formatCreatedFileContent()` — create-file preview; numbers content from line 1
-  with the shared gutter, then dims/truncates like `formatToolResultPreview`.
-- `formatParsedToolCallLine()` — like `formatToolCallLine` but prefixes `~ `.
-- `formatPromptEcho(text, eol?)` — the `> ` echo of a submitted prompt, with
-  continuation lines indented two spaces. Shared by `cli/session-modes.ts`, which
-  prints it live in raw mode (hence the `eol` parameter, which needs `\r\n`), and
-  [transcript-replay.md](transcript-replay.md), which reprints it — so the two
-  cannot drift.
-- `formatTranscriptStepDivider(options?)` — returns one raw divider line (no
-  newlines); uses the target stream's column width when `options` is provided.
-  `writeStepSeparator` in the renderer owns the surrounding blank lines.
-- `formatToolResultPreview()` / `formatEditFileDiff()` both honour
-  `maxResultLines` and `maxResultRows`, trimming via `fitLinesToRows` against the
-  rendered (gutter + colour) width and reporting the dropped count in a
-  "… (N more lines)" footer.
-
 ## Key neighbors
 
 [transcript-renderer.md](transcript-renderer.md) re-exports everything here and
@@ -67,26 +44,50 @@ formatRationaleLine(rationale: string): string
 
 formatToolCallLine(name: string, args: Record<string, unknown>): string
 
+/**
+ * Like `formatToolCallLine`, prefixed with `~ `.
+ */
 formatParsedToolCallLine(name: string, args: Record<string, unknown>): string
 
 /**
  * The `> ` echo of a submitted prompt. Shared by the raw-mode input UI, which
  * prints it live, and the replay, which reprints it — so the two cannot drift.
- * `eol` exists because raw mode needs an explicit carriage return.
+ * `eol` exists because raw mode needs an explicit carriage return (`\r\n`).
+ * Continuation lines are indented two spaces.
  */
 formatPromptEcho(text: string, eol?: string): string
 
 formatToolErrorLine(name: string, err: unknown): string
 
+/**
+ * Honours `maxResultLines` and `maxResultRows`, trimming via `fitLinesToRows`
+ * against the rendered (gutter + colour) width and reporting the dropped count in
+ * a "… (N more lines)" footer.
+ */
 formatToolResultPreview(result: unknown, options?: TranscriptRenderOptions): string
 
 /**
- * Create-file preview: the read tool's line-number gutter from line 1, so create and read read alike.
+ * Create-file preview: the read tool's line-number gutter from line 1, so create
+ * and read read alike, then dimmed and truncated like `formatToolResultPreview`.
  */
 formatCreatedFileContent(content: string, options?: TranscriptRenderOptions): string
 
+/**
+ * Smart diff renderer: red/green for changed lines, dim for file context. Every
+ * line carries a dim right-aligned line-number gutter starting at `startLine`
+ * (removed lines keep old-file numbers, everything else new-file numbers), in the
+ * same format `read`/`create` use via `util/line-numbers.ts`. Honours
+ * `maxResultLines` and `maxResultRows` the same way `formatToolResultPreview`
+ * does: `edit` (like `create`) previews its diff before confirmation, so a long
+ * change must still fit the approval row budget or it scrolls the call line the
+ * user is approving off-screen.
+ */
 formatEditFileDiff(_path: string, oldText: string, newText: string, contextBefore?: string[], contextAfter?: string[], options?: TranscriptRenderOptions, lineIndent?: string, startLine?: number): string
 
+/**
+ * One raw divider line, no surrounding newlines — `writeStepSeparator` in the
+ * renderer owns those. Uses the target stream's column width when `options` is given.
+ */
 formatTranscriptStepDivider(options?: TranscriptRuntimeOptions | undefined): string
 ```
 <!-- END GENERATED EXPORTS -->
@@ -103,7 +104,7 @@ formatTranscriptStepDivider(options?: TranscriptRuntimeOptions | undefined): str
 
 ## Budget
 
-191 / 500 lines (309 to spare).
+215 / 500 lines (285 to spare).
 
 ## Env
 

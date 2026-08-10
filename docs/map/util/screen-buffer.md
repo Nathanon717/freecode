@@ -12,20 +12,71 @@ Intercepts `process.stdout.write` at startup to maintain rolling buffers of rece
 ```typescript
 stripAnsi(str: string): string
 
+/**
+ * Writes bytes that are chrome, not transcript, so the buffer never records them.
+ * The capture filter normally recognises chrome by its cursor/screen escapes, but a
+ * write can be pure layout and still carry none — e.g. the bare newlines that open
+ * rows for the input frame. Recorded, those would surface as phantom blank lines in
+ * overlay repaints and resize scrubs, and would make hasPostEpochContent() claim a
+ * transcript exists on a fresh screen.
+ */
 writeChrome(chunk: string): void
 
+/**
+ * Call once at process startup (`index.ts`); a no-op if already installed.
+ *
+ * A write carrying a full-screen or scrollback erase (`\x1b[…J`, e.g. the
+ * `\x1b[2J` in `clearEntireTerminal` / `clearAndRedrawBanner`) resets the buffer
+ * and the epoch, since nothing previously on screen can sit behind an overlay any
+ * more. A line erase (`\x1b[2K`) does not.
+ */
 installScreenBuffer(): void
 
+/**
+ * Records the current write position as the start of the scroll-region epoch.
+ * Lines before this index (the banner and other chrome) are excluded from
+ * overlay repaints. Call it right after every banner (re)draw so the freshly
+ * printed banner is treated as chrome — not just once at startup, since
+ * /clear, /model, /config, /eval and resize all reprint the banner mid-session
+ * and their banner lines would otherwise leak into overlay repaints. Do NOT
+ * call it from per-turn input reinit that isn't preceded by a screen clear, or
+ * it would discard transcript lines the user can still see.
+ */
 startOverlayEpoch(): void
 
+/**
+ * Whether any transcript has been printed since the current overlay epoch. False
+ * on a fresh/startup screen (only the banner and pre-input chrome are on screen);
+ * true once real conversation output exists. The resize handler uses this to tell
+ * "the banner is what's showing" (redraw it responsively) from "a transcript is
+ * showing" (let the terminal reflow it, don't wipe to the banner).
+ */
 hasPostEpochContent(): boolean
 
 wrapStyledToRows(styled: string, width: number): string[]
 
+/**
+ * Returns the last `rowCount` post-epoch transcript display lines (styled, ANSI
+ * intact), top-padded with blanks when fewer exist. When `width` is given, over-
+ * wide logical lines are wrapped into multiple display rows first, so the result
+ * is exactly what those rows occupy on screen. Used to repaint the scroll region
+ * on resize: the terminal reflows cursor-addressed chrome (the input frame, and a
+ * suggestion overlay) into the transcript as stale duplicates, and the buffer
+ * holds only the clean transcript, so repainting from it erases them.
+ */
 getScreenBufferScrollRegionLines(rowCount: number, width?: number | undefined): string[]
 
 composeScrollRegionScrub(rowCount: number, width: number): string
 
+/**
+ * Returns the lines that should repaint the n overlay rows when a suggestion
+ * list closes.  freecode parks the cursor at the bottom of the scroll region
+ * before writing output, so each newline scrolls content upward and the
+ * bottom row is always blank after printing.  The preceding count-1 rows hold
+ * the last min(L, count-1) lines of scroll-region output, with blank padding
+ * at the top when L < count-1.  Lines are returned with their original ANSI
+ * color codes intact so the restore does not bleach content.
+ */
 getScreenBufferDisplayLinesForOverlay(count: number, _scrollHeight: number): string[]
 ```
 <!-- END GENERATED EXPORTS -->
@@ -41,18 +92,8 @@ getScreenBufferDisplayLinesForOverlay(count: number, _scrollHeight: number): str
 
 ## Budget
 
-192 / 500 lines (308 to spare).
+210 / 500 lines (290 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `installScreenBuffer` — call once at process startup (`index.ts`); no-op if already installed.
-- `startOverlayEpoch` — marks the current write position as the start of the scroll-region epoch; lines before it (banner/chrome) are excluded from overlay repaints. Called after **every** banner (re)draw in `banner.ts`, not just startup, so mid-session banner reprints (/clear, /model, /config, /eval) don't leak into overlay repaints.
-- `hasPostEpochContent` — whether any transcript has been printed since the current epoch. False on a fresh/startup screen (only banner + pre-input chrome), true once real output exists. The `bottom-ui.ts` resize handler branches on it: banner-only → redraw the banner responsively; transcript present → let the terminal reflow it (don't wipe).
-- `writeChrome` — writes bytes that must **not** be recorded, whatever they look like. Capture normally recognises chrome by its cursor/screen escapes, but a write can be pure layout and carry none: `setupInputUI` opens rows for the input frame with bare newlines. Recorded, those become phantom blank lines in overlay repaints and resize scrubs, and make `hasPostEpochContent()` claim a transcript on a fresh screen. Use it for any layout write without an escape; ordinary output must stay captured.
-- A write containing a full-screen / scrollback erase (`\x1b[…J`, e.g. the `\x1b[2J` in `clearEntireTerminal`/`clearAndRedrawBanner`) resets the buffer and the epoch, since nothing previously on screen can sit behind an overlay anymore. Line erase (`\x1b[2K`) does not trigger this.
-- `getScreenBufferDisplayLinesForOverlay` — returns styled lines (ANSI codes intact) needed to repaint `count` overlay rows after a suggestion list closes. Accounts for freecode's cursor-at-bottom-of-scroll-region output model: the bottom overlay row is always blank, the preceding `count-1` rows hold the last epoch lines, top-padded with blanks.
-- `getScreenBufferScrollRegionLines` — returns the last `rowCount` post-epoch transcript lines (styled), top-padded with blanks. The resize handler in `bottom-ui.ts` uses it to repaint the whole scroll region when a suggestion overlay was open, scrubbing the stale duplicate rows the terminal reflows in from the overlay's cursor-addressed writes.
 
 ## Key neighbors
 

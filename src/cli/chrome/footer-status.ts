@@ -12,17 +12,22 @@ let lastQuota: { quota: RateLimitSnapshot; capturedAt: number } | null = null;
 let lastModelStatus = '';
 let lastOpenAIDailySpend: OpenAIDailySpend = { state: 'idle', updatedAt: 0 };
 let retryBannerInfo: { name: string; label: string; targetMs: number } | null = null;
-// The live conversation's context size, as the *provider* reported it — the
-// prompt (input) token count of the most recent API call, which already equals
-// the whole message history because every call resends it. Latest wins; never a
-// running sum (a running sum across eval turns was the old bug). `window` is the model's
-// context window when known, else null. null overall = never measured, so the
-// footer shows nothing rather than a fabricated estimate.
 let lastContextUsage: { tokens: number; window: number | null } | null = null;
 
 export function setQuotaSnapshot(quota: RateLimitSnapshot | null): void {
   lastQuota = quota ? { quota, capturedAt: Date.now() } : null;
 }
+/**
+ * Set the live conversation's context size for the footer's `ctx` slot.
+ *
+ * `tokens` is the *provider-reported* prompt (input) token count of the most
+ * recent API call, which already equals the whole message history because every
+ * call resends it — so this is latest-wins and never a running sum (a running
+ * sum across eval turns was the old bug). `window` is the model's context
+ * window when known, else null. Pass `null` to blank the slot: never measured,
+ * or the model just changed, and the footer shows nothing rather than a
+ * fabricated estimate.
+ */
 export function setContextUsage(usage: { tokens: number; window: number | null } | null): void {
   lastContextUsage = usage;
 }
@@ -41,6 +46,7 @@ export function setRetryBanner(info: { name: string; label: string; targetMs: nu
   retryBannerInfo = info;
 }
 
+/** The retry-banner string for the footer's left side; `''` when no retry is pending. */
 export function formatEvalRunStatus(now = Date.now()): string {
   if (retryBannerInfo) {
     const remaining = Math.max(0, Math.ceil((retryBannerInfo.targetMs - now) / 1000));
@@ -148,13 +154,18 @@ function formatContextStatus(): string {
   return `${tokens} ctx`;
 }
 
-// Lays out the right-side footer content into 1..rowBudget rows.
-// result[0] = bottom (primary) row, result[1] = row above, result[2] = top row.
-// Budget=1 matches the old single-row drop behaviour (existing tests rely on this).
 function joinParts(...parts: string[]): string {
   return parts.filter(Boolean).join(' | ');
 }
 
+/**
+ * Lay out the right-side footer content into 1..`rowBudget` rows. `result[0]` is
+ * the bottom (primary) row, `result[1]` the row above it, and so on.
+ *
+ * Primary-row priority is model → ctx → quota, kept longest to shortest; the
+ * secondary content (OpenAI spend) drops first. `rowBudget` of 1 matches the old
+ * single-row drop behaviour, which existing tests rely on.
+ */
 export function layoutFooterRightRows(width: number, rowBudget: number, now = Date.now()): string[] {
   const quotaStr = formatQuotaStatus(now);
   const dailySpendStr = formatOpenAIDailySpend();

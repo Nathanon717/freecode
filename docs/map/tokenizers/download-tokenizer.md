@@ -10,10 +10,42 @@ Ensures a canonical HF repo file is cached under `.freecode/tokenizers/<family>/
 ## Exports
 
 ```typescript
+/**
+ * Plain HTTPS GET with redirect following. Follows the full redirect family
+ * (301/302/303/307/308) and resolves **relative** `Location` headers against the
+ * current URL — HF's CDN redirect is a 307 to a relative `/api/resolve-cache/…`
+ * path, and following only 301/302 (or treating the relative path as absolute) is
+ * what left the 0-byte files. Removes its partial output on any failure.
+ *
+ * Deliberately not shared with `eval/humaneval-data.ts`'s `downloadFile`: this one
+ * has no gzip/JSONL concerns, and reuse would couple `tokenizers/` to `eval/` for
+ * a small helper.
+ */
 downloadFile(url: string, dest: string): Promise<void>
 
+/**
+ * Cache path is keyed by family (not repo ID or model ID) to match
+ * count.ts's encoderCache key — one family currently maps to one canonical repo.
+ * `filename` is the HF repo file to fetch/store: the HF-fast families use the
+ * default `tokenizer.json`; the Tekken family passes `tekken.json` (a different
+ * file in the same repo layout), so it caches beside it without collision.
+ */
 tokenizerCachePath(family: string, filename?: string): string
 
+/**
+ * Downloads a canonical HF repo file if not already cached under
+ * .freecode/tokenizers/<family>/<filename>. Returns the cached path, or
+ * null (never throws) if the download fails — callers fall back to the
+ * generic estimate on null.
+ *
+ * The cached path counts only if it exists **and is non-empty**: a 0-byte
+ * leftover from a failed download is treated as absent and re-fetched
+ * (`docs/bug log/05-07-2026.md`). Downloads land on a sibling `<dest>.download`
+ * temp and are promoted onto `dest` by atomic `rename` only after a non-empty
+ * check, so `dest` is only ever a complete file. A failed or empty download
+ * removes the temp and returns null, which `count.ts` treats the same as an
+ * unresolved family.
+ */
 ensureTokenizerFile(family: string, repoId: string, filename?: string, downloadFn?: (url: string, dest: string) => Promise<void>): Promise<string | null>
 ```
 <!-- END GENERATED EXPORTS -->
@@ -30,14 +62,8 @@ ensureTokenizerFile(family: string, repoId: string, filename?: string, downloadF
 
 ## Budget
 
-89 / 500 lines (411 to spare).
+112 / 500 lines (388 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `tokenizerCachePath`: keyed by **family** + `filename` (default `tokenizer.json`), not repo ID or model ID — mirrors `count.ts`'s `encoderCache` key, since (so far) one family maps to exactly one canonical repo. The `filename` lets Tekken cache `tekken.json` beside the default without collision.
-- `ensureTokenizerFile`: `(family, repoId, filename?, downloadFn?)`. Returns the cached path only if it already exists **and is non-empty** (a 0-byte leftover from a failed download is treated as absent and re-fetched — see `docs/bug log/05-07-2026.md`); otherwise downloads from `https://huggingface.co/<repoId>/resolve/main/<filename>`. Downloads land on a sibling `<dest>.download` temp and are promoted onto `dest` via atomic `rename` only after a non-empty check, so `dest` is only ever a complete file. Never throws — a failed/empty download removes the temp and returns `null`, which `count.ts` treats the same as an unresolved family (fallback estimate).
-- `downloadFile`: plain HTTPS GET with redirect-following, same shape as `humaneval-data.ts`'s `downloadFile`. Follows the full redirect family (301/302/303/307/308) and resolves **relative** `Location` headers against the current URL — HF's CDN redirect is a 307 to a relative `/api/resolve-cache/...` path, and following only 301/302 (or treating the relative path as absolute) is what left the 0-byte files. Removes its partial output on any failure. Not shared with `humaneval-data.ts` on purpose — this one has no gzip/JSONL concerns, and cross-module reuse would couple `tokenizers/` to `eval/` for a small helper.
 
 ## Key Neighbors
 

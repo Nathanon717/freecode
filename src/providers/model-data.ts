@@ -219,8 +219,11 @@ export interface CatalogModel {
 /**
  * Write the provider catalog (display name + context window) for one provider into
  * the store. This is the DB's copy of what the provider says exists; user state on
- * the same row is untouched. Rows whose catalog values already match are skipped, so
- * a launch with an unchanged model list writes nothing.
+ * the same row is untouched — this writer touches only `display_name` and
+ * `context_window`, and the user-state writers never touch those two. Rows whose
+ * catalog values already match are skipped, so a launch with an unchanged model
+ * list writes nothing, and the changed rows go out as one batched
+ * `persistModelCatalogAsync` rather than a sync per row.
  *
  * Callers pass the provider's *final* model list, so blocklisted models never get a
  * row. Models the provider has stopped offering keep theirs.

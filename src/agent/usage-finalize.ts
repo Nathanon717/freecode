@@ -26,6 +26,10 @@ export interface UsageOutcome {
  * End any active usage capture for the provider and read captured rate-limit
  * headers. Shared by the success and error paths of agentLoop so partial
  * usage/quota metadata survives stream failures.
+ *
+ * Every provider, Anthropic included, routes through the generic
+ * OpenAI-compatible capture. Header reading is skipped when `DEBUG_QUOTA=0`;
+ * `promptTokens`/`outputTokens` pass through unchanged.
  */
 export async function finalizeUsageCapture(
   providerId: string,

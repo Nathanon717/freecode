@@ -30,6 +30,7 @@ function timestamp(): string {
   return `${hh}:${mm}:${ss}.${ms}`;
 }
 
+/** Emits only after `enableLog()` (the `-log` startup flag); a no-op otherwise. */
 export function log(category: string, message: string, data?: unknown): void {
   if (!enabled) return;
   const color = CATEGORY_COLORS[category] ?? chalk.white;
@@ -39,6 +40,7 @@ export function log(category: string, message: string, data?: unknown): void {
   process.stderr.write(`${ts} ${tag} ${message}${dataStr}\n`);
 }
 
+/** Always writes to stderr regardless of `enableLog` state, with the error text and stack. */
 export function logError(category: string, message: string, err: unknown): void {
   if (!enabled) return;
   let errMsg: string;

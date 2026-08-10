@@ -15,6 +15,11 @@ import type { ModelDataMap } from './db-types.js';
  * map and the config blob. Pure hydration — takes a client, returns plain data, owns
  * no state. Every column decode (null handling, JSON blobs, corrupt-row tolerance)
  * lives here so `db.ts` keeps only client lifecycle and writes.
+ *
+ * Eval runs attach to their model row, and a run whose parent row is absent is
+ * **dropped** — writers must persist the model row alongside the eval, not only
+ * the eval. Corrupt `settings` / `rate_limits` / `checks` JSON is skipped rather
+ * than thrown: one bad row must not fail the whole load.
  */
 
 export async function loadFromDb(c: Client): Promise<ModelDataMap> {

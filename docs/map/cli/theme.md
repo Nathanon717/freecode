@@ -20,6 +20,21 @@ adding or retuning a static color anywhere under `src/cli/`, or before hardcodin
  */
 palette: { readonly warning: '#FFA500'; readonly codeSurface: '#333333'; readonly toolName: '#c9b3ff'; readonly mutedHint: '#808080'; }
 
+/**
+ * The tokens call sites use. Every entry is a **getter**, not a stored value:
+ * chalk resolves a hex down to whatever the current `chalk.level` supports when
+ * the *builder* is constructed, not when it is called, so building these once at
+ * module load would freeze every token at the level detected during import —
+ * truecolor `#333333` collapses to basic black if the level is still 0 at that
+ * moment. Resolving per access reproduces the inline `chalk.hex(...)` calls these
+ * tokens replaced. Do not "optimize" the getters into plain properties.
+ *
+ * `codeSurface` / `codeSurfaceBg` / `codeSurfaceText` are one colour in three
+ * uses: foreground tint, background with the foreground untouched, and background
+ * with a readable foreground. `rotatingPastel` / `rotatingPastelBg` are the
+ * per-session accent, read live from `banner.ts` on each access and deliberately
+ * absent from `palette`, which holds one fixed value per role.
+ */
 theme: { readonly warning: ChalkInstance; readonly toolName: ChalkInstance; readonly mutedHint: ChalkInstance; readonly codeSurface: ChalkInstance; readonly codeSurfaceBg: ChalkInstance; readonly codeSurfaceText: ChalkInstance; readonly rotatingPastel: ChalkInstance; readonly rotatingPastelBg: ChalkInstance; }
 ```
 <!-- END GENERATED EXPORTS -->
@@ -36,15 +51,8 @@ theme: { readonly warning: ChalkInstance; readonly toolName: ChalkInstance; read
 
 ## Budget
 
-58 / 500 lines (442 to spare).
+67 / 500 lines (433 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `theme` — the tokens call sites use. Every entry is a **getter**, not a stored value. Chalk resolves a hex down to the current `chalk.level` when the *builder* is constructed, so building the tokens once at module load would freeze them at whatever level was detected during import — truecolor `#333333` collapses to basic black at level 0. Resolving per access reproduces the inline `chalk.hex(...)` calls these tokens replaced. Do not "optimize" the getters into plain properties.
-- `theme.codeSurface` vs `codeSurfaceBg` vs `codeSurfaceText` — one color, three uses: foreground tint (the language label above a block), background with the foreground untouched (padding runs), and background with a readable foreground (code text, codespans).
-- `rotatingPastel` / `rotatingPastelBg` — the per-session accent, read live from `banner.ts` on each access. Deliberately **not** in `palette`, which holds one fixed value per role; the accent is a ring of eight.
-- `palette` — the raw values. Prefer `theme`; reach for `palette` only when a call site needs the value itself rather than a styler.
 
 ## Scope
 

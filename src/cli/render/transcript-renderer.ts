@@ -270,7 +270,12 @@ export interface ToolStep {
 export interface ToolCallHeaderRows {
   /** The header itself: lead-in blanks + optional rationale + the call line. */
   header: number;
-  /** The model's response text directly above the header; 0 when it isn't adjacent. */
+  /**
+   * The model's response text directly above the header; 0 when it isn't
+   * adjacent. Measured before the lead-in bumps `toolCount`, so it is 0 for any
+   * parallel call after the step's first — only that first call sits directly
+   * under the response text.
+   */
   preamble: number;
 }
 

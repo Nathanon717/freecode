@@ -18,19 +18,23 @@ export const DEEPSEEK_V4_FAMILY = 'deepseek-v4';
 export const GLM4_FAMILY = 'glm-4';
 export const MISTRAL_TEKKEN_FAMILY = 'mistral-tekken';
 
-// Tekken is fetched from a different repo file (`tekken.json`, not the
-// `tokenizer.json` the HF-fast families use), so it's not in HF_TOKENIZER_REPO;
-// count.ts loads it through backends/tekken.ts. The whole modern Mistral line
-// shares one byte-BPE vocab (Nemo v3 and Magistral v11 verified byte-identical),
-// so one repo covers it.
+/**
+ * Tekken is fetched from a different repo file (`tekken.json`, not the
+ * `tokenizer.json` the HF-fast families use), so it's not in HF_TOKENIZER_REPO;
+ * count.ts loads it through backends/tekken.ts. The whole modern Mistral line
+ * shares one byte-BPE vocab (Nemo v3 and Magistral v11 verified byte-identical),
+ * so one repo covers it.
+ */
 export const MISTRAL_TEKKEN_REPO = 'mistralai/Mistral-Nemo-Instruct-2407';
 export const TEKKEN_FILENAME = 'tekken.json';
 
-// Canonical HF repo whose tokenizer.json is downloaded for each family backed
-// by backends/bpe-json.ts. Verified live against the HF API (content-hash
-// compared across sibling model versions, not guessed) — see
-// docs/map/tokenizers/model-family.md for the full verification trail and
-// why each repo was picked over its siblings.
+/**
+ * Canonical HF repo whose tokenizer.json is downloaded for each family backed
+ * by backends/bpe-json.ts. Verified live against the HF API (content-hash
+ * compared across sibling model versions, not guessed) — see this page's
+ * "Verification trail" and "Family coverage" sections for why each repo was
+ * picked over its siblings.
+ */
 export const HF_TOKENIZER_REPO: Partial<Record<TokenizerFamily, string>> = {
   [LLAMA3_FAMILY]: 'NousResearch/Meta-Llama-3-8B',
   [DEEPSEEK_V3_FAMILY]: 'deepseek-ai/DeepSeek-V3',
@@ -53,9 +57,12 @@ function isLlama3(modelId: string): boolean {
   return /llama-3/i.test(modelId);
 }
 
-// DeepSeek retrained its tokenizer between the V3/R1 generation and V4 — the
-// two are NOT the same family (confirmed: different tokenizer.json content
-// hash, ~7.8MB vs ~6.3MB). "Distill" models (e.g. `deepseek-r1-distill-llama-70b`,
+// DeepSeek's V3/R1 and V4 generations are kept as separate families. Not a
+// retrained vocab: model.vocab, model.merges, pre_tokenizer, normalizer, decoder
+// and post_processor all hash byte-identically between the two. The whole delta is
+// added_tokens (818 in V3 vs 1283 in V4), and those are live during encoding — so
+// `<think>` costs 3 tokens under V3 and 1 under V4. See the map page's "Family
+// coverage" section. "Distill" models (e.g. `deepseek-r1-distill-llama-70b`,
 // `deepseek-r1-distill-qwen-32b`) reuse their base model's tokenizer, not
 // DeepSeek's own — excluded rather than guessed, since a wrong-family exact
 // count is worse than the safe fallback.
@@ -130,6 +137,12 @@ function isMistralTekken(modelId: string): boolean {
   );
 }
 
+/**
+ * Resolves, in order: GPT-OSS, DeepSeek V4, DeepSeek V3, Llama 3.x, GLM-4,
+ * Mistral Tekken. Everything else returns null and falls back to the generic
+ * tiktoken estimate — including legacy Llama/Mistral (SentencePiece), which stays
+ * unimplemented because it folds cleanly into that fallback.
+ */
 export function resolveTokenizerFamily(modelId: string): TokenizerFamily | null {
   if (isGptOss(modelId)) return GPT_OSS_FAMILY;
   if (isDeepSeekV4(modelId)) return DEEPSEEK_V4_FAMILY;

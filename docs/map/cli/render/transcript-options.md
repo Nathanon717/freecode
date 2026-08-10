@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Resolves where transcript output goes and how much of a tool result it may show.
+Resolves where transcript output goes and how much of a tool result it may show. Split from `transcript-renderer.ts` so both it and anything else needing these can share them without importing the renderer's state machine back — a cycle. The renderer re-exports every name here, so prefer importing from `transcript-renderer.js` over reaching in directly.
 
 ## Read When
 
@@ -24,6 +24,11 @@ Resolves where transcript output goes and how much of a tool result it may show.
 type TranscriptStreamName = "stdout" | "null";
 
 interface TranscriptRenderOptions {
+  /**
+   * The stable default (30, `all` for unbounded), driven by
+   * `FREECODE_TRANSCRIPT_MAX_RESULT_LINES`. Applies alongside `maxResultRows`;
+   * whichever trims first wins.
+   */
   maxResultLines?: number;
   /**
    * Hard cap on the terminal rows the preview block may occupy, counting line
@@ -41,8 +46,17 @@ interface TranscriptRuntimeOptions extends TranscriptRenderOptions {
 
 DEFAULT_TRANSCRIPT_MAX_RESULT_LINES: 30
 
+/**
+ * A fallback only, kept for tests; the runtime divider uses the real terminal width.
+ */
 TRANSCRIPT_DIVIDER_WIDTH: 60
 
+/**
+ * `FREECODE_TRANSCRIPT_STREAM` only distinguishes "show it" from `null`, which
+ * silences the transcript; any unrecognised value is stdout. Unit tests set
+ * `null` suite-wide (`vitest.config.ts`), and `-p` sets it because it prints the
+ * final response itself.
+ */
 getTranscriptRuntimeOptions(env?: ProcessEnv): TranscriptRuntimeOptions
 
 getTranscriptStream(options?: TranscriptRuntimeOptions): WritableStream
@@ -60,15 +74,8 @@ getTranscriptStream(options?: TranscriptRuntimeOptions): WritableStream
 
 ## Budget
 
-70 / 500 lines (430 to spare).
+76 / 500 lines (424 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- Split out of [transcript-renderer.md](./transcript-renderer.md) purely so both it and any future module can share these without importing the renderer's state machine back — a cycle. The renderer re-exports every name here, so callers keep importing from `transcript-renderer.js`; prefer that over reaching in here directly.
-- **There are two streams, not three: `stdout` (the default) and `null`.** `stderr` was removed. It had been the default, which meant an off-TTY run put transcript output on the error stream while every real consumer — the TTY session, the eval subprocess, e2e layout scenarios — overrode it back to stdout; nothing ever wanted stderr. Substring e2e assertions match combined output, so they never cared either. `FREECODE_TRANSCRIPT_STREAM` now only distinguishes "show it" from `null`, which silences it: unit tests set that suite-wide (`vitest.config.ts`), and `-p` sets it because it prints the final response itself ([../headless-prompt.md](../headless-prompt.md)). An unrecognised value is stdout.
-- `maxResultLines` vs `maxResultRows` — lines is the stable default (30, `all` for unbounded, env-driven); rows is the interactive-only wrap-aware cap set by the approval path. Both apply; whichever trims first wins.
-- `TRANSCRIPT_DIVIDER_WIDTH` — a fallback only; the runtime divider uses the real terminal width.
 
 ## Key neighbors
 

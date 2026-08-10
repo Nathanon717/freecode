@@ -37,22 +37,32 @@ const encoderCache = new Map<TokenizerFamily, TokenizerEncoder>();
 // switches before a download finishes) so it isn't kicked off twice.
 const pendingLoads = new Map<TokenizerFamily, Promise<void>>();
 
-// Synchronous so it's safe on a hot path (e.g. once per keystroke). Reads
-// whatever's already in the in-memory cache; never blocks, never throws.
-// Falls back to the generic tiktoken estimate when no family is resolved or
-// no encoder has been compiled for it yet — the only reachable path until a
-// later phase registers an exact backend into encoderCache.
+/**
+ * Synchronous so it's safe on a hot path (e.g. once per keystroke). Reads
+ * whatever's already in the in-memory cache; never blocks, never throws.
+ * Falls back to the generic tiktoken estimate when no family is resolved or
+ * no encoder has been compiled for it yet — the only reachable path until a
+ * later phase registers an exact backend into encoderCache.
+ *
+ * The cache is keyed by *family*, not model ID, since many model IDs share one
+ * family.
+ */
 export function countTokens(messages: CoreMessage[], modelId: string): number {
   const family = resolveTokenizerFamily(modelId);
   const encoder = family !== null ? encoderCache.get(family) : undefined;
   return encoder ? encoder.countMessages(messages) : estimateContextTokens(messages);
 }
 
-// Count the tokens a bare string contributes on its own (no chat or
-// system-prompt overhead), using the model's exact encoder when one is loaded
-// and the generic estimate otherwise. `exact` reports which path ran so callers
-// can flag an estimate as approximate. Synchronous, never throws — same hot-path
-// contract as countTokens.
+/**
+ * Count the tokens a bare string contributes on its own (no chat or
+ * system-prompt overhead), using the model's exact encoder when one is loaded
+ * and the generic estimate otherwise. `exact` reports which path ran so callers
+ * can flag an estimate as approximate. Synchronous, never throws — same hot-path
+ * contract as countTokens.
+ *
+ * `cli/session-modes.ts` uses it for the approval hint's `+N tokens` /
+ * `+N tokens appx` label.
+ */
 export function countTextTokens(text: string, modelId: string): TokenCount {
   const family = resolveTokenizerFamily(modelId);
   const encoder = family !== null ? encoderCache.get(family) : undefined;
@@ -61,8 +71,14 @@ export function countTextTokens(text: string, modelId: string): TokenCount {
     : { tokens: estimateTextTokens(text), exact: false };
 }
 
-// Does an exact tokenizer backend *exist* for this model? Capability check for
-// catalog UI (the model-picker badge) — not whether an encoder is loaded yet.
+/**
+ * Does an exact tokenizer backend *exist* for this model? Capability check for
+ * catalog UI (the model-picker badge) — not whether an encoder is loaded yet.
+ *
+ * The picker runs before any preload, so a loaded-state check would almost never
+ * fire there. The stricter "the number we're showing is exact" signal lives on
+ * `countTextTokens`'s `exact` field instead.
+ */
 export function hasExactTokenizer(modelId: string): boolean {
   return resolveTokenizerFamily(modelId) !== null;
 }
@@ -81,13 +97,18 @@ async function loadTekkenFamily(family: TokenizerFamily): Promise<void> {
   if (path) encoderCache.set(family, loadTekkenEncoder(path));
 }
 
-// Resolves the family and compiles/caches its encoder in the background so
-// countTokens can read it synchronously on the next call. GPT-OSS resolves
-// immediately (bundled); the HF fast-tokenizer families (Llama 3.x, DeepSeek
-// V3/V4, GLM-4.5-4.7) and the modern Mistral Tekken family go through
-// ensure-download → load → cache over the network. Never
-// throws — an unresolved family or a download/build failure just leaves
-// encoderCache unset, which keeps countTokens on the fallback path.
+/**
+ * Resolves the family and compiles/caches its encoder in the background so
+ * countTokens can read it synchronously on the next call. GPT-OSS resolves
+ * immediately (bundled); the HF fast-tokenizer families (Llama 3.x, DeepSeek
+ * V3/V4, GLM-4.5-4.7) and the modern Mistral Tekken family go through
+ * ensure-download → load → cache over the network. Never
+ * throws — an unresolved family or a download/build failure just leaves
+ * encoderCache unset, which keeps countTokens on the fallback path.
+ *
+ * A module-level `pendingLoads` map de-dupes concurrent preload calls for the
+ * same family, so a rapid model switch cannot kick the same download off twice.
+ */
 export async function preloadTokenizerFor(modelId: string): Promise<void> {
   const family = resolveTokenizerFamily(modelId);
   if (family === null || encoderCache.has(family)) return;

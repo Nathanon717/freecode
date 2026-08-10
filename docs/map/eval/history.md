@@ -40,12 +40,21 @@ interface EvalDotsData {
   history: EvalHistoryEntry[];
 }
 
+/**
+ * Every stored history entry; `[]` when the DB is not yet initialized.
+ */
 loadEvalHistory(): EvalHistoryEntry[]
 
+/**
+ * Matches on `runHash`; `legacyFullHash` grandfathers entries written before the run-hash split.
+ */
 getEvalStatus(scenarioId: string, runHash: string, model: string, history: EvalHistoryEntry[], legacyFullHash?: string | undefined): EvalStatus
 
 getLatestEvalEntry(scenarioId: string, runHash: string, model: string, history: EvalHistoryEntry[], legacyFullHash?: string | undefined): EvalHistoryEntry | null
 
+/**
+ * Convenience bundle: discovers scenarios via `custom.ts`, hashes them all, and loads all history.
+ */
 loadEvalDotsData(): EvalDotsData
 ```
 <!-- END GENERATED EXPORTS -->
@@ -62,14 +71,8 @@ loadEvalDotsData(): EvalDotsData
 
 ## Budget
 
-113 / 500 lines (387 to spare).
+116 / 500 lines (384 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `loadEvalHistory()`: returns `[]` if the DB is not yet initialized.
-- `getEvalStatus()`: matches on `runHash`; also accepts `legacyFullHash` for grandfathering old entries.
-- `loadEvalDotsData()`: convenience bundle — discovers scenarios via `custom.ts`, hashes them all, and loads all history.
 
 ## Key Neighbors
 

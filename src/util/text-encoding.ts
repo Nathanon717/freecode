@@ -9,7 +9,11 @@ import { readFileSync } from 'fs';
 
 const BOM = '﻿';
 
-/** Removes a leading UTF-8 BOM (U+FEFF) if present. Never touches other characters. */
+/**
+ * Removes a leading UTF-8 BOM (U+FEFF) if present. Never touches other characters
+ * — e2e fixtures intentionally carry raw control bytes like DEL (`\x7f`) as real
+ * keystroke data.
+ */
 export function stripBom(text: string): string {
   return text.charCodeAt(0) === 0xFEFF ? text.slice(BOM.length) : text;
 }

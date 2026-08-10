@@ -22,12 +22,52 @@ interface TokenCount {
   exact: boolean;
 }
 
+/**
+ * Synchronous so it's safe on a hot path (e.g. once per keystroke). Reads
+ * whatever's already in the in-memory cache; never blocks, never throws.
+ * Falls back to the generic tiktoken estimate when no family is resolved or
+ * no encoder has been compiled for it yet — the only reachable path until a
+ * later phase registers an exact backend into encoderCache.
+ *
+ * The cache is keyed by *family*, not model ID, since many model IDs share one
+ * family.
+ */
 countTokens(messages: CoreMessage[], modelId: string): number
 
+/**
+ * Count the tokens a bare string contributes on its own (no chat or
+ * system-prompt overhead), using the model's exact encoder when one is loaded
+ * and the generic estimate otherwise. `exact` reports which path ran so callers
+ * can flag an estimate as approximate. Synchronous, never throws — same hot-path
+ * contract as countTokens.
+ *
+ * `cli/session-modes.ts` uses it for the approval hint's `+N tokens` /
+ * `+N tokens appx` label.
+ */
 countTextTokens(text: string, modelId: string): TokenCount
 
+/**
+ * Does an exact tokenizer backend *exist* for this model? Capability check for
+ * catalog UI (the model-picker badge) — not whether an encoder is loaded yet.
+ *
+ * The picker runs before any preload, so a loaded-state check would almost never
+ * fire there. The stricter "the number we're showing is exact" signal lives on
+ * `countTextTokens`'s `exact` field instead.
+ */
 hasExactTokenizer(modelId: string): boolean
 
+/**
+ * Resolves the family and compiles/caches its encoder in the background so
+ * countTokens can read it synchronously on the next call. GPT-OSS resolves
+ * immediately (bundled); the HF fast-tokenizer families (Llama 3.x, DeepSeek
+ * V3/V4, GLM-4.5-4.7) and the modern Mistral Tekken family go through
+ * ensure-download → load → cache over the network. Never
+ * throws — an unresolved family or a download/build failure just leaves
+ * encoderCache unset, which keeps countTokens on the fallback path.
+ *
+ * A module-level `pendingLoads` map de-dupes concurrent preload calls for the
+ * same family, so a rapid model switch cannot kick the same download off twice.
+ */
 preloadTokenizerFor(modelId: string): Promise<void>
 ```
 <!-- END GENERATED EXPORTS -->
@@ -44,15 +84,8 @@ preloadTokenizerFor(modelId: string): Promise<void>
 
 ## Budget
 
-108 / 500 lines (392 to spare).
+129 / 500 lines (371 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `countTokens`: resolves the model's family, looks it up in the in-memory `encoderCache` (keyed by family, not model ID, since many model IDs share one family), and falls back to `fallback-estimate.ts`'s generic tiktoken estimate when no family is resolved or no encoder is cached yet. Never blocks, never throws.
-- `countTextTokens`: like `countTokens` but for a bare string with no chat/system-prompt overhead (each backend's `countText` calls the encoder's text-encode lambda directly, bypassing `chat-format.ts`'s per-message + per-request + system-prompt padding). Returns `{ tokens, exact }`, where `exact` is true only when a loaded encoder produced the count and false on the generic-estimate fallback — this is the "the number is exact" signal `hasExactTokenizer` deliberately doesn't give. `cli/session-modes.ts` uses it for the approval hint's "+N tokens" / "+N tokens appx" label. Never blocks, never throws.
-- `hasExactTokenizer`: synchronous capability check (`resolveTokenizerFamily(modelId) !== null`) for catalog UI — the model-picker eye badge. Deliberately reports whether an exact backend *exists* for the model, not whether an encoder is loaded in `encoderCache`; the picker runs before any preload, so a loaded-state check would almost never fire there. The stricter "the number we're showing is exact" signal lives on `countTextTokens`'s `exact` field instead.
-- `preloadTokenizerFor`: resolves the family. For GPT-OSS, registers `backends/tiktoken.ts`'s `getGptOssEncoder()` into `encoderCache` directly (bundled, no download). For the HF fast-tokenizer families (`model-family.ts`'s `HF_TOKENIZER_REPO`), runs `download-tokenizer.ts`'s `ensureTokenizerFile` then `backends/bpe-json.ts`'s `loadBpeJsonEncoder`. For the Mistral Tekken family, `loadTekkenFamily` fetches the repo's `tekken.json` (via `ensureTokenizerFile`'s `filename` argument) then builds the encoder with `backends/tekken.ts`'s `loadTekkenEncoder`. A module-level `pendingLoads` map de-dupes concurrent preload calls for the same family (e.g. rapid model switches before a download finishes) so it isn't kicked off twice. Wrapped in try/catch — a download failure, parse failure, or unmapped family just leaves the cache unset, keeping `countTokens` on the fallback path.
 
 ## Key Neighbors
 

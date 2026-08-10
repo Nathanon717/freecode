@@ -47,14 +47,24 @@ const _read: Toggle = {
 
 const ALL_TOGGLES: Toggle[] = [_showNames, _autoRun, _read];
 
-// Seed the auto-run toggle from persisted config (called once at startup).
+/**
+ * Seed the auto-run toggle from persisted config (called once at startup).
+ *
+ * The `A` toggle reads as **Auto-run tools**, so its on state (index 0) is
+ * `AskMode` `'auto'` and its off state is `'ask'` — the display sense is
+ * inverted, while the `AskMode` values and `config.toolConfirmation` are not.
+ */
 export function initAskMode(mode: AskMode): void {
   _autoRun.index = mode === 'auto' ? 0 : 1;
 }
 
-// Seed the read-only toggle at startup. Interactive sessions leave it off and let
-// the user press Ctrl+R; the headless `-p` mode forces it on for the whole run
-// (cli/headless-prompt.ts) rather than passing a separate read-only flag around.
+/**
+ * Seed the read-only toggle at startup. Interactive sessions leave it off and let
+ * the user press Ctrl+R; headless `-p` (`cli/headless-prompt.ts`) seeds it for the
+ * whole run — on by default, off under `--edit` — rather than threading a separate
+ * read-only flag around. Same reason it forces `initAskMode('auto')`: there is no
+ * interactive channel to confirm on, and the off switch for confirmations is here.
+ */
 export function initReadOnly(on: boolean): void {
   _read.index = on ? 0 : 1;
 }
@@ -67,11 +77,12 @@ export function isReadOnly(): boolean {
   return _read.index === 0;
 }
 
+/** State of the leftmost `S` toggle: when on, every toggle renders its full label. Off by default. */
 export function areToggleNamesShown(): boolean {
   return _showNames.index === 0;
 }
 
-// Advance a toggle by its display character (case-insensitive).
+/** Advance the toggle whose display char matches (case-insensitive); false when none does. */
 export function cycleByChar(char: string): boolean {
   const t = ALL_TOGGLES.find(t => t.char.toLowerCase() === char.toLowerCase());
   if (!t) return false;
@@ -91,13 +102,18 @@ function renderToggle(t: Toggle): string {
   return charPart + theme.mutedHint(hintRest(t));
 }
 
-// Renders the toggle bar string (ANSI included, visible length = toggleBarWidth()).
+/**
+ * The toggle bar as an ANSI string: grey `ctrl+ `, then each toggle's char in
+ * banner art colour (foreground when off, background + black when on), single-space
+ * separated. Under `areToggleNamesShown()` each char carries the grey remainder of
+ * its first state's label. Visible length is `toggleBarWidth()`.
+ */
 export function composeToggleBar(): string {
   const prefix = chalk.gray('ctrl+ ');
   return prefix + ALL_TOGGLES.map(renderToggle).join(' ');
 }
 
-// Visible (non-ANSI) character count of the toggle bar.
+/** Visible (non-ANSI) character count of the toggle bar. */
 export function toggleBarWidth(): number {
   const prefixLen = 'ctrl+ '.length;
   const hintExtraLen = areToggleNamesShown()

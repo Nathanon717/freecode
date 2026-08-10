@@ -360,6 +360,11 @@ function buildConfigTab(tab: Tab, currentModel: string, globalPath: string): Men
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
+/**
+ * `onRestore` carries the session footer refresh (`resetBottomPromptState` /
+ * `refreshFooterDailySpend` / `drawBottomUI`) that cannot move into this module;
+ * the shell fires it after `setupBottomUI` when the bottom UI was active on a TTY.
+ */
 export async function runConfigCommand(
   rl: Interface,
   currentModel = '',

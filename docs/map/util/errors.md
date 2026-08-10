@@ -18,12 +18,25 @@ You need a consistent way to extract a string message from an `unknown` catch va
 ## Exports
 
 ```typescript
+/**
+ * `error.message` for an `Error`, `String(error)` otherwise.
+ */
 toErrorMessage(error: unknown): string
 
+/**
+ * Includes parsed provider detail where available: `code`, `type`, `param`,
+ * `failed_generation`, response bodies, and a `tool_use_failed` diagnosis.
+ */
 toDetailedErrorMessage(error: unknown): string
 
+/**
+ * True when the message matches any known context-overflow pattern (Anthropic, OpenAI, Gemini, Ollama, …).
+ */
 isContextOverflowError(error: unknown): boolean
 
+/**
+ * True when the provider returned `code: tool_use_failed`.
+ */
 isProviderToolUseFailed(error: unknown): boolean
 
 isNoSuchToolError(error: unknown): boolean
@@ -57,6 +70,10 @@ interface RejectedToolCall {
  * a tool result — and the SDK then stops stepping, because it only continues when
  * every call has one. Recognising these lets a turn feed the failure back and carry
  * on instead of ending. Returns null when the error is something else.
+ *
+ * Both native tool loops — `agent/loop.ts` and `agent/subagents/run-subagent.ts` —
+ * use it with `MAX_REJECTED_TOOL_CALLS` to recover mid-turn instead of aborting.
+ * It lives here rather than in either loop so the two cannot drift.
  */
 rejectedToolCall(error: unknown): RejectedToolCall | null
 
@@ -100,13 +117,5 @@ serializeError(error: unknown): unknown
 
 ## Budget
 
-316 / 500 lines (184 to spare).
+327 / 500 lines (173 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `toErrorMessage(error)` — returns `error.message` for `Error` instances, `String(error)` otherwise.
-- `toDetailedErrorMessage(error)` — includes parsed provider details such as `code`, `type`, `param`, `failed_generation`, response bodies, and a `tool_use_failed` diagnosis when available.
-- `isContextOverflowError(error)` — returns `true` when the error message matches any of the known context-overflow patterns across providers (Anthropic, OpenAI, Gemini, Ollama, etc.).
-- `isProviderToolUseFailed(error)` — returns `true` when the provider returned `code: tool_use_failed`.
-- `rejectedToolCall(error)` — the shared classifier for a call the AI SDK refused **before** `execute` ran: an unknown name (`AI_NoSuchToolError`) or arguments that failed the tool's schema (`AI_InvalidToolArgumentsError`). Neither produces a tool result, and the SDK stops stepping when results don't match calls, so both would end a turn. Returns the tool name, the arguments the model sent (for rendering the attempted call; empty for an unknown name), and the feedback message to hand back. Both native tool loops — `agent/loop.ts` and `agent/subagents/run-subagent.ts` — use it with `MAX_REJECTED_TOOL_CALLS` to recover mid-turn instead of aborting. Lives here rather than in either loop so the two cannot drift.

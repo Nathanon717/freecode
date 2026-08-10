@@ -21,6 +21,9 @@ Changing dataset location/format, download/redirect behavior, the example-proble
 ## Exports
 
 ```typescript
+/**
+ * Follows 301/302 redirects; rejects on a non-200 status or a stream error.
+ */
 downloadFile(url: string, dest: string): Promise<void>
 
 type HumanEvalResultMap = Record<string, 'pass' | 'fail'>;
@@ -33,10 +36,23 @@ interface HumanEvalProblem {
   entry_point: string;
 }
 
+/**
+ * Resolved dataset path: the `HUMANEVAL_DATA` override, else the bundled default.
+ */
 humanEvalDatasetPath(): string
 
+/**
+ * Download the HumanEval dataset if it is missing, printing progress. Returns
+ * false (after printing an error) when the download was needed and failed.
+ * `downloadFn` is injectable so tests can stub the network.
+ */
 ensureHumanEvalDataset(downloadFn?: (url: string, dest: string) => Promise<void>): Promise<boolean>
 
+/**
+ * Load and parse the HumanEval problems. Returns null (after printing an error)
+ * when the dataset cannot be read or parsed. Also honours `HUMANEVAL_EXAMPLE_DATA`,
+ * prepending the example problem when it is present.
+ */
 loadHumanEvalProblems(): HumanEvalProblem[] | null
 ```
 <!-- END GENERATED EXPORTS -->
@@ -53,14 +69,9 @@ loadHumanEvalProblems(): HumanEvalProblem[] | null
 
 ## Budget
 
-98 / 500 lines (402 to spare).
+105 / 500 lines (395 to spare).
 
 ## Env
 
 `HUMANEVAL_DATA`, `HUMANEVAL_EXAMPLE_DATA`
 <!-- END GENERATED MAP FACTS -->
-
-## Export notes
-
-- `downloadFile` follows 301/302 redirects and rejects on non-200 status or stream errors; `ensureHumanEvalDataset` accepts an injectable `downloadFn` so tests can stub the network.
-- `humanEvalDatasetPath` honors the `HUMANEVAL_DATA` env override, falling back to the bundled default; `loadHumanEvalProblems` additionally honors `HUMANEVAL_EXAMPLE_DATA` and prepends the example problem when present.

@@ -42,12 +42,14 @@ function pushDisplayLines(styled: string): void {
 
 let capturing = true;
 
-// Writes bytes that are chrome, not transcript, so the buffer never records them.
-// The capture filter normally recognises chrome by its cursor/screen escapes, but a
-// write can be pure layout and still carry none — e.g. the bare newlines that open
-// rows for the input frame. Recorded, those would surface as phantom blank lines in
-// overlay repaints and resize scrubs, and would make hasPostEpochContent() claim a
-// transcript exists on a fresh screen.
+/**
+ * Writes bytes that are chrome, not transcript, so the buffer never records them.
+ * The capture filter normally recognises chrome by its cursor/screen escapes, but a
+ * write can be pure layout and still carry none — e.g. the bare newlines that open
+ * rows for the input frame. Recorded, those would surface as phantom blank lines in
+ * overlay repaints and resize scrubs, and would make hasPostEpochContent() claim a
+ * transcript exists on a fresh screen.
+ */
 export function writeChrome(chunk: string): void {
   capturing = false;
   try {
@@ -57,6 +59,14 @@ export function writeChrome(chunk: string): void {
   }
 }
 
+/**
+ * Call once at process startup (`index.ts`); a no-op if already installed.
+ *
+ * A write carrying a full-screen or scrollback erase (`\x1b[…J`, e.g. the
+ * `\x1b[2J` in `clearEntireTerminal` / `clearAndRedrawBanner`) resets the buffer
+ * and the epoch, since nothing previously on screen can sit behind an overlay any
+ * more. A line erase (`\x1b[2K`) does not.
+ */
 export function installScreenBuffer(): void {
   if (installed) return;
   installed = true;
@@ -86,23 +96,27 @@ export function installScreenBuffer(): void {
   };
 }
 
-// Records the current write position as the start of the scroll-region epoch.
-// Lines before this index (the banner and other chrome) are excluded from
-// overlay repaints. Call it right after every banner (re)draw so the freshly
-// printed banner is treated as chrome — not just once at startup, since
-// /clear, /model, /config, /eval and resize all reprint the banner mid-session
-// and their banner lines would otherwise leak into overlay repaints. Do NOT
-// call it from per-turn input reinit that isn't preceded by a screen clear, or
-// it would discard transcript lines the user can still see.
+/**
+ * Records the current write position as the start of the scroll-region epoch.
+ * Lines before this index (the banner and other chrome) are excluded from
+ * overlay repaints. Call it right after every banner (re)draw so the freshly
+ * printed banner is treated as chrome — not just once at startup, since
+ * /clear, /model, /config, /eval and resize all reprint the banner mid-session
+ * and their banner lines would otherwise leak into overlay repaints. Do NOT
+ * call it from per-turn input reinit that isn't preceded by a screen clear, or
+ * it would discard transcript lines the user can still see.
+ */
 export function startOverlayEpoch(): void {
   epochStart = displayLineBufferStyled.length;
 }
 
-// Whether any transcript has been printed since the current overlay epoch. False
-// on a fresh/startup screen (only the banner and pre-input chrome are on screen);
-// true once real conversation output exists. The resize handler uses this to tell
-// "the banner is what's showing" (redraw it responsively) from "a transcript is
-// showing" (let the terminal reflow it, don't wipe to the banner).
+/**
+ * Whether any transcript has been printed since the current overlay epoch. False
+ * on a fresh/startup screen (only the banner and pre-input chrome are on screen);
+ * true once real conversation output exists. The resize handler uses this to tell
+ * "the banner is what's showing" (redraw it responsively) from "a transcript is
+ * showing" (let the terminal reflow it, don't wipe to the banner).
+ */
 export function hasPostEpochContent(): boolean {
   return displayLineBufferStyled.length > epochStart;
 }
@@ -144,13 +158,15 @@ export function wrapStyledToRows(styled: string, width: number): string[] {
   return rows;
 }
 
-// Returns the last `rowCount` post-epoch transcript display lines (styled, ANSI
-// intact), top-padded with blanks when fewer exist. When `width` is given, over-
-// wide logical lines are wrapped into multiple display rows first, so the result
-// is exactly what those rows occupy on screen. Used to repaint the scroll region
-// on resize: the terminal reflows cursor-addressed chrome (the input frame, and a
-// suggestion overlay) into the transcript as stale duplicates, and the buffer
-// holds only the clean transcript, so repainting from it erases them.
+/**
+ * Returns the last `rowCount` post-epoch transcript display lines (styled, ANSI
+ * intact), top-padded with blanks when fewer exist. When `width` is given, over-
+ * wide logical lines are wrapped into multiple display rows first, so the result
+ * is exactly what those rows occupy on screen. Used to repaint the scroll region
+ * on resize: the terminal reflows cursor-addressed chrome (the input frame, and a
+ * suggestion overlay) into the transcript as stale duplicates, and the buffer
+ * holds only the clean transcript, so repainting from it erases them.
+ */
 export function getScreenBufferScrollRegionLines(rowCount: number, width?: number): string[] {
   const epochLines = displayLineBufferStyled.slice(epochStart);
   const display = width
@@ -179,13 +195,15 @@ export function composeScrollRegionScrub(rowCount: number, width: number): strin
   return out + '\x1b[?7h';
 }
 
-// Returns the lines that should repaint the n overlay rows when a suggestion
-// list closes.  freecode parks the cursor at the bottom of the scroll region
-// before writing output, so each newline scrolls content upward and the
-// bottom row is always blank after printing.  The preceding count-1 rows hold
-// the last min(L, count-1) lines of scroll-region output, with blank padding
-// at the top when L < count-1.  Lines are returned with their original ANSI
-// color codes intact so the restore does not bleach content.
+/**
+ * Returns the lines that should repaint the n overlay rows when a suggestion
+ * list closes.  freecode parks the cursor at the bottom of the scroll region
+ * before writing output, so each newline scrolls content upward and the
+ * bottom row is always blank after printing.  The preceding count-1 rows hold
+ * the last min(L, count-1) lines of scroll-region output, with blank padding
+ * at the top when L < count-1.  Lines are returned with their original ANSI
+ * color codes intact so the restore does not bleach content.
+ */
 export function getScreenBufferDisplayLinesForOverlay(count: number, _scrollHeight: number): string[] {
   const epochLines = displayLineBufferStyled.slice(epochStart);
   const L = epochLines.length;

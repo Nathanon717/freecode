@@ -74,6 +74,7 @@ export function formatToolCallLine(
   );
 }
 
+/** Like `formatToolCallLine`, prefixed with `~ `. */
 export function formatParsedToolCallLine(
   name: string,
   args: Record<string, unknown>,
@@ -86,7 +87,8 @@ export function formatParsedToolCallLine(
 /**
  * The `> ` echo of a submitted prompt. Shared by the raw-mode input UI, which
  * prints it live, and the replay, which reprints it — so the two cannot drift.
- * `eol` exists because raw mode needs an explicit carriage return.
+ * `eol` exists because raw mode needs an explicit carriage return (`\r\n`).
+ * Continuation lines are indented two spaces.
  */
 export function formatPromptEcho(text: string, eol: string = "\n"): string {
   return text
@@ -116,6 +118,11 @@ function renderDimmedLines(lines: string[], options: TranscriptRenderOptions): s
     : indented;
 }
 
+/**
+ * Honours `maxResultLines` and `maxResultRows`, trimming via `fitLinesToRows`
+ * against the rendered (gutter + colour) width and reporting the dropped count in
+ * a "… (N more lines)" footer.
+ */
 export function formatToolResultPreview(
   result: unknown,
   options: TranscriptRenderOptions = {},
@@ -125,7 +132,10 @@ export function formatToolResultPreview(
   return trimmed ? renderDimmedLines(trimmed.split("\n"), options) : "";
 }
 
-/** Create-file preview: the read tool's line-number gutter from line 1, so create and read read alike. */
+/**
+ * Create-file preview: the read tool's line-number gutter from line 1, so create
+ * and read read alike, then dimmed and truncated like `formatToolResultPreview`.
+ */
 export function formatCreatedFileContent(
   content: string,
   options: TranscriptRenderOptions = {},
@@ -139,6 +149,16 @@ function splitDiffLines(text: string): string[] {
   return lines.length > 0 && lines[lines.length - 1] === "" ? lines.slice(0, -1) : lines;
 }
 
+/**
+ * Smart diff renderer: red/green for changed lines, dim for file context. Every
+ * line carries a dim right-aligned line-number gutter starting at `startLine`
+ * (removed lines keep old-file numbers, everything else new-file numbers), in the
+ * same format `read`/`create` use via `util/line-numbers.ts`. Honours
+ * `maxResultLines` and `maxResultRows` the same way `formatToolResultPreview`
+ * does: `edit` (like `create`) previews its diff before confirmation, so a long
+ * change must still fit the approval row budget or it scrolls the call line the
+ * user is approving off-screen.
+ */
 export function formatEditFileDiff(
   _path: string,
   oldText: string,
@@ -191,6 +211,10 @@ export function formatEditFileDiff(
     : formatted;
 }
 
+/**
+ * One raw divider line, no surrounding newlines — `writeStepSeparator` in the
+ * renderer owns those. Uses the target stream's column width when `options` is given.
+ */
 export function formatTranscriptStepDivider(options?: TranscriptRuntimeOptions): string {
   const stream = options ? getTranscriptStream(options) : process.stdout;
   const tty = stream as NodeJS.WriteStream;

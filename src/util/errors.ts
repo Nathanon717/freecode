@@ -7,6 +7,7 @@
 
 import { isRecord } from './guards.js';
 
+/** `error.message` for an `Error`, `String(error)` otherwise. */
 export function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -97,6 +98,10 @@ function detailedBaseMessage(error: unknown): string {
   return String(error);
 }
 
+/**
+ * Includes parsed provider detail where available: `code`, `type`, `param`,
+ * `failed_generation`, response bodies, and a `tool_use_failed` diagnosis.
+ */
 export function toDetailedErrorMessage(error: unknown): string {
   const baseMessage = detailedBaseMessage(error);
   const detailLines: string[] = [];
@@ -145,11 +150,13 @@ const OVERFLOW_PATTERNS = [
   /^4(00|13)\s*(status code)?\s*\(no body\)/i,                     // Cerebras / Mistral bare 400/413
 ];
 
+/** True when the message matches any known context-overflow pattern (Anthropic, OpenAI, Gemini, Ollama, …). */
 export function isContextOverflowError(error: unknown): boolean {
   const msg = toDetailedErrorMessage(error);
   return OVERFLOW_PATTERNS.some(p => p.test(msg));
 }
 
+/** True when the provider returned `code: tool_use_failed`. */
 export function isProviderToolUseFailed(error: unknown): boolean {
   const details = error instanceof Error
     ? apiErrorDetailsFromError(error)
@@ -217,6 +224,10 @@ export interface RejectedToolCall {
  * a tool result — and the SDK then stops stepping, because it only continues when
  * every call has one. Recognising these lets a turn feed the failure back and carry
  * on instead of ending. Returns null when the error is something else.
+ *
+ * Both native tool loops — `agent/loop.ts` and `agent/subagents/run-subagent.ts` —
+ * use it with `MAX_REJECTED_TOOL_CALLS` to recover mid-turn instead of aborting.
+ * It lives here rather than in either loop so the two cannot drift.
  */
 export function rejectedToolCall(error: unknown): RejectedToolCall | null {
   if (isNoSuchToolError(error)) {

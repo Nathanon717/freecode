@@ -27,6 +27,14 @@ interface HfTokenizer {
   encode(text: string, options?: { add_special_tokens?: boolean }): { ids: number[] };
 }
 
+/**
+ * Reads and `JSON.parse`s the file, then constructs `new Tokenizer(json, {})` —
+ * see the note above for why the empty config argument is safe. Encodes with
+ * `add_special_tokens: false` on every call, matching the tiktoken backend's
+ * `encode(text, [], [])` discipline: per-message overhead stays consistent across
+ * backends via `chat-format.ts`'s shared constant, instead of double-counting a
+ * model's real BOS/EOS injection.
+ */
 export function loadBpeJsonEncoder(tokenizerJsonPath: string): TokenizerEncoder {
   const json = readJsonFile<object>(tokenizerJsonPath);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- see HfTokenizer note above
