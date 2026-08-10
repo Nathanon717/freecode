@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Provider-agnostic pipeline for **every** registry provider (Anthropic included, via its OpenAI-compatible endpoint): parse body → apply profile quirks → fetch with retry → capture rate-limit headers → throw HTTP errors → convert/normalize response, with zero `if (id === 'x')` branches. `createOllamaProvider` is a bare `createOpenAI` and bypasses all of it.
+Provider-agnostic pipeline for **every** registry provider (Anthropic included, via its OpenAI-compatible endpoint): parse body → apply profile quirks → fetch with retry → capture rate-limit headers → throw HTTP errors → convert/normalize response, with zero `if (id === 'x')` branches.
 
 ## Read When
 
@@ -42,8 +42,6 @@ endProviderUsageCapture(providerId: string): Promise<CapturedProviderUsage[]>
 formatCapturedProviderUsages(usages: CapturedProviderUsage[] | null | undefined): string | null
 
 createOpenAICompatProvider(providerConfig: ProviderConfig): OpenAIProvider
-
-createOllamaProvider(): OpenAIProvider
 ```
 <!-- END GENERATED EXPORTS -->
 
@@ -59,7 +57,7 @@ createOllamaProvider(): OpenAIProvider
 
 ## Budget
 
-254 / 500 lines (246 to spare).
+247 / 500 lines (253 to spare).
 
 ## Env
 
@@ -106,16 +104,6 @@ The parser reads:
 - SSE `data:` chunks with either shape, keeping the last usage-bearing chunk
 
 Captured usage is intentionally not interpreted for billing; the CLI prints the raw JSON returned by the provider.
-
-## `createOllamaProvider`
-
-Returns an OpenAI-compatible provider pointed at:
-
-```text
-http://localhost:11434/v1
-```
-
-with API key `ollama`.
 
 ## Notes
 

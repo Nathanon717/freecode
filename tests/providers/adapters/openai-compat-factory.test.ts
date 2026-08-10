@@ -1,6 +1,6 @@
 // check-tests: orphan
-// Tests for createOpenAICompatProvider / createOllamaProvider.
-// These functions depend on external I/O (network, config files, DB), so
+// Tests for createOpenAICompatProvider.
+// It depends on external I/O (network, config files, DB), so
 // all boundary modules are mocked. Only pure helpers (sse, request, quirks,
 // guards) run real code, keeping the tests honest about wiring.
 
@@ -34,7 +34,6 @@ import { fetchWithRetry, formatOpenAICompatHttpError } from '../../../src/provid
 import { saveObservedRateLimits } from '../../../src/providers/model-data.js';
 import {
   createOpenAICompatProvider,
-  createOllamaProvider,
   registerQuotaUpdateSink,
   setParallelToolsDisabled,
   getLastCapturedHeaders,
@@ -96,20 +95,6 @@ async function captureUsage(providerId: string, response: Response) {
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
-
-describe('createOllamaProvider', () => {
-  it('returns a provider object', () => {
-    expect(createOllamaProvider()).toBeDefined();
-  });
-
-  it('calls createOpenAI with the ollama base URL and no real API key', () => {
-    vi.mocked(createOpenAI).mockClear();
-    createOllamaProvider();
-    const args = vi.mocked(createOpenAI).mock.calls.at(-1)![0] as { baseURL?: string; apiKey?: string };
-    expect(args.baseURL).toContain('11434');
-    expect(args.apiKey).toBe('ollama');
-  });
-});
 
 describe('createOpenAICompatProvider', () => {
   beforeEach(() => {

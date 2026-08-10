@@ -186,7 +186,7 @@ Format: filename (linecount)
   - [`openai-compat-quirks.ts`](providers/adapters/openai-compat-quirks.md) (64) — OpenAI-Compatible Provider Quirk Profiles
   - [`openai-compat-request.ts`](providers/adapters/openai-compat-request.md) (69) — OpenAI-Compatible Request Transforms
   - [`openai-compat-sse.ts`](providers/adapters/openai-compat-sse.md) (141) — OpenAI-Compatible SSE Transforms
-  - [`openai-compat.ts`](providers/adapters/openai-compat.md) (254) — OpenAI-Compatible Adapter
+  - [`openai-compat.ts`](providers/adapters/openai-compat.md) (247) — OpenAI-Compatible Adapter
 - `src/providers/`
   - [`fake.ts`](providers/fake.md) (436) — Fake LLM Fixtures
   - [`index.ts`](providers/index.md) (3) — Provider Re-exports

@@ -88,7 +88,7 @@ describe('Provider Registry', () => {
   });
 
   describe('Provider specific configurations', () => {
-    it('Ollama should not be in registry (handled separately)', () => {
+    it('Ollama is not a supported provider', () => {
       const ollama = getProvider('ollama');
       expect(ollama).toBeUndefined();
     });

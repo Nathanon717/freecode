@@ -1,5 +1,5 @@
 /**
- * @role Provider-agnostic pipeline for **every** registry provider (Anthropic included, via its OpenAI-compatible endpoint): parse body → apply profile quirks → fetch with retry → capture rate-limit headers → throw HTTP errors → convert/normalize response, with zero `if (id === 'x')` branches. `createOllamaProvider` is a bare `createOpenAI` and bypasses all of it.
+ * @role Provider-agnostic pipeline for **every** registry provider (Anthropic included, via its OpenAI-compatible endpoint): parse body → apply profile quirks → fetch with retry → capture rate-limit headers → throw HTTP errors → convert/normalize response, with zero `if (id === 'x')` branches.
  *
  * @readwhen
  * - Debugging rate-limit header capture or quota-sink updates for a specific provider.
@@ -252,12 +252,5 @@ export function createOpenAICompatProvider(providerConfig: ProviderConfig) {
     apiKey,
     headers: profile?.staticHeaders,
     fetch: customFetch,
-  });
-}
-
-export function createOllamaProvider() {
-  return createOpenAI({
-    baseURL: 'http://localhost:11434/v1',
-    apiKey: 'ollama',
   });
 }
