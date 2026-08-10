@@ -419,38 +419,5 @@ describe('db: tokenless run over a sync replica', () => {
   });
 });
 
-describe('db: isReplicaConflict', () => {
-  // A WalConflict is thrown and requires a destructive wipe+re-pull. "local state is
-  // incorrect" is NOT thrown (libSQL self-heals) and must NOT match — wiping on it
-  // would discard a replica libSQL is about to legitimately re-pull.
-  it.each([
-    ['ERROR libsql::sync: insert error (frame=84): WalConflict', true],
-    ['WalConflict', true],
-    ['local state is incorrect, db file exists but metadata file does not', false],
-    ['network timeout', false],
-    ['401 Unauthorized', false],
-  ])('%s → %s', (message, expected) => {
-    expect(db.isReplicaConflict(new Error(message))).toBe(expected);
-  });
-
-  it('handles non-Error values without throwing', () => {
-    expect(db.isReplicaConflict('WalConflict')).toBe(true);
-    expect(db.isReplicaConflict(null)).toBe(false);
-  });
-});
-
-describe('db: wipeLocalDb', () => {
-  it('removes the db file and every libSQL sidecar including `-info`', () => {
-    const dbPath = join(tempStore, 'freecode.db');
-    const suffixes = ['', '-shm', '-wal', '-info', '-meta'];
-    for (const s of suffixes) writeFileSync(dbPath + s, 'x');
-
-    db.wipeLocalDb('file:' + dbPath);
-
-    for (const s of suffixes) expect(existsSync(dbPath + s)).toBe(false);
-  });
-
-  it('never throws when the files are absent', () => {
-    expect(() => db.wipeLocalDb('file:' + join(tempStore, 'nonexistent.db'))).not.toThrow();
-  });
-});
+// isReplicaConflict / wipeLocalDb / isSyncReplica now live in db-replica.ts and are
+// covered by tests/store/db-replica.test.ts.

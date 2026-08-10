@@ -3,12 +3,12 @@
  *
  * @readwhen
  * - Troubleshooting startup DB errors or the libSQL client configuration.
- * - Extending the schema (new table or column).
+ * - Changing when or where schema bootstrap runs; the DDL itself lives in [db-schema.md](./db-schema.md).
  * - Understanding why model-data reads hit cache vs. JSON.
  */
 
 import { createClient, type Client, type InValue } from '@libsql/client';
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { log, logError } from '../logger.js';
 import type { ModelEntry, EvalRunSummary } from '../providers/model-data.js';
 import { setDbConfigCache, clearDbConfigCache, registerConfigPersist, type DbConfigData } from './db-config-cache.js';
@@ -16,6 +16,7 @@ import type { LlmCallRow } from './call-log.js';
 import { loadFromDb, loadConfigFromDb } from './db-load.js';
 import type { ModelDataMap } from './db-types.js';
 import { createSchema } from './db-schema.js';
+import { isReplicaConflict, isSyncReplica, wipeLocalDb } from './db-replica.js';
 import { getConfigMirrorPath, getDbUrl, getStoreDir, readDbConfig } from './store-paths.js';
 
 /** One provider-catalog row: the registry's view of a model, no user state. */
@@ -28,33 +29,9 @@ export interface ModelCatalogRow {
 }
 
 let client: Client | null = null;
+/** True only while `client` is a synced replica. See `syncReplica`. */
+let clientIsSynced = false;
 let cache: ModelDataMap | null = null;
-
-// libSQL replica sidecars. A recovery wipe MUST remove `-info` (sync metadata) or a
-// WalConflict survives the re-pull; verified real dir has no `-meta`. See db.md.
-const DB_FILE_SUFFIXES = ['', '-shm', '-wal', '-info', '-meta'] as const;
-
-/** Remove the local db file and all its libSQL sidecars. Never throws. Exported for tests. */
-export function wipeLocalDb(url: string): void {
-  const dbPath = url.replace(/^file:/, '');
-  for (const suffix of DB_FILE_SUFFIXES) {
-    try { unlinkSync(dbPath + suffix); } catch { /* ignore */ }
-  }
-}
-
-/**
- * True for a libSQL WalConflict (diverged replica → wipe + re-pull); NOT transient
- * network/auth errors, which must not trigger a destructive wipe. Exported for tests. See db.md.
- */
-export function isReplicaConflict(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
-  return /WalConflict/i.test(msg);
-}
-
-/** True when the db file at `url` is a libSQL embedded replica (has an `-info` sync-metadata sidecar). See db.md. */
-function isSyncReplica(url: string): boolean {
-  return existsSync(url.replace(/^file:/, '') + '-info');
-}
 
 
 // Tracks in-flight writes so resetStore() can drain them before closing.
@@ -143,7 +120,7 @@ export function persistModelRowAsync(key: string, entry: ModelEntry): void {
           entry.removed ? 1 : 0,
         ] as InValue[],
       });
-      await c.sync().catch((err) => logError('db', 'sync after model upsert failed', err));
+      await syncReplica(c, 'model upsert');
     } catch (err) {
       logError('db', 'Failed to persist model row', err);
     }
@@ -175,7 +152,7 @@ export function persistModelCatalogAsync(rows: ModelCatalogRow[]): void {
         })),
         'write'
       );
-      await c.sync().catch((err) => logError('db', 'sync after catalog upsert failed', err));
+      await syncReplica(c, 'catalog upsert');
     } catch (err) {
       logError('db', 'Failed to persist model catalog', err);
     }
@@ -272,7 +249,7 @@ export function persistCallLogAsync(row: LlmCallRow): void {
           row.error ?? null,
         ] as InValue[],
       });
-      await c.sync().catch((err) => logError('db', 'sync after call-log insert failed', err));
+      await syncReplica(c, 'call-log insert');
     } catch (err) {
       logError('db', 'Failed to persist call log row', err);
     }
@@ -290,7 +267,7 @@ function persistDbConfigRowAsync(scope: string, data: unknown): void {
               ON CONFLICT(scope) DO UPDATE SET data = excluded.data`,
         args: [scope, JSON.stringify(data)] as InValue[],
       });
-      await c.sync().catch((err) => logError('db', 'sync after config upsert failed', err));
+      await syncReplica(c, 'config upsert');
     } catch (err) {
       logError('db', 'Failed to persist config row', err);
     }
@@ -353,11 +330,22 @@ export function saveTranscriptAsync(
           scoringOutcome !== undefined ? JSON.stringify(scoringOutcome) : null,
         ] as InValue[],
       });
-      await c.sync().catch((err) => logError('db', 'sync after transcript insert failed', err));
+      await syncReplica(c, 'transcript insert');
     } catch (err) {
       logError('db', 'Failed to persist transcript', err);
     }
   });
+}
+
+/**
+ * Push a completed write to the remote, but only when the open client is a sync
+ * replica. A plain local-file client has no remote and libSQL's `sync()` throws
+ * `SyncNotSupported("File")`, so calling it unconditionally made every write on a
+ * local-only install raise an error on the way out.
+ */
+async function syncReplica(c: Client, what: string): Promise<void> {
+  if (!clientIsSynced) return;
+  await c.sync().catch((err) => logError('db', `sync after ${what} failed`, err));
 }
 
 export function getDbSyncConfig(): { syncUrl?: string; authToken?: string } {
@@ -394,11 +382,13 @@ async function openAndPrepareClient(): Promise<void> {
       return;
     }
     client = createClient({ url });
+    clientIsSynced = false;
     await createSchema(client);
     return;
   }
 
   client = openSyncedClient(url, syncUrl, authToken);
+  clientIsSynced = true;
   try {
     await client.sync();
     await createSchema(client);
@@ -439,6 +429,7 @@ async function doInit(): Promise<void> {
     logError('db', 'Store init failed; continuing without persistence', err);
     try { client?.close(); } catch { /* ignore */ }
     client = null;
+    clientIsSynced = false;
     if (cache === null) cache = {};
   }
   registerConfigPersist(persistDbConfigRowAsync);
@@ -463,6 +454,7 @@ export async function resetStore(): Promise<void> {
   pendingWrites.clear();
   client?.close();
   client = null;
+  clientIsSynced = false;
   cache = null;
   initPromise = null;
   clearDbConfigCache();

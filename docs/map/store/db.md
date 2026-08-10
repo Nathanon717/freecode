@@ -8,7 +8,7 @@ Owns the libSQL client, schema bootstrap, in-memory model-data cache, startup im
 ## Read When
 
 - Troubleshooting startup DB errors or the libSQL client configuration.
-- Extending the schema (new table or column).
+- Changing when or where schema bootstrap runs; the DDL itself lives in [db-schema.md](./db-schema.md).
 - Understanding why model-data reads hit cache vs. JSON.
 <!-- END GENERATED MAP INTENT -->
 
@@ -26,17 +26,6 @@ interface ModelCatalogRow {
   displayName: string;
   contextWindow?: number;
 }
-
-/**
- * Remove the local db file and all its libSQL sidecars. Never throws. Exported for tests.
- */
-wipeLocalDb(url: string): void
-
-/**
- * True for a libSQL WalConflict (diverged replica → wipe + re-pull); NOT transient
- * network/auth errors, which must not trigger a destructive wipe. Exported for tests. See db.md.
- */
-isReplicaConflict(err: unknown): boolean
 
 /**
  * Synchronously write the DbConfigData to the file mirror.
@@ -138,7 +127,7 @@ executeRawForTesting(sql: string, args: InValue[]): Promise<void>
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imports:** [`logger.ts`](../logger.md) ×17, [`store/store-paths.ts`](store-paths.md) ×7, [`store/db-config-cache.ts`](db-config-cache.md) ×6, [`store/db-schema.ts`](db-schema.md) ×4, [`store/db-types.ts`](db-types.md) ×3, [`providers/model-data.ts`](../providers/model-data.md) ×2, [`store/db-load.ts`](db-load.md) ×2, [`store/call-log.ts`](call-log.md) ×1
+- **Imports:** [`logger.ts`](../logger.md) ×13, [`store/store-paths.ts`](store-paths.md) ×7, [`store/db-config-cache.ts`](db-config-cache.md) ×6, [`store/db-replica.ts`](db-replica.md) ×4, [`store/db-schema.ts`](db-schema.md) ×4, [`store/db-types.ts`](db-types.md) ×3, [`providers/model-data.ts`](../providers/model-data.md) ×2, [`store/db-load.ts`](db-load.md) ×2, [`store/call-log.ts`](call-log.md) ×1
 - **Imported by:** [`providers/model-data.ts`](../providers/model-data.md) ×7, [`commands/model.ts`](../commands/model.md) ×3, [`agent/loop.ts`](../agent/loop.md) ×1, [`cli/command-dispatcher.ts`](../cli/command-dispatcher.md) ×1, [`cli/eval/eval-menu.ts`](../cli/eval/eval-menu.md) ×1, [`commands/config.ts`](../commands/config.md) ×1, [`commands/status.ts`](../commands/status.md) ×1, [`config/index.ts`](../config/index.md) ×1, +2 more
 
 ## Tests
@@ -147,7 +136,7 @@ executeRawForTesting(sql: string, args: InValue[]): Promise<void>
 
 ## Budget
 
-484 / 500 lines (16 to spare).
+476 / 500 lines (24 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Notes

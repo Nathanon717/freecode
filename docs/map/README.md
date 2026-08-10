@@ -179,7 +179,7 @@ Format: filename (linecount)
   - [`result-sink.ts`](eval/result-sink.md) (78) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (207) — Eval Subprocess Runner
 - [`index.ts`](index.md) (226) — CLI Entry Point
-- [`logger.ts`](logger.md) (54) — Logging Utility
+- [`logger.ts`](logger.md) (53) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (188) — Adapter HTTP Retry/Backoff
   - [`adapter-usage-capture.ts`](providers/adapters/adapter-usage-capture.md) (51) — Shared Usage/Header Capture
@@ -208,9 +208,10 @@ Format: filename (linecount)
   - [`call-log.ts`](store/call-log.md) (51) — Per-Call LLM Log
   - [`db-config-cache.ts`](store/db-config-cache.md) (54) — DB Config Cache
   - [`db-load.ts`](store/db-load.md) (92) — DB Row Hydration
+  - [`db-replica.ts`](store/db-replica.md) (27) — Replica Detection & Recovery
   - [`db-schema.ts`](store/db-schema.md) (86) — Table & Index DDL
   - [`db-types.ts`](store/db-types.md) (5) — Shared Store Types
-  - [`db.ts`](store/db.md) (484) — SQLite Store (libSQL/Turso)
+  - [`db.ts`](store/db.md) (476) — SQLite Store (libSQL/Turso)
   - [`model-list-cache.ts`](store/model-list-cache.md) (106) — Model List Cache
   - [`store-paths.ts`](store/store-paths.md) (57) — Store Location & Sync Credentials
 - `src/tokenizers/backends/`
