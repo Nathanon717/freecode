@@ -16,7 +16,7 @@ The map is maintained incrementally:
 Every page is the same shape: a generated head in a fixed order, then one authored tail.
 
 ```text
-# src/agent/loop.ts — Agent Loop     GENERATED  (path + @role title)
+# src/agent/loop.ts — Agent Loop     AUTHORED   (source path + a short label)
 ## Role                              GENERATED  (from @role in source)
 ## Read When                         GENERATED  (from @readwhen in source)
 ## Exports                           GENERATED  (+ JSDoc, + external ref counts)
@@ -27,7 +27,7 @@ Every page is the same shape: a generated head in a fixed order, then one author
 <free-form H2 tail>                  AUTHORED, optional, uncapped
 ```
 
-Do not hand-edit content between the `BEGIN/END GENERATED` markers — `npm run docs:generate` maintains it. The tail is the one authored slot, and it is the one no parser could produce.
+Do not hand-edit content between the `BEGIN/END GENERATED` markers — `npm run docs:generate` maintains it. The tail is the one authored slot, and it is the one no parser could produce. The H1 is the other: it names the source file and gives it a short label, which the structure tree above reads.
 
 **H2-only.** Every addressable field is `## <Exact Name>`, and runs from that heading to the next H2 or to the next generated marker. No inline-bold fields, no frontmatter: a second grammar buys nothing the queries need.
 
@@ -38,7 +38,7 @@ The canonical names above are **reserved** — a page spells one exactly and put
 | Generated section | Derived from |
 | --- | --- |
 | `Role` | `@role` in the source file's module header (`scripts/docgen/map-intent.ts`) |
-| `Read When` | `@readwhen` in the same header; absent when the module has no tag |
+| `Read When` | `@readwhen` in the same header; every module carries one |
 | `Exports` | each export's signature and its JSDoc (`scripts/docgen/map-exports.ts`) |
 | `Neighbors` | the intra-`src/` import graph, both directions (`scripts/docgen/map-facts.ts`) |
 | `Tests` | the mirrored `tests/` file, plus a count of the others that name this module |
@@ -64,7 +64,11 @@ The header holds **tags and nothing else**. Untagged prose there attaches to the
  */
 ```
 
-`npm run docs:generate` checks generated reference docs first. If they are current, it leaves them untouched; if they are stale, it regenerates them (including every page's generated blocks and this file's structure tree). It then runs `scripts/checks/check-map.ts`, which checks that every `src/**/*.ts` file has a matching map page, that map pages still point to existing source files, and that each page keeps its generated blocks.
+`npm run docs:generate` checks generated reference docs first. If they are current, it leaves them untouched; if they are stale, it regenerates them (including every page's generated blocks and this file's structure tree). It then runs `scripts/checks/check-map.ts`, which pairs every `src/**/*.ts` file with its page and enforces everything above: the page exists and is linked from here, the H1 names its source file, every required section is present and exactly spelled as an H2, the canonical head runs in order above the tail, no prose sits outside a section, and `Role` and `Read When` are inside their caps. Caps and intent are checked against the **source tags**, so a failure names the tag to edit rather than a page you cannot hand-fix.
+
+No check can see whether a tag still *describes* its code. That question is a sweep: `npm run intent-drift` asks it of every source file, and `npm run map-drift` asks it of every authored tail. See [sweeps.md](../sweeps.md).
+
+`docs:generate` also reports which *non-map* docs your source changes oblige you to check — see [docs.md](../docs.md#codebase-map).
 
 In the tail, write whatever sections the file's behavior needs. Keep it short and operational, and do not restate a fact a generated section already carries.
 

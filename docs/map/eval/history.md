@@ -4,6 +4,12 @@
 ## Role
 
 Loads eval history from the DB cache, computes per-scenario eval status, and provides the bulk data bundle used by the model picker and eval menus.
+
+## Read When
+
+- Changing how eval status dots (grey/green/orange/red) are derived from cached history.
+- Debugging wrong dot colors caused by runHash versus legacy full-hash matching.
+- Extending the history bundle served to model picker and eval menus (tokens, checks, hashes).
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

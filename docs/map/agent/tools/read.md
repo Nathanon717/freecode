@@ -4,6 +4,12 @@
 ## Role
 
 Reads a UTF-8 file relative to the active project root, with line-based pagination and fuzzy "did you mean" suggestions on ENOENT.
+
+## Read When
+
+- Changing the read tool's line pagination, offset/limit defaults, or "end of file" trailer.
+- Debugging or extending the ENOENT "did you mean" filename suggestions against sibling entries.
+- Adjusting how readFile marks files as read via markFileRead or formats line-numbered output.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

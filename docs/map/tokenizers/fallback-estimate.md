@@ -4,6 +4,12 @@
 ## Role
 
 The permanent fallback token estimator for any model with no exact tokenizer backend — a real `o200k_base` BPE count for the wrong model family, not a chars/4 heuristic. Replaces the deleted `src/agent/token-count.ts`.
+
+## Read When
+
+- Changing fallback token counting for models lacking exact tokenizer backends.
+- Debugging token-count mismatches between fallback o200k_base estimates and exact backends.
+- Adding special-token handling when estimateTextTokens encodes strings like "<|endoftext|>".
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

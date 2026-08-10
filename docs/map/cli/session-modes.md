@@ -4,6 +4,12 @@
 ## Role
 
 Builds the interactive TTY `CliSessionMode` (`createInteractiveMode`). The deterministic `--script` mode was split into [scripted-mode.md](scripted-mode.md) at the 500-line limit.
+
+## Read When
+
+- Changing tool-call skeleton autofill, Tab slot cycling, or Backspace slot stepping in the prompt editor.
+- Debugging mid-turn read-only enforcement or auto-approve token-budget logic in `confirmToolCall`.
+- Fixing footer context/usage or daily-spend refresh timing around turns, model switches, and config commands.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

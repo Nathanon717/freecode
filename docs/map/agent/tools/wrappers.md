@@ -4,6 +4,12 @@
 ## Role
 
 The decorator layer every offered tool is built from — rationale argument, user confirmation and approval preview, transcript rendering and trace capture, turn stop, and serialized execution. Split out of [index.md](index.md) at the 500-line limit; `index.ts` owns *which* tools exist and which a turn is offered, this file owns *what happens around each call*.
+
+## Read When
+
+- Debugging why Esc stops the turn or how a denial renders before TurnStoppedError.
+- Changing transcript output around a call: header, rationale, edit diff, create content, or errors.
+- Extending the shared wrapper stack — rationale, confirmation, activity label, trace capture, serialization.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

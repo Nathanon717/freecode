@@ -4,6 +4,12 @@
 ## Role
 
 Owns the in-memory conversation for a CLI session.
+
+## Read When
+
+- Changing the all-or-nothing turn commit that drops empty assistant turns and unpaired tool calls.
+- Debugging Mistral's HTTP 400 (code 3240) from empty assistant messages in conversation history.
+- Adding persistence or serialization to the in-memory session messages and clearMessages behaviour.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

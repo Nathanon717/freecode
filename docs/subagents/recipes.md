@@ -205,6 +205,43 @@ converts a veto into a redesign. A hostile prompt that can only say no is worth 
 
 ---
 
+## R7 — Fan-out: draft authored metadata for every file in a list
+
+**Model:** `zen:big-pickle` · **Time:** 452s wall for 42 files, 6 in parallel (median 54s
+per call, worst 99s) · **Verified:** yes — 42/42, mechanically
+**Stats:** 352,199 free tokens across the batch
+
+```bash
+xargs -a files.txt -P 6 -I{} freecode --stats --model zen:big-pickle -p "Read {}. Output 1-3 markdown bullets naming the concrete tasks that should make an agent open this file. Each bullet is one line, starts with '- ', begins with a gerund (Changing/Debugging/Adding/Extending), under 20 words, and names behaviour specific to THIS file — not generic advice. Do not describe what the file is; say when to read it. Output only the bullets, nothing else."
+```
+
+Run to author the 42 missing `@readwhen` tags when `Read When` became mandatory. One call
+per file, output to one file per source file, then applied by script.
+
+**Verification — the part that makes this recipe work.** A batch answer nobody can check
+is 42 guesses. Every backticked identifier and every multi-digit number in all 42 drafts
+was extracted and grepped against the file it described: **0 unverified**, one Python loop,
+one Bash call. The same pass counted bullets, which caught 6 drafts that had run to 4.
+Lead-side work was then a read of the drafts plus 7 judgment edits (6 bullets dropped to
+the cap, 1 draft replaced as too generic for a 3-line barrel file) — 124 bullets applied.
+
+**Use when:** an authored field is missing across N files and the content is derivable from
+each file alone — `@role`/`@readwhen`, a JSDoc line, a test-file header. The unit is one
+file, there is no cross-file reasoning, and N is the whole cost on a paid provider.
+
+**What made it checkable:** *"names behaviour specific to THIS file"* is what produces the
+backticked symbols and concrete numbers the verification pass greps for. A prompt that
+allows generic phrasing produces text that is unfalsifiable, and unfalsifiable output
+cannot be batch-verified at all. The negative clause — *"Do not describe what the file is;
+say when to read it"* — is load-bearing too: without it the model restates `@role`.
+
+**When to fan out with `xargs` and when to reach for a sweep.** This is one prompt asked of
+every file in a tree, which is a [sweep](../sweeps.md)'s definition — but a sweep produces a
+findings-only *report*, and this produces per-file *content* to apply. Fan-out is right when
+you want every answer kept. If you only want the exceptions, write a sweep.
+
+---
+
 ## Prompt Patterns That Work
 
 Distilled from the runs above:

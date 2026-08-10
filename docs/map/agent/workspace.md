@@ -4,6 +4,12 @@
 ## Role
 
 Provides the current project root and per-root file read tracking to tool modules that are created outside a single request scope.
+
+## Read When
+
+- Changing how project-root scoping or symlink traversal guards work.
+- Debugging "Path escapes project root" errors or cross-request read dedup.
+- Extending the per-root read-file tracking for tools outside request scope.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 import { spawnSync } from 'child_process';
+import { renderDocReferenceReport } from './doc-references.js';
 
 function run(args: string[], stdio: 'inherit' | 'pipe' = 'inherit') {
   const result = spawnSync(process.execPath, args, {
@@ -42,3 +43,9 @@ if (check.status === 0) {
 runRequired(['--import', 'tsx', 'scripts/checks/check-map.ts']);
 runRequired(['--import', 'tsx', 'scripts/checks/check-line-limits.ts']);
 runRequired(['--import', 'tsx', 'scripts/checks/check-tests.ts']);
+
+// Last, and never fatal: which prose docs mention the source files in the
+// working tree. An obligation, not a check — it prints after the checks pass
+// because it is the next thing to do, not a reason to stop.
+const report = renderDocReferenceReport();
+if (report) console.log(report);

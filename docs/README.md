@@ -12,10 +12,10 @@ Use this directory as the project handbook. Generated reference pages report fac
 - [Writing unit tests](unit-tests.md): behavior-first testing rules to prevent test-file bloat. Read before writing unit tests.
 - [Test pipeline timing](scripts/time.md): per-section timing tool to identify pipeline bottlenecks.
 - [Model availability smoke test](scripts/test-all-models.md): sends "hi" to every free model to check which ones currently respond.
-- [Sweeps](sweeps.md): one bare LLM call per unit across a tree. How to run one (`npm run dead-code`, `npm run map-drift`), how to write one, and the candidates not yet written.
+- [Sweeps](sweeps.md): one bare LLM call per unit across a tree. How to run one (`npm run dead-code`, `npm run map-drift`, `npm run intent-drift`), how to write one, and the candidates not yet written.
 - [Line limit](line-limit.md): the 500-line hard limit and extraction guidance.
 - [Codebase map](map/README.md): agent-oriented source navigation.
-- [Map overhaul](map-overhaul.md): **temporary plan** to make the map queryable by section and shrink hand-written content to what cannot be derived. Deletes itself as it ships; read its Retirement section before editing it.
+- [Map generation candidates](ideas/map-generation-candidates.md): derived map sections that were costed and **not built**, each with the evidence that shelved it. Read before proposing a new generated section, so a rejected one is not re-derived.
 - [PTY session](pty-session.md): drive the live TUI from the shell, exactly as a human would.
   <!-- BEGIN GENERATED PTY QUICKSTART REF -->
 For usage only, read lines 1–72.

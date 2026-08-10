@@ -4,6 +4,12 @@
 ## Role
 
 Shared interfaces for provider metadata, model metadata, static limits, and loaded config.
+
+## Read When
+
+- Changing free-model gating semantics that depend on isFreeModelId or the free-tier default.
+- Adding a new per-provider overridable setting like parallelTools or autoApproveTokenBudget.
+- Extending rate-limit or blocklist fields (rpm, rpd, tpm, tpd, modelTierBlocklist) on provider or model metadata.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

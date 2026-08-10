@@ -1,5 +1,10 @@
 /**
  * @role The engine's public entry point: a synchronous `countTokens` safe to call on a hot path (once per keystroke), backed by an in-memory encoder cache keyed by family, plus an async `preloadTokenizerFor` that compiles and caches exact backends in the background.
+ *
+ * @readwhen
+ * - Changing the synchronous per-keystroke token count or its generic-estimate fallback path.
+ * - Debugging why counts show as approximate, since cache misses fall back to `estimateTextTokens` with `exact: false`.
+ * - Adding a new tokenizer family backend to the `preloadTokenizerFor` ensure-download → load → cache pipeline.
  */
 
 import type { CoreMessage } from 'ai';

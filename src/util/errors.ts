@@ -1,5 +1,8 @@
 /**
- * @role Shared error-formatting utilities.
+ * @role Everything freecode does with an `unknown` thrown value: format it for a
+ * user or a log, classify it (context overflow, tools unsupported, no such
+ * model, malformed tool call), recover the tool call a provider rejected, and
+ * serialize it. `TurnStoppedError`, the Esc-stop signal, is defined here too.
  *
  * @readwhen
  * You need a consistent way to extract a string message from an `unknown` catch value, or to surface provider/API details from structured error payloads.

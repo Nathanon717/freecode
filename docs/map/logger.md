@@ -4,6 +4,12 @@
 ## Role
 
 Category-colored stderr logging. Diagnostic logging is disabled by default; errors always surface.
+
+## Read When
+
+- Adding or renaming a log category color in CATEGORY_COLORS.
+- Changing the stderr output format, timestamp, or JSON data serialization.
+- Debugging why `-log` flag output is missing, since enableLog() gates every write.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

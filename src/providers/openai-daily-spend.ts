@@ -1,5 +1,10 @@
 /**
  * @role Fetches and caches the current UTC day's OpenAI organization cost for the interactive footer.
+ *
+ * @readwhen
+ * - Debugging the footer's OpenAI daily spend when amounts are wrong, missing, or non-USD buckets are ignored.
+ * - Changing the 5-minute cache TTL or the single-in-flight refresh dedup around the costs fetch.
+ * - Adding handling for a missing OPENAI_ADMIN_KEY or extending amount formatting for sub-cent spend.
  */
 
 /** The footer's snapshot of the current UTC day's OpenAI organization cost. */

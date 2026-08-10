@@ -66,6 +66,15 @@ function tagBodies(lines: string[]): Map<string, string> {
   return new Map([...bodies].map(([tag, body]) => [tag, body.join('\n').trim()]));
 }
 
+/**
+ * The file without its header, so a reader judging whether the tags still
+ * describe the code is not shown the tags restated inside their own evidence.
+ */
+export function stripModuleHeader(content: string): string {
+  const shebang = /^#![^\n]*\n/.exec(content)?.[0] ?? '';
+  return shebang + content.slice(shebang.length).replace(MODULE_HEADER, '').trimStart();
+}
+
 export function readModuleIntent(srcAbsPath: string): ModuleIntent {
   const lines = headerLines(readFileSync(srcAbsPath, 'utf-8'));
   const bodies = lines ? tagBodies(lines) : new Map<string, string>();

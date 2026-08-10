@@ -2,6 +2,11 @@
  * @role Owns the constraints on the messages a turn contributes back to the
  * session history. Read it before changing what any loop returns as `turnMessages`,
  * or before adding a fourth tool protocol.
+ *
+ * @readwhen
+ * - Changing what any loop returns as `turnMessages` before it reaches session history.
+ * - Fixing Esc-stopped turns whose denied tool calls commit unpaired (bug log 05-08-2026).
+ * - Adding a fourth tool protocol or adjusting native tool-call/result pairing constraints.
  */
 
 // Shape rules for the messages a turn contributes back to the session history.

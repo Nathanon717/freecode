@@ -1,5 +1,10 @@
 /**
  * @role Clears the terminal and prints the freecode ASCII banner in a rotating pastel color.
+ *
+ * @readwhen
+ * - Changing the rotating pastel banner color persisted in `banner-color.json`.
+ * - Debugging terminal clear/redraw behaviour when the banner is the only thing on screen.
+ * - Adding or tuning the compact/full banner switch at the 82-column width threshold.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";

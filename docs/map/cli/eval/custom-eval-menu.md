@@ -4,6 +4,12 @@
 ## Role
 
 Provides the **Custom** tab of the unified eval menu (`buildCustomEvalTab`) and the eval scenario run loop (`runEvalScenarios`) backed by `evals/custom/`. The `/eval` menu itself is composed in `cli/eval/eval-menu.ts`. Delegates subprocess execution to `eval-runner.ts`, rendering to `eval-screen.ts`, error parsing to `eval-errors.ts`, and the inline action sub-menu to `action-menu.ts`.
+
+## Read When
+
+- Changing the Custom eval tab's Run/View/Edit action menu or 'a' run-all shortcut.
+- Debugging skipped scenarios reported missing prompt.md or eval/check.ts.
+- Adjusting the 500ms live quota and retry-banner polling during custom eval runs.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

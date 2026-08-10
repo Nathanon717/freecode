@@ -4,6 +4,12 @@
 ## Role
 
 Public API layer for all per-model data: the provider catalog (display name, context window), favorites, native-tools state, per-model settings, eval run records, and observed rate limits. Keyed by `"provider:modelId"`. All public function signatures are synchronous; reads hit the `db.ts` in-memory cache and writes update the cache then fire-and-forget persist to the DB.
+
+## Read When
+
+- Changing favorites, removal, or native-tools state per `"provider:modelId"` key.
+- Adding persisted per-model settings (temperature, reasoning effort) overrides.
+- Debugging eval run recording, humaneval pass/fail derivation, or observed rate limits.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

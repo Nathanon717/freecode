@@ -1,5 +1,10 @@
 /**
  * @role Implements the `/config` terminal UI for editing settings at global, provider, and model levels.
+ *
+ * @readwhen
+ * - Adding a new boolean or numeric setting to the /config editor's SETTINGS array and per-tab visibility rules.
+ * - Changing how provider/model overrides cycle through inherit, false, true, and clamp at min/max.
+ * - Debugging why /config edits don't persist — provider overrides seed from the DB-merged config, not config.json.
  */
 
 import chalk from 'chalk';

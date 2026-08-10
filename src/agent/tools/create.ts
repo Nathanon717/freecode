@@ -1,5 +1,10 @@
 /**
  * @role Creates a new UTF-8 file relative to the active project root.
+ *
+ * @readwhen
+ * - Changing how new files are created, e.g. adding a fail-if-exists check, encoding, or error handling.
+ * - Debugging why creating a file fails or reports wrong bytes written.
+ * - Extending file creation to support newline/tab normalization or directory auto-creation.
  */
 
 import { tool } from 'ai';

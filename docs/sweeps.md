@@ -1,9 +1,15 @@
 # Sweeps
 
 A **sweep** is one bare LLM call per unit across a whole tree, with the per-unit verdicts
-collected into a findings-only report. `npm run map-drift` is the original and
-`npm run dead-code` the second; `scripts/sweep/` is the engine every other sweep should be
-built on.
+collected into a findings-only report. Three exist: `npm run map-drift` (does a page's
+authored tail still match its code), `npm run dead-code`, and `npm run intent-drift` (does
+a module's `@role` / `@readwhen` still match the code below it). `scripts/sweep/` is the
+engine every other sweep should be built on.
+
+The two drift sweeps are complements, not duplicates. `map-drift` strips every generated
+block before the page reaches the model, so the intent sections are not in what it sees;
+`intent-drift` reads the tags from the source file, which is where they live. Neither can
+answer the other's question.
 
 Sweeps exist because free providers invert the unit economics — see
 [subagents/README.md](subagents/README.md) for why exhaustive, low-hit-rate work becomes
@@ -96,7 +102,8 @@ other vocabulary you like.
 If the answer format is `OK` or one finding token, `createVerdictParser` in
 `scripts/sweep/binary-verdict.ts` already handles the ways weak models mangle it — code
 fences, preamble, leaked reasoning blocks, `No <token> found` — and never coerces an
-unreadable answer to clean. `map-drift` binds it to `DRIFT`, `dead-code` to `DEAD`.
+unreadable answer to clean. `map-drift` and `intent-drift` share one binding to `DRIFT` in
+`drift-classify.ts`; `dead-code` binds `DEAD`.
 
 ## Flags
 

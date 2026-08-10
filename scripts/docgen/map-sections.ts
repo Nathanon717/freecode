@@ -7,11 +7,10 @@
  * `map-query.ts` all read it, so changing map strategy is an edit to this array
  * rather than an edit to 115 pages.
  *
- * The parser tolerates the corpus as it stands today: the same field appears as
- * an H2 (`## Read When`) on some pages and as an inline bold label
- * (`**Read when:**`) on others, with three spellings of "neighbors". Aliases
- * resolve all of those to one canonical name, so a query works across the whole
- * corpus before the migration has touched it.
+ * The parser also reads spellings no page uses any more — an inline
+ * `**Read when:**` field, three spellings of "neighbors". Aliases resolve them
+ * to one canonical name, which is what lets `check-map.ts` refuse a
+ * reintroduced spelling *by name* instead of reporting a missing section.
  */
 import { readdirSync } from 'fs';
 import { join, relative, dirname } from 'path';
@@ -29,9 +28,9 @@ function toPosix(path: string): string {
 export type SectionSource = 'generated' | 'authored';
 
 /**
- * `canonical` sections are the target page. `legacy` sections exist today and
- * are slated for deletion — they stay in the manifest so the migration can find
- * and rescue them, and so the checker can name them when it starts refusing.
+ * `canonical` sections are the page. `legacy` sections are gone from the
+ * corpus and stay in the manifest for one reason: the checker refuses them by
+ * name, so a page that grows one back says what it grew.
  */
 export type SectionStatus = 'canonical' | 'legacy';
 
@@ -40,7 +39,7 @@ export interface MapSection {
   name: string;
   source: SectionSource;
   status: SectionStatus;
-  /** Whether a page must carry it once enforcement lands. */
+  /** Whether `check-map.ts` requires a page to carry it. */
   required: boolean;
   /**
    * Every spelling seen in the corpus, normalized (lowercased, no trailing
@@ -49,10 +48,19 @@ export interface MapSection {
   aliases: string[];
 }
 
+/**
+ * Size caps, enforced against the source tags rather than the rendered page.
+ * `Role` and `Read When` are the sections pulled in bulk across a glob, so their
+ * cost scales with page count; the tail is only ever fetched one page at a time
+ * and is uncapped.
+ */
+export const ROLE_MAX_CHARS = 400;
+export const READ_WHEN_MAX_BULLETS = 3;
+
 /** Canonical order is the order of this array. */
 export const MAP_SECTIONS: MapSection[] = [
   { name: 'Role', source: 'generated', status: 'canonical', required: true, aliases: ['role', 'purpose'] },
-  { name: 'Read When', source: 'generated', status: 'canonical', required: false, aliases: ['read when'] },
+  { name: 'Read When', source: 'generated', status: 'canonical', required: true, aliases: ['read when'] },
   { name: 'Exports', source: 'generated', status: 'canonical', required: true, aliases: ['exports'] },
   {
     name: 'Neighbors',

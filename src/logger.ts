@@ -1,5 +1,10 @@
 /**
  * @role Category-colored stderr logging. Diagnostic logging is disabled by default; errors always surface.
+ *
+ * @readwhen
+ * - Adding or renaming a log category color in CATEGORY_COLORS.
+ * - Changing the stderr output format, timestamp, or JSON data serialization.
+ * - Debugging why `-log` flag output is missing, since enableLog() gates every write.
  */
 
 import chalk from 'chalk';

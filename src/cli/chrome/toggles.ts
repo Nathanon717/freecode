@@ -1,5 +1,10 @@
 /**
  * @role Holds runtime state for the footer toggle bar — Show toggle names (label visibility), Auto-run tools (tool-confirmation), and Read-only mode — and exposes getters, cyclers, and the renderer used by `bottom-ui.ts`.
+ *
+ * @readwhen
+ * - Changing footer toggle-bar rendering, ANSI styling, or visible width for the S/A/R keys.
+ * - Adding or removing a footer toggle state cycled by `cycleByChar` (e.g. a new mode key).
+ * - Debugging read-only seeding from headless `-p` runs or `--edit` via `initReadOnly`/`initAskMode`.
  */
 
 import chalk from 'chalk';

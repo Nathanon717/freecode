@@ -4,6 +4,12 @@
 ## Role
 
 Defines the `OpenAICompatQuirks` interface and the `providerQuirks` map. Each entry co-locates one provider's static traits: extra headers, request transforms, rate-limit capture, and error hints. Providers absent from the map get the default path in the adapter skeleton.
+
+## Read When
+
+- Adding a new OpenAI-compatible provider's static headers, transforms, or rate-limit capture to providerQuirks.
+- Debugging rate-limit parsing for Mistral, Cerebras, or Groq responses.
+- Changing per-provider request transforms like temperature stripping or Zen reasoning_content injection.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

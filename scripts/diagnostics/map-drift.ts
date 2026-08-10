@@ -27,7 +27,7 @@
 import { readdirSync, readFileSync } from 'fs';
 import { join, relative, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { classify as classifyDrift } from './map-drift-classify.js';
+import { classify as classifyDrift } from './drift-classify.js';
 import { runSweep, type SweepVerdict } from '../sweep/sweep.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

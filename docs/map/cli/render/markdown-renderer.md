@@ -4,6 +4,12 @@
 ## Role
 
 Converts plain markdown text (from LLM responses) into chalk-styled terminal output. Active when `process.stdout.isTTY` is truthy **or** `FORCE_COLOR` is set — the eval subprocess runner sets `FORCE_COLOR=1` so eval output renders identically to interactive chat. Scripted runs without either flag receive raw text unchanged.
+
+## Read When
+
+- Changing how inline markdown tokens (strong, em, links, codespans) get styled in terminal output.
+- Debugging grey background bleed when styled prose soft-wraps at the terminal width boundary.
+- Extending pipe-table rendering, code block framing, or the streaming line-buffered renderer.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

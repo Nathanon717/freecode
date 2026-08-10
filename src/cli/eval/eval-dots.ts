@@ -1,5 +1,10 @@
 /**
  * @role Chalk-based renderers for eval status circles. The domain logic (history loading, status computation, hashing, types) has been extracted to `src/eval/history.ts` and `src/eval/custom.ts`. This file keeps only the visual rendering functions.
+ *
+ * @readwhen
+ * - Changing circle colors per eval status, like swapping orange for the theme warning.
+ * - Adding a new eval status that needs a matching circle in the statusCircle switch.
+ * - Debugging a wrong circle shown for a scenario, since status logic lives in src/eval/history.ts.
  */
 
 import chalk from 'chalk';

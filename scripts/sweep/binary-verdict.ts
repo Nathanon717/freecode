@@ -17,9 +17,9 @@
  *    under-reports findings — the exact failure this parser was written to fix.
  *
  * Parameterised by the finding token so a sweep does not have to re-derive the
- * recovery rules. `map-drift-classify.ts` binds it to `DRIFT`,
+ * recovery rules. `drift-classify.ts` binds it to `DRIFT`,
  * `dead-code-classify.ts` to `DEAD`; both are exercised by
- * tests/scripts/map-drift-classify.test.ts, which predates the generalization
+ * tests/scripts/drift-classify.test.ts, which predates the generalization
  * and is the regression suite for it.
  */
 

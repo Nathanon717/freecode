@@ -4,6 +4,12 @@
 ## Role
 
 Declares which tools exist and which of them a given turn is offered, and assembles them through the wrapper stack. What happens *around* each call — rationale, confirmation, rendering, turn stop, serialization — lives in [wrappers.md](wrappers.md).
+
+## Read When
+
+- Adding a new tool to the offered set by registering it in `READ_ONLY_TOOL_DEFS` or `WRITE_TOOL_DEFS`.
+- Changing which tools read-only mode offers via the `READ_ONLY_TOOL_DEFS` partition and early return.
+- Debugging why `spawn_agent` is absent on a path, since only agent/loop.ts injects it.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

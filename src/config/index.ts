@@ -1,5 +1,10 @@
 /**
  * @role Loads settings/API keys from defaults, global config, local config, and environment variables into one cached `Config` object.
+ *
+ * @readwhen
+ * - Changing the precedence order among defaults, global config.json, DB cache, .freecoderc, and env vars.
+ * - Adding or removing a provider's API key environment variable mapping and providerIds entry.
+ * - Debugging why a syncable setting like defaultModel or toolRationale isn't propagating to the DB.
  */
 
 import { writeFileSync, existsSync, mkdirSync } from 'fs';

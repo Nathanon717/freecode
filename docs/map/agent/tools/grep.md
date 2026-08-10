@@ -4,6 +4,12 @@
 ## Role
 
 Searches files using ripgrep (`rg`), which is a required freecode dependency. Results are sorted by file modification time (newest first) so recently-changed code surfaces first.
+
+## Read When
+
+- Changing how grep results sort by file modification time so recently-changed files surface first.
+- Debugging the timeout, max-buffer, and exit-code-2 failure messages returned to the agent.
+- Extending the content/context-line rendering or the count and files_with_matches output formats.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

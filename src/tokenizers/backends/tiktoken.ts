@@ -1,5 +1,10 @@
 /**
  * @role Wraps a `js-tiktoken` encoding as a `TokenizerEncoder`, and registers the GPT-OSS exact family into `count.ts`'s `encoderCache`. `createTiktokenEncoder` is the reusable wrapper, typed to accept any `Tiktoken` — from `getEncoding` (GPT-OSS) or constructed directly from parsed ranks.
+ *
+ * @readwhen
+ * - Debugging GPT-OSS context counts that differ from the Phase 1 fallback.
+ * - Changing GPT-OSS counting to use o200k_harmony specials instead of o200k_base ranks.
+ * - Adding a new tiktoken-based encoding family via createTiktokenEncoder or getGptOssEncoder.
  */
 
 import type { CoreMessage } from 'ai';

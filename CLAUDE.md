@@ -80,7 +80,7 @@ delegating work.
 - Use `docs/docs.md` for generated-doc ownership and maintenance rules.
 - Use `docs/map/README.md` for source navigation.
 - Use `docs/providers.md` for provider setup, registry facts, and provider testing.
-- Use `docs/sweeps.md` to run or write a sweep — one LLM call per file across a tree (`npm run dead-code`, `npm run map-drift`).
+- Use `docs/sweeps.md` to run or write a sweep — one LLM call per file across a tree (`npm run dead-code`, `npm run map-drift`, `npm run intent-drift`).
 - After fixing a bug, create and index a new, short file in `docs/bug log/` (adding brand new behaviour doesn't count as a bug fix).
 - **One file per bug per day.** If a bug you already logged today comes back — the fix was wrong, incomplete, or moved the failure — edit *that* file so it reads as current truth, rather than adding a second entry that supersedes it. A *different* bug on the same day still gets the next suffix (`24-07-2026b.md`, `24-07-2026c.md` — three unrelated bugs shipped on one day); a recurrence on a *later* day still gets its own dated file.
 - Verification should succeed BEFORE docs are updated, not after.

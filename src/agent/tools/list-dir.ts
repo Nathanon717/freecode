@@ -1,5 +1,10 @@
 /**
  * @role Lists one directory relative to the active project root.
+ *
+ * @readwhen
+ * - Exploring a project's directory structure to understand its layout before reading files.
+ * - Debugging why a directory listing returns empty, errors, or wrong path resolution.
+ * - Extending the list tool's output (e.g., hidden files, symlinks, sorting rules).
  */
 
 import { tool } from 'ai';

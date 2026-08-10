@@ -1,5 +1,10 @@
 /**
  * @role Implements `/renderer` — a hardcoded example transcript that exercises every turn layout type through the live transcript and markdown renderers. Because it calls the real renderer functions, any change to those renderers is immediately reflected in the demo output.
+ *
+ * @readwhen
+ * - Changing `/renderer` demo output after modifying transcript or markdown renderers.
+ * - Adding a new turn layout or tool result kind to the demo transcript.
+ * - Debugging rendered turn output by comparing against this hardcoded example transcript.
  */
 
 import chalk from "chalk";

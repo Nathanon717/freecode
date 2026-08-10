@@ -1,5 +1,10 @@
 /**
  * @role Provider-agnostic pipeline for **every** registry provider (Anthropic included) plus Ollama: parse body → apply profile quirks → fetch with retry → capture rate-limit headers → throw HTTP errors → convert/normalize response, with zero `if (id === 'x')` branches.
+ *
+ * @readwhen
+ * - Debugging rate-limit header capture or quota-sink updates for a specific provider.
+ * - Changing outgoing request-body transforms like parallel_tool_calls injection or forced non-stream responses.
+ * - Adding usage or token capture from JSON/SSE responses that feed the call log.
  */
 
 import { createOpenAI } from '@ai-sdk/openai';

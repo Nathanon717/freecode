@@ -4,6 +4,12 @@
 ## Role
 
 Generic loop that reads inputs from a mode and dispatches them until EOF or exit.
+
+## Read When
+
+- Changing the CLI loop that reads inputs and dispatches them until EOF or an exit result.
+- Adding or altering CliSessionMode lifecycle hooks like beforeDispatch, onExit, or onInputExhausted.
+- Debugging why a session stops early, given EOF, exit-result, and hook-ordering behaviour.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

@@ -1,5 +1,10 @@
 /**
  * @role Executes shell commands in the active project root with a regex-based destructive-command guard.
+ *
+ * @readwhen
+ * - Changing the regex-based destructive-command guard (rm, git push, del patterns) in `isDestructiveCommand`.
+ * - Debugging shell output truncation or elision, where head+tail windows and the 10 MB cap interact.
+ * - Extending how exit statuses, timeouts, or maxBuffer failures are surfaced in the composed tool result.
  */
 
 import { tool } from 'ai';

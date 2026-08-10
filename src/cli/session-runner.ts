@@ -1,5 +1,10 @@
 /**
  * @role Generic loop that reads inputs from a mode and dispatches them until EOF or exit.
+ *
+ * @readwhen
+ * - Changing the CLI loop that reads inputs and dispatches them until EOF or an exit result.
+ * - Adding or altering CliSessionMode lifecycle hooks like beforeDispatch, onExit, or onInputExhausted.
+ * - Debugging why a session stops early, given EOF, exit-result, and hook-ordering behaviour.
  */
 
 import type { AgentLoopResult } from '../agent/loop.js';

@@ -1,5 +1,10 @@
 /**
  * @role Shared inline action sub-menu that splices into any list-picker screen below the selected row. Used by both `custom-eval-menu.ts` (eval picker) and `commands/model.ts` (model picker).
+ *
+ * @readwhen
+ * - Changing the inline action sub-menu that splices below the selected row in list pickers.
+ * - Adding keyboard navigation (arrow keys, Enter, Escape) or options to the shared eval/model picker sub-menu.
+ * - Debugging cursor selection or redraw behaviour shared by `custom-eval-menu.ts` and `commands/model.ts`.
  */
 
 import chalk from 'chalk';

@@ -1,5 +1,10 @@
 /**
  * @role The message/content-stringification and overhead-arithmetic logic every tokenizer backend shares — a fixed per-message and per-request overhead plus whatever `encodeText` function the caller supplies. Extracted from `fallback-estimate.ts` in Phase 2 so the new tiktoken backend (and future HF/SentencePiece/Tekken backends) reuse the same formula instead of duplicating it per encoder.
+ *
+ * @readwhen
+ * - Changing the shared per-message or per-request overhead constants (4 and 2) to match a model family's real counting.
+ * - Extending `stringifyMessageContent` so a new content-part shape (tool results, images) stringifies to text the same way.
+ * - Adding a new tokenizer backend that must reuse this same overhead arithmetic instead of duplicating it.
  */
 
 import type { CoreMessage } from 'ai';

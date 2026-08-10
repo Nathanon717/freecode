@@ -15,6 +15,7 @@ This table is generated from `package.json`.
 | `npm run dev` | `tsx src/index.ts` |
 | `npm run docs:generate` | `tsx scripts/docgen/sync-docs.ts` |
 | `npm run docs:refresh-models` | `tsx scripts/docgen/refresh-models.ts` |
+| `npm run intent-drift` | `tsx scripts/diagnostics/intent-drift.ts` |
 | `npm run lint` | `eslint src tests scripts --cache` |
 | `npm run lint:fix` | `eslint src tests scripts --cache --fix` |
 | `npm run map` | `tsx scripts/docgen/map-query.ts` |

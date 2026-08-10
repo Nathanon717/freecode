@@ -4,6 +4,12 @@
 ## Role
 
 Implements the interactive `/model` picker used by TTY sessions: provider fetch, the per-provider tabs, and the run loop. Pure rendering/data helpers live in [cli/menus/model-screen.ts](../cli/menus/model-screen.md).
+
+## Read When
+
+- Debugging the /model picker's provider/favourites/removed tabs, Remove/Restore flow, or filter-key handling.
+- Implementing the stubbed Edit action in the picker's action menu.
+- Changing the permanent blocklist flow, including the confirm menu and deleteModelRows cleanup.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

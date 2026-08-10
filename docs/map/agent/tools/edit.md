@@ -4,6 +4,12 @@
 ## Role
 
 Applies one exact text replacement inside an existing UTF-8 file relative to the active project root.
+
+## Read When
+
+- Changing exact old_text/new_text replacement semantics or its uniqueness requirement.
+- Debugging edit tool errors like "old_text not found", multiple matches, or must-be-read-first.
+- Extending line-ending handling (CRLF/LF) or escaped \n/\t normalization in edits.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

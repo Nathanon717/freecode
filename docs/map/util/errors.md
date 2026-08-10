@@ -3,7 +3,10 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Shared error-formatting utilities.
+Everything freecode does with an `unknown` thrown value: format it for a
+user or a log, classify it (context overflow, tools unsupported, no such
+model, malformed tool call), recover the tool call a provider rejected, and
+serialize it. `TurnStoppedError`, the Esc-stop signal, is defined here too.
 
 ## Read When
 

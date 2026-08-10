@@ -4,6 +4,10 @@
 ## Role
 
 Barrel file for the providers subsystem.
+
+## Read When
+
+- Adding or removing a symbol re-exported from the providers barrel.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

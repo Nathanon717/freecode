@@ -1,5 +1,10 @@
 /**
  * @role Handles slash commands and sends normal user input to the agent loop.
+ *
+ * @readwhen
+ * - Adding or rewiring slash commands like /model, /clear, or /eval dispatch.
+ * - Changing how user turns are committed to session history or agentLoop.
+ * - Modifying model-selection output, provider usage display, or FREECODE_RESULT_JSON handling.
  */
 
 import chalk from 'chalk';

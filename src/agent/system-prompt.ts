@@ -1,5 +1,10 @@
 /**
  * @role Builds the static string injected as the `system` message for every agent turn.
+ *
+ * @readwhen
+ * - Changing the rules or tips injected into every agent turn's system message.
+ * - Debugging why the model calls a tool that was never offered, or lacks write-tool rules.
+ * - Modifying how AGENTS.md/CLAUDE.md loads, including caller-only fence stripping or file choice.
  */
 
 import { existsSync } from 'fs';

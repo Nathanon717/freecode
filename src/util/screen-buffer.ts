@@ -1,5 +1,10 @@
 /**
  * @role Intercepts `process.stdout.write` at startup to maintain rolling buffers of recent terminal output. Keeps a plain (ANSI-stripped) buffer for text search and a parallel styled buffer (ANSI codes preserved) for overlay repaints. Used by the bottom TUI to repaint rows after temporary overlays.
+ *
+ * @readwhen
+ * - Debugging overlay close repaints that bleach or resurrect banner lines into the transcript.
+ * - Fixing resize scrubs that leave stale duplicated rows from the reflowed input frame.
+ * - Changing which writes count as chrome versus transcript, e.g. phantom blank lines from bare newlines.
  */
 
 const MAX_LINES = 150;

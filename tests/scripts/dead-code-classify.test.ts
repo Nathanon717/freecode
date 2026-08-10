@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { classify } from '../../scripts/diagnostics/dead-code-classify.js';
 
 // The recovery machinery is shared with map-drift and regression-tested in
-// tests/scripts/map-drift-classify.test.ts. What is tested here is the binding:
+// tests/scripts/drift-classify.test.ts. What is tested here is the binding:
 // that `DEAD` anchors, that the phrasings a model reaches for when it means
 // "nothing to delete" read as clean, and — most importantly — that a finding is
 // never silently laundered into a pass.

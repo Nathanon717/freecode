@@ -1,6 +1,6 @@
 // check-tests: orphan — covers scripts/diagnostics/, which has no src/ mirror.
 import { describe, it, expect } from 'vitest';
-import { classify } from '../../scripts/diagnostics/map-drift-classify.js';
+import { classify } from '../../scripts/diagnostics/drift-classify.js';
 
 // Shapes marked "captured" are real responses taken from
 // scripts/diagnostics/map-drift/mistral-mistral-medium-2508.md, which preserved

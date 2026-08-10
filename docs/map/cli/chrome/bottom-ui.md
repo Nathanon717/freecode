@@ -4,6 +4,12 @@
 ## Role
 
 Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and the input-area layout; the state it draws lives in sibling modules, which callers import directly — this module does not re-export them.
+
+## Read When
+
+- Debugging idle footer timer output snapping the Termux viewport (lastFooterOutput byte-compare skip).
+- Fixing terminal resize reflow ghost rows from the cursor-addressed input frame (SIGWINCH scrub).
+- Changing reserved-row geometry shared by footer, input frame, suggestions overlay, and thinking label.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

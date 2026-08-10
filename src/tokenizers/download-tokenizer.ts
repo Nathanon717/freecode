@@ -1,5 +1,10 @@
 /**
  * @role Ensures a canonical HF repo file is cached under `.freecode/tokenizers/<family>/<filename>`, downloading it if missing. The HF-fast families use the default `tokenizer.json`; the Tekken family passes `tekken.json`. Mirrors `eval/humaneval-data.ts`'s injectable-`downloadFn` shape for testability.
+ *
+ * @readwhen
+ * - Adding a new tokenizer family that fetches a non-default repo file, like Tekken's `tekken.json`.
+ * - Debugging failed tokenizer downloads that leave 0-byte cache entries or reject on 307 redirects.
+ * - Changing the `.freecode/tokenizers/<family>/<filename>` cache layout to match count.ts's encoderCache keying.
  */
 
 import { createWriteStream, existsSync, mkdirSync, renameSync, rmSync, statSync } from 'fs';

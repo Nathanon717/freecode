@@ -19,8 +19,9 @@ __pycache__/
 # generated
 *.js.map
 
-# map-drift model-comparison reports (one per model per run)
+# drift-sweep model-comparison reports (one per model per run)
 scripts/diagnostics/map-drift/
+scripts/diagnostics/intent-drift/
 # rate-limit-probe raw header/body dumps (one per provider per run)
 scripts/diagnostics/rate-limit-probe/
 *.d.ts.map

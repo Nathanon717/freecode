@@ -4,6 +4,12 @@
 ## Role
 
 Defines slash command names, fuzzy filtering, inline completion, and help text.
+
+## Read When
+
+- Adding a new slash command to the SLASH_COMMANDS list with its description.
+- Changing fuzzy matching or inline completion logic for typed slash inputs.
+- Debugging why an input starting with / is treated as a command instead of sent to the model.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->

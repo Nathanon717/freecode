@@ -1,5 +1,10 @@
 /**
  * @role The raw terminal protocol the bottom UI is built from — rows/columns, scroll-region (DECSTBM), cursor addressing, line erase, cursor save/restore — with no knowledge of the footer, input frame, or any layout. Every operation has a `…Sequence()` form returning the string, plus a writing form where a caller needs one; prefer the former so a frame goes out in one `process.stdout.write`.
+ *
+ * @readwhen
+ * - Debugging misplaced output or cursor jumps in the bottom UI by inspecting the raw escape sequences it emits.
+ * - Changing terminal geometry handling, like the TTY fallback rows of 24 and columns of 80.
+ * - Extending scroll-region behaviour around DECSTBM, including cursor home/save-restore interplay during teardown or resize.
  */
 
 // Terminal geometry and the raw escape sequences the chrome is built from.

@@ -1,12 +1,8 @@
 // check-tests: orphan — covers scripts/docgen/, which has no src/ mirror.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import {
-  MAP_ROOT,
   MAP_SECTIONS,
   findSection,
-  listMapPages,
   matchesGlob,
   normalizeMapPath,
   parseMapPage,
@@ -125,33 +121,7 @@ describe('the manifest', () => {
   });
 });
 
-describe('the corpus parses', () => {
-  const pages = listMapPages().map(path => parseMapPage(path, readFileSync(join(MAP_ROOT, path), 'utf-8')));
-
-  it('gives every page a title, a Role and an Exports block', () => {
-    const untitled = pages.filter(p => p.title === '').map(p => p.path);
-    const roleless = pages.filter(p => !findSection(p, 'Role')?.body).map(p => p.path);
-    const exportless = pages.filter(p => !findSection(p, 'Exports')).map(p => p.path);
-    expect({ untitled, roleless, exportless }).toEqual({ untitled: [], roleless: [], exportless: [] });
-  });
-
-  it('buckets every heading as canonical or tail — the legacy ones are gone', () => {
-    const statuses = new Set(pages.flatMap(p => p.sections.map(s => s.status)));
-    expect([...statuses].sort()).toEqual(['canonical', 'tail']);
-  });
-
-  // The two things the page codemod established that no generator re-derives:
-  // `docs:generate` only re-lays the intent block, so a canonical section that
-  // drifts below the tail, or prose written outside every heading, would
-  // otherwise survive every run.
-  it('puts the canonical head above the tail and leaves no prose outside a section', () => {
-    const stranded = pages.filter(p => p.preamble).map(p => p.path);
-    const misordered = pages
-      .filter(p => {
-        const firstTail = p.sections.findIndex(s => s.status !== 'canonical');
-        return firstTail !== -1 && p.sections.slice(firstTail).some(s => s.status === 'canonical');
-      })
-      .map(p => p.path);
-    expect({ stranded, misordered }).toEqual({ stranded: [], misordered: [] });
-  });
-});
+// The corpus itself is not asserted here. `scripts/checks/check-map.ts` reads
+// this same parser and enforces the page contract against every page on every
+// `docs:generate`, with a failure that names the source tag to fix; a second
+// copy of those rules in a test would only drift from it.

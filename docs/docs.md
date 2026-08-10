@@ -57,12 +57,14 @@ Generated docs should report facts. Human-written docs should explain how to use
 
 Each page's generated blocks and the README structure tree are facts derived from source — see "Generated References" above. The intent a signature cannot carry is written in the source file too, and lifted: what the module is for and when to open it belong to `@role` / `@readwhen` in its module header, per-export intent belongs to that export's JSDoc. Dependency facts belong to `## Neighbors`, which is derived. Do not hand-write any of those on the page; what stays authored there is the tail below the generated head.
 
-The map checker in `scripts/checks/check-map.ts` enforces these structural rules:
+The map checker in `scripts/checks/check-map.ts` enforces two things, and runs inside `docs:generate`:
 
-- every `src/**/*.ts` file has a matching `docs/map/**/*.md` page;
-- every map page, except `docs/map/README.md`, points to an existing source file;
-- every source map page is linked from `docs/map/README.md`;
-- every source map page contains its generated exports block, and the README contains its generated structure block.
+- **Coverage** — every `src/**/*.ts` file has a `docs/map/**/*.md` page, linked from `docs/map/README.md`; every map page except that README points at an existing source file; every page keeps its generated blocks, and the README its structure block.
+- **Page shape** — the contract in [map/README.md](map/README.md#page-shape), enforced as written there: required sections, exact spellings, canonical order above the tail, no orphan prose, and the `Role` / `Read When` size caps.
+
+`docs:generate` then prints which prose docs mention the source files in your working tree: *you changed these 4 files; these 6 docs name them.* Which docs describe a source file is an **update obligation**, not reading material, so it arrives when it is actionable instead of sitting in a static section on a page nobody opens. Nothing fails because of it.
+
+Dated records are excluded — `docs/bug log/` and `docs/sessions/` describe what happened, so an old entry naming a file you just changed is history, not a stale doc. `docs/map/` is excluded too: the generator and the map checker already keep it in step.
 
 ## Examples
 
