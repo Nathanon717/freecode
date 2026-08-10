@@ -48,11 +48,8 @@ injectSystemIntoFirstUserMessage(messages: Record<string, unknown>[]): Record<st
 31 / 500 lines (469 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Key Neighbors
+## Notes
 
-- [adapters/openai-compat.md](adapters/openai-compat.md): sole consumer; applies these predicates inside its custom fetch wrapper.
-- [model-data.md](model-data.md): runtime-learned per-model traits (e.g. `nativeTools`); complements the static checks here.
-
-## Update Triggers
-
-Add a predicate here whenever a model subset needs different request-body handling than the rest of its provider. Do not add runtime-learned traits here — those belong in `model-data.ts`.
+A predicate belongs here whenever a model subset needs different request-body handling
+than the rest of its provider. Runtime-learned traits do not — those belong in
+[model-data.md](model-data.md).

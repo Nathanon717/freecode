@@ -67,7 +67,8 @@ restoreCursorSequence(): string
 56 / 500 lines (444 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Key neighbors
+## Notes
 
-- `cli/chrome/bottom-ui.ts` — sole consumer; composes these into the footer, input frame, and suggestion overlay
-- `util/screen-buffer.ts` — builds its own repaint sequences inline; its `hasCursorOrScreenControl` regex recognises the sequences emitted here so chrome writes are kept out of the transcript buffer
+`util/screen-buffer.ts` builds its own repaint sequences inline; its
+`hasCursorOrScreenControl` regex recognises the sequences emitted here, which is what keeps
+chrome writes out of the transcript buffer. There is no import between the two.

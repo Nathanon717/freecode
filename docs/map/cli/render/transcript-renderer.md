@@ -12,8 +12,6 @@ Turn/step state machine and writing for all visible agent transcript output. The
 - Debugging spacing issues between response text and tool calls.
 <!-- END GENERATED MAP INTENT -->
 
-The pure formatters (`format*`) now live in [transcript-format.md](transcript-format.md) and are re-exported here, so this stays the single import site. This module is what *writes*; that one is what decides how things *look*.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -220,6 +218,10 @@ renderTurn(steps: RenderedStep[], opts?: TranscriptRuntimeOptions | undefined): 
 
 403 / 500 lines (97 to spare).
 <!-- END GENERATED MAP FACTS -->
+
+## Scope
+
+The pure formatters (`format*`) now live in [transcript-format.md](transcript-format.md) and are re-exported here, so this stays the single import site. This module is what *writes*; that one is what decides how things *look*.
 
 ## Desired Turn Layout
 

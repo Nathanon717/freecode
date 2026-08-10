@@ -1,5 +1,5 @@
 /**
- * @role Orchestrates the unified, tabbed eval menu behind `/eval`. Wraps the lifecycle chrome (`menu-shell.ts`) around a tabbed list menu (`list-menu.ts`) whose tabs are the **Custom** tab (evals/custom scenarios, from `custom-eval-menu.ts`) and the **HumanEval** tab (from `cli/eval/humaneval-menu.ts`, with dataset loading from `eval/humaneval-data.ts`). After the picker closes it dispatches the tagged choice to the matching run loop.
+ * @role Orchestrates the unified, tabbed eval menu behind `/eval`: the lifecycle chrome (`menu-shell.ts`) wrapped around a tabbed list menu (`list-menu.ts`) carrying a **Custom** tab and a **HumanEval** tab. After the picker closes it dispatches the tagged choice to the matching run loop.
  *
  * @readwhen
  * - Changing how `/eval` is composed, adding a new eval tab, or changing the tab data-loading strategy.

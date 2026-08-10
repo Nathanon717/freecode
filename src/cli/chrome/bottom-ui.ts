@@ -1,5 +1,5 @@
 /**
- * @role Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and the input-area layout; status state lives in `footer-status.ts`, buffer/cursor state in `input-buffer.ts`, the suggestion overlay's snapshot in `suggestion-overlay.ts`, the turn flag and activity verb behind the `thinking…` label in `turn-state.ts`, and the raw escape sequences in `ansi.ts`. Import those directly — this module does not re-export them.
+ * @role Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and the input-area layout; the state it draws lives in sibling modules, which callers import directly — this module does not re-export them.
  */
 
 import chalk from 'chalk';

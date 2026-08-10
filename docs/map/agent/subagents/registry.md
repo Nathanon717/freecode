@@ -54,8 +54,3 @@ agentCatalog(): string
 
 - `agentCatalog()` feeds the `spawn_agent` tool description and unknown-agent errors, so its wording is model-facing.
 - `listAgentNames()` is the source of `spawn_agent`'s `agentType` enum in [../tools/spawn-agent.md](../tools/spawn-agent.md) — adding a persona here widens that enum automatically.
-
-## Key neighbors
-
-- [run-subagent.md](run-subagent.md) — consumes a persona to drive the sub-turn loop.
-- [../tools/spawn-agent.md](../tools/spawn-agent.md) — exposes these personas to the model.

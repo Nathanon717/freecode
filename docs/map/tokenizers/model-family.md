@@ -118,14 +118,8 @@ One catalog ID is left unmapped on purpose: `nvidia/nemotron-nano-3-30b-a3b` loo
 
 **Separating DeepSeek V3 from V4 needs the tie-breaker.** Their base BPE is byte-identical, so no ordinary text can tell them apart — the probe reports both and says `INDISTINGUISHABLE`. What does separate them is writing V4's *added* tokens literally: `<think>` costs 3 tokens under V3 and 1 under V4. The probe runs that sample only when a tie needs breaking. `big-pickle` charged 552 where V3 predicts 552 and V4 predicts 201; the known-V4 control charged 201. That control matters — had it also charged 552, the measurement would have been telling us the serving stack ignores added tokens rather than anything about the vocab.
 
-## Key Neighbors
+## Notes
 
-- [count.md](count.md): sole consumer; looks up the resolved family in its encoder cache, and reads `HF_TOKENIZER_REPO` to drive `preloadTokenizerFor`'s download step.
-- [backends/tiktoken.md](backends/tiktoken.md): the GPT-OSS family's encoder.
-- [backends/bpe-json.md](backends/bpe-json.md): the encoder every `HF_TOKENIZER_REPO` family loads into.
-- [backends/tekken.md](backends/tekken.md): the encoder the `MISTRAL_TEKKEN_FAMILY` loads into.
-- `providers/model-quirks.ts`: same one-predicate-per-case pattern, different concern (request-body quirks, not tokenizer selection).
-
-## Update Triggers
-
-Add a predicate whenever a model family gets an exact tokenizer backend. Don't add per-model-ID special cases — group by family the same way the backend/download logic does. Re-verify (don't assume) tokenizer identity before widening an existing family's regex to cover a new model generation.
+A family gets a predicate when it gets an exact tokenizer backend. Group by family the way
+the backend and download logic do — no per-model-ID special cases — and re-verify (never
+assume) tokenizer identity before widening an existing regex to a new model generation.

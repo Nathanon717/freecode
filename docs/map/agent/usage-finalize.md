@@ -54,8 +54,3 @@ finalizeUsageCapture(providerId: string, promptTokens: number | undefined, outpu
 
 `DEBUG_QUOTA`
 <!-- END GENERATED MAP FACTS -->
-
-## Key Neighbors
-
-- [`loop.ts`](loop.md) — the sole caller; feeds the result through `applyUsageOutcome`.
-- [`../providers/adapters/openai-compat.md`](../providers/adapters/openai-compat.md) — the capture store it ends.

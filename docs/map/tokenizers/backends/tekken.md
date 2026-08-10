@@ -52,13 +52,9 @@ loadTekkenEncoder(tekkenJsonPath: string): TokenizerEncoder
 52 / 500 lines (448 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Key Neighbors
+## Notes
 
-- [tiktoken.md](tiktoken.md): supplies `createTiktokenEncoder`, the shared `Tiktoken → TokenizerEncoder` wrapper this backend feeds its constructed encoding into.
-- [../download-tokenizer.md](../download-tokenizer.md): fetches/caches `tekken.json` (via its `filename` parameter) — the cached path this backend reads.
-- [../count.md](../count.md): calls `loadTekkenEncoder` from `preloadTokenizerFor`'s Tekken branch once the file is cached.
-- [../model-family.md](../model-family.md): owns `MISTRAL_TEKKEN_FAMILY`, `MISTRAL_TEKKEN_REPO`, `TEKKEN_FILENAME`, and the `isMistralTekken` predicate.
-
-## Update Triggers
-
-If a future Mistral generation retrains the byte-BPE vocab (not just the special-token set), the "one repo covers the line" assumption breaks — split the family and add a second canonical repo, re-verifying that the used-vocab hash matches before widening the predicate.
+"One repo covers the line" holds only while the byte-BPE vocab is stable. A Mistral
+generation that retrains it (not just the special-token set) breaks the assumption: split
+the family, add a second canonical repo, and verify the used-vocab hash matches before
+widening the predicate.

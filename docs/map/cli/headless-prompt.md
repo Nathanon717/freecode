@@ -73,6 +73,11 @@ This is the part callers depend on; changing it breaks `$(freecode -p ...)`.
   count, and wall time. Printed even on the error path, since a failed or
   rate-limited turn still spent tokens.
 
+It calls `agentLoop` directly rather than going through
+[session-runner.md](session-runner.md) or [command-dispatcher.md](command-dispatcher.md):
+those print their own progress lines to stdout (`(empty response from model)`, provider
+usage), which this contract cannot afford.
+
 ## What it is allowed to do
 
 - **Read-only unless `--edit`.** `initReadOnly(!edit)` drives the same toggle as
@@ -95,18 +100,3 @@ This is the part callers depend on; changing it breaks `$(freecode -p ...)`.
 - **Bounded.** `FREECODE_MAX_TOOL_CALLS` (default 50) denies further calls past the
   budget so an unattended turn winds down and answers. The agent loop itself is
   unbounded, and nobody is watching this one.
-
-## Key neighbors
-
-- `src/index.ts` — validates the flag, rejects `-p` together with `--script`, sets
-  the free-only env var, and calls this with the resolved model.
-- It calls `agentLoop` **directly** rather than going through
-  [session-runner.md](session-runner.md) / [command-dispatcher.md](command-dispatcher.md):
-  those print their own progress lines to stdout (`(empty response from model)`,
-  provider usage), which the output contract cannot afford.
-
-## Update triggers
-
-- The output contract changes (what stdout carries, exit codes).
-- Read-only/`--edit`, confirmation, sub-agent, or free-only enforcement moves.
-- `AgentLoopResult` changes shape around `text` / `turnMessages`.

@@ -65,9 +65,3 @@ Both paths return **only the final step's text** (the segment after the last too
 - Sub-agent tokens are **tracked but not displayed**. The sub-agent shares the parent's model handle, so its requests land in the same provider-keyed usage store and reach `providerUsage[]`. What they never reach is the footer's `ctx` number: it only reports the last step's own prompt tokens, and sub-agent calls are not steps (`cli/session-modes.ts`).
 - No tool-approval concept inside a sub-agent at all: it runs the raw `READ_ONLY_TOOL_DEFS` directly, bypassing `createTools`'s confirmation wrapper entirely (see the file header comment), so there is nothing for the user to approve or deny in the first place.
 - **`spawn_agent` does not exist under the prompt-based tool protocol.** `runParsedToolsLoop` builds its tools without a `spawnAgent` runner, so a model that lacks native tool calling (or has `parsedTools` set) cannot delegate at all — the native runner is never reached. `buildSystemPrompt` takes a `spawnAgent` flag so the parsed-mode prompt does not advertise a tool that is not there; keep the two in sync.
-
-## Key neighbors
-
-- [registry.md](registry.md) — supplies the persona (system prompt + step budget).
-- [../loop.md](../loop.md) — constructs the model-bound `SubAgentContext` and passes the runner into `createTools`.
-- [../stream-turn.md](../stream-turn.md) — the shared drain/recovery driver the native path runs on.

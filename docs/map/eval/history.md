@@ -74,14 +74,7 @@ loadEvalDotsData(): EvalDotsData
 116 / 500 lines (384 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Key Neighbors
+## Notes
 
-- Imports scenario discovery and hashing from [custom.md](custom.md).
-- `EvalCheckResult` shape must stay in sync with `evals/custom/shared/types.ts`.
-- Consumed by `cli/eval/eval-menu.ts`, `cli/eval/eval-screen.ts`, `cli/eval/custom-eval-menu.ts`, and `commands/model.ts`.
-
-## Update Triggers
-
-- When the eval history format or DB cache structure changes.
-- When `EvalCheckResult` shape changes.
-- When the status color mapping logic changes.
+`EvalCheckResult` must stay in sync with `evals/custom/shared/types.ts` — a file outside
+`src/`, so nothing in the import graph will flag the drift.

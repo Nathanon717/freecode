@@ -3,27 +3,12 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Implements the HumanEval tab (`buildHumanEvalTab`), the run loop (`runHumanEvalProblems`/`runOneProblem`), the rate-limit retry prompter (`makeRetryPrompter`), and the Python-based scorer. Composed into `/eval` by `cli/eval/eval-menu.ts` (this file doesn't own the menu chrome or the `runRawPicker` loop). Dataset loading/download lives in `eval/humaneval-data.ts`; this file only imports its `HumanEvalProblem`/`HumanEvalResultMap` types. Sibling of `cli/eval/custom-eval-menu.ts` (the Custom tab).
+Implements the HumanEval tab (`buildHumanEvalTab`), the run loop (`runHumanEvalProblems`/`runOneProblem`), the rate-limit retry prompter (`makeRetryPrompter`), and the Python-based scorer. Composed into `/eval` by `cli/eval/eval-menu.ts`, which owns the menu chrome and the `runRawPicker` loop.
 
 ## Read When
 
 Changing prompt wording, the Python check logic, viewport size, run-dir layout, dot rendering, result persistence format, or the tab/menu composition (see `cli/eval/eval-menu.ts`).
 <!-- END GENERATED MAP INTENT -->
-
-**Key neighbors:**
-- `src/cli/eval/eval-menu.ts` — composes this tab into `/eval`
-- `src/cli/eval/custom-eval-menu.ts` — the Custom-tab sibling (same `MenuTab` + run-loop shape)
-- `src/eval/humaneval-data.ts` — dataset loading/download + `HumanEvalProblem`/`HumanEvalResultMap` types
-- `src/cli/menus/list-menu.ts` — `MenuTab` shape returned by `buildHumanEvalTab`
-- `src/eval/runner.ts` — `startEvalScenario`, `resetEvalWorkDir`
-- `src/cli/eval/eval-screen.ts` — `printEvalHeader`, `printEvalSummary` (shared header/summary rendering)
-- `src/cli/chrome/footer-status.ts` — `setActiveModelFromString`
-- `src/cli/eval/eval-dots.ts` — `statusCircle` (colored dot renderer) reused for picker dots
-- `src/providers/model-data.ts` — `appendEvalRun` (records each run to `.freecode/`)
-- `evals/humaneval/.runs/` — per-problem work dirs (not tracked in git; gitignored under `evals/*`)
-- `tests/e2e/tty-humaneval-fake.e2e.json` — end-to-end fake-LLM TTY test; uses `tests/e2e/humaneval-mini.jsonl.gz` as bundled single-problem dataset via `HUMANEVAL_DATA` env var
-
-**Result persistence:** Each run is stored in `.freecode/models.json` (summary) and `.freecode/evals/humaneval/{provider}-{modelId}/{timestamp}.json` (full transcript + scoring). The `transcript` field is an array of turn objects, each with `systemPrompt`, `userMessage`, `tokenUsage: { input?, output? }`, and `toolCalls`. For humaneval (single-turn evals) the array always has exactly one entry.
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -63,3 +48,18 @@ runHumanEvalProblems(chosen: HumanEvalProblem[], model: string, rl: Interface): 
 
 319 / 500 lines (181 to spare).
 <!-- END GENERATED MAP FACTS -->
+
+## Result Persistence
+
+Each run is stored in `.freecode/models.json` (summary) and `.freecode/evals/humaneval/{provider}-{modelId}/{timestamp}.json` (full transcript + scoring). The `transcript` field is an array of turn objects, each with `systemPrompt`, `userMessage`, `tokenUsage: { input?, output? }`, and `toolCalls`. For humaneval (single-turn evals) the array always has exactly one entry.
+
+## Notes
+
+`tests/e2e/tty-humaneval-fake.e2e.json` is the end-to-end fake-LLM TTY test for this tab.
+It points `HUMANEVAL_DATA` at `tests/e2e/humaneval-mini.jsonl.gz`, a bundled single-problem
+dataset.
+
+Dataset loading and download live in
+[../../eval/humaneval-data.md](../../eval/humaneval-data.md); this file imports only its
+`HumanEvalProblem` / `HumanEvalResultMap` types. Sibling of
+[custom-eval-menu.md](custom-eval-menu.md), the Custom tab.

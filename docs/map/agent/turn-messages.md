@@ -8,31 +8,6 @@ session history. Read it before changing what any loop returns as `turnMessages`
 or before adding a fourth tool protocol.
 <!-- END GENERATED MAP INTENT -->
 
-## Why it exists
-
-Two tool protocols write into the same `Conversation`:
-
-- the **native** path emits real `tool-call` parts on an assistant message plus a
-  `role: 'tool'` message of matching `tool-result` parts;
-- the **parsed-tools** and **fake** paths emit the text protocol — a plain
-  assistant message and a plain user message of `<tool_result>` blocks.
-
-Text-protocol messages are accepted everywhere and need no translation. Native
-tool messages are the constrained direction, and every export below exists for
-them.
-
-## Key neighbors
-
-`agent/conversation.ts` (`commitTurn` calls the sanitizer, and decides whether the
-turn produced anything from what survives it),
-`agent/stream-turn.ts` (produces the native `turnMessages`),
-`agent/parsed-tools.ts` and `agent/fake-loop.ts` (consume the flattener).
-
-## Update triggers
-
-A new tool protocol, a change to what `runRecoveringStream` collects, or a
-provider that rejects a message shape these rules currently allow.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -105,3 +80,19 @@ flattenToolMessagesToText(messages: CoreMessage[]): CoreMessage[]
 
 195 / 500 lines (305 to spare).
 <!-- END GENERATED MAP FACTS -->
+
+## Why it exists
+
+Two tool protocols write into the same `Conversation`:
+
+- the **native** path emits real `tool-call` parts on an assistant message plus a
+  `role: 'tool'` message of matching `tool-result` parts;
+- the **parsed-tools** and **fake** paths emit the text protocol — a plain
+  assistant message and a plain user message of `<tool_result>` blocks.
+
+Text-protocol messages are accepted everywhere and need no translation. Native
+tool messages are the constrained direction, and every export below exists for
+them.
+
+`agent/conversation.ts`'s `commitTurn` calls the sanitizer and decides whether the turn
+produced anything from what survives it.

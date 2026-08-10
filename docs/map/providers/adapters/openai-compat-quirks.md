@@ -52,9 +52,3 @@ Edit one entry here. The adapter skeleton in [openai-compat](openai-compat.md) r
 | groq       |     |     | ✓   |     |
 | openai     |     | ✓   |     |     |
 | zen        |     | ✓   |     |     |
-
-## Key Neighbors
-
-- [openai-compat-request](openai-compat-request.md) — pure transform implementations called by `transformRequest` hooks
-- [openai-compat](openai-compat.md) — consumer: reads `providerQuirks[id]` and runs the fixed pipeline
-- [quota/headers](../quota/headers.md) — `parseRateLimitSnapshot` implementations

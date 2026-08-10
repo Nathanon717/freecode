@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Declares which tools exist and which of them a given turn is offered, and assembles them through the wrapper stack. What happens *around* each call — rationale, confirmation, rendering, turn stop, serialization — moved to [wrappers.md](wrappers.md) at the 500-line limit; the confirmation types are defined there and re-exported here, so the rest of the codebase keeps importing them from `agent/tools/index.js`.
+Declares which tools exist and which of them a given turn is offered, and assembles them through the wrapper stack. What happens *around* each call — rationale, confirmation, rendering, turn stop, serialization — lives in [wrappers.md](wrappers.md).
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
@@ -94,3 +94,9 @@ call, and `agent/loop.ts` calls it per `streamText` attempt. That scoping is wha
 makes the Esc stop per-turn without any flag kept in the CLI session:
 the box is discarded with the tool set it belongs to. See
 [wrappers.md](wrappers.md#turn-stop-esc).
+
+## Notes
+
+The confirmation types are defined in [wrappers.md](wrappers.md) and re-exported here, so
+the rest of the codebase keeps importing them from `agent/tools/index.js`. The split
+happened at the 500-line limit.

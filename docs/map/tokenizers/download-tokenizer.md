@@ -65,13 +65,9 @@ ensureTokenizerFile(family: string, repoId: string, filename?: string, downloadF
 112 / 500 lines (388 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Key Neighbors
+## Notes
 
-- [backends/bpe-json.md](backends/bpe-json.md): the consumer of the cached `tokenizer.json` path this module produces.
-- [backends/tekken.md](backends/tekken.md): the consumer of the cached `tekken.json` path (fetched via the `filename` parameter).
-- [count.md](count.md): calls `ensureTokenizerFile` from `preloadTokenizerFor` before loading the encoder.
-- `src/eval/humaneval-data.ts`: the pattern this mirrors (injectable `downloadFn`, "ensure" naming), not a shared dependency.
-
-## Update Triggers
-
-If a family ever needs more than one file from the same repo (e.g. `tokenizer_config.json`), extend `ensureTokenizerFile` rather than adding a second parallel download path — but see `backends/bpe-json.md`'s notes on why `tokenizer_config.json` is deliberately never fetched for the BPE families this backend currently serves.
+A family that needs more than one file from the same repo (say `tokenizer_config.json`)
+extends `ensureTokenizerFile` rather than adding a second parallel download path — but see
+[backends/bpe-json.md](backends/bpe-json.md) for why `tokenizer_config.json` is
+deliberately never fetched for the BPE families this serves.

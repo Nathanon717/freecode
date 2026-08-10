@@ -35,11 +35,3 @@ No mirrored test — pure type declarations; erased at compile time, no runtime 
 
 5 / 500 lines (495 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Key Neighbors
-
-- [store/db.md](db.md), [store/db-load.md](db-load.md): both import from here.
-
-## Update Triggers
-
-Update this page when a type is added or removed here.

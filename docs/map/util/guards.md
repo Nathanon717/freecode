@@ -10,10 +10,6 @@ Shared type guard utilities used across multiple modules.
 You need to narrow `unknown` to a plain object (`Record<string, unknown>`).
 <!-- END GENERATED MAP INTENT -->
 
-**Key neighbors:** `src/providers/adapters/openai-compat.ts`
-
-**Update triggers:** New type guards that are (or will be) used in two or more source files.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -35,3 +31,7 @@ isRecord(value: unknown): value is Record<string, unknown>
 
 3 / 500 lines (497 to spare).
 <!-- END GENERATED MAP FACTS -->
+
+## Notes
+
+A type guard earns a place here once two or more source files need (or will need) it.

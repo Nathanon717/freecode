@@ -10,10 +10,6 @@ Shared BOM handling for any text file that may have been authored or edited outs
 You're about to `readFileSync` a file that a user, an external tool, or a download could have written with a leading UTF-8 BOM — a bare `JSON.parse` throws on one with no useful message.
 <!-- END GENERATED MAP INTENT -->
 
-**Key neighbors:** `src/config/index.ts`, `src/eval/custom.ts`, `src/eval/humaneval-data.ts`, `src/agent/system-prompt.ts`, `src/tokenizers/backends/bpe-json.ts`, `src/cli/eval/custom-eval-menu.ts`, `scripts/docgen/generate-docs.ts`, `tests/harness/run-e2e.ts`, `tests/repo-encoding.test.ts` (the repo-wide guard that uses `hasBom`).
-
-**Update triggers:** New BOM-adjacent encoding helpers needed in two or more source files.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -59,3 +55,9 @@ hasBom(buf: Buffer<ArrayBufferLike>): boolean
 ## Scope
 
 Internal round-trip files this app both writes and reads back itself (model cache, quota cache, eval result sink) are deliberately not routed through these helpers — nothing but this codebase produces them, so there is no BOM risk to guard against.
+
+A BOM-adjacent encoding helper earns a place here once two or more source files need it.
+
+Consumers reach past `src/`: `scripts/docgen/generate-docs.ts`, `tests/harness/run-e2e.ts`
+and `tests/repo-encoding.test.ts` (the repo-wide guard built on `hasBom`) all import from
+here, so the generated Neighbors block understates the blast radius.

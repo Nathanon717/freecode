@@ -10,8 +10,6 @@ Reads the DB into the shapes the app holds in memory — the model-data map and 
 adding a column to `models`/`eval_runs` that must reach `ModelEntry`, or changing how a stored blob is decoded.
 <!-- END GENERATED MAP INTENT -->
 
-Pure hydration: takes a client, returns plain data, owns no state. Every column decode lives here (null handling, JSON blob parsing, corrupt-row tolerance), so `db.ts` keeps only client lifecycle and writes.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -48,12 +46,6 @@ loadConfigFromDb(c: Client): Promise<DbConfigData>
 92 / 500 lines (408 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Key Neighbors
+## Scope
 
-- [store/db.md](db.md): sole caller, from `doInit()`.
-- [store/db-types.md](db-types.md): the `ModelDataMap` shape returned.
-- [providers/model-data.md](../providers/model-data.md): owns `ModelEntry`/`EvalRunSummary`.
-
-## Update Triggers
-
-Update this page when the columns read, or the decode rules, change.
+Pure hydration: takes a client, returns plain data, owns no state. Every column decode lives here (null handling, JSON blob parsing, corrupt-row tolerance), so `db.ts` keeps only client lifecycle and writes.

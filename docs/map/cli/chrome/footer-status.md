@@ -69,13 +69,6 @@ layoutFooterRightRows(width: number, rowBudget: number, now?: number): string[]
 225 / 500 lines (275 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Note
+## Notes
 
 The `ctx` slot shows **measured** context size — the provider's own `prompt_tokens` for the last call — not a local tokenizer estimate. It is deliberately *not* built on `src/tokenizers/count.ts`: a computed estimate would undercount (it never sees tool schemas or provider-injected content) and, once output/reasoning tokens enter the arithmetic, becomes provider-specific and easy to get silently wrong. The renderer does zero arithmetic beyond `N/M` and shows nothing until a real count arrives, so it can never display a fabricated number. Format is raw integers (`12345/128000 ctx`, or `12345 ctx` when the window is unknown) — no separators, no percentage, no rounding, so tests can pin exact digits. History: this replaces the earlier multi-writer `setTokenCount`/`${n} ctx` slot, whose five callers each fed it a different quantity (local estimate, last-call input, cumulative eval totals) — the eval cumulative-sum path is why the old `ctx` could exceed the context window.
-
-## Key neighbors
-
-- `cli/chrome/bottom-ui.ts` — imports `layoutFooterRightRows` and `formatEvalRunStatus` for `composeFooterOutput`
-- `cli/session-modes.ts`, `cli/eval/custom-eval-menu.ts`, `cli/eval/humaneval-menu.ts`, `index.ts` — import the status setters directly
-- `providers/openai-daily-spend.ts` — imports `OpenAIDailySpend` type
-- `providers/quota/headers.ts` — imports `RateLimitSnapshot` type

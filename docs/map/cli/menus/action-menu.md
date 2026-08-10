@@ -55,13 +55,3 @@ lines.splice(selectedScreenIdx + 1, 0, ...menu.renderLines());
 const res = menu.handleKey(key);
 if (res.type === 'select') { /* res.option */ }
 ```
-
-## Key Neighbours
-
-- `cli/menus/raw-picker.ts` — `runRawPicker` host that callers use
-- `cli/eval/custom-eval-menu.ts` — eval picker consumer
-- `commands/model.ts` — model picker consumer
-
-## Update Triggers
-
-Update when action sub-menu visual style, key bindings, or result type changes.

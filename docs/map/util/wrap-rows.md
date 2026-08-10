@@ -57,12 +57,7 @@ fitLinesToRows<T>(lines: T[], maxRows: number, render: (line: T) => string): T[]
 `COLUMNS`
 <!-- END GENERATED MAP FACTS -->
 
-## Key neighbors
+## Notes
 
-- [../cli/transcript-renderer.md](../cli/render/transcript-renderer.md) — sole consumer; trims the pending-approval preview with these.
-- [../cli/tool-approval.md](../cli/tools/tool-approval.md) — owns the row budget that gets passed in.
-- [screen-buffer.md](screen-buffer.md) — provides `stripAnsi` for the width measurement.
-
-## Update triggers
-
-Update when the wrap model changes (e.g. wide/CJK character width, which the current `stripAnsi().length` measure does not model).
+The wrap model measures with `stripAnsi().length`, so wide/CJK character width is not
+modelled.

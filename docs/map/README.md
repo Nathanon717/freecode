@@ -11,7 +11,29 @@ The map is maintained incrementally:
 3. After edits, run `npm run docs:generate` and inspect `git diff --name-only`.
 4. Update the intent where it lives: a module whose purpose or read/use guidance changed needs its `@role` / `@readwhen` edited **in the source file**, not on the page. Only the page's tail sections are edited on the page.
 
-Most of a page is **generated** from source — do not hand-edit content between the `BEGIN/END GENERATED` markers. `npm run docs:generate` maintains it; you only write the surrounding intent.
+## Page shape
+
+Every page is the same shape: a generated head in a fixed order, then one authored tail.
+
+```text
+# src/agent/loop.ts — Agent Loop     GENERATED  (path + @role title)
+## Role                              GENERATED  (from @role in source)
+## Read When                         GENERATED  (from @readwhen in source)
+## Exports                           GENERATED  (+ JSDoc, + external ref counts)
+## Neighbors                         GENERATED  (imports / imported-by, ref-weighted)
+## Tests                             GENERATED  (emitted even when empty)
+## Budget                            GENERATED  (lines vs 500)
+## Env                               GENERATED  (omitted when empty)
+<free-form H2 tail>                  AUTHORED, optional, uncapped
+```
+
+Do not hand-edit content between the `BEGIN/END GENERATED` markers — `npm run docs:generate` maintains it. The tail is the one authored slot, and it is the one no parser could produce.
+
+**H2-only.** Every addressable field is `## <Exact Name>`, and runs from that heading to the next H2 or to the next generated marker. No inline-bold fields, no frontmatter: a second grammar buys nothing the queries need.
+
+The canonical names above are **reserved** — a page spells one exactly and puts it in that order. The tail is **positional, not name-based**: anything after the canonical head is detail, addressable as a block and enumerable by heading. That is what lets it stay unconstrained and still be machine-readable.
+
+**Size caps.** `Role` ≤ 400 characters, `Read When` ≤ 3 bullets, tail uncapped. Role and Read When are the sections pulled in bulk across a glob, so their cost scales with page count and the cap has to be hard. A tail section is only ever fetched one page at a time.
 
 | Generated section | Derived from |
 | --- | --- |
@@ -44,7 +66,7 @@ The header holds **tags and nothing else**. Untagged prose there attaches to the
 
 `npm run docs:generate` checks generated reference docs first. If they are current, it leaves them untouched; if they are stale, it regenerates them (including every page's generated blocks and this file's structure tree). It then runs `scripts/checks/check-map.ts`, which checks that every `src/**/*.ts` file has a matching map page, that map pages still point to existing source files, and that each page keeps its generated blocks.
 
-What you still write on the page itself is the tail: whatever sections the file's behavior needs, below the generated head. Keep it short and operational, and do not restate a fact a generated section already carries.
+In the tail, write whatever sections the file's behavior needs. Keep it short and operational, and do not restate a fact a generated section already carries.
 
 ## Querying
 
@@ -60,7 +82,7 @@ What you still write on the page itself is the tail: whatever sections the file'
 
 `<file>` accepts `src/agent/loop.ts`, `agent/loop.md` or `agent/loop`. `<glob>` matches map-relative paths: `**` is every page, `agent/` is a directory, `*` stops at a separator. Add `--format json` for structured output.
 
-Section names resolve through the manifest in `scripts/docgen/map-sections.ts`, which maps every spelling in the corpus to one canonical name — `Key Neighbors`, `Key neighbours` and `Neighbors` all answer to `Neighbors`, and an inline `**Read when:**` answers the same as `## Read When`. That array is the single definition of map structure.
+Section names resolve through the manifest in `scripts/docgen/map-sections.ts` — the single definition of map structure, read by every generator, check and query. It still carries the older spellings as aliases (`Key Neighbors` and `Key neighbours` answer to `Neighbors`; an inline `**Read when:**` answers the same as `## Read When`) even though no page uses them any more, so a query still resolves one that gets reintroduced.
 
 ## Structure
 

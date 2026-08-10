@@ -62,8 +62,3 @@ editDiffResult(args: Record<string, unknown>, ctx: EditDiffContext | undefined):
 - `computeEditDiffContext(path, oldText)` reads the file at `join(process.cwd(), path)`, locates `oldText` (with the same `\n`/`\t`/CRLF normalisation the edit tool applies), and returns the unchanged lines above/below, the leading indent stripped onto its own line, and the 1-based `startLine` the diff renders from. It never throws — a missing file or unmatched `oldText` degrades to empty context (`startLine` 1). The context walk stops at blank lines and at `loadConfig().diffContextLines`.
 - `editDiffResult(args, ctx)` builds the `edit-diff` `ToolStepResult` from the edit's args plus that (possibly absent) context, or returns `null` when the args aren't a well-formed edit (missing/typed-wrong `path`/`old_text`/`new_text`).
 - The diff is a **projection** of the intended edit: it renders even when `old_text` won't match, in which case the edit tool errors on execute.
-
-## Key Neighbors
-
-- [index.md](index.md) — computes the context in `withToolRendering` (stashed in `PreviewState.editContext`) and renders it in `withConfirmation` (pre-approval) and post-execution.
-- [../../cli/transcript-renderer.md](../../cli/render/transcript-renderer.md) — owns `ToolStepResult` and `formatEditFileDiff`, which draws the result this module builds.

@@ -3,9 +3,8 @@
  *
  * @readwhen
  * - Adding, removing, or reordering a provider.
- * - Changing model IDs, display names, API key env vars, tool support, paid status, or static limits.
+ * - Changing model IDs, display names, API key env vars, tool support, paid status, static limits, or where display names and context windows come from.
  * - Debugging router selection where registry order or provider metadata matters.
- * - Changing where model display names or context windows come from. Every successful live init writes the provider's final model list to the `models` table via `saveProviderCatalog`, and `_doInit` does the same for static providers afterwards (the change check makes the repeat a no-op). When a fetch fails, the model list is rebuilt from `getProviderCatalog` — the DB, not `model-cache.json`, which holds ids only. `runLiveProviderInit`'s `finish()` applies the registry blocklist (substring + exact) **and** the user blocklist centrally, before the catalog write, so blocklisted models never reach the DB regardless of whether the provider's own `selectModels` filters (openrouter does not).
  *
  * For the generated provider table, see [providers.md](../../providers.md).
  */

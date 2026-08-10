@@ -36,14 +36,3 @@ buildEvalDots(model: string, data: EvalDotsData): string
 
 30 / 500 lines (470 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Key Neighbors
-
-- Imports `getEvalStatus`, `EvalStatus`, `EvalDotsData` from [eval/history.md](../../eval/history.md).
-- Read by `cli/eval/humaneval-menu.ts` and `commands/model.ts` for circle display.
-- `cli/eval/eval-menu.ts` uses `statusCircle` directly for non-TTY list output.
-
-## Update Triggers
-
-- When the `statusCircle` color mapping changes.
-- When `buildEvalDots` ordering or format changes.

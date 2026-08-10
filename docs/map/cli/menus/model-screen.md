@@ -91,12 +91,8 @@ buildModelDetailScreen(item: ModelMenuItem): string[]
 252 / 500 lines (248 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Key neighbors
+## Notes
 
-- Consumed by [commands/model.ts](../../commands/model.md), which owns provider fetch (`getSelectableModels`), the per-provider tabs, and the run loop. It re-exports `ModelMenuItem` / `filterModelItems` / `buildAllItemLines` for a stable surface.
-- Uses [cli/render/banner.ts](../render/banner.md) `getBannerColor` for accents.
-
-## Update triggers
-
-- New `ModelMenuItem` field or badge.
-- Row/section layout or scroll-indicator changes.
+[commands/model.md](../../commands/model.md) owns provider fetch (`getSelectableModels`),
+the per-provider tabs, and the run loop. This module re-exports `ModelMenuItem` /
+`filterModelItems` / `buildAllItemLines` so that consumer has one stable surface.

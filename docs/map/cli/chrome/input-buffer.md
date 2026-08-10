@@ -66,9 +66,3 @@ cursorToVisualPos(buf: string, cursor: number, w: number): { visualRow: number; 
 
 117 / 500 lines (383 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Key neighbors
-
-- `cli/chrome/bottom-ui.ts` — imports from here for rendering
-- `cli/session-modes.ts` — imports the buffer/cursor functions directly for key handling
-- `cli/session-modes.ts` — calls all cursor/buffer mutations in response to keystrokes

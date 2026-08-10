@@ -10,10 +10,6 @@ Shared raw-terminal-key detection used by the interactive input handlers.
 You're handling a raw keypress (`data`/`key` string from stdin in raw mode) and need to recognize backspace, which terminals send as either DEL (`\x7f`) or BS (`\x08`) depending on platform/emulator.
 <!-- END GENERATED MAP INTENT -->
 
-**Key neighbors:** `src/cli/session-modes.ts`, `src/cli/tools/tool-approval.ts`, `src/commands/model.ts`.
-
-**Update triggers:** New raw-key classification needed in two or more source files.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -38,3 +34,7 @@ isBackspaceKey(key: string): boolean
 
 4 / 500 lines (496 to spare).
 <!-- END GENERATED MAP FACTS -->
+
+## Notes
+
+A raw-key classification earns a place here once two or more source files need it.

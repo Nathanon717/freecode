@@ -62,15 +62,7 @@ Covers both the static tokens and the session accent. **Ownership of the accent 
 
 There is no theme *switching* mechanism yet (no light/dark, no config selection). This module is the token layer that a switcher would sit on top of.
 
-## Key neighbors
+## Notes
 
-- `cli/render/markdown-renderer.ts` — `codeSurface`, `codeSurfaceBg`, `codeSurfaceText`
-- `cli/eval/eval-dots.ts`, `cli/eval/eval-screen.ts` — `warning`
-- `cli/tools/tool-invocation.ts` — `toolName`
-- `cli/chrome/toggles.ts` — `mutedHint`, `rotatingPastel`, `rotatingPastelBg`
-- `cli/menus/list-menu.ts`, `cli/menus/model-screen.ts` — `rotatingPastelBg` for the selected tab / row
-- `cli/render/banner.ts` — owns the pastel ring and rotation state this module reads (one-way: banner does not import theme)
-
-## Update triggers
-
-Adding a token, retuning a palette value, or migrating more call sites off literal colors. `tests/cli/theme.test.ts` pins each token to the literal it replaced — a deliberate retune moves those expectations with it.
+`tests/cli/theme.test.ts` pins each token to the literal it replaced, so a deliberate
+retune moves those expectations with it.

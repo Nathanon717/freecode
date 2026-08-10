@@ -48,13 +48,3 @@ all orchestration now goes through the shared `renderTurn` / `renderToolStep` / 
 | Multiple tool calls in one step | multiple `ToolStep` entries in one `RenderedStep` |
 | Tool error | `error` |
 | Markdown showcase | `RenderedStep.text` only, no tools |
-
-## Key neighbors
-
-- `../cli/render/transcript-renderer.ts` — `renderTurn`, `renderToolStep`, `writeToolCallHeader`, `writeToolStepResult`, and the state machine
-- `../cli/render/markdown-renderer.ts` — `renderMarkdown`
-- `../cli/command-dispatcher.ts` — dispatches `/renderer`
-
-## Update triggers
-
-Update this page when turn types are added/removed, the demo structure changes, or key neighbors are renamed.

@@ -57,9 +57,3 @@ injectParallelToolCallsFalse(body: Record<string, unknown>): Record<string, unkn
 
 69 / 500 lines (431 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Key Neighbors
-
-- [model-quirks](../model-quirks.md) — predicates (`openAIModelDisallowsTemperature`, `mistralCodestralRequiresSystemInjection`) used here
-- [openai-compat-quirks](openai-compat-quirks.md) — consumer: wires these transforms into per-provider profiles
-- [openai-compat](openai-compat.md) — consumer: calls `injectParallelToolCallsFalse` directly (runtime toggle, not a profile entry)

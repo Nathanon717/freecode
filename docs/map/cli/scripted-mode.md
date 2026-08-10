@@ -44,9 +44,3 @@ createScriptedMode(scriptPath: string): CliSessionMode
 - `/eval` prints that the menu is unavailable instead of opening it.
 - Under `FREECODE_AUTO_CONFIRM=1` (eval subprocesses) every call is auto-approved until `FREECODE_MAX_TOOL_CALLS` is exceeded, after which calls are silently denied — a hard budget for unattended runs, no prompt (scripted stdin is closed).
 - On EOF, prints `Goodbye!` unless `FREECODE_AUTO_CONFIRM=1`.
-
-## Key Neighbors
-
-- [session-modes.md](session-modes.md) — the interactive counterpart; both build a `CliSessionMode` for `session-runner.ts`.
-- [tools/tool-approval.md](tools/tool-approval.md) — `formatScriptedToolMenu` / `parseScriptedToolChoice`.
-- `../index.ts` — selects this mode for `--script` runs.

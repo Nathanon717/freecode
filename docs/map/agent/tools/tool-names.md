@@ -96,8 +96,5 @@ of the `readOnly` / `spawnAgent` flags.
   calling a tool that is not there.
 - `cli/tools/tool-invocation.ts` — re-exports `TOOL_NAMES` / `isToolName`.
 
-## Update triggers
-
-- A tool is added or removed, or moves between the halves.
-- `createTools` changes which tools it offers for a given flag combination —
-  `offeredToolNames` must move with it or the drift test fails.
+- The drift test — `createTools` changing which tools it offers for a given flag
+  combination must move `offeredToolNames` with it, or the test fails.

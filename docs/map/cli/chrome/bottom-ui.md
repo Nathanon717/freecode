@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and the input-area layout; status state lives in `footer-status.ts`, buffer/cursor state in `input-buffer.ts`, the suggestion overlay's snapshot in `suggestion-overlay.ts`, the turn flag and activity verb behind the `thinking…` label in `turn-state.ts`, and the raw escape sequences in `ansi.ts`. Import those directly — this module does not re-export them.
+Renders and controls the bottom-pinned prompt/status area. Owns only the ANSI scroll-region state and the input-area layout; the state it draws lives in sibling modules, which callers import directly — this module does not re-export them.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
@@ -117,3 +117,11 @@ Row counts are reset and the scroll region re-established from the new dimension
 ## Cleanup
 
 Process-exit handler restores the scroll region and parks the cursor.
+
+## Notes
+
+State this module draws but does not own: status in [footer-status.md](footer-status.md),
+buffer and cursor in [input-buffer.md](input-buffer.md), the suggestion overlay's snapshot
+in [suggestion-overlay.md](suggestion-overlay.md), the turn flag and the activity verb
+behind the `thinking…` label in [turn-state.md](turn-state.md), and the raw escape
+sequences in [ansi.md](ansi.md).

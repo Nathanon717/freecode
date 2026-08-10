@@ -11,8 +11,6 @@ Implements the `/status` slash command. Shows API key status for all providers, 
 - Changing Doppler detection logic (looks for `DOPPLER_PROJECT` env var).
 <!-- END GENERATED MAP INTENT -->
 
-No state is mutated; output only.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -39,14 +37,6 @@ runStatusCommand(): void
 `DOPPLER_CONFIG`, `DOPPLER_PROJECT`
 <!-- END GENERATED MAP FACTS -->
 
-## Key Neighbors
+## Scope
 
-- [providers/provider-registry.md](../providers/provider-registry.md): `PROVIDER_REGISTRY` for provider list.
-- [config/index.md](../config/index.md): `loadConfig()` for config-file API keys.
-- [providers/db.md](../store/db.md): `getDbSyncConfig()` for DB sync URL.
-- [cli/slash-commands.md](../cli/slash-commands.md): `/status` is registered here.
-- [cli/command-dispatcher.md](../cli/command-dispatcher.md): dispatches `/status` to `runStatusCommand`.
-
-## Update Triggers
-
-Update this page when the command output sections change or new status categories are added.
+No state is mutated; output only.

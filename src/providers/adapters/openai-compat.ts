@@ -1,5 +1,5 @@
 /**
- * @role Provider-agnostic pipeline for **every** registry provider (Anthropic included) plus Ollama: parse body → apply profile quirks → fetch with retry → capture rate-limit headers → throw HTTP errors → convert/normalize response, with zero `if (id === 'x')` branches. Provider-specific pieces live elsewhere: static traits in [quirks](openai-compat-quirks.md), body transforms in [request](openai-compat-request.md)/[sse](openai-compat-sse.md), retry + error formatting in [http-retry](adapter-http-retry.md), capture stores in [usage-capture](adapter-usage-capture.md). There is no separate Anthropic adapter; Anthropic is a catalog entry (`baseUrl: "https://api.anthropic.com/v1"`) with no quirk profile, so it runs the default pipeline with `captureRateLimits` off.
+ * @role Provider-agnostic pipeline for **every** registry provider (Anthropic included) plus Ollama: parse body → apply profile quirks → fetch with retry → capture rate-limit headers → throw HTTP errors → convert/normalize response, with zero `if (id === 'x')` branches.
  */
 
 import { createOpenAI } from '@ai-sdk/openai';

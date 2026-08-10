@@ -12,26 +12,6 @@ changing what a tool call line, rationale, result preview, created
 file, edit diff, prompt echo or step divider *looks* like.
 <!-- END GENERATED MAP INTENT -->
 
-## Why it is separate
-
-Split from [transcript-renderer.md](transcript-renderer.md), which owns the
-turn/step state machine and the writing. Keeping these free of output is what
-lets the live path, the `/renderer` demo and the post-wipe replay produce
-byte-identical text from the same inputs — the replay's test asserts exactly
-that.
-
-## Key neighbors
-
-[transcript-renderer.md](transcript-renderer.md) re-exports everything here and
-is the module callers should import from.
-[transcript-options.md](transcript-options.md) supplies the options types and
-truncation defaults.
-
-## Update triggers
-
-A new transcript element that needs a look of its own, or a change to preview
-truncation.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -110,3 +90,11 @@ formatTranscriptStepDivider(options?: TranscriptRuntimeOptions | undefined): str
 
 `COLUMNS`
 <!-- END GENERATED MAP FACTS -->
+
+## Why it is separate
+
+Split from [transcript-renderer.md](transcript-renderer.md), which owns the
+turn/step state machine and the writing. Keeping these free of output is what
+lets the live path, the `/renderer` demo and the post-wipe replay produce
+byte-identical text from the same inputs — the replay's test asserts exactly
+that.

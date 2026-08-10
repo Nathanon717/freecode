@@ -10,10 +10,6 @@ Reads and writes `$FREECODE_HOME/blocklist.json`, the flat list of `provider:mod
 changing where the user blocklist is stored, what it applies to, or how a malformed file is tolerated.
 <!-- END GENERATED MAP INTENT -->
 
-Deliberately separate from the `modelIdBlocklist` / `modelIdExactBlocklist` arrays in `provider-catalog.ts`. Those are shipped, hand-curated defaults meaning "this model is broken for everyone" and live in checked-in source; this file is the personal counterpart, written at runtime by the `/model` picker's **Remove Fully** action. Keeping them apart is what stops a user's private removals from landing in the repo's catalog — do not merge the two.
-
-The file is a bare JSON array and nothing else, so it doubles as the viewing/editing UI: there is no dedicated screen for it, and hand-editing is a supported workflow.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -62,12 +58,8 @@ resetUserBlocklistCache(): void
 81 / 500 lines (419 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Key Neighbors
+## Notes
 
-- [providers/provider-registry.md](provider-registry.md): applies the list in `_doInit` (before any catalog write) and owns `blocklistModelPermanently`, the runtime add-plus-strip entry point.
-- [commands/model.md](../commands/model.md): the picker's Remove Fully action is the only writer.
-- [config/index.md](../config/index.md): `getConfigDir()` decides where the file lives.
+Deliberately separate from the `modelIdBlocklist` / `modelIdExactBlocklist` arrays in `provider-catalog.ts`. Those are shipped, hand-curated defaults meaning "this model is broken for everyone" and live in checked-in source; this file is the personal counterpart, written at runtime by the `/model` picker's **Remove Fully** action. Keeping them apart is what stops a user's private removals from landing in the repo's catalog — do not merge the two.
 
-## Update Triggers
-
-Update this page when the file format or location changes, or when a new call site starts consulting the user blocklist.
+The file is a bare JSON array and nothing else, so it doubles as the viewing/editing UI: there is no dedicated screen for it, and hand-editing is a supported workflow.

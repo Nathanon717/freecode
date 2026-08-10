@@ -60,11 +60,9 @@ readDbConfig(): { syncUrl?: string | undefined; authToken?: string | undefined; 
 `FREECODE_DB_AUTH_TOKEN`, `FREECODE_DB_SYNC_URL`, `FREECODE_HOME`, `FREECODE_STORE`
 <!-- END GENERATED MAP FACTS -->
 
-## Key neighbors
+## Notes
 
-- Extracted from [db.ts](./db.md), its only caller, to keep that file under the 500-line limit. Deliberately dependency-free so importing it can never pull in the libSQL client.
-- [model-data.ts](../providers/model-data.md) and [model-list-cache.ts](./model-list-cache.md) carry their own `getStoreDir` for the same directory; they do not import this file.
-
-## Update triggers
-
-- New store path or credential source.
+Deliberately dependency-free, so importing it can never pull in the libSQL client.
+[../providers/model-data.md](../providers/model-data.md) and
+[model-list-cache.md](model-list-cache.md) carry their own `getStoreDir` for the same
+directory rather than importing this file.

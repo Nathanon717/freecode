@@ -1,5 +1,5 @@
 /**
- * @role The engine's public entry point: a synchronous `countTokens` safe to call on a hot path (e.g. once per keystroke), backed by an in-memory encoder cache keyed by family, plus an async `preloadTokenizerFor` that compiles and caches exact backends in the background (GPT-OSS bundled since Phase 2; Llama 3.x/DeepSeek V3+V4/GLM-4.5-4.7 downloaded-and-cached since Phase 3; modern Mistral Tekken since Phase 4). `commands/model.ts` reads the synchronous `hasExactTokenizer` capability check to badge picker rows. `cli/session-modes.ts` is the live consumer of the encoder cache: it calls `preloadTokenizerFor` when the active model changes and `countTextTokens` to show the tool-approval preview's "+N tokens" count. The footer `ctx` slot deliberately does **not** use this engine: it shows the provider's own reported `prompt_tokens` (measured, cache-inclusive on most providers) rather than a local estimate that would systematically undercount — see `cli/chrome/footer-status.ts`.
+ * @role The engine's public entry point: a synchronous `countTokens` safe to call on a hot path (once per keystroke), backed by an in-memory encoder cache keyed by family, plus an async `preloadTokenizerFor` that compiles and caches exact backends in the background.
  */
 
 import type { CoreMessage } from 'ai';

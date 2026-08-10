@@ -145,13 +145,3 @@ extractOpenAICompatRateLimitBuckets(providerId: string, headers: Headers): Recor
 
 253 / 500 lines (247 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Key Neighbors
-
-- [providers/provider-registry.md](../provider-registry.md): static model limits.
-- [providers/adapters/openai-compat.md](../adapters/openai-compat.md): captured OpenAI-compatible headers (Anthropic included).
-- [agent/loop.md](../../agent/loop.md): attaches quota metadata to turn results.
-
-## Update Triggers
-
-Update this page when exported parser names, quota ownership, or key consumers change. Keep detailed header mappings in source tests or generated references, not in this map page.

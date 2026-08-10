@@ -47,11 +47,12 @@ estimateContextTokens(messages: CoreMessage[]): number
 33 / 500 lines (467 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Used By
-
-- [count.md](count.md): `countTokens`'s fallback path when no exact family is resolved or cached.
-- [chat-format.md](chat-format.md): supplies the shared overhead formula this file's exports wrap.
-
 ## Caveat
 
 This is the wrong model family's tokenizer for anything that isn't OpenAI's `o200k_base` vocab — a real BPE estimate, still not exact billing/provider accounting for non-OpenAI models.
+
+## Notes
+
+[count.md](count.md)'s `countTokens` uses this whenever no exact family resolves or is
+cached, and [chat-format.md](chat-format.md) supplies the shared overhead formula these
+exports wrap.

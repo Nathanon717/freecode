@@ -44,8 +44,3 @@ makeSpawnAgentTool(spawnAgent: SpawnAgentFn): CoreTool<ZodObject<{ agentType: Zo
 - Because it is model-bound, `spawn_agent` is **absent** from the parsed-tools and hand-typed (`tool-runner`) paths, which inject no runner.
 - It skips the confirmation wrapper (`requiresConfirmation=false` in `wrap`) since the sub-agent is read-only.
 - The `agentType` enum and the advertised catalog come from [../subagents/registry.md](../subagents/registry.md).
-
-## Key neighbors
-
-- [../subagents/run-subagent.md](../subagents/run-subagent.md) — the runner this tool ultimately drives.
-- [index.md](index.md) — registers and wraps the tool.

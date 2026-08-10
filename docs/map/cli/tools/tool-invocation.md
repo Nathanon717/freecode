@@ -151,14 +151,3 @@ parseToolArgs(argsText: string): Record<string, unknown>
 
 357 / 500 lines (143 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Key Neighbors
-
-- [tool-runner.md](./tool-runner.md) — executes what this parses; owns `/tools` listing.
-- [bottom-ui.md](../chrome/bottom-ui.md) — highlighter consumer.
-- [session-modes.md](../session-modes.md) — auto-close consumer.
-- [command-dispatcher.md](../command-dispatcher.md) — calls `parseToolInvocation` before falling back to the agent.
-
-## Update Triggers
-
-Update when the invocation syntax, argument coercion rules, or the tool name set change.

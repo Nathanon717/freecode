@@ -12,12 +12,6 @@ Test-only fake model runner for free agent-loop verification. It validates order
 - Extending fake coverage into parsed-tools or Responses-style paths.
 <!-- END GENERATED MAP INTENT -->
 
-**Why it lives in `src/` and ships in `dist/`:** `mock` and `mock-native` are real entries in
-`provider-registry.ts`, resolved at runtime from a model string like `mock:gpt-freecode-test`.
-E2e tests spawn the built binary (`tests/harness/run-e2e.ts` runs `dist/index.js`), so the
-fake must be present in the build or e2e tests lose their model. It is a deliberately fake
-provider, not a test fixture - do not move it to `tests/`.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -113,6 +107,14 @@ runFakeModel(call: FakeModelCall): Promise<FakeModelResult>
 `FREECODE_FAKE_LLM`, `FREECODE_FAKE_LLM_SCRIPT`, `FREECODE_FAKE_LLM_TRACE`
 <!-- END GENERATED MAP FACTS -->
 
+## Why It Lives in `src/` and Ships in `dist/`
+
+`mock` and `mock-native` are real entries in
+`provider-registry.ts`, resolved at runtime from a model string like `mock:gpt-freecode-test`.
+E2e tests spawn the built binary (`tests/harness/run-e2e.ts` runs `dist/index.js`), so the
+fake must be present in the build or e2e tests lose their model. It is a deliberately fake
+provider, not a test fixture - do not move it to `tests/`.
+
 ## Execution Paths
 
 Two fake execution paths share the same fixture format and trace mechanism:
@@ -127,12 +129,3 @@ Two fake execution paths share the same fixture format and trace mechanism:
 - Trace output is optional through `FREECODE_FAKE_LLM_TRACE`; e2e tests can assert it with `expect.fakeLlmTrace`.
 - Steps are consumed in order and fail closed on mismatched provider, model, turn, message count, system prompt, user text, required tool names, tool settings, malformed tool calls, exhausted fixtures, or unused fixture steps.
 - Trace entries include `executionPath` (`'fake-direct'` or `'native-stream'`), emitted chunks, emitted tool calls, prompt-facing messages, tool availability, tool settings, and deterministic usage metadata.
-
-## Key Neighbors
-
-- [provider-registry.md](provider-registry.md): gates `mock:*` model resolution and blocks real providers in fake mode.
-- [agent/loop.md](../agent/loop.md): calls `runFakeModel()` after building the real system prompt and tool list.
-
-## Update Triggers
-
-Update this page when fake fixture schema, matching behavior, trace behavior, or supported response types change.

@@ -3,19 +3,12 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Owns the HumanEval dataset concern for the `/eval` HumanEval tab: resolving the dataset path (`humanEvalDatasetPath`), downloading it if missing (`ensureHumanEvalDataset`/`downloadFile`), and parsing it into `HumanEvalProblem[]` (`loadHumanEvalProblems`). Defines the `HumanEvalProblem`/`HumanEvalResultMap` types consumed by the tab/run loop. Counterpart of `eval/custom.ts` (scenario discovery for the Custom tab).
+Owns the HumanEval dataset concern for the `/eval` HumanEval tab: resolving the dataset path (`humanEvalDatasetPath`), downloading it if missing (`ensureHumanEvalDataset`/`downloadFile`), and parsing it into `HumanEvalProblem[]` (`loadHumanEvalProblems`).
 
 ## Read When
 
 Changing dataset location/format, download/redirect behavior, the example-problem prepend, or the `HUMANEVAL_DATA` / `HUMANEVAL_EXAMPLE_DATA` env overrides (test fixtures).
 <!-- END GENERATED MAP INTENT -->
-
-**Key neighbors:**
-- `src/cli/eval/humaneval-menu.ts` — the tab + run loop that consume the problems and types
-- `src/cli/eval/eval-menu.ts` — calls `humanEvalDatasetPath`/`loadHumanEvalProblems` to populate the tab
-- `src/eval/custom.ts` — the Custom-tab counterpart (scenario discovery)
-- `evals/humaneval/data/` — bundled dataset (`HumanEval.jsonl.gz`, `example_problem.jsonl`); gitignored under `evals/*`
-- `tests/e2e/humaneval-mini.jsonl.gz`, `tests/e2e/humaneval-example.jsonl` — fixtures pointed at via env overrides
 
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
@@ -75,3 +68,12 @@ loadHumanEvalProblems(): HumanEvalProblem[] | null
 
 `HUMANEVAL_DATA`, `HUMANEVAL_EXAMPLE_DATA`
 <!-- END GENERATED MAP FACTS -->
+
+## Notes
+
+`tests/e2e/humaneval-mini.jsonl.gz` and `tests/e2e/humaneval-example.jsonl` are pointed at
+through the env overrides, so fixtures outside `src/` depend on the dataset path.
+
+It also defines the `HumanEvalProblem` / `HumanEvalResultMap` types the tab and run loop
+consume. Counterpart of [custom.md](custom.md), which does scenario discovery for the
+Custom tab.

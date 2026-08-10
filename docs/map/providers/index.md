@@ -30,6 +30,6 @@ No mirrored test — pure barrel; only re-exports, no logic of its own.
 3 / 500 lines (497 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Note
+## Notes
 
 Most internal provider modules import direct dependencies instead of this barrel to keep dependency edges explicit.

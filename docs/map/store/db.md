@@ -12,8 +12,6 @@ Owns the libSQL client, schema bootstrap, in-memory model-data cache, startup im
 - Understanding why model-data reads hit cache vs. JSON.
 <!-- END GENERATED MAP INTENT -->
 
-The eval/model store migration is complete — expect no half-migrated state.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -152,6 +150,10 @@ executeRawForTesting(sql: string, args: InValue[]): Promise<void>
 484 / 500 lines (16 to spare).
 <!-- END GENERATED MAP FACTS -->
 
+## Notes
+
+The eval/model store migration is complete — expect no half-migrated state.
+
 ## Schema
 
 Six tables are created idempotently at `initStore()`. The DDL itself lives in [db-schema.md](./db-schema.md); the semantics are:
@@ -183,12 +185,3 @@ Tokenless-replica decline (`isSyncReplica`): sync tokens reach `readDbConfig` on
 - **Writes:** `save(store, changedKeys?)` in model-data calls `setModelData()` to update the in-memory cache synchronously, then calls `persistModelRowAsync(key, entry)` for each changed key — one `c.execute()` per row. `appendEvalRun` additionally calls `saveTranscriptAsync()` to persist transcript content to `eval_runs`/`eval_transcripts`, and persists the model row (via `save(store, [key])`) so the FK parent exists; `saveTranscriptAsync` also self-insures the parent row (INSERT OR IGNORE on `models`) to stay order-independent of the model-row write.
 - **Durability:** DB writes are fire-and-forget. The DB (synced via Turso) is the cross-device source of truth.
 - **Deletes:** `deleteModelRows(keys)` is the one **awaited** write — its caller gates it on a user confirmation and must know it landed; it returns `true` when the delete is durable. It deletes children explicitly, deepest first (`eval_transcripts` → `eval_runs` → `llm_calls` → `models`), because nothing in the schema cascades: the `REFERENCES` clauses carry no `ON DELETE`, so with `PRAGMA foreign_keys = ON` a bare parent delete is rejected, and `llm_calls` has no FK at all so its rows would just be orphaned. One batch, so a mid-way failure leaves the DB untouched. Adding `ON DELETE CASCADE` is not an option — SQLite cannot ALTER a constraint in, and it still would not reach `llm_calls`. On a **synced** store the batch runs **directly against the primary** (a throwaway remote client from `readDbConfig`'s `syncUrl`/`authToken`), then `client.sync()` pulls it local — NOT a local-replica delete pushed on `sync()`. A local delete is an un-pushed WAL frame, and the per-launch catalog upserts keep advancing the remote, so that frame loses the push race and is discarded by the next launch's WalConflict wipe-and-re-pull — the row comes back forever, so a model the user removed fully reappears on every launch. Writing to the primary sidesteps the race; `false` (returned when the primary write fails, e.g. offline) means the caller should tell the user it will retry next launch. See `docs/bug log/24-07-2026.md`.
-
-## Key Neighbors
-
-- [providers/model-data.md](../providers/model-data.md): sole caller of `getModelData`/`setModelData`.
-- [index.md](../index.md): calls `initStore()` once at startup.
-
-## Update Triggers
-
-Update this page when the schema changes, new exports are added, or the sync config path changes.

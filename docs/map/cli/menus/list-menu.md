@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-The shared tabbed list-menu state machine built on `raw-picker.ts`. Owns the active tab, the selected index (including the `-1` tab-row focus), detail/action modes, Up/Down navigation, the inline-action-menu splice, and the detail-screen swap. Replaces the per-menu copies of this logic in `/eval`, `/config`, and the `/model` picker. Each tab supplies only its body rendering and any extra key behavior.
+The shared tabbed list-menu state machine built on `raw-picker.ts`. Owns the active tab, the selected index (including the `-1` tab-row focus), detail/action modes, Up/Down navigation, the inline-action-menu splice, and the detail-screen swap. Each tab supplies only its body rendering and any extra key behavior.
 
 ## Read When
 
@@ -143,9 +143,7 @@ runListMenu<TResult>(rl: Interface, opts: ListMenuOptions<TResult>): Promise<TRe
 - **Escape hatch:** item-focused keys other than Up/Down/Esc are offered to `tab.onKey` first (favorites, filter typing, value cycling), then the Right/Enter fallbacks.
 - Funnels through a single `runRawPicker` call so the captured-opts command tests keep working.
 
-## Key neighbors
+## Notes
 
-- `cli/menus/raw-picker.ts` — the underlying raw-mode picker.
-- `cli/menus/action-menu.ts` — `InlineActionMenu` used for the action sub-menu.
-- `cli/menus/menu-shell.ts` — the lifecycle chrome menus wrap around this.
-- `cli/eval/custom-eval-menu.ts`, `cli/eval/humaneval-menu.ts`, `commands/config.ts`, `commands/model.ts` — adopters.
+It replaces the per-menu copies of this logic that `/eval`, `/config` and the `/model`
+picker each used to carry.

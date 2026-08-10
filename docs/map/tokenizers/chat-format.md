@@ -45,12 +45,12 @@ countContextTokens(messages: CoreMessage[], encodeText: (text: string) => number
 47 / 500 lines (453 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Used By
+## Notes
 
-- [fallback-estimate.md](fallback-estimate.md): its `estimateContextTokens`/`estimateMessageTokens` are now thin wrappers over these, bound to the fallback encoder.
-- [backends/tiktoken.md](backends/tiktoken.md): `createTiktokenEncoder` binds these to a real `js-tiktoken` encoding.
-- [backends/bpe-json.md](backends/bpe-json.md): `loadBpeJsonEncoder` binds these to a real `@huggingface/tokenizers` BPE encoding.
-
-## Update Triggers
-
-Any new tokenizer backend (HF `tokenizer.json`, SentencePiece, Tekken) should build its `TokenizerEncoder` on top of `countContextTokens` rather than re-deriving the overhead formula, unless that family's real chat-template overhead needs to diverge from the flat constants here — see `backends/tiktoken.ts`'s caveat comment for why that divergence hasn't been tackled yet even where the model's real format differs.
+- A new tokenizer backend should build its `TokenizerEncoder` on top of
+  `countContextTokens` rather than re-deriving the overhead formula — unless that family's
+  real chat-template overhead has to diverge from the flat constants here. See the caveat
+  in [backends/tiktoken.md](backends/tiktoken.md) for why that divergence has not been
+  tackled even where the model's real format differs.
+- [fallback-estimate.md](fallback-estimate.md)'s `estimateContextTokens` /
+  `estimateMessageTokens` are thin wrappers over these, bound to the fallback encoder.

@@ -12,6 +12,38 @@ changing what a menu leaves on screen, or what a replayed turn
 shows.
 <!-- END GENERATED MAP INTENT -->
 
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
+
+```typescript
+/**
+ * Reprint the recorded conversation. A no-op on an empty record, so `/clear`
+ * (which empties it along with the history) still lands on a bare banner — there
+ * the blank screen is accurate.
+ *
+ * `messages` is read only for the header count: the record is what was on screen,
+ * while the history is what the model is sent, and the point of the header is to
+ * state the latter.
+ */
+replayTranscript(messages: CoreMessage[], options?: TranscriptRuntimeOptions): void
+```
+<!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`cli/render/transcript-renderer.ts`](transcript-renderer.md) ×7, [`cli/render/transcript-record.ts`](transcript-record.md) ×3
+- **Imported by:** [`cli/command-dispatcher.ts`](../command-dispatcher.md) ×3
+
+## Tests
+
+`tests/cli/render/transcript-replay.test.ts`.
+
+## Budget
+
+78 / 500 lines (422 to spare).
+<!-- END GENERATED MAP FACTS -->
+
 ## Why not repaint from the screen buffer
 
 The obvious approach — repaint from `util/screen-buffer.ts`, as the resize
@@ -45,46 +77,7 @@ then `resetTranscriptTurnState(true)` after, leaving the machine as a completed
 turn would. Recording is suspended throughout, or the replay would append itself
 to the record it is reading.
 
-## Key neighbors
+## Notes
 
-[../command-dispatcher.md](../command-dispatcher.md) is the only caller (after
-`/config`, `/model`, `/eval`). [transcript-renderer.md](transcript-renderer.md)
-supplies `renderTurn` and `formatPromptEcho`, the latter shared with
-`cli/session-modes.ts` so a replayed prompt echo cannot drift from the live one.
-
-## Update triggers
-
-A new command that wipes the screen without clearing history, or a change to what
-`transcript-record.ts` stores.
-
-<!-- BEGIN GENERATED EXPORTS -->
-## Exports
-
-```typescript
-/**
- * Reprint the recorded conversation. A no-op on an empty record, so `/clear`
- * (which empties it along with the history) still lands on a bare banner — there
- * the blank screen is accurate.
- *
- * `messages` is read only for the header count: the record is what was on screen,
- * while the history is what the model is sent, and the point of the header is to
- * state the latter.
- */
-replayTranscript(messages: CoreMessage[], options?: TranscriptRuntimeOptions): void
-```
-<!-- END GENERATED EXPORTS -->
-
-<!-- BEGIN GENERATED MAP FACTS -->
-## Neighbors
-
-- **Imports:** [`cli/render/transcript-renderer.ts`](transcript-renderer.md) ×7, [`cli/render/transcript-record.ts`](transcript-record.md) ×3
-- **Imported by:** [`cli/command-dispatcher.ts`](../command-dispatcher.md) ×3
-
-## Tests
-
-`tests/cli/render/transcript-replay.test.ts`.
-
-## Budget
-
-78 / 500 lines (422 to spare).
-<!-- END GENERATED MAP FACTS -->
+`formatPromptEcho` is shared with `cli/session-modes.ts`, so a replayed prompt echo cannot
+drift from the live one.

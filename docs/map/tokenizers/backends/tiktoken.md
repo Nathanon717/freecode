@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Wraps a `js-tiktoken` encoding as a `TokenizerEncoder`, and registers the GPT-OSS exact family into `count.ts`'s `encoderCache`. `createTiktokenEncoder` is the reusable wrapper — typed to accept any `Tiktoken`, whether from `getEncoding` (GPT-OSS) or constructed directly from parsed ranks. The Mistral Tekken backend ([tekken.md](tekken.md)) reuses it, building a `Tiktoken` from `tekken.json`'s vocab.
+Wraps a `js-tiktoken` encoding as a `TokenizerEncoder`, and registers the GPT-OSS exact family into `count.ts`'s `encoderCache`. `createTiktokenEncoder` is the reusable wrapper, typed to accept any `Tiktoken` — from `getEncoding` (GPT-OSS) or constructed directly from parsed ranks.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
@@ -47,11 +47,11 @@ GPT-OSS's real tokenizer is `o200k_harmony`, not `o200k_base`. Verified against 
 - The per-message overhead is [chat-format.md](../chat-format.md)'s generic flat constant, not GPT-OSS's real harmony wrapper token cost.
 - **The total is currently numerically identical to the Phase 1 fallback** — GPT-OSS is classified as an "exact family" (for cache wiring and any future exact-vs-estimate UI marker) without yet being numerically more accurate than the fallback. Making it genuinely exact requires rendering the harmony template and encoding its wrapper tokens as real specials — out of scope for this phase; flagged to the user and deferred rather than silently scoped in.
 
-## Used By
+Rendering the real harmony template would make these counts genuinely diverge from the
+fallback; this section and its pinned test both move when that lands.
 
-- [count.md](../count.md): `preloadTokenizerFor` registers `getGptOssEncoder()` into `encoderCache` for the GPT-OSS family.
-- [tekken.md](tekken.md): `loadTekkenEncoder` feeds its `tekken.json`-derived `Tiktoken` through `createTiktokenEncoder`.
+## Notes
 
-## Update Triggers
-
-If a later phase renders the real harmony template (making GPT-OSS counts genuinely diverge from the fallback), update the "Known inaccuracy" section above and the corresponding pinned test.
+[../count.md](../count.md) registers `getGptOssEncoder()` into `encoderCache` for the
+GPT-OSS family, and [tekken.md](tekken.md) feeds its `tekken.json`-derived `Tiktoken`
+through `createTiktokenEncoder`.

@@ -76,12 +76,3 @@ getTranscriptStream(options?: TranscriptRuntimeOptions): WritableStream
 
 76 / 500 lines (424 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Key neighbors
-
-- [transcript-renderer.md](./transcript-renderer.md) — sole consumer; re-exports this whole surface.
-- [tool-approval.md](../tools/tool-approval.md) — computes the `maxResultRows` value.
-
-## Update triggers
-
-Update when a runtime option or the stream routing rules change.

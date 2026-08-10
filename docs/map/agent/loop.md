@@ -148,6 +148,8 @@ return AgentLoopResult
 - Tool wrappers serialize execution so concurrent tool calls do not mutate files in parallel.
 - If the provider rejects tool use at runtime (`isToolsNotSupportedError`), the loop automatically retries via `runParsedToolsLoop` from `parsed-tools.ts`, which uses a text-based `<tool_call>` protocol instead of native function calling. The rejection is persisted via `setNativeTools(provider, modelId, false)` (model-data) so the fallback is used automatically next time; the startup read uses `isNativeToolsDisabled`. The user can also manually enable this path by setting `parsedTools: true` in per-model settings (via `/config` → Model tab); both routes check `modelSettings.parsedTools || isNativeToolsDisabled(...)` at the top of `streamWithRetry`.
 
+- **The prompt's tool list and the tool set `createTools` offers have to agree.** `parsed-tools.ts` builds tools without a `spawnAgent` runner, so `agentLoop` rebuilds the system prompt with `offeredToolNames({ readOnly, spawnAgent: false })` before entering it. Both prompt builds pass `options.readOnly` through; without that, a read-only turn is told it can edit files. See [tools/tool-names.md](tools/tool-names.md).
+
 ## Internal Helpers
 
 - `runFakeLlm(providerId, modelId, ...)` now lives in [fake-loop.md](fake-loop.md) (extracted at the 500-line limit). It handles the entire `FAKE_PROVIDER_ID` path and returns `AgentLoopResult` directly, so `agentLoop` returns immediately after calling it. `mock-native:*` is unaffected — it runs through `streamWithRetry` like a real provider.
@@ -157,26 +159,9 @@ return AgentLoopResult
 - **`onStepUsage` — the per-step `ctx` tick.** An `AgentLoopOptions` callback fired at every step boundary with that step's own `promptTokens`, so the footer's context size climbs during a multi-step tool turn rather than jumping once at the end. Emitted from three places so every execution path ticks: the native `onStepFinish` handler (using `event.usage`, which is per-step — unlike the awaited `result.usage`), `runFakeLlm`'s per-step loop (this is what the TTY e2e tests exercise), and `runParsedToolsLoop` via an optional callback param. Values climb within a turn because each step resends a longer history; the last one equals the turn's final `promptTokens`. Consumer side lives in `cli/session-modes.ts`.
 - `finalizeUsageCapture(...)` now lives in [usage-finalize.md](usage-finalize.md) (extracted at the 500-line limit). `agentLoop` imports it and calls it on both the success and catch paths, feeding the result through `applyUsageOutcome`.
 
-## Key Neighbors
-
-- [providers/provider-registry.md](../providers/provider-registry.md): resolves provider/model.
-- [system-prompt.md](system-prompt.md): builds the prompt.
-- [tools/index.md](tools/index.md): creates tool wrappers.
-- [providers/adapters/openai-compat.md](../providers/adapters/openai-compat.md): captures provider metadata and usage details.
-- [providers/fake.md](../providers/fake.md): fake fixture runner for free agent-loop verification.
-- [providers/model-data.md](../providers/model-data.md): `isNativeToolsDisabled`/`setNativeTools` for the native-tools fallback trait.
-- [tool-render-gate.md](tool-render-gate.md): orders streamed text before tool-call headers on the native `fullStream` path.
-- [stream-turn.md](stream-turn.md): drains the native `fullStream` and owns rejected-tool-call recovery.
-- [parsed-tools.md](parsed-tools.md): the text-protocol fallback. It builds tools without a `spawnAgent` runner, so `agentLoop` rebuilds the system prompt with `offeredToolNames({ readOnly, spawnAgent: false })` before entering it. Both prompt builds pass `options.readOnly` through: the tool list the prompt states has to be the tool set `createTools` actually offers, or a read-only turn is told it can edit files. See [tools/tool-names.md](tools/tool-names.md).
-- [usage-finalize.md](usage-finalize.md): ends usage capture and reads quota headers for each turn.
-
 ## Error Handling
 
 - **Failures ride on `error`, never on `text`.** Every path that fails without throwing (`FREECODE_NO_LLM`, the `resolveModel` failure, the stream catch — and `runFakeLlm`'s catch) returns the message in `AgentLoopResult.error` and leaves `text` as the model's own output: empty, or whatever partial text it emitted first. The loop has already printed the error to stdout, and the session must not persist it as something the assistant said (`docs/bug log/28-07-2026.md`).
 - Routing errors do not throw; they return `providerId: "none"`, `modelId: "none"`, zero tokens, and the reason in `error`.
 - Stream errors are logged and returned with any partial text plus the detailed error message in `error`. API errors include parsed provider fields such as `code`, `type`, and `failed_generation` when the SDK exposes them. Usage capture is ended on this path so any available partial usage metadata can still be returned.
 - Context-overflow errors (`isContextOverflowError`) are detected as a distinct subcase: a specific multi-line user-facing message is printed to stdout explaining the limit was exceeded and suggesting starting a new session or switching to a larger-context model via `/model`. `error` carries a condensed single-line version of this message.
-
-## Update Triggers
-
-Update this page when `agentLoop()` inputs/outputs, execution flow, or major consumers change.

@@ -67,9 +67,3 @@ runMenuShell<T>(rl: Interface, opts: MenuShellOptions<T>): Promise<T>
 4. `finally`: `rl.pause()`; when the bottom UI was active on a TTY, `resetStdinConsoleMode()` + `resetTerminalPrivateModes()` + `setupBottomUI()` + `onRestore?.()`.
 
 Does **not** own: the picker render/key loop (see `raw-picker.ts` / `list-menu.ts`), non-TTY fallbacks (handle inside `run()`), or session-state refresh (pass via `onRestore`).
-
-## Key neighbors
-
-- `cli/menus/raw-picker.ts` — provides the raw-mode reset helpers and the picker the body runs.
-- `cli/eval/custom-eval-menu.ts`, `cli/eval/humaneval-menu.ts` — current adopters.
-- `cli/chrome/bottom-ui.ts` — `isBottomUIActive` / `teardownBottomUI` / `setupBottomUI`.

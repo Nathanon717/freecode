@@ -48,12 +48,9 @@ resolveWritableProjectPath(path: string): Promise<ResolvedProjectPath>
 72 / 500 lines (428 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Used By
-
-- `agent/loop.ts` calls `setProjectRoot(projectRoot)` at the start of each turn.
-- Agent filesystem tools call the project path resolvers before reading, writing, listing, or searching paths.
-- `read` marks files as read after successful reads; `edit` checks that state before editing.
-
 ## Important Behavior
 
 This module is intentionally stateful. A single process can switch roots between CLI sessions, so callers must set the root before invoking tools. Read tracking is path-based and scoped to the current `projectRoot` by clearing it whenever the root changes. Path containment starts with lexical relative-path checks and existing/writable filesystem targets are also checked with `realpath`, so symlinks, junctions, and other reparse-point escapes do not bypass the project-root boundary.
+
+- `read` marks files as read after a successful read; `edit` checks that state before
+  editing.

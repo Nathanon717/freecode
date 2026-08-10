@@ -8,9 +8,8 @@ Catalog of known cloud providers and their models. Source of provider IDs, displ
 ## Read When
 
 - Adding, removing, or reordering a provider.
-- Changing model IDs, display names, API key env vars, tool support, paid status, or static limits.
+- Changing model IDs, display names, API key env vars, tool support, paid status, static limits, or where display names and context windows come from.
 - Debugging router selection where registry order or provider metadata matters.
-- Changing where model display names or context windows come from. Every successful live init writes the provider's final model list to the `models` table via `saveProviderCatalog`, and `_doInit` does the same for static providers afterwards (the change check makes the repeat a no-op). When a fetch fails, the model list is rebuilt from `getProviderCatalog` — the DB, not `model-cache.json`, which holds ids only. `runLiveProviderInit`'s `finish()` applies the registry blocklist (substring + exact) **and** the user blocklist centrally, before the catalog write, so blocklisted models never reach the DB regardless of whether the provider's own `selectModels` filters (openrouter does not).
 
 For the generated provider table, see [providers.md](../../providers.md).
 <!-- END GENERATED MAP INTENT -->
@@ -79,13 +78,13 @@ resolveModel(modelPreference: string): ResolvedModel
 - **`resolveModel` is where paid access is refused**, beside the existing `isFakeLlmMode` block and before the key lookup. It is the funnel every path reaches, including the three that never see the picker's list: `--model`, `FREECODE_MODEL`, and a persisted `defaultModel`. See [paid-guard.md](paid-guard.md) for the layering and the threat model.
 - `initDynamicProviders` calls `updateProviderCache` on every successful fetch to persist results and detect new/removed models.
 
-## Key Neighbors
+## Catalog Writes
 
-- [adapters/openai-compat.md](adapters/openai-compat.md): provider factory consumed by `resolveModel()` for every registry provider, including Anthropic.
-- [config/index.md](../config/index.md): maps provider IDs to config/env keys.
-- [providers.md](../../providers.md): generated reference output.
-- [fake.md](fake.md): fake LLM fixture runner used by e2e verification.
+Every successful live init writes the provider's final model list to the `models` table via
+`saveProviderCatalog`, and `_doInit` does the same for static providers afterwards (the
+change check makes the repeat a no-op). When a fetch fails, the model list is rebuilt from
+`getProviderCatalog` — the DB, not `model-cache.json`, which holds ids only.
 
-## Update Triggers
-
-Update this page when registry ownership, key consumers, or special-case behavior changes. Do not duplicate the provider inventory here.
+`runLiveProviderInit`'s `finish()` applies the registry blocklist (substring + exact) **and**
+the user blocklist centrally, before the catalog write, so blocklisted models never reach the
+DB regardless of whether the provider's own `selectModels` filters (openrouter does not).

@@ -53,9 +53,3 @@ releaseToolRenderGate(): void
 
 80 / 500 lines (420 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Key Neighbors
-
-- [`loop.ts`](loop.md) — arms the gate and releases it from the `fullStream` consumer.
-- [`tools/index.ts`](tools/index.md) — `withToolRendering.execute` awaits the gate before the header.
-- [`../cli/transcript-renderer.md`](../cli/render/transcript-renderer.md) — the header/preview/divider writers being ordered.

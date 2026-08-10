@@ -40,8 +40,3 @@ createSchema(c: Client): Promise<void>
 ## Idempotence
 
 `createSchema` runs on every client open, including after a WalConflict replica wipe re-creates the client. Every statement is therefore `IF NOT EXISTS` and must stay safe to re-execute against a populated database. Adding a column to an existing table needs an explicit `ALTER TABLE ... ADD COLUMN`, guarded by a `PRAGMA table_info` check (bare `ADD COLUMN` throws "duplicate column" on re-run) — see the `models.removed` column for the pattern.
-
-## Key Neighbors
-
-- [db.md](./db.md): sole caller; owns the client, cache, and all persistence functions.
-- [call-log.md](./call-log.md): owns the row shape written to `llm_calls`.

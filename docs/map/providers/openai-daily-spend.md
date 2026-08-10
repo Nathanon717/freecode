@@ -66,8 +66,3 @@ refreshOpenAIDailySpend(options: OpenAIDailySpendRefreshOptions): void
 ## Behavior
 
 Requires `OPENAI_ADMIN_KEY`; ordinary OpenAI project keys are not used for organization costs. When a model preference is supplied, refreshes and cached snapshots are displayed only for selected OpenAI models. Successful responses sum USD amount values across the returned cost bucket results and cache the snapshot for five minutes.
-
-## Key Neighbors
-
-- [cli/footer-status.md](../cli/chrome/footer-status.md): imports `OpenAIDailySpend` type from this module.
-- [cli/session-modes.md](../cli/session-modes.md): triggers refreshes when the interactive footer is active.

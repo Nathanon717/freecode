@@ -117,14 +117,3 @@ The load-bearing property: response messages are only ever collected from an att
 The **one** exception is Esc, and it is deliberate. `withTurnStop` ([../agent/tools/wrappers.md](tools/wrappers.md#turn-stop-esc)) rejects *after* the denial has rendered, because a call with no result is what stops the AI SDK stepping. The SDK reports that rejection as an `error` part but still finishes the attempt cleanly, so this driver treats a `TurnStoppedError` part as **not** an error: it collects the denial text into `stopDenials`, keeps draining, and returns the attempt as the one that drained. That check runs *before* the rejected-tool-call recovery below, so a turn the user stopped is never retried. The unpaired call it leaves behind is the caller's to repair — `agent/loop.ts` does, with `pairStoppedToolCalls`, before anything else sees the turn.
 
 `run-subagent.ts` discards the outcome entirely: a sub-agent's messages terminate at the sub-agent and must never reach the parent `Conversation`.
-
-## Key neighbors
-
-- [loop.md](loop.md) — foreground caller; supplies rendering and usage-carrying callbacks.
-- [subagents/run-subagent.md](subagents/run-subagent.md) — silent caller; supplies only text accumulation.
-- [../util/errors.md](../util/errors.md) — `rejectedToolCall`, `MAX_REJECTED_TOOL_CALLS`.
-
-## Update triggers
-
-- A new caller needs a hook the callback set does not cover.
-- The recovery cap or the continuation-message shape changes.

@@ -41,13 +41,8 @@ loadBpeJsonEncoder(tokenizerJsonPath: string): TokenizerEncoder
 41 / 500 lines (459 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Key Neighbors
+## Notes
 
-- [../chat-format.md](../chat-format.md): supplies the shared overhead formula this backend builds `TokenizerEncoder` on top of.
-- [../download-tokenizer.md](../download-tokenizer.md): supplies the cached file path this backend reads.
-- [../count.md](../count.md): calls `loadBpeJsonEncoder` from `preloadTokenizerFor` once `download-tokenizer.ts` confirms the file is cached.
-- [../model-family.md](../model-family.md): owns the family→repo-ID mapping and the verification trail for why each canonical repo was chosen.
-
-## Update Triggers
-
-If a future family's `tokenizer.json` uses a non-BPE model type (WordPiece/Unigram), re-check whether the `{}` config shortcut still holds — `create_tokenizer_model` in the library *does* read config fields (`eos_token`, etc.) for Unigram and Legacy model types.
+The `{}` config shortcut holds only for BPE model types. `create_tokenizer_model` in the
+library *does* read config fields (`eos_token`, and others) for Unigram and Legacy types,
+so a family whose `tokenizer.json` is not BPE needs that re-checked.

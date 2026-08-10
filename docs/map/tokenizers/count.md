@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-The engine's public entry point: a synchronous `countTokens` safe to call on a hot path (e.g. once per keystroke), backed by an in-memory encoder cache keyed by family, plus an async `preloadTokenizerFor` that compiles and caches exact backends in the background (GPT-OSS bundled since Phase 2; Llama 3.x/DeepSeek V3+V4/GLM-4.5-4.7 downloaded-and-cached since Phase 3; modern Mistral Tekken since Phase 4). `commands/model.ts` reads the synchronous `hasExactTokenizer` capability check to badge picker rows. `cli/session-modes.ts` is the live consumer of the encoder cache: it calls `preloadTokenizerFor` when the active model changes and `countTextTokens` to show the tool-approval preview's "+N tokens" count. The footer `ctx` slot deliberately does **not** use this engine: it shows the provider's own reported `prompt_tokens` (measured, cache-inclusive on most providers) rather than a local estimate that would systematically undercount — see `cli/chrome/footer-status.ts`.
+The engine's public entry point: a synchronous `countTokens` safe to call on a hot path (once per keystroke), backed by an in-memory encoder cache keyed by family, plus an async `preloadTokenizerFor` that compiles and caches exact backends in the background.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
@@ -87,14 +87,20 @@ preloadTokenizerFor(modelId: string): Promise<void>
 129 / 500 lines (371 to spare).
 <!-- END GENERATED MAP FACTS -->
 
-## Key Neighbors
+## Notes
 
-- [model-family.md](model-family.md): family resolution and the family→repo-ID map.
-- [fallback-estimate.md](fallback-estimate.md): the always-available fallback path.
-- [backends/tiktoken.md](backends/tiktoken.md): the GPT-OSS encoder registered here — also documents why its counts aren't yet numerically different from the fallback.
-- [backends/bpe-json.md](backends/bpe-json.md) and [download-tokenizer.md](download-tokenizer.md): the HF fast-tokenizer families' load path.
-- [backends/tekken.md](backends/tekken.md): the Mistral Tekken family's load path.
+An exact tokenizer backend registers its compiled encoder into `encoderCache` from
+`preloadTokenizerFor`.
 
-## Update Triggers
+Exact backends by phase: GPT-OSS bundled (phase 2); Llama 3.x, DeepSeek V3+V4 and
+GLM-4.5–4.7 downloaded and cached (phase 3); modern Mistral Tekken (phase 4).
 
-When a phase adds an exact tokenizer backend, register its compiled encoder into `encoderCache` from `preloadTokenizerFor` and update this page's notes.
+`commands/model.ts` reads the synchronous `hasExactTokenizer` capability check to badge
+picker rows. `cli/session-modes.ts` is the live consumer of the encoder cache: it calls
+`preloadTokenizerFor` when the active model changes, and `countTextTokens` for the
+tool-approval preview's "+N tokens" count.
+
+The footer `ctx` slot deliberately does **not** use this engine. It shows the provider's
+own reported `prompt_tokens` — measured, and cache-inclusive on most providers — rather
+than a local estimate that would systematically undercount. See
+[../cli/chrome/footer-status.md](../cli/chrome/footer-status.md).

@@ -92,9 +92,7 @@ Each is independently sufficient for the case it covers; none is redundant.
   sandbox against one that means to — anything that can edit source can unset an env
   var.
 
-## Update triggers
-
-- A provider gains or loses `paid: true` (update the env var list and the test).
-- A new entry point hands freecode to an agent (turn the flag on there).
-- The free-model predicate moves (it lives on the catalog entry — see
-  [provider-catalog.md](provider-catalog.md)).
+- A provider gaining or losing `paid: true` moves the env-var list and the test with it.
+- A new entry point that hands freecode to an agent has to turn the flag on there.
+- The free-model predicate lives on the catalog entry, not here — see
+  [provider-catalog.md](provider-catalog.md).

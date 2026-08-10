@@ -10,10 +10,6 @@ Shared error-formatting utilities.
 You need a consistent way to extract a string message from an `unknown` catch value, or to surface provider/API details from structured error payloads.
 <!-- END GENERATED MAP INTENT -->
 
-**Key neighbors:** `src/agent/loop.ts`, `src/agent/tools/index.ts`, `src/cli/command-dispatcher.ts`
-
-**Update triggers:** New error-related utilities needed in two or more source files.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -119,3 +115,7 @@ serializeError(error: unknown): unknown
 
 327 / 500 lines (173 to spare).
 <!-- END GENERATED MAP FACTS -->
+
+## Notes
+
+An error-related utility earns a place here once two or more source files need it.

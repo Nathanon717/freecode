@@ -75,11 +75,3 @@ Slash commands and menus run through `beforeDispatch`, not `beforeAgentCall`, so
 Model phases (request in flight vs. streaming vs. reasoning) get no verb either. That distinction is the one that would genuinely need a signal plumbed out of `agent/loop.ts`, and streamed text is already visible in the transcript. Retry backoff is likewise left alone: `footer-status.ts` already owns `retryBannerInfo`, with a live countdown that says strictly more than a verb could.
 
 This supersedes an earlier note here arguing for one flag and no phase enum. That argument's premise — that any verb would need a signal out of `agent/loop.ts` — turned out to hold only for model phases. For tool verbs the name is already a plain string in `wrappers.ts`, so the cost was a lookup, not a plumbing job.
-
-## Key neighbors
-
-- `cli/chrome/bottom-ui.ts` — owns `showThinking()`, the reserved row, and the draw; registers the repaint listener
-- `agent/tools/wrappers.ts` — `withActivity`, the only writer of the verb
-- `cli/session-modes.ts` — the only writer of the turn flag (`beforeAgentCall` / `afterAgentCall`)
-- `cli/tools/tool-approval.ts` — reads `isTurnActive()` to pick the cursor-restore path
-- `cli/theme.ts` — `rotatingPastel`, the session accent the label is drawn in

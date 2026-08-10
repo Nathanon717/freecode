@@ -6,8 +6,6 @@
 Implements the `/config` terminal UI for editing settings at global, provider, and model levels.
 <!-- END GENERATED MAP INTENT -->
 
-Built on the shared menu layers ([menu-shell](../cli/menus/menu-shell.md), [list-menu](../cli/menus/list-menu.md)). Each config tab is a `MenuTab` whose `onKey` cycles the focused setting's value (no `actionMenu`/`renderDetail`). `wrap: false` matches the editor's non-wrapping navigation.
-
 <!-- BEGIN GENERATED EXPORTS -->
 ## Exports
 
@@ -35,6 +33,10 @@ runConfigCommand(rl: Interface, currentModel?: string, onRestore?: (() => void) 
 
 401 / 500 lines (99 to spare).
 <!-- END GENERATED MAP FACTS -->
+
+## How It Works
+
+Built on the shared menu layers ([menu-shell](../cli/menus/menu-shell.md), [list-menu](../cli/menus/list-menu.md)). Each config tab is a `MenuTab` whose `onKey` cycles the focused setting's value (no `actionMenu`/`renderDetail`). `wrap: false` matches the editor's non-wrapping navigation.
 
 ## Tabs
 

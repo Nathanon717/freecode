@@ -57,13 +57,3 @@ PROVIDER_REGISTRY: ProviderConfig[]
 - `selectFreeModels` applies it to a list for *discovery*; `resolveModel` gates on
   `isFreeModel` for *access*. Same predicate, deliberately — see
   [paid-guard.md](paid-guard.md).
-
-## Key Neighbors
-
-- [provider-registry.md](provider-registry.md): imports and re-exports `PROVIDER_REGISTRY`; owns all init logic and `resolveModel`.
-- [paid-guard.md](paid-guard.md): the `FREECODE_FREE_ONLY` block that consumes `paid` and `isFreeModelId`.
-- [types.md](types.md): `ProviderConfig` type consumed here.
-
-## Update Triggers
-
-Update this page when the provider list changes in a structurally significant way (new provider added, removed, or type changed). Do not duplicate the provider inventory here.

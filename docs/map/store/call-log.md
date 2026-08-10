@@ -74,8 +74,3 @@ Token fields are populated **only** from a usage object the provider actually re
 ## Chokepoints
 
 - `adapters/openai-compat.ts` — the only adapter; logs on transport failure, on HTTP error (before the throw), and on success by teeing the existing `parseProviderUsage` promise into the log. Derives `model_key` as `"provider:modelId"` from the outgoing request body, falling back to `"provider:unknown"` — the row is still worth having when the body is unparseable.
-
-## Key Neighbors
-
-- [db.md](./db.md): owns the `llm_calls` table and `persistCallLogAsync`.
-- [quota/headers.md](../providers/quota/headers.md): the complementary source — header *ceilings*, versus this file's observed *usage*.

@@ -58,12 +58,8 @@ Note this path pre-dates and bypasses native tool orchestration entirely: there 
 
 `mock-native:*` is a **different** path — it builds a real `LanguageModel` (`createFakeNativeLanguageModel`) and runs through `streamWithRetry` in `loop.ts` like any provider. Use that one to cover native orchestration behaviour.
 
-## Key Neighbors
+## Notes
 
-- [loop.md](loop.md): dispatches here for `FAKE_PROVIDER_ID`; supplies `AgentLoopOptions`/`AgentLoopResult`/`ModelSettings` as type-only imports (so the cycle is erased at runtime).
-- [providers/fake.md](../providers/fake.md): fixture parsing, step matching, and the trace this loop's calls are asserted against.
-- [parsed-tools.md](parsed-tools.md): `executeToolCalls`.
-
-## Update Triggers
-
-Update this page when the fixture step protocol, tool-result feedback shape, or fixture-completion assertions change.
+[loop.md](loop.md) dispatches here for `FAKE_PROVIDER_ID` and supplies `AgentLoopOptions` /
+`AgentLoopResult` / `ModelSettings` as type-only imports, so the cycle is erased at
+runtime.

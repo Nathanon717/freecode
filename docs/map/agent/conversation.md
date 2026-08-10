@@ -6,7 +6,36 @@
 Owns the in-memory conversation for a CLI session.
 <!-- END GENERATED MAP INTENT -->
 
-## Note
+<!-- BEGIN GENERATED EXPORTS -->
+## Exports
+
+```typescript
+class Conversation {
+  readonly projectRoot: string;
+  messages: CoreMessage[];
+  constructor(projectRoot: string): Conversation;
+  clearMessages(): void;
+  commitTurn(userMessage: CoreMessage, turnMessages: CoreMessage[], assistantText: string): boolean;
+}
+```
+<!-- END GENERATED EXPORTS -->
+
+<!-- BEGIN GENERATED MAP FACTS -->
+## Neighbors
+
+- **Imports:** [`agent/turn-messages.ts`](turn-messages.md) ×1
+- **Imported by:** [`cli/command-dispatcher.ts`](../cli/command-dispatcher.md) ×1, [`cli/session-runner.ts`](../cli/session-runner.md) ×1
+
+## Tests
+
+`tests/agent/conversation.test.ts`. 1 other test file references it.
+
+## Budget
+
+59 / 500 lines (441 to spare).
+<!-- END GENERATED MAP FACTS -->
+
+## Notes
 
 `commitTurn` is the only append path, and it is all-or-nothing: the user's
 message and everything the turn produced go in together, or nothing does. A turn
@@ -38,32 +67,3 @@ single large `read` stays in history for the rest of the session. `/clear` is th
 release valve.
 
 No longer provides token estimation. `getContextTokenCount()` (backed by the deleted `agent/token-count.ts`) was removed when the tokenizer engine was extracted — see `docs/map/tokenizers/count.md` for the standalone engine that replaces it. Any future context-size readout should call `src/tokenizers/count.ts`'s `countTokens` directly rather than routing back through `Conversation`.
-
-<!-- BEGIN GENERATED EXPORTS -->
-## Exports
-
-```typescript
-class Conversation {
-  readonly projectRoot: string;
-  messages: CoreMessage[];
-  constructor(projectRoot: string): Conversation;
-  clearMessages(): void;
-  commitTurn(userMessage: CoreMessage, turnMessages: CoreMessage[], assistantText: string): boolean;
-}
-```
-<!-- END GENERATED EXPORTS -->
-
-<!-- BEGIN GENERATED MAP FACTS -->
-## Neighbors
-
-- **Imports:** [`agent/turn-messages.ts`](turn-messages.md) ×1
-- **Imported by:** [`cli/command-dispatcher.ts`](../cli/command-dispatcher.md) ×1, [`cli/session-runner.ts`](../cli/session-runner.md) ×1
-
-## Tests
-
-`tests/agent/conversation.test.ts`. 1 other test file references it.
-
-## Budget
-
-59 / 500 lines (441 to spare).
-<!-- END GENERATED MAP FACTS -->

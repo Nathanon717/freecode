@@ -94,13 +94,3 @@ getScreenBufferDisplayLinesForOverlay(count: number, _scrollHeight: number): str
 
 210 / 500 lines (290 to spare).
 <!-- END GENERATED MAP FACTS -->
-
-## Key neighbors
-
-- Called from `src/index.ts` at startup.
-- Read by `src/cli/chrome/bottom-ui.ts` when slash-command suggestions temporarily cover transcript rows.
-- `startOverlayEpoch` is called by `src/cli/render/banner.ts` after each banner draw.
-
-## Update triggers
-
-Update this page if MAX_LINES changes, if the ANSI/control-sequence filtering changes, if the epoch or overlay model changes, or if new consumers read the buffer.

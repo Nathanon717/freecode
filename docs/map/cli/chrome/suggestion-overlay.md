@@ -53,8 +53,3 @@ composeOverlayRestore(width: number): string
 ## Why a snapshot exists
 
 Suggestion rows draw **over** the scroll region rather than inside the reserved bottom rows, so they overpaint live transcript. The covered rows are read out of the screen buffer when the overlay opens (`captureOverlay`) and repainted from that copy when it closes (`composeOverlayRestore`), which is why closing the overlay doesn't leave holes in the transcript.
-
-## Key neighbors
-
-- `cli/chrome/bottom-ui.ts` — sole caller; splitting this out is what kept it under the 500-line limit
-- `util/screen-buffer.ts` — `getScreenBufferDisplayLinesForOverlay` supplies the snapshot lines
