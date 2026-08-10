@@ -65,10 +65,11 @@ describe('log', () => {
 });
 
 describe('logError', () => {
-  it('is silent when not enabled', async () => {
+  it('writes even when not enabled, so errors are never swallowed', async () => {
     const { logError } = await freshLogger();
     logError('router', 'bad', new Error('oops'));
-    expect(stderrOutput).toHaveLength(0);
+    expect(stderrOutput[0]).toContain('[error]');
+    expect(stderrOutput[0]).toContain('oops');
   });
 
   it('writes Error message to stderr', async () => {

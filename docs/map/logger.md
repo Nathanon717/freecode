@@ -9,7 +9,7 @@ Category-colored stderr logging. Diagnostic logging is disabled by default; erro
 
 - Adding or renaming a log category color in CATEGORY_COLORS.
 - Changing the stderr output format, timestamp, or JSON data serialization.
-- Debugging why `-log` flag output is missing, since enableLog() gates every write.
+- Debugging why `-log` flag output is missing, since enableLog() gates log() — but never logError(), which writes unconditionally.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
@@ -33,7 +33,7 @@ logError(category: string, message: string, err: unknown): void
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imported by:** [`cli/command-dispatcher.ts`](cli/command-dispatcher.md) ×21, [`store/db.ts`](store/db.md) ×17, [`agent/loop.ts`](agent/loop.md) ×10, [`agent/parsed-tools.ts`](agent/parsed-tools.md) ×5, [`agent/usage-finalize.ts`](agent/usage-finalize.md) ×3, [`eval/result-sink.ts`](eval/result-sink.md) ×3, [`eval/runner.ts`](eval/runner.md) ×3, [`agent/tools/wrappers.ts`](agent/tools/wrappers.md) ×2, +7 more
+- **Imported by:** [`cli/command-dispatcher.ts`](cli/command-dispatcher.md) ×21, [`store/db.ts`](store/db.md) ×13, [`agent/loop.ts`](agent/loop.md) ×10, [`agent/parsed-tools.ts`](agent/parsed-tools.md) ×5, [`agent/usage-finalize.ts`](agent/usage-finalize.md) ×3, [`eval/result-sink.ts`](eval/result-sink.md) ×3, [`eval/runner.ts`](eval/runner.md) ×3, [`agent/tools/wrappers.ts`](agent/tools/wrappers.md) ×2, +7 more
 
 ## Tests
 
@@ -41,7 +41,7 @@ logError(category: string, message: string, err: unknown): void
 
 ## Budget
 
-54 / 500 lines (446 to spare).
+53 / 500 lines (447 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Category Colors

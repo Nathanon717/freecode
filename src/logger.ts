@@ -4,7 +4,7 @@
  * @readwhen
  * - Adding or renaming a log category color in CATEGORY_COLORS.
  * - Changing the stderr output format, timestamp, or JSON data serialization.
- * - Debugging why `-log` flag output is missing, since enableLog() gates every write.
+ * - Debugging why `-log` flag output is missing, since enableLog() gates log() — but never logError(), which writes unconditionally.
  */
 
 import chalk from 'chalk';
@@ -47,7 +47,6 @@ export function log(category: string, message: string, data?: unknown): void {
 
 /** Always writes to stderr regardless of `enableLog` state, with the error text and stack. */
 export function logError(category: string, message: string, err: unknown): void {
-  if (!enabled) return;
   let errMsg: string;
   if (err instanceof Error) {
     errMsg = err.message;
