@@ -44,7 +44,7 @@ Then review the generated diff. If the generated output is wrong, fix the source
 
 Use these ownership rules:
 
-- Provider facts belong in `src/providers/provider-registry.ts`; the model lists for live-fetch providers belong in the committed snapshot `src/providers/model-snapshot.json`, refreshed with `npm run docs:refresh-models`.
+- Provider facts belong in `src/providers/provider-catalog.ts` (`provider-registry.ts` re-exports it); the model lists for live-fetch providers belong in the committed snapshot `src/providers/model-snapshot.json`, refreshed with `npm run docs:refresh-models`.
 - Slash command names and descriptions belong in `src/cli/slash-commands.ts`.
 - Npm script facts belong in `package.json`.
 - E2e test names, descriptions, and workspaces belong in `tests/e2e/*.e2e.json`.
@@ -68,7 +68,7 @@ Dated records are excluded — `docs/bug log/` and `docs/sessions/` describe wha
 
 ## Examples
 
-- Adding a provider: update `src/providers/provider-registry.ts`, config wiring if needed, then run `npm run docs:generate`.
+- Adding a provider: update `src/providers/provider-catalog.ts`, config wiring if needed, then run `npm run docs:generate`.
 - Adding a slash command: update `src/cli/slash-commands.ts`, command dispatch behavior, an e2e test if user-visible, then run `npm run docs:generate`.
 - Adding an e2e test: add `tests/e2e/*.e2e.json`, then run `npm run docs:generate`.
 - Changing verification policy: update `AGENTS.md` and affected npm scripts.

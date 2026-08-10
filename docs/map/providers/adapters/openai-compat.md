@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Provider-agnostic pipeline for **every** registry provider (Anthropic included) plus Ollama: parse body → apply profile quirks → fetch with retry → capture rate-limit headers → throw HTTP errors → convert/normalize response, with zero `if (id === 'x')` branches.
+Provider-agnostic pipeline for **every** registry provider (Anthropic included, via its OpenAI-compatible endpoint): parse body → apply profile quirks → fetch with retry → capture rate-limit headers → throw HTTP errors → convert/normalize response, with zero `if (id === 'x')` branches. `createOllamaProvider` is a bare `createOpenAI` and bypasses all of it.
 
 ## Read When
 

@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Intercepts `process.stdout.write` at startup to maintain rolling buffers of recent terminal output. Keeps a plain (ANSI-stripped) buffer for text search and a parallel styled buffer (ANSI codes preserved) for overlay repaints. Used by the bottom TUI to repaint rows after temporary overlays.
+Intercepts `process.stdout.write` at startup to maintain one rolling buffer of recent terminal output, kept styled (ANSI codes preserved) so repaints restore the original colors. Used by the bottom TUI to repaint rows after temporary overlays. `stripAnsi` is exported for width and line math, not for a second stripped buffer.
 
 ## Read When
 

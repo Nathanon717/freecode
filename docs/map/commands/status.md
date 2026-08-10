@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Implements the `/status` slash command. Shows API key status for all providers, Turso DB sync configuration, and whether environment variables are being injected via Doppler.
+Implements the `/status` slash command. Shows API key status for the providers that need a user-supplied key — those carrying a built-in `defaultApiKey` are filtered out — plus Turso DB sync configuration and whether environment variables are being injected via Doppler.
 
 ## Read When
 

@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Wraps a `js-tiktoken` encoding as a `TokenizerEncoder`, and registers the GPT-OSS exact family into `count.ts`'s `encoderCache`. `createTiktokenEncoder` is the reusable wrapper, typed to accept any `Tiktoken` — from `getEncoding` (GPT-OSS) or constructed directly from parsed ranks.
+Wraps a `js-tiktoken` encoding as a `TokenizerEncoder`, and memoizes the GPT-OSS one behind `getGptOssEncoder`; `count.ts` is what registers that encoder into its own `encoderCache`. `createTiktokenEncoder` is the reusable wrapper, typed to accept any `Tiktoken` — from `getEncoding` (GPT-OSS) or constructed directly from parsed ranks.
 
 ## Read When
 

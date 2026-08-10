@@ -3,12 +3,12 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Catalog of known cloud providers and their models. Source of provider IDs, display names, base URLs, API key env vars, tool support flags, model IDs, static model limits, and live-fetch init logic.
+Runtime layer over the static provider catalog in [provider-catalog.md](./provider-catalog.md), which it re-exports as `PROVIDER_REGISTRY`. Owns live model-list fetching and init, model filtering, dead-model retirement and blocklisting, and `resolveModel`, which turns a model preference into a provider plus a ready model instance.
 
 ## Read When
 
-- Adding, removing, or reordering a provider.
-- Changing model IDs, display names, API key env vars, tool support, paid status, static limits, or where display names and context windows come from.
+- Debugging live model-list init, filtering, retirement, or blocklisting.
+- Changing which providers fetch models live via `LIVE_PROVIDER_IDS`, or how live display names and context windows land on registry entries. Provider definitions and their order live in [provider-catalog.md](./provider-catalog.md).
 - Debugging router selection where registry order or provider metadata matters.
 
 For the generated provider table, see [providers.md](../../providers.md).

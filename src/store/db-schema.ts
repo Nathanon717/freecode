@@ -1,5 +1,5 @@
 /**
- * @role All `CREATE TABLE` / `CREATE INDEX` statements for the libSQL store, plus `PRAGMA foreign_keys = ON`. Extracted from `db.ts` so schema changes are a single-file edit and `db.ts` stays under the line limit. Pure DDL — no client lifecycle, no reads, no writes.
+ * @role All `CREATE TABLE` / `CREATE INDEX` statements for the libSQL store, plus `PRAGMA foreign_keys = ON` and the guarded `ALTER TABLE` migrations that retrofit columns onto older DBs. Extracted from `db.ts` so schema changes are a single-file edit and `db.ts` stays under the line limit. DDL and schema-shape probes only — no client lifecycle, no row reads or writes.
  *
  * @readwhen
  * Adding a table, column, or index. Table-by-table semantics and the read/write architecture live in [db.md](./db.md).
@@ -10,7 +10,7 @@ import type { Client } from '@libsql/client';
 /**
  * Create every table and index idempotently. Run on each client open (including
  * after a replica wipe), so it must stay safe to re-execute against a live DB.
- * Table-by-table detail lives in docs/map/providers/db.md.
+ * Table-by-table detail lives in docs/map/store/db.md.
  */
 export async function createSchema(c: Client): Promise<void> {
   await c.execute('PRAGMA foreign_keys = ON');
