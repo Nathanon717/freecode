@@ -77,6 +77,10 @@ These claims are an agent-navigation layer, not documentation. Their rules:
 - They exist purely for token reduction: they let an agent decide whether this file matters WITHOUT reading it.
 - They are deliberately terse. Brevity is correct, not a defect. ROLE is capped at 400 characters and READ WHEN at three bullets, so omission of detail is intended.
 - They describe the module as a whole. They are not an API listing, and per-export intent lives in each export's own JSDoc, which is not your concern.
+- They are copied verbatim onto a map page under \`docs/map/\`, which mirrors the source tree at identical depth, so a markdown link written in a claim is resolved from the *page*, not from the source file. A link target ending in \`.md\` is therefore a pointer to another page, never a filename the code is expected to contain:
+  - A target that mirrors a source path — \`[wrappers.md](wrappers.md)\`, \`[db-schema.md](./db-schema.md)\`, \`[model-screen.md](../cli/menus/model-screen.md)\` — names that source module (\`wrappers.ts\`, \`./db-schema.ts\`, \`../cli/menus/model-screen.ts\`). Translate it, then judge whether *that module* is still the right target: pointing at a module that no longer owns the thing IS drift.
+  - A target that leaves the mirrored tree — \`[providers.md](../../providers.md)\` — is a hand-written doc. You cannot see it, so you cannot audit it. Not drift.
+  In neither case is the \`.md\` extension itself drift, and in neither case is the code's failure to mention the linked filename evidence of anything. A linking file need not import what it points at; the reference may run against the dependency direction. This applies only to markdown link syntax — a claim naming a real repo file in prose (\`AGENTS.md\`, \`CLAUDE.md\`) means that file, and is judged normally.
 
 Drift is ONLY where a claim asserts something the code contradicts or no longer supports:
 - a stated purpose the file no longer has, or one that misses the responsibility the file now mostly is,
