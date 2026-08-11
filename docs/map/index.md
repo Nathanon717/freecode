@@ -3,11 +3,11 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Thin executable entry point. It parses process flags and the `undo` verb, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
+Thin executable entry point. It resolves the `undo` verb, validates process flags against [cli/args.md](cli/args.md) and dispatches on them, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
 
 ## Read When
 
-- Changing CLI startup flags or mode selection, or adding a subcommand verb that must resolve before the flag scans.
+- Changing CLI startup flags or mode selection, or adding a subcommand verb that must resolve before the flag scans. What each flag *is* lives in [cli/args.md](cli/args.md); this file decides what it does.
 - Debugging startup provider probes, readline lifecycle, or default model selection.
 - Tracing how the executable enters the shared session runner.
 <!-- END GENERATED MAP INTENT -->
@@ -21,7 +21,7 @@ _No exported symbols._
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imports:** [`providers/paid-guard.ts`](providers/paid-guard.md) ×3
+- **Imports:** [`providers/paid-guard.ts`](providers/paid-guard.md) ×3, [`cli/args.ts`](cli/args.md) ×1
 
 ## Tests
 
@@ -29,7 +29,7 @@ _No exported symbols._
 
 ## Budget
 
-239 / 500 lines (261 to spare).
+229 / 500 lines (271 to spare).
 
 ## Env
 

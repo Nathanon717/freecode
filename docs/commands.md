@@ -54,6 +54,21 @@ This table is generated from `src/cli/slash-commands.ts`.
 
 ## CLI Flags
 
+**A flag that takes a value takes the very next argument** — `-p`, `--model`, and `--script`
+each own the token directly after them, and other flags go before or after that pair. Both of
+these are the same command:
+
+```bash
+freecode -p "<prompt>" --stats --model zen:big-pickle
+freecode --stats --model zen:big-pickle -p "<prompt>"
+```
+
+Nothing is accepted silently. A value that is itself a flag (`-p --stats "<prompt>"` — the
+prompt is no longer where `-p` looks), a flag not listed below (`-m`; the long form
+`--model` is the only spelling), and a bare argument no flag claimed are each rejected by
+name with exit code 1. Quoting is the shell's job and the quotes never reach freecode — they
+exist so a multi-word prompt arrives as *one* argument.
+
 - `-p "<prompt>"`: Run one non-interactive turn and print the final response to stdout. See [Headless prompt mode](#headless-prompt-mode--p).
 - `--stats`: With `-p`, print one stderr line of cost/timing info after the turn. Ignored without `-p`.
 - `--edit`: With `-p`, offer the write tools (`create`, `edit`, `shell_exec`) instead of running read-only. A no-op without `-p`: interactive and `--script` sessions already have those tools, and Ctrl+R is what takes them away.

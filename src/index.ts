@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * @role Thin executable entry point. It parses process flags and the `undo` verb, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
+ * @role Thin executable entry point. It resolves the `undo` verb, validates process flags against [cli/args.md](cli/args.md) and dispatches on them, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
  *
  * @readwhen
- * - Changing CLI startup flags or mode selection, or adding a subcommand verb that must resolve before the flag scans.
+ * - Changing CLI startup flags or mode selection, or adding a subcommand verb that must resolve before the flag scans. What each flag *is* lives in [cli/args.md](cli/args.md); this file decides what it does.
  * - Debugging startup provider probes, readline lifecycle, or default model selection.
  * - Tracing how the executable enters the shared session runner.
  */
@@ -13,6 +13,7 @@ import { spawnSync } from 'child_process';
 import { writeFileSync, readFileSync } from 'fs';
 import chalk from 'chalk';
 import { FREE_ONLY_ENV_VAR, isFreeOnlyMode, isPaidApiKeyEnvVar } from './providers/paid-guard.js';
+import { validateCliArgs } from './cli/args.js';
 
 function tryInjectDoppler(): void {
   if (process.env['DOPPLER_PROJECT']) return;
@@ -62,38 +63,27 @@ async function main() {
   // libSQL is deferred to the first store-consuming action — it never loads on early-exit paths.
   // Early exits here keep --model/--script error paths under ~200ms.
   // Do NOT reference `rl` here — it is created after the imports below.
+  const argError = validateCliArgs(args);
+  if (argError) {
+    console.error(`Error: ${argError}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  // Safe only because the walk above proved no flag's value is itself a flag: an `indexOf`
+  // otherwise matches the `--model` in `-p --model` and reads the wrong side of the pair.
   const modelIdx = args.indexOf('--model');
-  if (modelIdx !== -1) {
-    const modelPreference = args[modelIdx + 1];
-    if (!modelPreference) {
-      console.error('Error: --model requires a provider:model argument');
-      process.exitCode = 1;
-      return;
-    }
-  }
-
   const promptIdx = args.indexOf('-p');
-  if (promptIdx !== -1) {
-    if (!args[promptIdx + 1]) {
-      console.error('Error: -p requires a prompt argument');
-      process.exitCode = 1;
-      return;
-    }
-    if (args.includes('--script')) {
-      console.error('Error: -p and --script are different session modes; pass one');
-      process.exitCode = 1;
-      return;
-    }
+  const scriptIdx = args.indexOf('--script');
+
+  if (promptIdx !== -1 && scriptIdx !== -1) {
+    console.error('Error: -p and --script are different session modes; pass one');
+    process.exitCode = 1;
+    return;
   }
 
-  const scriptIdx = args.indexOf('--script');
   if (scriptIdx !== -1) {
     const scriptPath = args[scriptIdx + 1];
-    if (!scriptPath) {
-      console.error('Error: --script requires a file path argument');
-      process.exitCode = 1;
-      return;
-    }
     try {
       readFileSync(scriptPath);
     } catch {

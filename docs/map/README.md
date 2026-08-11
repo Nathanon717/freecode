@@ -123,6 +123,8 @@ Format: filename (linecount)
   - [`turn-messages.ts`](agent/turn-messages.md) (195) — Turn Message Shape Rules
   - [`usage-finalize.ts`](agent/usage-finalize.md) (45) — Turn Usage/Quota Finalization
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
+- `src/cli/`
+  - [`args.ts`](cli/args.md) (56) — CLI Argument Contract
 - `src/cli/chrome/`
   - [`ansi.ts`](cli/chrome/ansi.md) (56) — Terminal Geometry & Escape Sequences
   - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (487) — Bottom Terminal UI
@@ -183,7 +185,7 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (105) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (78) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (207) — Eval Subprocess Runner
-- [`index.ts`](index.md) (239) — CLI Entry Point
+- [`index.ts`](index.md) (229) — CLI Entry Point
 - [`logger.ts`](logger.md) (94) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (188) — Adapter HTTP Retry/Backoff

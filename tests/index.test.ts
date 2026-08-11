@@ -60,4 +60,26 @@ describe('CLI argument validation', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('Error reading script file');
   });
+
+  // The reported failure: every one of these three tokens was silently discarded, and the
+  // turn ran with the literal prompt "--stats" on the default model, printing a
+  // plausible-looking answer. Whichever check fires first, the run must not start.
+  it('exits 1: the whole misordered command that used to run silently', () => {
+    const result = run(['-p', '--stats', '-m', 'zen:big-pickle', 'what does this repo do']);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('-p requires a prompt argument');
+    expect(result.stderr).toContain('--stats');
+  });
+
+  // Every rejection message is pinned in tests/cli/args.test.ts; what a spawn adds is that
+  // the process actually exits on one. The accepted case below is the same in reverse.
+  //
+  // Rejection is on the flag table, not on a leading `-`, so a prompt that opens with a
+  // dash is still a prompt. FREECODE_NO_LLM makes the accepted run exit without a provider.
+  it('accepts a prompt that starts with a dash', () => {
+    const result = run(['-p', '--stats is what? explain', '--stats'], { FREECODE_NO_LLM: '1' });
+    expect(result.stderr).not.toContain('requires a prompt argument');
+    expect(result.stderr).not.toContain('Unknown flag');
+    expect(result.stderr).not.toContain('Unexpected argument');
+  });
 });
