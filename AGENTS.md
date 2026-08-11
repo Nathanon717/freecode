@@ -77,25 +77,34 @@ it is hard-blocked to free models — safe to call yourself. Adding `--edit` giv
 `create`/`edit`/`shell_exec` (still no sub-agents, still unconfirmed), so use it only for a
 scoped change you will review. See the `-p` section of `docs/commands.md`.
 
-**Delegate to it.** Freecode's models are free, so the only budget that matters is the
-*calling* agent's own context. **Delegating is the default; reading files yourself is the
-exception that needs a reason.** The one standing exception is a question whose exact Grep
-pattern you can already name. See `docs/subagents/README.md` for when it pays off,
-verified prompts, and known failure modes. Maintain it: add when you learn something, and
-delete entries whose premise is gone rather than annotating them as outdated.
+**Delegate by default.** Freecode's models are free, so the only budget that matters is the
+*calling* agent's own context; reading files yourself is the exception that needs a reason.
+The one standing exception is a question you can already write the Grep for, and that is the
+whole test — *can I type the pattern right now?* A question phrased in terms of a literal (an
+env var, an export, a filename) is a Grep. A question phrased in terms of behavior ("where
+does X get decided", "which files handle Y") has no pattern to type, and is a delegated call.
+
+**Demand output you can check cheaply.** Verification is the tax on delegation and decides
+whether a call was worth making. Ask for `file_path:line_number`, exported names, or "answer
+with the path": a claim anchored to a path is confirmed with one Glob, while an unanchored
+assertion ("the retry logic is layered") must be trusted or re-derived, which defeats the point.
+
+**If a task feels too wasteful to bother with, that instinct is miscalibrated** — it is
+calibrated for paid providers, where cost scales with N. Here N is free, so exhaustive
+sweeps, asking three models for a consensus, and low-yield speculative scans are all
+rational. The same question asked of every file in a tree is a sweep: `docs/sweeps.md`.
 
 **If a subagent can't do what you need, that is a bug in freecode — a program you are
 editing anyway.** Fix the prompt first, then write the recipe, then change `src/`. Log the
 gap in `docs/subagents/ideas.md`. Never conclude "the subagent can't do this" and quietly
 do the work by hand.
 
-**Always declare your delegation decision:**
-
-- Before starting any substantial task, state whether you plan to delegate and why (or why not).
-- At the end of every nontrivial turn, state whether you actually delegated and why (or why not).
-- A "no" must name the specific cheaper thing you did instead — the literal Grep pattern,
-  the one file. **"I didn't need a summary" and "it was only a few files" are not
-  reasons**; `docs/subagents/README.md` retires both by name.
+**Declare your delegation decision** before any substantial task and at the end of every
+nontrivial turn. A "no" must name the specific cheaper thing you did instead — the literal
+Grep pattern, the one file. **"I didn't need a summary" and "it was only a few files" are
+not reasons**; `docs/subagents/README.md` retires both by name. That file — verified
+prompts, recorded failures, and how to feed and prune them — is for when you are improving
+delegation, not reading before every task.
 <!-- caller-only:end -->
 
 ## Debugging and Verifying the UI

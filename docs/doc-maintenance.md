@@ -51,6 +51,35 @@ Use these ownership rules:
 
 Generated docs should report facts. Human-written docs should explain how to use those facts.
 
+## Always-Loaded Docs vs. Looked-Up Docs
+
+`AGENTS.md` / `CLAUDE.md` is injected into every turn, so each line is paid for on every
+task whether or not it is used. Everything else in `docs/` is paid for only when opened.
+That makes the two kinds of file **different selections, not long and short versions of
+the same content** — the failure mode is writing the always-loaded file as a summary of
+the looked-up one, which pays twice for one fact and lets the copies drift.
+
+Two tests keep a pair honest, and they must be applied together:
+
+- **Up:** a line belongs in `AGENTS.md` only if it changes what an agent does on a task
+  that is not about that subsystem.
+- **Down:** a line belongs in the `docs/` page only if it is needed solely when working on
+  that subsystem — evidence, measurements, history, maintenance rules.
+
+A line failing its test moves; it is not copied. When promoting one, pay for it by
+compressing or deleting a line already in `AGENTS.md`, so the always-loaded file stays a
+decision layer rather than accreting.
+
+The worked example is the `AGENTS.md` Subagents section paired with
+[subagents/README.md](subagents/README.md), which states the pair at the top of the page.
+
+`AGENTS.md` and `CLAUDE.md` must stay byte-identical, and no check enforces it. After
+editing either, run `cp AGENTS.md CLAUDE.md` (or the reverse) and confirm with `diff`.
+Content inside `<!-- caller-only:start -->` / `<!-- caller-only:end -->` is stripped by
+`src/agent/system-prompt.ts` before injection, so it addresses agents that *call* freecode
+and is never seen by freecode itself — check which audience a line is for before moving it
+across that fence.
+
 ## Codebase Map
 
 `docs/map/` is an agent navigation layer, not a reference manual. It should say where code lives, what owns what, and which files are worth reading first. Reference facts belong in generated docs or source metadata.

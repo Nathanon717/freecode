@@ -1,16 +1,24 @@
 # Freecode As A Subagent
 
 How a **lead agent** — any capable paid model driving a session, whichever tool it runs
-in — delegates work to free `freecode -p` subagents. This directory is written by lead
-agents, for lead agents. Read it before starting work; add to it whenever you learn
-something.
+in — delegates work to free `freecode -p` subagents.
 
-## The Standing Rule
+**This directory is the workshop, not the manual.** The rules for deciding and firing a
+call live in the Subagents section of `AGENTS.md` / `CLAUDE.md` — kept identical, called
+`AGENTS.md` below — which is in context on every task. This directory is what you read
+when you are *improving delegation itself*: adding a recipe, closing a capability gap,
+writing a sweep. It assumes that section is already loaded, so nothing here restates it.
 
-**Before every action, consider whether delegating would have been cheaper.** Especially
-before any broad read. The aim is to operate as a *team lead over free subagents* rather
-than as a low-level doer: dispatch, review, and synthesize instead of reading everything
-first-hand.
+The split is maintained by a matched pair of tests:
+
+- **Up:** every line in the `AGENTS.md` section must change what you do on a task that has
+  nothing to do with subagents. A line that doesn't is costing tokens on every turn.
+- **Down:** every line here must be something you only need when you are editing the
+  delegation system.
+
+A line failing its test moves to the other file. When this directory starts restating the
+behavior rules, it has drifted back into being a second copy of `AGENTS.md` and stops
+earning the tokens it costs to open.
 
 ## Why This Exists
 
@@ -29,17 +37,10 @@ That inverts the usual instinct. Minimizing total tokens is calibrated for paid 
 and is the wrong objective here. Efficiency still matters — free quotas are finite and
 shared — but it is the second priority, not the first.
 
-## The Delegation Rule
+## Evidence For The Delegation Rule
 
-**Delegate by default. The one exception is a question whose exact search pattern you can
-already name — that is what Grep is for.**
-
-The test is a single question: *can I write the Grep right now?* If the question is
-phrased in terms of a literal — an env var name, an export, a filename — write it. If it
-is phrased in terms of *behavior* ("where does X get decided", "which files handle Y",
-"what happens when Z"), there is no pattern to type, and the call is worth making.
-
-Evidence from real trials (see [recipes.md](recipes.md)):
+The rule and its one Grep-shaped exception are in `AGENTS.md`. This is what it was
+calibrated against — the trials that set where the line falls (see [recipes.md](recipes.md)):
 
 | Task | Verdict |
 | --- | --- |
@@ -48,77 +49,35 @@ Evidence from real trials (see [recipes.md](recipes.md)):
 | "Which rule does this proposed change violate?" | **Delegate.** 13s, and it found that our *existing* design already violated the rule. (R6) |
 | "Find every place that reads `FREECODE_FREE_ONLY`" | **Don't.** The literal string was already known; one `Grep` matches it in under a second. (R3) |
 
-### Two excuses this rule has been used to manufacture
-
-Both were real, both are wrong, and both are why this section is worded as it is:
-
-- **"I didn't need a summary."** Summarizing is not the criterion and never was. R5
-  produced no prose at all — eight lines of `file:line` — and is the largest measured win
-  in this directory. The output shape is irrelevant; what matters is whether the lead
-  would otherwise have opened the files.
-- **"It was only a few files."** The lead's cost is what it *reads*, not what it reports.
-  Three files it would have opened is three files' worth of lead context spent on
-  something a free model reads for nothing.
+Two excuses this evidence retires, both real, both used in past sessions to skip a call
+that would have paid: **"I didn't need a summary"** — R5 produced no prose at all, eight
+lines of `file:line`, and is the largest measured win here; output shape was never the
+criterion. **"It was only a few files"** — the lead's cost is what it *reads*, not what it
+reports.
 
 The rule generalizes past delegation: **never read a generated reference whole.**
 `docs/providers.md` tabulates every OpenAI and Anthropic model; reading it to learn which
 free models exist costs thousands of lead tokens for one column of one row. Grep it.
 
-## Verification Cost Is The Tax On Delegation
-
-Every delegated answer needs some lead-side checking, and that checking eats the savings.
-So the aim is not just accurate answers — it is **answers that are cheap to check.**
-
-**Prefer prompts that force checkable output.** Ask for `file_path:line_number`, exported
-names, or "answer with the path". A claim anchored to a file path is confirmed by one
-`ls` or Glob; the entire 11-file list from the trace trial was verified in a single call.
-An unanchored architectural assertion ("the retry logic is layered") has no cheap check
-and must be either trusted or re-derived — which defeats the point.
-
-This is the single highest-leverage habit in this doc.
+Checkable output is the habit that makes all of this hold, and it is stated in `AGENTS.md`
+because it applies to every call. The measured version: the entire 11-file list from the
+trace trial (R1) was verified in a single call, because every claim was a path.
 
 ## Operating Facts
 
-- **The bare default is `zen:deepseek-v4-flash-free`.** Verified via `freecode -log -p`.
-  It is competent for short lookups but weaker at multi-file synthesis.
-- **Pin the model in every recipe.** An unpinned recipe is not reproducible, and the
-  default can change.
-- **Avoid `groq:*` for delegation.** Its rate limits are too low to spend on subagent
-  work; save that quota. Prefer `zen:*` — OpenCode is keyless (quota is per IP).
-- **`-p` is read-only by default** (`read`, `grep`, `list_dir`) and hard-blocked to free
-  models, so it is safe for the lead to call unattended. No sub-agents in either mode.
-- **`--edit` adds the write half** (`create`, `edit`, `shell_exec`) — and there is no
-  confirmation channel, so those run unattended in the cwd. Delegation recipes here are
-  read-only; reach for `--edit` only for a scoped change you are willing to review.
-- **Review a delegated edit with `freecode undo --diff`, never `git diff`.** The snapshot
-  is taken immediately before the subagent's first write, so anything already dirty in the
-  tree is inside it and drops out — `--diff` shows that call's work alone, where `git diff`
-  cannot separate it from the lead's. Add `--semantic` to get the same change as changed
-  symbols plus repeated shapes collapsed to one body with every location still listed;
-  measured at 17 lines against git's 46 for a four-site rename. `--list -n 1` is the
-  diffstat alone when only the blast radius is in question.
 - **Bounded at 50 tool calls** (`FREECODE_MAX_TOOL_CALLS` overrides).
 - **`--stats` reports cost on stderr**, leaving stdout clean. Use it on every delegated
   call — delegation economics cannot be improved while they are invisible.
-- Full flag contract: the `-p` section of [commands.md](../commands.md).
+- Full flag contract, including the `-p` / `--edit` capability split: the `-p` section of
+  [commands.md](../commands.md).
 
 ## "The Subagent Can't Do That" Is A Bug Report
 
-You are working inside freecode's own source tree. When a delegated call fails, is
-awkward, needs a wrapper script, or needs the lead to babysit it, that is a **capability
-gap in a program you can edit** — not a fact about delegation and not a license to do the
-work by hand.
-
-The order of moves when a call does not work:
-
-1. **Fix the prompt.** Most apparent limits are missing output-shape clauses. Every
-   failure recorded in [failures.md](failures.md) so far dissolved this way — the
-   line-number loss, the preamble leak. Try this before concluding anything.
-2. **Write the recipe.** If the fixed prompt works, it is a recipe, and the next session
-   should not have to rediscover it. This is where "I need exact line numbers" ends: R5,
-   not a hand-read.
-3. **Change `src/`.** If no prompt gets there, the gap is in freecode. File it in
-   [ideas.md](ideas.md) with the invocation that failed, or just build it.
+`AGENTS.md` carries the order of moves — fix the prompt, write the recipe, change `src/`.
+What belongs here is why the first step is almost always the one that works: **most
+apparent limits are missing output-shape clauses.** Every failure recorded in
+[failures.md](failures.md) so far dissolved that way — the line-number loss, the preamble
+leak. Neither was a model limitation; both were prompts that never asked.
 
 **Never stop at step zero.** "The subagent couldn't, so I read it myself" is only a valid
 report if it is followed by an entry in [ideas.md](ideas.md) naming what was missing.
@@ -177,10 +136,10 @@ Four triggers, all cheap:
    a failure entry (worked badly), or an [ideas.md](ideas.md) entry (couldn't work without
    a source change). A call that produces none of the three was wasted twice. Record the
    misses too: a log of successes only has stopped being useful.
-3. **When a task feels too wasteful to bother with** — that instinct is calibrated for
-   paid providers and is now wrong. If it is the same question asked of every unit in a
-   tree, add it to the candidate sweeps in [../sweeps.md](../sweeps.md) instead of
-   dismissing it; otherwise it is an untested idea in [recipes.md](recipes.md).
+3. **When a task feels too wasteful to bother with** — if it is the same question asked of
+   every unit in a tree, it belongs in the candidate sweeps in [../sweeps.md](../sweeps.md);
+   otherwise it is an untested idea in [recipes.md](recipes.md). Either way it gets filed,
+   not dismissed.
 4. **Whenever you catch yourself working around freecode rather than with it** — writing a
    shell loop to fan a call out, re-running something by hand because it half-failed,
    picking a model manually after a rate limit. Each of those is a capability gap; the
@@ -197,15 +156,20 @@ dropped. It had dropped an entire layer. See R1 in [recipes.md](recipes.md).
 
 ### Removing
 
-Deletion is a normal edit here, not an exception. Two things to delete on sight:
+Deletion is a normal edit here, not an exception. Four things to delete on sight:
 
 - **Entries whose premise is gone.** When a feature request ships, **delete the entry** —
   do not rewrite it to say "SHIPPED". A shipped feature is not a request, and the tendency
   to annotate rather than remove is how this directory rots. Same for a failure whose
   cause has been fixed, or an untested idea once it has a recipe.
 - **Facts with two homes.** One fact, one file. Evidence lives where it was measured (a
-  recipe); the rule derived from it lives here in the README; everything else links.
+  recipe); the rule derived from it lives in `AGENTS.md`; everything else links.
   A number restated in three files will drift in two of them.
+- **Anything that restates `AGENTS.md`.** The same rule aimed at the boundary that matters
+  most, and the one this directory has broken before: the behavior rules were drafted here
+  and copied up, leaving two drifting copies of each. Apply the down-test from the top of
+  this page — if a paragraph would change what you do on an unrelated task, it belongs up
+  there, not here.
 - **Standalone backlogs.** An unverified idea lives as a **bounded tail of the file it
   graduates into.** `recipes.md`'s Untested Ideas and the candidate sweeps in
   [../sweeps.md](../sweeps.md) sit next to the verified content that dwarfs them, and next
