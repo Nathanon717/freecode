@@ -93,6 +93,28 @@ against 643KB of source, ~56:1.
 
 ---
 
+## An exhaustive tree survey exceeds the latency envelope and returns nothing
+
+**Seen:** 2026-08-11, default model. Prompt: *"across `docs/` and the repo root, find EVERY
+place that describes the codebase map — file path, line numbers, one-line summary each; list
+where you'd expect it and it is absent."* Killed at 300s. **The captured output held only the
+shell's `Terminated` line — not one byte of model output**, so the whole run was lost.
+
+Two things compound. The task is unbounded — "every place" over a whole tree is a sweep's
+shape, one call per unit, not one call over all units. And `-p` prints only the final
+message, at the end, so a run that does not finish yields *nothing*; there is no partial
+credit for the 300s spent. That is the real cost: not slowness, but that slowness is total.
+
+**Instead:** bound the search before delegating. Name the candidate files (a `git ls-files`
+or one Grep gives you the list for free), then ask the subagent to summarize *those*. If the
+question genuinely is one-per-unit across a tree, it is a sweep — see [../sweeps.md](../sweeps.md).
+
+**Revises "Latency is workable. 11–42s per call." below** — that range holds for scoped
+questions. It does not survive an unscoped one, and the failure mode past the envelope is
+total loss rather than a slow answer.
+
+---
+
 ## Non-Failures Worth Recording
 
 Checked and found *not* to be problems:

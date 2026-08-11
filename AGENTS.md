@@ -16,9 +16,47 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 ## Required Rules
 
-- Before broad source reads, start with `docs/map/README.md` and the relevant map page.
-- After changing any file in `/src/`, make sure to check its corresponding map page and consider if you need to update it.
+- Map first, source second — see **Codebase Map** below.
 - Never justify dead code by calling it a "fallback" - remove it.
+
+## Codebase Map
+
+`docs/map/` holds one page per `src/**/*.ts` file, mirroring the tree at identical depth. It
+is the navigation layer: it exists so you can decide which files matter *without reading them*.
+
+**Query the map; don't open it.** `npm run map` reads pages by section, so one call answers a
+question across a whole directory. Reading a page whole — and reading source before the map —
+is the exception that needs a reason.
+
+| Command | Answers |
+| --- | --- |
+| `npm run map -- role <glob>` | what every file under a path is for, one line each — start here |
+| `npm run map -- section "read when" <glob>` | when to open each of them; any section by name |
+| `npm run map -- exports <file>` | signatures and their JSDoc, without the rest of the page |
+| `npm run map -- sections <file>` | what one page holds, including its authored tail |
+| `npm run map -- neighbors-of <file>` | who imports it, and whose link text has gone stale |
+
+`<glob>` is map-relative (`agent/`, `**`); `<file>` takes `src/agent/loop.ts`, `agent/loop.md`
+or `agent/loop`. Add `--format json` for structured output.
+
+`npm run map` needs shell access. A read-only `-p` turn has none — it reads
+`docs/map/<path>.md` directly, which is why pages stay terse.
+
+**Intent is edited in the source file, never on the page.** A page is a generated head — Role,
+Read When, Exports, Neighbors, Tests, Budget, Env — plus one authored tail below it:
+
+- What a module is for and when to open it belong to `@role` / `@readwhen` in its module header.
+- Per-export intent belongs to that export's JSDoc.
+- Only the tail is edited on the page itself.
+
+So after changing a file in `/src/`, inspect `git diff --name-only`, update the `@role` /
+`@readwhen` of anything whose purpose or read guidance moved — **and the page's tail if the
+behavior it describes moved**, since no generator can fix that — then run `npm run docs:generate`.
+`npm test` fails if a page drifts out of shape. No check can tell whether a tag still
+*describes* its code — that is what `npm run intent-drift` (source tags) and `npm run map-drift`
+(authored tails) are for.
+
+Full page contract: `docs/map/README.md`. Ownership rules: `docs/docs.md`.
 
 ## Enviornment
 
@@ -78,14 +116,11 @@ delegating work.
 
 - Use `docs/README.md` as the documentation index.
 - Use `docs/docs.md` for generated-doc ownership and maintenance rules.
-- Use `docs/map/README.md` for source navigation.
 - Use `docs/providers.md` for provider setup, registry facts, and provider testing.
 - Use `docs/sweeps.md` to run or write a sweep — one LLM call per file across a tree (`npm run dead-code`, `npm run map-drift`, `npm run intent-drift`).
 - After fixing a bug, create and index a new, short file in `docs/bug log/` (adding brand new behaviour doesn't count as a bug fix).
 - **One file per bug per day.** If a bug you already logged today comes back — the fix was wrong, incomplete, or moved the failure — edit *that* file so it reads as current truth, rather than adding a second entry that supersedes it. A *different* bug on the same day still gets the next suffix (`24-07-2026b.md`, `24-07-2026c.md` — three unrelated bugs shipped on one day); a recurrence on a *later* day still gets its own dated file.
 - Verification should succeed BEFORE docs are updated, not after.
-
-After code changes, inspect `git diff --name-only`. A changed file's purpose and read/use guidance live in its `@role` / `@readwhen` module header and are generated onto the page, so edit those in the source file; edit the map page itself only for the tail sections below the generated head.
 
 ## Git
 
