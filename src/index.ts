@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * @role Thin executable entry point. It parses process flags, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
+ * @role Thin executable entry point. It parses process flags and the `undo` verb, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
  *
  * @readwhen
- * - Changing CLI startup flags or mode selection.
+ * - Changing CLI startup flags or mode selection, or adding a subcommand verb that must resolve before the flag scans.
  * - Debugging startup provider probes, readline lifecycle, or default model selection.
  * - Tracing how the executable enters the shared session runner.
  */
@@ -48,6 +48,15 @@ tryInjectDoppler();
 
 async function main() {
   const args = process.argv.slice(2);
+
+  // Before every flag scan below. Those are `indexOf`-based and would happily
+  // match an argument meant for `undo`. Undo is git and nothing else, so it also
+  // returns before readline and the store exist — there is no teardown to do.
+  if (args[0] === 'undo') {
+    const { runUndo } = await import('./cli/undo.js');
+    process.exitCode = await runUndo({ projectRoot: process.cwd(), args: args.slice(1) });
+    return;
+  }
 
   // Validate args before loading the heavy module graph (ai SDK).
   // libSQL is deferred to the first store-consuming action — it never loads on early-exit paths.

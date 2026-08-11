@@ -96,3 +96,28 @@ files as a cold run, just a different layer of them, at +15s. The demonstrated w
 from *demanding line numbers*, which is a prompt change and needs no feature. Worth
 measuring on more than one task before building it; if the next measurement is also flat,
 delete this.
+
+---
+
+## Absence questions time out instead of answering
+
+**Observed:** 11-08-2026, while implementing the undo snapshots plan. Four recon calls to
+`zen:big-pickle`; three returned in 36-95s. The fourth — *"in `src/`, find where a session id
+is generated or stored; output each site as `file_path:line_number`"* — was still running at
+the 300s cap and was killed (exit 143). The other three succeeded on the same model with the
+same prompt shape.
+
+The difference is that the answer was **nothing**: freecode has no process-wide session id.
+The subagent had no basis to stop, so it kept searching. A grep for `sessionId` settled it in
+under a second, but only *after* the delegated call had already been paid for and abandoned.
+
+**Proposal:** teach the `-p` system prompt that "no such thing exists" is a valid, expected
+answer, and that a search which has covered the plausible names should say so rather than
+widen. Failing that, the tool-call budget should degrade into "answer with what you have"
+rather than run to the wall — the 50-call budget already exists for runaway turns, but a turn
+killed by the *caller's* timeout returns nothing at all, which is the worst outcome.
+
+**Why it matters for delegation:** absence questions are common when planning a change
+("is there already a X?"), and they are exactly the ones a lead cannot cheaply pre-grep,
+because not knowing the literal is the reason for asking. A delegation path that reliably
+hangs on them pushes the lead back to reading source by hand.

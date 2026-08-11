@@ -3,11 +3,11 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Executes shell commands in the active project root with a regex-based destructive-command guard.
+Executes shell commands in the active project root, behind a hard block on writes to `.git` and a model-confirmable destructive-command guard.
 
 ## Read When
 
-- Changing the regex-based destructive-command guard (rm, git push, del patterns) in `isDestructiveCommand`.
+- Changing the regex-based destructive-command guard (rm, git push, del patterns) in `isDestructiveCommand`, or debugging a command refused outright as a `.git` write — that block is unconditional and lives in [git-guard.md](git-guard.md).
 - Debugging shell output truncation or elision, where head+tail windows and the 10 MB cap interact.
 - Extending how exit statuses, timeouts, or maxBuffer failures are surfaced in the composed tool result.
 <!-- END GENERATED MAP INTENT -->
@@ -25,7 +25,7 @@ shellTool: CoreTool<z.ZodObject<{ command: z.ZodString; timeout_ms: z.ZodOptiona
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imports:** [`agent/workspace.ts`](../workspace.md) ×1
+- **Imports:** [`agent/tools/git-guard.ts`](git-guard.md) ×2, [`agent/workspace.ts`](../workspace.md) ×1
 - **Imported by:** [`agent/tools/index.ts`](index.md) ×1
 
 ## Tests
@@ -34,7 +34,7 @@ shellTool: CoreTool<z.ZodObject<{ command: z.ZodString; timeout_ms: z.ZodOptiona
 
 ## Budget
 
-129 / 500 lines (371 to spare).
+133 / 500 lines (367 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Parameters
@@ -67,6 +67,9 @@ ren / rename
 
 ## Behavior
 
+- Refuses before anything else when the command would write to or delete something under
+  `.git` — see [git-guard.md](git-guard.md). That block is checked *before* the destructive
+  patterns below because it must not be satisfiable by `confirmDestructive`.
 - Runs with `cwd: projectRoot`.
 - Uses `timeout_ms` when provided, otherwise a 30-second timeout.
 - Raises `maxBuffer` to 10 MB. `exec`'s own 1 MB default kills the child and

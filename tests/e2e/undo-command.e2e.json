@@ -1,0 +1,11 @@
+{
+  "name": "undo-command",
+  "description": "`freecode undo` is an argv verb, resolved before every `indexOf`-based flag scan in src/index.ts — here it wins over the `--script` the harness appends after it, which is the ordering the check exists to guarantee. With nothing snapshotted it reports that plainly and exits 0 rather than erroring: there is no failure in having nothing to undo",
+  "workspace": "temp",
+  "flags": ["undo", "--list"],
+  "expect": {
+    "stdoutContains": ["No snapshots for this project"],
+    "stdoutAbsent": ["Error:", "Goodbye"],
+    "exitCode": 0
+  }
+}

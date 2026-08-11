@@ -48,6 +48,10 @@ This table is generated from `src/cli/slash-commands.ts`.
 | `/renderer` | Show a hardcoded demo transcript through the live renderer |
 <!-- END GENERATED SLASH COMMANDS -->
 
+## Subcommands
+
+- `undo`: Restore the project to the snapshot freecode took before this session's first write. See [Undo](#undo-freecode-undo). Resolved from the first argument, before every flag is parsed.
+
 ## CLI Flags
 
 - `-p "<prompt>"`: Run one non-interactive turn and print the final response to stdout. See [Headless prompt mode](#headless-prompt-mode--p).
@@ -117,3 +121,49 @@ freecode -p "..." --stats
 # stdout: <answer>
 # stderr: stats: model=groq:llama-3.3-70b ctx=1234 output=56 total=1290 toolCalls=2 wallTimeMs=843
 ```
+
+## Undo (`freecode undo`)
+
+```bash
+freecode undo           # restore the most recent snapshot
+freecode undo --list    # every snapshot, newest first, with what changed since each
+freecode undo <id>      # restore one by id
+```
+
+**Nobody has to arm it.** Immediately before the first `create`, `edit`, or `shell_exec` of
+a process — interactive, `--script`, or `-p --edit` alike — freecode snapshots the project
+into a bare git repo of its own under `$FREECODE_HOME/snapshots/`. A turn that only reads
+costs nothing; the snapshot is taken lazily, once, and captures pre-agent state exactly.
+
+The shadow repo lives outside the project and never touches the user's own repo: no refs, no
+objects, no index-lock contention, and nothing to clean up if freecode is killed mid-run. It
+works in directories that are not git repos at all.
+
+A restore puts back working files, the exact staged/unstaged split, and — when a rogue
+command moved it — the branch's pre-run commit. The first `git status` after an undo
+re-hashes, because the restored index carries stale stat data.
+
+`undo` does not need to be run from the directory freecode was launched in. It walks up from
+the current directory (never past the enclosing repo) to find the snapshots, and says which
+root it used. If the snapshots belong to a directory *below* you instead, it names it.
+
+**Cost.** The first snapshot in a project writes the tracked tree into a fresh object store —
+a few seconds on a repo this size, once. Every session after that is about a second, and a
+session that never writes pays nothing at all.
+
+**What it does not cover:**
+
+- **Files ignored by `.gitignore`.** They never enter a snapshot and are never restored.
+  This is what keeps snapshots cheap. `undo` says so when it runs.
+- **The project's own `.git`.** Deleting it loses commit history, branches, and reflog, which
+  no worktree snapshot can return. That is prevented rather than recovered: writes and
+  deletes targeting `.git/` are refused outright by `create`, `edit`, and `shell_exec`, and
+  the refusal is not something the model can confirm its way past.
+
+**Without a `git` binary** there is no net: the failure is logged, and the write proceeds
+unprotected rather than being blocked. Refusing to work because the safety net is missing
+inverts the point of having one. `freecode undo` itself exits 1 and says so.
+
+Retention is the newest 20 snapshots per project; older refs are deleted, which is what lets
+git reclaim the objects. `--list` prints the `--git-dir` incantation for inspecting them by
+hand — they are deliberately invisible to `git log` in the project.

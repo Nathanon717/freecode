@@ -106,17 +106,19 @@ Format: filename (linecount)
   - [`system-prompt.ts`](agent/system-prompt.md) (77) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
 - `src/agent/tools/`
-  - [`create.ts`](agent/tools/create.md) (32) — create Tool
+  - [`create.ts`](agent/tools/create.md) (34) — create Tool
   - [`edit-diff-context.ts`](agent/tools/edit-diff-context.md) (102) — Edit Diff Context
-  - [`edit.ts`](agent/tools/edit.md) (70) — edit Tool
+  - [`edit.ts`](agent/tools/edit.md) (72) — edit Tool
+  - [`git-guard.ts`](agent/tools/git-guard.md) (69) — Git Internals Guard
   - [`grep.ts`](agent/tools/grep.md) (323) — grep Tool
   - [`index.ts`](agent/tools/index.md) (102) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (44) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (87) — read Tool
-  - [`shell.ts`](agent/tools/shell.md) (129) — shell_exec Tool
+  - [`shell.ts`](agent/tools/shell.md) (133) — shell_exec Tool
+  - [`snapshot-gate.ts`](agent/tools/snapshot-gate.md) (29) — Snapshot Gate
   - [`spawn-agent.ts`](agent/tools/spawn-agent.md) (37) — spawn_agent Tool
   - [`tool-names.ts`](agent/tools/tool-names.md) (64) — Tool Name Partition
-  - [`wrappers.ts`](agent/tools/wrappers.md) (494) — Tool Wrapper Stack
+  - [`wrappers.ts`](agent/tools/wrappers.md) (497) — Tool Wrapper Stack
 - `src/agent/`
   - [`turn-messages.ts`](agent/turn-messages.md) (195) — Turn Message Shape Rules
   - [`usage-finalize.ts`](agent/usage-finalize.md) (45) — Turn Usage/Quota Finalization
@@ -164,6 +166,8 @@ Format: filename (linecount)
   - [`tool-approval.ts`](cli/tools/tool-approval.md) (344) — Tool Approval Prompts
   - [`tool-invocation.ts`](cli/tools/tool-invocation.md) (357) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tools/tool-runner.md) (103) — Hand-Typed Tool Execution + /tools Listing
+- `src/cli/`
+  - [`undo.ts`](cli/undo.md) (158) — undo Command
 - `src/commands/`
   - [`config.ts`](commands/config.md) (401) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (389) — Interactive Model Picker
@@ -178,7 +182,7 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (105) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (78) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (207) — Eval Subprocess Runner
-- [`index.ts`](index.md) (226) — CLI Entry Point
+- [`index.ts`](index.md) (235) — CLI Entry Point
 - [`logger.ts`](logger.md) (61) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (188) — Adapter HTTP Retry/Backoff
@@ -204,6 +208,10 @@ Format: filename (linecount)
 - `src/providers/`
   - [`types.ts`](providers/types.md) (63) — Type Definitions
   - [`user-blocklist.ts`](providers/user-blocklist.md) (81) — Per-User Model Blocklist
+- `src/snapshots/`
+  - [`auto.ts`](snapshots/auto.md) (47) — Automatic Snapshot
+  - [`index.ts`](snapshots/index.md) (285) — Snapshot Library
+  - [`shadow-repo.ts`](snapshots/shadow-repo.md) (240) — Shadow Repo
 - `src/store/`
   - [`call-log.ts`](store/call-log.md) (51) — Per-Call LLM Log
   - [`db-config-cache.ts`](store/db-config-cache.md) (54) — DB Config Cache

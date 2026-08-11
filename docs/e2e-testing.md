@@ -106,6 +106,20 @@ Any e2e test that drives the agent loop pairs a `mock:*` model with an `llmFixtu
 - `y`/`yes` and `n`/`no` turns are consumed as tool-call confirmations when the agent requests a tool. If the next turn is not an approval answer, the tool call is denied and the turn remains available as normal user input.
 - Approval turns are skipped if there is no pending tool request, so a failed provider call does not accidentally turn `y` into a user prompt.
 
+### Undo snapshots in e2e tests
+
+Every write tool call takes an undo snapshot of the workspace before it runs (see
+[commands.md](commands.md#undo-freecode-undo)). The harness points every child at **one**
+snapshots directory via `FREECODE_SNAPSHOT_DIR`, shared for the whole suite and removed
+afterwards. Each test otherwise has its own `FREECODE_HOME`, so a `workspace: "repo"` e2e test
+that calls a write tool would re-pay a cold snapshot of this entire repo — seconds apiece, in
+parallel, for a net it is not exercising.
+
+Nothing needs doing for an ordinary e2e test. A scenario that reads the shadow repo back —
+only `undo-snapshot-on-first-write` does — sets `"env": { "FREECODE_SNAPSHOT_DIR": "" }` so its
+snapshots land under its own `FREECODE_HOME`, where a glob cannot match another scenario's
+shadow repo. An empty value counts as unset.
+
 ## Assertions
 
 - `stdoutContains`: Substrings expected in combined stdout + stderr.

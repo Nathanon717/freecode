@@ -1,8 +1,11 @@
 # Plan: agent undo snapshots
 
-**Status:** approved, not yet built. Written to be executed from a cold session — every
-decision below is settled and every non-obvious fact was verified empirically. Do not
-re-derive the "Established facts" section; re-verify only if you change the design.
+**Status:** **built.** All five implementation steps shipped; the user-facing contract now
+lives in [commands.md](commands.md#undo-freecode-undo) and the mechanism in the map pages for
+`src/snapshots/` and `src/agent/tools/git-guard.ts`. This file is kept as the design record —
+the "Established facts" and "Rejected alternatives" sections are why the code looks the way it
+does, and re-deriving them costs a session. Two deviations from the plan as written are noted
+inline below (the hook's placement, and the snapshot id's discriminator).
 
 ## The problem
 
@@ -60,6 +63,9 @@ default.
   `~/.config/freecode/snapshots/` regardless of `$FREECODE_HOME` and warn once.
   **Relocate, never refuse** — a netless `--edit` run is precisely the failure being
   prevented, so this check must not be able to disable the net.
+  **As built the warning goes to `log()`, not to the user** — it only surfaces under
+  `-log`. Anything louder would have to write to stderr, which corrupts the TUI, and the
+  condition is one the e2e and pty harnesses create deliberately rather than one a user hits.
 
 ### Three details that are not optional
 
@@ -83,6 +89,23 @@ default.
 | "Always commit first" | Wrong moment; depends on memory. Both stated constraints. |
 | `git stash create` | **Excludes untracked files entirely.** A new-but-unadded file the agent deletes is unrecoverable. This is the tempting simplification — do not take it. |
 | Snapshot commits under `refs/freecode/…` in the user's repo | Works, and dedups against existing objects, but needs `* -text` in the user's `.git/info/attributes` to avoid corrupting line endings. That is transient mutation of shared state: if freecode dies between write and cleanup, every file in the user's repo is left marked binary, silently breaking their diffs until someone notices. Worse than the failure it prevents. |
+
+### Found during implementation: concurrency is the normal case
+
+The plan assumed one freecode per project. `CLAUDE.md` makes that false — its standing rule
+is for an interactive session to delegate to `freecode -p --edit`, so two processes share one
+shadow repo routinely. Three consequences, all verified with real concurrent processes:
+
+1. `git init` is not atomic; the loser of the race fails partway through. Creation catches
+   that and re-checks for `HEAD`.
+2. Nothing may stage into the shared index. Every operation gets its own `GIT_INDEX_FILE`;
+   the shared index is read as a stat cache and written back best-effort, never locked. This
+   matters *because* the hook swallows failures — an `index.lock` collision would otherwise
+   leave the second session unprotected and silent, which is the exact failure mode this
+   whole design exists to prevent.
+3. Snapshot ids must be reserved synchronously. The listing they are checked against is stale
+   the moment it is read, so two snapshots in one tick would pick the same id and the second
+   `update-ref` would overwrite the first.
 
 ### Accepted costs
 
@@ -133,7 +156,8 @@ $FREECODE_HOME/snapshots/<basename>-<hash>.git/   # $SHADOW — bare repo, creat
 ```
 
 `<snapshot-id>` is `YYYYMMDDTHHMMSS` (UTC) + `-` + the session id, with `-<n>` appended on
-collision. Timestamp alone is not enough: the hook fires on first write, a session can be
+collision. **As built it is the pid, not a session id** — freecode has no process-wide session
+identifier, and the pid has the property actually needed here: unique per run. Timestamp alone is not enough: the hook fires on first write, a session can be
 re-entered, and two snapshots in the same second would silently overwrite each other.
 
 A ref maps to its index copy by that id and nothing else. `freecode-index/` is created by
@@ -210,6 +234,14 @@ here). This is a separate, smaller change than the snapshot system and can land 
    owns what happens around each call). Re-locate the exact site with
    `npm run map -- exports agent/tools/wrappers` rather than trusting the line numbers
    below — they were accurate when this was written and will rot.
+
+   **As built the hook is not on the approved path.** It is a separate innermost wrapper,
+   `src/agent/tools/snapshot-gate.ts`, applied by `wrap` only when `isWriteTool(name)` — which
+   satisfies "immediately before the first mutation" literally, cannot be bypassed by a future
+   `requiresConfirmation = false`, cannot fire on the `hasPrecomputed` read-only path, and sits
+   inside `withSerializedExecution`'s queue so concurrent first writes cannot race. It also
+   left `wrappers.ts` (6 lines under the limit at the time) alone. The analysis below is why
+   that site was the alternative considered.
 
    As of writing, the composition is (outermost first) `withSerializedExecution` →
    `withTurnStop` → `withActivity` → `withToolRendering` → `withConfirmation` →

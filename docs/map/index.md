@@ -3,11 +3,11 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Thin executable entry point. It parses process flags, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
+Thin executable entry point. It parses process flags and the `undo` verb, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
 
 ## Read When
 
-- Changing CLI startup flags or mode selection.
+- Changing CLI startup flags or mode selection, or adding a subcommand verb that must resolve before the flag scans.
 - Debugging startup provider probes, readline lifecycle, or default model selection.
 - Tracing how the executable enters the shared session runner.
 <!-- END GENERATED MAP INTENT -->
@@ -29,7 +29,7 @@ _No exported symbols._
 
 ## Budget
 
-226 / 500 lines (274 to spare).
+235 / 500 lines (265 to spare).
 
 ## Env
 

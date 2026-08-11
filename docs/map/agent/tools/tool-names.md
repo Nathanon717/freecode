@@ -58,7 +58,7 @@ offeredToolNames(options: { readOnly?: boolean | undefined; spawnAgent?: boolean
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imported by:** [`cli/tools/tool-invocation.ts`](../../cli/tools/tool-invocation.md) ×9, [`agent/loop.ts`](../loop.md) ×2, [`agent/system-prompt.ts`](../system-prompt.md) ×2, [`agent/tools/index.ts`](index.md) ×2, [`cli/session-modes.ts`](../../cli/session-modes.md) ×2, [`agent/tools/wrappers.ts`](wrappers.md) ×1
+- **Imported by:** [`cli/tools/tool-invocation.ts`](../../cli/tools/tool-invocation.md) ×9, [`agent/loop.ts`](../loop.md) ×2, [`agent/system-prompt.ts`](../system-prompt.md) ×2, [`agent/tools/index.ts`](index.md) ×2, [`cli/session-modes.ts`](../../cli/session-modes.md) ×2, [`agent/tools/snapshot-gate.ts`](snapshot-gate.md) ×1, [`agent/tools/wrappers.ts`](wrappers.md) ×1
 
 ## Tests
 

@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock",
+        "model": "gpt-freecode-test",
+        "mustContain": ["Create note.txt"],
+        "toolsAvailable": ["create", "shell_exec"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["Writing the file."],
+        "toolCalls": [
+          {
+            "name": "create",
+            "args": {
+              "path": "note.txt",
+              "content": "created by fake llm\n"
+            }
+          }
+        ],
+        "usage": { "promptTokens": 20, "outputTokens": 6, "totalTokens": 26 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "mustContain": ["<tool_result name=\"create\">"]
+      },
+      "response": {
+        "chunks": ["Checking the shadow repo."],
+        "toolCalls": [
+          {
+            "name": "shell_exec",
+            "args": {
+              "command": "git --git-dir=$(echo \"$FREECODE_HOME\"/snapshots/*.git) --work-tree=. log --all --format=%s"
+            }
+          }
+        ],
+        "usage": { "promptTokens": 30, "outputTokens": 8, "totalTokens": 38 }
+      }
+    },
+    {
+      "match": {
+        "turn": 3,
+        "mustContain": ["freecode-snapshot"]
+      },
+      "response": {
+        "text": "The snapshot is there.",
+        "usage": { "promptTokens": 40, "outputTokens": 5, "totalTokens": 45 }
+      }
+    }
+  ]
+}

@@ -9,7 +9,7 @@ The decorator layer every offered tool is built from — rationale argument, use
 
 - Debugging why Esc stops the turn or how a denial renders before TurnStoppedError.
 - Changing transcript output around a call: header, rationale, edit diff, create content, or errors.
-- Extending the shared wrapper stack — rationale, confirmation, activity label, trace capture, serialization.
+- Extending the shared wrapper stack — snapshot gate, rationale, confirmation, activity label, trace capture, serialization.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
@@ -72,8 +72,8 @@ wrap(name: string, t: AnyCoreTool, useRationale: boolean, queueExecution: Queued
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imports:** [`cli/render/transcript-renderer.ts`](../../cli/render/transcript-renderer.md) ×16, [`agent/tools/edit-diff-context.ts`](edit-diff-context.md) ×5, [`util/errors.ts`](../../util/errors.md) ×4, [`cli/chrome/turn-state.ts`](../../cli/chrome/turn-state.md) ×3, [`logger.ts`](../../logger.md) ×2, [`agent/tool-render-gate.ts`](../tool-render-gate.md) ×1, [`agent/tools/tool-names.ts`](tool-names.md) ×1, [`cli/tools/tool-approval.ts`](../../cli/tools/tool-approval.md) ×1
-- **Imported by:** [`agent/tools/index.ts`](index.md) ×12
+- **Imports:** [`cli/render/transcript-renderer.ts`](../../cli/render/transcript-renderer.md) ×16, [`agent/tools/edit-diff-context.ts`](edit-diff-context.md) ×5, [`util/errors.ts`](../../util/errors.md) ×4, [`cli/chrome/turn-state.ts`](../../cli/chrome/turn-state.md) ×3, [`logger.ts`](../../logger.md) ×2, [`agent/tool-render-gate.ts`](../tool-render-gate.md) ×1, [`agent/tools/snapshot-gate.ts`](snapshot-gate.md) ×1, [`agent/tools/tool-names.ts`](tool-names.md) ×1, [`cli/tools/tool-approval.ts`](../../cli/tools/tool-approval.md) ×1
+- **Imported by:** [`agent/tools/index.ts`](index.md) ×12, [`agent/tools/snapshot-gate.ts`](snapshot-gate.md) ×2
 
 ## Tests
 
@@ -81,7 +81,7 @@ wrap(name: string, t: AnyCoreTool, useRationale: boolean, queueExecution: Queued
 
 ## Budget
 
-494 / 500 lines (6 to spare).
+497 / 500 lines (3 to spare).
 
 ## Env
 
@@ -92,6 +92,7 @@ wrap(name: string, t: AnyCoreTool, useRationale: boolean, queueExecution: Queued
 
 `wrap()` applies the whole stack to one raw tool. The effective order is:
 
+0. `withSnapshotGate` for `create`/`edit`/`shell_exec` only, in [snapshot-gate.md](snapshot-gate.md). Innermost of the whole stack, so the session's undo snapshot is taken immediately before the raw tool mutates anything — after approval, never on a denial, and never on a read-only tool's pre-confirmation precompute.
 1. `withRationale` when `loadConfig().toolRationale` is true. It adds a required `rationale` string to the Zod schema and strips it before calling the real tool.
 2. `withConfirmation`. It calls the mode-supplied approval callback and returns a denial string to the model when rejected or no callback exists. For `read`/`grep`/`list_dir` (the read-only tool set) it runs the real tool *before* the callback and reuses that result on approval instead of re-running it — safe only because those three have no side effect beyond reading. Immediately after precomputing — or, without executing early because writing is not safe pre-confirmation, for `create` from `args.content` and for `edit` from `args.old_text`/`new_text` plus the diff context `withToolRendering` stashed in `PreviewState.editContext` — it writes the grey/dim content preview via `writeToolResultPreview` from `cli/render/transcript-renderer.ts`. This is the same call the post-execution path uses, so it must go through the transcript stream at header-write time, not through the approval UI after `teardownBottomUI` (that ordering silently drops output outside the active scroll region — verified live via a PTY session). The `edit` preview is a projection: it renders the intended diff even if `old_text` won't ultimately match, and the tool still errors on execute in that case. Only `shell_exec` never previews early. That preview is capped by `getApprovalPreviewRowBudget` (`cli/tools/tool-approval.ts`) to the rows left between the approval hint and the content above it, so a long result cannot scroll the call line the user is approving — or the model's preamble explaining it — off the top; the budget needs their real heights, which `withToolRendering` records in the shared `PreviewState` box as `rowsAbove`. The cap is transcript-only — the model still gets the full result. For the three precomputed tools it also passes the exact result string on the preview as `resultText`, so the approval UI (via `cli/session-modes.ts`) can tokenize it and show how many tokens approving adds. When the preview was actually written and the call is approved, `withToolRendering`'s post-execution result write is suppressed via a shared `PreviewState` box so the same content doesn't print twice; on denial the preview stays but the denial message still prints normally.
 3. `withToolRendering`. Delegates all transcript output to the shared orchestration API in `cli/render/transcript-renderer.ts`. It first `await`s `awaitToolRenderGate()` (`agent/tool-render-gate.ts`) so that on the native `fullStream` path the header waits until the stream consumer has flushed this step's preamble text (a no-op on non-streaming paths); then calls `writeToolCallHeader(...)` (lead-in + optional rationale + call line) before tool execution, stashing its returned row heights in `PreviewState.rowsAbove` for the approval preview budget above, then `writeToolStepResult(name, result)` after execution completes or `writeToolStepResult(name, { kind: 'error', error })` on failure. For an `edit` it calls `computeEditDiffContext` (in [edit-diff-context.md](edit-diff-context.md)) before the tool runs — the diff context must be read from disk while the file is still in its pre-edit state — and stashes the result in `PreviewState.editContext` so `withConfirmation` can render the pending-approval diff from the same single disk read. Also appends JSON trace events to `FREECODE_TRACE_JSON` when set. It never rethrows: a rejected `execute` produces no tool result, so the model would never learn the call failed and the SDK would end the turn — the error message is handed back as the result instead.

@@ -56,7 +56,7 @@ resolveModelSettings(selectedModel: string): Required<OverridableSettings>
 ## Neighbors
 
 - **Imports:** [`providers/types.ts`](../providers/types.md) ×11, [`store/db-config-cache.ts`](../store/db-config-cache.md) ×9, [`logger.ts`](../logger.md) ×2, [`providers/model-settings-accessor.ts`](../providers/model-settings-accessor.md) ×1, [`providers/paid-guard.ts`](../providers/paid-guard.md) ×1, [`store/db.ts`](../store/db.md) ×1, [`util/text-encoding.ts`](../util/text-encoding.md) ×1
-- **Imported by:** [`commands/config.ts`](../commands/config.md) ×8, [`providers/provider-registry.ts`](../providers/provider-registry.md) ×5, [`commands/model.ts`](../commands/model.md) ×3, [`agent/loop.ts`](../agent/loop.md) ×2, [`cli/command-dispatcher.ts`](../cli/command-dispatcher.md) ×2, [`cli/session-modes.ts`](../cli/session-modes.md) ×2, [`providers/adapters/openai-compat.ts`](../providers/adapters/openai-compat.md) ×2, [`providers/quota/cache.ts`](../providers/quota/cache.md) ×2, +4 more
+- **Imported by:** [`commands/config.ts`](../commands/config.md) ×8, [`providers/provider-registry.ts`](../providers/provider-registry.md) ×5, [`commands/model.ts`](../commands/model.md) ×3, [`agent/loop.ts`](../agent/loop.md) ×2, [`cli/command-dispatcher.ts`](../cli/command-dispatcher.md) ×2, [`cli/session-modes.ts`](../cli/session-modes.md) ×2, [`providers/adapters/openai-compat.ts`](../providers/adapters/openai-compat.md) ×2, [`providers/quota/cache.ts`](../providers/quota/cache.md) ×2, +5 more
 
 ## Tests
 

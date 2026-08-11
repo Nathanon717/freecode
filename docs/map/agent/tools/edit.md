@@ -3,12 +3,12 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Applies one exact text replacement inside an existing UTF-8 file relative to the active project root.
+Applies one exact text replacement inside an existing UTF-8 file relative to the active project root, refusing paths inside `.git`.
 
 ## Read When
 
 - Changing exact old_text/new_text replacement semantics or its uniqueness requirement.
-- Debugging edit tool errors like "old_text not found", multiple matches, or must-be-read-first.
+- Debugging edit tool errors like "old_text not found", multiple matches, must-be-read-first, or a refusal to write inside `.git` — that guard is in [git-guard.md](git-guard.md).
 - Extending line-ending handling (CRLF/LF) or escaped \n/\t normalization in edits.
 <!-- END GENERATED MAP INTENT -->
 
@@ -23,7 +23,7 @@ editTool: CoreTool<z.ZodObject<{ path: z.ZodString; old_text: z.ZodString; new_t
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imports:** [`agent/workspace.ts`](../workspace.md) ×2
+- **Imports:** [`agent/tools/git-guard.ts`](git-guard.md) ×2, [`agent/workspace.ts`](../workspace.md) ×2
 - **Imported by:** [`agent/tools/index.ts`](index.md) ×1
 
 ## Tests
@@ -32,7 +32,7 @@ editTool: CoreTool<z.ZodObject<{ path: z.ZodString; old_text: z.ZodString; new_t
 
 ## Budget
 
-70 / 500 lines (430 to spare).
+72 / 500 lines (428 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Parameters
@@ -46,6 +46,7 @@ editTool: CoreTool<z.ZodObject<{ path: z.ZodString; old_text: z.ZodString; new_t
 ## Behavior
 
 - Resolves through `resolveProjectPath()`, rejecting absolute paths and `..` escapes outside the project root.
+- Refuses outright when any path segment is `.git` — see [git-guard.md](git-guard.md).
 - Requires the normalized relative path to have been successfully read with `read` first.
 - Normalizes double-escaped `\\n` and `\\t` sequences in `old_text` and `new_text`.
 - Rejects empty, missing, or ambiguous `old_text`.

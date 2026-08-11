@@ -4,7 +4,7 @@
  * @readwhen
  * - Debugging why Esc stops the turn or how a denial renders before TurnStoppedError.
  * - Changing transcript output around a call: header, rationale, edit diff, create content, or errors.
- * - Extending the shared wrapper stack — rationale, confirmation, activity label, trace capture, serialization.
+ * - Extending the shared wrapper stack — snapshot gate, rationale, confirmation, activity label, trace capture, serialization.
  */
 
 // The decorator layer every offered tool is built from.
@@ -19,6 +19,7 @@ import { z } from "zod";
 import type { CoreTool } from "ai";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { isReadOnlyTool } from "./tool-names.js";
+import { withSnapshotGate } from "./snapshot-gate.js";
 import { logError } from "../../logger.js";
 import { toErrorMessage, TurnStoppedError } from "../../util/errors.js";
 import { awaitToolRenderGate } from "../tool-render-gate.js";
@@ -480,15 +481,17 @@ export function wrap(
   // spawn_agent runs a read-only sub-agent, so it skips confirmation (like the
   // read-only tools) but still renders and serialises. It also skips the rationale
   // wrapper so the model need not supply one to delegate.
+  // Innermost, under confirmation and rationale alike — see snapshot-gate.ts.
+  const gated = withSnapshotGate(name, t);
   const confirmed = requiresConfirmation
     ? withConfirmation(
         name,
-        useRationale ? withRationale(t) : t,
+        useRationale ? withRationale(gated) : gated,
         confirmToolCall,
         previewState,
         stopState,
       )
-    : t;
+    : gated;
   return withSerializedExecution(
     withTurnStop(
       name,

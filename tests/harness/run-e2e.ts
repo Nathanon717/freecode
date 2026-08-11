@@ -43,6 +43,15 @@ const ROOT = join(__dirname, '..', '..');
 const E2E_DIR = join(__dirname, '..', 'e2e');
 const DIST_ENTRY = join(ROOT, 'dist', 'index.js');
 
+// One snapshots directory for the whole suite, rather than one per test.
+// Every test gets its own $FREECODE_HOME, and undo snapshots live under it by
+// default — so a repo-workspace test that calls a write tool would re-pay a cold
+// snapshot of this entire repo, several seconds apiece and all at once under
+// parallelism. That is setup cost, not coverage: the scenarios that actually
+// assert on snapshots create their own. Sharing the directory pays it once.
+const SNAPSHOT_DIR = join(tmpdir(), `freecode-snapshots-${process.pid}`);
+mkdirSync(SNAPSHOT_DIR, { recursive: true });
+
 interface E2eTest {
   name: string;
   description: string;
@@ -214,6 +223,7 @@ if (ttyE2eTests.length > 0) {
           ...safeBaseEnv,
           FREECODE_HOME: tmpHome,
           FREECODE_STORE: tmpStore,
+          FREECODE_SNAPSHOT_DIR: SNAPSHOT_DIR,
           DEBUG_QUOTA: '0',
           FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
           // Prevent Doppler injection and Turso sync in child processes — keeps tests
@@ -312,6 +322,7 @@ if (nonTtyE2eTests.length > 0) {
             ...safeBaseEnv,
             FREECODE_HOME: tmpHome,
             FREECODE_STORE: tmpStore,
+            FREECODE_SNAPSHOT_DIR: SNAPSHOT_DIR,
             DEBUG_QUOTA: '0',
             FORCE_COLOR: process.env.FORCE_COLOR ?? '1',
             DOPPLER_PROJECT: '1',
@@ -425,6 +436,8 @@ if (timingJsonPath) {
     console.error('[timing] failed to write e2e test timings:', err);
   }
 }
+
+removeTempDir(SNAPSHOT_DIR, 'snapshots');
 
 if (failed > 0) {
   console.log('');

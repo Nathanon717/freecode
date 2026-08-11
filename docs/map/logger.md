@@ -38,7 +38,7 @@ logError(category: string, message: string, err: unknown): void
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imported by:** [`cli/command-dispatcher.ts`](cli/command-dispatcher.md) ×21, [`store/db.ts`](store/db.md) ×13, [`agent/loop.ts`](agent/loop.md) ×10, [`agent/parsed-tools.ts`](agent/parsed-tools.md) ×5, [`agent/usage-finalize.ts`](agent/usage-finalize.md) ×3, [`eval/result-sink.ts`](eval/result-sink.md) ×3, [`eval/runner.ts`](eval/runner.md) ×3, [`agent/tools/wrappers.ts`](agent/tools/wrappers.md) ×2, +7 more
+- **Imported by:** [`cli/command-dispatcher.ts`](cli/command-dispatcher.md) ×21, [`store/db.ts`](store/db.md) ×13, [`agent/loop.ts`](agent/loop.md) ×10, [`agent/parsed-tools.ts`](agent/parsed-tools.md) ×5, [`agent/usage-finalize.ts`](agent/usage-finalize.md) ×3, [`eval/result-sink.ts`](eval/result-sink.md) ×3, [`eval/runner.ts`](eval/runner.md) ×3, [`agent/tools/wrappers.ts`](agent/tools/wrappers.md) ×2, +9 more
 
 ## Tests
 

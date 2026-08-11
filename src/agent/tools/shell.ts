@@ -1,8 +1,8 @@
 /**
- * @role Executes shell commands in the active project root with a regex-based destructive-command guard.
+ * @role Executes shell commands in the active project root, behind a hard block on writes to `.git` and a model-confirmable destructive-command guard.
  *
  * @readwhen
- * - Changing the regex-based destructive-command guard (rm, git push, del patterns) in `isDestructiveCommand`.
+ * - Changing the regex-based destructive-command guard (rm, git push, del patterns) in `isDestructiveCommand`, or debugging a command refused outright as a `.git` write — that block is unconditional and lives in [git-guard.md](git-guard.md).
  * - Debugging shell output truncation or elision, where head+tail windows and the 10 MB cap interact.
  * - Extending how exit statuses, timeouts, or maxBuffer failures are surfaced in the composed tool result.
  */
@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { projectRoot } from '../workspace.js';
+import { GIT_INTERNALS_REFUSAL, shellTouchesGitInternals } from './git-guard.js';
 
 const execAsync = promisify(exec);
 
@@ -113,6 +114,9 @@ export const shellTool = tool({
     confirmDestructive: z.boolean().optional().describe('Set to true only if user confirmed destructive command'),
   }),
   execute: async ({ command, timeout_ms, confirmDestructive }) => {
+    // Checked before the destructive-command guard: that one is satisfied by a
+    // flag the model sets, and this block must not be reachable that way.
+    if (shellTouchesGitInternals(command)) return GIT_INTERNALS_REFUSAL;
     if (isDestructiveCommand(command) && !confirmDestructive) {
       return 'Destructive command detected. Set confirmDestructive: true if user confirmed.';
     }

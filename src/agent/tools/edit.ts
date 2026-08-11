@@ -1,9 +1,9 @@
 /**
- * @role Applies one exact text replacement inside an existing UTF-8 file relative to the active project root.
+ * @role Applies one exact text replacement inside an existing UTF-8 file relative to the active project root, refusing paths inside `.git`.
  *
  * @readwhen
  * - Changing exact old_text/new_text replacement semantics or its uniqueness requirement.
- * - Debugging edit tool errors like "old_text not found", multiple matches, or must-be-read-first.
+ * - Debugging edit tool errors like "old_text not found", multiple matches, must-be-read-first, or a refusal to write inside `.git` — that guard is in [git-guard.md](git-guard.md).
  * - Extending line-ending handling (CRLF/LF) or escaped \n/\t normalization in edits.
  */
 
@@ -11,6 +11,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { readFile, writeFile } from 'fs/promises';
 import { hasFileBeenRead, resolveExistingProjectPath } from '../workspace.js';
+import { GIT_INTERNALS_REFUSAL, isGitInternalPath } from './git-guard.js';
 
 function normalizeToolText(text: string): string {
   return text.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
@@ -38,6 +39,7 @@ export const editTool = tool({
     } catch (error) {
       return `Error editing file: ${error instanceof Error ? error.message : String(error)}`;
     }
+    if (isGitInternalPath(resolved.relativePath)) return GIT_INTERNALS_REFUSAL;
     const normalizedOldText = normalizeLineEndings(normalizeToolText(old_text));
     const normalizedNewText = normalizeLineEndings(normalizeToolText(new_text));
 

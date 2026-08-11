@@ -1,0 +1,24 @@
+{
+  "name": "git-guard-blocks-writes",
+  "description": "`rm -rf .git` and a `create` into `.git/` are both refused outright, and the refusal reaches the model so it stops retrying. This is the one gap snapshots cannot close: the shadow repo holds worktree content, so files come back but commit history does not. The block is deliberately not model-confirmable — `shell_exec`'s confirmDestructive is a parameter the model sets, and under `-p --edit` ask mode is auto, so a flag here would be worth nothing. The approvals in this scenario are granted (`y`) precisely to show the guard refuses anyway",
+  "workspace": "temp",
+  "model": "mock:gpt-freecode-test",
+  "llmFixture": "git-guard-blocks-writes.llm.json",
+  "turns": [
+    { "input": "Delete the git directory." },
+    { "input": "y" },
+    { "input": "y" }
+  ],
+  "expect": {
+    "stdoutContains": [
+      "Refused: writing to or deleting the project's .git directory is blocked.",
+      "I cannot touch .git."
+    ],
+    "stdoutAbsent": ["No API key configured"],
+    "exitCode": 0,
+    "toolTrace": {
+      "sequence": ["shell_exec", "create"],
+      "maxCalls": 2
+    }
+  }
+}

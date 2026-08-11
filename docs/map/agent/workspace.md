@@ -43,11 +43,11 @@ resolveWritableProjectPath(path: string): Promise<ResolvedProjectPath>
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imported by:** [`agent/tools/read.ts`](tools/read.md) ×3, [`agent/system-prompt.ts`](system-prompt.md) ×2, [`agent/tools/create.ts`](tools/create.md) ×2, [`agent/tools/edit.ts`](tools/edit.md) ×2, [`agent/loop.ts`](loop.md) ×1, [`agent/tools/grep.ts`](tools/grep.md) ×1, [`agent/tools/list-dir.ts`](tools/list-dir.md) ×1, [`agent/tools/shell.ts`](tools/shell.md) ×1
+- **Imported by:** [`agent/tools/read.ts`](tools/read.md) ×3, [`agent/system-prompt.ts`](system-prompt.md) ×2, [`agent/tools/create.ts`](tools/create.md) ×2, [`agent/tools/edit.ts`](tools/edit.md) ×2, [`agent/loop.ts`](loop.md) ×1, [`agent/tools/grep.ts`](tools/grep.md) ×1, [`agent/tools/list-dir.ts`](tools/list-dir.md) ×1, [`agent/tools/shell.ts`](tools/shell.md) ×1, +1 more
 
 ## Tests
 
-`tests/agent/workspace.test.ts`. 6 other test files reference it.
+`tests/agent/workspace.test.ts`. 8 other test files reference it.
 
 ## Budget
 

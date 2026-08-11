@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "model": "mock:gpt-freecode-test",
+  "steps": [
+    {
+      "match": {
+        "turn": 1,
+        "provider": "mock",
+        "model": "gpt-freecode-test",
+        "mustContain": ["Delete the git directory."],
+        "toolsAvailable": ["create", "shell_exec"],
+        "nativeToolsSupplied": true
+      },
+      "response": {
+        "chunks": ["Removing it."],
+        "toolCalls": [
+          {
+            "name": "shell_exec",
+            "args": {
+              "command": "rm -rf .git",
+              "confirmDestructive": true
+            }
+          }
+        ],
+        "usage": { "promptTokens": 20, "outputTokens": 6, "totalTokens": 26 }
+      }
+    },
+    {
+      "match": {
+        "turn": 2,
+        "mustContain": ["Refused: writing to or deleting the project's .git directory is blocked."]
+      },
+      "response": {
+        "chunks": ["Trying the file tools instead."],
+        "toolCalls": [
+          {
+            "name": "create",
+            "args": {
+              "path": ".git/config",
+              "content": "clobbered\n"
+            }
+          }
+        ],
+        "usage": { "promptTokens": 30, "outputTokens": 8, "totalTokens": 38 }
+      }
+    },
+    {
+      "match": {
+        "turn": 3,
+        "mustContain": ["Refused: writing to or deleting the project's .git directory is blocked."]
+      },
+      "response": {
+        "text": "I cannot touch .git.",
+        "usage": { "promptTokens": 40, "outputTokens": 5, "totalTokens": 45 }
+      }
+    }
+  ]
+}
