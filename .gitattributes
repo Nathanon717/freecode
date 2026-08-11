@@ -1,3 +1,12 @@
-docs/providers.md text eol=lf
-docs/commands.md text eol=lf
-docs/scenarios.md text eol=lf
+# Line endings are LF everywhere, on every platform. The generators write LF
+# (Node emits '\n'), so a CRLF checkout makes every generated file dirty the
+# moment `docs:generate` runs. Pinning eol=lf here overrides a developer's
+# core.autocrlf, so the working tree matches what the generators produce.
+* text=auto eol=lf
+
+# Windows batch: cmd.exe is the consumer, so CRLF is the correct checkout.
+# Declared, so it is stable rather than churn.
+*.cmd text eol=crlf
+
+# Binary — never touch.
+*.gz binary
