@@ -24,6 +24,11 @@ suspendFooterTimer(): void
 
 resumeFooterTimer(): void
 
+/**
+ * True while a raw picker or the approval prompt owns rows this module would otherwise draw.
+ */
+isFooterTimerSuspended(): boolean
+
 getRows(): number
 
 getLastReservedRows(): number
@@ -67,15 +72,15 @@ setOnResizeCallback(cb: (() => void) | null): void
 ## Neighbors
 
 - **Imports:** [`cli/chrome/ansi.ts`](ansi.md) ×65, [`cli/chrome/input-buffer.ts`](input-buffer.md) ×9, [`cli/chrome/suggestion-overlay.ts`](suggestion-overlay.md) ×8, [`util/screen-buffer.ts`](../../util/screen-buffer.md) ×5, [`cli/chrome/turn-state.ts`](turn-state.md) ×4, [`cli/render/banner.ts`](../render/banner.md) ×4, [`cli/chrome/footer-status.ts`](footer-status.md) ×2, [`cli/chrome/toggles.ts`](toggles.md) ×2, [`cli/tools/tool-invocation.ts`](../tools/tool-invocation.md) ×2
-- **Imported by:** [`cli/session-modes.ts`](../session-modes.md) ×31, [`cli/tools/tool-approval.ts`](../tools/tool-approval.md) ×16, [`cli/menus/raw-picker.ts`](../menus/raw-picker.md) ×15, [`cli/menus/menu-shell.ts`](../menus/menu-shell.md) ×3, [`cli/eval/eval-menu.ts`](../eval/eval-menu.md) ×1
+- **Imported by:** [`cli/session-modes.ts`](../session-modes.md) ×31, [`cli/tools/tool-approval.ts`](../tools/tool-approval.md) ×16, [`cli/menus/raw-picker.ts`](../menus/raw-picker.md) ×15, [`cli/tui-log-sink.ts`](../tui-log-sink.md) ×6, [`cli/menus/menu-shell.ts`](../menus/menu-shell.md) ×3, [`cli/eval/eval-menu.ts`](../eval/eval-menu.md) ×1
 
 ## Tests
 
-`tests/cli/chrome/bottom-ui.test.ts`. 6 other test files reference it.
+`tests/cli/chrome/bottom-ui.test.ts`. 7 other test files reference it.
 
 ## Budget
 
-485 / 500 lines (15 to spare).
+487 / 500 lines (13 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Layout

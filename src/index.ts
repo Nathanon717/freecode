@@ -117,7 +117,8 @@ async function main() {
   const { registerRetryBannerSink } = await import('./providers/adapters/adapter-http-retry.js');
   const { createStdoutRetrySink } = await import('./cli/stdout-retry-sink.js');
   const { loadConfig } = await import('./config/index.js');
-  const { enableLog } = await import('./logger.js');
+  const { enableLog, registerLogSink } = await import('./logger.js');
+  const { createTuiLogSink } = await import('./cli/tui-log-sink.js');
   const { primeConfigCacheFromFile, drainPendingWrites } = await import('./store/db.js');
 
   installScreenBuffer();
@@ -210,6 +211,9 @@ async function main() {
     setupFooterUI();
     registerRetryBannerSink(setRetryBanner);
     registerQuotaUpdateSink(setQuotaSnapshot);
+    // From here on the cursor lives inside the bottom UI, so background logging
+    // (model prefetch, DB persists, retries) has to be routed into the scroll region.
+    registerLogSink(createTuiLogSink());
   }
 
   // Warm model lists and pricing in background so /model opens instantly.

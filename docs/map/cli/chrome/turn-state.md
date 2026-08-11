@@ -43,7 +43,7 @@ composeThinkingLabel(): string
 
 ## Tests
 
-`tests/cli/chrome/turn-state.test.ts`. 1 other test file references it.
+`tests/cli/chrome/turn-state.test.ts`. 2 other test files reference it.
 
 ## Budget
 

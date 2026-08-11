@@ -18,7 +18,7 @@ import { getProviderCatalog, saveProviderCatalog } from "./model-data.js";
 import { createOpenAICompatProvider } from "./adapters/openai-compat.js";
 import { resolveApiKey } from "../config/index.js";
 import { addToUserBlocklist, getUserBlocklist } from "./user-blocklist.js";
-import { logError } from "../logger.js";
+import { logError, logWarn } from "../logger.js";
 import {
   FAKE_MODEL_PREFIX,
   FAKE_NATIVE_MODEL_PREFIX,
@@ -177,7 +177,10 @@ async function runLiveProviderInit(
       })),
     );
   } catch (err) {
-    logError(
+    // logWarn, not logError: the catch below has a full answer (the cached catalog), and
+    // every throw on this path is our own `new Error("HTTP <status>")` a few lines up, so
+    // the stack names freecode's fetch wrapper and nothing the message doesn't already say.
+    logWarn(
       "registry",
       `Failed to fetch ${providerId} models, using cache`,
       err,

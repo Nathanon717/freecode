@@ -29,7 +29,7 @@ _No exported symbols._
 
 ## Budget
 
-235 / 500 lines (265 to spare).
+239 / 500 lines (261 to spare).
 
 ## Env
 

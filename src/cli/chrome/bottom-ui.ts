@@ -59,6 +59,8 @@ export function isFooterUIActive(): boolean { return footerActive; }
 
 export function suspendFooterTimer(): void { footerTimerSuspended = true; }
 export function resumeFooterTimer(): void { footerTimerSuspended = false; }
+/** True while a raw picker or the approval prompt owns rows this module would otherwise draw. */
+export function isFooterTimerSuspended(): boolean { return footerTimerSuspended; }
 
 export function getRows(): number { return rows(); }
 export function getLastReservedRows(): number { return lastReservedRows; }

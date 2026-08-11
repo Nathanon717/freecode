@@ -60,7 +60,7 @@ cursorToVisualPos(buf: string, cursor: number, w: number): { visualRow: number; 
 
 ## Tests
 
-`tests/cli/chrome/input-buffer.test.ts`. 2 other test files reference it.
+`tests/cli/chrome/input-buffer.test.ts`. 3 other test files reference it.
 
 ## Budget
 

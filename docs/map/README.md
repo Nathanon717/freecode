@@ -125,7 +125,7 @@ Format: filename (linecount)
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/chrome/`
   - [`ansi.ts`](cli/chrome/ansi.md) (56) — Terminal Geometry & Escape Sequences
-  - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (485) — Bottom Terminal UI
+  - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (487) — Bottom Terminal UI
   - [`footer-status.ts`](cli/chrome/footer-status.md) (225) — Footer Status State and Formatters
   - [`input-buffer.ts`](cli/chrome/input-buffer.md) (117) — Input Buffer State
   - [`suggestion-overlay.ts`](cli/chrome/suggestion-overlay.md) (58) — Suggestion Overlay Snapshot
@@ -167,6 +167,7 @@ Format: filename (linecount)
   - [`tool-invocation.ts`](cli/tools/tool-invocation.md) (357) — Hand-Typed Tool Call Parsing
   - [`tool-runner.ts`](cli/tools/tool-runner.md) (103) — Hand-Typed Tool Execution + /tools Listing
 - `src/cli/`
+  - [`tui-log-sink.ts`](cli/tui-log-sink.md) (43) — TUI Log Sink
   - [`undo.ts`](cli/undo.md) (158) — undo Command
 - `src/commands/`
   - [`config.ts`](commands/config.md) (401) — Interactive Config Editor
@@ -182,8 +183,8 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (105) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (78) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (207) — Eval Subprocess Runner
-- [`index.ts`](index.md) (235) — CLI Entry Point
-- [`logger.ts`](logger.md) (61) — Logging Utility
+- [`index.ts`](index.md) (239) — CLI Entry Point
+- [`logger.ts`](logger.md) (94) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (188) — Adapter HTTP Retry/Backoff
   - [`adapter-usage-capture.ts`](providers/adapters/adapter-usage-capture.md) (51) — Shared Usage/Header Capture
@@ -201,7 +202,7 @@ Format: filename (linecount)
   - [`paid-guard.ts`](providers/paid-guard.md) (59) — Free-Only Hard Block
   - [`pricing-verifier.ts`](providers/pricing-verifier.md) (122) — Dual-Source Pricing Verifier
   - [`provider-catalog.ts`](providers/provider-catalog.md) (330) — Provider Catalog
-  - [`provider-registry.ts`](providers/provider-registry.md) (455) — Provider Registry
+  - [`provider-registry.ts`](providers/provider-registry.md) (458) — Provider Registry
 - `src/providers/quota/`
   - [`cache.ts`](providers/quota/cache.md) (38) — Quota Cache
   - [`headers.ts`](providers/quota/headers.md) (253) — Provider Rate-Limit Header Parsing

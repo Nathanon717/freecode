@@ -58,7 +58,7 @@ resolveModel(modelPreference: string): ResolvedModel
 
 ## Budget
 
-455 / 500 lines (45 to spare).
+458 / 500 lines (42 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Special Cases
