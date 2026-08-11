@@ -29,3 +29,16 @@ describe('tracked text files have no leading UTF-8 BOM', () => {
     expect(hasBom(buf), `${file} starts with a UTF-8 BOM (EF BB BF) — strip it`).toBe(false);
   });
 });
+
+// CRLF is the same class of problem as a BOM: invisible, and it makes the
+// generators disagree with the checkout. `docs:generate` writes LF, so a CRLF
+// working tree reports a different line count for every source file and every
+// map page comes back dirty. `.gitattributes` pins `eol=lf` to prevent it; this
+// catches a file that got in some other way. `.cmd` is intentionally CRLF and
+// is not a text extension here, so it is already out of scope.
+describe('tracked text files use LF line endings', () => {
+  it.each(trackedFiles)('%s', (file) => {
+    const buf = readFileSync(join(ROOT, file));
+    expect(buf.includes('\r\n'), `${file} has CRLF line endings — the repo is LF-only`).toBe(false);
+  });
+});

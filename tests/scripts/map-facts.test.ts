@@ -41,6 +41,17 @@ describe('countLines — the arithmetic the 500-line gate uses', () => {
   it('keeps a shebang, and finds the header under it', () => {
     expect(countLines('#!/usr/bin/env node\n\n/**\n * @role r\n */\n\na\n')).toBe(2);
   });
+
+  it('counts a CRLF checkout the same as an LF one', () => {
+    for (const lf of [
+      'a\nb\n',
+      '/**\n * @role Does the thing.\n */\n\na\nb\n',
+      '#!/usr/bin/env node\n\n/**\n * @role r\n */\n\na\n',
+      'a\n\n/**\n * Not the header.\n */\nb\n',
+    ]) {
+      expect(countLines(lf.replace(/\n/g, '\r\n'))).toBe(countLines(lf));
+    }
+  });
 });
 
 describe('renderFactsBlock', () => {

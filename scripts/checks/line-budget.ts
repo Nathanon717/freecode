@@ -26,9 +26,15 @@ const MODULE_HEADER = /^(#![^\n]*\n)?\s*\/\*[\s\S]*?\*\/[^\S\n]*\n?\n?/;
  * somewhere the code cannot invalidate. Only the header is exempt; a comment
  * anywhere below it counts like any other line, so the limit still measures how
  * much file there is to read.
+ *
+ * CRLF is normalised away first. A count is a property of the file, not of the
+ * checkout that produced it — without this, a Windows working tree counts one
+ * line more than a Linux one, because `[^\S\n]*\n?\n?` eats the `\r` and then
+ * stops one newline short of the blank line under the header.
  */
 export function countLines(content: string): number {
   const lines = content
+    .replace(/\r\n/g, '\n')
     .replace(MODULE_HEADER, (_match: string, shebang: string | undefined) => shebang ?? '')
     .split('\n');
   return lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
