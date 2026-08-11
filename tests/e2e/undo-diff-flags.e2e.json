@@ -1,0 +1,11 @@
+{
+  "name": "undo-diff-flags",
+  "description": "`undo --diff --semantic` is a read: with nothing snapshotted it reports that and exits 0, and it must never fall through to a restore. That last part is the reason `--semantic` implies `--diff` in the parser — argv reaching `undo` still carries process-level flags it does not recognise (the harness appends `--script` right here), so an unrecognised review flag cannot be rejected, and a command that recognised nothing would run the destructive branch by default. `stdoutAbsent` pins that: no 'Restored' line for a flag combination that only ever meant 'show me'",
+  "workspace": "temp",
+  "flags": ["undo", "--diff", "--semantic"],
+  "expect": {
+    "stdoutContains": ["No snapshots for this project"],
+    "stdoutAbsent": ["Restored", "Error:", "Goodbye"],
+    "exitCode": 0
+  }
+}

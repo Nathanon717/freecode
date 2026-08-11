@@ -3,12 +3,13 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-`freecode undo` — restores the project to the snapshot freecode took before an agent session's first write, or lists the snapshots available. The snapshot library it drives is [../snapshots/index.md](../snapshots/index.md).
+`freecode undo` — restores the project to the snapshot freecode took before an agent session's first write, lists the snapshots available, or shows what a restore would revert (`--diff`, `--semantic`). The snapshot library it drives is [../snapshots/index.md](../snapshots/index.md); the summary encoding is [../snapshots/semantic-diff.md](../snapshots/semantic-diff.md).
 
 ## Read When
 
 - Changing what `freecode undo` prints, its flags, or its exit codes.
 - Debugging an undo that reported success but left the project wrong.
+- Changing how a snapshot's changes are reviewed before deciding to restore.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
@@ -31,7 +32,7 @@ runUndo({ projectRoot: startDir, args }: UndoOptions): Promise<number>
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imports:** [`snapshots/index.ts`](../snapshots/index.md) ×6, [`snapshots/shadow-repo.ts`](../snapshots/shadow-repo.md) ×4
+- **Imports:** [`snapshots/index.ts`](../snapshots/index.md) ×8, [`snapshots/shadow-repo.ts`](../snapshots/shadow-repo.md) ×4, [`snapshots/semantic-diff.ts`](../snapshots/semantic-diff.md) ×1
 
 ## Tests
 
@@ -39,7 +40,7 @@ runUndo({ projectRoot: startDir, args }: UndoOptions): Promise<number>
 
 ## Budget
 
-158 / 500 lines (342 to spare).
+227 / 500 lines (273 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Surface
@@ -49,9 +50,25 @@ runUndo({ projectRoot: startDir, args }: UndoOptions): Promise<number>
 | `freecode undo` | restores the most recent snapshot |
 | `freecode undo <id>` | restores that snapshot |
 | `freecode undo --list` | every snapshot, newest first, each with a `git diff --stat` of what changed since it, plus the `--git-dir` incantation for inspecting them by hand |
+| `freecode undo --list -n <count>` | the newest `<count>` only, and a line saying how many were held back |
+| `freecode undo --diff [<id>]` | the patch a restore would revert, instead of restoring |
+| `freecode undo --diff --semantic` | that patch re-encoded by [../snapshots/semantic-diff.md](../snapshots/semantic-diff.md) |
 
 Exit 0 when there is nothing to undo — having nothing snapshotted is not a failure. Exit 1
-only for a missing `git` binary, an unknown id, or a restore that threw.
+only for a missing `git` binary, an unknown id, a non-positive `-n`, or a restore that threw.
+
+## Why the parser is a loop rather than two `includes` calls
+
+Two flags broke the old shape, and both broke it toward *restoring something nobody asked
+to restore*:
+
+- **`-n` takes a value.** The id used to be "the first token that is not a flag", so
+  `undo --list -n 3` would have looked up a snapshot called `3`. Values are consumed where
+  they are introduced instead.
+- **`--semantic` implies `--diff`.** argv reaching `undo` still carries process-level flags
+  meant for the rest of freecode, so unrecognised flags cannot be rejected. That leaves the
+  destructive branch as the fallthrough for anything unparsed, and a review flag must never
+  land there.
 
 ## Placement in src/index.ts
 

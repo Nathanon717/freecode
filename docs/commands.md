@@ -140,9 +140,12 @@ freecode -p "..." --stats
 ## Undo (`freecode undo`)
 
 ```bash
-freecode undo           # restore the most recent snapshot
-freecode undo --list    # every snapshot, newest first, with what changed since each
-freecode undo <id>      # restore one by id
+freecode undo                    # restore the most recent snapshot
+freecode undo --list             # every snapshot, newest first, with what changed since each
+freecode undo --list -n 3        # just the newest 3
+freecode undo <id>               # restore one by id
+freecode undo --diff [<id>]      # print what a restore would revert, as a patch
+freecode undo --diff --semantic  # the same change, encoded as symbols and repeated shapes
 ```
 
 **Nobody has to arm it.** Immediately before the first `create`, `edit`, or `shell_exec` of
@@ -157,6 +160,21 @@ works in directories that are not git repos at all.
 A restore puts back working files, the exact staged/unstaged split, and — when a rogue
 command moved it — the branch's pre-run commit. The first `git status` after an undo
 re-hashes, because the restored index carries stale stat data.
+
+**Reviewing before deciding (`--diff`).** The snapshot is a baseline nothing else can
+offer: it was taken immediately before the agent's first write, so whatever was already
+dirty in the tree is *inside* it and drops out of the comparison. `--diff` prints what a
+restore would revert and nothing else, while a plain `git diff` cannot tell an agent's
+work from the work it was started on top of. Files the agent created are included — the
+diff is staged into a scratch index first, which is what makes new paths visible without
+touching the project's own index.
+
+`--semantic` re-encodes that same patch for a reader with a budget: changed files with the
+symbols they touch, then hunks that make the *identical* edit collapsed into one shape —
+shown once, with every location still listed. A hunk that cannot be classified with
+certainty is printed verbatim rather than summarised, so every hunk appears exactly once,
+either as a named shape or as itself. Symbol names come from git's own hunk-header
+heuristic: dependable for declarations at column zero, blank for indented members.
 
 `undo` does not need to be run from the directory freecode was launched in. It walks up from
 the current directory (never past the enclosing repo) to find the snapshots, and says which

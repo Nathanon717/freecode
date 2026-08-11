@@ -55,6 +55,13 @@ listSnapshots(projectRoot: string): Promise<SnapshotMeta[]>
 snapshotDiffStat(projectRoot: string, id: string): Promise<string>
 
 /**
+ * The unified patch between a snapshot and the project as it stands now —
+ * every change the snapshot would undo, and nothing a concurrent editor did
+ * before it was taken.
+ */
+snapshotDiffPatch(projectRoot: string, id: string): Promise<string>
+
+/**
  * Puts the project back to `id`.
  *
  * The guards are on **what the snapshot recorded, not what is true now**: the
@@ -80,7 +87,7 @@ inspectHint(projectRoot: string): string
 ## Neighbors
 
 - **Imports:** [`snapshots/shadow-repo.ts`](shadow-repo.md) ×26
-- **Imported by:** [`cli/undo.ts`](../cli/undo.md) ×6, [`snapshots/auto.ts`](auto.md) ×2
+- **Imported by:** [`cli/undo.ts`](../cli/undo.md) ×8, [`snapshots/auto.ts`](auto.md) ×2
 
 ## Tests
 
@@ -88,7 +95,7 @@ inspectHint(projectRoot: string): string
 
 ## Budget
 
-297 / 500 lines (203 to spare).
+316 / 500 lines (184 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## What a snapshot is

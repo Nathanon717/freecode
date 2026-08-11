@@ -121,3 +121,55 @@ killed by the *caller's* timeout returns nothing at all, which is the worst outc
 ("is there already a X?"), and they are exactly the ones a lead cannot cheaply pre-grep,
 because not knowing the literal is the reason for asking. A delegation path that reliably
 hangs on them pushes the lead back to reading source by hand.
+
+---
+
+## `-p --edit --until "<command>"`
+
+**Observed:** 11-08-2026, delegating a scoped edit. There is no way to hand a subagent a
+success criterion it can check itself, so a turn ends whenever the model decides it is
+finished — right or wrong. Every miss therefore costs a full lead-side review round-trip
+to *discover* it is a miss, before any correction can start. Weak evidence by this file's
+standard: the observation is a missing capability rather than a call that failed, and the
+trial that would price it has not been run.
+
+**Problem:** the lead's cheapest possible review is one it does not have to do, which
+happens when the change carries a machine oracle. `src/` here is unusually well-oracled —
+`npm test` covers build, lint, docs shape, line limit, and e2e — but a subagent cannot be
+told "you are done when this passes", so the oracle only ever runs after the fact.
+
+**Proposal:** `--until "<command>"` runs the named command after each candidate edit, feeds
+a failure back to the model as the next turn, and stops on success or on a bounded attempt
+count. Exit non-zero when the attempts run out, so the caller can tell "passed" from "gave
+up" without reading anything.
+
+**Why it matters for delegation:** it moves the spec from prose into something checkable,
+and moves the correction loop off the lead entirely — the retries are free, and only the
+final state needs reviewing. It also makes the honest boundary explicit: work with no such
+command (docs prose, `@role` tags, prompts) is where edit-delegation stays net-negative,
+and the flag's absence is what says so.
+
+---
+
+## A lean patch encoding for `undo --diff`
+
+**Observed:** 11-08-2026, reviewing a four-site rename over a snapshot. `--diff` emits git's
+unencoded output — `index 809c03f..bc95b41 100644` and a repeated `--- a/x` / `+++ b/x`
+pair per file, plus full context lines — at 46 lines for a change `--semantic` said in 17.
+Every one of those bytes is lead context, and none of them carry judgement.
+
+**Problem:** `--semantic` compresses by *classifying*, so anything it cannot classify falls
+back to raw git output. That fallback is the common case for genuinely novel changes, which
+are also the ones most worth reading carefully — so the encoding is worst exactly where
+attention should go.
+
+**Proposal:** strip what carries no signal — `index` lines, mode lines, the redundant
+`---`/`+++` pair, and `@@` markers already implied by a printed location. Make context
+lines a flag (`-U0`-style) rather than a default, since a lead reviewing a file it has
+already read is paying twice for the same lines.
+
+**Why it matters for delegation:** it is the smallest, least clever lever on review cost —
+no classification, no risk of collapsing two different hunks, nothing to get wrong. It
+applies to every diff rather than only the repetitive ones, which is what makes it worth
+building even though `--semantic` already exists.
+

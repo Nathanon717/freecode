@@ -1,9 +1,10 @@
 /**
- * @role `freecode undo` — restores the project to the snapshot freecode took before an agent session's first write, or lists the snapshots available. The snapshot library it drives is [../snapshots/index.md](../snapshots/index.md).
+ * @role `freecode undo` — restores the project to the snapshot freecode took before an agent session's first write, lists the snapshots available, or shows what a restore would revert (`--diff`, `--semantic`). The snapshot library it drives is [../snapshots/index.md](../snapshots/index.md); the summary encoding is [../snapshots/semantic-diff.md](../snapshots/semantic-diff.md).
  *
  * @readwhen
  * - Changing what `freecode undo` prints, its flags, or its exit codes.
  * - Debugging an undo that reported success but left the project wrong.
+ * - Changing how a snapshot's changes are reviewed before deciding to restore.
  */
 
 // Runs before the heavy module graph loads (see src/index.ts): undo is git and
@@ -16,9 +17,11 @@ import {
   inspectHint,
   listSnapshots,
   restoreSnapshot,
+  snapshotDiffPatch,
   snapshotDiffStat,
   type SnapshotMeta,
 } from '../snapshots/index.js';
+import { semanticDiff } from '../snapshots/semantic-diff.js';
 import {
   gitAvailable,
   listShadowProjects,
@@ -30,6 +33,38 @@ export interface UndoOptions {
   projectRoot: string;
   /** Remaining argv after the `undo` verb. */
   args: string[];
+}
+
+interface UndoArgs {
+  list: boolean;
+  diff: boolean;
+  semantic: boolean;
+  /** `--list -n <count>`; undefined shows every snapshot. */
+  limit?: number;
+  id?: string;
+}
+
+/**
+ * `-n` takes a value, so the snapshot id cannot be "the first token that is not
+ * a flag": `undo --list -n 3` would read `3` as an id. Values are consumed
+ * where they are introduced instead.
+ *
+ * Unrecognised flags are ignored rather than rejected, because argv here still
+ * carries process-level flags that were never meant for `undo`. That is also
+ * why `--semantic` implies `--diff`: with no flag it recognised, a typo'd
+ * review command would fall through to *restoring* the project.
+ */
+function parseArgs(args: string[]): UndoArgs {
+  const parsed: UndoArgs = { list: false, diff: false, semantic: false };
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--list') parsed.list = true;
+    else if (arg === '--diff') parsed.diff = true;
+    else if (arg === '--semantic') parsed.semantic = parsed.diff = true;
+    else if (arg === '-n') parsed.limit = Number(args[++i]);
+    else if (!arg.startsWith('-')) parsed.id ??= arg;
+  }
+  return parsed;
 }
 
 function describe(snapshot: SnapshotMeta, index: number): string {
@@ -74,8 +109,11 @@ export async function runUndo({ projectRoot: startDir, args }: UndoOptions): Pro
     return 1;
   }
 
-  const wantsList = args.includes('--list');
-  const idArg = args.find((arg) => !arg.startsWith('-'));
+  const options = parseArgs(args);
+  if (options.limit !== undefined && (!Number.isInteger(options.limit) || options.limit < 1)) {
+    console.error('Error: -n takes a positive whole number of snapshots.');
+    return 1;
+  }
 
   const projectRoot = await resolveUndoRoot(startDir);
   if (!projectRoot) return reportNoSnapshots(startDir);
@@ -91,23 +129,28 @@ export async function runUndo({ projectRoot: startDir, args }: UndoOptions): Pro
 
   if (snapshots.length === 0) return reportNoSnapshots(projectRoot);
 
-  if (wantsList) {
+  if (options.list) {
+    const shown = options.limit === undefined ? snapshots : snapshots.slice(0, options.limit);
     console.log(`Snapshots for ${projectRoot} (newest first):\n`);
-    for (const [index, snapshot] of snapshots.entries()) {
+    for (const [index, snapshot] of shown.entries()) {
       console.log(describe(snapshot, index));
       const stat = await safeDiffStat(projectRoot, snapshot.id);
       console.log(stat ? indent(stat) : '    (no changes since this snapshot)');
       console.log('');
     }
+    const hidden = snapshots.length - shown.length;
+    if (hidden > 0) console.log(`${hidden} older snapshot(s) not shown; raise \`-n\` to see them.\n`);
     console.log(`Inspect them by hand with:\n  ${inspectHint(projectRoot)}`);
     return 0;
   }
 
-  const target = idArg ? snapshots.find((s) => s.id === idArg) : snapshots[0];
+  const target = options.id ? snapshots.find((s) => s.id === options.id) : snapshots[0];
   if (!target) {
-    console.error(`Error: no snapshot ${idArg}. Run \`freecode undo --list\` to see them.`);
+    console.error(`Error: no snapshot ${options.id}. Run \`freecode undo --list\` to see them.`);
     return 1;
   }
+
+  if (options.diff) return reportDiff(projectRoot, target, options.semantic);
 
   try {
     const outcome = await restoreSnapshot(projectRoot, target.id);
@@ -125,6 +168,33 @@ export async function runUndo({ projectRoot: startDir, args }: UndoOptions): Pro
     console.error(`Error restoring snapshot: ${message(error)}`);
     return 1;
   }
+}
+
+/**
+ * Prints what a restore of `target` would revert, and nothing else — the
+ * snapshot is the baseline, so work that was already in the tree when it was
+ * taken does not appear. That is the property `git diff` cannot offer, and the
+ * reason this is a subcommand rather than an incantation in the docs.
+ */
+async function reportDiff(
+  projectRoot: string,
+  target: SnapshotMeta,
+  semantic: boolean,
+): Promise<number> {
+  let patch: string;
+  try {
+    patch = await snapshotDiffPatch(projectRoot, target.id);
+  } catch (error) {
+    console.error(`Error reading snapshot ${target.id}: ${message(error)}`);
+    return 1;
+  }
+
+  if (patch === '') {
+    console.log(`No changes since snapshot ${target.id} (${target.takenAt || 'unknown time'}).`);
+    return 0;
+  }
+  console.log(semantic ? semanticDiff(patch) : patch);
+  return 0;
 }
 
 /**

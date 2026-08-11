@@ -208,25 +208,44 @@ export async function listSnapshots(projectRoot: string): Promise<SnapshotMeta[]
   return metas.sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
 }
 
-/** `git diff --stat` between a snapshot and the project as it stands now. */
-export async function snapshotDiffStat(projectRoot: string, id: string): Promise<string> {
-  // Reads never create. `--list` calls this, and a read-only-looking command
-  // must not leave a git repo behind.
+/**
+ * `git diff <flavour>` between a snapshot and the project as it stands now.
+ *
+ * The staging step is what makes the answer mean "everything this snapshot
+ * would undo": a plain `git diff <ref>` against the shadow repo reports only
+ * paths git already knows about, so files the agent *created* would silently
+ * not appear. `add -A` into a scratch index puts them in the comparison, and
+ * `--cached` is then what reads that index rather than the worktree.
+ *
+ * Doing it in a scratch index is what keeps this safe to call from a read-only
+ * command: nothing the user owns is touched, and a read never creates a repo.
+ */
+async function snapshotDiff(projectRoot: string, id: string, flavour: string[]): Promise<string> {
   const { path: shadowDir } = shadowRepoPath(projectRoot);
-  // The index must describe the current worktree for the diff to mean "what
-  // changed since the snapshot". Staging into a scratch index makes that free:
-  // nothing the user owns is touched, and `--list` never mutates the project
-  // it is describing.
   const out = await withScratchIndex(shadowDir, async (indexFile) => {
     await runShadowGit(shadowDir, projectRoot, ['add', '-A'], indexFile);
     return runShadowGit(
       shadowDir,
       projectRoot,
-      ['diff', '--cached', '--stat', `${REF_PREFIX}${id}`],
+      ['diff', '--cached', ...flavour, `${REF_PREFIX}${id}`],
       indexFile,
     );
   });
   return out.trimEnd();
+}
+
+/** `git diff --stat` between a snapshot and the project as it stands now. */
+export async function snapshotDiffStat(projectRoot: string, id: string): Promise<string> {
+  return snapshotDiff(projectRoot, id, ['--stat']);
+}
+
+/**
+ * The unified patch between a snapshot and the project as it stands now —
+ * every change the snapshot would undo, and nothing a concurrent editor did
+ * before it was taken.
+ */
+export async function snapshotDiffPatch(projectRoot: string, id: string): Promise<string> {
+  return snapshotDiff(projectRoot, id, []);
 }
 
 /**

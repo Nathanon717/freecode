@@ -89,7 +89,14 @@ This is the single highest-leverage habit in this doc.
   models, so it is safe for the lead to call unattended. No sub-agents in either mode.
 - **`--edit` adds the write half** (`create`, `edit`, `shell_exec`) — and there is no
   confirmation channel, so those run unattended in the cwd. Delegation recipes here are
-  read-only; reach for `--edit` only for a scoped change you are willing to `git diff`.
+  read-only; reach for `--edit` only for a scoped change you are willing to review.
+- **Review a delegated edit with `freecode undo --diff`, never `git diff`.** The snapshot
+  is taken immediately before the subagent's first write, so anything already dirty in the
+  tree is inside it and drops out — `--diff` shows that call's work alone, where `git diff`
+  cannot separate it from the lead's. Add `--semantic` to get the same change as changed
+  symbols plus repeated shapes collapsed to one body with every location still listed;
+  measured at 17 lines against git's 46 for a four-site rename. `--list -n 1` is the
+  diffstat alone when only the blast radius is in question.
 - **Bounded at 50 tool calls** (`FREECODE_MAX_TOOL_CALLS` overrides).
 - **`--stats` reports cost on stderr**, leaving stdout clean. Use it on every delegated
   call — delegation economics cannot be improved while they are invisible.

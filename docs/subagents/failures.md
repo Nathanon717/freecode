@@ -115,6 +115,27 @@ total loss rather than a slow answer.
 
 ---
 
+## A wrong prompt and a stale build both fail silently, and look identical
+
+**Seen:** 11-08-2026, two `-p` calls burned (~78k subagent tokens, ~57s) that produced
+nothing. Both looked like model failures. Neither was.
+
+**Cause one — `-p` takes the argument immediately after it.** The invocation was
+`freecode -p --stats --model <m> "<question>"`, so the prompt was literally `--stats`; the
+real question was never sent. The model then answered about the `--stats` flag, fluently
+and plausibly, and a second call in the same shape "confirmed" the first. Nothing errored.
+**Write the prompt first: `freecode -p "<prompt>" --edit --stats --model <m>`.**
+
+**Cause two — a globally linked `freecode` can be serving a stale `dist/`.** Those calls
+also passed `-m` as the model flag, which the current source rejects (`--model` is the only
+form). They ran anyway, because the linked binary was an older build. A later `npm run
+build` in the same session made the identical command start failing with `Unknown flag: -m`
+— the same invocation, two behaviours, no change to the argv.
+
+**What to do instead:** treat a subagent answer that is *about the flags you passed* as an
+invocation bug, not a model failure. And when a `-p` call behaves differently than it did
+earlier in a session where `src/` was rebuilt, suspect the binary before the model.
+
 ## Non-Failures Worth Recording
 
 Checked and found *not* to be problems:

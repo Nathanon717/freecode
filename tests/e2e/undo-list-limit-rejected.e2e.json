@@ -1,0 +1,11 @@
+{
+  "name": "undo-list-limit-rejected",
+  "description": "`-n` takes a value, which is why `undo` cannot find its snapshot id by scanning for the first token that is not a flag — under that rule `undo --list -n 3` would restore a snapshot called '3'. Here the value is rejected as a count (0 is not a number of snapshots to show) and the command exits 1 before touching the project, which is only reachable if `-n` consumed its own argument instead of leaking it into the id slot",
+  "workspace": "temp",
+  "flags": ["undo", "--list", "-n", "0"],
+  "expect": {
+    "stdoutContains": ["-n takes a positive whole number"],
+    "stdoutAbsent": ["Restored", "Snapshots for"],
+    "exitCode": 1
+  }
+}

@@ -170,7 +170,7 @@ Format: filename (linecount)
   - [`tool-runner.ts`](cli/tools/tool-runner.md) (103) — Hand-Typed Tool Execution + /tools Listing
 - `src/cli/`
   - [`tui-log-sink.ts`](cli/tui-log-sink.md) (43) — TUI Log Sink
-  - [`undo.ts`](cli/undo.md) (158) — undo Command
+  - [`undo.ts`](cli/undo.md) (227) — undo Command
 - `src/commands/`
   - [`config.ts`](commands/config.md) (401) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (389) — Interactive Model Picker
@@ -213,7 +213,8 @@ Format: filename (linecount)
   - [`user-blocklist.ts`](providers/user-blocklist.md) (81) — Per-User Model Blocklist
 - `src/snapshots/`
   - [`auto.ts`](snapshots/auto.md) (47) — Automatic Snapshot
-  - [`index.ts`](snapshots/index.md) (297) — Snapshot Library
+  - [`index.ts`](snapshots/index.md) (316) — Snapshot Library
+  - [`semantic-diff.ts`](snapshots/semantic-diff.md) (250) — Semantic Diff
   - [`shadow-repo.ts`](snapshots/shadow-repo.md) (288) — Shadow Repo
 - `src/store/`
   - [`call-log.ts`](store/call-log.md) (51) — Per-Call LLM Log
