@@ -80,7 +80,7 @@ docs/         Handbook, generated references, architecture decisions
 scripts/      Build, test, and doc-generation utilities
 ```
 
-Start at [docs/map/README.md](docs/map/README.md) for source navigation and [docs/README.md](docs/README.md) for the full documentation index.
+For source navigation, query the codebase map with `npm run map` — [docs/map/README.md](docs/map/README.md) documents the verbs and the page contract. [docs/README.md](docs/README.md) is the full documentation index.
 
 ## License
 

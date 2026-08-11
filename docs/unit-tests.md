@@ -2,6 +2,8 @@
 
 Test behavior observable through the public surface. A test earns its place by catching a regression a user or caller would notice — never write one just to raise coverage.
 
+`tests/` mirrors `src/` at identical depth, so a module's tests sit at a path you can compute rather than search: `src/agent/loop.ts` → `tests/agent/loop.test.ts`. The mirror is enforced in both directions; the two ways out are below.
+
 ## Avoid these
 
 1. **Don't test unreachable branches.** If a branch can't occur through the public API (a defensive `return ''` for a type TypeScript forbids), don't cast invalid input to hit it — mark it `/* v8 ignore next -- reason */`.
@@ -18,7 +20,7 @@ it.each([['user', 'hello', 7], ['user', null, 5]])(
 
 ## Exempting a file from the mirrored-test rule
 
-Every `src/**/*.ts` file must have a matching `tests/**/*.test.ts` with at least one real `it`/`test`/`describe`, enforced by `scripts/checks/check-tests.ts`. A file opts out with an inline marker **and a mandatory reason**:
+`scripts/checks/check-tests.ts` enforces the mirror, and requires at least one real `it`/`test`/`describe` in the matching file. A file opts out with an inline marker **and a mandatory reason**:
 
 ```ts
 // check-tests: no-test — pure type declarations; erased at compile time, no runtime behavior to test

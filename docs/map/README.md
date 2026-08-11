@@ -1,13 +1,13 @@
 # Codebase Map
 
-This is the agent navigation layer for the `freecode` source tree. Use it before broad source reads to decide which files matter for a task.
+This is the agent navigation layer for the `freecode` source tree. Query it with `npm run map` before broad source reads, to decide which files matter for a task without reading them. This file is the contract behind those queries — the page shape they address and the verbs available — not a page you read to navigate.
 
 These docs exist purely for agent context — there is no human-facing audience. The map's whole point is token reduction: it lets an agent decide which files matter without reading them. So keep every page terse. Prose that costs more tokens than it saves defeats the purpose.
 
 The map is maintained incrementally:
 
-1. Start from this file and the relevant area page.
-2. Read source only when the map points you to files involved in the change.
+1. Start with a query — `npm run map -- role <area>/` across the code you are changing.
+2. Read source only once a query has named the files involved in the change.
 3. After edits, run `npm run docs:generate` and inspect `git diff --name-only`.
 4. Update the intent where it lives: a module whose purpose or read/use guidance changed needs its `@role` / `@readwhen` edited **in the source file**, not on the page. Only the page's tail sections are edited on the page.
 
@@ -68,7 +68,7 @@ The header holds **tags and nothing else**. Untagged prose there attaches to the
 
 No check can see whether a tag still *describes* its code. That question is a sweep: `npm run intent-drift` asks it of every source file, and `npm run map-drift` asks it of every authored tail. See [sweeps.md](../sweeps.md).
 
-`docs:generate` also reports which *non-map* docs your source changes oblige you to check — see [docs.md](../docs.md#codebase-map).
+`docs:generate` also reports which *non-map* docs your source changes oblige you to check — see [doc-maintenance.md](../doc-maintenance.md#codebase-map).
 
 In the tail, write whatever sections the file's behavior needs. Keep it short and operational, and do not restate a fact a generated section already carries.
 

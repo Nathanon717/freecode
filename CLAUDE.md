@@ -48,7 +48,7 @@ behavior it describes moved**, since no generator can fix that — then run `npm
 *describes* its code — that is what `npm run intent-drift` (source tags) and `npm run map-drift`
 (authored tails) are for.
 
-Full page contract: `docs/map/README.md`. Ownership rules: `docs/docs.md`.
+Full page contract: `docs/map/README.md`. Ownership rules: `docs/doc-maintenance.md`.
 
 ## Enviornment
 
@@ -107,7 +107,7 @@ delegating work.
 ## Documentation
 
 - Use `docs/README.md` as the documentation index.
-- Use `docs/docs.md` for generated-doc ownership and maintenance rules.
+- Use `docs/doc-maintenance.md` for generated-doc ownership and maintenance rules.
 - Use `docs/providers.md` for provider setup, registry facts, and provider testing.
 - Use `docs/sweeps.md` to run or write a sweep — one LLM call per file across a tree (`npm run dead-code`, `npm run map-drift`, `npm run intent-drift`).
 - After fixing a bug, create and index a new, short file in `docs/bug log/` (adding brand new behaviour doesn't count as a bug fix).

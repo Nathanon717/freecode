@@ -6,7 +6,7 @@ and stay visible next to each other rather than accreting as separate wishlists.
 
 Each entry carries the evidence that shelved it and the condition that would unshelve it.
 **When one ships, delete its entry** — do not annotate it as done. A shipped generator is
-described by `docs/docs.md` and its own code, not by a list of things that might exist.
+described by `docs/doc-maintenance.md` and its own code, not by a list of things that might exist.
 
 ---
 
