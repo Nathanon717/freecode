@@ -79,7 +79,7 @@ inspectHint(projectRoot: string): string
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imports:** [`snapshots/shadow-repo.ts`](shadow-repo.md) ×23
+- **Imports:** [`snapshots/shadow-repo.ts`](shadow-repo.md) ×26
 - **Imported by:** [`cli/undo.ts`](../cli/undo.md) ×6, [`snapshots/auto.ts`](auto.md) ×2
 
 ## Tests
@@ -88,7 +88,7 @@ inspectHint(projectRoot: string): string
 
 ## Budget
 
-285 / 500 lines (215 to spare).
+297 / 500 lines (203 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## What a snapshot is

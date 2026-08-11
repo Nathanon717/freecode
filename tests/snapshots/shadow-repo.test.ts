@@ -7,6 +7,7 @@ import {
   ensureShadowRepo,
   gitAvailable,
   indexCopyPath,
+  retryingObjectWrites,
   shadowRepoPath,
 } from '../../src/snapshots/shadow-repo.js';
 
@@ -80,5 +81,48 @@ describe('indexCopyPath', () => {
 describe('gitAvailable', () => {
   it('finds the git binary this suite already depends on', async () => {
     await expect(gitAvailable()).resolves.toBe(true);
+  });
+});
+
+describe('retryingObjectWrites', () => {
+  // What git says when two processes write the same loose object on Windows.
+  const collision = new Error(
+    'Command failed: git add -A\nerror: unable to write file .git/objects/5a/72eb: Permission denied\nerror: failed to insert into database',
+  );
+
+  it('retries a lost race and returns the winner-freshened result', async () => {
+    let calls = 0;
+    const body = (): Promise<string> => {
+      calls++;
+      return calls === 1 ? Promise.reject(collision) : Promise.resolve('tree-sha');
+    };
+
+    await expect(retryingObjectWrites(body)).resolves.toBe('tree-sha');
+    expect(calls).toBe(2);
+  });
+
+  // The gate is the whole safety argument: widened to any permission error, a
+  // read-only snapshots directory becomes three attempts and the same failure.
+  it('rethrows a permission error that is not an object collision, first attempt', async () => {
+    const denied = new Error('Command failed: git add -A\nfatal: EACCES: permission denied');
+    let calls = 0;
+    const body = (): Promise<string> => {
+      calls++;
+      return Promise.reject(denied);
+    };
+
+    await expect(retryingObjectWrites(body)).rejects.toThrow(denied);
+    expect(calls).toBe(1);
+  });
+
+  it('gives up rather than retrying forever, and reports the real error', async () => {
+    let calls = 0;
+    const body = (): Promise<string> => {
+      calls++;
+      return Promise.reject(collision);
+    };
+
+    await expect(retryingObjectWrites(body)).rejects.toThrow('failed to insert into database');
+    expect(calls).toBe(3);
   });
 });

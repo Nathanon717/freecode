@@ -211,8 +211,8 @@ Format: filename (linecount)
   - [`user-blocklist.ts`](providers/user-blocklist.md) (81) — Per-User Model Blocklist
 - `src/snapshots/`
   - [`auto.ts`](snapshots/auto.md) (47) — Automatic Snapshot
-  - [`index.ts`](snapshots/index.md) (285) — Snapshot Library
-  - [`shadow-repo.ts`](snapshots/shadow-repo.md) (240) — Shadow Repo
+  - [`index.ts`](snapshots/index.md) (297) — Snapshot Library
+  - [`shadow-repo.ts`](snapshots/shadow-repo.md) (288) — Shadow Repo
 - `src/store/`
   - [`call-log.ts`](store/call-log.md) (51) — Per-Call LLM Log
   - [`db-config-cache.ts`](store/db-config-cache.md) (54) — DB Config Cache

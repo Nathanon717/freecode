@@ -190,7 +190,10 @@ export function listShadowProjects(): string[] {
  * delegating to `freecode -p --edit`). Two `add -A` runs against one index
  * collide on `index.lock`, and the snapshot hook swallows failures — so the
  * second session would run unprotected and silently. A per-operation scratch
- * index removes the contention instead of racing it.
+ * index removes that contention instead of racing it.
+ *
+ * The object database is still shared, and it is not lock-free on Windows — see
+ * `retryingObjectWrites`, which every object-writing call here goes through.
  */
 export function runShadowGit(
   shadowDir: string,
@@ -202,6 +205,51 @@ export function runShadowGit(
     ['--git-dir', shadowDir, '--work-tree', projectRoot, ...args],
     projectRoot,
     indexFile,
+  );
+}
+
+/**
+ * Runs a shadow-git command that writes objects, retrying a lost race.
+ *
+ * Two sessions snapshotting one project hash the *same* content, so they race to
+ * create the same loose object. POSIX `rename` overwrites atomically and git
+ * treats the collision as success; on Windows the object is already there and
+ * read-only, the link/rename fails EACCES, and `add -A` dies with "failed to
+ * insert into database". The loser has nothing to do but look again — by the
+ * time it retries, the winner's object is on disk and git skips writing it. A
+ * genuine permissions fault still surfaces, one backoff later.
+ *
+ * Wrap the calls that write objects (`add`, `write-tree`, `commit-tree`), not
+ * `update-ref` or anything on the restore path — those do not write objects, and
+ * a retry there would re-run a partially applied change.
+ */
+export async function retryingObjectWrites<T>(body: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await body();
+    } catch (error) {
+      if (attempt >= OBJECT_WRITE_ATTEMPTS || !isObjectWriteCollision(error)) throw error;
+      log('snapshots', `lost a loose-object race, retrying (attempt ${attempt + 1})`);
+      await delay(OBJECT_WRITE_BACKOFF_MS * attempt);
+    }
+  }
+}
+
+const OBJECT_WRITE_ATTEMPTS = 3;
+const OBJECT_WRITE_BACKOFF_MS = 25;
+
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Narrow on purpose: both halves must match, so a read-only snapshots directory
+ * is reported on the first attempt instead of being retried into a slower
+ * version of the same error.
+ */
+function isObjectWriteCollision(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    /permission denied|EACCES|EPERM/i.test(message) &&
+    /unable to write|failed to insert into database/i.test(message)
   );
 }
 

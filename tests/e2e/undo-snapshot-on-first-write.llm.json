@@ -36,7 +36,7 @@
           {
             "name": "shell_exec",
             "args": {
-              "command": "git --git-dir=$(echo \"$FREECODE_HOME\"/snapshots/*.git) --work-tree=. log --all --format=%s"
+              "command": "node -e \"const{readdirSync}=require('fs');const{join}=require('path');const{execFileSync}=require('child_process');const d=join(process.env.FREECODE_HOME,'snapshots');const entries=readdirSync(d);const g=entries.find(n=>n.endsWith('.git'));if(!g){console.log('no shadow repo under '+d+', saw: '+entries.join(', '));process.exit(1);}console.log(execFileSync('git',['--git-dir',join(d,g),'--work-tree','.','log','--all','--format=%s'],{encoding:'utf8'}));\""
             }
           }
         ],

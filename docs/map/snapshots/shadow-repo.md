@@ -73,9 +73,29 @@ listShadowProjects(): string[]
  * delegating to `freecode -p --edit`). Two `add -A` runs against one index
  * collide on `index.lock`, and the snapshot hook swallows failures — so the
  * second session would run unprotected and silently. A per-operation scratch
- * index removes the contention instead of racing it.
+ * index removes that contention instead of racing it.
+ *
+ * The object database is still shared, and it is not lock-free on Windows — see
+ * `retryingObjectWrites`, which every object-writing call here goes through.
  */
 runShadowGit(shadowDir: string, projectRoot: string, args: string[], indexFile?: string | undefined): Promise<string>
+
+/**
+ * Runs a shadow-git command that writes objects, retrying a lost race.
+ *
+ * Two sessions snapshotting one project hash the *same* content, so they race to
+ * create the same loose object. POSIX `rename` overwrites atomically and git
+ * treats the collision as success; on Windows the object is already there and
+ * read-only, the link/rename fails EACCES, and `add -A` dies with "failed to
+ * insert into database". The loser has nothing to do but look again — by the
+ * time it retries, the winner's object is on disk and git skips writing it. A
+ * genuine permissions fault still surfaces, one backoff later.
+ *
+ * Wrap the calls that write objects (`add`, `write-tree`, `commit-tree`), not
+ * `update-ref` or anything on the restore path — those do not write objects, and
+ * a retry there would re-run a partially applied change.
+ */
+retryingObjectWrites<T>(body: () => Promise<T>): Promise<T>
 
 /**
  * Runs git against the project's own repo — only for the HEAD/branch rollback.
@@ -97,8 +117,8 @@ gitAvailable(): Promise<boolean>
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imports:** [`config/index.ts`](../config/index.md) ×1, [`logger.ts`](../logger.md) ×1
-- **Imported by:** [`snapshots/index.ts`](index.md) ×23, [`cli/undo.ts`](../cli/undo.md) ×4
+- **Imports:** [`logger.ts`](../logger.md) ×2, [`config/index.ts`](../config/index.md) ×1
+- **Imported by:** [`snapshots/index.ts`](index.md) ×26, [`cli/undo.ts`](../cli/undo.md) ×4
 
 ## Tests
 
@@ -106,7 +126,7 @@ gitAvailable(): Promise<boolean>
 
 ## Budget
 
-240 / 500 lines (260 to spare).
+288 / 500 lines (212 to spare).
 
 ## Env
 
@@ -148,6 +168,13 @@ Two freecode processes in one project is the normal case, not an edge one —
   best-effort, never locked. A lost race costs a slower snapshot, never a failed one — which
   matters because the snapshot hook swallows failures, so a collision would otherwise leave a
   session unprotected and silent.
+- **The object database is shared, and on Windows it is not lock-free.** Racers snapshot the
+  same content, so they write byte-identical loose objects. POSIX `rename` overwrites and git
+  calls the collision a success; Windows cannot rename over the existing read-only object and
+  `add -A` dies with `Permission denied` / `failed to insert into database`. Every call that
+  writes objects therefore goes through `retryingObjectWrites` — on the retry the winner's
+  object is on disk and git skips writing it. Do not wrap `update-ref` or the restore path in
+  it: they write no objects, and a retry would re-run a partially applied change.
 
 `freecode-project` records the absolute project path at creation, because the directory name
 is hashed and cannot be read back. `undo` uses it to point someone at the right directory.

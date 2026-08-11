@@ -20,6 +20,7 @@ import { join } from 'path';
 import {
   ensureShadowRepo,
   indexCopyPath,
+  retryingObjectWrites,
   runProjectGit,
   runShadowGit,
   scratchIndexPath,
@@ -129,9 +130,18 @@ export async function takeSnapshot(projectRoot: string): Promise<SnapshotMeta> {
   const { head, branch } = await projectHead(projectRoot);
   const takenAt = new Date().toISOString();
 
+  // `add`, `write-tree` and `commit-tree` are the calls that write objects, and
+  // two sessions snapshotting one project write the same ones — see
+  // `retryingObjectWrites`.
   const tree = await withScratchIndex(shadowDir, async (indexFile) => {
-    await runShadowGit(shadowDir, projectRoot, ['add', '-A'], indexFile);
-    return (await runShadowGit(shadowDir, projectRoot, ['write-tree'], indexFile)).trim();
+    await retryingObjectWrites(() =>
+      runShadowGit(shadowDir, projectRoot, ['add', '-A'], indexFile),
+    );
+    return (
+      await retryingObjectWrites(() =>
+        runShadowGit(shadowDir, projectRoot, ['write-tree'], indexFile),
+      )
+    ).trim();
   });
   const message = [
     'freecode-snapshot',
@@ -141,7 +151,9 @@ export async function takeSnapshot(projectRoot: string): Promise<SnapshotMeta> {
     `time=${takenAt}`,
   ].join('\n');
   const commit = (
-    await runShadowGit(shadowDir, projectRoot, ['commit-tree', tree, '-m', message])
+    await retryingObjectWrites(() =>
+      runShadowGit(shadowDir, projectRoot, ['commit-tree', tree, '-m', message]),
+    )
   ).trim();
   await runShadowGit(shadowDir, projectRoot, ['update-ref', `${REF_PREFIX}${id}`, commit]);
 
