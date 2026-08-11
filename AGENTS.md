@@ -6,14 +6,6 @@ Freecode is a TypeScript CLI coding agent.
 
 This file is intentionally short. Keep detailed reference material in `docs/` and link to it from here.
 
-## Typical workflow when editing code
-
-1. Read docs
-2. Read code
-3. Edit code
-4. Get `npm test` green
-5. Update docs
-
 ## Required Rules
 
 - Before broad source reads, start with `docs/map/README.md` and the relevant map page.
