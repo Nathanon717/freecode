@@ -10,6 +10,9 @@ let stderrOutput: string[] = [];
 let stderrSpy: MockInstance;
 
 beforeEach(() => {
+  // vitest.config.ts sets FREECODE_SILENCE_ERRORS for the whole suite. Clear it here so
+  // these tests see the real write path; the silencing itself is covered explicitly below.
+  vi.stubEnv('FREECODE_SILENCE_ERRORS', undefined);
   stderrOutput = [];
   stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation((chunk) => {
     stderrOutput.push(String(chunk));
@@ -19,6 +22,7 @@ beforeEach(() => {
 
 afterEach(() => {
   stderrSpy.mockRestore();
+  vi.unstubAllEnvs();
   vi.resetModules();
 });
 
@@ -101,5 +105,23 @@ describe('logError', () => {
     enableLog();
     logError('db', 'oops', new Error('with stack'));
     expect(stderrOutput[0]).toContain('Error: with stack');
+  });
+
+  it('is silent when FREECODE_SILENCE_ERRORS is set, even after enableLog', async () => {
+    vi.stubEnv('FREECODE_SILENCE_ERRORS', '1');
+    const { logError, enableLog } = await freshLogger();
+    enableLog();
+    logError('db', 'oops', new Error('boom'));
+    expect(stderrOutput).toHaveLength(0);
+  });
+
+  it('reads the env var per call, so unsetting it restores output', async () => {
+    vi.stubEnv('FREECODE_SILENCE_ERRORS', '1');
+    const { logError } = await freshLogger();
+    logError('db', 'silenced', new Error('boom'));
+    vi.stubEnv('FREECODE_SILENCE_ERRORS', undefined);
+    logError('db', 'audible', new Error('boom'));
+    expect(stderrOutput).toHaveLength(1);
+    expect(stderrOutput[0]).toContain('audible');
   });
 });

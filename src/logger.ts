@@ -1,10 +1,10 @@
 /**
- * @role Category-colored stderr logging. Diagnostic logging is disabled by default; errors always surface.
+ * @role Category-colored stderr logging. Diagnostic logging is disabled by default; errors surface unless FREECODE_SILENCE_ERRORS is set.
  *
  * @readwhen
  * - Adding or renaming a log category color in CATEGORY_COLORS.
  * - Changing the stderr output format, timestamp, or JSON data serialization.
- * - Debugging why `-log` flag output is missing, since enableLog() gates log() — but never logError(), which writes unconditionally.
+ * - Debugging missing output: enableLog() gates log() but never logError(), whose only gate is FREECODE_SILENCE_ERRORS — set for the unit suite, so expected-error noise stays out of the reporter.
  */
 
 import chalk from 'chalk';
@@ -45,8 +45,16 @@ export function log(category: string, message: string, data?: unknown): void {
   process.stderr.write(`${ts} ${tag} ${message}${dataStr}\n`);
 }
 
-/** Always writes to stderr regardless of `enableLog` state, with the error text and stack. */
+/**
+ * Writes to stderr regardless of `enableLog` state, with the error text and stack.
+ *
+ * Silent only when `FREECODE_SILENCE_ERRORS` is set, which the unit suite does: dozens of
+ * tests drive error paths on purpose, and those writes land on the real stderr rather than
+ * vitest's captured one, shredding the dot reporter. Read at call time so a test can delete
+ * the variable and exercise the write path.
+ */
 export function logError(category: string, message: string, err: unknown): void {
+  if (process.env.FREECODE_SILENCE_ERRORS) return;
   let errMsg: string;
   if (err instanceof Error) {
     errMsg = err.message;

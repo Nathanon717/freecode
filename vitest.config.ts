@@ -20,7 +20,12 @@ export default defineConfig({
     // src/agent/tools) can take several seconds under full-parallel CPU contention.
     // The default 5s testTimeout is too tight for tests that import such graphs.
     testTimeout: 15000,
-    env: { FREECODE_TRANSCRIPT_STREAM: 'null' },
+    // FREECODE_SILENCE_ERRORS: the suite drives error paths on purpose, and logError writes
+    // straight to the real stderr — vitest never captures it, so every expected error
+    // interleaves with the dot reporter. Silenced here rather than by stubbing
+    // process.stderr.write globally, which would also swallow a failing test's diagnostics.
+    // tests/logger.test.ts deletes it to test the write path.
+    env: { FREECODE_TRANSCRIPT_STREAM: 'null', FREECODE_SILENCE_ERRORS: '1' },
     coverage: {
       reporter: ['text', 'json', 'html'],
     },

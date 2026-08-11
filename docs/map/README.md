@@ -179,7 +179,7 @@ Format: filename (linecount)
   - [`result-sink.ts`](eval/result-sink.md) (78) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (207) — Eval Subprocess Runner
 - [`index.ts`](index.md) (226) — CLI Entry Point
-- [`logger.ts`](logger.md) (53) — Logging Utility
+- [`logger.ts`](logger.md) (61) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (188) — Adapter HTTP Retry/Backoff
   - [`adapter-usage-capture.ts`](providers/adapters/adapter-usage-capture.md) (51) — Shared Usage/Header Capture
