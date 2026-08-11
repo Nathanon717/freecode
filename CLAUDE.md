@@ -92,7 +92,7 @@ do the work by hand.
 **Always declare your delegation decision:**
 
 - Before starting any substantial task, state whether you plan to delegate and why (or why not).
-- At the end of *every* response, state whether you actually delegated and why (or why not).
+- At the end of every nontrivial turn, state whether you actually delegated and why (or why not).
 - A "no" must name the specific cheaper thing you did instead — the literal Grep pattern,
   the one file. **"I didn't need a summary" and "it was only a few files" are not
   reasons**; `docs/subagents/README.md` retires both by name.
