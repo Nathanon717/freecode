@@ -50,7 +50,7 @@ This table is generated from `src/cli/slash-commands.ts`.
 
 ## Subcommands
 
-- `undo`: Restore the project to the snapshot freecode took before this session's first write. See [Undo](#undo-freecode-undo). Resolved from the first argument, before every flag is parsed.
+- `checkpoint`: Review, revert, or accept what a session changed, against the snapshot freecode took before its first write. See [Checkpoint](#checkpoint-freecode-checkpoint). Resolved from the first argument, before every flag is parsed.
 
 ## CLI Flags
 
@@ -119,7 +119,12 @@ on top of the read tools. `spawn_agent` stays absent — editing is not fan-out.
 
 There is still no confirmation channel, so **writes and shell commands run unattended**
 in the working directory the CLI was launched from. The 50-call budget is the only
-stop; give it a scoped prompt and a workspace you can `git diff`.
+stop; give it a scoped prompt, and review the result with
+[`freecode checkpoint diff`](#checkpoint-freecode-checkpoint) — which, unlike `git diff`,
+shows the run's own work rather than that work plus whatever the tree was already dirty with.
+
+**Only one `--edit` run at a time.** A second is refused until the first one's changes have
+been accepted or reverted; see [Checkpoint](#checkpoint-freecode-checkpoint).
 
 `--edit` does not change anything else about `-p`: still free models only, still one
 turn, still nothing but the final answer on stdout.
@@ -137,15 +142,15 @@ freecode -p "..." --stats
 # stderr: stats: model=groq:llama-3.3-70b ctx=1234 output=56 total=1290 toolCalls=2 wallTimeMs=843
 ```
 
-## Undo (`freecode undo`)
+## Checkpoint (`freecode checkpoint`)
 
 ```bash
-freecode undo                    # restore the most recent snapshot
-freecode undo --list             # every snapshot, newest first, with what changed since each
-freecode undo --list -n 3        # just the newest 3
-freecode undo <id>               # restore one by id
-freecode undo --diff [<id>]      # print what a restore would revert, as a patch
-freecode undo --diff --semantic  # the same change, encoded as symbols and repeated shapes
+freecode checkpoint                    # what exists, newest first (same as `list`)
+freecode checkpoint list -n 3          # just the newest 3
+freecode checkpoint diff [<id>]        # what a revert would undo, summarised
+freecode checkpoint diff --patch       # the same change as a raw unified patch
+freecode checkpoint revert [<id>]      # put the project back
+freecode checkpoint accept             # reviewed and good: baseline moves to here
 ```
 
 **Nobody has to arm it.** Immediately before the first `create`, `edit`, or `shell_exec` of
@@ -157,28 +162,73 @@ The shadow repo lives outside the project and never touches the user's own repo:
 objects, no index-lock contention, and nothing to clean up if freecode is killed mid-run. It
 works in directories that are not git repos at all.
 
-A restore puts back working files, the exact staged/unstaged split, and — when a rogue
-command moved it — the branch's pre-run commit. The first `git status` after an undo
-re-hashes, because the restored index carries stale stat data.
+**The snapshot is a baseline, not just a way back.** It was taken immediately before the
+agent's first write, so whatever was already dirty in the tree is *inside* it and drops out
+of every comparison — which is what lets `diff` show an agent's work alone, where a plain
+`git diff` cannot tell that work from the work it was started on top of. Files the agent
+created are included: the diff is staged into a scratch index first, which is what makes new
+paths visible without touching the project's own index.
 
-**Reviewing before deciding (`--diff`).** The snapshot is a baseline nothing else can
-offer: it was taken immediately before the agent's first write, so whatever was already
-dirty in the tree is *inside* it and drops out of the comparison. `--diff` prints what a
-restore would revert and nothing else, while a plain `git diff` cannot tell an agent's
-work from the work it was started on top of. Files the agent created are included — the
-diff is staged into a scratch index first, which is what makes new paths visible without
-touching the project's own index.
+**The verb carries the intent, and only `revert` and `accept` write.** `list` and `diff` are
+reads. A bare `freecode checkpoint` lists. An unknown subcommand is rejected by name rather
+than falling through to an action nobody asked for.
 
-`--semantic` re-encodes that same patch for a reader with a budget: changed files with the
-symbols they touch, then hunks that make the *identical* edit collapsed into one shape —
-shown once, with every location still listed. A hunk that cannot be classified with
+**`accept` is what makes this a review loop rather than a safety net.** It says the change
+has been looked at and is good, takes a fresh snapshot as the new baseline, and frees the
+project for the next delegation. The snapshot is the point: without one, "accepted" would be
+a state nothing recorded, the newest snapshot would still be the *pre*-agent one, and a later
+`revert` would throw away the approved work along with whatever came after it. It also does
+not restore anything — the accepted work stays exactly where it is.
+
+**One `-p --edit` run per project at a time.** A second is refused, naming the first and what
+it was asked to do, until that work has been accepted or reverted:
+
+```bash
+$ freecode -p --edit "tidy the retry helper"
+Error: another `-p --edit` run has unreviewed changes in this project
+(started 2026-08-12T18:03:11.402Z, pid 41288): add the missing null guard
+Review them with `freecode checkpoint diff`, then `freecode checkpoint accept`
+or `freecode checkpoint revert` before delegating again.
+```
+
+This is what keeps "the newest snapshot" an unambiguous answer to "what did the agent just
+change" — with two overlapping runs, `diff` would report on whichever snapshot happened to be
+newer and give no sign it had picked. The claim is taken before the turn, so a refusal costs
+no tokens, and it is dropped again if the run turns out to write nothing. A run that wrote and
+then *failed* keeps it: those changes are the ones most worth looking at. Read-only `-p` is
+unaffected in both directions — it neither claims nor waits. So are interactive and `--script`
+sessions: they still snapshot, but a watched session is its own review, and blocking a human
+mid-edit on a workflow they did not opt into would be the wrong trade.
+
+**With a delegation outstanding, `diff` and `revert` mean "since that run began"** rather
+than "since the newest snapshot". Only delegated runs are serialised, so an interactive
+session starting up before you review takes a snapshot of its own — targeting *that* would
+hide the delegated change completely and let a revert report success while keeping it.
+Anything that landed on top is shown rather than hidden, which is the right way round: an
+edit the reviewer did not expect is exactly what they need to see. The command says so when
+the snapshot it picked is not the newest.
+
+If a run is killed before anyone reviews it, the lock is still held — correctly, its changes
+really are unreviewed. `accept` and `revert` are both ways out, and `accept` works even with
+nothing snapshotted, so a run that died before its snapshot landed cannot leave a lock that
+nothing can free.
+
+**`diff` summarises by default**, because the reader it is written for is a lead agent
+holding the whole change in a context window it is also working in. The summary is changed
+files with the symbols they touch, then hunks making the *identical* edit collapsed into one
+shape — shown once, with every location still listed. A hunk that cannot be classified with
 certainty is printed verbatim rather than summarised, so every hunk appears exactly once,
 either as a named shape or as itself. Symbol names come from git's own hunk-header
-heuristic: dependable for declarations at column zero, blank for indented members.
+heuristic: dependable for declarations at column zero, blank for indented members. Pass
+`--patch` for the raw unified diff instead.
 
-`undo` does not need to be run from the directory freecode was launched in. It walks up from
-the current directory (never past the enclosing repo) to find the snapshots, and says which
-root it used. If the snapshots belong to a directory *below* you instead, it names it.
+A revert puts back working files, the exact staged/unstaged split, and — when a rogue
+command moved it — the branch's pre-run commit. The first `git status` afterwards re-hashes,
+because the restored index carries stale stat data.
+
+`checkpoint` does not need to be run from the directory freecode was launched in. It walks
+up from the current directory (never past the enclosing repo) to find the snapshots, and says
+which root it used. If the snapshots belong to a directory *below* you instead, it names it.
 
 **Cost.** The first snapshot in a project writes the tracked tree into a fresh object store —
 a few seconds on a repo this size, once. Every session after that is about a second, and a
@@ -187,7 +237,7 @@ session that never writes pays nothing at all.
 **What it does not cover:**
 
 - **Files ignored by `.gitignore`.** They never enter a snapshot and are never restored.
-  This is what keeps snapshots cheap. `undo` says so when it runs.
+  This is what keeps snapshots cheap. `revert` says so when it runs.
 - **The project's own `.git`.** Deleting it loses commit history, branches, and reflog, which
   no worktree snapshot can return. That is prevented rather than recovered: writes and
   deletes targeting `.git/` are refused outright by `create`, `edit`, and `shell_exec`, and
@@ -195,8 +245,8 @@ session that never writes pays nothing at all.
 
 **Without a `git` binary** there is no net: the failure is logged, and the write proceeds
 unprotected rather than being blocked. Refusing to work because the safety net is missing
-inverts the point of having one. `freecode undo` itself exits 1 and says so.
+inverts the point of having one. `freecode checkpoint` itself exits 1 and says so.
 
 Retention is the newest 20 snapshots per project; older refs are deleted, which is what lets
-git reclaim the objects. `--list` prints the `--git-dir` incantation for inspecting them by
+git reclaim the objects. `list` prints the `--git-dir` incantation for inspecting them by
 hand — they are deliberately invisible to `git log` in the project.

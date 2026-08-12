@@ -1,0 +1,11 @@
+{
+  "name": "checkpoint-command",
+  "description": "`freecode checkpoint` is an argv verb, resolved before every `indexOf`-based flag scan in src/index.ts — here it wins over the `--script` the harness appends after it, which is the ordering the check exists to guarantee. That trailing `--script` is also what pins the parser's one concession: it skips process-level flags on the authority of the table in cli/args.ts, so a flag aimed at the process cannot be mistaken for a typo aimed at the subcommand. With nothing snapshotted it reports that plainly and exits 0 rather than erroring: there is no failure in having nothing to revert",
+  "workspace": "temp",
+  "flags": ["checkpoint", "list"],
+  "expect": {
+    "stdoutContains": ["No snapshots for this project"],
+    "stdoutAbsent": ["Error:", "Goodbye"],
+    "exitCode": 0
+  }
+}

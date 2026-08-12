@@ -33,6 +33,19 @@ const FLAGS: ReadonlyMap<string, FlagSpec> = new Map<string, FlagSpec>([
 const FLAG_LIST = [...FLAGS.keys()].join(', ');
 
 /**
+ * Whether `token` is a process-level flag, and whether it consumes the argument after it.
+ *
+ * For the subcommand parsers, which are dispatched off raw argv *before* the walk below
+ * ever runs and so still see flags aimed at the process rather than at them. They skip
+ * what this claims and reject everything else by name, which is only single-sourced —
+ * rather than a second copy of the table, drifting — because it is answered from here.
+ */
+export function processFlag(token: string): { takesValue: boolean } | undefined {
+  if (!FLAGS.has(token)) return undefined;
+  return { takesValue: FLAGS.get(token) !== null };
+}
+
+/**
  * Validates `args` — argv past the executable, with any subcommand verb already resolved —
  * and returns the first problem as a printable message, or `null` when every token is
  * accounted for. Three ways to be wrong, all of which used to pass silently and run a turn

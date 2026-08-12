@@ -1,5 +1,9 @@
 # Plan: agent undo snapshots
 
+> **The surface is now `freecode checkpoint` (`list` / `diff` / `revert`), not `freecode undo`.**
+> This file keeps its original name and wording as the design record of the day it was
+> written; the current contract is [commands.md](commands.md#checkpoint-freecode-checkpoint).
+
 **Status:** **built.** All five implementation steps shipped; the user-facing contract now
 lives in [commands.md](commands.md#undo-freecode-undo) and the mechanism in the map pages for
 `src/snapshots/` and `src/agent/tools/git-guard.ts`. This file is kept as the design record —

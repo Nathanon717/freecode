@@ -19,6 +19,16 @@ anything heavy.
 
 ```typescript
 /**
+ * Whether `token` is a process-level flag, and whether it consumes the argument after it.
+ *
+ * For the subcommand parsers, which are dispatched off raw argv *before* the walk below
+ * ever runs and so still see flags aimed at the process rather than at them. They skip
+ * what this claims and reject everything else by name, which is only single-sourced —
+ * rather than a second copy of the table, drifting — because it is answered from here.
+ */
+processFlag(token: string): { takesValue: boolean; } | undefined
+
+/**
  * Validates `args` — argv past the executable, with any subcommand verb already resolved —
  * and returns the first problem as a printable message, or `null` when every token is
  * accounted for. Three ways to be wrong, all of which used to pass silently and run a turn
@@ -36,7 +46,7 @@ validateCliArgs(args: readonly string[]): string | null
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imported by:** [`index.ts`](../index.md) ×1
+- **Imported by:** [`cli/checkpoint.ts`](checkpoint.md) ×1, [`index.ts`](../index.md) ×1
 
 ## Tests
 
@@ -44,7 +54,7 @@ validateCliArgs(args: readonly string[]): string | null
 
 ## Budget
 
-56 / 500 lines (444 to spare).
+69 / 500 lines (431 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Why It Exists
@@ -61,12 +71,13 @@ rather than a habit spread across call sites. It is pure and imports nothing, be
 `src/index.ts` runs it before it loads the `ai` SDK graph — an invalid command line must
 still exit in milliseconds.
 
-**Scope: the main command line only.** `src/index.ts` resolves the `undo` verb from `args[0]`
-and returns *before* this walk, so a subcommand's own arguments are parsed by the subcommand
-— [undo.md](undo.md) still does `args.includes('--list')`, and `freecode undo --lst` is read
-as a snapshot id rather than rejected. That is the same class this module closes, on the one
-surface it does not see; extending the walk to the verb is the obvious next step, not
-something this change made safe.
+**Scope: the main command line only.** `src/index.ts` resolves the `checkpoint` verb from
+`args[0]` and returns *before* this walk, so a subcommand's own arguments are parsed by the
+subcommand. [checkpoint.md](checkpoint.md) applies the same rule there — every token
+accounted for or named in an error — which is why `processFlag()` is exported: argv on that
+path still carries flags aimed at the process, and the subcommand has to be able to tell
+those from a typo aimed at it. It asks this table rather than keeping a second copy that
+would drift out of step the next time a flag is added above.
 
 ## Behavior
 

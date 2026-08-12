@@ -27,6 +27,10 @@
 //    mode is forced to `auto` — the same off switch as Ctrl+A, not a new one. Under
 //    `--edit` that means writes and shell commands run unattended; the tool-call
 //    budget below is the only stop.
+//  - **One `--edit` run per project at a time.** A second is refused until the
+//    first one's work has been accepted or reverted, which is what keeps "the
+//    newest snapshot" an unambiguous answer to "what did the agent just change".
+//    Read-only `-p` is unaffected: it has nothing to review.
 //  - **Free models only.** src/index.ts sets `FREECODE_FREE_ONLY=1` for `-p`
 //    before any credential loads; see providers/paid-guard.ts.
 
@@ -101,6 +105,23 @@ export async function runHeadlessPrompt(
     return 1;
   }
 
+  // Claimed before the turn rather than at the first write, so a refusal costs
+  // nothing and arrives before any tokens are spent. Released below only if the
+  // run turned out to write nothing.
+  if (edit) {
+    const { claimReviewLock } = await import("../snapshots/review-lock.js");
+    const held = claimReviewLock(projectRoot, prompt.split("\n")[0] ?? "");
+    if (held) {
+      process.stderr.write(
+        `Error: another \`-p --edit\` run has unreviewed changes in this project ` +
+        `(started ${held.startedAt || "unknown"}, pid ${held.pid}): ${held.task}\n` +
+        `Review them with \`freecode checkpoint diff\`, then \`freecode checkpoint accept\` ` +
+        `or \`freecode checkpoint revert\` before delegating again.\n`,
+      );
+      return 1;
+    }
+  }
+
   process.env["FREECODE_TRANSCRIPT_STREAM"] = "null";
   initReadOnly(!edit);
   initAskMode("auto");
@@ -121,39 +142,54 @@ export async function runHeadlessPrompt(
     return Promise.resolve({ approved: getAskMode() === "auto" });
   };
 
-  // Imported lazily, matching the command dispatcher: the `ai` SDK is ~1.2s to load
-  // and the argument-validation exits in src/index.ts must not pay for it.
-  const { agentLoop } = await import("../agent/loop.js");
-  const messages: CoreMessage[] = [{ role: "user", content: prompt }];
-  const result = await agentLoop(messages, projectRoot, model, {
-    confirmToolCall,
-    readOnly: isReadOnly(),
-    spawnAgent: false,
-  });
+  try {
+    // Imported lazily, matching the command dispatcher: the `ai` SDK is ~1.2s to load
+    // and the argument-validation exits in src/index.ts must not pay for it.
+    const { agentLoop } = await import("../agent/loop.js");
+    const messages: CoreMessage[] = [{ role: "user", content: prompt }];
+    const result = await agentLoop(messages, projectRoot, model, {
+      confirmToolCall,
+      readOnly: isReadOnly(),
+      spawnAgent: false,
+    });
 
-  // agentLoop reports failures on `error` and leaves `text` as whatever the model
-  // managed to say first, so print both: partial output is still worth having, but
-  // the exit code has to say the run did not complete.
-  const text = finalResponse(result);
-  if (text) process.stdout.write(`${text}\n`);
+    // agentLoop reports failures on `error` and leaves `text` as whatever the model
+    // managed to say first, so print both: partial output is still worth having, but
+    // the exit code has to say the run did not complete.
+    const text = finalResponse(result);
+    if (text) process.stdout.write(`${text}\n`);
 
-  // Printed even when the turn errored: a rate-limited or failed turn still spent
-  // tokens, and that is exactly the case a caller most wants visibility into.
-  // `usage.promptTokens` is the last step's context size, not a sum of what every
-  // step in a multi-step tool turn actually cost (agent/loop.ts) — labeled `ctx=`
-  // rather than `prompt=` so it doesn't read as a per-turn total.
-  if (stats) {
-    const { totalTokens, promptTokens, outputTokens } = result.usage;
-    process.stderr.write(
-      `stats: model=${result.providerId}:${result.modelId} ctx=${promptTokens ?? 0} ` +
-      `output=${outputTokens ?? 0} total=${totalTokens} toolCalls=${toolCalls} ` +
-      `wallTimeMs=${Date.now() - startedAt}\n`,
-    );
+    // Printed even when the turn errored: a rate-limited or failed turn still spent
+    // tokens, and that is exactly the case a caller most wants visibility into.
+    // `usage.promptTokens` is the last step's context size, not a sum of what every
+    // step in a multi-step tool turn actually cost (agent/loop.ts) — labeled `ctx=`
+    // rather than `prompt=` so it doesn't read as a per-turn total.
+    if (stats) {
+      const { totalTokens, promptTokens, outputTokens } = result.usage;
+      process.stderr.write(
+        `stats: model=${result.providerId}:${result.modelId} ctx=${promptTokens ?? 0} ` +
+        `output=${outputTokens ?? 0} total=${totalTokens} toolCalls=${toolCalls} ` +
+        `wallTimeMs=${Date.now() - startedAt}\n`,
+      );
+    }
+
+    if (result.error) {
+      process.stderr.write(`Error: ${result.error}\n`);
+      return 1;
+    }
+    return 0;
+  } finally {
+    // The release condition has one owner: snapshots/auto.ts already knows
+    // whether this process took a snapshot, and asking it is what keeps a second
+    // flag here from ever disagreeing with it. A run that wrote nothing frees the
+    // project immediately; a run that wrote — whether it then succeeded, errored,
+    // or threw — stays locked until someone reviews it.
+    if (edit) {
+      const { sessionSnapshotId } = await import("../snapshots/auto.js");
+      if ((await sessionSnapshotId()) === undefined) {
+        const { releaseReviewLock } = await import("../snapshots/review-lock.js");
+        releaseReviewLock(projectRoot);
+      }
+    }
   }
-
-  if (result.error) {
-    process.stderr.write(`Error: ${result.error}\n`);
-    return 1;
-  }
-  return 0;
 }

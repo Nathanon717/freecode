@@ -6,7 +6,7 @@
  * - Debugging a legitimate command refused as a `.git` write, or a `.gitignore`/`.github` path wrongly caught.
  */
 
-// Undo snapshots recover working files from a shadow repo outside the project,
+// Checkpoint snapshots recover working files from a shadow repo outside the project,
 // so deleting files is fully covered. Deleting the project's `.git` is not:
 // files come back, but commit history, branches, and reflog do not, because the
 // shadow repo stores worktree content plus an index copy, not the user's object
@@ -73,5 +73,5 @@ export function shellTouchesGitInternals(command: string): boolean {
 /** The single refusal wording, so every guarded tool reports the block the same way. */
 export const GIT_INTERNALS_REFUSAL =
   "Refused: writing to or deleting the project's .git directory is blocked. " +
-  'Undo snapshots cannot recover commit history, so freecode does not allow it — ' +
+  'Checkpoint snapshots cannot recover commit history, so freecode does not allow it — ' +
   'use ordinary git commands (git reset, git checkout, git branch -d) instead.';

@@ -23,6 +23,6 @@ The codebase map is the way into `src/`, and `npm run map` is the way into the m
 For usage only, read lines 1–72.
 <!-- END GENERATED PTY QUICKSTART REF -->
 - [Freecode as a subagent](subagents/README.md): the workshop for delegation to free `freecode -p` subagents — verified recipes, known failures, and the capped list of source changes that would make delegation better. When to delegate is in `AGENTS.md`, not here; read this when improving delegation itself.
-- [Agent undo snapshots (plan)](undo-snapshots-plan.md): approved, unbuilt design for automatically snapshotting the project before an agent's first write so any run can be undone after the fact. Verified git facts included — read before touching snapshot/restore.
+- [Agent checkpoint snapshots (plan)](undo-snapshots-plan.md): the design record behind `freecode checkpoint` — built, and kept for the verified git facts and rejected alternatives. Read before touching snapshot/restore.
 - [Session logs](sessions/README.md): optional records of substantial feature work.
 - [New device setup](device-setup.md): install Doppler, link the project, and get all API keys + DB sync in one step.

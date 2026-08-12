@@ -1,0 +1,11 @@
+{
+  "name": "checkpoint-diff-is-a-read",
+  "description": "`checkpoint diff` only ever means 'show me'. Under the old `undo` surface the destructive action was the *default* branch, so any flag combination the parser failed to recognise fell through to restoring the project; the verb is what removes that hazard, and this pins it — no 'Reverted' line, exit 0, nothing touched. With nothing snapshotted it says so rather than erroring",
+  "workspace": "temp",
+  "flags": ["checkpoint", "diff"],
+  "expect": {
+    "stdoutContains": ["No snapshots for this project"],
+    "stdoutAbsent": ["Reverted", "Error:", "Goodbye"],
+    "exitCode": 0
+  }
+}

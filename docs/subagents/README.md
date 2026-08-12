@@ -70,6 +70,20 @@ trace trial (R1) was verified in a single call, because every claim was a path.
   call — delegation economics cannot be improved while they are invisible.
 - Full flag contract, including the `-p` / `--edit` capability split: the `-p` section of
   [commands.md](../commands.md).
+- **One `--edit` run per project at a time.** A second is refused, naming the first, until
+  its work has been accepted or reverted. Delegation is therefore a *cycle*, not a call:
+  `-p --edit` → `freecode checkpoint diff` → `accept` or `revert`. Forgetting the last step
+  is not a silent cost; it blocks the next delegation, which is the point.
+- **`checkpoint diff` is how a delegated edit gets reviewed, and `git diff` cannot replace
+  it.** freecode snapshots the project immediately before the run's first write, so the diff
+  is the run's own work — where `git diff` shows that work mixed with everything the tree was
+  already dirty with. It summarises by default (symbols touched, repeated edits collapsed to
+  one shape with every location still listed), because the lead's context is the scarce
+  budget; `--patch` gives the raw unified diff when the summary is not enough.
+- **The review is where delegated work is held to the lead's own standard.** The checkpoint
+  shows the artifact, not the process — it cannot say what the sub-agent read, what it tried
+  and abandoned, or whether it ran the tests. That half has to come from the prompt: demand
+  `file_path:line_number`, demand the test command it ran and the output.
 
 ## "The Subagent Can't Do That" Is A Bug Report
 

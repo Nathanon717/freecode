@@ -78,6 +78,14 @@ it is hard-blocked to free models — safe to call yourself. Adding `--edit` giv
 `create`/`edit`/`shell_exec` (still no sub-agents, still unconfirmed), so use it only for a
 scoped change you will review. See the `-p` section of `docs/commands.md`.
 
+**Reviewing an `--edit` run is not optional, and `git diff` is the wrong tool for it** — it
+cannot tell the sub-agent's work from the work it was started on top of. `freecode checkpoint
+diff` can: freecode snapshots the project immediately before the run's first write, so that
+diff is the run's own changes and nothing else. Read it, then `freecode checkpoint accept` or
+`freecode checkpoint revert`. Until you do one of those, the next `--edit` call is refused —
+one edit agent per project at a time, so "the newest snapshot" always means "what the last
+delegation did".
+
 **Delegate by default.** Freecode's models are free, so the only budget that matters is the
 *calling* agent's own context; reading files yourself is the exception that needs a reason.
 The one standing exception is a question you can already write the Grep for, and that is the

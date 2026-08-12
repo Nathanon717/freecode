@@ -1,9 +1,9 @@
 /**
- * @role Takes, lists, restores, and prunes agent undo snapshots over the shadow repo. A library over `git` with no CLI concerns; the `freecode undo` surface is [../cli/undo.md](../cli/undo.md).
+ * @role Takes, lists, restores, and prunes agent checkpoint snapshots over the shadow repo. A library over `git` with no CLI concerns; the `freecode checkpoint` surface is [../cli/checkpoint.md](../cli/checkpoint.md).
  *
  * @readwhen
  * - Changing what a snapshot captures, or the restore sequence that puts a project back.
- * - Debugging an undo that left files right but history wrong, or one that skipped the index copy.
+ * - Debugging a revert that left files right but history wrong, or one that skipped the index copy.
  * - Changing snapshot ids, retention, or the metadata carried in the snapshot commit message.
  */
 
@@ -287,7 +287,7 @@ export async function restoreSnapshot(projectRoot: string, id: string): Promise<
   if (existsSync(savedIndex)) {
     if (existsSync(projectGitDir)) {
       // The restored index carries stale stat data, so the first `git status`
-      // after an undo re-hashes. Correct, just slower.
+      // after a revert re-hashes. Correct, just slower.
       await copyFile(savedIndex, join(projectGitDir, 'index'));
       indexRestored = true;
       if (meta.head && meta.branch) {

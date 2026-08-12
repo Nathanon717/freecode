@@ -3,12 +3,12 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Locates and initializes the bare "shadow" git repo that backs agent undo snapshots, and runs git against it with the project directory as its work tree.
+Locates and initializes the bare "shadow" git repo that backs agent checkpoint snapshots, and runs git against it with the project directory as its work tree.
 
 ## Read When
 
 - Changing where snapshots live on disk, or the containment check that relocates them out of the project.
-- Debugging line-ending corruption across an undo, which the `* -text` attribute written here is what prevents.
+- Debugging line-ending corruption across a revert, which the `* -text` attribute written here is what prevents.
 - Adding a git invocation that must target the shadow repo rather than the project's own `.git`.
 <!-- END GENERATED MAP INTENT -->
 
@@ -118,11 +118,11 @@ gitAvailable(): Promise<boolean>
 ## Neighbors
 
 - **Imports:** [`logger.ts`](../logger.md) ×2, [`config/index.ts`](../config/index.md) ×1
-- **Imported by:** [`snapshots/index.ts`](index.md) ×26, [`cli/undo.ts`](../cli/undo.md) ×4
+- **Imported by:** [`snapshots/index.ts`](index.md) ×26, [`cli/checkpoint.ts`](../cli/checkpoint.md) ×4, [`snapshots/review-lock.ts`](review-lock.md) ×1
 
 ## Tests
 
-`tests/snapshots/shadow-repo.test.ts`. 1 other test file references it.
+`tests/snapshots/shadow-repo.test.ts`. 2 other test files reference it.
 
 ## Budget
 

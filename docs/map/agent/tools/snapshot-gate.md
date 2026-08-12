@@ -3,11 +3,11 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-The innermost wrapper in the tool stack: takes the session's undo snapshot immediately before the first write tool actually executes. Composed by `wrap` in [wrappers.md](wrappers.md).
+The innermost wrapper in the tool stack: takes the session's checkpoint snapshot immediately before the first write tool actually executes. Composed by `wrap` in [wrappers.md](wrappers.md).
 
 ## Read When
 
-- Changing which tools arm the undo net, or where in the wrapper stack it is armed.
+- Changing which tools arm the checkpoint net, or where in the wrapper stack it is armed.
 - Debugging a snapshot that captured post-mutation state, or one that never fired.
 <!-- END GENERATED MAP INTENT -->
 
@@ -16,7 +16,7 @@ The innermost wrapper in the tool stack: takes the session's undo snapshot immed
 
 ```typescript
 /**
- * Arms the undo net for `create`, `edit`, and `shell_exec`; every other tool passes through untouched.
+ * Arms the checkpoint net for `create`, `edit`, and `shell_exec`; every other tool passes through untouched.
  */
 withSnapshotGate(name: string, t: AnyCoreTool): AnyCoreTool
 ```

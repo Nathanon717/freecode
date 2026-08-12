@@ -3,12 +3,12 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Takes, lists, restores, and prunes agent undo snapshots over the shadow repo. A library over `git` with no CLI concerns; the `freecode undo` surface is [../cli/undo.md](../cli/undo.md).
+Takes, lists, restores, and prunes agent checkpoint snapshots over the shadow repo. A library over `git` with no CLI concerns; the `freecode checkpoint` surface is [../cli/checkpoint.md](../cli/checkpoint.md).
 
 ## Read When
 
 - Changing what a snapshot captures, or the restore sequence that puts a project back.
-- Debugging an undo that left files right but history wrong, or one that skipped the index copy.
+- Debugging a revert that left files right but history wrong, or one that skipped the index copy.
 - Changing snapshot ids, retention, or the metadata carried in the snapshot commit message.
 <!-- END GENERATED MAP INTENT -->
 
@@ -87,7 +87,7 @@ inspectHint(projectRoot: string): string
 ## Neighbors
 
 - **Imports:** [`snapshots/shadow-repo.ts`](shadow-repo.md) ×26
-- **Imported by:** [`cli/undo.ts`](../cli/undo.md) ×8, [`snapshots/auto.ts`](auto.md) ×2
+- **Imported by:** [`cli/checkpoint.ts`](../cli/checkpoint.md) ×14, [`snapshots/auto.ts`](auto.md) ×2
 
 ## Tests
 

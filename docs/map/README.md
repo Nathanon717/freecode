@@ -124,7 +124,8 @@ Format: filename (linecount)
   - [`usage-finalize.ts`](agent/usage-finalize.md) (45) — Turn Usage/Quota Finalization
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/`
-  - [`args.ts`](cli/args.md) (56) — CLI Argument Contract
+  - [`args.ts`](cli/args.md) (69) — CLI Argument Contract
+  - [`checkpoint.ts`](cli/checkpoint.md) (351) — checkpoint Command
 - `src/cli/chrome/`
   - [`ansi.ts`](cli/chrome/ansi.md) (56) — Terminal Geometry & Escape Sequences
   - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (487) — Bottom Terminal UI
@@ -142,7 +143,7 @@ Format: filename (linecount)
   - [`eval-screen.ts`](cli/eval/eval-screen.md) (177) — Eval Screen Renderers
   - [`humaneval-menu.ts`](cli/eval/humaneval-menu.md) (319) — HumanEval Tab + Run Loop
 - `src/cli/`
-  - [`headless-prompt.ts`](cli/headless-prompt.md) (152) — Headless Prompt Mode (`-p`)
+  - [`headless-prompt.ts`](cli/headless-prompt.md) (188) — Headless Prompt Mode (`-p`)
 - `src/cli/menus/`
   - [`action-menu.ts`](cli/menus/action-menu.md) (52) — Inline Action Sub-menu
   - [`list-menu.ts`](cli/menus/list-menu.md) (364) — Shared Tabbed List Menu
@@ -170,7 +171,6 @@ Format: filename (linecount)
   - [`tool-runner.ts`](cli/tools/tool-runner.md) (103) — Hand-Typed Tool Execution + /tools Listing
 - `src/cli/`
   - [`tui-log-sink.ts`](cli/tui-log-sink.md) (43) — TUI Log Sink
-  - [`undo.ts`](cli/undo.md) (227) — undo Command
 - `src/commands/`
   - [`config.ts`](commands/config.md) (401) — Interactive Config Editor
   - [`model.ts`](commands/model.md) (389) — Interactive Model Picker
@@ -185,7 +185,7 @@ Format: filename (linecount)
   - [`humaneval-data.ts`](eval/humaneval-data.md) (105) — HumanEval Dataset Loader
   - [`result-sink.ts`](eval/result-sink.md) (78) — Eval Result JSON IPC Sink
   - [`runner.ts`](eval/runner.md) (207) — Eval Subprocess Runner
-- [`index.ts`](index.md) (229) — CLI Entry Point
+- [`index.ts`](index.md) (232) — CLI Entry Point
 - [`logger.ts`](logger.md) (94) — Logging Utility
 - `src/providers/adapters/`
   - [`adapter-http-retry.ts`](providers/adapters/adapter-http-retry.md) (188) — Adapter HTTP Retry/Backoff
@@ -212,8 +212,9 @@ Format: filename (linecount)
   - [`types.ts`](providers/types.md) (63) — Type Definitions
   - [`user-blocklist.ts`](providers/user-blocklist.md) (81) — Per-User Model Blocklist
 - `src/snapshots/`
-  - [`auto.ts`](snapshots/auto.md) (47) — Automatic Snapshot
+  - [`auto.ts`](snapshots/auto.md) (65) — Automatic Snapshot
   - [`index.ts`](snapshots/index.md) (316) — Snapshot Library
+  - [`review-lock.ts`](snapshots/review-lock.md) (67) — Review Lock
   - [`semantic-diff.ts`](snapshots/semantic-diff.md) (250) — Semantic Diff
   - [`shadow-repo.ts`](snapshots/shadow-repo.md) (288) — Shadow Repo
 - `src/store/`

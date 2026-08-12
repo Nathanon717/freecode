@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Thin executable entry point. It resolves the `undo` verb, validates process flags against [cli/args.md](cli/args.md) and dispatches on them, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
+Thin executable entry point. It resolves the `checkpoint` verb, validates process flags against [cli/args.md](cli/args.md) and dispatches on them, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
 
 ## Read When
 
@@ -29,7 +29,7 @@ _No exported symbols._
 
 ## Budget
 
-229 / 500 lines (271 to spare).
+232 / 500 lines (268 to spare).
 
 ## Env
 

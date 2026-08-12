@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * @role Thin executable entry point. It resolves the `undo` verb, validates process flags against [cli/args.md](cli/args.md) and dispatches on them, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
+ * @role Thin executable entry point. It resolves the `checkpoint` verb, validates process flags against [cli/args.md](cli/args.md) and dispatches on them, initializes config/provider probes, creates a `Conversation`, and delegates the REPL/script loop to `src/cli/*`.
  *
  * @readwhen
  * - Changing CLI startup flags or mode selection, or adding a subcommand verb that must resolve before the flag scans. What each flag *is* lives in [cli/args.md](cli/args.md); this file decides what it does.
@@ -51,11 +51,14 @@ async function main() {
   const args = process.argv.slice(2);
 
   // Before every flag scan below. Those are `indexOf`-based and would happily
-  // match an argument meant for `undo`. Undo is git and nothing else, so it also
-  // returns before readline and the store exist — there is no teardown to do.
-  if (args[0] === 'undo') {
-    const { runUndo } = await import('./cli/undo.js');
-    process.exitCode = await runUndo({ projectRoot: process.cwd(), args: args.slice(1) });
+  // match an argument meant for `checkpoint`. It is git and nothing else, so it
+  // also returns before readline and the store exist — no teardown to do. `-log`
+  // is read off raw argv here because the shared handler further down is past
+  // this early return.
+  if (args[0] === 'checkpoint') {
+    if (args.includes('-log')) (await import('./logger.js')).enableLog();
+    const { runCheckpoint } = await import('./cli/checkpoint.js');
+    process.exitCode = await runCheckpoint({ projectRoot: process.cwd(), args: args.slice(1) });
     return;
   }
 

@@ -1,8 +1,8 @@
 /**
- * @role The innermost wrapper in the tool stack: takes the session's undo snapshot immediately before the first write tool actually executes. Composed by `wrap` in [wrappers.md](wrappers.md).
+ * @role The innermost wrapper in the tool stack: takes the session's checkpoint snapshot immediately before the first write tool actually executes. Composed by `wrap` in [wrappers.md](wrappers.md).
  *
  * @readwhen
- * - Changing which tools arm the undo net, or where in the wrapper stack it is armed.
+ * - Changing which tools arm the checkpoint net, or where in the wrapper stack it is armed.
  * - Debugging a snapshot that captured post-mutation state, or one that never fired.
  */
 
@@ -21,7 +21,7 @@ import type { AnyCoreTool } from './wrappers.js';
 
 type ToolExecuteFn = (args: Record<string, unknown>, opts: unknown) => Promise<unknown>;
 
-/** Arms the undo net for `create`, `edit`, and `shell_exec`; every other tool passes through untouched. */
+/** Arms the checkpoint net for `create`, `edit`, and `shell_exec`; every other tool passes through untouched. */
 export function withSnapshotGate(name: string, t: AnyCoreTool): AnyCoreTool {
   if (!t.execute || !isWriteTool(name)) return t;
   const original: ToolExecuteFn = t.execute as ToolExecuteFn;

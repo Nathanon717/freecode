@@ -1,5 +1,5 @@
 /**
- * @role Re-encodes a unified patch as a symbol-and-shape summary for `freecode undo --diff --semantic`. A pure string transform with no imports — undo runs before the heavy module graph loads.
+ * @role Re-encodes a unified patch as a symbol-and-shape summary — what `freecode checkpoint diff` prints unless `--patch` asks for the raw one. A pure string transform with no imports — checkpoint runs before the heavy module graph loads.
  *
  * @readwhen
  * - Changing how a delegated change is summarised, or which hunks collapse into a repeated shape.

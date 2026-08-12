@@ -42,7 +42,7 @@ runHeadlessPrompt(options: HeadlessPromptOptions): Promise<number>
 
 ## Budget
 
-152 / 500 lines (348 to spare).
+188 / 500 lines (312 to spare).
 
 ## Env
 
@@ -72,6 +72,19 @@ This is the part callers depend on; changing it breaks `$(freecode -p ...)`.
   [../agent/loop.md](../agent/loop.md)), output tokens, total tokens, tool-call
   count, and wall time. Printed even on the error path, since a failed or
   rate-limited turn still spent tokens.
+
+## One `--edit` run per project at a time
+
+An edit-enabled run claims the lock in [../snapshots/review-lock.md](../snapshots/review-lock.md)
+**before the turn**, so a refusal costs no tokens, and exits 1 naming the holder and the task
+it was given. Read-only `-p` neither claims nor checks — it has nothing to review.
+
+The release lives in a `finally` and asks `sessionSnapshotId()` in
+[../snapshots/auto.md](../snapshots/auto.md) rather than tracking a flag of its own: that
+module already knows whether this process snapshotted, and two flags can disagree while one
+cannot. So a run that wrote nothing frees the project on the way out, and a run that wrote
+keeps the lock whether it then succeeded, errored, or threw — an errored run's changes are the
+ones most worth looking at before anything else touches the project.
 
 It calls `agentLoop` directly rather than going through
 [session-runner.md](session-runner.md) or [command-dispatcher.md](command-dispatcher.md):

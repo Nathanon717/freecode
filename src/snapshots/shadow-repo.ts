@@ -1,9 +1,9 @@
 /**
- * @role Locates and initializes the bare "shadow" git repo that backs agent undo snapshots, and runs git against it with the project directory as its work tree.
+ * @role Locates and initializes the bare "shadow" git repo that backs agent checkpoint snapshots, and runs git against it with the project directory as its work tree.
  *
  * @readwhen
  * - Changing where snapshots live on disk, or the containment check that relocates them out of the project.
- * - Debugging line-ending corruption across an undo, which the `* -text` attribute written here is what prevents.
+ * - Debugging line-ending corruption across a revert, which the `* -text` attribute written here is what prevents.
  * - Adding a git invocation that must target the shadow repo rather than the project's own `.git`.
  */
 
@@ -156,7 +156,7 @@ async function createShadowRepo(projectRoot: string, shadowDir: string): Promise
     // A shadow git-dir does not swallow the project's `.git` anyway; this is
     // free insurance.
     await writeFile(join(shadowDir, 'info', 'exclude'), '/.git/\n', 'utf-8');
-    // The directory name carries a hash, so it cannot be read back. `undo` uses
+    // The directory name carries a hash, so it cannot be read back. `checkpoint` uses
     // this to tell someone standing in the wrong directory where their
     // snapshots actually are.
     await writeFile(join(shadowDir, PROJECT_MARKER), `${resolve(projectRoot)}\n`, 'utf-8');

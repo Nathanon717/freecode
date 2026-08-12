@@ -3,7 +3,7 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-The automatic half of undo: one snapshot per process, taken lazily immediately before the first write-tool call. Kept separate from [index.md](index.md) so the snapshot library stays callable more than once per process.
+The automatic half of `freecode checkpoint`: one snapshot per process, taken lazily immediately before the first write-tool call. Kept separate from [index.md](index.md) so the snapshot library stays callable more than once per process.
 
 ## Read When
 
@@ -28,6 +28,18 @@ The automatic half of undo: one snapshot per process, taken lazily immediately b
 ensureSnapshot(): Promise<void>
 
 /**
+ * The snapshot this process took, once it has settled — or undefined if it never
+ * wrote, or tried and failed.
+ *
+ * The single answer to "does this run have unreviewed work?", so that nothing
+ * else has to keep a second flag that could disagree with this one. A failed
+ * snapshot counts as *no* snapshot on purpose: the writes did happen, but there
+ * is no checkpoint to review them against, and a caller that held a review lock
+ * open for one would strand the project with nothing able to clear it.
+ */
+sessionSnapshotId(): Promise<string | undefined>
+
+/**
  * Test-only: drops the memo so a fresh snapshot can be taken in the same process.
  */
 resetSnapshotMemo(): void
@@ -42,11 +54,11 @@ resetSnapshotMemo(): void
 
 ## Tests
 
-`tests/snapshots/auto.test.ts`. 1 other test file references it.
+`tests/snapshots/auto.test.ts`. 2 other test files reference it.
 
 ## Budget
 
-47 / 500 lines (453 to spare).
+65 / 500 lines (435 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Why the memo is at module scope

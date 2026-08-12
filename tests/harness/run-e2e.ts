@@ -44,7 +44,7 @@ const E2E_DIR = join(__dirname, '..', 'e2e');
 const DIST_ENTRY = join(ROOT, 'dist', 'index.js');
 
 // One snapshots directory for the whole suite, rather than one per test.
-// Every test gets its own $FREECODE_HOME, and undo snapshots live under it by
+// Every test gets its own $FREECODE_HOME, and checkpoint snapshots live under it by
 // default — so a repo-workspace test that calls a write tool would re-pay a cold
 // snapshot of this entire repo, several seconds apiece and all at once under
 // parallelism. That is setup cost, not coverage: the scenarios that actually
