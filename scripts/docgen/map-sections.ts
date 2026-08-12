@@ -254,10 +254,18 @@ export function normalizeMapPath(input: string): string {
  * `**` crosses separators, `*` and `?` do not. A pattern with no wildcard and no
  * `.md` is treated as a directory prefix, so `agent/` and `agent` both mean
  * `agent/**`.
+ *
+ * Source spellings are accepted alongside map ones: a `src/` prefix strips and a
+ * `.ts` suffix becomes `.md`. Paths pasted out of `git diff --name-only` are the
+ * reason — they arrive as `src/agent/loop.ts`. The bare stem `normalizeMapPath`
+ * also takes is deliberately *not* one of them: here it stays a directory
+ * prefix, which is what makes `agent/` mean `agent/**`.
  */
 export function matchesGlob(pattern: string, page: string): boolean {
   let glob = toPosix(pattern).replace(/^\.\//, '');
   if (glob.startsWith('docs/map/')) glob = glob.slice('docs/map/'.length);
+  else if (glob.startsWith('src/')) glob = glob.slice('src/'.length);
+  glob = glob.replace(/\.ts$/, '.md');
   if (!/[*?]/.test(glob) && !glob.endsWith('.md')) glob = `${glob.replace(/\/$/, '')}/**`;
 
   const regex = glob

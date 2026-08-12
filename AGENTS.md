@@ -28,8 +28,9 @@ is the exception that needs a reason.
 | `npm run map -- sections <file>` | what one page holds, including its authored tail |
 | `npm run map -- neighbors-of <file>` | who imports it, and whose link text has gone stale |
 
-`<glob>` is map-relative (`agent/`, `**`); `<file>` takes `src/agent/loop.ts`, `agent/loop.md`
-or `agent/loop`. Add `--format json` for structured output.
+`<file>` takes `src/agent/loop.ts`, `agent/loop.md` or `agent/loop`; `<glob>` takes the first
+two plus patterns (`agent/`, `**`), so a path pasted from `git diff --name-only` works either
+way — but a bare stem is a directory to a glob, not a page. `--format json` for structured output.
 
 `npm run map` needs shell access. A read-only `-p` turn has none — it reads
 `docs/map/<path>.md` directly, which is why pages stay terse.

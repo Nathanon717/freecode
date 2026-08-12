@@ -105,6 +105,21 @@ describe('matchesGlob', () => {
   it('accepts a docs/map-prefixed pattern', () => {
     expect(matchesGlob('docs/map/util/*.md', 'util/guards.md')).toBe(true);
   });
+
+  // Paths pasted out of `git diff --name-only` arrive as `src/agent/loop.ts`,
+  // the spelling normalizeMapPath already took. The glob verbs took only the
+  // map spelling, so the paste failed on the exact workflow CLAUDE.md prescribes.
+  it('accepts the source spellings normalizeMapPath accepts', () => {
+    expect(matchesGlob('src/agent/', 'agent/loop.md')).toBe(true);
+    expect(matchesGlob('src/agent/loop.ts', 'agent/loop.md')).toBe(true);
+    expect(matchesGlob('agent/loop.ts', 'agent/loop.md')).toBe(true);
+    expect(matchesGlob('src/agent/*.ts', 'agent/loop.md')).toBe(true);
+  });
+
+  it('keeps a source spelling from widening past its own directory', () => {
+    expect(matchesGlob('src/agent/loop.ts', 'agent/fake-loop.md')).toBe(false);
+    expect(matchesGlob('src/agent/*.ts', 'agent/tools/read.md')).toBe(false);
+  });
 });
 
 describe('the manifest', () => {

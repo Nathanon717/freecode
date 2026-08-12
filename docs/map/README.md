@@ -84,7 +84,7 @@ In the tail, write whatever sections the file's behavior needs. Keep it short an
 | `npm run map -- sections <file>` | what a page contains, canonical sections and one-off headings alike |
 | `npm run map -- neighbors-of <file>` | which pages link to this one, and where their link text has gone stale |
 
-`<file>` accepts `src/agent/loop.ts`, `agent/loop.md` or `agent/loop`. `<glob>` matches map-relative paths: `**` is every page, `agent/` is a directory, `*` stops at a separator. Add `--format json` for structured output.
+`<file>` accepts `src/agent/loop.ts`, `agent/loop.md` or `agent/loop`. `<glob>` accepts the first two — so a path pasted from `git diff --name-only` works on either — plus map-relative patterns: `**` is every page, `agent/` is a directory, `*` stops at a separator. The bare stem is the one spelling they read differently: to a glob `agent/loop` is the directory `agent/loop/**`, which is what makes `agent/` work. Add `--format json` for structured output.
 
 Section names resolve through the manifest in `scripts/docgen/map-sections.ts` — the single definition of map structure, read by every generator, check and query. It still carries the older spellings as aliases (`Key Neighbors` and `Key neighbours` answer to `Neighbors`; an inline `**Read when:**` answers the same as `## Read When`) even though no page uses them any more, so a query still resolves one that gets reintroduced.
 

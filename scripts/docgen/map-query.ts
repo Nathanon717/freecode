@@ -15,9 +15,10 @@
  *   npm run map -- neighbors-of <file>    inverse: who names this file
  *                        [--format md|json]
  *
- * A <file> is any of `src/agent/loop.ts`, `agent/loop.md` or `agent/loop`.
- * A <glob> matches map-relative paths: `**` is every page, `agent/` is a
- * directory prefix, `*` stops at a path separator.
+ * A <file> is any of `src/agent/loop.ts`, `agent/loop.md` or `agent/loop`. A
+ * <glob> takes the first two, plus patterns over map-relative paths: `**` is
+ * every page, `agent/` is a directory prefix, `*` stops at a path separator.
+ * A bare stem is a directory to a glob, never a page.
  */
 import { readFileSync } from 'fs';
 import { join, relative, dirname, resolve } from 'path';
