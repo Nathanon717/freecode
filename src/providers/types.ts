@@ -69,4 +69,6 @@ export interface Config {
   loadAgentsMd: boolean;
   /** Auto-approve read-only tool calls costing fewer than this many tokens. 0 = off. */
   autoApproveTokenBudget: number;
+  /** Docker image used for contained shell commands; local .freecoderc may override it. */
+  sandboxImage?: string;
 }

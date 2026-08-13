@@ -103,18 +103,19 @@ Format: filename (linecount)
   - [`registry.ts`](agent/subagents/registry.md) (55) — Sub-Agent Registry
   - [`run-subagent.ts`](agent/subagents/run-subagent.md) (160) — Sub-Agent Runner
 - `src/agent/`
-  - [`system-prompt.ts`](agent/system-prompt.md) (77) — System Prompt
+  - [`system-prompt.ts`](agent/system-prompt.md) (78) — System Prompt
   - [`tool-render-gate.ts`](agent/tool-render-gate.md) (80) — Tool Render Gate
 - `src/agent/tools/`
+  - [`container-shell.ts`](agent/tools/container-shell.md) (179) — Docker Shell Boundary
   - [`create.ts`](agent/tools/create.md) (34) — create Tool
   - [`edit-diff-context.ts`](agent/tools/edit-diff-context.md) (102) — Edit Diff Context
   - [`edit.ts`](agent/tools/edit.md) (72) — edit Tool
-  - [`git-guard.ts`](agent/tools/git-guard.md) (69) — Git Internals Guard
+  - [`git-guard.ts`](agent/tools/git-guard.md) (78) — Git Internals Guard
   - [`grep.ts`](agent/tools/grep.md) (323) — grep Tool
   - [`index.ts`](agent/tools/index.md) (102) — Tool Registry
   - [`list-dir.ts`](agent/tools/list-dir.md) (44) — list_dir Tool
   - [`read.ts`](agent/tools/read.md) (87) — read Tool
-  - [`shell.ts`](agent/tools/shell.md) (133) — shell_exec Tool
+  - [`shell.ts`](agent/tools/shell.md) (136) — shell_exec Tool
   - [`snapshot-gate.ts`](agent/tools/snapshot-gate.md) (29) — Snapshot Gate
   - [`spawn-agent.ts`](agent/tools/spawn-agent.md) (37) — spawn_agent Tool
   - [`tool-names.ts`](agent/tools/tool-names.md) (64) — Tool Name Partition
@@ -125,7 +126,7 @@ Format: filename (linecount)
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/`
   - [`args.ts`](cli/args.md) (69) — CLI Argument Contract
-  - [`checkpoint.ts`](cli/checkpoint.md) (351) — checkpoint Command
+  - [`checkpoint.ts`](cli/checkpoint.md) (499) — checkpoint Command
 - `src/cli/chrome/`
   - [`ansi.ts`](cli/chrome/ansi.md) (56) — Terminal Geometry & Escape Sequences
   - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (487) — Bottom Terminal UI
@@ -143,7 +144,7 @@ Format: filename (linecount)
   - [`eval-screen.ts`](cli/eval/eval-screen.md) (177) — Eval Screen Renderers
   - [`humaneval-menu.ts`](cli/eval/humaneval-menu.md) (319) — HumanEval Tab + Run Loop
 - `src/cli/`
-  - [`headless-prompt.ts`](cli/headless-prompt.md) (188) — Headless Prompt Mode (`-p`)
+  - [`headless-prompt.ts`](cli/headless-prompt.md) (245) — Headless Prompt Mode (`-p`)
 - `src/cli/menus/`
   - [`action-menu.ts`](cli/menus/action-menu.md) (52) — Inline Action Sub-menu
   - [`list-menu.ts`](cli/menus/list-menu.md) (364) — Shared Tabbed List Menu
@@ -209,14 +210,17 @@ Format: filename (linecount)
   - [`cache.ts`](providers/quota/cache.md) (38) — Quota Cache
   - [`headers.ts`](providers/quota/headers.md) (253) — Provider Rate-Limit Header Parsing
 - `src/providers/`
-  - [`types.ts`](providers/types.md) (63) — Type Definitions
+  - [`types.ts`](providers/types.md) (65) — Type Definitions
   - [`user-blocklist.ts`](providers/user-blocklist.md) (81) — Per-User Model Blocklist
 - `src/snapshots/`
-  - [`auto.ts`](snapshots/auto.md) (65) — Automatic Snapshot
-  - [`index.ts`](snapshots/index.md) (316) — Snapshot Library
-  - [`review-lock.ts`](snapshots/review-lock.md) (67) — Review Lock
+  - [`auto.ts`](snapshots/auto.md) (98) — Automatic Snapshot
+  - [`coverage.ts`](snapshots/coverage.md) (152) — Snapshot Coverage
+  - [`gitdir.ts`](snapshots/gitdir.md) (170) — Git Directory Snapshots
+  - [`index.ts`](snapshots/index.md) (458) — Snapshot Library
+  - [`locked-files.ts`](snapshots/locked-files.md) (129) — Locked Files On Restore
+  - [`review-lock.ts`](snapshots/review-lock.md) (153) — Review Lock
   - [`semantic-diff.ts`](snapshots/semantic-diff.md) (250) — Semantic Diff
-  - [`shadow-repo.ts`](snapshots/shadow-repo.md) (288) — Shadow Repo
+  - [`shadow-repo.ts`](snapshots/shadow-repo.md) (354) — Shadow Repo
 - `src/store/`
   - [`call-log.ts`](store/call-log.md) (51) — Per-Call LLM Log
   - [`db-config-cache.ts`](store/db-config-cache.md) (54) — DB Config Cache

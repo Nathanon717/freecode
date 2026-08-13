@@ -11,6 +11,13 @@ the "Established facts" and "Rejected alternatives" sections are why the code lo
 does, and re-deriving them costs a session. Two deviations from the plan as written are noted
 inline below (the hook's placement, and the snapshot id's discriminator).
 
+> **One piece of the mechanism below has since been replaced.** The security audit that followed
+> ([agent-containment-plan.md](agent-containment-plan.md)) found `.git` outside coverage entirely,
+> so it is now snapshotted as a second work tree — and the `.git/index` byte-copy this file
+> describes is gone, because the index comes back inside that tree. Everything written here about
+> *why* an index copy was needed still explains what the replacement has to preserve. Current
+> mechanism: [map/snapshots/gitdir.md](map/snapshots/gitdir.md).
+
 ## The problem
 
 `freecode -p --edit` hands an unattended agent `create` / `edit` / `shell_exec` with ask

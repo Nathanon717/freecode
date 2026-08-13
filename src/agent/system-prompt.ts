@@ -51,7 +51,8 @@ export function buildSystemPrompt(
   const canWrite = toolNames.some(isWriteTool);
   let prompt = `You are a coding agent who always follows the rules. You help the user with coding tasks by reading, writing, and navigating their codebase.
 
-Your OS: ${env}
+Your host OS: ${env}${toolNames.includes('shell_exec') ? `
+shell_exec OS: Linux (Docker), with the project mounted at /work. File tools still take project-relative paths.` : ''}
 Available tools: ${toolNames.join(", ")}
 
 RULES - MUST ALWAYS FOLLOW${canWrite ? `

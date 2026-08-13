@@ -30,7 +30,17 @@
 //  - **One `--edit` run per project at a time.** A second is refused until the
 //    first one's work has been accepted or reverted, which is what keeps "the
 //    newest snapshot" an unambiguous answer to "what did the agent just change".
-//    Read-only `-p` is unaffected: it has nothing to review.
+//    A lock that can be neither claimed nor read is refused too — an unwritable
+//    snapshot store must not read as a free project. Read-only `-p` is unaffected:
+//    it has nothing to review.
+//  - **A run whose snapshot failed keeps the lock and says so on stderr.** It
+//    wrote, and nothing covers what it wrote; releasing on that used to be
+//    indistinguishable from releasing a run that wrote nothing at all
+//    (docs/agent-containment-plan.md, R4). See `settleReviewLock` below.
+//  - **The run cannot review itself.** `shell_exec` stamps `FREECODE_SANDBOXED=1`
+//    on its children, and `freecode checkpoint accept`/`revert` refuse under it —
+//    otherwise one shell command frees the lock, re-baselines the snapshot, and
+//    leaves the work unreviewed on disk (docs/agent-containment-plan.md, R1).
 //  - **Free models only.** src/index.ts sets `FREECODE_FREE_ONLY=1` for `-p`
 //    before any credential loads; see providers/paid-guard.ts.
 
@@ -110,13 +120,33 @@ export async function runHeadlessPrompt(
   // run turned out to write nothing.
   if (edit) {
     const { claimReviewLock } = await import("../snapshots/review-lock.js");
-    const held = claimReviewLock(projectRoot, prompt.split("\n")[0] ?? "");
-    if (held) {
+    const claim = claimReviewLock(projectRoot, prompt.split("\n")[0] ?? "");
+    if (claim.status === "held") {
+      const { held } = claim;
       process.stderr.write(
         `Error: another \`-p --edit\` run has unreviewed changes in this project ` +
         `(started ${held.startedAt || "unknown"}, pid ${held.pid}): ${held.task}\n` +
         `Review them with \`freecode checkpoint diff\`, then \`freecode checkpoint accept\` ` +
         `or \`freecode checkpoint revert\` before delegating again.\n`,
+      );
+      return 1;
+    }
+    // Unknown is refused, not assumed free: see claimReviewLock. Naming the file
+    // and the error is the whole difference between a refusal and a mystery.
+    if (claim.status === "unavailable") {
+      process.stderr.write(
+        `Error: the review lock for this project could not be claimed or read, so freecode ` +
+        `cannot tell whether another \`-p --edit\` run has unreviewed changes: ${claim.reason}\n` +
+        // Only one of the two has a fix from here. `checkpoint accept` — the
+        // documented way out of a stuck lock — takes a baseline snapshot, so it
+        // needs the very store an unwritable-store failure just proved it cannot
+        // write; saying "delete it" there would send someone after the wrong file.
+        (claim.cause === "unreadable-lock"
+          ? `The lock file ${claim.path} exists but could not be read — a run killed mid-write ` +
+            `leaves one like this. Delete it if no delegated run is outstanding, then try again.\n`
+          : `The snapshot store under ${claim.path} cannot be written. Nothing in freecode can ` +
+            `repair that from here (\`checkpoint accept\` would have to write it too), so fix the ` +
+            `directory's permissions or set FREECODE_HOME somewhere writable.\n`),
       );
       return 1;
     }
@@ -179,17 +209,44 @@ export async function runHeadlessPrompt(
     }
     return 0;
   } finally {
-    // The release condition has one owner: snapshots/auto.ts already knows
-    // whether this process took a snapshot, and asking it is what keeps a second
-    // flag here from ever disagreeing with it. A run that wrote nothing frees the
-    // project immediately; a run that wrote — whether it then succeeded, errored,
-    // or threw — stays locked until someone reviews it.
-    if (edit) {
-      const { sessionSnapshotId } = await import("../snapshots/auto.js");
-      if ((await sessionSnapshotId()) === undefined) {
-        const { releaseReviewLock } = await import("../snapshots/review-lock.js");
-        releaseReviewLock(projectRoot);
-      }
-    }
+    if (edit) await settleReviewLock(projectRoot);
   }
+}
+
+/**
+ * Frees the project, records the snapshot, or reports that there is none —
+ * exactly one of the three, on the way out of an `--edit` run.
+ *
+ * The condition has one owner: snapshots/auto.ts already knows how this process's
+ * snapshot went, and asking it is what keeps a second flag here from ever
+ * disagreeing. What R4 changed is that it can now answer *three* ways. `none`
+ * frees the project immediately — nothing was written, so there is nothing to
+ * review. `taken` keeps the lock and writes the id into it, so `checkpoint` can
+ * name this run's snapshot rather than infer one.
+ *
+ * `failed` is the case that used to be silently identical to `none`, and it is the
+ * worst of the three: the writes landed, no snapshot covers them, and the lock was
+ * being released — so the project was marked free precisely when it was least
+ * reviewable, and the failure went to a log that `-p` silences. It now keeps the
+ * lock and says so on stderr, where a caller composing `$(freecode -p ...)` still
+ * sees it without stdout's answer being polluted.
+ */
+async function settleReviewLock(projectRoot: string): Promise<void> {
+  const { sessionSnapshot } = await import("../snapshots/auto.js");
+  const snapshot = await sessionSnapshot();
+  const { recordLockSnapshot, releaseReviewLock } = await import("../snapshots/review-lock.js");
+
+  if (snapshot.status === "none") return releaseReviewLock(projectRoot);
+  if (snapshot.status === "taken") return recordLockSnapshot(projectRoot, { snapshotId: snapshot.id });
+
+  recordLockSnapshot(projectRoot, { snapshotFailed: true });
+  process.stderr.write(
+    `Error: this run changed the project, but freecode could not take the checkpoint snapshot ` +
+    `that its changes would have been reviewed against (${snapshot.reason}).\n` +
+    `Nothing was lost, and nothing is protected either: \`freecode checkpoint diff\` has no ` +
+    `baseline for this run and \`freecode checkpoint revert\` cannot undo it.\n` +
+    `The project stays locked so no further \`-p --edit\` run starts against an unreviewable ` +
+    `state. Review the changes with \`git status\` and \`git diff\`, then \`freecode checkpoint ` +
+    `accept\` to clear the lock.\n`,
+  );
 }

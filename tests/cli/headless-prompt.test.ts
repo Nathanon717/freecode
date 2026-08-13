@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
-import { mkdtempSync, rmSync } from 'fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import type { CoreMessage } from 'ai';
@@ -7,6 +7,7 @@ import type { AgentLoopResult } from '../../src/agent/loop.js';
 import { runHeadlessPrompt } from '../../src/cli/headless-prompt.js';
 import { getAskMode, isReadOnly } from '../../src/cli/chrome/toggles.js';
 import { claimReviewLock, readReviewLock } from '../../src/snapshots/review-lock.js';
+import type { SessionSnapshot } from '../../src/snapshots/auto.js';
 
 const agentLoop = vi.hoisted(() => vi.fn());
 vi.mock('../../src/agent/loop.js', () => ({ agentLoop }));
@@ -18,8 +19,8 @@ vi.mock('../../src/agent/loop.js', () => ({ agentLoop }));
 // This replaces the whole module, so `ensureSnapshot` is undefined here. Safe
 // only because `agentLoop` is mocked too and snapshot-gate never runs — unmock
 // the loop and this file needs the real export back.
-const sessionSnapshotId = vi.hoisted(() => vi.fn<() => Promise<string | undefined>>());
-vi.mock('../../src/snapshots/auto.js', () => ({ sessionSnapshotId }));
+const sessionSnapshot = vi.hoisted(() => vi.fn<() => Promise<SessionSnapshot>>());
+vi.mock('../../src/snapshots/auto.js', () => ({ sessionSnapshot }));
 
 function loopResult(over: Partial<AgentLoopResult> = {}): AgentLoopResult {
   return {
@@ -45,8 +46,8 @@ describe('runHeadlessPrompt', () => {
   beforeEach(() => {
     agentLoop.mockReset();
     // A run that wrote nothing, which is what every pre-existing test here is.
-    sessionSnapshotId.mockReset();
-    sessionSnapshotId.mockResolvedValue(undefined);
+    sessionSnapshot.mockReset();
+    sessionSnapshot.mockResolvedValue({ status: 'none' });
     // Isolated so an `--edit` test cannot leave a review lock in the real
     // snapshot store, where the next real delegation would trip over it.
     home = mkdtempSync(join(tmpdir(), 'freecode-headless-'));
@@ -101,7 +102,7 @@ describe('runHeadlessPrompt', () => {
   // for a review command to key on.
   it('refuses a second --edit run while the first one is unreviewed', async () => {
     agentLoop.mockResolvedValue(loopResult({ text: 'answer' }));
-    expect(claimReviewLock('.', 'the first delegation')).toBeUndefined();
+    expect(claimReviewLock('.', 'the first delegation').status).toBe('claimed');
 
     const code = await runHeadlessPrompt({ projectRoot: '.', prompt: 'go', model: 'zen:hy3-free', edit: true });
 
@@ -110,6 +111,26 @@ describe('runHeadlessPrompt', () => {
     expect(agentLoop).not.toHaveBeenCalled();
     expect(written(stderr)).toContain('the first delegation');
     expect(written(stderr)).toContain('freecode checkpoint diff');
+  });
+
+  // An unwritable snapshot store used to read as a free project (finding B11):
+  // the exclusive write failed, the readback failed, and the run started anyway
+  // with mutual exclusion silently off. Refusing is only useful if it says which
+  // file to look at.
+  it('refuses an --edit run when the lock can be neither claimed nor read', async () => {
+    agentLoop.mockResolvedValue(loopResult({ text: 'answer' }));
+    // A file where the snapshots directory belongs: nothing can be created under it.
+    writeFileSync(join(home, 'snapshots'), 'not a directory', 'utf-8');
+
+    const code = await runHeadlessPrompt({ projectRoot: '.', prompt: 'go', model: 'zen:hy3-free', edit: true });
+
+    expect(code).toBe(1);
+    expect(agentLoop).not.toHaveBeenCalled();
+    expect(written(stderr)).toContain('could not be claimed or read');
+    expect(written(stderr)).toContain('cannot be written');
+    // Not the delete-the-lock-file instruction: there is no lock file here, and
+    // `checkpoint accept` cannot clear this one either — it needs the same store.
+    expect(written(stderr)).not.toContain('Delete it');
   });
 
   it('leaves read-only -p unaffected by an outstanding review', async () => {
@@ -134,13 +155,43 @@ describe('runHeadlessPrompt', () => {
   it('holds the lock when the run wrote and then errored', async () => {
     // The writes happened either way: an errored turn's changes are exactly the
     // ones most worth looking at before anything else touches the project.
-    sessionSnapshotId.mockResolvedValue('20260812T000000-1');
+    sessionSnapshot.mockResolvedValue({ status: 'taken', id: '20260812T000000-1' });
     agentLoop.mockResolvedValue(loopResult({ text: 'partial', error: 'rate limited' }));
 
     const code = await runHeadlessPrompt({ projectRoot: '.', prompt: 'go', model: 'zen:hy3-free', edit: true });
 
     expect(code).toBe(1);
     expect(readReviewLock('.')?.task).toBe('go');
+  });
+
+  it('records the snapshot id in the lock, so review is not a guess from timestamps', async () => {
+    // Without this, `checkpoint diff` picks its target by comparing `takenAt`
+    // against the claim, and cannot tell this run's snapshot from one an
+    // interactive session took in the same window (cli/checkpoint.ts, outstanding).
+    sessionSnapshot.mockResolvedValue({ status: 'taken', id: '20260812T000000-1' });
+    agentLoop.mockResolvedValue(loopResult({ text: 'answer' }));
+
+    await runHeadlessPrompt({ projectRoot: '.', prompt: 'go', model: 'zen:hy3-free', edit: true });
+
+    expect(readReviewLock('.')?.snapshotId).toBe('20260812T000000-1');
+    expect(readReviewLock('.')?.snapshotFailed).toBeUndefined();
+  });
+
+  it('keeps the lock and reports it when the run wrote but its snapshot failed', async () => {
+    // The case R4 exists for. This used to be indistinguishable from "wrote
+    // nothing": the lock was released over changes that no snapshot covers, and
+    // the only record of the failure went to a log `-p` silences.
+    sessionSnapshot.mockResolvedValue({ status: 'failed', reason: 'ENOSPC: no space left' });
+    agentLoop.mockResolvedValue(loopResult({ text: 'answer' }));
+
+    const code = await runHeadlessPrompt({ projectRoot: '.', prompt: 'go', model: 'zen:hy3-free', edit: true });
+
+    // The turn itself succeeded, and stdout still carries only its answer.
+    expect(code).toBe(0);
+    expect(written(stdout)).toBe('answer\n');
+    expect(readReviewLock('.')?.snapshotFailed).toBe(true);
+    expect(written(stderr)).toContain('ENOSPC: no space left');
+    expect(written(stderr)).toContain('checkpoint accept');
   });
 
   it('prints the final assistant message, not every step of narration', async () => {

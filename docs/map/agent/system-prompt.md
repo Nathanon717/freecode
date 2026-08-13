@@ -46,7 +46,7 @@ buildSystemPrompt(loadAgentsMd?: boolean, toolNames?: readonly string[]): string
 
 ## Budget
 
-77 / 500 lines (423 to spare).
+78 / 500 lines (422 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Behavior

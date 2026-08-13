@@ -1,4 +1,28 @@
-import { describe, it, expect } from 'vitest';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { describe, it, expect, vi } from 'vitest';
+
+const execAsync = promisify(exec);
+
+vi.mock('../../../src/agent/tools/container-shell.js', () => ({
+  runSandboxedCommand: async (command: string, projectRoot: string, timeoutMs: number) => {
+    try {
+      const { stdout, stderr } = await execAsync(command, {
+        cwd: projectRoot,
+        timeout: timeoutMs,
+        maxBuffer: 10 * 1024 * 1024,
+        env: { ...process.env, FREECODE_SANDBOXED: '1' },
+      });
+      return { stdout, stderr, code: 0 };
+    } catch (error) {
+      const failure = error as { stdout?: string; stderr?: string; code?: number | string; killed?: boolean; message?: string };
+      return {
+        stdout: failure.stdout ?? '', stderr: failure.stderr ?? '', code: failure.code,
+        killed: failure.killed, message: failure.message,
+      };
+    }
+  },
+}));
 
 describe('shell tool', () => {
   it('identifies destructive commands', async () => {
@@ -19,6 +43,30 @@ describe('shell tool', () => {
     expect(isDestructiveCommand('remark --help')).toBe(false);
     expect(isDestructiveCommand('model list')).toBe(false);
     expect(isDestructiveCommand('bundle install')).toBe(false);
+  });
+
+  // The other half of finding A1's fix: the refusal in cli/checkpoint.ts is only
+  // reachable if the marker actually lands in the child. Also asserts the rest of
+  // the environment still arrives — commands here run real builds, and C4 of
+  // docs/agent-containment-plan.md is where that inheritance is narrowed.
+  it('marks its children as agent-run, keeping the rest of the environment', async () => {
+    const { shellTool } = await import('../../../src/agent/tools/shell.js');
+    process.env['FREECODE_SHELL_ENV_PROBE'] = 'inherited';
+    const script = 'console.log(process.env.FREECODE_SANDBOXED + "/" + process.env.FREECODE_SHELL_ENV_PROBE)';
+    const command = `${JSON.stringify(process.execPath)} -e ${JSON.stringify(script)}`;
+
+    try {
+      const result = await shellTool.execute?.({ command }, {}) as string | undefined;
+      expect(result?.trim()).toBe('1/inherited');
+    } finally {
+      delete process.env['FREECODE_SHELL_ENV_PROBE'];
+    }
+
+    // The marker belongs to the child and must never reach freecode's own process:
+    // the human's route out of a held review lock *is* `checkpoint accept`, and
+    // setting this on `process.env` would lock them out of their own project while
+    // leaving every test above green.
+    expect(process.env['FREECODE_SANDBOXED']).toBeFalsy();
   });
 
   it('honors a custom timeout_ms', async () => {

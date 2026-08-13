@@ -33,9 +33,16 @@ function warnIfConptyUnpinned(): void {
 // can't make live network requests. E2e tests never call a live LLM.
 const PROVIDER_API_KEY_VARS = new Set(PROVIDER_REGISTRY.map(p => p.apiKeyEnvVar));
 
+// Stripped too: the marker `shell_exec` stamps on its children
+// (src/agent/tools/shell.ts). Running `npm test` *through* freecode's own shell
+// tool — which CLAUDE.md encourages — would otherwise leak it into vitest and
+// every e2e child, and every accept/revert case would hit the self-approval
+// refusal for a reason nothing in the failure output would name.
+const STRIPPED_VARS = new Set([...PROVIDER_API_KEY_VARS, 'FREECODE_SANDBOXED']);
+
 // Base env with all provider API keys removed, used for every e2e test subprocess.
 const safeBaseEnv = Object.fromEntries(
-  Object.entries(process.env).filter(([k]) => !PROVIDER_API_KEY_VARS.has(k)),
+  Object.entries(process.env).filter(([k]) => !STRIPPED_VARS.has(k)),
 );
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -71,6 +78,8 @@ interface E2eTest {
   env?: Record<string, string>;
   humanEvalDataFixture?: string;
   humanEvalExampleDataFixture?: string;
+  /** Scenario exercises real Docker containment and is skipped when no daemon is available. */
+  requiresDocker?: boolean;
 }
 
 // Each e2e test spawns its own freecode CLI process (and some spawn Python for
@@ -171,11 +180,39 @@ const e2eTests = e2eFiles.map(file => {
 let passed = 0;
 let failed = 0;
 
+const dockerAvailable = spawnSync('docker', ['info'], { stdio: 'ignore', windowsHide: true }).status === 0;
+
 const runnableE2eTests = e2eTests.filter(({ test }) => {
   if (skipTty && test.tty) return false;
   if (onlyTty && !test.tty) return false;
+  if (test.requiresDocker && !dockerAvailable) return false;
   return true;
 });
+
+// Pay the cold snapshot once, here, rather than inside a timed test step.
+//
+// Any scenario whose agent writes trips the snapshot gate over *this* repo, and
+// since snapshots began covering gitignored files that walk is ~12s cold against
+// ~0.3s warm (dist/, coverage/, evals/humaneval/.runs — thousands of small files
+// git has to hash). Every test already shares one `FREECODE_SNAPSHOT_DIR` so the
+// walk is paid once; the flaw was paying it inside whichever test happened to
+// write first, whose `waitFor` budget it then blew — that is what broke
+// `tty-status-line-ticks` and `tty-thinking-label`. Warming here leaves the stat
+// cache in the shared index, so every test's own first write is the warm case.
+//
+// Gated on a scenario that runs an agent turn at all: only a fixture-backed run
+// can reach a write tool, and 12s is not free to add to a filtered run of
+// UI-only scenarios that would never have snapshotted anything.
+if (runnableE2eTests.some(({ test }) => test.llmFixture)) {
+  process.env.FREECODE_SNAPSHOT_DIR = SNAPSHOT_DIR;
+  const { takeSnapshot } = await import('../../src/snapshots/index.js');
+  const t0 = Date.now();
+  await takeSnapshot(ROOT).catch((err: unknown) => {
+    // Not fatal: a cold snapshot inside a test is slow, not broken.
+    console.warn(chalk.yellow(`  WARN  could not pre-warm the snapshot cache: ${String(err)}`));
+  });
+  console.log(chalk.dim(`Snapshot cache warmed in ${Date.now() - t0}ms.\n`));
+}
 
 // Run TTY e2e tests in parallel — each spawns its own isolated PTY process.
 const ttyE2eTests = runnableE2eTests.filter(({ file, test }) => {
@@ -369,6 +406,17 @@ if (nonTtyE2eTests.length > 0) {
       workspace: test.workspace ?? 'repo',
       env: test.env,
     });
+    if (test.expect.snapshotCommit) {
+      const snapshotRoot = join(tmpHome, 'snapshots');
+      const repos = existsSync(snapshotRoot)
+        ? readdirSync(snapshotRoot).filter((entry) => entry.endsWith('.git'))
+        : [];
+      const found = repos.some((entry) => {
+        const result = spawnSync('git', ['--git-dir', join(snapshotRoot, entry), 'log', '--all', '--format=%s'], { encoding: 'utf8' });
+        return result.status === 0 && result.stdout.includes('freecode-snapshot');
+      });
+      if (!found) failures.push('snapshotCommit: no freecode-snapshot commit found in the scenario snapshot store');
+    }
 
     // Authoring aid for stdoutBlock, mirroring TTY_DUMP: never hand-write a
     // block from what the output is assumed to look like.

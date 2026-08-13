@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, mkdir, readFile, rm } from 'fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, relative } from 'path';
 import {
   ensureShadowRepo,
   gitAvailable,
-  indexCopyPath,
   retryingObjectWrites,
   shadowRepoPath,
+  withScratchIndex,
 } from '../../src/snapshots/shadow-repo.js';
 
 let base = '';
@@ -60,8 +60,26 @@ describe('ensureShadowRepo', () => {
 
     expect(existsSync(join(shadowDir, 'HEAD'))).toBe(true);
     expect(await readFile(join(shadowDir, 'info', 'attributes'), 'utf-8')).toContain('* -text');
-    expect(await readFile(join(shadowDir, 'info', 'exclude'), 'utf-8')).toContain('/.git/');
     expect(existsSync(join(shadowDir, 'freecode-index'))).toBe(true);
+  });
+
+  // `info/exclude` used to carry `/.git/` as "free insurance" and is now git's own
+  // default template: every snapshot operation stages with `add -f`, which
+  // overrides `info/exclude` exactly as it overrides the project's `.gitignore`,
+  // so writing one would be a guard that does nothing. What keeps the project's
+  // `.git` out is git skipping any directory of that name during the walk.
+  it('does not rely on info/exclude, which add -f overrides', async () => {
+    const shadowDir = await ensureShadowRepo(root);
+    const exclude = join(shadowDir, 'info', 'exclude');
+
+    if (existsSync(exclude)) {
+      const contents = await readFile(exclude, 'utf-8');
+      const rules = contents
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line !== '' && !line.startsWith('#'));
+      expect(rules).toEqual([]);
+    }
   });
 
   it('is idempotent, so a second session reuses the same history', async () => {
@@ -70,11 +88,44 @@ describe('ensureShadowRepo', () => {
   });
 });
 
-describe('indexCopyPath', () => {
-  it('maps a snapshot id to its saved index and nothing else', () => {
-    expect(indexCopyPath('/shadow.git', '20260101T000000-7')).toBe(
-      join('/shadow.git', 'freecode-index', '20260101T000000-7.index'),
+describe('withScratchIndex', () => {
+  it('writes the scratch index back to the cache it was told to seed from', async () => {
+    // The whole point of the parameter: the project and its `.git` are two work
+    // trees, and seeding one walk from the other's stat cache matches nothing and
+    // silently pays the cold cost — ~12s a snapshot on this repo — every time.
+    const shadowDir = await ensureShadowRepo(root);
+    const cache = join(shadowDir, 'freecode-index', 'gitdir.index');
+
+    await withScratchIndex(
+      shadowDir,
+      async (indexFile) => writeFile(indexFile, 'seeded'),
+      { cache },
     );
+
+    expect(await readFile(cache, 'utf-8')).toBe('seeded');
+    // The default cache is git's own index, and must not have been touched.
+    expect(existsSync(join(shadowDir, 'index'))).toBe(false);
+  });
+
+  it('leaves the cache alone under discard, and still seeds from it', async () => {
+    // What an operation staging two paths must do: reading the warm cache is free,
+    // saving its own narrow index over it costs the next full walk 12s.
+    const shadowDir = await ensureShadowRepo(root);
+    const cache = join(shadowDir, 'freecode-index', 'gitdir.index');
+    await writeFile(cache, 'warm');
+
+    const seen = await withScratchIndex(
+      shadowDir,
+      async (indexFile) => {
+        const seed = await readFile(indexFile, 'utf-8');
+        await writeFile(indexFile, 'narrow');
+        return seed;
+      },
+      { cache, discard: true },
+    );
+
+    expect(seen).toBe('warm');
+    expect(await readFile(cache, 'utf-8')).toBe('warm');
   });
 });
 

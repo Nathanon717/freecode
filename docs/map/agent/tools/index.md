@@ -61,7 +61,7 @@ listDirTool: CoreTool<ZodObject<{ path: ZodOptional<ZodString>; }, "strip", ZodT
 
 ## Tests
 
-`tests/agent/tools/index.test.ts`. 2 other test files reference it.
+`tests/agent/tools/index.test.ts`. 3 other test files reference it.
 
 ## Budget
 

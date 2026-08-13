@@ -25,7 +25,16 @@ export default defineConfig({
     // interleaves with the dot reporter. Silenced here rather than by stubbing
     // process.stderr.write globally, which would also swallow a failing test's diagnostics.
     // tests/logger.test.ts deletes it to test the write path.
-    env: { FREECODE_TRANSCRIPT_STREAM: 'null', FREECODE_SILENCE_ERRORS: '1' },
+    // FREECODE_SANDBOXED: blanked, not inherited. It is the marker shell_exec stamps on
+    // its children (src/agent/tools/shell.ts), and `npm test` run through freecode's own
+    // shell tool would otherwise leak it into the suite, where every checkpoint
+    // accept/revert case would hit the self-approval refusal. Tests that want the marker
+    // set it themselves.
+    env: {
+      FREECODE_TRANSCRIPT_STREAM: 'null',
+      FREECODE_SILENCE_ERRORS: '1',
+      FREECODE_SANDBOXED: '',
+    },
     coverage: {
       reporter: ['text', 'json', 'html'],
     },

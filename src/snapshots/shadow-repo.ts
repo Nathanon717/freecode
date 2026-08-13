@@ -19,7 +19,7 @@
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { createHash, randomBytes } from 'crypto';
-import { mkdir, writeFile } from 'fs/promises';
+import { copyFile, mkdir, rm, writeFile } from 'fs/promises';
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { homedir } from 'os';
 import { basename, isAbsolute, join, relative, resolve } from 'path';
@@ -98,9 +98,47 @@ function isInside(root: string, candidate: string): boolean {
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
 }
 
-/** Byte-copy of the project's `.git/index` taken alongside snapshot `id`. */
-export function indexCopyPath(shadowDir: string, id: string): string {
-  return join(shadowDir, 'freecode-index', `${id}.index`);
+export interface ScratchIndexOptions {
+  /**
+   * Stat cache to seed from and write back to. Defaults to the shadow repo's own
+   * `index`, which is the project's; `.git` is a second work tree and keeps its
+   * own (snapshots/gitdir.ts). Seeding one walk from the other's cache matches no
+   * stat data at all and silently pays the cold cost every time.
+   */
+  cache?: string;
+  /**
+   * Skip the write-back, for an operation that stages only a handful of paths. Its
+   * index describes a fraction of the tree, so saving it *over* a warm cache would
+   * make the next full walk cold — 12s here — to no one's benefit.
+   */
+  discard?: boolean;
+}
+
+/**
+ * Runs `body` against a private index, so two freecode processes in one project
+ * cannot collide on the shadow repo's shared `index.lock`.
+ *
+ * The shared index is still used — as a **cache seed, never as a lock**. The staging
+ * step re-hashes every file whose stat data it cannot match, so a cold scratch index
+ * makes each snapshot walk the whole tree (~12s on this repo, ~0.3s with the cache).
+ * Seeding from the shared copy and writing the result back keeps the stat cache warm
+ * across sessions while leaving every operation independent: a lost race costs a
+ * slower snapshot, never a failed one.
+ */
+export async function withScratchIndex<T>(
+  shadowDir: string,
+  body: (indexFile: string) => Promise<T>,
+  { cache = join(shadowDir, 'index'), discard = false }: ScratchIndexOptions = {},
+): Promise<T> {
+  const indexFile = scratchIndexPath(shadowDir);
+  await copyFile(cache, indexFile).catch(() => undefined);
+  try {
+    const result = await body(indexFile);
+    if (!discard) await copyFile(indexFile, cache).catch(() => undefined);
+    return result;
+  } finally {
+    await rm(indexFile, { force: true }).catch(() => undefined);
+  }
 }
 
 /** Names the project a shadow repo belongs to, since its directory name is hashed. */
@@ -153,9 +191,13 @@ async function createShadowRepo(projectRoot: string, shadowDir: string): Promise
     // endings. It lives in freecode's own git dir, so it is written once and
     // never touched again — no shared state is mutated.
     await writeFile(join(shadowDir, 'info', 'attributes'), '* -text\n', 'utf-8');
-    // A shadow git-dir does not swallow the project's `.git` anyway; this is
-    // free insurance.
-    await writeFile(join(shadowDir, 'info', 'exclude'), '/.git/\n', 'utf-8');
+    // No `info/exclude` is written. It used to hold `/.git/` as "free insurance",
+    // and it is not insurance at all: every snapshot operation stages with
+    // `add -f` (see snapshots/index.ts), which overrides `info/exclude` exactly as
+    // it overrides the project's `.gitignore`. What keeps the project's `.git` out
+    // of the *project* tree is git itself skipping any directory of that name
+    // during the worktree walk — which is why capturing it needs a second work
+    // tree rather than a looser add (snapshots/gitdir.ts).
     // The directory name carries a hash, so it cannot be read back. `checkpoint` uses
     // this to tell someone standing in the wrong directory where their
     // snapshots actually are.
@@ -195,12 +237,30 @@ export function listShadowProjects(): string[] {
  * The object database is still shared, and it is not lock-free on Windows — see
  * `retryingObjectWrites`, which every object-writing call here goes through.
  */
-export function runShadowGit(
+export async function runShadowGit(
   shadowDir: string,
   projectRoot: string,
   args: string[],
   indexFile?: string,
 ): Promise<string> {
+  return (await runShadowGitCapturing(shadowDir, projectRoot, args, indexFile)).stdout;
+}
+
+/**
+ * As {@link runShadowGit}, but hands back stderr as well.
+ *
+ * For the one caller that needs it: `read-tree -u` reports a file it could not
+ * delete as a *warning* and exits 0, so a revert that silently left the agent's
+ * file on disk is indistinguishable from a clean one unless somebody reads
+ * stderr (snapshots/locked-files.ts). Everywhere else stderr is git's progress
+ * chatter and dropping it is right.
+ */
+export function runShadowGitCapturing(
+  shadowDir: string,
+  projectRoot: string,
+  args: string[],
+  indexFile?: string,
+): Promise<GitOutput> {
   return runGit(
     ['--git-dir', shadowDir, '--work-tree', projectRoot, ...args],
     projectRoot,
@@ -254,8 +314,8 @@ function isObjectWriteCollision(error: unknown): boolean {
 }
 
 /** Runs git against the project's own repo — only for the HEAD/branch rollback. */
-export function runProjectGit(projectRoot: string, args: string[]): Promise<string> {
-  return runGit(args, projectRoot);
+export async function runProjectGit(projectRoot: string, args: string[]): Promise<string> {
+  return (await runGit(args, projectRoot)).stdout;
 }
 
 /** A scratch index path nothing else in this or any other process will touch. */
@@ -273,8 +333,8 @@ export function scratchIndexPath(shadowDir: string): string {
  * `commit-tree` that stops to ask for a passphrase would hang the write it is
  * protecting.
  */
-async function runGit(args: string[], cwd: string, indexFile?: string): Promise<string> {
-  const { stdout } = await execFileAsync('git', ['-c', 'commit.gpgsign=false', ...args], {
+async function runGit(args: string[], cwd: string, indexFile?: string): Promise<GitOutput> {
+  const { stdout, stderr } = await execFileAsync('git', ['-c', 'commit.gpgsign=false', ...args], {
     cwd,
     maxBuffer: MAX_GIT_OUTPUT_BYTES,
     env: {
@@ -283,7 +343,13 @@ async function runGit(args: string[], cwd: string, indexFile?: string): Promise<
       ...(indexFile ? { GIT_INDEX_FILE: indexFile } : {}),
     },
   });
-  return stdout;
+  return { stdout, stderr };
+}
+
+/** Both streams of a git call. Only the restore path reads the second one. */
+export interface GitOutput {
+  stdout: string;
+  stderr: string;
 }
 
 /** Whether a `git` binary exists at all. Snapshots are impossible without one. */

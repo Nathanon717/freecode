@@ -1,20 +1,17 @@
 /**
- * @role Executes shell commands in the active project root, behind a hard block on writes to `.git` and a model-confirmable destructive-command guard.
+ * @role Executes shell commands through the Docker containment boundary, preserving output/status reporting while refusing guarded `.git` and destructive command shapes.
  *
  * @readwhen
  * - Changing the regex-based destructive-command guard (rm, git push, del patterns) in `isDestructiveCommand`, or debugging a command refused outright as a `.git` write — that block is unconditional and lives in [git-guard.md](git-guard.md).
- * - Debugging shell output truncation or elision, where head+tail windows and the 10 MB cap interact.
- * - Extending how exit statuses, timeouts, or maxBuffer failures are surfaced in the composed tool result.
+ * - Changing containment, image selection, or the child environment — those live in [container-shell.md](container-shell.md).
+ * - Debugging shell output truncation or elision, where head+tail windows and the 10 MB cap interact, or extending how exit statuses, timeouts, and maxBuffer failures are surfaced in the composed tool result.
  */
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { projectRoot } from '../workspace.js';
 import { GIT_INTERNALS_REFUSAL, shellTouchesGitInternals } from './git-guard.js';
-
-const execAsync = promisify(exec);
+import { runSandboxedCommand } from './container-shell.js';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 
@@ -106,6 +103,21 @@ const failureStatus = (failure: ExecFailure, timeoutMs: number): string => {
   return `[command did not run: ${failure.message ?? 'unknown error'}]`;
 };
 
+// Stamped inside the container. freecode's control plane is normally absent, but this
+// tool is a shell, so `freecode checkpoint accept` was reachable from inside the
+// very run being reviewed: it freed the review lock, took a fresh baseline so
+// `checkpoint diff` reported "No changes", and left the work on disk (A1 in
+// docs/agent-containment-audit.md, demonstrated end to end). The marker is what
+// lets cli/checkpoint.ts tell an agent's shell from the user's terminal.
+//
+// It is deliberately weak — `env -u FREECODE_SANDBOXED freecode checkpoint accept`
+// defeats it — because a shell cannot be made to lie to its own child. The real
+// fix is that no `freecode` binary and no snapshot store exist inside the sandbox
+// (C1 in docs/agent-containment-plan.md); this holds the line until then, and
+// costs nothing once it does.
+// Read per call, not once at module load: `process.env` is still being written
+// when this module is imported (see cli/headless-prompt.ts), and a child that
+// inherited a stale snapshot of it would be a subtler bug than the one above.
 export const shellTool = tool({
   description: 'Execute a shell command. Use this to run build scripts, git commands, npm install, etc.',
   parameters: z.object({
@@ -121,22 +133,13 @@ export const shellTool = tool({
       return 'Destructive command detected. Set confirmDestructive: true if user confirmed.';
     }
     const timeoutMs = timeout_ms ?? DEFAULT_TIMEOUT_MS;
-    try {
-      const { stdout, stderr } = await execAsync(command, {
-        timeout: timeoutMs,
-        maxBuffer: MAX_OUTPUT_BYTES,
-        cwd: projectRoot,
-      });
+    const failure = await runSandboxedCommand(command, projectRoot, timeoutMs);
+    if (failure.code === undefined && !failure.killed && !failure.message) {
       // A bare empty result would be ambiguous with a failure that printed
       // nothing, so success-with-no-output says so.
-      return composeResult(stdout, stderr, stdout || stderr ? null : '[exit 0, no output]');
-    } catch (error) {
-      const failure = (error ?? {}) as ExecFailure;
-      return composeResult(
-        failure.stdout ?? '',
-        failure.stderr ?? '',
-        failureStatus(failure, timeoutMs),
-      );
+      return composeResult(failure.stdout, failure.stderr, failure.stdout || failure.stderr ? null : '[exit 0, no output]');
     }
+    if (failure.code === 0) return composeResult(failure.stdout, failure.stderr, failure.stdout || failure.stderr ? null : '[exit 0, no output]');
+    return composeResult(failure.stdout, failure.stderr, failureStatus(failure, timeoutMs));
   },
 });

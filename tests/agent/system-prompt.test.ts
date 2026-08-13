@@ -131,5 +131,12 @@ describe('buildSystemPrompt', () => {
     const prompt = buildSystemPrompt();
     const expected = process.platform === 'win32' ? 'Windows' : 'Linux';
     expect(prompt).toContain(expected);
+    expect(prompt).toContain('shell_exec OS: Linux (Docker)');
+    expect(prompt).toContain('/work');
+  });
+
+  it('does not describe a shell in read-only mode', () => {
+    const prompt = buildSystemPrompt(false, offeredToolNames({ readOnly: true }));
+    expect(prompt).not.toContain('shell_exec OS:');
   });
 });

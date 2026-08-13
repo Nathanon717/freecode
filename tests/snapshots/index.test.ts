@@ -11,6 +11,7 @@ import {
   pruneSnapshots,
   restoreSnapshot,
   snapshotDiffStat,
+  snapshotGitDirDiff,
   takeSnapshot,
   inspectHint,
 } from '../../src/snapshots/index.js';
@@ -81,7 +82,7 @@ describe('snapshots over a git project', () => {
     expect(existsSync(join(root, 'junk.txt'))).toBe(false);
     expect(await git(root, 'status', '--porcelain')).toBe(before);
     expect((await git(root, 'rev-parse', 'HEAD')).trim()).toBe(head);
-    expect(outcome.indexRestored).toBe(true);
+    expect(outcome.gitDirRestored).toBe(true);
     expect(outcome.headRestored).toBe(true);
     expect(outcome.warnings).toEqual([]);
   });
@@ -110,19 +111,134 @@ describe('snapshots over a git project', () => {
     expect(await readFile(join(root, 'tracked.txt'), 'utf-8')).toBe('original\n');
   });
 
-  it('excludes gitignored files, which is what keeps snapshots cheap', async () => {
-    await writeFile(join(root, '.gitignore'), 'ignored/\n');
-    await mkdir(join(root, 'ignored'), { recursive: true });
-    await writeFile(join(root, 'ignored', 'big.bin'), 'not backed up\n');
+  it('brings HEAD back off a branch the agent created, not just the branch ref', async () => {
+    // The honest-agent case: `git checkout -b` is ordinary work, and moving the
+    // old branch ref underneath the user restored nothing they could see —
+    // revert reported success while leaving them on the agent's branch.
+    const branch = (await git(root, 'symbolic-ref', '--short', 'HEAD')).trim();
+    const head = (await git(root, 'rev-parse', 'HEAD')).trim();
+    const snapshot = await takeSnapshot(root);
+
+    await git(root, 'checkout', '-q', '-b', 'agent-work');
+    await writeFile(join(root, 'tracked.txt'), 'damaged\n');
+    await commitAll(root, 'rogue');
+
+    const outcome = await restoreSnapshot(root, snapshot.id);
+
+    expect((await git(root, 'symbolic-ref', '--short', 'HEAD')).trim()).toBe(branch);
+    expect((await git(root, 'rev-parse', 'HEAD')).trim()).toBe(head);
+    expect(outcome.headRestored).toBe(true);
+  });
+
+  it('reattaches a HEAD the agent detached', async () => {
+    const branch = (await git(root, 'symbolic-ref', '--short', 'HEAD')).trim();
+    const snapshot = await takeSnapshot(root);
+
+    await git(root, 'checkout', '-q', '--detach');
+    await writeFile(join(root, 'tracked.txt'), 'damaged\n');
+    await commitAll(root, 'rogue');
+
+    const outcome = await restoreSnapshot(root, snapshot.id);
+
+    expect((await git(root, 'symbolic-ref', '--short', 'HEAD')).trim()).toBe(branch);
+    expect(outcome.headRestored).toBe(true);
+  });
+
+  it('leaves HEAD detached when that is where the snapshot found it', async () => {
+    // `projectHead` records a detached HEAD as no branch at all, so this is the
+    // arm that writes HEAD directly with `--no-deref`. Without a test the only
+    // coverage was the branch arm, which would silently have been enough for
+    // `update-ref refs/heads/HEAD` to look correct.
+    await git(root, 'checkout', '-q', '--detach');
+    const head = (await git(root, 'rev-parse', 'HEAD')).trim();
+    const snapshot = await takeSnapshot(root);
+    expect(snapshot.branch).toBeUndefined();
+
+    await git(root, 'checkout', '-q', '-b', 'agent-work');
+    await writeFile(join(root, 'tracked.txt'), 'damaged\n');
+    await commitAll(root, 'rogue');
+
+    const outcome = await restoreSnapshot(root, snapshot.id);
+
+    await expect(git(root, 'symbolic-ref', '--quiet', 'HEAD')).rejects.toThrow();
+    expect((await git(root, 'rev-parse', 'HEAD')).trim()).toBe(head);
+    expect(outcome.headRestored).toBe(true);
+  });
+
+  // Finding A2. A payload under `dist/` needed no `.gitignore` edit to be both
+  // invisible to `checkpoint diff` and immune to `checkpoint revert`, and deleting
+  // an ignored `.env` was unrecoverable. Diff and restore are asserted together on
+  // purpose: they stage through one shared builder, and the failure mode if they
+  // ever diverge is a revert that leaves behind exactly what the diff showed.
+  it('covers gitignored files in both directions', async () => {
+    await writeFile(join(root, '.gitignore'), 'dist/\n.env\n');
+    await mkdir(join(root, 'dist'), { recursive: true });
+    await writeFile(join(root, 'dist', 'app.js'), 'legitimate build\n');
+    await writeFile(join(root, '.env'), 'SECRET=1\n');
     await commitAll(root, 'ignore');
 
     const snapshot = await takeSnapshot(root);
-    await writeFile(join(root, 'ignored', 'big.bin'), 'changed by agent\n');
+    await writeFile(join(root, 'dist', 'payload.js'), 'exfiltrate();\n');
+    await writeFile(join(root, 'dist', 'app.js'), 'tampered build\n');
+    await rm(join(root, '.env'));
+
+    const stat = await snapshotDiffStat(root, snapshot.id);
+    expect(stat).toContain('dist/payload.js');
+    expect(stat).toContain('.env');
+
     await restoreSnapshot(root, snapshot.id);
 
-    // Out of scope for recovery, and documented as such.
-    expect(await readFile(join(root, 'ignored', 'big.bin'), 'utf-8')).toBe('changed by agent\n');
+    expect(existsSync(join(root, 'dist', 'payload.js'))).toBe(false);
+    expect(await readFile(join(root, 'dist', 'app.js'), 'utf-8')).toBe('legitimate build\n');
+    expect(await readFile(join(root, '.env'), 'utf-8')).toBe('SECRET=1\n');
   });
+
+  // The one exclusion, and it is prevention rather than backup: containment mounts
+  // node_modules read-only (C3), so there is nothing to hide there and 316 MB not
+  // worth copying. A revert must leave it alone rather than half-restore it.
+  it('leaves node_modules out of the snapshot at any depth', async () => {
+    await mkdir(join(root, 'node_modules', '.bin'), { recursive: true });
+    await mkdir(join(root, 'packages', 'app', 'node_modules'), { recursive: true });
+    await writeFile(join(root, 'node_modules', '.bin', 'tsc'), 'original\n');
+    await writeFile(join(root, 'packages', 'app', 'node_modules', 'dep.js'), 'original\n');
+
+    const snapshot = await takeSnapshot(root);
+    await writeFile(join(root, 'node_modules', '.bin', 'tsc'), 'payload\n');
+    await writeFile(join(root, 'packages', 'app', 'node_modules', 'dep.js'), 'payload\n');
+    // A covered file changed in the same breath, so an empty diff cannot pass this
+    // by capturing nothing at all — the stat has to name this and only this.
+    await writeFile(join(root, 'tracked.txt'), 'covered change\n');
+
+    const stat = await snapshotDiffStat(root, snapshot.id);
+    expect(stat).toContain('tracked.txt');
+    expect(stat).not.toContain('node_modules');
+    await restoreSnapshot(root, snapshot.id);
+
+    expect(await readFile(join(root, 'node_modules', '.bin', 'tsc'), 'utf-8')).toBe('payload\n');
+    expect(await readFile(join(root, 'packages', 'app', 'node_modules', 'dep.js'), 'utf-8')).toBe('payload\n');
+  });
+
+  it('honours FREECODE_SNAPSHOT_EXCLUDE over the default list', async () => {
+    process.env['FREECODE_SNAPSHOT_EXCLUDE'] = 'cache';
+    try {
+      await mkdir(join(root, 'cache'), { recursive: true });
+      await mkdir(join(root, 'node_modules'), { recursive: true });
+      await writeFile(join(root, 'cache', 'blob'), 'original\n');
+      await writeFile(join(root, 'node_modules', 'dep.js'), 'original\n');
+
+      const snapshot = await takeSnapshot(root);
+      await writeFile(join(root, 'cache', 'blob'), 'changed\n');
+      await writeFile(join(root, 'node_modules', 'dep.js'), 'changed\n');
+      await restoreSnapshot(root, snapshot.id);
+
+      // The override replaces the default rather than adding to it.
+      expect(await readFile(join(root, 'cache', 'blob'), 'utf-8')).toBe('changed\n');
+      expect(await readFile(join(root, 'node_modules', 'dep.js'), 'utf-8')).toBe('original\n');
+    } finally {
+      delete process.env['FREECODE_SNAPSHOT_EXCLUDE'];
+    }
+  });
+
 
   it('reports what changed since a snapshot', async () => {
     const snapshot = await takeSnapshot(root);
@@ -210,6 +326,83 @@ describe('snapshots and line endings', () => {
   });
 });
 
+// Finding A3. `git config core.hooksPath` was RCE that survived a revert and never
+// appeared in a diff: `.git` was outside coverage entirely, so config, refs, and
+// the reflog were whatever the agent left. These assert the directory itself is
+// snapshot state now.
+describe('snapshots over the project .git', () => {
+  beforeEach(async () => {
+    await git(root, 'init', '-q', '.');
+    await writeFile(join(root, 'tracked.txt'), 'original\n');
+    await commitAll(root, 'init');
+  });
+
+  it('reverts a planted core.hooksPath and shows it in the diff first', async () => {
+    const snapshot = await takeSnapshot(root);
+
+    // The payload: a hook directory git will run on the user's next commit. The
+    // script itself is an ordinary worktree file; `core.hooksPath` is the half
+    // that used to be unreachable.
+    await mkdir(join(root, '.evilhooks'), { recursive: true });
+    await writeFile(join(root, '.evilhooks', 'pre-commit'), '#!/bin/sh\ntouch HOOK_RAN\n');
+    await git(root, 'config', 'core.hooksPath', '.evilhooks');
+
+    const gitPatch = await snapshotGitDirDiff(root, snapshot);
+    expect(gitPatch).toContain('hooksPath');
+
+    await restoreSnapshot(root, snapshot.id);
+
+    await expect(git(root, 'config', 'core.hooksPath')).rejects.toThrow();
+    expect(existsSync(join(root, '.evilhooks', 'pre-commit'))).toBe(false);
+    expect(await snapshotGitDirDiff(root, snapshot)).toBe('');
+  });
+
+  it('recovers a branch the agent deleted', async () => {
+    await git(root, 'branch', 'sidebranch');
+    const side = (await git(root, 'rev-parse', 'sidebranch')).trim();
+    const snapshot = await takeSnapshot(root);
+
+    await git(root, 'branch', '-D', 'sidebranch');
+    // The teeth of the finding: with the refs gone, this collects the objects
+    // they held, so nothing short of snapshotting `.git` could bring it back.
+    await git(root, 'reflog', 'expire', '--all', '--expire=now');
+    await git(root, 'gc', '-q', '--prune=now');
+
+    await restoreSnapshot(root, snapshot.id);
+
+    expect((await git(root, 'rev-parse', 'sidebranch')).trim()).toBe(side);
+    expect(await git(root, 'fsck', '--no-progress')).toBe('');
+  });
+
+  it('never captures a transient index.lock, which a revert would recreate', async () => {
+    // Restoring one would wedge every later git command in the project with
+    // "Another git process seems to be running".
+    await writeFile(join(root, '.git', 'index.lock'), '');
+    const snapshot = await takeSnapshot(root);
+    await rm(join(root, '.git', 'index.lock'));
+
+    await restoreSnapshot(root, snapshot.id);
+    expect(existsSync(join(root, '.git', 'index.lock'))).toBe(false);
+  });
+
+  it('keeps the worktree restore and says how to finish the job when .git cannot be put back', async () => {
+    // The real trigger is a file another process holds open — `.git/index` under
+    // an editor aborts `read-tree -u` mid-write on Windows. Deleting the object
+    // the restore reads reproduces that failure without an OS-specific lock.
+    const snapshot = await takeSnapshot(root);
+    await writeFile(join(root, 'tracked.txt'), 'damaged\n');
+    const { path: shadowDir } = shadowRepoPath(root);
+    const commit = snapshot.gitDir!;
+    await rm(join(shadowDir, 'objects', commit.slice(0, 2), commit.slice(2)), { force: true });
+
+    const outcome = await restoreSnapshot(root, snapshot.id);
+
+    expect(await readFile(join(root, 'tracked.txt'), 'utf-8')).toBe('original\n');
+    expect(outcome.gitDirRestored).toBe(false);
+    expect(outcome.warnings.join(' ')).toContain('revert` again');
+  });
+});
+
 describe('snapshots outside a git project', () => {
   it('restores the worktree of a plain directory', async () => {
     await writeFile(join(root, 'notes.txt'), 'original\n');
@@ -223,7 +416,7 @@ describe('snapshots outside a git project', () => {
 
     expect(await readFile(join(root, 'notes.txt'), 'utf-8')).toBe('original\n');
     expect(existsSync(join(root, 'junk.txt'))).toBe(false);
-    expect(outcome.indexRestored).toBe(false);
+    expect(outcome.gitDirRestored).toBe(false);
     expect(outcome.warnings).toEqual([]);
   });
 
@@ -242,10 +435,13 @@ describe('snapshots outside a git project', () => {
     expect(md5(await readFile(join(root, '.git', 'index')))).toBe(indexBefore);
   });
 
-  it('says plainly that history was not recovered when .git is gone', async () => {
+  // This used to be the test that a revert said plainly that history was gone for
+  // good. `.git` is snapshotted now, so the honest answer changed: it comes back.
+  it('rebuilds a .git the agent deleted outright', async () => {
     await git(root, 'init', '-q', '.');
     await writeFile(join(root, 'tracked.txt'), 'original\n');
     await commitAll(root, 'init');
+    const head = (await git(root, 'rev-parse', 'HEAD')).trim();
     const snapshot = await takeSnapshot(root);
 
     await rm(join(root, '.git'), { recursive: true, force: true });
@@ -253,7 +449,9 @@ describe('snapshots outside a git project', () => {
     const outcome = await restoreSnapshot(root, snapshot.id);
 
     expect(await readFile(join(root, 'tracked.txt'), 'utf-8')).toBe('original\n');
-    expect(outcome.indexRestored).toBe(false);
-    expect(outcome.warnings.join(' ')).toContain('NOT recovered');
+    expect(outcome.gitDirRestored).toBe(true);
+    expect(outcome.warnings).toEqual([]);
+    expect((await git(root, 'rev-parse', 'HEAD')).trim()).toBe(head);
+    expect(await git(root, 'status', '--porcelain')).toBe('');
   });
 });

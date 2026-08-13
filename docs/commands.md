@@ -76,6 +76,12 @@ exist so a multi-word prompt arrives as *one* argument.
 - `--model <provider:model>`: Override `FREECODE_MODEL` and config default model for the current process.
 - `-log`: Enable diagnostic logging.
 
+`shell_exec` requires a running Docker installation. Commands run in a resource-limited Linux
+container with the project at `/work`, networking disabled, and no inherited host credentials.
+The default image is `node:22-bookworm-slim`; set `sandboxImage` in the project's `.freecoderc`
+to use a project-specific toolchain. Docker startup or image failures refuse the command rather
+than running it directly on the host.
+
 ## Headless prompt mode (`-p`)
 
 ```bash
@@ -172,6 +178,15 @@ paths visible without touching the project's own index.
 **The verb carries the intent, and only `revert` and `accept` write.** `list` and `diff` are
 reads. A bare `freecode checkpoint` lists. An unknown subcommand is rejected by name rather
 than falling through to an action nobody asked for.
+
+**The project's own `.git` is snapshotted too**, so a revert puts back commit history, branches,
+the reflog, `config`, and hooks — `git config core.hooksPath` pointing at a script of the agent's
+choosing used to survive a revert and never show up in a diff. `diff` prints changes to
+`.git/config` and `.git/hooks/` as a section of its own, raw in both modes; refs and objects stay
+out of it because they churn on every git command an agent runs, so a deleted branch is recovered
+without being listed. If some file inside `.git` cannot be written — another program holding it
+open is the usual cause — the revert restores your files, says so, exits 1, and keeps the project
+locked to that run: running the same command again once the program has let go finishes the job.
 
 **`accept` is what makes this a review loop rather than a safety net.** It says the change
 has been looked at and is good, takes a fresh snapshot as the new baseline, and frees the

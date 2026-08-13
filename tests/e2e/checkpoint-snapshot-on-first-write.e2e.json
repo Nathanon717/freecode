@@ -7,17 +7,17 @@
   "env": { "FREECODE_SNAPSHOT_DIR": "" },
   "turns": [
     { "input": "Create note.txt with the text created by fake llm." },
-    { "input": "y" },
     { "input": "y" }
   ],
   "expect": {
-    "stdoutContains": ["freecode-snapshot", "The snapshot is there."],
+    "stdoutContains": ["The snapshot is there."],
     "stdoutAbsent": ["No API key configured", "Error:"],
     "exitCode": 0,
     "files": [{ "path": "note.txt", "contentExact": "created by fake llm\n" }],
     "toolTrace": {
-      "sequence": ["create", "shell_exec"],
-      "maxCalls": 2
-    }
+      "sequence": ["create"],
+      "maxCalls": 1
+    },
+    "snapshotCommit": true
   }
 }

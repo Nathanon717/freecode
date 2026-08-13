@@ -31,26 +31,8 @@
         "mustContain": ["<tool_result name=\"create\">"]
       },
       "response": {
-        "chunks": ["Checking the shadow repo."],
-        "toolCalls": [
-          {
-            "name": "shell_exec",
-            "args": {
-              "command": "node -e \"const{readdirSync}=require('fs');const{join}=require('path');const{execFileSync}=require('child_process');const d=join(process.env.FREECODE_HOME,'snapshots');const entries=readdirSync(d);const g=entries.find(n=>n.endsWith('.git'));if(!g){console.log('no shadow repo under '+d+', saw: '+entries.join(', '));process.exit(1);}console.log(execFileSync('git',['--git-dir',join(d,g),'--work-tree','.','log','--all','--format=%s'],{encoding:'utf8'}));\""
-            }
-          }
-        ],
-        "usage": { "promptTokens": 30, "outputTokens": 8, "totalTokens": 38 }
-      }
-    },
-    {
-      "match": {
-        "turn": 3,
-        "mustContain": ["freecode-snapshot"]
-      },
-      "response": {
         "text": "The snapshot is there.",
-        "usage": { "promptTokens": 40, "outputTokens": 5, "totalTokens": 45 }
+        "usage": { "promptTokens": 30, "outputTokens": 5, "totalTokens": 35 }
       }
     }
   ]

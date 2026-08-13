@@ -21,7 +21,7 @@
  * `.gitignore`, `.gitattributes`, `.gitmodules`, and `.github` out of it — those
  * are ordinary project files an agent has every reason to write.
  */
-const GIT_INTERNALS = /(?:^|[\s'"=`(/\\])\.git(?![\w-])/;
+const GIT_INTERNALS = /(?:^|[\s'"=`(/\\])\.git(?![\w-])/i;
 
 /**
  * A redirect whose *target* is inside `.git`. Kept separate from the verbs below
@@ -30,7 +30,7 @@ const GIT_INTERNALS = /(?:^|[\s'"=`(/\\])\.git(?![\w-])/;
  * (`grep -r --exclude-dir=.git foo . > out.txt`), and refusing that would block
  * commands whose whole point is to leave `.git` alone.
  */
-const REDIRECT_INTO_GIT = /(?:^|[^0-9<>])>>?\s*['"]?[^\s'"|;&]*\.git(?![\w-])/;
+const REDIRECT_INTO_GIT = /(?:^|[^0-9<>])>>?\s*['"]?[^\s'"|;&]*\.git(?![\w-])/i;
 
 /**
  * Command shapes that write. A command merely *mentioning* `.git` is usually a
@@ -56,11 +56,20 @@ const MUTATING = [
   /\bshred\b/i,
 ];
 
-/** True when a relative project path points inside `.git`. */
+/**
+ * True when a relative project path points inside `.git`.
+ *
+ * Case-insensitive because on Windows and macOS the filesystem is:
+ * `.GIT/hooks/pre-commit` opens the real `.git/hooks/pre-commit` there, so an
+ * exact-match comparison refused the lowercase spelling and wrote the hook for
+ * the uppercase one. On Linux `.GIT` is a genuinely different directory and
+ * refusing it is a false positive — an acceptable one, since nothing legitimate
+ * writes to a path spelled that way.
+ */
 export function isGitInternalPath(relativePath: string): boolean {
   return relativePath
     .split(/[/\\]/)
-    .some((segment) => segment === '.git');
+    .some((segment) => segment.toLowerCase() === '.git');
 }
 
 /** True when a shell command would write to or delete something under `.git`. */

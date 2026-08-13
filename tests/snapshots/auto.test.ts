@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, mkdir, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { ensureSnapshot, resetSnapshotMemo } from '../../src/snapshots/auto.js';
+import { ensureSnapshot, resetSnapshotMemo, sessionSnapshot } from '../../src/snapshots/auto.js';
 import { listSnapshots } from '../../src/snapshots/index.js';
 import { setProjectRoot } from '../../src/agent/workspace.js';
 
@@ -51,5 +51,33 @@ describe('ensureSnapshot', () => {
     setProjectRoot(join(base, 'does-not-exist'));
     resetSnapshotMemo();
     await expect(ensureSnapshot()).resolves.toBeUndefined();
+  });
+});
+
+describe('sessionSnapshot', () => {
+  it('reports none before any write, and the id after one', async () => {
+    expect(await sessionSnapshot()).toEqual({ status: 'none' });
+
+    await ensureSnapshot();
+    const [snapshot] = await listSnapshots(root);
+
+    expect(await sessionSnapshot()).toEqual({ status: 'taken', id: snapshot.id });
+  });
+
+  it('separates a failed snapshot from never having written', async () => {
+    // The distinction R4 exists for: both used to answer `undefined`, and
+    // `-p --edit` read that as "nothing to review" and freed the project over
+    // changes no snapshot covers.
+    setProjectRoot(join(base, 'does-not-exist'));
+    resetSnapshotMemo();
+    await ensureSnapshot();
+
+    const outcome = await sessionSnapshot();
+    expect(outcome.status).toBe('failed');
+    // One line naming the fault, not the whole git invocation that produced it.
+    if (outcome.status === 'failed') {
+      expect(outcome.reason).not.toContain('\n');
+      expect(outcome.reason).not.toBe('');
+    }
   });
 });

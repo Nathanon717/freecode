@@ -24,5 +24,7 @@ For usage only, read lines 1–72.
 <!-- END GENERATED PTY QUICKSTART REF -->
 - [Freecode as a subagent](subagents/README.md): the workshop for delegation to free `freecode -p` subagents — verified recipes, known failures, and the capped list of source changes that would make delegation better. When to delegate is in `AGENTS.md`, not here; read this when improving delegation itself.
 - [Agent checkpoint snapshots (plan)](undo-snapshots-plan.md): the design record behind `freecode checkpoint` — built, and kept for the verified git facts and rejected alternatives. Read before touching snapshot/restore.
+- [Agent containment (plan)](agent-containment-plan.md): **in progress.** Checkpoint reviewability is landed; Docker containment is implemented with real-daemon acceptance and live output streaming still pending. The locked decisions and rejected substrates are here — read before touching `shell_exec`, `git-guard.ts`, or snapshot coverage.
+- [Agent containment audit](agent-containment-audit.md): the evidence base for that plan — 16 findings, ranked, marked by whether they were demonstrated or derived. Re-runnable proof scripts in [scripts/containment-audit/](scripts/containment-audit/README.md).
 - [Session logs](sessions/README.md): optional records of substantial feature work.
 - [New device setup](device-setup.md): install Doppler, link the project, and get all API keys + DB sync in one step.

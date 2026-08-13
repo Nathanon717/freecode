@@ -62,6 +62,8 @@ export interface E2eExpectations {
   files?: FileExpectation[];
   toolTrace?: ToolTraceExpectation;
   fakeLlmTrace?: FakeLlmTraceExpectation;
+  /** At least one shadow repo under this scenario's FREECODE_HOME contains a freecode snapshot commit. */
+  snapshotCommit?: boolean;
 }
 
 export interface ToolTraceEvent {
@@ -91,4 +93,3 @@ export interface FakeLlmTraceEvent {
     outputTokens?: number;
   };
 }
-

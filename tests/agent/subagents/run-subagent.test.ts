@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
@@ -58,5 +58,38 @@ describe('runSubAgent', () => {
     const result = await runSubAgent('explore', 'Find where config is loaded.', fakeCtx);
 
     expect(result).toBe('loadConfig — src/config/index.ts:1 [V]');
+  });
+
+  // Finding D14. A sub-agent gets READ_ONLY_TOOL_DEFS *raw* — no withSnapshotGate,
+  // no withConfirmation, no transcript rendering (see the header of
+  // run-subagent.ts). That is sound only for as long as the set it reaches for
+  // stays read-only: a write tool added to READ_ONLY_TOOL_DEFS, or this function
+  // switching to a wider source, would produce unconfirmed, unsnapshotted,
+  // invisible writes — invisible because `checkpoint diff` needs a snapshot the
+  // gate never took. So pin the names the sub-turn is actually handed, not the
+  // persona: AgentPersona carries no tool field, and no persona edit can widen it.
+  it('hands the sub-turn the read-only tools and nothing else', async () => {
+    const tracePath = join(tempRoot, 'trace.json');
+    process.env.FREECODE_FAKE_LLM_TRACE = tracePath;
+    writeFixture({ version: 1, steps: [{ response: { text: 'done', usage: { totalTokens: 1 } } }] });
+
+    try {
+      await runSubAgent('explore', 'anything', fakeCtx);
+    } finally {
+      delete process.env.FREECODE_FAKE_LLM_TRACE;
+    }
+
+    const trace = JSON.parse(readFileSync(tracePath, 'utf-8')) as Array<{ toolNames: string[] }>;
+    const offered = trace[0].toolNames;
+    const { READ_ONLY_TOOL_DEFS, WRITE_TOOL_DEFS } = await import('../../../src/agent/tools/index.js');
+    expect([...offered].sort()).toEqual([...Object.keys(READ_ONLY_TOOL_DEFS)].sort());
+    expect(offered.filter(name => name in WRITE_TOOL_DEFS)).toEqual([]);
+    // Read-only is the property under test; naming the write tools makes a
+    // failure say which one arrived.
+    expect(offered).not.toContain('create');
+    expect(offered).not.toContain('edit');
+    expect(offered).not.toContain('shell_exec');
+    // No recursion either: a sub-agent that could spawn is a budget nobody watches.
+    expect(offered).not.toContain('spawn_agent');
   });
 });

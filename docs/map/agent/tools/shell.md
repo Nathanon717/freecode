@@ -3,13 +3,13 @@
 <!-- BEGIN GENERATED MAP INTENT -->
 ## Role
 
-Executes shell commands in the active project root, behind a hard block on writes to `.git` and a model-confirmable destructive-command guard.
+Executes shell commands through the Docker containment boundary, preserving output/status reporting while refusing guarded `.git` and destructive command shapes.
 
 ## Read When
 
 - Changing the regex-based destructive-command guard (rm, git push, del patterns) in `isDestructiveCommand`, or debugging a command refused outright as a `.git` write — that block is unconditional and lives in [git-guard.md](git-guard.md).
-- Debugging shell output truncation or elision, where head+tail windows and the 10 MB cap interact.
-- Extending how exit statuses, timeouts, or maxBuffer failures are surfaced in the composed tool result.
+- Changing containment, image selection, or the child environment — those live in [container-shell.md](container-shell.md).
+- Debugging shell output truncation or elision, where head+tail windows and the 10 MB cap interact, or extending how exit statuses, timeouts, and maxBuffer failures are surfaced in the composed tool result.
 <!-- END GENERATED MAP INTENT -->
 
 <!-- BEGIN GENERATED EXPORTS -->
@@ -25,7 +25,7 @@ shellTool: CoreTool<z.ZodObject<{ command: z.ZodString; timeout_ms: z.ZodOptiona
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imports:** [`agent/tools/git-guard.ts`](git-guard.md) ×2, [`agent/workspace.ts`](../workspace.md) ×1
+- **Imports:** [`agent/tools/git-guard.ts`](git-guard.md) ×2, [`agent/tools/container-shell.ts`](container-shell.md) ×1, [`agent/workspace.ts`](../workspace.md) ×1
 - **Imported by:** [`agent/tools/index.ts`](index.md) ×1
 
 ## Tests
@@ -34,14 +34,14 @@ shellTool: CoreTool<z.ZodObject<{ command: z.ZodString; timeout_ms: z.ZodOptiona
 
 ## Budget
 
-133 / 500 lines (367 to spare).
+136 / 500 lines (364 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Parameters
 
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| `command` | `string` | required | Command passed to `child_process.exec`. |
+| `command` | `string` | required | Linux shell command passed to the warm Docker executor. |
 | `timeout_ms` | `number` | `30000` | Maximum command runtime in milliseconds. |
 | `confirmDestructive` | `boolean` | `false` | Must be true for commands matching destructive patterns. |
 
@@ -70,7 +70,10 @@ ren / rename
 - Refuses before anything else when the command would write to or delete something under
   `.git` — see [git-guard.md](git-guard.md). That block is checked *before* the destructive
   patterns below because it must not be satisfiable by `confirmDestructive`.
-- Runs with `cwd: projectRoot`.
+- Runs through [container-shell.md](container-shell.md), in Linux at `/work`; output paths are
+  translated back to the host project root before the model sees them.
+- Passes none of freecode's host environment. `FREECODE_SANDBOXED=1` is the sole explicit child
+  variable, retaining R1's refusal for development checkouts containing their own built CLI.
 - Uses `timeout_ms` when provided, otherwise a 30-second timeout.
 - Raises `maxBuffer` to 10 MB. `exec`'s own 1 MB default kills the child and
   discards its output, which a real `dotnet build` or `npm test` trips.
@@ -107,5 +110,5 @@ catch block that returns `message` alone silently drops everything a
 stdout-reporting build tool said — see `docs/bug log/05-08-2026c.md`. Covered by
 `tests/agent/tools/shell.test.ts` and `tests/e2e/shell-failure-output.e2e.json`.
 
-`exec` hands back two separate buffers, so true stdout/stderr interleaving is
+Docker exec hands back two separate buffers, so true stdout/stderr interleaving is
 not recoverable here; only a pty would preserve it.

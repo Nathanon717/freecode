@@ -17,6 +17,13 @@ Hard block on writes and deletes targeting a project's `.git` directory, used by
 ```typescript
 /**
  * True when a relative project path points inside `.git`.
+ *
+ * Case-insensitive because on Windows and macOS the filesystem is:
+ * `.GIT/hooks/pre-commit` opens the real `.git/hooks/pre-commit` there, so an
+ * exact-match comparison refused the lowercase spelling and wrote the hook for
+ * the uppercase one. On Linux `.GIT` is a genuinely different directory and
+ * refusing it is a false positive — an acceptable one, since nothing legitimate
+ * writes to a path spelled that way.
  */
 isGitInternalPath(relativePath: string): boolean
 
@@ -43,7 +50,7 @@ GIT_INTERNALS_REFUSAL: string
 
 ## Budget
 
-69 / 500 lines (431 to spare).
+78 / 500 lines (422 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Why this is a hard block
@@ -54,12 +61,15 @@ The gap is closed by prevention.
 
 Not model-confirmable, deliberately. `shell_exec`'s `confirmDestructive` is a parameter the
 *model* sets, and under `freecode -p --edit` ask mode is `auto` — a flag here would be worth
-nothing. The shell check runs before `isDestructiveCommand` for that reason.
+nothing. For that reason the caller ([`shell.ts`](shell.md)) runs `shellTouchesGitInternals`
+and returns the refusal *before* it reaches the confirmable `isDestructiveCommand` branch.
 
 ## What it does and does not catch
 
-- Paths: any segment equal to `.git`. `.gitignore`, `.gitattributes`, `.gitmodules` and
-  `.github` are ordinary project files and pass.
+- Paths: any segment equal to `.git`, compared case-insensitively — Windows and macOS open
+  `.GIT/hooks/pre-commit` as the real hook, so a byte comparison refused one spelling and
+  permitted the other. `.gitignore`, `.gitattributes`, `.gitmodules` and `.github` are
+  ordinary project files and pass.
 - Shell: fires where a `.git` reference and a mutating verb meet, or where a redirect's
   *target* is inside `.git`. `cat .git/HEAD` is a read and passes; `rm -rf .git`, `mv .git …`,
   and `echo … > .git/HEAD` do not.
@@ -67,3 +77,13 @@ nothing. The shell check runs before `isDestructiveCommand` for that reason.
   standard way to skip a repo's internals is to name them —
   `grep -r --exclude-dir=.git foo . > out.txt` — and refusing that would block commands whose
   whole point is to leave `.git` alone. Both exclude idioms are in the test table.
+
+## What it cannot catch
+
+This is a denylist over an unbounded shell, so read it as raising the cost of an accident, not
+as `.git` being protected. The whole class it misses is **git mutating its own internals
+without the string `.git` appearing anywhere**: `git config core.hooksPath …` installs a hook
+that survives a revert, and `git reflog expire`, `gc --prune=now`, and `branch -D` destroy
+history the same way. No regex over shell text closes that. What closes it is snapshotting
+`.git` itself and running the agent in a container — until then, treat the guard as a
+speed bump.

@@ -10,6 +10,7 @@ This file is intentionally short. Keep detailed reference material in `docs/` an
 
 - Map first, source second — see **Codebase Map** below.
 - Never justify dead code by calling it a "fallback" - remove it.
+- After writing a final response thats ~300 words or more, end with a concise TLDR.
 
 ## Codebase Map
 

@@ -1,0 +1,12 @@
+{
+  "name": "checkpoint-no-self-approval",
+  "description": "`freecode checkpoint accept` refuses when it is running inside an agent's shell. shell_exec stamps FREECODE_SANDBOXED on every child it spawns (src/agent/tools/shell.ts), and freecode's control plane is a CLI on $PATH — so without this the run under review could accept its own work: lock freed, a fresh baseline that makes `checkpoint diff` report no changes, payload still on disk, next delegation permitted (finding A1). The refusal is checked here against the real binary reading the real environment, ahead of resolving any snapshot root, so nothing is written before it fires — an accept that refused *after* taking its baseline would leave the agent's snapshot in `checkpoint list`. It names the variable rather than reporting a bare failure, because someone who set it for an unrelated reason must be able to see why they are locked out",
+  "workspace": "temp",
+  "env": { "FREECODE_SANDBOXED": "1" },
+  "flags": ["checkpoint", "accept"],
+  "expect": {
+    "stdoutContains": ["FREECODE_SANDBOXED", "Run it from your own terminal"],
+    "stdoutAbsent": ["Accepted", "baseline"],
+    "exitCode": 1
+  }
+}

@@ -77,6 +77,8 @@ interface Config {
   loadAgentsMd: boolean;
   /** Auto-approve read-only tool calls costing fewer than this many tokens. 0 = off. */
   autoApproveTokenBudget: number;
+  /** Docker image used for contained shell commands; local .freecoderc may override it. */
+  sandboxImage?: string;
 }
 ```
 <!-- END GENERATED EXPORTS -->
@@ -92,7 +94,7 @@ No mirrored test — pure type declarations; erased at compile time, no runtime 
 
 ## Budget
 
-63 / 500 lines (437 to spare).
+65 / 500 lines (435 to spare).
 <!-- END GENERATED MAP FACTS -->
 
 ## Notes

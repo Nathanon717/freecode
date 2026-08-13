@@ -39,10 +39,34 @@ interface ShadowLocation {
  */
 shadowRepoPath(projectRoot: string): ShadowLocation
 
+interface ScratchIndexOptions {
+  /**
+   * Stat cache to seed from and write back to. Defaults to the shadow repo's own
+   * `index`, which is the project's; `.git` is a second work tree and keeps its
+   * own (snapshots/gitdir.ts). Seeding one walk from the other's cache matches no
+   * stat data at all and silently pays the cold cost every time.
+   */
+  cache?: string;
+  /**
+   * Skip the write-back, for an operation that stages only a handful of paths. Its
+   * index describes a fraction of the tree, so saving it *over* a warm cache would
+   * make the next full walk cold — 12s here — to no one's benefit.
+   */
+  discard?: boolean;
+}
+
 /**
- * Byte-copy of the project's `.git/index` taken alongside snapshot `id`.
+ * Runs `body` against a private index, so two freecode processes in one project
+ * cannot collide on the shadow repo's shared `index.lock`.
+ *
+ * The shared index is still used — as a **cache seed, never as a lock**. The staging
+ * step re-hashes every file whose stat data it cannot match, so a cold scratch index
+ * makes each snapshot walk the whole tree (~12s on this repo, ~0.3s with the cache).
+ * Seeding from the shared copy and writing the result back keeps the stat cache warm
+ * across sessions while leaving every operation independent: a lost race costs a
+ * slower snapshot, never a failed one.
  */
-indexCopyPath(shadowDir: string, id: string): string
+withScratchIndex<T>(shadowDir: string, body: (indexFile: string) => Promise<T>, { cache, discard }?: ScratchIndexOptions): Promise<T>
 
 /**
  * Creates the shadow repo if it is not there yet and returns its path.
@@ -81,6 +105,17 @@ listShadowProjects(): string[]
 runShadowGit(shadowDir: string, projectRoot: string, args: string[], indexFile?: string | undefined): Promise<string>
 
 /**
+ * As {@link runShadowGit}, but hands back stderr as well.
+ *
+ * For the one caller that needs it: `read-tree -u` reports a file it could not
+ * delete as a *warning* and exits 0, so a revert that silently left the agent's
+ * file on disk is indistinguishable from a clean one unless somebody reads
+ * stderr (snapshots/locked-files.ts). Everywhere else stderr is git's progress
+ * chatter and dropping it is right.
+ */
+runShadowGitCapturing(shadowDir: string, projectRoot: string, args: string[], indexFile?: string | undefined): Promise<GitOutput>
+
+/**
  * Runs a shadow-git command that writes objects, retrying a lost race.
  *
  * Two sessions snapshotting one project hash the *same* content, so they race to
@@ -108,6 +143,14 @@ runProjectGit(projectRoot: string, args: string[]): Promise<string>
 scratchIndexPath(shadowDir: string): string
 
 /**
+ * Both streams of a git call. Only the restore path reads the second one.
+ */
+interface GitOutput {
+  stdout: string;
+  stderr: string;
+}
+
+/**
  * Whether a `git` binary exists at all. Snapshots are impossible without one.
  */
 gitAvailable(): Promise<boolean>
@@ -118,15 +161,15 @@ gitAvailable(): Promise<boolean>
 ## Neighbors
 
 - **Imports:** [`logger.ts`](../logger.md) ×2, [`config/index.ts`](../config/index.md) ×1
-- **Imported by:** [`snapshots/index.ts`](index.md) ×26, [`cli/checkpoint.ts`](../cli/checkpoint.md) ×4, [`snapshots/review-lock.ts`](review-lock.md) ×1
+- **Imported by:** [`snapshots/index.ts`](index.md) ×29, [`snapshots/gitdir.ts`](gitdir.md) ×13, [`cli/checkpoint.ts`](../cli/checkpoint.md) ×4, [`snapshots/locked-files.ts`](locked-files.md) ×3, [`snapshots/review-lock.ts`](review-lock.md) ×1
 
 ## Tests
 
-`tests/snapshots/shadow-repo.test.ts`. 2 other test files reference it.
+`tests/snapshots/shadow-repo.test.ts`. 5 other test files reference it.
 
 ## Budget
 
-288 / 500 lines (212 to spare).
+354 / 500 lines (146 to spare).
 
 ## Env
 
@@ -138,10 +181,17 @@ gitAvailable(): Promise<boolean>
 ```text
 $FREECODE_HOME/snapshots/<basename>-<hash>.git/   # bare repo, created once
   info/attributes                                 # "* -text", written at creation
-  info/exclude                                    # "/.git/"
   refs/snapshots/<snapshot-id>                    # one ref per snapshot
-  freecode-index/<snapshot-id>.index              # byte-copy of the project's .git/index
+  index                                           # stat cache for the project walk
+  freecode-index/gitdir.index                     # stat cache for the .git walk
+  freecode-index/scratch-<pid>-<rand>.index       # one per operation in flight
 ```
+
+The two caches are separate because they describe two different work trees, and
+`withScratchIndex` takes the one to seed from as an argument for that reason. Seeding the `.git`
+walk from the project's cache would match no stat data at all and silently pay the cold cost —
+12s a snapshot here — every time. Neither is ever locked: they are copied out, worked on, and
+copied back best-effort.
 
 ## Ordering that is not optional
 
@@ -153,6 +203,13 @@ $FREECODE_HOME/snapshots/<basename>-<hash>.git/   # bare repo, created once
   cwd, so the same `--git-dir`/`--work-tree` pair from elsewhere snapshots the wrong tree.
 - Git identity is supplied by env, not read from config: `commit-tree` refuses to run without
   one, and a machine that has never configured git has none.
+
+**No `info/exclude` is written.** It used to hold `/.git/` as "free insurance", and it never was
+any: every snapshot operation stages with `add -f` ([index.md](index.md)), which overrides
+`info/exclude` exactly as it overrides the project's `.gitignore` — verified both ways. What
+keeps the project's `.git` out of the *project* tree is git skipping any directory of that name
+during the worktree walk, which is why capturing it takes a second work tree rooted at `.git`
+rather than a looser add ([gitdir.md](gitdir.md)).
 
 ## Concurrency
 

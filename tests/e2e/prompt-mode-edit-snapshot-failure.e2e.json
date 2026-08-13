@@ -1,0 +1,22 @@
+{
+  "name": "prompt-mode-edit-snapshot-failure",
+  "description": "A `-p --edit` run whose checkpoint snapshot fails still writes, still answers, and says on stderr that its changes have no baseline to be reviewed against. The write landing is the older half of the contract: refusing writes because the safety net is unavailable inverts the point of having one (src/snapshots/auto.ts). The stderr line is R4. `ensureSnapshot` swallowed every failure to a log, and `-p` silences the transcript, so nothing reached the caller at all - and worse, the release condition asked only whether an id existed, so 'wrote unprotected' was indistinguishable from 'wrote nothing' and the review lock was freed over changes no snapshot covers (findings A5/A6). The failure is injected the way a broken store really presents: GIT_OBJECT_DIRECTORY pointing at a directory that is not there, which makes every shadow-repo git call fail while leaving the lock file - plain fs, no git - claimable, so the run gets past its claim and dies at the snapshot. stdout stays the answer and nothing else, which is what makes `$(freecode -p ...)` composable",
+  "workspace": "temp",
+  "model": "mock-native:gpt-freecode-test",
+  "llmFixture": "prompt-mode-edit.llm.json",
+  "flags": ["--edit"],
+  "prompt": "write note.txt for me",
+  "env": { "GIT_OBJECT_DIRECTORY": "no-such-object-directory" },
+  "expect": {
+    "exitCode": 0,
+    "stdoutContains": [
+      "Wrote note.txt.",
+      "could not take the checkpoint snapshot",
+      "project stays locked",
+      "checkpoint accept"
+    ],
+    "files": [
+      { "path": "note.txt", "contentExact": "written headlessly\n" }
+    ]
+  }
+}

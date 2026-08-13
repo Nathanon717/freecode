@@ -42,7 +42,7 @@ runHeadlessPrompt(options: HeadlessPromptOptions): Promise<number>
 
 ## Budget
 
-188 / 500 lines (312 to spare).
+245 / 500 lines (255 to spare).
 
 ## Env
 
@@ -79,12 +79,28 @@ An edit-enabled run claims the lock in [../snapshots/review-lock.md](../snapshot
 **before the turn**, so a refusal costs no tokens, and exits 1 naming the holder and the task
 it was given. Read-only `-p` neither claims nor checks — it has nothing to review.
 
-The release lives in a `finally` and asks `sessionSnapshotId()` in
+The release lives in a `finally` and asks `sessionSnapshot()` in
 [../snapshots/auto.md](../snapshots/auto.md) rather than tracking a flag of its own: that
-module already knows whether this process snapshotted, and two flags can disagree while one
-cannot. So a run that wrote nothing frees the project on the way out, and a run that wrote
-keeps the lock whether it then succeeded, errored, or threw — an errored run's changes are the
-ones most worth looking at before anything else touches the project.
+module already knows how this process's snapshot went, and two flags can disagree while one
+cannot. It answers three ways, and `settleReviewLock` does exactly one thing per answer:
+
+| Answer | Effect |
+| --- | --- |
+| `none` — wrote nothing | frees the project on the way out |
+| `taken` | keeps the lock and records the snapshot id in it |
+| `failed` — wrote, no snapshot | keeps the lock and reports it on stderr |
+
+A run that wrote keeps the lock whether it then succeeded, errored, or threw — an errored run's
+changes are the ones most worth looking at before anything else touches the project.
+
+`failed` is R4. It used to be indistinguishable from `none`, because the question asked was "is
+there an id?" — so a run that wrote while its snapshot store was broken **released the lock**,
+marking the project free over changes nothing covers, and the only record of the failure went to
+a log that `-p` silences (findings A5/A6). The report goes to stderr, not stdout, so the output
+contract above survives it; the exit code still belongs to the turn, because the turn itself
+succeeded. `tests/e2e/prompt-mode-edit-snapshot-failure.e2e.json` covers it against the real
+binary, breaking the store with `GIT_OBJECT_DIRECTORY` — which fails every shadow-repo git call
+while leaving the lock file, plain `fs` and no git, claimable.
 
 It calls `agentLoop` directly rather than going through
 [session-runner.md](session-runner.md) or [command-dispatcher.md](command-dispatcher.md):
