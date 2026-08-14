@@ -161,7 +161,7 @@ gitAvailable(): Promise<boolean>
 ## Neighbors
 
 - **Imports:** [`logger.ts`](../logger.md) ×2, [`config/index.ts`](../config/index.md) ×1
-- **Imported by:** [`snapshots/index.ts`](index.md) ×29, [`snapshots/gitdir.ts`](gitdir.md) ×13, [`cli/checkpoint.ts`](../cli/checkpoint.md) ×4, [`snapshots/locked-files.ts`](locked-files.md) ×3, [`snapshots/review-lock.ts`](review-lock.md) ×1
+- **Imported by:** [`snapshots/index.ts`](index.md) ×29, [`snapshots/gitdir.ts`](gitdir.md) ×13, [`snapshots/locked-files.ts`](locked-files.md) ×3, [`cli/checkpoint-root.ts`](../cli/checkpoint-root.md) ×2, [`cli/checkpoint.ts`](../cli/checkpoint.md) ×2, [`snapshots/review-lock.ts`](review-lock.md) ×1
 
 ## Tests
 

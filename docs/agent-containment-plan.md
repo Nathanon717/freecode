@@ -425,8 +425,8 @@ Real, and out of scope until the above lands. Full detail in the audit.
 - **The shadow repo never runs `git gc`** — `pruneSnapshots` deletes refs but objects survive
   indefinitely, so secrets from deleted files persist in plaintext under
   `~/.config/freecode/snapshots`, unbounded.
-- **Lock orphaning** — `headless-prompt` claims at its own `projectRoot`; `checkpoint` releases
-  at whatever `resolveSnapshotRoot` walks up to. Launch `-p --edit` from a subdirectory and the
-  lock is never released.
+- **Lock orphaning** — `headless-prompt` claims at its own `projectRoot`; `checkpoint-root.ts`
+  resolves the directory whose lock `checkpoint` releases. Launch `-p --edit` from a
+  subdirectory and the lock is never released.
 - Tool results are not ANSI/OSC-stripped before reaching the terminal; `checkpoint diff` output
   is attacker-influenced text fed to a reviewing agent.

@@ -121,7 +121,7 @@ inspectHint(projectRoot: string): string
 
 ## Tests
 
-`tests/snapshots/index.test.ts`. 4 other test files reference it.
+`tests/snapshots/index.test.ts`. 5 other test files reference it.
 
 ## Budget
 

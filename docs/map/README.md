@@ -126,7 +126,8 @@ Format: filename (linecount)
   - [`workspace.ts`](agent/workspace.md) (72) — Agent Tool Context
 - `src/cli/`
   - [`args.ts`](cli/args.md) (69) — CLI Argument Contract
-  - [`checkpoint.ts`](cli/checkpoint.md) (499) — checkpoint Command
+  - [`checkpoint-root.ts`](cli/checkpoint-root.md) (34) — Checkpoint Project Discovery
+  - [`checkpoint.ts`](cli/checkpoint.md) (467) — checkpoint Command
 - `src/cli/chrome/`
   - [`ansi.ts`](cli/chrome/ansi.md) (56) — Terminal Geometry & Escape Sequences
   - [`bottom-ui.ts`](cli/chrome/bottom-ui.md) (487) — Bottom Terminal UI

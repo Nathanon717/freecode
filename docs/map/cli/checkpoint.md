@@ -32,7 +32,7 @@ runCheckpoint({ projectRoot: startDir, args }: CheckpointOptions): Promise<numbe
 <!-- BEGIN GENERATED MAP FACTS -->
 ## Neighbors
 
-- **Imports:** [`snapshots/index.ts`](../snapshots/index.md) ×17, [`snapshots/review-lock.ts`](../snapshots/review-lock.md) ×6, [`snapshots/shadow-repo.ts`](../snapshots/shadow-repo.md) ×4, [`cli/args.ts`](args.md) ×1, [`snapshots/coverage.ts`](../snapshots/coverage.md) ×1, [`snapshots/semantic-diff.ts`](../snapshots/semantic-diff.md) ×1
+- **Imports:** [`snapshots/index.ts`](../snapshots/index.md) ×17, [`snapshots/review-lock.ts`](../snapshots/review-lock.md) ×6, [`cli/checkpoint-root.ts`](checkpoint-root.md) ×2, [`snapshots/shadow-repo.ts`](../snapshots/shadow-repo.md) ×2, [`cli/args.ts`](args.md) ×1, [`snapshots/coverage.ts`](../snapshots/coverage.md) ×1, [`snapshots/semantic-diff.ts`](../snapshots/semantic-diff.md) ×1
 
 ## Tests
 
@@ -40,7 +40,7 @@ runCheckpoint({ projectRoot: startDir, args }: CheckpointOptions): Promise<numbe
 
 ## Budget
 
-499 / 500 lines (1 to spare).
+467 / 500 lines (33 to spare).
 
 ## Env
 
@@ -205,11 +205,13 @@ refusal; `list` does not, having nothing to be wrong about.
 
 ## Finding the right project
 
-Snapshots are keyed on the directory freecode was launched from, and someone reaching for a
-checkpoint is rarely standing in it. So the start directory is not taken at face value:
+Snapshot-root discovery lives in [checkpoint-root.md](checkpoint-root.md). Snapshots are keyed
+on the directory freecode was launched from, and someone reaching for a checkpoint is rarely
+standing in it. So the start directory is not taken at face value:
 
-1. Walk up from the cwd looking for a shadow repo, bounded by the enclosing git toplevel so
-   this can never reach into a parent project. A match prints which root it is using.
+1. Walk up from the cwd looking for a shadow repo, bounded by Git's relative route to the
+   enclosing toplevel so this cannot reach a parent project or lose Windows 8.3 path spelling.
+   A match prints which root it is using.
 2. Failing that, `listShadowProjects()` names any snapshotted directory *below* the cwd —
    "no snapshots" would be a wrong answer when freecode was launched one level down.
 

@@ -15,8 +15,9 @@
 // action was destructive, so a mistyped review flag fell through to *restoring*
 // the project; here the only way to reach `revert` is to type it.
 
-import { dirname, relative, isAbsolute, resolve } from 'path';
+import { resolve } from 'path';
 import { processFlag } from './args.js';
+import { isUnder, resolveSnapshotRoot } from './checkpoint-root.js';
 import { listExcludedPaths } from '../snapshots/coverage.js';
 import {
   inspectHint,
@@ -30,12 +31,7 @@ import {
 } from '../snapshots/index.js';
 import { readReviewLock, releaseReviewLock, reviewLockPath } from '../snapshots/review-lock.js';
 import { semanticDiff } from '../snapshots/semantic-diff.js';
-import {
-  gitAvailable,
-  listShadowProjects,
-  runProjectGit,
-  shadowRepoExists,
-} from '../snapshots/shadow-repo.js';
+import { gitAvailable, listShadowProjects } from '../snapshots/shadow-repo.js';
 
 export interface CheckpointOptions {
   projectRoot: string;
@@ -138,34 +134,6 @@ function describe(snapshot: SnapshotMeta, index: number): string {
   const branch = snapshot.branch ? ` on ${snapshot.branch}` : '';
   const head = snapshot.head ? ` at ${snapshot.head.slice(0, 8)}` : '';
   return `${index === 0 ? '*' : ' '} ${snapshot.id}  ${when}${branch}${head}`;
-}
-
-function isUnder(ancestor: string, candidate: string): boolean {
-  const rel = relative(ancestor, candidate);
-  return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel);
-}
-
-/**
- * Snapshots are keyed on the directory freecode was launched from, and someone
- * reaching for a checkpoint is rarely standing in it — they are two levels down
- * in `src/` and something just went wrong. Walk up until a shadow repo turns up,
- * bounded by the enclosing repo so this can never reach into a parent project.
- */
-async function resolveSnapshotRoot(startDir: string): Promise<string | undefined> {
-  let ceiling = startDir;
-  try {
-    ceiling = (await runProjectGit(startDir, ['rev-parse', '--show-toplevel'])).trim() || startDir;
-  } catch {
-    // Not a git repo: the launch directory is the only candidate worth trusting.
-  }
-
-  let current = resolve(startDir);
-  for (;;) {
-    if (shadowRepoExists(current)) return current;
-    const parent = dirname(current);
-    if (parent === current || !isUnder(resolve(ceiling), current)) return undefined;
-    current = parent;
-  }
 }
 
 /** Returns the process exit code. */

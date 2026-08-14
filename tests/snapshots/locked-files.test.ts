@@ -51,9 +51,23 @@ async function holdOpen(file: string): Promise<void> {
   holder = spawn('powershell.exe', [
     '-NoProfile', '-Command',
     `$f=[System.IO.File]::Open('${file.replace(/\\/g, '\\\\')}','Open','ReadWrite','Read'); ` +
-    'Start-Sleep -Seconds 60; $f.Close()',
-  ], { stdio: 'ignore' });
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+    "Write-Output 'ready'; Start-Sleep -Seconds 60; $f.Close()",
+  ], { stdio: ['ignore', 'pipe', 'ignore'] });
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Timed out waiting for file holder')), 10_000);
+    holder!.once('error', (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+    holder!.once('exit', (code) => {
+      clearTimeout(timeout);
+      reject(new Error(`File holder exited before acquiring the lock (${code ?? 'signal'})`));
+    });
+    holder!.stdout!.once('data', () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+  });
 }
 
 const onWindows = process.platform === 'win32';
